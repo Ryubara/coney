@@ -283,27 +283,25 @@ MaterialChange::MaterialChange(rw::Atomic& atomic, const graphics::Material3d& m
         break;
     }
     case graphics::MaterialColour::Shade: {
-        // A human's colour times the shadow dimming, his alpha the fade (docs/research/graphics.md#human-draw). The
-        // materials keep the human's own colour between draws, so each draw scales the same colour, as the original
-        // scales the instance's HuColor; the fade stays, as the original writes it into the material and leaves it.
+        // The human's colour (Material3d::tint: his HuColor, white until a script sets it) with red, green and blue
+        // times the shadow dimming, truncated, and the fade as its alpha, written as the first material's colour in
+        // place of its own and left there, as HumanRender_Draw writes it (docs/research/graphics.md#human-draw, steps
+        // 3 and 4). A character has one material; the Entity inspector reads the alpha back as the last fade.
         const float shade = std::clamp(material.shade, 0.0F, 1.0F);
-        const auto scaled = [shade](rw::uint8 channel) {
+        const auto scaled = [shade](std::uint8_t channel) {
             return static_cast<rw::uint8>(static_cast<float>(channel) * shade);
         };
-        m_flags = geometry->flags;
-        m_restore = true;
-        for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
-            rw::RGBA& colour = geometry->matList.materials[i]->color;
-            m_own.push_back({colour.red, colour.green, colour.blue, material.fade});
-            colour = rw::RGBA{scaled(colour.red), scaled(colour.green), scaled(colour.blue), material.fade};
+        if (geometry->matList.numMaterials > 0) {
+            const graphics::Rgba human = material.tint;
+            geometry->matList.materials[0]->color =
+                rw::RGBA{scaled(human.r), scaled(human.g), scaled(human.b), material.fade};
         }
         break;
     }
     }
 }
 
-// Puts back what a tint or a shade changed: the geometry's flags and the materials' own colours (a shade's with its
-// fade kept).
+// Puts back what a tint changed: the geometry's flags and the first material's own colour.
 MaterialChange::~MaterialChange() {
     if (!m_restore) {
         return;

@@ -55,9 +55,9 @@ void applySceneStates(const graphics::SceneStates& states);
 /// (docs/engine/renderer.md#comparing), and the GPU renderer, which reads only SceneStates, relies on that.
 [[nodiscard]] graphics::SceneStates sceneStatesInForce();
 
-/// Changes an atomic's materials as a 3D draw's graphics::Material3d says while it lives: a fade or a paint is kept, a
-/// tint (the first material's colour and the modulation it turns on) is put back when it goes, and a shade (a
-/// human's) puts back each material's red, green and blue and keeps the fade in its alpha. The one place the GL3
+/// Changes an atomic's materials as a 3D draw's graphics::Material3d says while it lives: a fade, a paint or a shade
+/// (a human's colour and fade) is kept, and a tint (the first material's colour and the modulation it turns on) is
+/// put back when it goes. The one place the GL3
 /// renderer and the draws outside the frame description (the debug tools' mesh views) change them, so both draw the
 /// same colours.
 class MaterialChange {
@@ -72,9 +72,9 @@ class MaterialChange {
 
   private:
     rw::Geometry* m_geometry;
-    std::vector<std::array<std::uint8_t, 4>> m_own; // the colours (RGBA) to put back: a tint's first, a shade's all
+    std::vector<std::array<std::uint8_t, 4>> m_own; // the colour (RGBA) to put back: a tint's first
     std::uint32_t m_flags = 0;                      // a tint's geometry flags before it
-    bool m_restore = false;                         // a tint or a shade: put the colours and flags back
+    bool m_restore = false;                         // a tint: put the colour and flags back
 };
 
 /// A librw world holding a list of chosen lights (graphics::SceneLight), for drawing an atomic lit by exactly those

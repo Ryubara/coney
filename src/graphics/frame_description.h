@@ -169,9 +169,10 @@ enum class MaterialColour : std::uint8_t {
     /// Every material's colour set to Material3d::tint and kept: a car part's paint, or white
     /// (docs/research/graphics.md#car-draw).
     Paint,
-    /// Every material's red, green and blue times Material3d::shade for this draw alone, put back after it, and its
-    /// alpha set to Material3d::fade and kept: a human's colour times the shadow dimming and his distance fade, as
-    /// HumanRender_Draw writes them (docs/research/graphics.md#human-draw, steps 3 and 4).
+    /// The first material's colour replaced by Material3d::tint with its red, green and blue times Material3d::shade
+    /// (truncated) and its alpha Material3d::fade, and kept: a human's colour (HuColor, white unless a script sets it)
+    /// times the shadow dimming and his distance fade, as HumanRender_Draw writes them
+    /// (docs/research/graphics.md#human-draw, steps 3 and 4).
     Shade,
 };
 
@@ -182,9 +183,10 @@ struct Material3d {
     /// The alpha of every material colour under MaterialColour::Fade: a streamed sector's fade-in
     /// (World_RenderSectorAtomic, docs/research/world.md#a-frame), 255 once faded in.
     std::uint8_t fade = 255;
-    /// The colour MaterialColour::Tint gives the first material and MaterialColour::Paint gives every one.
+    /// The colour MaterialColour::Tint gives the first material, MaterialColour::Paint gives every one and
+    /// MaterialColour::Shade dims for the first: an object's tint, a car's paint, a human's colour.
     Rgba tint = kWhite;
-    /// What MaterialColour::Shade multiplies each material's red, green and blue by (0 to 1): a human's shadow dimming
+    /// What MaterialColour::Shade multiplies the human's red, green and blue by (0 to 1): a human's shadow dimming
     /// (graphics::ShadowDim::factor()), 1 for a human it does not dim.
     float shade = 1.0F;
     /// Texture levels picked by the distance to the camera, as the original draws the streamed sectors alone

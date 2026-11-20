@@ -304,13 +304,15 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
 
 **Built for the humans (item 9).** Each human is one draw (`PlayLighting::drawHumanPasses`, `HumanRender_Draw`,
 `0x00174320`): his body and blood layer by id, his placement and his skinning matrices (`FrameDescription::bonesOf`).
-`MaterialColour::Shade` scales each material's own colour by the shadow dimming for the draw and keeps the distance fade
-in its alpha ([Drawing a human](../research/graphics.md#human-draw)). The blood layer is the dual layer with
-`DualPass::Blood` ([Characters](../research/rendering.md#characters)). The lights are selected once for both passes
+`MaterialColour::Shade` writes his colour (`HuColor`, white until it is ported) times the shadow dimming as the first
+material's colour, in place of the disc's `0x969696`, with the distance fade as its alpha, and leaves it there ([Drawing
+a human](../research/graphics.md#human-draw)). The blood layer is the dual layer with `DualPass::Blood`
+([Characters](../research/rendering.md#characters)). The lights are selected once for both passes
 (`SceneLighting::humanLights`). On the skinned pipeline `Gl3Renderer` lends both atomics a palette filled from the
 bones; CPU skinning blended the same matrices. The human scene's hash and the disc frames' did not move between item 9's
-commits. Left for item 14: a converted character mesh lacks the skin weights, and the blood textures are not in the
-scene assets. Held objects and hats draw as objects.
+first two commits; the colour, ported after them, moved both (the humans brighter by 255/150). Left for item 14: a
+converted character mesh lacks the skin weights, and the blood textures are not in the scene assets. Held objects and
+hats draw as objects.
 
 #### Texture lifetime {#texture-lifetime}
 
@@ -625,7 +627,11 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   107 atomic draws), the same before and after item 8's two fixes (a car's lights at squared distance 0, an object's
   tint on its first material), with the screenshot unchanged. Item 9's, the same after both its commits:
   `level99-street` 144 records (119 atomic draws), `0xbd96883072a978f9`; `level95-hub` 74 (56), `0x3ea8db9c32d56092`;
-  with `--cpu-skinning` `0x292b3d9dc97355d1` and `0x37f02cb07ff2b76f`; both paths' screenshots matched the base's.
+  with `--cpu-skinning` `0x292b3d9dc97355d1` and `0x37f02cb07ff2b76f`; both paths' screenshots matched the base's. With
+  the humans' colour then ported (their white `HuColor` times the dimming, not the material's `0x969696`), the same
+  counts: `level99-street` `0xc8c5be7c138a978e`, `level95-hub` `0x5a39681c1dd355c9`; with `--cpu-skinning`
+  `0xf737a41632222772` and `0x304202659c4bd0c8`; `level99-street`'s screenshot 19,151 pixels over 2 (6.7 %, largest
+  difference 59), all on the humans, and `level95-hub`'s black one unchanged.
 - **The grid across systems** is the open question this item leaves to CI: the expected hashes were recorded on
   Windows, and the first CI run on Linux and macOS shows whether they hold. If one differs, the fallback grid is 1/256
   of a unit for positions and texture coordinates (`kDrawGridSteps`) with colours kept at 8 bits, and the expected

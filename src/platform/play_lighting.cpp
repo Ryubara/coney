@@ -114,10 +114,12 @@ void PlayLighting::drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture
         mesh.setDrawnPasses(0);
         return;
     }
-    // His materials' own colours (HuColor is white) times the player's shadow dimming, the alpha the fade; the blood
-    // layer takes the same colours, so both passes are lit alike, as the original's vertex colours are equal.
+    // His colour times the player's shadow dimming in place of the material's own, the alpha the fade. The colour is
+    // the instance's HuColor, white until a script sets it; HuColor is not ported, so every human is white. The blood
+    // layer takes the same colour, so both passes are lit alike, as the original's one material serves both.
     const graphics::Material3d material{.colour = graphics::MaterialColour::Shade,
                                         .fade = static_cast<std::uint8_t>(std::lround(255.0F * fade)),
+                                        .tint = graphics::kWhite,
                                         .shade = player ? m_playerDim.factor() : 1.0F};
     const bool hidden = player && m_playerDim.hidden();
     m_scene->noteHiddenHuman(hidden);
