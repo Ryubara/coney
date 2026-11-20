@@ -609,6 +609,8 @@ class Fighter {
     [[nodiscard]] bool healthOut() const { return m_healthOut && m_health.depleted(); }
     /// The player's reactions, stun and ground timers.
     [[nodiscard]] const Victim& victim() const { return m_victim; }
+    /// Record `+0x108`, the hit timer. Stub for the tests: 0, as before the busy time existed.
+    [[nodiscard]] std::uint64_t busyUntilMs() const { return 0; }
     /// Hurt: below the power class's hurt fraction of its health.
     [[nodiscard]] bool hurt() const { return m_health.fraction() < m_victim.powerClass().hurtFraction; }
     /// Reacting to a hit, stunned, down or getting up: the player cannot act.
