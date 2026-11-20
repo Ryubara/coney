@@ -226,7 +226,7 @@ page = "graphics.md#code-models"
 role = "chunk `0x46` ([WAD contents](formats/wad-contents.md#object-list))"
 level = "confirmed-code"
 coney = "src/world_objects/object_list.h:ObjectList::parse"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001811b0
