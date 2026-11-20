@@ -26,12 +26,28 @@ NetServer::NetServer(Transport& transport, ServerConfig config)
                                  .movieTimeoutSteps = m_config.movieTimeoutSteps}) {}
 
 std::uint32_t NetServer::loadLevel(const std::string& level, std::uint16_t checkpoint) {
-    (void)level;
-    (void)checkpoint;
-    return 0; // stub
+    const LoadLevel order = m_level.load(level, checkpoint);
+    if (m_running) {
+        for (const ServerClient& client : m_clients) {
+            if (client.joined) {
+                sendTo(client, order);
+            }
+        }
+    }
+    return order.load;
 }
 
-void NetServer::endMission(MissionOutcome /*outcome*/) {}
+void NetServer::endMission(MissionOutcome outcome) {
+    const std::optional<LoadLevel>& current = m_level.current();
+    if (!m_running || !current) {
+        return;
+    }
+    for (const ServerClient& client : m_clients) {
+        if (client.joined) {
+            sendTo(client, MissionEnd{.load = current->load, .outcome = outcome});
+        }
+    }
+}
 
 // NOLINTNEXTLINE(bugprone-exception-escape): stop() can only throw on allocation, which ends the program anyway
 NetServer::~NetServer() { stop(); }
@@ -91,6 +107,7 @@ void NetServer::receive() {
             const std::size_t index = find(event->peer);
             if (index < m_clients.size()) {
                 if (m_clients[index].joined) {
+                    m_level.playerLeft(m_clients[index].slot);
                     m_events.push_back(ServerEvent{.kind = ServerEvent::Kind::Left,
                                                    .slot = m_clients[index].slot,
                                                    .name = m_clients[index].name,
@@ -124,9 +141,21 @@ void NetServer::receive() {
         ++client.stepsSinceHeard;
         ++client.stepsConnected;
         const bool handshakeOver = !client.joined && client.stepsConnected > m_config.handshakeTimeoutSteps;
-        const bool silent = client.joined && client.stepsSinceHeard > m_config.timeoutSteps;
+        // A game loading a level may run no steps until it has, so a loading player is held to the load's time-out
+        // below instead of the keep-alive's.
+        const bool silent =
+            client.joined && client.stepsSinceHeard > m_config.timeoutSteps && !m_level.loading(client.slot);
         if (handshakeOver || silent) {
             close(i, ByeReason::TimedOut, true);
+        }
+    }
+    // The loading barrier's time-out: a player who has not loaded the host's level in time is dropped, so the host
+    // never waits for ever.
+    for (const std::uint8_t slot : m_level.step()) {
+        const auto found =
+            std::ranges::find_if(m_clients, [slot](const ServerClient& c) { return c.joined && c.slot == slot; });
+        if (found != m_clients.end()) {
+            close(static_cast<std::size_t>(found - m_clients.begin()), ByeReason::LoadTimedOut, true);
         }
     }
 
@@ -167,8 +196,10 @@ void NetServer::sendSnapshots(std::uint32_t step, std::span<const SnapshotHuman>
     if (!m_running) {
         return;
     }
+    // A player loading the level is not in it yet: their first snapshot comes once they have loaded, against what
+    // they last acknowledged (in full for one who has acknowledged none, such as a player who joined mid-level).
     for (ServerClient& client : m_clients) {
-        if (client.joined) {
+        if (client.joined && !m_level.loading(client.slot)) {
             sendTo(client, client.snapshots.build(step, humans, huds));
         }
     }
@@ -179,8 +210,8 @@ void NetServer::sendEvents(std::uint32_t step, std::span<const NetEvent> events)
         return;
     }
     for (ServerClient& client : m_clients) {
-        if (!client.joined) {
-            continue;
+        if (!client.joined || m_level.loading(client.slot)) {
+            continue; // a player loading the level is not in it to see or hear them
         }
         for (const EventBatch& batch : client.events.build(step, events)) {
             sendTo(client, batch);
@@ -239,12 +270,30 @@ bool NetServer::handle(ServerClient& client, const Message& message) {
         }
         return true;
     }
+    if (const auto* loaded = std::get_if<LevelLoaded>(&message)) {
+        // A reply names a load ordered to this player; a late one, overtaken by a newer order, is ignored.
+        const LoadReply reply = client.joined ? m_level.loaded(client.slot, loaded->load) : LoadReply::Invalid;
+        if (reply == LoadReply::Invalid) {
+            close(index, ByeReason::ProtocolError, true);
+            return false;
+        }
+        return true;
+    }
+    if (const auto* done = std::get_if<MovieDone>(&message)) {
+        if (!client.joined) {
+            close(index, ByeReason::ProtocolError, true);
+            return false;
+        }
+        m_level.movieDone(client.slot, done->movieStep, done->skipped);
+        return true;
+    }
     if (std::holds_alternative<Bye>(message)) {
         // The player is leaving: report it, and close without a Bye of our own.
         close(index, std::get<Bye>(message).reason, false);
         return false;
     }
-    // Welcome, Reject, InputTiming, Snapshot and EventBatch only ever go from a server to a client.
+    // Welcome, Reject, InputTiming, Snapshot, EventBatch, LoadLevel and MissionEnd only ever go from a server to a
+    // client.
     close(index, ByeReason::ProtocolError, true);
     return false;
 }
@@ -276,6 +325,11 @@ bool NetServer::handleHello(ServerClient& client, const Hello& hello) {
                                    .name = client.name,
                                    .reason = ByeReason::Quit,
                                    .connectionLost = false});
+    // A player who joins a host already in a level loads it first; the barrier waits for them.
+    m_level.playerJoined(client.slot);
+    if (m_level.current()) {
+        sendTo(client, m_level.joinOrder());
+    }
     return true;
 }
 
@@ -291,6 +345,7 @@ void NetServer::close(std::size_t index, ByeReason reason, bool bye) {
         sendTo(client, Bye{.reason = reason});
     }
     if (client.joined) {
+        m_level.playerLeft(client.slot);
         m_events.push_back(ServerEvent{.kind = ServerEvent::Kind::Left,
                                        .slot = client.slot,
                                        .name = client.name,

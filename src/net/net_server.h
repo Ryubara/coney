@@ -61,7 +61,6 @@ struct ServerEvent {
     enum class Kind : std::uint8_t {
         Joined, ///< a player finished the handshake
         Left,   ///< a joined player is gone (`reason` says how; ConnectionLost when the transport dropped it)
-        Loaded, ///< a joined player has loaded the host's current level (LevelBarrier::loaded())
     };
     Kind kind = Kind::Joined;
     std::uint8_t slot = 0;

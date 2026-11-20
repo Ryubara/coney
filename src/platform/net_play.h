@@ -186,6 +186,8 @@ class NetPlay final {
     // Hosting: sends each joined player a snapshot of the game's humans at `step`, and writes the digest of what it
     // leaves them holding.
     void sendSnapshots(std::uint32_t step);
+    // Hosting: notes each joined player who has loaded the host's level since the last call.
+    void noteLoaded();
     // Joined: writes the digest of each snapshot the session decoded since the last call.
     void noteDecoded();
 
@@ -226,6 +228,7 @@ class NetPlay final {
     GameEvents m_gameEvents;                                       // gameEvents(): records while hosting
     net::EventSubjectIds m_eventIds;                               // setEventSubjectIds()
     std::optional<std::pair<std::string, std::uint16_t>> m_level;  // loadLevel(): the host's level and checkpoint
+    std::vector<std::uint8_t> m_loadingSlots;                      // the joined slots loading at the last noteLoaded()
 };
 
 /// The game's pad input through network play: what `inner` (null: no pads) gives, passed through NetPlay::pads().

@@ -27,7 +27,7 @@ namespace coney::net {
 
 /// The protocol's version. Bump it with any change to a message's layout or meaning: a client and a server of
 /// different versions refuse each other in the handshake rather than misread each other.
-inline constexpr std::uint16_t kProtocolVersion = 7;
+inline constexpr std::uint16_t kProtocolVersion = 8;
 /// The first field of Hello, "CONY" read as a little-endian number: a packet from another program is refused.
 inline constexpr std::uint32_t kProtocolMagic = 0x594e4f43U;
 /// The UDP port a server listens on unless told otherwise.
@@ -336,8 +336,9 @@ using Message = std::variant<Hello, Welcome, Reject, Bye, Ping, Pong, InputComma
 /// The packet for `message`. A Hello or Welcome whose name is over kMaxNameBytes, an InputCommands with no pads, more
 /// than kMaxInputCommands or one for a step below 0, a Snapshot that breaks its rules (sequence 0, a baseline not
 /// among the kSnapshotHistory before it, ids not valid and rising, a kept entry with nothing changed, a removal with
-/// something) and an EventBatch that breaks its rules (sequence 0, no events or more than kMaxBatchEvents, an event of
-/// the other delivery, ordinals not rising, a field its kind does not carry set, a text over kMaxGameEventText) are
+/// something), an EventBatch that breaks its rules (sequence 0, no events or more than kMaxBatchEvents, an event of
+/// the other delivery, ordinals not rising, a field its kind does not carry set, a text over kMaxGameEventText) and a
+/// level message that breaks its rules (a load or checkpoint of 0, a level name empty or over kMaxLevelNameBytes) are
 /// programmer errors.
 [[nodiscard]] std::vector<std::byte> encode(const Message& message);
 
@@ -345,13 +346,14 @@ using Message = std::variant<Hello, Welcome, Reject, Bye, Ping, Pong, InputComma
 /// enumerator, the wrong magic, a name over kMaxNameBytes, a pressure byte flagged as above 0 but written as 0, an
 /// older pad written in full that is the same as the step after it, a pad for a step below 0, a Snapshot that breaks
 /// the rules encode() asserts or has a field word over its range, an EventBatch that breaks the rules encode() asserts
-/// or names an unknown kind, trailing bytes. A Hello
+/// or names an unknown kind, a level message with a load or checkpoint of 0, no level name or an unknown reason or
+/// outcome, trailing bytes. A Hello
 /// of another version decodes to its version alone (an empty name), since the rest of its layout is that version's.
 [[nodiscard]] std::expected<Message, Error> decode(std::span<const std::byte> packet);
 
-/// How a message travels: the handshake, Bye and a reliable EventBatch reliably and in order, a Snapshot unreliably
-/// but never older after newer (UnreliableSequenced), Ping, Pong, InputCommands, InputTiming, SnapshotAck and a
-/// one-shots' EventBatch unreliably.
+/// How a message travels: the handshake, Bye, the level messages and a reliable EventBatch reliably and in order, a
+/// Snapshot unreliably but never older after newer (UnreliableSequenced), Ping, Pong, InputCommands, InputTiming,
+/// SnapshotAck and a one-shots' EventBatch unreliably.
 [[nodiscard]] Delivery deliveryOf(const Message& message);
 
 /// Whether `name` may be a player's or a server's name: 1 to kMaxNameBytes printable ASCII characters (space to
