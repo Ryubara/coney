@@ -183,6 +183,22 @@ Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman
     // priority; one that does not fit waits, and a smaller one after it may still go.
     const std::size_t budgetBits = m_budgetBytes * 8;
     std::size_t usedBits = snapshotHeaderBits(snapshot, removals.size() + changes.size(), hudChanges.size());
+    std::vector<SnapshotHudEntry> hudsTaken;
+    for (const SnapshotHudEntry& entry : hudChanges) {
+        const std::size_t bits = snapshotHudEntryBits(entry);
+        if (usedBits + bits > budgetBits) {
+            continue;
+        }
+        usedBits += bits;
+        hudsTaken.push_back(entry);
+        if (entry.removed) {
+            hudsHeld.erase(entry.slot);
+        } else {
+            hudsHeld.insert_or_assign(entry.slot, hudsNow.at(entry.slot)->words);
+        }
+    }
+    std::ranges::sort(hudsTaken, [](const SnapshotHudEntry& a, const SnapshotHudEntry& b) { return a.slot < b.slot; });
+    snapshot.huds = std::move(hudsTaken);
     std::vector<SnapshotEntry> taken;
     const auto offer = [&](const Candidate& candidate) {
         const std::size_t bits = snapshotEntryBits(candidate.entry);
@@ -200,22 +216,6 @@ Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman
     };
     std::ranges::for_each(removals, offer);
     std::ranges::for_each(changes, offer);
-    std::vector<SnapshotHudEntry> hudsTaken;
-    for (const SnapshotHudEntry& entry : hudChanges) {
-        const std::size_t bits = snapshotHudEntryBits(entry);
-        if (usedBits + bits > budgetBits) {
-            continue;
-        }
-        usedBits += bits;
-        hudsTaken.push_back(entry);
-        if (entry.removed) {
-            hudsHeld.erase(entry.slot);
-        } else {
-            hudsHeld.insert_or_assign(entry.slot, hudsNow.at(entry.slot)->words);
-        }
-    }
-    std::ranges::sort(hudsTaken, [](const SnapshotHudEntry& a, const SnapshotHudEntry& b) { return a.slot < b.slot; });
-    snapshot.huds = std::move(hudsTaken);
 
     std::ranges::sort(taken, [](const SnapshotEntry& a, const SnapshotEntry& b) { return a.id < b.id; });
     snapshot.humans = std::move(taken);

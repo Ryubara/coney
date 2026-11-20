@@ -165,15 +165,16 @@ removal and a slot's next generation, the baseline's choice (the newest acknowle
 the client's Stale, NoBaseline and refusals, the packet's pinned bytes and the decoder's refusals, a human in chained
 fades with its four layers, a gait value on every layer, the budget and the priority accumulator (every packet within
 1,200 bytes, nobody waiting more than seven snapshots, the longest wait being the first full send of 200 humans at 31 a
-snapshot, a high-rate human in every one), the busy scene's bytes, and a round trip by hand through loss, held-back and
-repeated snapshots and late acknowledgements, where every snapshot decoded leaves the client holding exactly the
+snapshot, a high-rate human in every one), the busy scene's bytes, the players' HUDs taking their room in a full budget
+before the humans (both in the first snapshot, 30 humans beside them), and a round trip by hand through loss, held-back
+and repeated snapshots and late acknowledgements, where every snapshot decoded leaves the client holding exactly the
 server's record of it. `tests/net/sessions_test.cpp` runs snapshots between a `NetServer` and a `NetClient` on the
 loopback through a link conditioner with loss, jitter, duplicates and reordering both ways, and drops a client that
 acknowledges a snapshot never sent. `tests/net/player_huds_test.cpp` covers the [HUD state](#hud-state): a slot's state
 through its words and back (a number past its range held at its end), the HUDs in full first, then their changed fields,
 a slot removed and back, a delta against an older baseline, the HUD entries' pinned bytes and the decoder's and the
-client's refusals, and the game's HUDs as network play captures them. `sessions_test.cpp` sends both players' HUDs
-every step to a client on the loopback, which steps a HUD of its own from what it decodes: on a clean link its panels
-are the server's at every step, and over a bad one what it holds is the server's record of each snapshot.
+client's refusals, and the game's HUDs as network play captures them. `sessions_test.cpp` sends both players' HUDs every
+step to a client on the loopback, which steps a HUD of its own from what it decodes: on a clean link its panels are the
+server's at every step, and over a bad one what it holds is the server's record of each snapshot.
 `tests/platform/net_play_test.cpp` hands a host's HUDs to its guest (`NetPlay::setGameHuds()`, `arrivedHuds()`), and
 `tests/hud/hud_test.cpp` drives each panel from its own slot's state.
