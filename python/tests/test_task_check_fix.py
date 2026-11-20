@@ -14,7 +14,8 @@ import pytest
 from git_support import git
 from test_task_check import TASK, TESTS, World, _main_edits, make_world, start_fix
 
-from coney_tools import check_fix, ctest_scope, pr_proof, stamps, unit
+from coney_tools import check_fix, ctest_scope, pr_diff, pr_proof, stamps, unit
+from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
 
 BRAIN = '#include "ai/brain.h"\nint think() { return %d; }\n'
@@ -212,14 +213,14 @@ def test_a_base_without_the_fix_rules_has_no_fix_profile(world: World) -> None:
 
 def test_an_anchor_whose_commit_is_gone_runs_the_full_check(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
     full_then_edit(world)
-    real = check_fix.pr_diff.change_of
+    real = pr_diff.change_of
 
     def lost(root: Path, target: str, tip: str) -> Any:
         if tip == world.log.stamps[-1].commit:
-            raise check_fix.ConfigError(f"{tip}: not a commit of {root}")
+            raise ConfigError(f"{tip}: not a commit of {root}")
         return real(root, target, tip)
 
-    monkeypatch.setattr(check_fix.pr_diff, "change_of", lost)
+    monkeypatch.setattr(pr_diff, "change_of", lost)
     assert check(world) == 0
     assert "fix" not in world.stamp.detail
     assert any("cannot be read" in line for line in world.said)
