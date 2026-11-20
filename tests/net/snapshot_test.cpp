@@ -487,6 +487,31 @@ TEST_CASE("snapshots: a busy scene's bytes per snapshot are pinned", "[net][snap
     CHECK(receiver.humans() == holdingOf(scene(60, 4, 5)));
 }
 
+// Expected: unverified, #1447 (Coney's own budget order; snapshots.md#hud-state)
+TEST_CASE("snapshots: the players' HUDs take their room in a full budget before the humans", "[net][snapshot]") {
+    // The busy scene's sixty humans would fill the first snapshot on their own; both players' HUDs come with them.
+    // Each slot's words are its fields at their encoding's zero: a slot new to the client goes in full whatever its
+    // values, so the bits are the same.
+    SnapshotSender sender;
+    SnapshotReceiver receiver;
+    const std::vector<SnapshotHud> huds{SnapshotHud{.slot = 0, .words = {}}, SnapshotHud{.slot = 1, .words = {}}};
+    const Snapshot snapshot = sender.build(0, scene(60, 0, 5), huds);
+    const auto applied = receiver.apply(overTheWire(snapshot));
+    REQUIRE(applied.has_value());
+    REQUIRE(*applied == SnapshotApplied::Applied);
+    // Both HUDs are in the first snapshot, in full: slot 2 bits, removed 1, 13 changed bits and the fields' 110 bits
+    // = 126 bits each.
+    REQUIRE(snapshot.huds.size() == 2);
+    CHECK(snapshot.huds[0].slot == 0);
+    CHECK(snapshot.huds[1].slot == 1);
+    CHECK(receiver.huds().size() == 2);
+    // The humans have what is left: the header is still 48 bits (the HUD count, 2, is one byte), so 30 humans in full
+    // fit, 48 + 2 x 126 + 30 x 302 = 9,360 bits, 1,170 bytes; a 31st would take it past 9,600 bits. Humans taken
+    // first would fit 31 (9,410 bits) and leave room for one HUD only.
+    CHECK(snapshot.humans.size() == 30);
+    CHECK(encode(snapshot).size() == 1170);
+}
+
 // Expected: unverified, #554 (Coney's own priority accumulator; the original has no network play)
 TEST_CASE("snapshots: the budget holds every packet to its bytes, and the priority accumulator reaches everyone",
           "[net][snapshot]") {
