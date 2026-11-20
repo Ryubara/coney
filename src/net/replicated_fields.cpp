@@ -180,8 +180,12 @@ std::uint32_t fieldWord(const FieldSpec& field, const FieldValue& value) {
         const double rounded = std::round((share - std::floor(share)) * steps);
         return static_cast<std::uint32_t>(rounded >= steps ? 0.0 : rounded);
     }
-    case FieldEncoding::Exact:
-        return 0U;
+    case FieldEncoding::Exact: {
+        CONEY_ASSERT(std::holds_alternative<float>(value));
+        // The float's own bits; what has no finite value goes as 0, and -0 as 0, so one value has one word.
+        const float number = std::get<float>(value);
+        return std::isfinite(number) && number != 0.0F ? std::bit_cast<std::uint32_t>(number) : 0U;
+    }
     }
     CONEY_ASSERT(false);
     return 0;
@@ -205,8 +209,14 @@ std::expected<FieldValue, Error> fieldValue(const FieldSpec& field, std::uint32_
     case FieldEncoding::Angle:
         return FieldValue{
             static_cast<float>((static_cast<double>(word) / angleSteps(field.bits) * kTurn) - std::numbers::pi)};
-    case FieldEncoding::Exact:
-        return FieldValue{0.0F};
+    case FieldEncoding::Exact: {
+        // A word the writer never makes (an infinity, NaN, -0) is a corrupt or forged packet.
+        const auto number = std::bit_cast<float>(word);
+        if (!std::isfinite(number) || (number == 0.0F && word != 0U)) {
+            return fail(ErrorCode::Invalid, std::format("field {}: {:#x} is not a finite number", field.name, word));
+        }
+        return FieldValue{number};
+    }
     }
     return fail(ErrorCode::Invalid, std::format("field {}: unknown encoding", field.name));
 }
@@ -252,7 +262,8 @@ std::expected<void, Error> validateFields(std::span<const FieldSpec> fields) {
                 return refuse("named twice");
             }
         }
-        if (field.bits < 1 || field.bits > 32 || (field.encoding == FieldEncoding::Bool && field.bits != 1)) {
+        if (field.bits < 1 || field.bits > 32 || (field.encoding == FieldEncoding::Bool && field.bits != 1) ||
+            (field.encoding == FieldEncoding::Exact && field.bits != 32)) {
             return refuse("bits out of range");
         }
         if ((field.encoding == FieldEncoding::Float || field.encoding == FieldEncoding::Integer) &&

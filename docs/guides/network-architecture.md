@@ -425,13 +425,16 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   events; the client draws it.
 - **Today:** `HUD` has two player panels, each driven from its player slot's `hud::PlayerHudState`, which the play
   mode owns (`PlayLevelSimulation::playerHuds()`; slot 1 stays empty until a second player plays in a level), and each
-  slot's state travels in the snapshots ([HUD state](snapshots.md#hud-state)); only radar 0 is driven. Menus read pad
+  slot's state travels in the snapshots ([HUD state](snapshots.md#hud-state)), with the HUD's standing state: each
+  slot's panel flags, prompt and radar switch, and the shared counter panels, bars, scoreboard, stopwatch and settings
+  (`PlayLevelSimulation::hudStanding()`, [The HUD's standing state](snapshots.md#hud-standing)); only radar 0 is
+  driven. Menus read pad
   port 0; the pause menu leaves out the co-op quit. The play mode's HUD state is the simulation's (`hud::HudOwner`, its
   own HUD or the game's), and so is its update in the step; `platform::HudLayer` only lists and draws the sprites of the
   HUD's newest step.
-- **In the way:** the second radar, and the HUD's standing state outside the panels' inputs (the prompts, the radar's
-  blips, the counter panels, a panel's script flags such as `ForceShowPlayerHud`), which no snapshot carries yet; a
-  menu driven by whichever player opened it (the original's pause stores the player).
+- **In the way:** the second radar, and the radar's blips, which no snapshot carries yet (#1537: they
+  need each blip's place or the network id of what it follows); a menu driven by whichever player opened it (the
+  original's pause stores the player).
 
 ### Audio (`audio/`, `platform/audio_output`) {#sub-audio}
 

@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <utility>
 
 #include "core/assert.h"
 #include "core/error.h"
@@ -52,6 +53,44 @@ const char* hudRuleBroken(const Snapshot& snapshot) {
     return nullptr;
 }
 
+// Whether a Snapshot's HUD elements and texts keep their rules: null when they do, else the reason.
+const char* hudStandingRuleBroken(const Snapshot& snapshot) {
+    if (snapshot.hudElements.size() > kHudElements || snapshot.hudTexts.size() > kHudElements) {
+        return "network snapshot carries more HUD elements or texts than there are keys";
+    }
+    for (std::size_t i = 0; i < snapshot.hudElements.size(); ++i) {
+        const SnapshotHudElementEntry& entry = snapshot.hudElements[i];
+        if (entry.key >= kHudElements) {
+            return "network snapshot names a HUD element past the last";
+        }
+        if (i > 0 && snapshot.hudElements[i - 1].key >= entry.key) {
+            return "network snapshot's HUD elements are not in rising order";
+        }
+        const std::uint32_t all = allHudElementFields(entry.key);
+        if (entry.removed ? entry.changed != 0 : (entry.changed == 0 || (entry.changed & ~all) != 0)) {
+            return "network snapshot HUD element changes nothing, or a removal changes something";
+        }
+        for (std::size_t field = 0; field < kMaxHudElementFields; ++field) {
+            if ((entry.changed & (1U << field)) == 0 && entry.words.at(field) != 0) {
+                return "network snapshot HUD element has a word for a field it does not change";
+            }
+        }
+    }
+    for (std::size_t i = 0; i < snapshot.hudTexts.size(); ++i) {
+        const SnapshotHudTextEntry& entry = snapshot.hudTexts[i];
+        if (!hudElementHasText(entry.key)) {
+            return "network snapshot names a HUD text no element has";
+        }
+        if (i > 0 && snapshot.hudTexts[i - 1].key >= entry.key) {
+            return "network snapshot's HUD texts are not in rising order";
+        }
+        if (entry.removed ? !entry.text.empty() : (entry.text.empty() || entry.text.size() > kMaxHudTextBytes)) {
+            return "network snapshot HUD text is empty or too long, or a removal has a text";
+        }
+    }
+    return nullptr;
+}
+
 // Whether a Snapshot keeps its rules (encode() asserts them, decode() refuses what breaks them): null when it does,
 // else the reason.
 const char* snapshotRuleBroken(const Snapshot& snapshot) {
@@ -63,6 +102,9 @@ const char* snapshotRuleBroken(const Snapshot& snapshot) {
         return "network snapshot's baseline is not among the snapshots before it";
     }
     if (const char* broken = hudRuleBroken(snapshot)) {
+        return broken;
+    }
+    if (const char* broken = hudStandingRuleBroken(snapshot)) {
         return broken;
     }
     for (std::size_t i = 0; i < snapshot.humans.size(); ++i) {
@@ -157,6 +199,99 @@ std::expected<SnapshotHudEntry, Error> readSnapshotHudEntry(BitReader& in) {
     return entry;
 }
 
+// Writes a Snapshot HUD element as Snapshot's comment lays it out.
+void writeSnapshotHudElement(BitWriter& out, const SnapshotHudElementEntry& entry) {
+    out.writeBits(entry.key, kHudElementBits);
+    out.writeBool(entry.removed);
+    if (entry.removed) {
+        return;
+    }
+    const auto fields = fieldTable(hudElementKind(entry.key));
+    for (std::size_t field = 0; field < fields.size(); ++field) {
+        const bool changed = (entry.changed & (1U << field)) != 0;
+        out.writeBool(changed);
+        if (changed) {
+            out.writeBits(entry.words.at(field), fields[field].bits);
+        }
+    }
+}
+
+// Reads a Snapshot HUD element written by writeSnapshotHudElement(); a key past the last, or a word over its field's
+// range, is Invalid.
+std::expected<SnapshotHudElementEntry, Error> readSnapshotHudElement(BitReader& in) {
+    SnapshotHudElementEntry entry;
+    auto key = in.readBits(kHudElementBits);
+    if (!key) {
+        return std::unexpected(key.error());
+    }
+    if (*key >= kHudElements) {
+        return fail(ErrorCode::Invalid, "network snapshot names a HUD element past the last");
+    }
+    entry.key = static_cast<std::uint8_t>(*key);
+    auto removed = in.readBool();
+    if (!removed) {
+        return std::unexpected(removed.error());
+    }
+    entry.removed = *removed;
+    if (entry.removed) {
+        return entry;
+    }
+    const auto fields = fieldTable(hudElementKind(entry.key));
+    for (std::size_t field = 0; field < fields.size(); ++field) {
+        auto changed = in.readBool();
+        if (!changed) {
+            return std::unexpected(changed.error());
+        }
+        if (!*changed) {
+            continue;
+        }
+        auto word = in.readBits(fields[field].bits);
+        if (!word) {
+            return std::unexpected(word.error());
+        }
+        if (auto value = fieldValue(fields[field], *word); !value) {
+            return std::unexpected(value.error());
+        }
+        entry.changed |= 1U << field;
+        entry.words.at(field) = *word;
+    }
+    return entry;
+}
+
+// Writes a Snapshot HUD text as Snapshot's comment lays it out.
+void writeSnapshotHudText(BitWriter& out, const SnapshotHudTextEntry& entry) {
+    out.writeBits(entry.key, kHudElementBits);
+    out.writeBool(entry.removed);
+    if (!entry.removed) {
+        out.writeString(entry.text, kMaxHudTextBytes);
+    }
+}
+
+// Reads a Snapshot HUD text written by writeSnapshotHudText(); a text over kMaxHudTextBytes is Invalid (the rules
+// check the rest).
+std::expected<SnapshotHudTextEntry, Error> readSnapshotHudText(BitReader& in) {
+    SnapshotHudTextEntry entry;
+    auto key = in.readBits(kHudElementBits);
+    if (!key) {
+        return std::unexpected(key.error());
+    }
+    entry.key = static_cast<std::uint8_t>(*key);
+    auto removed = in.readBool();
+    if (!removed) {
+        return std::unexpected(removed.error());
+    }
+    entry.removed = *removed;
+    if (entry.removed) {
+        return entry;
+    }
+    auto text = in.readString(kMaxHudTextBytes);
+    if (!text) {
+        return std::unexpected(text.error());
+    }
+    entry.text = std::move(*text);
+    return entry;
+}
+
 // Reads a Snapshot entry written by writeSnapshotEntry(); a word over its field's range is Invalid.
 std::expected<SnapshotEntry, Error> readSnapshotEntry(BitReader& in) {
     const auto fields = fieldTable(ReplicatedKind::Human);
@@ -209,6 +344,14 @@ void writeSnapshotBody(BitWriter& out, const Snapshot& snapshot) {
     out.writeVarUint(snapshot.huds.size());
     for (const SnapshotHudEntry& entry : snapshot.huds) {
         writeSnapshotHudEntry(out, entry);
+    }
+    out.writeVarUint(snapshot.hudElements.size());
+    for (const SnapshotHudElementEntry& entry : snapshot.hudElements) {
+        writeSnapshotHudElement(out, entry);
+    }
+    out.writeVarUint(snapshot.hudTexts.size());
+    for (const SnapshotHudTextEntry& entry : snapshot.hudTexts) {
+        writeSnapshotHudText(out, entry);
     }
 }
 
@@ -267,6 +410,41 @@ std::expected<Snapshot, Error> readSnapshotBody(BitReader& in) {
         snapshot.huds.push_back(*entry);
     }
     if (const char* broken = hudRuleBroken(snapshot)) {
+        return fail(ErrorCode::Invalid, broken);
+    }
+    // The HUD's standing state: its elements, then its texts, each count checked before any is read.
+    auto elementCount = in.readVarUint();
+    if (!elementCount) {
+        return std::unexpected(elementCount.error());
+    }
+    if (*elementCount > kHudElements) {
+        return fail(ErrorCode::Invalid, "network snapshot carries more HUD elements or texts than there are keys");
+    }
+    for (std::uint64_t i = 0; i < *elementCount; ++i) {
+        auto entry = readSnapshotHudElement(in);
+        if (!entry) {
+            return std::unexpected(entry.error());
+        }
+        snapshot.hudElements.push_back(*entry);
+    }
+    if (const char* broken = hudStandingRuleBroken(snapshot)) {
+        return fail(ErrorCode::Invalid, broken);
+    }
+    auto textCount = in.readVarUint();
+    if (!textCount) {
+        return std::unexpected(textCount.error());
+    }
+    if (*textCount > kHudElements) {
+        return fail(ErrorCode::Invalid, "network snapshot carries more HUD elements or texts than there are keys");
+    }
+    for (std::uint64_t i = 0; i < *textCount; ++i) {
+        auto entry = readSnapshotHudText(in);
+        if (!entry) {
+            return std::unexpected(entry.error());
+        }
+        snapshot.hudTexts.push_back(std::move(*entry));
+    }
+    if (const char* broken = hudStandingRuleBroken(snapshot)) {
         return fail(ErrorCode::Invalid, broken);
     }
     return snapshot;
@@ -330,15 +508,32 @@ bool hudElementHasText(std::uint8_t key) {
     return key < kHudElements && key != kHudElementGauge && key != kHudElementSettings;
 }
 
-std::size_t snapshotHudElementEntryBits(const SnapshotHudElementEntry& /*entry*/) { return 0; }
+std::size_t snapshotHudElementEntryBits(const SnapshotHudElementEntry& entry) {
+    std::size_t bits = kHudElementBits + 1;
+    if (entry.removed) {
+        return bits;
+    }
+    const auto fields = fieldTable(hudElementKind(entry.key));
+    for (std::size_t field = 0; field < fields.size(); ++field) {
+        bits += 1;
+        if ((entry.changed & (1U << field)) != 0) {
+            bits += static_cast<std::size_t>(fields[field].bits);
+        }
+    }
+    return bits;
+}
 
-std::size_t snapshotHudTextEntryBits(const SnapshotHudTextEntry& /*entry*/) { return 0; }
+std::size_t snapshotHudTextEntryBits(const SnapshotHudTextEntry& entry) {
+    const std::size_t bits = kHudElementBits + 1;
+    return entry.removed ? bits : bits + varUintBits(entry.text.size()) + (entry.text.size() * 8);
+}
 
 std::size_t snapshotHeaderBits(const Snapshot& snapshot, std::size_t entries, std::size_t hudEntries,
-                               std::size_t /*elementEntries*/, std::size_t /*textEntries*/) {
+                               std::size_t elementEntries, std::size_t textEntries) {
     return 8 + varUintBits(snapshot.sequence) +
            varUintBits(snapshot.baseline == 0 ? 0 : snapshot.sequence - snapshot.baseline) +
-           varUintBits(snapshot.step) + varUintBits(entries) + varUintBits(hudEntries);
+           varUintBits(snapshot.step) + varUintBits(entries) + varUintBits(hudEntries) + varUintBits(elementEntries) +
+           varUintBits(textEntries);
 }
 
 } // namespace coney::net

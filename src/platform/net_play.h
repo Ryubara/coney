@@ -87,8 +87,9 @@ class NetPlay final {
     /// joined player as a snapshot. The game hands them over once a step, before afterStep(); the last ones given are
     /// sent while no new ones come (the game paused, or between levels with none).
     void setGameHumans(std::span<const net::SnapshotHuman> humans);
-    /// Hosting: each player slot's HUD in the host's game this step (net::GameHumans::huds()), which afterStep() sends
-    /// with the humans in each joined player's snapshot. Handed over and kept as setGameHumans()'s humans are.
+    /// Hosting: each player slot's HUD in the host's game this step (net::GameHumans::huds()) and the HUD's standing
+    /// state (`elements` and `texts`, net::GameHumans::hudElements() and hudTexts()), which afterStep() sends with the
+    /// humans in each joined player's snapshot. Handed over and kept as setGameHumans()'s humans are.
     void setGameHuds(std::span<const net::SnapshotHud> huds, std::span<const net::SnapshotHudElement> elements = {},
                      std::span<const net::SnapshotHudText> texts = {});
     /// Joined: each player slot's HUD the newest decoded snapshot holds, by slot: what this game draws each player's
@@ -230,6 +231,8 @@ class NetPlay final {
 
     std::vector<net::SnapshotHuman> m_gameHumans;                  // setGameHumans()
     std::vector<net::SnapshotHud> m_gameHuds;                      // setGameHuds()
+    std::vector<net::SnapshotHudElement> m_gameHudElements;        // setGameHuds()
+    std::vector<net::SnapshotHudText> m_gameHudTexts;              // setGameHuds()
     std::function<void(const net::DigestLine&)> m_snapshotDigests; // setSnapshotDigests()
     std::uint32_t m_steps = 0;                                     // afterStep() calls
     std::uint32_t m_lastDecoded = 0;                               // the newest snapshot a digest was written for

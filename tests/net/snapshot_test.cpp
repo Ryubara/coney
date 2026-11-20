@@ -171,8 +171,9 @@ TEST_CASE("snapshots: the first is full, and a still scene's next ones are empty
     CHECK(second.baseline == 1);
     CHECK(second.humans.empty());
     CHECK(receiver.humans() == holdingOf(humans));
-    // Header only: the id, the sequence, one back, the step, no entries and no HUD entries, a byte each.
-    CHECK(encode(second).size() == 6);
+    // Header only: the id, the sequence, one back, the step, no entries, no HUD entries, no HUD elements and no HUD
+    // texts, a byte each.
+    CHECK(encode(second).size() == 8);
 }
 
 // Expected: unverified, #554 (Coney's own snapshots; the original has no network play)
@@ -336,7 +337,7 @@ TEST_CASE("snapshots: the packet is pinned, round-trips and refuses what breaks 
     // From bit 0: slot 2 (16 bits) = 0x02 0x00; generation 1 (6 bits), removed 0, field 0's changed bit 0 = 0x01;
     // fields 1 to 8 unchanged = 0x00; fields 9 to 16 unchanged = 0x00; fields 17 to 20 unchanged (bits 0 to 3), field
     // 21 changed and its word 1 (bits 4 and 5), field 22 unchanged = 0x30; then no HUD entries, a varint 0 from bit 7
-    // (protocol 7) = 0x00; then no HUD elements and no HUD texts, two more varints 0 (protocol 8) = 0x00 0x00.
+    // (protocol 7) = 0x00; then no HUD elements and no HUD texts, two more varints 0 (protocol 9) = 0x00 0x00.
     const std::vector<std::byte> expected{std::byte{0x0a}, std::byte{0x03}, std::byte{0x01}, std::byte{0x07},
                                           std::byte{0x01}, std::byte{0x02}, std::byte{0x00}, std::byte{0x01},
                                           std::byte{0x00}, std::byte{0x00}, std::byte{0x30}, std::byte{0x00},

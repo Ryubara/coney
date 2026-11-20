@@ -150,6 +150,11 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     /// plays in a level, and drives panel 1 as it is.
     /// @coney-only network play's per-slot HUD state; the original's panels read their players themselves
     [[nodiscard]] std::span<const hud::PlayerHudState> playerHuds() const { return m_playerHuds; }
+    /// The HUD's standing state now: each player slot's panel flags, prompt and radar, and the shared counter panels,
+    /// bars, scoreboard, stopwatch and settings the scripts set (docs/guides/snapshots.md#hud-standing). The play
+    /// mode's HUD owns it as simulation state; network play carries it beside playerHuds().
+    /// @coney-only network play's view of the HUD; the original has none
+    [[nodiscard]] hud::HudStanding hudStanding() const { return m_hud->hud().standing(); }
 
     /// The level's world objects (the scripts' spawn records brought in round the camera, the objective markers):
     /// what the newest step draws (play_level_world.cpp).

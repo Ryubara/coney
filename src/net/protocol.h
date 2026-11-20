@@ -27,7 +27,7 @@ namespace coney::net {
 
 /// The protocol's version. Bump it with any change to a message's layout or meaning: a client and a server of
 /// different versions refuse each other in the handshake rather than misread each other.
-inline constexpr std::uint16_t kProtocolVersion = 8;
+inline constexpr std::uint16_t kProtocolVersion = 9;
 /// The first field of Hello, "CONY" read as a little-endian number: a packet from another program is refused.
 inline constexpr std::uint32_t kProtocolMagic = 0x594e4f43U;
 /// The UDP port a server listens on unless told otherwise.
@@ -48,7 +48,7 @@ enum class MessageId : std::uint8_t {
     // 7 was PadInput (protocol 2: one step's pad per packet), replaced by InputCommands; never reused.
     InputCommands = 8, ///< client to server: the client's pads in its latest few steps (protocol 3)
     InputTiming = 9,   ///< server to client: how early the client's input commands arrive (protocol 3)
-    Snapshot = 10,     ///< server to client: the humans the client needs, as a delta (protocol 4; HUDs 7)
+    Snapshot = 10,     ///< server to client: the humans the client needs, as a delta (protocol 4; HUDs 7 and 9)
     SnapshotAck = 11,  ///< client to server: the newest snapshot the client has decoded (protocol 4)
     EventBatch = 12,   ///< server to client: what the game made its players see or hear in one step (protocol 5)
     LoadLevel = 13,    ///< server to client: load this level at this checkpoint (protocol 8)
@@ -255,7 +255,7 @@ struct SnapshotHudTextEntry {
 /// HUD elements (a varint, at most kHudElements) and each: its key (kHudElementBits), a removed bit and, when not
 /// removed, for each of its fields a changed bit followed by the word when set; then the number of HUD texts (a
 /// varint, at most kHudElements) and each: its key (kHudElementBits), a removed bit and, when not removed, the text (a
-/// varint length of 1 to kMaxHudTextBytes, then its bytes) (protocol 8).
+/// varint length of 1 to kMaxHudTextBytes, then its bytes) (protocol 9).
 struct Snapshot {
     std::uint32_t sequence = 1;           ///< 1 for a client's first, one more for each after
     std::uint32_t baseline = 0;           ///< the sequence it is a delta against; 0 for none (a full snapshot)

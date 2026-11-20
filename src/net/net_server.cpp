@@ -192,8 +192,8 @@ void NetServer::send() {
 }
 
 void NetServer::sendSnapshots(std::uint32_t step, std::span<const SnapshotHuman> humans,
-                              std::span<const SnapshotHud> huds, std::span<const SnapshotHudElement> /*hudElements*/,
-                              std::span<const SnapshotHudText> /*hudTexts*/) {
+                              std::span<const SnapshotHud> huds, std::span<const SnapshotHudElement> hudElements,
+                              std::span<const SnapshotHudText> hudTexts) {
     if (!m_running) {
         return;
     }
@@ -201,7 +201,7 @@ void NetServer::sendSnapshots(std::uint32_t step, std::span<const SnapshotHuman>
     // they last acknowledged (in full for one who has acknowledged none, such as a player who joined mid-level).
     for (ServerClient& client : m_clients) {
         if (client.joined && !m_level.loading(client.slot)) {
-            sendTo(client, client.snapshots.build(step, humans, huds));
+            sendTo(client, client.snapshots.build(step, humans, huds, hudElements, hudTexts));
         }
     }
 }
