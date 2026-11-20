@@ -42,26 +42,29 @@ Homebrew's `llvm@19`. `clang_tidy_program` of coney.local.toml names another cop
 version, or none, makes the check "cannot run" (no stamp, nothing wrong with the change): a newer one reports what CI
 would not, an older one misses what it would.
 
-**Windows paths.** clang-tidy sees a header's path with backslashes on Windows (`C:\...\src\core/pad.h`), so the check
-hands it `.clang-tidy`'s `HeaderFilterRegex` with each `/` widened to either slash, and applies the line filter itself
-after clang-tidy instead of through `--line-filter` (whose names clang-tidy compares with those paths). Both give the
-findings CI's settings give; neither changes `.clang-tidy`.
+**Windows paths.** clang-tidy sees a header's path with backslashes on Windows (`<checkout>\src\core/pad.h`), so the
+check hands it `.clang-tidy`'s `HeaderFilterRegex` with each `/` widened to either slash, and applies the line filter
+itself after clang-tidy instead of through `--line-filter` (whose names clang-tidy compares with those paths). Both
+give the findings CI's settings give; neither changes `.clang-tidy`.
 
 ### Where it differs from CI {#differences}
 
 On Windows the compile database is MSVC's, so clang-tidy reads each source as clang-cl does, against Microsoft's
 standard library and with the `_WIN32` code paths; CI reads it as Clang 19 on Linux against libstdc++. The checks that
-look into the library's own code can then disagree. Measured on the pull requests of [#1496](issue:1496), at the commit
-CI failed, with the local pass against an MSVC `ci` compile database of the same sources:
+look into the library's own code can then disagree. Measured on the pull requests of [#1496](issue:1496), with the
+sources at the commit CI failed on and the MSVC `ci` compile database of the branch's own build (a source the build did
+not have yet given its folder's flags):
 
 | Pull request | CI's findings | Found here | Not found here, and why |
 | --- | --- | --- | --- |
 | [#1487](issue:1487) | `tests/warriors/xbox_save_test.cpp:309` `bugprone-unchecked-optional-access` | it | nothing; the local run also gave `src/fileio/qcow2_image.h:39` `bugprone-exception-escape` in the defaulted move constructor, which CI did not: Microsoft's `std::map` allocates a node when moved, libstdc++'s does not, so the constructor can throw only on Windows (advice here, below) |
 | [#1488](issue:1488) | `src/gui/mod_ui/ui_model.cpp:45` `bugprone-unused-return-value`; `src/gui/mod_ui/ui_screen.cpp:447` `bugprone-optional-value-conversion` | the first | the second: the check matches the shape of `std::optional`'s converting constructor, which libstdc++ and Microsoft's library write differently, so `event(kind, *chosen)` into a `std::optional` parameter is not matched here |
-| [#1492](issue:1492) | `tests/net/event_channel_test.cpp:345` and `:346` `bugprone-implicit-widening-of-multiplication-result` | MEASURE-1492 | MEASURE-1492-WHY |
+| [#1492](issue:1492) | `tests/net/event_channel_test.cpp:345` and `:346` `bugprone-implicit-widening-of-multiplication-result` | both | nothing |
 | [#1493](issue:1493) | `src/debug/lua_console.cpp:76` `bugprone-exception-escape` | none | `bugprone-exception-escape` follows `throw` expressions through the function bodies it can see: libstdc++ throws `std::bad_alloc` and `std::length_error` from inline code in its headers, Microsoft's library from functions compiled into its DLL (`_Xlength_error`, `_Xbad_alloc`), so a destructor that may allocate looks safe here |
 
-So the local check catches most of what CI reports, and the rest is of two kinds: a finding in the standard library's
+Four of CI's six findings were found here. The local pass took 2 to 4 minutes for 3 to 12 sources and 15 minutes
+for the 34 of [#1492](issue:1492), four at a time on a machine running other builds. So the local check catches most of
+what CI reports, and the rest is of two kinds: a finding in the standard library's
 shape (`bugprone-exception-escape` through an allocation, `bugprone-optional-value-conversion`), and a finding in
 code only Linux compiles. Those still arrive as CI annotations and are fixed on the branch.
 
@@ -171,4 +174,8 @@ the full build that only generated the headers.
 | [#1492](issue:1492) | 34.0 min | 1159 s (a slow mirror) | 593 s | 232 s |
 | [#1493](issue:1493) | 5.0 min | 42 s | 160 s | 44 s |
 
-AFTER-MEASURE
+With this design the job builds the planned sources' order-only targets instead (generated headers only, nothing
+compiled), so the full-build column, 53 to 88 percent of each job above, goes. The clang-tidy step itself is unchanged
+on a source the cache has not seen; one it has seen with the same inputs costs a lookup (two sources here: 56 seconds
+run, 0.1 seconds from the cache, each entry about 50 KB for the 280 to 360 files it read). The job's own times after the
+change are those of its first runs in CI.
