@@ -137,8 +137,9 @@ def add_ci_parser(
         help="print the Ninja targets that make what clang-tidy needs for a plan's sources",
         description=(
             "Prints, one per line, the Ninja targets that generate what the plan's sources need before clang-tidy can "
-            "read them (each source's CMake target's order-only target: its generated headers, nothing compiled; "
-            "else its object file), so the job builds these instead of the whole project. Exit code 0."
+            "read them (each source's CMake target's order-only target: its generated headers and the targets it "
+            "depends on, but none of its own sources; else its object file), so the job builds these instead of the "
+            "whole project. Exit code 0."
         ),
     )
     deps.add_argument("--plan", required=True, metavar="FILE", help="the plan `tidy-plan` wrote")

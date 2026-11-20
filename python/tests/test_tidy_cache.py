@@ -3,6 +3,7 @@
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -65,7 +66,15 @@ def pinned_clang_tidy() -> str | None:
 
 @pytest.mark.parametrize(
     "compiler",
-    ["/usr/bin/clang++-19 -std=c++20", "clang++ -std=c++20", "cl.exe /nologo /std:c++latest /showIncludes"],
+    [
+        "/usr/bin/clang++-19 -std=c++20",
+        "clang++ -std=c++20",
+        # clang-cl mode reads MSVC's headers, which only a Windows machine has.
+        pytest.param(
+            "cl.exe /nologo /std:c++latest /showIncludes",
+            marks=pytest.mark.skipif(sys.platform != "win32", reason="clang-cl mode needs MSVC's headers"),
+        ),
+    ],
 )
 def test_the_real_clang_tidy_writes_the_dependency_file_for_either_driver(tmp_path: Path, compiler: str) -> None:
     program = pinned_clang_tidy()

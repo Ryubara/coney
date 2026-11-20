@@ -47,9 +47,9 @@ conventions could not be read. [What CI runs](building.md#what-ci-runs) says whe
   set. Only the folders and extensions of `ci.tidy` count otherwise ([clang-tidy](clang-tidy.md)).
 * `tidy-deps` prints, one per line, the Ninja targets that make what the plan's sources need before clang-tidy can read
   them: for each source, the order-only target CMake's Ninja generator writes for the target that compiles it
-  (`cmake_object_order_depends_target_<target>`: its generated headers and its dependencies', nothing compiled), or
-  the source's object file when the build file has no such target. The job builds these instead of the whole project
-  ([Building only what it reads](clang-tidy.md#build)).
+  (`cmake_object_order_depends_target_<target>`: its generated headers and, built in full, the targets it depends on;
+  none of its own sources), or the source's object file when the build file has no such target. The job builds these
+  instead of the whole project ([Building only what it reads](clang-tidy.md#build)).
 * `tidy-run` runs `clang-tidy` on the plan's sources (for a plan of every file, every source of Coney's own the compile
   database names, never one under `_deps/`), `--jobs` at a time (default: the cores), against the compile database in
   `--build-dir`, with the plan's line filter (one too long for an argument, over 100 KB, is left off and applied

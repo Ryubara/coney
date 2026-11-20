@@ -105,8 +105,8 @@ runs](building.md#what-a-pull-request-runs)). Otherwise:
    its `WarningsAsErrors` makes every finding an error. The job fails on any finding, and also when clang-tidy itself
    fails (a missing compile database, a crash) or a planned source does not compile (a compiler error on any line,
    changed or not: clang-tidy could not analyse it).
-4. The findings reach the pull request as annotations on the changed lines: the job writes a SARIF file and uploads it to
-   code scanning (category `clang-tidy`). A pull request from a fork has a read-only token that cannot upload, so the
+4. The findings reach the pull request as annotations on the changed lines: the job writes a SARIF file and uploads it
+   to code scanning (category `clang-tidy`). A pull request from a fork has a read-only token that cannot upload, so the
    job prints the findings as workflow commands (`::error file=...`), which annotate the diff as well. Either way the
    job's summary lists the first findings and the log holds all of them.
 
@@ -121,11 +121,11 @@ clang-tidy needs the compile database and the headers the build generates, not t
 builds, after configuring, only the targets `coney-tools ci tidy-deps` prints for the plan's sources: for each, the
 order-only target CMake's Ninja generator writes for the target that compiles it
 (`cmake_object_order_depends_target_<target>`: that target's generated headers and the targets it depends on), or the
-source's object file when there is no such target. Mostly nothing is compiled, but an order-only target also holds
-the targets its target depends on: `coney-studio`'s pulls in `coney` (the executable, built and linked), and `coney`'s
-the copied assets, so a plan with a `studio_*.cpp` source, and every pass over the whole codebase, still builds
-`coney`. Coney generates one file this way, the embedded
-shader data of `src/platform/shaders/`; SDL3's and Catch2's configuration headers are written by the configure step.
+source's object file when there is no such target. An order-only target compiles none of its own target's sources,
+but it also builds the targets its target depends on, in full: `coney-studio`'s pulls in `coney` (the executable,
+built and linked), and `coney`'s the copied assets, so a plan with a `studio_*.cpp` source, and every pass over the
+whole codebase, still builds `coney`. Coney generates one file this way, the embedded shader data of
+`src/platform/shaders/`; SDL3's and Catch2's configuration headers are written by the configure step.
 The build job is the one that reports compile errors, so a failure here does not stop the job.
 
 ## The result cache {#cache}
@@ -153,7 +153,8 @@ request's cache is scoped to its own ref, so nobody else could restore it, and i
 every other run saves into its own ref's scope: `main`'s pushes and nightly runs, which every run reads, and manual
 runs and `release/**` pushes, which only later runs of that same ref read. A run saves also when a newer push
 cancels it, since each entry is written whole as its source finishes. The `cache-prune` job keeps one such entry per
-branch, like the compiler caches ([CI caches](building.md#ci-caches)). A change to `.clang-tidy` starts from an empty cache.
+branch, like the compiler caches ([CI caches](building.md#ci-caches)). A change to `.clang-tidy` starts from an
+empty cache.
 
 ## The checks {#checks}
 

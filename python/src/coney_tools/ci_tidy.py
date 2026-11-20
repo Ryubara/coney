@@ -301,9 +301,9 @@ ORDER_TARGET = "cmake_object_order_depends_target_"
 
 def build_targets(build_dir: Path, root: Path, units: Sequence[Unit]) -> list[str]:
     """The Ninja targets that make what clang-tidy needs to analyse `units`: for each, the order-only target of the
-    CMake target that compiles it (the generated headers, nothing compiled), when the build file has one, else its
-    object file. clang-tidy needs the compile database and the generated headers, not the objects, so the job builds
-    these instead of the whole project."""
+    CMake target that compiles it (its generated headers and the targets it depends on, but none of its own sources),
+    when the build file has one, else its object file. clang-tidy needs the compile database and the generated
+    headers, not the objects, so the job builds these instead of the whole project."""
     commands = tidy_cache.load_commands(build_dir, root)
     try:
         ninja = (build_dir / "build.ninja").read_text(encoding="utf-8", errors="replace")

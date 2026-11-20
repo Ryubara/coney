@@ -251,7 +251,8 @@ jobs:
         uses: ./.github/actions/deps-save
       # clang-tidy reads the compile database (written by the configure above) and the headers the build generates;
       # it needs no object file. So only the planned sources' targets' order-only targets are built: their generated
-      # headers, nothing compiled. The build job reports compile errors, so a failure here does not stop the job.
+      # headers and the targets they depend on, but none of their own sources (a studio_*.cpp source still builds
+      # coney). The build job reports compile errors, so a failure here does not stop the job.
       - name: Generate the headers the planned sources read
         if: steps.plan.outputs.run == 'true'
         run: |
@@ -300,9 +301,8 @@ jobs:
       # Every run but a pull request's saves the cache, as with ccache, into its own ref's scope: main's pushes and
       # nightly runs, which every run restores, and manual runs and release/** pushes, which only that ref's later runs
       # restore. A pull request's cache is scoped to its own ref, so no other run could restore it, and it would push
-      # main's entries out. A run cancelled
-      # by a newer push still saves: every entry is written whole as its source finishes, so the next run starts from
-      # what this one checked instead of from nothing.
+      # main's entries out. A run cancelled by a newer push still saves: every entry is written whole as its source
+      # finishes, so the next run starts from what this one checked instead of from nothing.
       - if: ${{ always() && github.event_name != 'pull_request' && steps.plan.outputs.run == 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
