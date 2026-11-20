@@ -833,6 +833,18 @@ from RenderWare's behaviour, not read here. A name found nowhere gives no textur
 Game code looks up a texture by name in one particular dictionary through device slot `+0x168` (used by the HUD and
 effects; callers not traced).
 
+### Texture lifetime {#texture-lifetime}
+
+A texture outlives its dictionary while a material still holds it. A material takes a reference when it is given
+a texture: `RpMaterialSetTexture` (`0x0046d010`) raises the new texture's reference count at `+0x54` and destroys the
+texture it held before. RenderWare's texture destroy (`0x00488d90`, by its shape `RwTextureDestroy`) lowers that count
+and frees the texture only when it reaches 0; a dictionary's destroy (`0x00488c58`, `RwTexDictionaryDestroy`) calls it
+for each texture in the dictionary, then unlinks the dictionary. `World_UnloadPart` (`0x004115d0`) destroys a part's
+dictionary that way once its atomics are released. Confirmed (code) at those addresses. So a material that found its
+texture by name in a part's dictionary ([above](#texture-lookup)), an object's for one, keeps drawing with it after the
+part unloads, as the material's reference keeps the texture; whether any object on the disc does so is not checked.
+Coney keeps the same rule for its own converted textures ([Texture lifetime](../engine/renderer.md#texture-lifetime)).
+
 ### 2D drawing {#2d-drawing}
 
 There is no 2D layer in pixels. The front end and the HUD draw **sprites through RenderWare's PTank plugin**

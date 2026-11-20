@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <utility>
+#include <vector>
 
 #include <rw.h>
 
@@ -67,6 +68,7 @@ std::expected<graphics::TextureId, Error> SceneAssets::addTexture(rw::Texture& t
         return graphics::TextureId{};
     }
     if (const graphics::TextureId have = textureOf(&texture); have.valid()) {
+        ++m_uses[have.value].uses;
         return have;
     }
     const ConversionTimer timer(m_totals.nanoseconds);
@@ -80,24 +82,30 @@ std::expected<graphics::TextureId, Error> SceneAssets::addTexture(rw::Texture& t
         return std::unexpected(std::move(id.error()));
     }
     m_textures.emplace(&texture, *id);
+    m_uses.emplace(id->value, TextureEntry{.source = &texture, .uses = 1});
     ++m_totals.textures;
     hold(m_totals.textureBytes, bytes);
     return *id;
 }
 
-void SceneAssets::removeTexture(graphics::TextureId id) {
+void SceneAssets::removeTexture(graphics::TextureId id) { release(id); }
+
+void SceneAssets::release(graphics::TextureId id) {
+    const auto found = m_uses.find(id.value);
+    if (found == m_uses.end()) {
+        return;
+    }
+    // Still used by another addTexture() or a held mesh's material: it stays, under the same id.
+    if (--found->second.uses > 0) {
+        return;
+    }
     if (const graphics::TextureData* data = m_store.texture(id); data != nullptr) {
         m_totals.textureBytes -= bytesOf(*data);
     }
-    if (!m_store.removeTexture(id)) {
-        return;
-    }
+    m_store.removeTexture(id);
     // The librw texture it came from is forgotten too, so one made later at the same address is a new texture.
-    const auto found =
-        std::find_if(m_textures.begin(), m_textures.end(), [id](const auto& entry) { return entry.second == id; });
-    if (found != m_textures.end()) {
-        m_textures.erase(found);
-    }
+    m_textures.erase(found->second.source);
+    m_uses.erase(found);
 }
 
 graphics::TextureId SceneAssets::textureOf(const rw::Texture* texture) const {
@@ -131,7 +139,13 @@ std::expected<graphics::MeshId, Error> SceneAssets::addAtomic(rw::Atomic& atomic
     MeshEntry entry{.atomic = &atomic, .textures = {}};
     const rw::Geometry& geometry = *atomic.geometry;
     for (rw::int32 m = 0; m < geometry.matList.numMaterials; ++m) {
-        entry.textures.push_back(textureOf(geometry.matList.materials[m]->texture));
+        const graphics::TextureId texture = textureOf(geometry.matList.materials[m]->texture);
+        // The mesh holds the texture while it is held, so the id stays valid after whoever added it lets go: a
+        // material may have found it in another dictionary, such as a streamed part's (renderer.md#texture-lifetime).
+        if (texture.valid()) {
+            ++m_uses[texture.value].uses;
+        }
+        entry.textures.push_back(texture);
     }
     m_meshes.emplace(id->value, std::move(entry));
     return *id;
@@ -142,7 +156,16 @@ void SceneAssets::removeMesh(graphics::MeshId id) {
         m_totals.meshBytes -= bytesOf(*data);
     }
     m_store.removeMesh(id);
-    m_meshes.erase(id.value);
+    const auto found = m_meshes.find(id.value);
+    if (found == m_meshes.end()) {
+        return;
+    }
+    // Moved out first: releasing may not touch the entry being erased.
+    const std::vector<graphics::TextureId> textures = std::move(found->second.textures);
+    m_meshes.erase(found);
+    for (const graphics::TextureId texture : textures) {
+        release(texture);
+    }
 }
 
 rw::Atomic* SceneAssets::atomic(graphics::MeshId id) const {

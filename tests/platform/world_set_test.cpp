@@ -16,9 +16,13 @@
 #include "fileio/disc.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode_stack.h"
+#include "graphics/asset_store.h"
+#include "platform/object_draw.h"
 #include "platform/render_engine.h"
+#include "platform/scene_assets.h"
 #include "platform/texture_dictionary.h"
 #include "platform/texture_lookup.h"
+#include "platform/world_atomic.h"
 #include "platform/world_viewer_mode.h"
 #include "support/fixtures.h"
 #include "support/rw_fixtures.h"
@@ -179,6 +183,119 @@ TEST_CASE("a material taking its texture from another part's dictionary is count
     REQUIRE((*set)->atomic(0, 1) != nullptr);
     REQUIRE((*set)->atomic(0, 1)->geometry->matList.materials[0]->texture != nullptr);
     CHECK((*set)->borrowedTextures() == 1);
+}
+
+// Expected: graphics.md#texture-lifetime, confirmed (code): RenderWare's texture destroy (0x00488d90) only drops a
+// reference, and a dictionary's destroy (0x00488c58) calls it for each texture, so a texture a material still holds
+// outlives the part dictionary it came from. An object's material finds its texture by name through every loaded
+// dictionary (graphics.md#texture-lookup), here part 1's; after part 1 unloads, the object's mesh still names a
+// texture the scene assets hold (docs/engine/renderer.md#texture-lifetime), until the mesh goes.
+TEST_CASE("an object material taking a streamed part's texture keeps it after the part unloads", "[world_set]") {
+    auto engine = RenderEngine::start(RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    coney::platform::SceneAssets& assets = (*engine)->sceneAssets();
+    REQUIRE(assets.converting());
+    TempDir dir;
+    const coney::io::Wad wad =
+        openWorldDisc(dir, coney::test::partFile(0, {{0, stripAtomic("own")}},
+                                                 coney::test::texDictionary({coney::test::rgbaTexture2x2("own"),
+                                                                             coney::test::rgbaTexture2x2("lent")})));
+    coney::world::SectorBudget budget(10'000);
+    const std::vector<std::string> names{"test"};
+    auto set = WorldSet::load(wad, names, budget, false, assets);
+    REQUIRE(set.has_value());
+    coney::world::StreamedWorld& world = *(*set)->worlds()[0];
+    REQUIRE(coney::world::requestPart(world, 0, 1, budget, **set, 100).has_value());
+
+    // The object's model is read while part 1 is loaded, its material naming part 1's texture; then its mesh goes in,
+    // as PlacedObjects and ParkedCars put theirs (addObjectMesh()).
+    const Bytes section = stripAtomic("lent");
+    auto object = coney::platform::WorldAtomic::read(section.span(), {0, 0, 0});
+    REQUIRE(object.has_value());
+    object->unpack();
+    REQUIRE(object->atomic()->geometry->matList.materials[0]->texture != nullptr);
+    const coney::platform::ObjectMesh mesh = coney::platform::addObjectMesh(assets, *object->atomic());
+    REQUIRE(mesh.mesh.valid());
+    REQUIRE(assets.materialTextures(mesh.mesh).size() == 1);
+    const coney::graphics::TextureId lent = assets.materialTextures(mesh.mesh)[0];
+    REQUIRE(lent.valid());
+    REQUIRE(assets.store().texture(lent) != nullptr);
+
+    // Part 1 goes while the object stays: the texture its mesh names is still held.
+    (*set)->unloadPart(0, 1);
+    world.markPartUnloaded(1);
+    CHECK(assets.store().texture(lent) != nullptr);
+    CHECK(assets.materialTextures(mesh.mesh)[0] == lent);
+
+    // The object goes too: nothing names the texture any more, so it is dropped.
+    coney::platform::removeObjectMesh(assets, mesh);
+    CHECK(assets.store().texture(lent) == nullptr);
+}
+
+// Expected: graphics.md#texture-lifetime, confirmed (code): as above, for a part's material that found its texture in
+// another part's dictionary (the case borrowedTextures() counts): that part unloading leaves the texture held.
+TEST_CASE("a part material taking another part's texture keeps it after that part unloads", "[world_set]") {
+    auto engine = RenderEngine::start(RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    coney::platform::SceneAssets& assets = (*engine)->sceneAssets();
+    REQUIRE(assets.converting());
+    TempDir dir;
+    const coney::io::Wad wad =
+        openWorldDisc(dir,
+                      coney::test::partFile(0, {{0, stripAtomic("own")}},
+                                            coney::test::texDictionary({coney::test::rgbaTexture2x2("own"),
+                                                                        coney::test::rgbaTexture2x2("lent")})),
+                      coney::test::partFile(0, {{1, stripAtomic("lent")}}));
+    coney::world::SectorBudget budget(10'000);
+    const std::vector<std::string> names{"test"};
+    auto set = WorldSet::load(wad, names, budget, false, assets);
+    REQUIRE(set.has_value());
+    coney::world::StreamedWorld& world = *(*set)->worlds()[0];
+    REQUIRE(coney::world::requestPart(world, 0, 1, budget, **set, 100).has_value());
+    REQUIRE(coney::world::requestPart(world, 0, 2, budget, **set, 100).has_value());
+    const WorldSet::SectorMesh* sector = (*set)->sectorMesh(0, 1);
+    REQUIRE(sector != nullptr);
+    REQUIRE(assets.materialTextures(sector->mesh).size() == 1);
+    const coney::graphics::TextureId lent = assets.materialTextures(sector->mesh)[0];
+    REQUIRE(lent.valid());
+
+    (*set)->unloadPart(0, 1);
+    world.markPartUnloaded(1);
+    CHECK(assets.store().texture(lent) != nullptr);
+}
+
+// Expected: graphics.md#texture-lifetime, confirmed (code): as above; the debug tools' refresh of a sector's mesh
+// (WorldSet::refreshMesh(), Coney's own) converts it again under a new id, and the new mesh still names the borrowed
+// texture, though the old mesh was its last holder once the lending part unloaded.
+TEST_CASE("a refreshed part mesh keeps a texture it took from a part since unloaded", "[world_set]") {
+    auto engine = RenderEngine::start(RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    coney::platform::SceneAssets& assets = (*engine)->sceneAssets();
+    REQUIRE(assets.converting());
+    TempDir dir;
+    const coney::io::Wad wad =
+        openWorldDisc(dir,
+                      coney::test::partFile(0, {{0, stripAtomic("own")}},
+                                            coney::test::texDictionary({coney::test::rgbaTexture2x2("own"),
+                                                                        coney::test::rgbaTexture2x2("lent")})),
+                      coney::test::partFile(0, {{1, stripAtomic("lent")}}));
+    coney::world::SectorBudget budget(10'000);
+    const std::vector<std::string> names{"test"};
+    auto set = WorldSet::load(wad, names, budget, false, assets);
+    REQUIRE(set.has_value());
+    coney::world::StreamedWorld& world = *(*set)->worlds()[0];
+    REQUIRE(coney::world::requestPart(world, 0, 1, budget, **set, 100).has_value());
+    REQUIRE(coney::world::requestPart(world, 0, 2, budget, **set, 100).has_value());
+    (*set)->unloadPart(0, 1);
+    world.markPartUnloaded(1);
+
+    (*set)->refreshMesh(0, 1);
+    const WorldSet::SectorMesh* sector = (*set)->sectorMesh(0, 1);
+    REQUIRE(sector != nullptr);
+    REQUIRE(assets.materialTextures(sector->mesh).size() == 1);
+    const coney::graphics::TextureId lent = assets.materialTextures(sector->mesh)[0];
+    CHECK(lent.valid());
+    CHECK(assets.store().texture(lent) != nullptr);
 }
 
 TEST_CASE("textures are found by name across every registered dictionary, newest first", "[texture_lookup]") {
