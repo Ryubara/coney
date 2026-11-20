@@ -162,6 +162,20 @@ void NetServer::sendSnapshots(std::uint32_t step, std::span<const SnapshotHuman>
     }
 }
 
+void NetServer::sendEvents(std::uint32_t step, std::span<const NetEvent> events) {
+    if (!m_running || events.empty()) {
+        return;
+    }
+    for (ServerClient& client : m_clients) {
+        if (!client.joined) {
+            continue;
+        }
+        for (const EventBatch& batch : client.events.build(step, events)) {
+            sendTo(client, batch);
+        }
+    }
+}
+
 std::size_t NetServer::joinedCount() const {
     return static_cast<std::size_t>(std::ranges::count_if(m_clients, [](const ServerClient& c) { return c.joined; }));
 }
@@ -218,7 +232,7 @@ bool NetServer::handle(ServerClient& client, const Message& message) {
         close(index, std::get<Bye>(message).reason, false);
         return false;
     }
-    // Welcome, Reject, InputTiming and Snapshot only ever go from a server to a client.
+    // Welcome, Reject, InputTiming, Snapshot and EventBatch only ever go from a server to a client.
     close(index, ByeReason::ProtocolError, true);
     return false;
 }

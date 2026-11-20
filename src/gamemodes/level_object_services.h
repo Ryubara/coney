@@ -9,6 +9,7 @@
 
 #include "animation/anim_math.h"
 #include "camera/camera_view.h"
+#include "core/game_events.h"
 #include "effects/particles.h"
 #include "gamemodes/level_crime_services.h"
 #include "scripting/script_system.h"
@@ -51,6 +52,10 @@ class LevelObjectServices final : public world_objects::ObjectServices {
 
     /// Sounds go to `sounds` from now on (null: none).
     void setSounds(world_objects::ObjectServices* sounds) { m_sounds = sounds; }
+    /// Raises each sound as a game event on `*events` (read at each sound, as the binding context's `events` is set
+    /// after gameplay is made; null, or a null `*events`: none) for network play (docs/guides/multiplayer.md#events).
+    /// @coney-only network play; the original has none
+    void setEvents(GameEvents* const* events) { m_events = events; }
     /// Loose objects (a broken prop's piece) become spawn records in `records` from now on (null: none).
     void setSpawnRecords(world_objects::SpawnRecords* records) { m_records = records; }
     /// Car stereos are freed in `cars` from now on (null: none).
@@ -82,8 +87,14 @@ class LevelObjectServices final : public world_objects::ObjectServices {
         }
     }
 
+    /// Raises a Sound3D (setEvents()), then plays the sound.
+    /// @coney-only network play's event before the original's sound; the original raises none
     void playSound(std::uint32_t nameHash, anim::Vec3 at) override;
+    /// Raises a Cue at `at`, then plays it.
+    /// @coney-only network play's event before the original's sound; the original raises none
     void playCueAt(int cue, anim::Vec3 at) override;
+    /// Raises a MaterialPair, then plays it.
+    /// @coney-only network play's event before the original's sound; the original raises none
     void playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at, float volume = 1.0F) override;
     void lockPickClick(double human) override;
     /// Calls the script function `function` with the human's and the door's handles; nothing for an empty name.
@@ -131,7 +142,12 @@ class LevelObjectServices final : public world_objects::ObjectServices {
   private:
     script::ScriptSystem& m_scripts;
     world_objects::WorldFlags& m_flags;
+    // Raises `event` on the events setEvents() points at, when there are any.
+    // @coney-only network play; the original has none
+    void raise(GameEvent event) const;
+
     world_objects::ObjectServices* m_sounds;
+    GameEvents* const* m_events = nullptr; // setEvents()
     effects::ParticleSystems* m_particles = nullptr;
     std::function<std::optional<camera::CameraView>()> m_view;
     std::function<void(double, double)> m_damage;            // setDamageReceiver()

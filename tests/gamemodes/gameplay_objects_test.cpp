@@ -18,6 +18,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
+#include "core/game_events.h"
 #include "effects/particles.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/gameplay_mode.h"
@@ -168,6 +169,56 @@ TEST_CASE("the level's objects' services pass the sounds on", "[gameplay][object
     CHECK(counting.sounds == 1);
     CHECK(counting.pairs == 1);
     CHECK(counting.clicks == 1);
+}
+
+// Expected: unverified, #547 (the events are Coney's own network play; the original has none)
+TEST_CASE("the level's objects' sounds are raised as game events while recording, then played",
+          "[gameplay][objects][events]") {
+    struct Counting final : coney::world_objects::ObjectServices {
+        int calls = 0;
+        void playSound(std::uint32_t /*nameHash*/, coney::anim::Vec3 /*at*/) override { ++calls; }
+        void playCueAt(int /*cue*/, coney::anim::Vec3 /*at*/) override { ++calls; }
+        void playMaterialPair(std::uint8_t /*a*/, std::uint8_t /*b*/, coney::anim::Vec3 /*at*/,
+                              float /*volume*/ = 1.0F) override {
+            ++calls;
+        }
+    };
+    const auto files = objectScripts();
+    const coney::script::ScriptSource source =
+        [&files](std::string_view name) -> std::expected<std::vector<std::byte>, coney::Error> {
+        const auto found = files.find(name);
+        if (found == files.end()) {
+            return coney::fail(coney::ErrorCode::NotFound, "no such script");
+        }
+        return found->second;
+    };
+    coney::LevelScripts scripts(source, "level1", 1, [](std::string_view) {});
+    Counting counting;
+    coney::LevelObjectServices services(scripts.scripts(), scripts.flags(), &counting);
+    coney::GameEvents* where = nullptr;
+    services.setEvents(&where);
+    // No events yet (the session hands them over later): played, nothing raised.
+    services.playSound(0x10, {1.0F, 2.0F, 3.0F});
+    coney::GameEvents events;
+    where = &events;
+    services.playSound(0x10, {1.0F, 2.0F, 3.0F});
+    CHECK(events.size() == 0); // offline
+    events.setRecording(true);
+    services.playSound(0x20, {1.0F, 2.0F, 3.0F});
+    services.playCueAt(7, {4.0F, 5.0F, 6.0F});
+    services.playMaterialPair(2, 5, {0.5F, 0.5F, 0.0F}, 0.25F);
+    CHECK(counting.calls == 5);
+    const std::vector<coney::GameEvent> raised = events.take();
+    REQUIRE(raised.size() == 3);
+    CHECK(raised[0] ==
+          coney::GameEvent{.kind = coney::GameEventKind::Sound3D, .id = 0x20, .position = {1.0F, 2.0F, 3.0F}});
+    CHECK(raised[1] ==
+          coney::GameEvent{.kind = coney::GameEventKind::Cue, .id = 7, .value = 1, .position = {4.0F, 5.0F, 6.0F}});
+    CHECK(raised[2] == coney::GameEvent{.kind = coney::GameEventKind::MaterialPair,
+                                        .id = 2,
+                                        .value = 5,
+                                        .extra = 250,
+                                        .position = {0.5F, 0.5F, 0.0F}});
 }
 
 TEST_CASE("the level's objects' services pass a human's damage to gameplay's receiver", "[gameplay][objects]") {

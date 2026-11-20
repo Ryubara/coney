@@ -1223,6 +1223,19 @@ bool SceneSystem::playing() const {
     });
 }
 
+std::vector<std::uint32_t> SceneSystem::playingScenes() const {
+    std::vector<std::uint32_t> ids;
+    for (const std::unique_ptr<SceneTask>& task : m_tasks) {
+        if (task->state() == SceneState::Starting || task->state() == SceneState::Playing) {
+            ids.push_back(task->id());
+        }
+    }
+    std::ranges::sort(ids);
+    const auto repeats = std::ranges::unique(ids);
+    ids.erase(repeats.begin(), repeats.end());
+    return ids;
+}
+
 bool SceneSystem::cinematicActive() const { return m_sceneState != 0; }
 
 bool SceneSystem::holdingObject() const {

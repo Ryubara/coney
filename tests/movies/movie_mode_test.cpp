@@ -14,6 +14,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "audio/mixer.h"
+#include "core/game_events.h"
 #include "core/pad.h"
 #include "core/pads.h"
 #include "gamemodes/game_mode_stack.h"
@@ -215,6 +216,27 @@ TEST_CASE("movie player: any button skips a skippable movie, never LOGO; the nex
     CHECK(skips.opened == std::vector<std::string>{"LOGO", "PLOGO", "L1_IN"});
     CHECK(skips.player->counts().skipped == 2);
     CHECK(skips.log.back() == "movie: L1_IN skipped after 2 frames\n");
+}
+
+// Expected: unverified, #547 (the events are Coney's own network play; the original has none)
+TEST_CASE("movie player: raises each movie's start and end as game events, never a debug movie's", "[movies][events]") {
+    Harness h({{12, coney::pad::kUp}});
+    coney::GameEvents events;
+    events.setRecording(true);
+    h.player->setEvents(&events);
+    h.player->playMovie("LOGO");
+    h.player->playMovie("PLOGO");
+    h.runToEnd();
+    const std::vector<coney::GameEvent> raised = events.take();
+    REQUIRE(raised.size() == 4);
+    CHECK(raised[0] == coney::GameEvent{.kind = coney::GameEventKind::MovieStart, .value = 0, .text = "LOGO"});
+    CHECK(raised[1] == coney::GameEvent{.kind = coney::GameEventKind::MovieEnd, .value = 0, .text = "LOGO"});
+    CHECK(raised[2] == coney::GameEvent{.kind = coney::GameEventKind::MovieStart, .value = 1, .text = "PLOGO"});
+    CHECK(raised[3] == coney::GameEvent{.kind = coney::GameEventKind::MovieEnd, .value = 1, .text = "PLOGO"});
+    // The debug menu's movie is this game's own.
+    h.player->playMovie("L1_IN", coney::movies::MovieRequest{.debug = true});
+    h.runToEnd();
+    CHECK(events.size() == 0);
 }
 
 TEST_CASE("movie player: a held button skips a movie at once", "[movies]") {

@@ -9,9 +9,12 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
+#include "core/game_events.h"
 #include "core/pads.h"
+#include "net/event_channel.h"
 #include "net/link_conditioner.h"
 #include "net/net_client.h"
 #include "net/net_server.h"
@@ -85,7 +88,18 @@ class NetPlay final {
     /// snapshot afterStep() sends player 2, with what it leaves them holding (net::SnapshotSender::holding()); joined,
     /// a line for each snapshot the session decoded, by the host's step it shows. Empty for none.
     void setSnapshotDigests(std::function<void(const net::DigestLine&)> sink) { m_snapshotDigests = std::move(sink); }
-    /// The steps run so far (afterStep() calls): a host's snapshots name the step they are from, counted from 0.
+    /// The one call through which the game reports what its players see or hear (coney::GameEvents): it records while
+    /// this game hosts, and afterStep() sends the step's events to each joined player; offline or joined it keeps
+    /// nothing. The run hands it to the game's subsystems (GameSession::setGameEvents()); it outlives every mode.
+    [[nodiscard]] GameEvents& gameEvents() { return m_gameEvents; }
+    /// Hosting: maps an event's subject (a script handle) to the network id the guest knows it by; empty (the default)
+    /// sends every subject as no id, until the game's humans and objects carry ids in the session.
+    void setEventSubjectIds(net::EventSubjectIds ids) { m_eventIds = std::move(ids); }
+    /// Joined: the host's game events whose step is at most `step` (a host's step the guest shows), each once, in
+    /// order (net::NetClient::takeEvents()); none when not joined.
+    [[nodiscard]] std::vector<net::ArrivedEvent> takeArrivedEvents(std::uint32_t step);
+    /// The steps run so far (afterStep() calls): a host's snapshots and events name the step they are from, counted
+    /// from 0.
     [[nodiscard]] std::uint32_t steps() const { return m_steps; }
     /// One line for the end of a run: the role, port and players, or the client's state.
     [[nodiscard]] std::string summary() const;
@@ -171,6 +185,8 @@ class NetPlay final {
     std::function<void(const net::DigestLine&)> m_snapshotDigests; // setSnapshotDigests()
     std::uint32_t m_steps = 0;                                     // afterStep() calls
     std::uint32_t m_lastDecoded = 0;                               // the newest snapshot a digest was written for
+    GameEvents m_gameEvents;                                       // gameEvents(): records while hosting
+    net::EventSubjectIds m_eventIds;                               // setEventSubjectIds()
 };
 
 /// The game's pad input through network play: what `inner` (null: no pads) gives, passed through NetPlay::pads().

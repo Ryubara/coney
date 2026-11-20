@@ -29,6 +29,7 @@
 #include "combat/stick.h"
 #include "combat/throw_aim.h"
 #include "core/error.h"
+#include "core/game_events.h"
 #include "core/interpolation.h"
 #include "core/options.h"
 #include "core/pad.h"
@@ -183,7 +184,16 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     /// @coney-only a disc test's count of the doors drawn
     [[nodiscard]] std::size_t doorsDrawnNear(anim::Vec3 at, float radius) const;
 
+    /// Raises what the level makes its players see or hear that passes no other seam (its objects' breaks, its scenes'
+    /// starts and ends) on `events` from now on (null: none; it must outlive the level), for network play
+    /// (docs/guides/multiplayer.md#events).
+    /// @coney-only network play; the original has none
+    void setGameEvents(GameEvents* events) { m_events = events; }
+
   protected:
+    /// Where the level raises its events (setGameEvents()); null for none.
+    [[nodiscard]] GameEvents* gameEvents() const { return m_events; }
+
     /// The simulation on `ground` (owned from now on) with player 1 playing `character` (the scene's character, which
     /// the sandbox's targets and fighters play too) as model `model`, at the ground's start (dropped onto it when
     /// `snapToGround`), made as character type `type` of `types` (human::playerClassOf()). `wad` (which must outlive
@@ -336,6 +346,8 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     bool stepLockPick(const Pad& pad);
     // After the player's step: his object attack's hit sent to its object, then the objects' two 60 Hz ticks.
     void stepObjects();
+    // Raises a car's breaking glass as an object break, for network play.
+    void raiseCarBreak(const world_objects::CarHitEffect& effect);
     // Player 1's object attack under way (Player_ObjectAttack's clip, 661 or 662, with its object): whether its hit
     // lands on the object this step. It lands when the clip's strike shapes come on (a car or other object) or strike
     // it (a pane or door, through strikeObjects()), not at the attack's start
@@ -464,6 +476,8 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     void stepMugging(human::Human& human);
     // The stereo-theft panel follows player 1's theft: shown from the press, its progress each update with cue 0x22 per
     // stage (and 0x23 for the last), gone as the end clip starts (docs/research/hud-functions-panels.md#stereo-layout).
+    // @coney-only the level's glue between player 1's theft and its panel: the original's HUD_StereoTheftStart, Set
+    // and End calls from StereoTheft_Start, Theft_UpdateStereo and StereoTheft_End, in one step
     void stepStereoPanel(const human::Human& human);
     // The mug meter follows player 1's mugging: shown while it runs, with the raw left stick, whether it is on target
     // and both bars' fills (docs/research/hud-functions-panels.md#mug-meter-layout).
@@ -586,6 +600,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // they outlive the humans playing them.
     std::map<std::string, std::unique_ptr<human::PlayerCharacter>, std::less<>> m_castCharacters;
     ScriptedCast m_cast;            // the level's scripts' humans and brains; all null without them
+    GameEvents* m_events = nullptr; // setGameEvents()
     bool m_castPlayerBound = false; // whether player 1's creation is bound to the player
     // The level's route planner (null without path data), before the AI so it outlives the brains that use it.
     std::unique_ptr<ai::RoutePlanner> m_planner;

@@ -880,6 +880,7 @@ int main(int argc, char** argv) {
     // `--script-trace`) apply to the first level it loads.
     if (session) {
         session->attachAudio(audio.get());
+        session->setGameEvents(&netPlay.gameEvents());
         session->setHumansTrace(humansTrace);
         session->setNetHumans(&netGame.humans());
         if (commandLineLevel) {
@@ -1135,6 +1136,7 @@ int main(int argc, char** argv) {
         sandboxViewer.reset();
         coney::platform::GameSession& started = makeSession();
         started.attachAudio(audio.get());
+        started.setGameEvents(&netPlay.gameEvents());
         started.setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
         started.setMeshViews(meshViews);
         started.setLightingSwitches(&debugSession.lighting());

@@ -121,6 +121,9 @@ void writeMessage(BitWriter& out, const Message& message) {
                 CONEY_ASSERT(m.sequence != 0);
                 out.writeU8(static_cast<std::uint8_t>(MessageId::SnapshotAck));
                 out.writeVarUint(m.sequence);
+            } else if constexpr (std::is_same_v<T, EventBatch>) {
+                out.writeU8(static_cast<std::uint8_t>(MessageId::EventBatch));
+                writeEventBatchBody(out, m);
             } else if constexpr (std::is_same_v<T, InputTiming>) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::InputTiming));
                 out.writeVarInt(m.lead);
@@ -300,6 +303,13 @@ std::expected<Message, Error> readFields(BitReader& in, std::uint8_t id) {
         }
         return SnapshotAck{.sequence = *sequence};
     }
+    case MessageId::EventBatch: {
+        auto batch = readEventBatchBody(in);
+        if (!batch) {
+            return std::unexpected(batch.error());
+        }
+        return *batch;
+    }
     case MessageId::InputTiming: {
         auto lead = in.readVarInt();
         if (!lead) {
@@ -353,6 +363,10 @@ Delivery deliveryOf(const Message& message) {
         std::holds_alternative<InputCommands>(message) || std::holds_alternative<InputTiming>(message) ||
         std::holds_alternative<SnapshotAck>(message)) {
         return Delivery::Unreliable;
+    }
+    // One-shot events go once or never: a sound resent late would play out of time. The rest must arrive, in order.
+    if (const auto* batch = std::get_if<EventBatch>(&message); batch != nullptr) {
+        return batch->reliable ? Delivery::ReliableOrdered : Delivery::Unreliable;
     }
     // A snapshot older than one already delivered is of no use: the newer one holds everything it does.
     if (std::holds_alternative<Snapshot>(message)) {

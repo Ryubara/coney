@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "core/error.h"
+#include "core/game_events.h"
 #include "core/pad.h"
 #include "net/net_id.h"
 #include "net/replicated_fields.h"
@@ -26,7 +27,7 @@ namespace coney::net {
 
 /// The protocol's version. Bump it with any change to a message's layout or meaning: a client and a server of
 /// different versions refuse each other in the handshake rather than misread each other.
-inline constexpr std::uint16_t kProtocolVersion = 4;
+inline constexpr std::uint16_t kProtocolVersion = 5;
 /// The first field of Hello, "CONY" read as a little-endian number: a packet from another program is refused.
 inline constexpr std::uint32_t kProtocolMagic = 0x594e4f43U;
 /// The UDP port a server listens on unless told otherwise.
@@ -48,7 +49,8 @@ enum class MessageId : std::uint8_t {
     InputCommands = 8, ///< client to server: the client's pads in its latest few steps (protocol 3)
     InputTiming = 9,   ///< server to client: how early the client's input commands arrive (protocol 3)
     Snapshot = 10,     ///< server to client: the humans the client needs, as a delta (protocol 4)
-    SnapshotAck = 11   ///< client to server: the newest snapshot the client has decoded (protocol 4)
+    SnapshotAck = 11,  ///< client to server: the newest snapshot the client has decoded (protocol 4)
+    EventBatch = 12    ///< server to client: what the game made its players see or hear in one step (protocol 5)
 };
 
 /// Why a server refused a Hello.
@@ -174,6 +176,51 @@ struct SnapshotAck {
     std::uint32_t sequence = 0;
 };
 
+/// The most events one EventBatch carries.
+inline constexpr std::size_t kMaxBatchEvents = 256;
+/// The most bytes an EventSender puts in one EventBatch's packet, so it fits one datagram with the transport's header
+/// (the snapshot's budget, docs/guides/network-architecture.md#snapshots); a batch with a single event may be larger.
+inline constexpr std::size_t kEventBatchBudgetBytes = 1200;
+
+/// One game event as it travels (coney::GameEvent, with its subject as a network id): its kind's fields only
+/// (gameEventFields()), the others at their defaults.
+struct NetEvent {
+    GameEventKind kind = GameEventKind::Sound2D;
+    /// Its place among the events of its step, counted from 0 across both deliveries, so a client hands a step's
+    /// events over in the order they were raised.
+    std::uint16_t ordinal = 0;
+    NetId subject{};                 ///< The human or object it belongs to; none (no id) when it names none.
+    std::uint32_t id = 0;            ///< GameEvent::id
+    std::uint32_t value = 0;         ///< GameEvent::value
+    std::uint32_t extra = 0;         ///< GameEvent::extra
+    std::array<float, 3> position{}; ///< GameEvent::position
+    std::string text{};              ///< GameEvent::text, at most kMaxGameEventText bytes
+    std::array<float, 4> rotation{0.0F, 0.0F, 0.0F, 1.0F}; ///< GameEvent::rotation
+
+    friend bool operator==(const NetEvent&, const NetEvent&) = default;
+};
+
+/// A server step's game events of one delivery: the reliable ones (reliableGameEvent()) go ReliableOrdered, the
+/// one-shots Unreliable, each batch numbered in its own sequence so a client drops a repeat
+/// (docs/guides/multiplayer.md#events).
+///
+/// The packet: reliable (1 bit), the sequence (a varint, 32 bits at most), the server's step (a varint, 32 bits at
+/// most), the number of events less one (8 bits), then each event: its kind (8 bits), its ordinal (a varint, 16 bits
+/// at most) and the fields its kind carries in this order: subject (kNetIdBits), id, value, extra (varints, 32 bits at
+/// most), position (three exact 32-bit floats), rotation (four exact 32-bit floats), text (a string of at most
+/// kMaxGameEventText bytes).
+struct EventBatch {
+    bool reliable = false;
+    std::uint32_t sequence = 1;     ///< 1 for a delivery's first batch to a client, one more for each after
+    std::uint32_t step = 0;         ///< the server's step the events happened in
+    std::vector<NetEvent> events{}; ///< 1 to kMaxBatchEvents, of this delivery, ordinals strictly rising
+
+    friend bool operator==(const EventBatch&, const EventBatch&) = default;
+};
+
+/// Bits `event` takes in an EventBatch's packet: what an EventSender's budget counts.
+[[nodiscard]] std::size_t eventBits(const NetEvent& event);
+
 /// Bits `entry` takes in a Snapshot's packet: what the server's snapshot budget counts.
 [[nodiscard]] std::size_t snapshotEntryBits(const SnapshotEntry& entry);
 
@@ -185,24 +232,28 @@ struct SnapshotAck {
 [[nodiscard]] bool samePadOnTheWire(const PadSample& a, const PadSample& b);
 
 /// Any message.
-using Message =
-    std::variant<Hello, Welcome, Reject, Bye, Ping, Pong, InputCommands, InputTiming, Snapshot, SnapshotAck>;
+using Message = std::variant<Hello, Welcome, Reject, Bye, Ping, Pong, InputCommands, InputTiming, Snapshot, SnapshotAck,
+                             EventBatch>;
 
 /// The packet for `message`. A Hello or Welcome whose name is over kMaxNameBytes, an InputCommands with no pads, more
-/// than kMaxInputCommands or one for a step below 0, and a Snapshot that breaks its rules (sequence 0, a baseline not
+/// than kMaxInputCommands or one for a step below 0, a Snapshot that breaks its rules (sequence 0, a baseline not
 /// among the kSnapshotHistory before it, ids not valid and rising, a kept entry with nothing changed, a removal with
-/// something) are programmer errors.
+/// something) and an EventBatch that breaks its rules (sequence 0, no events or more than kMaxBatchEvents, an event of
+/// the other delivery, ordinals not rising, a field its kind does not carry set, a text over kMaxGameEventText) are
+/// programmer errors.
 [[nodiscard]] std::vector<std::byte> encode(const Message& message);
 
 /// Reads one packet. Fails with Truncated when it is short and Invalid for anything else wrong: an unknown id or
 /// enumerator, the wrong magic, a name over kMaxNameBytes, a pressure byte flagged as above 0 but written as 0, an
 /// older pad written in full that is the same as the step after it, a pad for a step below 0, a Snapshot that breaks
-/// the rules encode() asserts or has a field word over its range, trailing bytes. A Hello
+/// the rules encode() asserts or has a field word over its range, an EventBatch that breaks the rules encode() asserts
+/// or names an unknown kind, trailing bytes. A Hello
 /// of another version decodes to its version alone (an empty name), since the rest of its layout is that version's.
 [[nodiscard]] std::expected<Message, Error> decode(std::span<const std::byte> packet);
 
-/// How a message travels: the handshake and Bye reliably and in order, a Snapshot unreliably but never older after
-/// newer (UnreliableSequenced), Ping, Pong, InputCommands, InputTiming and SnapshotAck unreliably.
+/// How a message travels: the handshake, Bye and a reliable EventBatch reliably and in order, a Snapshot unreliably
+/// but never older after newer (UnreliableSequenced), Ping, Pong, InputCommands, InputTiming, SnapshotAck and a
+/// one-shots' EventBatch unreliably.
 [[nodiscard]] Delivery deliveryOf(const Message& message);
 
 /// Whether `name` may be a player's or a server's name: 1 to kMaxNameBytes printable ASCII characters (space to

@@ -2,10 +2,12 @@
 #include "effects/particles.h"
 
 #include "core/assert.h"
+#include "core/game_events.h"
 
 #include <algorithm>
 #include <cmath>
 #include <numbers>
+#include <string>
 #include <utility>
 
 namespace coney::effects {
@@ -250,6 +252,20 @@ ParticleSystem* ParticleSystems::spawn(std::string_view typeName, anim::Vec3 pos
             system.offset = anim::subtract(position, *at);
         }
     }
+    // Network play (Coney's own): the start a caller asked for goes out as an event; what it makes in turn below does
+    // not, as a guest's own start makes it again.
+    if (!m_spawning) {
+        // Its colour and rectangle as resolved (the creator's or the type's) and its turn, so a guest's system faces
+        // and looks the same.
+        raiseGameEvent(m_events, GameEvent{.kind = GameEventKind::ParticleStart,
+                                           .subject = parent,
+                                           .id = system.colour,
+                                           .value = system.rect,
+                                           .position = {position.x, position.y, position.z},
+                                           .text = std::string(typeName),
+                                           .rotation = {rotation.x, rotation.y, rotation.z, rotation.w}});
+    }
+    const bool outermost = !std::exchange(m_spawning, true);
     // The muzzle flash makes a puff of smoke where it fires (its Spawns link, docs/references/particles.md).
     const std::size_t index = m_systems.size() - 1;
     if (system.type->name == "part_gun_flash") {
@@ -261,6 +277,9 @@ ParticleSystem* ParticleSystems::spawn(std::string_view typeName, anim::Vec3 pos
         } else {
             spawnExplosionParts(position, rotation);
         }
+    }
+    if (outermost) {
+        m_spawning = false;
     }
     return &m_systems[index];
 }
@@ -381,12 +400,16 @@ ParticleSystem* ParticleSystems::spawnSparks(anim::Vec3 at, anim::Vec3 direction
     return spawn("spark", at, rotationTowards(direction));
 }
 
+// A breaking pane's shard drawn as a particle. The original's shard is a `glasstest` object of its own
+// (GlassTest_Init 0x003e44e0, docs/research/objects.md#shatter), which Coney draws through the particles.
+// @coney-only a pane's shard as a particle; the original makes a glasstest object
 ParticleSystem* ParticleSystems::spawnShard(anim::Vec3 at, float size, std::uint32_t colour) {
     ParticleSystem* shard = spawn("glasstest", at, {}, 0, 0, colour);
     if (shard == nullptr || m_particles >= kParticleBudget) {
         return shard;
     }
-    // The shard is made at once, at the size the pane gives it.
+    // The shard is made at once, at the size the pane gives it. Network play: its start (raised in spawn(), one per
+    // shard) carries no size, so a guest's shard takes the type's (docs/guides/multiplayer.md#events).
     Particle particle = makeParticle(*shard);
     particle.size = size;
     shard->particles.push_back(particle);

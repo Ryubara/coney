@@ -18,6 +18,7 @@ add_library(coney_core STATIC
     core/chunk_types.cpp
     core/deferred_input.cpp
     core/event_log.cpp
+    core/game_events.cpp
     core/log.cpp
     core/log_record.cpp
     core/log_ring.cpp
@@ -75,6 +76,7 @@ add_library(coney_core STATIC
     gamemodes/gameplay_revive.cpp
     gamemodes/gameplay_uncuff.cpp
     gamemodes/gameplay_war_commands.cpp
+    gamemodes/sound_events.cpp
     gamemodes/system_music.cpp
     gamemodes/legal_screen_mode.cpp
     gamemodes/level_crime_services.cpp
@@ -547,6 +549,7 @@ target_link_libraries(coney_movies PUBLIC coney_core coney_audio)
 # (docs/guides/multiplayer.md).
 add_library(coney_net STATIC net/bit_stream.cpp net/input_buffer.cpp net/link_conditioner.cpp net/link_quality.cpp net/net_id.cpp net/replicated_fields.cpp net/snapshot.cpp
                              net/loopback_transport.cpp net/net_client.cpp net/net_server.cpp net/protocol.cpp net/snapshot_wire.cpp
+                             net/event_wire.cpp net/event_channel.cpp
                              net/jitter_buffer.cpp net/client_world.cpp net/state_digest.cpp net/game_humans.cpp net/session_record.cpp)
 coney_target_defaults(coney_net)
 target_link_libraries(coney_net PUBLIC coney_core)

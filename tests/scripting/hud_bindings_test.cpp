@@ -16,6 +16,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
+#include "core/game_events.h"
 #include "gui/global_strings.h"
 #include "hud/hud.h"
 #include "scripting/lua_value.h"
@@ -112,6 +113,92 @@ TEST_CASE("HUDSetObjective reads slot, text, mode, silent and ms, 8000 by defaul
     REQUIRE(hud.checklist().slots[1].has_value());
     harness.call("HUDRemoveAllGoalText", {});
     CHECK_FALSE(hud.checklist().slots[0].has_value());
+}
+
+// Expected: unverified, #547 (the event is Coney's own network play; the original has none)
+TEST_CASE("HUDSetObjective raises its objective as a game event while recording", "[scripting][hud][events]") {
+    coney::hud::Hud hud;
+    Harness harness(&hud);
+    coney::GameEvents events;
+    harness.context.events = &events;
+    // Offline nothing is kept.
+    harness.call("HUDSetObjective", {Value(0.0), Value("Follow Ash"), Value(0.0)});
+    CHECK(events.size() == 0);
+    events.setRecording(true);
+    harness.call("HUDSetObjective", {Value(1.0), Value("Win"), Value(2.0), Value(1.0), Value(3000.0)});
+    const std::vector<coney::GameEvent> raised = events.take();
+    REQUIRE(raised.size() == 1);
+    CHECK(
+        raised[0] ==
+        coney::GameEvent{
+            .kind = coney::GameEventKind::Objective, .id = 1, .value = (2U << 1U) | 1U, .extra = 3000, .text = "Win"});
+    // The HUD shows it as before.
+    REQUIRE(hud.checklist().slots[1].has_value());
+}
+
+// Expected: unverified, #547 (the event is Coney's own network play; the original has none)
+TEST_CASE("HUDRemoveAllGoalText raises slot 0's clearing as an objective event while recording",
+          "[scripting][hud][events]") {
+    coney::hud::Hud hud;
+    Harness harness(&hud);
+    coney::GameEvents events;
+    harness.context.events = &events;
+    harness.call("HUDSetObjective", {Value(0.0), Value("Follow Ash"), Value(0.0)});
+    REQUIRE(hud.checklist().slots[0].has_value());
+    events.setRecording(true);
+    harness.call("HUDRemoveAllGoalText", {});
+    // The event HUDSetObjective(0, "", 1, silent) raises: slot 0 cleared (mode 1), silently, so a guest's HUD that
+    // applies it as an objective clears the same line.
+    const std::vector<coney::GameEvent> raised = events.take();
+    REQUIRE(raised.size() == 1);
+    CHECK(raised[0] == coney::GameEvent{.kind = coney::GameEventKind::Objective, .id = 0, .value = (1U << 1U) | 1U});
+    // The HUD clears it as before.
+    CHECK_FALSE(hud.checklist().slots[0].has_value());
+}
+
+// Expected: unverified, #547 (the event is Coney's own network play; the original has none)
+TEST_CASE("HUDSetAnnounceMsg raises its message as a game event while recording", "[scripting][hud][events]") {
+    coney::hud::Hud hud;
+    Harness harness(&hud);
+    coney::GameEvents events;
+    events.setRecording(true);
+    harness.context.events = &events;
+    harness.call("HUDSetAnnounceMsg", {Value(5.0), Value("<DISPLAYTIME 4000>Go"), Value(1.0)});
+    const std::vector<coney::GameEvent> raised = events.take();
+    REQUIRE(raised.size() == 1);
+    CHECK(raised[0] ==
+          coney::GameEvent{
+              .kind = coney::GameEventKind::HudMessage, .id = 5, .value = 1, .text = "<DISPLAYTIME 4000>Go"});
+}
+
+// Expected: unverified, #547 (the events are Coney's own network play; the original has none)
+TEST_CASE("the tutorial bindings raise their hints as game events while recording", "[scripting][hud][events]") {
+    coney::hud::Hud hud;
+    Harness harness(&hud);
+    coney::GameEvents events;
+    harness.context.events = &events;
+    // Offline nothing is kept.
+    harness.call("HUDSetTutorialText", {Value("Press X")});
+    CHECK(events.size() == 0);
+    events.setRecording(true);
+    harness.call("HUDSetTutorialText", {Value("Later"), Value(3.0)});
+    harness.call("HUDSetTutorialText", {Value()});
+    harness.call("HUDFlushTutorialText", {Value(3.0)});
+    harness.call("HUDFlushTutorialText", {});
+    harness.call("HUDEnableGameTutorialText", {Value(1.0)});
+    // The callback is the server's own script's business: no event.
+    harness.call("HUDSetTutorialCallback", {Value("P1.BasicAttacks")});
+    const std::vector<coney::GameEvent> raised = events.take();
+    using coney::GameEvent;
+    using coney::GameEventKind;
+    REQUIRE(raised.size() == 5);
+    CHECK(raised[0] == GameEvent{.kind = GameEventKind::Hint, .id = 0, .value = 3, .text = "Later"});
+    CHECK(raised[1] == GameEvent{.kind = GameEventKind::Hint, .id = 1});
+    CHECK(raised[2] == GameEvent{.kind = GameEventKind::Hint, .id = 2, .value = 3});
+    CHECK(raised[3] == GameEvent{.kind = GameEventKind::Hint, .id = 2, .value = coney::hud::kHintFlushAll});
+    CHECK(raised[4] == GameEvent{.kind = GameEventKind::Hint, .id = 3, .value = 1});
+    // The HUD acts as before.
+    CHECK(hud.gameTutorialText());
 }
 
 TEST_CASE("the objective header takes the HUD string and the CfgHUDColor recording", "[scripting][hud]") {

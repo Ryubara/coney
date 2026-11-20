@@ -14,9 +14,11 @@
 #include <utility>
 #include <vector>
 
+#include "core/game_events.h"
 #include "core/options.h"
 #include "core/pad.h"
 #include "core/pads.h"
+#include "net/event_channel.h"
 #include "net/input_buffer.h"
 #include "net/link_conditioner.h"
 #include "net/net_client.h"
@@ -113,6 +115,8 @@ bool NetPlay::hostOn(const std::string& bindAddress) {
         return false;
     }
     note(std::format("hosting on port {} as {}", m_server->port(), m_playerName));
+    // From the next step the game's events are kept, to be sent to whoever joins.
+    m_gameEvents.setRecording(true);
     return true;
 }
 
@@ -181,6 +185,7 @@ bool NetPlay::inSession() const {
 }
 
 void NetPlay::teardown() {
+    m_gameEvents.setRecording(false);
     m_server.reset();
     m_client.reset();
     if (m_link) {
@@ -248,6 +253,11 @@ void NetPlay::afterStep() {
     const std::uint32_t step = m_steps++;
     if (m_server) {
         sendSnapshots(step);
+        // The step's events, raised by the game since the last step, go before the flush that sends them.
+        const std::vector<GameEvent> events = m_gameEvents.take();
+        if (!events.empty()) {
+            m_server->sendEvents(step, net::toNetEvents(events, m_eventIds));
+        }
         m_server->send();
         for (const net::ServerEvent& event : m_server->takeEvents()) {
             if (event.kind == net::ServerEvent::Kind::Joined) {
@@ -314,6 +324,13 @@ void NetPlay::noteDecoded() {
                                           .pads = std::nullopt});
     }
     m_lastDecoded = newest;
+}
+
+std::vector<net::ArrivedEvent> NetPlay::takeArrivedEvents(std::uint32_t step) {
+    if (!m_client) {
+        return {};
+    }
+    return m_client->takeEvents(step);
 }
 
 PortSamples NetPlay::pads(const PortSamples& local) {

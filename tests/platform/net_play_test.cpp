@@ -14,6 +14,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/game_events.h"
 #include "core/options.h"
 #include "core/pad.h"
 #include "core/pads.h"
@@ -319,6 +320,7 @@ TEST_CASE("a guest with no pad plugged in leaves the host's port 2 unplugged", "
     CHECK_FALSE(games.hostSees[1].connected);
 }
 
+// Expected: frontend.md#pad-record, confirmed (code)
 TEST_CASE("a host takes one remote player, as the console has two pad ports", "[net][net_play]") {
     // Expected: docs/guides/multiplayer.md#player-two (one remote player, on pad port 2)
     TwoGames games;
@@ -413,4 +415,34 @@ TEST_CASE("the game's humans are captured only while a session or a proof needs 
     auto hostOpened = coney::platform::NetGame::open(hosting);
     REQUIRE(hostOpened.has_value());
     CHECK((**hostOpened).humans().capturing());
+}
+
+// Expected: unverified, #547 (Coney's own network play; the original has none)
+TEST_CASE("a host's game events reach the joined guest once each, at the host's step", "[net][net_play][events]") {
+    TwoGames games;
+    // Offline the game's events are not kept.
+    games.host.gameEvents().raise(coney::GameEvent{.kind = coney::GameEventKind::Sound2D, .id = 1});
+    CHECK(games.host.gameEvents().size() == 0);
+    games.connect();
+    CHECK(games.host.gameEvents().recording());
+    CHECK_FALSE(games.guest.gameEvents().recording());
+    // Raised during the host's next step: a sound and an objective.
+    const std::uint32_t step = games.host.steps();
+    games.host.gameEvents().raise(coney::GameEvent{.kind = coney::GameEventKind::Sound2D, .id = 0x99});
+    games.host.gameEvents().raise(
+        coney::GameEvent{.kind = coney::GameEventKind::Objective, .id = 0, .extra = 8000, .text = "Go"});
+    games.run(3);
+    CHECK(games.guest.takeArrivedEvents(step - 1).empty());
+    const std::vector<coney::net::ArrivedEvent> arrived = games.guest.takeArrivedEvents(step);
+    REQUIRE(arrived.size() == 2);
+    CHECK(arrived[0].step == step);
+    CHECK(arrived[0].event.kind == coney::GameEventKind::Sound2D);
+    CHECK(arrived[0].event.id == 0x99);
+    CHECK(arrived[1].event.kind == coney::GameEventKind::Objective);
+    CHECK(arrived[1].event.text == "Go");
+    CHECK(games.guest.takeArrivedEvents(games.host.steps()).empty());
+    // Leaving stops the recording.
+    games.host.disconnect();
+    CHECK_FALSE(games.host.gameEvents().recording());
+    CHECK(games.host.takeArrivedEvents(100).empty());
 }
