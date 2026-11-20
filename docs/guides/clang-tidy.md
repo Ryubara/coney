@@ -69,6 +69,12 @@ what CI reports, and the rest is of two kinds: a finding in the standard library
 shape (`bugprone-exception-escape` through an allocation, `bugprone-optional-value-conversion`), and a finding in
 code only Linux compiles. Those still arrive as CI annotations and are fixed on the branch.
 
+A third check misses part of what it finds in CI: `bugprone-unchecked-optional-access` here reports an unchecked
+`.value()` but not an unchecked `*` (Microsoft's `std::optional` declares its `operator*` where the check's model
+does not look). Measured with the pinned clang-tidy on a planted probe against the MSVC `ci` compile database:
+`return value.value();` on an unchecked parameter was reported, `return *value;` on a default-constructed optional or
+on a function's result was not. Libstdc++'s `operator*` is matched, so CI reports both.
+
 **Advice.** `bugprone-exception-escape` differs both ways, so on Windows its findings are printed as advice
 (`advice, not a failure (may differ from CI): ...`) and fail nothing; on Linux, where the library is CI's, they fail
 the check as any other. The checks treated so are `ci.tidy.local_advisory` of

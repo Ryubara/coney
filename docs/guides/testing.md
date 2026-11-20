@@ -629,13 +629,13 @@ the build the check has just made; a finding fails the check and names its file,
 worktree before review ([clang-tidy here](clang-tidy.md#local); [#1496](issue:1496): six pull requests in one day
 failed CI's clang-tidy after their reviews had passed). CI's required `clang-tidy` check
 still runs the same pass on the pull request, and every file on `main` and nightly ([clang-tidy](clang-tidy.md)). It
-catches what MSVC lets through, such as an unchecked `std::optional` access (`bugprone-unchecked-optional-access`) or
-a use after a move. The local run reads the code through MSVC's headers, so a few findings come only from CI's Linux run
-([the differences](clang-tidy.md#differences)); one of those is an annotation on the pull request, fixed as a fix
-task on the branch ([Tracks](how-we-work.md#slots)). A designated initializer that
-skips a field (`-Wmissing-designated-field-initializers`) is caught by the GCC and Clang builds instead, whose `-Wall -Wextra`
-warnings are errors in the `ci`, `ci-release` and `asan` presets (`CONEY_WARNINGS_AS_ERRORS`); clang-tidy's `-*` turns
-off its compiler diagnostics.
+catches what MSVC lets through, such as an unchecked `std::optional` access (`bugprone-unchecked-optional-access`;
+locally only through `.value()`, not `*`) or a use after a move. The local run reads the code through MSVC's headers,
+so a few findings come only from CI's Linux run ([the differences](clang-tidy.md#differences)); one of those is an
+annotation on the pull request, fixed as a fix task on the branch ([Tracks](how-we-work.md#slots)). A designated
+initializer that skips a field (`-Wmissing-designated-field-initializers`) is caught by the GCC and Clang builds
+instead, whose `-Wall -Wextra` warnings are errors in the `ci`, `ci-release` and `asan` presets
+(`CONEY_WARNINGS_AS_ERRORS`); clang-tidy's `-*` turns off its compiler diagnostics.
 
 `ci run` runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
 runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's
