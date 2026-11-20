@@ -205,9 +205,13 @@ def test_a_hold_by_an_agent_on_a_forks_pull_request_says_its_branch_is_no_units(
         "when a unit's branch has the same name; engineer-2 fixes the fork's branch, not a unit's"
     ]
     asked: list[int] = []
+
+    def fork(number: int) -> str:
+        asked.append(number)
+        return "contributor:285-add-x"
+
     waiver = Out()
-    note = "the contributor fixes it"
-    assert waiver.run(tmp_path, "1415", "--note", note, fork=lambda n: asked.append(n) or "x") == 0
+    assert waiver.run(tmp_path, "1415", "--note", "the contributor fixes it", fork=fork) == 0
     assert asked == [] and waiver.err == []
     ours = Out()
     assert ours.run(tmp_path, "812", "--who", "engineer-2") == 0 and ours.err == []

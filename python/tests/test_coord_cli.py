@@ -248,7 +248,7 @@ def test_a_forks_pull_request_with_a_units_branch_name_neither_releases_nor_clai
         {"number": 1415, "headRefName": "unit-a", "state": "MERGED", "closedAt": when(1), **fork},
         {"number": 1416, "headRefName": "unit-b", "state": "OPEN", "closedAt": None, **fork},
     ]
-    opened = dict(answers[("pr", "list", "--state", "open")][0])  # type: ignore[index]
+    opened = dict(answers[("pr", "list", "--state", "open")][0])
     answers[("pr", "list", "--state", "open")] = [{**opened, "number": 1416, **fork}]
     report = collect(sources(layout, FakeGh(answers)), github=True)
     queued = {(u["branch"], u["file"]): (u["queued"], u["pr"]) for u in report["release"]["units"]}
