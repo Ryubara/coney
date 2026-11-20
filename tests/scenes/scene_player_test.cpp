@@ -814,17 +814,18 @@ TEST_CASE("an intro card is held along the camera's own view axis", "[scenes]") 
 
 namespace {
 
-// Plays tst_long (scene 3) with human 7 in role 0 as `request` asks, to its end; skipped with cross after 2 s when
-// `skip` is set.
+// Plays tst_long (scene 3) with human 7 in role 0 as `request` asks, through the update of its end; skipped with
+// cross after 2 s when `skip` is set.
 void playLong(Harness& h, const scenes::PlayRequest& request, bool skip = false) {
     h.system.preload("tst_long", "");
     h.step();
     REQUIRE(h.system.joinHuman(7.0, 3, 0, 2));
     REQUIRE(h.system.play(3, request));
-    for (int i = 0; i < 200 && !h.system.done(3); ++i) {
+    // To the update in which it ends (done() holds from state 7, the update before the end).
+    for (int i = 0; i < 200 && h.system.stats().ended == 0; ++i) {
         h.step(skip && i > 70 ? scenes::kSkipCross : 0);
     }
-    REQUIRE(h.system.done(3));
+    REQUIRE(h.system.stats().ended == 1);
 }
 
 } // namespace

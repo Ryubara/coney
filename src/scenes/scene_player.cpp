@@ -1007,8 +1007,10 @@ class SceneTask {
     // Whether the scene got as far as its start (its brains were suspended, its letterbox shown).
     [[nodiscard]] bool begun() const { return !m_roles.empty() || !m_tracks.empty() || m_cameraBegun; }
 
-    // A scene that did not start within kStartTimeoutMs is given up as the end gives everything back; whether the
-    // end function is called is not traced (Coney: it is not).
+    // A scene that did not start within kStartTimeoutMs is given up as the end gives everything back, without the
+    // end function; a cinematic's crew gets the follow. The original also calls the end function (once per type-31
+    // event of the camera track, then once more), puts the humans and objects at their end poses, fades in at once
+    // and shows the HUD; those wait for #673.
     // @orig 0x0039ec60 SceneTask_Abort (SceneTask.cpp)
     void abort() {
         ++m_system.m_stats.aborted;

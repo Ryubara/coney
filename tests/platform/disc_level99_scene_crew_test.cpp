@@ -162,13 +162,15 @@ TEST_CASE("the disc's level99: the intro scene's end gives player 1's crew the f
     REQUIRE(crew != nullptr);
     const std::uint32_t tacticsBefore = crew->tacticsSet();
 
-    // Step by step to the update in which the scene ends (2,026 frames of scene).
+    // Step by step to the update in which the scene ends (2,026 frames of scene; done() holds from state 7, the
+    // update before the end).
+    const std::uint64_t endedBefore = system->stats().ended;
     int steps = 0;
-    while (!system->done(*intro) && steps < 2400) {
+    while (system->stats().ended == endedBefore && steps < 2400) {
         stack.runUntilEmpty(timer, {}, 1);
         ++steps;
     }
-    REQUIRE(system->done(*intro));
+    REQUIRE(system->stats().ended == endedBefore + 1);
     CHECK(scripts.scripts().errors() == 0);
     CHECK(rules.lastWarriorCommand.at(0) == 0);
     CHECK_FALSE(story.menuLocked.at(0));
