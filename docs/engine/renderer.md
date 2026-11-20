@@ -132,7 +132,7 @@ nothing of several passes, depth pre-passes, shadow casters, previous-frame tran
 | Machines with no Vulkan or D3D12 (old GPUs, some VMs) | the GL3 platform stays | the GL3 renderer stays as fallback while needed | bgfx and Diligent keep a GL backend | none |
 | Coney's code that changes | the 133 `rw::gl3::` sites and 35 direct GL calls get a per-platform twin; the rest keeps calling librw | the ~460 drawing sites in about 24 files move behind Coney's own draw interface ([Migration](#migration)) | the same ~460 sites, against the library's API | the same ~460, three times below them |
 | New code | a librw platform per API, larger than the GL3 one (memory, descriptors, synchronisation, pipeline cache): **XL per API** | Coney's renderer once, shaders once in HLSL compiled offline to SPIR-V, DXIL and MSL: **XL**, in steps that each land | the renderer once against the library, plus its build and shader tools: **XL** | three backends and their shaders: **XL × 3** |
-| Risk | Coney maintains a fork of a library whose upstream is a small project with occasional commits; PSO hitches from immediate render states; the fork only reaches what librw's single-pass pipelines can express | SDL's GPU API is young (SDL 3.2 and later); it exposes no native device or command-list handles, so a vendor upscaler cannot be plugged in without patching SDL ([Upscalers](#upscalers)); no geometry or tessellation stages, no ray tracing | a large dependency with its own build and shader compiler; Diligent needs MoltenVK on macOS; bgfx's API has its own conventions for views and state | highest effort and three sets of bugs; only worth it for ray tracing |
+| Risk | Coney maintains a fork of a library whose upstream is a small project with occasional commits; PSO hitches from immediate render states; the fork only reaches what librw's single-pass pipelines can express | SDL's GPU API is young (SDL 3.2 and later); it exposes no native device or command-list handles, so a vendor upscaler cannot be plugged in without patching SDL ([Upscalers](renderer-scaling.md#upscalers)); no geometry or tessellation stages, no ray tracing | a large dependency with its own build and shader compiler; Diligent needs MoltenVK on macOS; bgfx's API has its own conventions for views and state | highest effort and three sets of bugs; only worth it for ray tracing |
 | Per-pixel lighting, shadow maps | only inside librw's pipelines, one camera pass: shadow passes and light lists fight its model | yes, as Coney's passes | yes | yes |
 | TAA, motion vectors | needs previous transforms and jitter that librw has no place for | yes: the blended steps already give previous poses | yes | yes |
 | Uncapped rate without tearing | mailbox present only if the fork adds it | `MAILBOX` present mode built in | yes | yes |
@@ -154,8 +154,8 @@ data.**
 - **The work is the same size in (b), (c) and (d) on Coney's side** (the ~460 sites move behind one interface), and (b)
   adds the least on top: no third-party renderer to learn, build and track, and one backend instead of three.
 - **What (b) gives up** is native handles (vendor upscalers) and ray tracing. Both are optional extras on this page;
-  [Upscalers](#upscalers) says how they would be reached, and either can be added later behind the same seam with a
-  narrow native path, without changing the passes above it.
+  [Upscalers](renderer-scaling.md#upscalers) says how they would be reached, and either can be added later behind the
+  same seam with a narrow native path, without changing the passes above it.
 
 A local spike settled what the reading could not, and nothing from it lands: [Spike](#spike).
 
@@ -301,6 +301,7 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
   `Gl3Renderer` draws it as a sector, so the object scene's hash and the disc frames' did not move between item 8's
   commits. While the mesh views are on, or a mesh did not convert, the atomic goes through the lighting rig as before
   (`SceneLighting::drawObjectAtomic` or `drawCarAtomic`) with the same colours.
+
 **Built for the humans (item 9).** Each human is one draw (`PlayLighting::drawHumanPasses`, `HumanRender_Draw`,
 `0x00174320`): his body and blood layer by id, his placement and his skinning matrices (`FrameDescription::bonesOf`).
 `MaterialColour::Shade` scales each material's own colour by the shadow dimming for the draw and keeps the distance fade
@@ -445,47 +446,10 @@ The work order is in [Order](#order): the lighting frame first (item 19: simulat
 renderer), then, once the new renderer has its scene target (item 22), the gamma ramp, the *Xbox* preset's light caps
 and fog, the shadow maps and per-pixel lights (items 24, 25 and 28 to 31).
 
-## Anti-aliasing and scaling {#aa}
+## Anti-aliasing, scaling and HDR {#aa}
 
-All of these draw into the scene target at the internal resolution and resolve or upscale into the window
-([Enhancements: foundation F2](../guides/enhancements.md#foundations)).
-
-| Technique | Where it fits | Licence |
-| --- | --- | --- |
-| MSAA 2×, 4×, 8× | geometry edges, which this game's long straight scenery edges are full of; with alpha-to-coverage for fences and foliage. On the SDL3 GPU renderer only (item 26): the GL3 path draws none | none (API feature) |
-| FXAA 3.11 | cheapest post AA, slight blur | NVIDIA's FXAA licence, permissive; check at adoption |
-| SMAA 1×, T2× | better edges than FXAA, cheap; the default post AA | MIT |
-| TAA (Coney's own) | shimmer on thin wires and fences; uses the blended steps' previous poses for motion vectors and a jittered projection | Coney's code |
-| Render scale 0.5-2× | above 1 is supersampling; a *640 × 448* mode with nearest filtering for the PS2 look | Coney's code |
-| Upscalers | from a render scale below 1, in tiers ([below](#upscalers)) | per tier |
-
-### Upscalers {#upscalers}
-
-Listed as options, in tiers, each off in *PS2* and *Xbox*. Each licence is dealt with when its item comes: FSR's MIT
-needs no decision, and a proprietary SDK or binary is a maintainer decision then. The versions are the current ones
-as this design was written; the item checks them again.
-
-| Tier | Upscaler | Runs on | Licence (as its project states it; not confirmed, checked at adoption) | Reach from SDL3's GPU API | Item |
-| --- | --- | --- | --- | --- | --- |
-| Fallback | AMD FSR 1 (EASU and RCAS): spatial upscale and sharpen | any GPU; the one tier CI can test, on its software drivers | MIT | plain shaders of Coney's | 33 |
-| Main, portable | AMD FSR 3.1 (FidelityFX SDK): temporal, from TAA's motion vectors | any vendor | MIT | the SDK's upscaler shaders ported as Coney's compute passes; its own backends want native handles | 34 |
-| Vendor | NVIDIA DLSS 4 and DLAA (Streamline or NGX SDK) | NVIDIA RTX | NVIDIA's proprietary SDK licence; redistributable binaries | native handles and a vendor binary beside the executable; a separate opt-in plug-in, as the [Enhancements plan](../guides/enhancements.md#decided) records for proprietary SDKs | 35 |
-| Vendor | AMD FSR 4 ("Redstone"): machine-learned | AMD RX 9000 and 7000; 4.1 adds RX 6000 and some APUs; never NVIDIA. Shader Model 6.6, so Direct3D 12 only until AMD's announced Vulkan version ships | the FidelityFX SDK's terms for its prebuilt ML upscaler | as DLSS | 36 |
-| Optional | Intel XeSS | Intel Arc best; other GPUs through its fallback | Intel's XeSS SDK licence; redistributable binaries | as DLSS | filed if a maintainer asks for it |
-
-The vendor tiers need the device and command buffer underneath SDL's GPU API: a small patch to Coney's pinned SDL (or
-an upstream extension) that exposes them, used only by the plug-in. Whether to carry that change to SDL is decided
-with item 35, the first that needs it; FSR 3.1 is ported so that it does not.
-
-## HDR output {#hdr}
-
-The game's content is SDR on the GS scale, so HDR output is a presentation of it, not new range
-([Enhancements: HDR](../guides/enhancements.md#lighting-and-post-processing)). On the GPU renderer, an HDR10 or scRGB
-swapchain (SDL3's GPU API has both) takes an inverse tone map of the SDR picture, with highlights from what the
-lighting work adds (coronas, glows, bloom). Paper white and peak brightness are display values; the HUD and the front
-end draw at paper white. It is a live toggle on the debug menu's Display page and a command-line flag, greyed out with
-the reason when the display or its driver has no HDR. The PS2 look stays the default and test mode forces SDR. Its
-pull request shows a picture check for each output mode (item 23).
+The anti-aliasing techniques, the render scale, the upscalers in their tiers and HDR output are designed on their own
+page, [Anti-aliasing, scaling and HDR](renderer-scaling.md), split out to keep this one short.
 
 ## Presets {#presets}
 
@@ -517,8 +481,8 @@ also a toggle of its own, off in *PS2*, so a player can take one without the res
 research's In Coney section places under *Faithful*. The frame-rate gaps are closed in every preset
 ([Gaps](#frame-rate-gaps)); at 30 frames a second and in test mode the drawn values are the newest step's, so the
 *PS2* tests do not see them. Ray-traced shadows and AO are in no preset: SDL3's GPU API has no ray tracing, so they
-need a native Vulkan or D3D12 path beside it (the same native handles as [Upscalers](#upscalers)), a later option
-after item 21.
+need a native Vulkan or D3D12 path beside it (the same native handles as
+[Upscalers](renderer-scaling.md#upscalers)), a later option after item 21.
 
 *PS2* is what tests use and is forced in test mode. Which preset a player gets by default is open
 ([Questions](#questions)); until a maintainer decides, every option ships off, which is *PS2*.

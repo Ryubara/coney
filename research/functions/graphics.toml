@@ -90,7 +90,7 @@ status = "compared"
 [[function.gaps]]
 what = "the first second's fade-in after the instance's stamp not drawn"
 relation = "stand-in"
-issue = 654
+issue = 1526
 
 [[function.gaps]]
 what = "the blob shadow's conditions (HuShadow, viewport, state 0x1cc, a held object), the scene-state ground ray and the sprite's turn and scale"
