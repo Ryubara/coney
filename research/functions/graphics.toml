@@ -84,8 +84,18 @@ name = "HumanRender_Draw"
 page = "graphics.md#code-characters"
 role = "[Drawing a human](graphics.md#human-draw), [Lighting](lighting.md#humans)"
 level = "confirmed-code"
-coney = "src/graphics/human_blood.h:bloodLayerFor"
-status = "legacy"
+coney = "src/platform/play_lighting.h:PlayLighting::drawHumanPasses"
+status = "compared"
+
+[[function.gaps]]
+what = "the first second's fade-in after the instance's stamp not drawn"
+relation = "stand-in"
+issue = 654
+
+[[function.gaps]]
+what = "the blob shadow's conditions (HuShadow, viewport, state 0x1cc, a held object), the scene-state ground ray and the sprite's turn and scale"
+relation = "not-ported"
+issue = 654
 
 [[function]]
 address = 0x00175210
