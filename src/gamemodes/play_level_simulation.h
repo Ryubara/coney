@@ -511,6 +511,15 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     [[nodiscard]] std::optional<HeldDraw> heldDrawOf(double held, const human::Human& human,
                                                      const human::PlayerCharacter& character, const anim::Pose& pose,
                                                      anim::Vec3 feet, float heading) const;
+    // Before the pick-ups' step: every object a script (`HuPlaceItemInHand`) or a class's weapon put in a human's hand
+    // is made, as its handle has no world object yet (docs/research/objects.md#held, Scripted placement).
+    // @coney-only Coney's pass over the humans for placeItemInHand()
+    void stepPlacedHeld();
+    // Makes the object `human` holds by name, when it has no record yet: a record of its type at his feet, held by him
+    // (`holder`, his script handle) as its pick-up clip places it (heldDrawOf()), with its anim set his. An unknown
+    // type, or a type he would carry as a prop, leaves his hand empty.
+    // @orig 0x0024c280 Human_PlaceItemInHand (unknown)
+    void placeItemInHand(human::Human& human, double holder);
 
     // --- play_level_hats.cpp: the hats the humans wear (docs/research/characters.md#hats).
 

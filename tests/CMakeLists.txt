@@ -191,6 +191,7 @@ add_executable(coney_tests
     platform/disc_flash_test.cpp
     platform/disc_crew_commands_test.cpp
     platform/disc_given_weapon_test.cpp
+    platform/disc_scripted_held_test.cpp
     platform/disc_level80_wreck_test.cpp
     platform/disc_revive_test.cpp
     platform/disc_level80_story_test.cpp
