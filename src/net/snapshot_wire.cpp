@@ -302,7 +302,40 @@ std::size_t snapshotHudEntryBits(const SnapshotHudEntry& entry) {
     return bits;
 }
 
-std::size_t snapshotHeaderBits(const Snapshot& snapshot, std::size_t entries, std::size_t hudEntries) {
+ReplicatedKind hudElementKind(std::uint8_t key) {
+    CONEY_ASSERT(key < kHudElements);
+    if (key < kHudElementCounters) {
+        return ReplicatedKind::HudPlayer;
+    }
+    if (key < kHudElementBars) {
+        return ReplicatedKind::HudCounter;
+    }
+    if (key < kHudElementGauge) {
+        return ReplicatedKind::HudBar;
+    }
+    if (key == kHudElementGauge) {
+        return ReplicatedKind::HudGauge;
+    }
+    if (key < kHudElementStopWatch) {
+        return ReplicatedKind::HudScoreRow;
+    }
+    return key == kHudElementStopWatch ? ReplicatedKind::HudStopWatch : ReplicatedKind::HudSettings;
+}
+
+std::size_t hudElementFieldCount(std::uint8_t key) { return fieldTable(hudElementKind(key)).size(); }
+
+std::uint32_t allHudElementFields(std::uint8_t key) { return (1U << hudElementFieldCount(key)) - 1U; }
+
+bool hudElementHasText(std::uint8_t key) {
+    return key < kHudElements && key != kHudElementGauge && key != kHudElementSettings;
+}
+
+std::size_t snapshotHudElementEntryBits(const SnapshotHudElementEntry& /*entry*/) { return 0; }
+
+std::size_t snapshotHudTextEntryBits(const SnapshotHudTextEntry& /*entry*/) { return 0; }
+
+std::size_t snapshotHeaderBits(const Snapshot& snapshot, std::size_t entries, std::size_t hudEntries,
+                               std::size_t /*elementEntries*/, std::size_t /*textEntries*/) {
     return 8 + varUintBits(snapshot.sequence) +
            varUintBits(snapshot.baseline == 0 ? 0 : snapshot.sequence - snapshot.baseline) +
            varUintBits(snapshot.step) + varUintBits(entries) + varUintBits(hudEntries);

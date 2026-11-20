@@ -510,6 +510,7 @@ target_sources(coney_core PRIVATE
     hud/fixed_cam_icon.cpp
     hud/hint_box.cpp
     hud/hud.cpp
+    hud/hud_standing.cpp
     hud/radar.cpp
     hud/hud_canvas.cpp
     hud/mash_meter.cpp

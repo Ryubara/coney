@@ -27,4 +27,25 @@ namespace coney::net {
 /// @coney-only network play; the original has none
 [[nodiscard]] std::vector<SnapshotHud> snapshotHuds(std::span<const hud::PlayerHudState> slots);
 
+/// The HUD's standing state as a snapshot takes it: its elements and its texts, each in key order.
+/// @coney-only network play; the original has none
+struct SnapshotHudStanding {
+    std::vector<SnapshotHudElement> elements;
+    std::vector<SnapshotHudText> texts;
+};
+
+/// `standing` as elements and texts (docs/guides/snapshots.md#hud-standing): each player's element; a counter panel
+/// taken, a bar or the gauge that exists, a scoreboard row shown and the stopwatch shown, each as its element; the
+/// settings always. Each text that is not empty, of an element that is there, cut to kMaxHudTextBytes. A number
+/// beyond its field's range is held at the range's end.
+/// @coney-only network play; the original has none
+[[nodiscard]] SnapshotHudStanding snapshotHudStanding(const hud::HudStanding& standing);
+
+/// The standing state that `elements` and `texts` (what a client holds) stand for: an element not held is as a HUD
+/// with no such part has it (a panel released, a bar removed, a row cleared, the stopwatch hidden); the settings, when
+/// not held, are the HUD's defaults. Player elements past hud::kPlayers are left out. The cycles' running parts are at
+/// their start, and the counter panels have no hide time.
+/// @coney-only network play; the original has none
+[[nodiscard]] hud::HudStanding hudStanding(const SnapshotHudElements& elements, const SnapshotHudTexts& texts);
+
 } // namespace coney::net

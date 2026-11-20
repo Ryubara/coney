@@ -85,4 +85,8 @@ std::vector<SnapshotHud> snapshotHuds(std::span<const hud::PlayerHudState> slots
     return huds;
 }
 
+SnapshotHudStanding snapshotHudStanding(const hud::HudStanding& /*standing*/) { return {}; }
+
+hud::HudStanding hudStanding(const SnapshotHudElements& /*elements*/, const SnapshotHudTexts& /*texts*/) { return {}; }
+
 } // namespace coney::net

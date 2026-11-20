@@ -24,6 +24,7 @@
 #include "net/net_client.h"
 #include "net/net_server.h"
 #include "net/net_status.h"
+#include "net/player_huds.h"
 #include "net/protocol.h"
 #include "net/snapshot.h"
 #include "net/state_digest.h"
@@ -292,7 +293,12 @@ void NetPlay::setGameHumans(std::span<const net::SnapshotHuman> humans) {
     m_gameHumans.assign(humans.begin(), humans.end());
 }
 
-void NetPlay::setGameHuds(std::span<const net::SnapshotHud> huds) { m_gameHuds.assign(huds.begin(), huds.end()); }
+void NetPlay::setGameHuds(std::span<const net::SnapshotHud> huds, std::span<const net::SnapshotHudElement> /*elements*/,
+                          std::span<const net::SnapshotHudText> /*texts*/) {
+    m_gameHuds.assign(huds.begin(), huds.end());
+}
+
+hud::HudStanding NetPlay::arrivedHudStanding() const { return {}; }
 
 net::SnapshotHuds NetPlay::arrivedHuds() const {
     if (!m_client) {

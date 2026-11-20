@@ -465,6 +465,29 @@ TEST_CASE("a host sends its players' HUDs with its snapshots, and the guest hold
     CHECK(games.host.arrivedHuds().empty()); // a host draws its own
 }
 
+TEST_CASE("a host sends its HUD's standing state with its snapshots, and the guest holds it as the host had it",
+          "[net][net_play][hud]") {
+    // Expected: unverified, #1524 (Coney's own snapshots; docs/guides/snapshots.md#hud-standing)
+    TwoGames games;
+    CHECK(games.guest.arrivedHudStanding() == coney::hud::HudStanding{}); // not joined
+    games.connect();
+    // A counter panel counting up each step and player 1's prompt: the host's game hands them over before each send.
+    coney::hud::HudStanding standing;
+    standing.players[0].prompt = "Press X";
+    standing.shared.counters[0].used = true;
+    standing.shared.counters[0].label = "Tags";
+    for (int i = 0; i < 20; ++i) {
+        standing.shared.counters[0].value = static_cast<float>(i);
+        const coney::net::SnapshotHudStanding parts = coney::net::snapshotHudStanding(standing);
+        games.host.setGameHuds({}, parts.elements, parts.texts);
+        games.run(1);
+    }
+    // The guest decodes each step's snapshot at the start of the next: it holds the step before last's state.
+    standing.shared.counters[0].value = 18.0F;
+    CHECK(games.guest.arrivedHudStanding() == standing);
+    CHECK(games.host.arrivedHudStanding() == coney::hud::HudStanding{}); // a host draws its own
+}
+
 TEST_CASE("a host with nobody joined sends nothing and writes no snapshot digest", "[net][net_play]") {
     // Expected: unverified, #558 (Coney's own digest)
     TwoGames games;

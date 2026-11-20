@@ -33,6 +33,8 @@ struct GenericBar {
     graphics::Rgba colour{255, 255, 255, 255}; ///< The fill colour while `gradient` is off (HudBar `+0x28`).
     float width = 0.22F;                       ///< GUI units.
     float height = 0.025F;                     ///< GUI units.
+
+    friend bool operator==(const GenericBar&, const GenericBar&) = default;
 };
 
 /// The chase gauge (HUD `+0xa940`): a track, an end icon and a marker placed by where `value` lies between `min` and
@@ -44,6 +46,8 @@ struct ChaseGauge {
     float value = 30.0F;              ///< `+0x340`.
     float min = 0.0F;                 ///< `+0x344`.
     float max = 60.0F;                ///< `+0x348`.
+
+    friend bool operator==(const ChaseGauge&, const ChaseGauge&) = default;
 };
 
 /// The bars the scripts make with `HUDEnableBar`, fill with `HUDSetBarPercentage` and recolour with
@@ -78,6 +82,13 @@ class ScriptedBars {
     void setProperty(std::uint32_t index, bool gradient, graphics::Rgba colour, float width);
     /// Every bar removed: a new level.
     void clear();
+    /// Puts `bar` in slot `slot` as it is: a guest's HUD taking the host's (Hud::applyStanding()). A slot out of
+    /// range does nothing.
+    /// @coney-only network play; the original has none
+    void restoreBar(std::size_t slot, const GenericBar& bar);
+    /// Takes `gauge` as the chase gauge as it is (Hud::applyStanding()).
+    /// @coney-only network play; the original has none
+    void restoreGauge(const ChaseGauge& gauge) { m_gauge = gauge; }
 
     /// Adds the visible bars' sprites: the generic bars in the right column moved down by `columnShift` (GUI units:
     /// the counter panels' and the stopwatch's height), then the gauge.

@@ -967,3 +967,124 @@ TEST_CASE("each player's panel is driven from his own slot's HUD state, panel 1 
     CHECK(hud.panel(0).activityMs() == firstActivity);
     CHECK(hud.panel(1).activityMs() == 9000);
 }
+
+// Expected: unverified, #1524 (Coney's own view of the HUD's standing state, snapshots.md#hud-standing; each part is
+// the HUD's own as its tests above pin it: the panel's flags, the prompt and its cycle, the counter panels, the bars,
+// the scoreboard, the stopwatch and the radars' switches)
+TEST_CASE("the HUD's standing state reads back as its parts hold it, and a guest's HUD takes it", "[hud][net]") {
+    coney::hud::HudServices services;
+    services.stopWatchTime = [] { return 65000; };
+    Hud host(services);
+    REQUIRE(host.attachPlayer(1, 0) == 1);
+    host.panel(1).setForceShow(true);
+    host.panel(1).setFlashFrames(6);
+    host.setActionPrompt(0, "Press X");
+    const coney::hud::ActionCycle cycle{.on = true, .framesPerIcon = 4, .blinkFrames = 6, .iconA = 79, .iconB = 73};
+    host.startActionCycle(1, cycle);
+    host.setClubActionText(true);
+    host.radarOff(1);
+    host.setRadarRange(30.0F, 60.0F);
+    host.setRadarZoomScale(1.5F);
+    const int counter = host.counterPanels().take(2, "Tags", 0.22F);
+    REQUIRE(counter == 0);
+    host.counterPanels().setValue(counter, 2, 6.0F, 0, false, 0, coney::test::kSilent);
+    host.counterPanels().setValue(counter, 1, 2.0F, 3000, false, 100, coney::test::kSilent);
+    const std::vector<std::string> boss{"Boss"};
+    host.bars().enable(1, true, boss, 1, false, 0, 0);
+    host.bars().setPercentage(1, 0.4F, 0.0F, 0, 0.0F);
+    const std::vector<std::string> names{"Cleon", "Ajax"};
+    host.enableTextProgress(true, names, 2, 1);
+    host.setTextProgress("Ajax", 7, coney::graphics::Rgba{200, 20, 20, 255}, 1);
+    host.showStopWatch(true, "Time ");
+    step(host, 200);
+    step(host, 233);
+
+    const coney::hud::HudStanding standing = host.standing();
+    const coney::hud::PlayerHudStanding& first = standing.players.at(0);
+    CHECK_FALSE(first.panel.attached);
+    CHECK(first.prompt == "Press X");
+    CHECK_FALSE(first.promptHidden);
+    CHECK_FALSE(first.cycle.on);
+    CHECK(first.radarOn);
+    const coney::hud::PlayerHudStanding& second = standing.players.at(1);
+    CHECK(second.panel == coney::hud::PanelFlags{.attached = true,
+                                                 .banner = coney::hud::bannerRecord(0),
+                                                 .shown = true,
+                                                 .mayShow = true,
+                                                 .forceShow = true,
+                                                 .flashFrames = 6});
+    CHECK(second.prompt.empty());
+    CHECK(second.promptHidden);
+    // The cycle's settings, at its start: the host's own has stepped twice.
+    CHECK(host.actionCycle(1).counter == 2);
+    CHECK(second.cycle == cycle);
+    CHECK_FALSE(second.radarOn);
+    CHECK(second.radarTint == coney::hud::RadarTint::Grey);
+    const coney::hud::SharedHudStanding& shared = standing.shared;
+    CHECK(shared.visible);
+    CHECK(shared.clubActionText);
+    CHECK_FALSE(shared.radarScriptOn);
+    CHECK(shared.radarRest == 30.0F);
+    CHECK(shared.radarFast == 60.0F);
+    CHECK(shared.radarZoomScale == 1.5F);
+    // The counter panel without its hide time; the rest as the HUD holds them.
+    coney::hud::CounterPanel tags = host.counterPanels().panels()[0];
+    REQUIRE(tags.hideAtMs.has_value());
+    tags.hideAtMs.reset();
+    CHECK(shared.counters[0] == tags);
+    CHECK_FALSE(shared.counters[1].used);
+    CHECK(shared.bars[0] == host.bars().bar(0));
+    CHECK(shared.bars[0].fill == 0.4F);
+    CHECK(shared.gauge == host.bars().gauge());
+    CHECK(shared.scores == host.textProgress());
+    CHECK(shared.scores[0].label == "Ajax");
+    CHECK(shared.stopWatch == host.stopWatch());
+    CHECK(shared.stopWatchMs == 65000);
+
+    // A guest's HUD takes it all: its own standing state reads the same (but for the stopwatch's time, which its
+    // services give), and the parts hold what the host's do.
+    Hud guest = makeHud(nullptr);
+    guest.applyStanding(standing);
+    coney::hud::HudStanding taken = guest.standing();
+    CHECK(taken.shared.stopWatchMs == 0);
+    taken.shared.stopWatchMs = standing.shared.stopWatchMs;
+    CHECK(taken == standing);
+    CHECK(guest.panel(1).attached());
+    CHECK(guest.panel(1).forceShow());
+    CHECK(guest.actionPrompt(0) == "Press X");
+    CHECK(guest.actionCycle(1).on);
+    CHECK_FALSE(guest.radar().on.at(1));
+    CHECK(guest.radar().rest == 30.0F);
+    CHECK(guest.counterPanels().panels()[0].visible);
+    CHECK(coney::hud::CounterPanels::textOf(guest.counterPanels().panels()[0]) == "Tags 2/6");
+    CHECK(guest.clubActionText());
+
+    // Its cycle steps on its own: the same state again does not restart it; a changed icon does.
+    step(guest, 266);
+    step(guest, 300);
+    REQUIRE(guest.actionCycle(1).counter == 2);
+    guest.applyStanding(standing);
+    CHECK(guest.actionCycle(1).counter == 2);
+    coney::hud::HudStanding swapped = standing;
+    swapped.players.at(1).cycle.iconB = 75;
+    guest.applyStanding(swapped);
+    CHECK(guest.actionCycle(1).counter == 0);
+    CHECK(guest.actionCycle(1).iconB == 75);
+
+    // A tint the host changes blends on the guest from the colour it had; a panel released goes.
+    host.setRadarTint(0, coney::hud::RadarTint::Blue);
+    host.counterPanels().release(counter);
+    const coney::hud::HudStanding later = host.standing();
+    CHECK(later.players.at(0).radarTint == coney::hud::RadarTint::Blue);
+    CHECK_FALSE(later.shared.counters[0].used);
+    guest.applyStanding(later);
+    CHECK(guest.radar().tint.at(0) == coney::hud::RadarTint::Blue);
+    CHECK(guest.radar().previousTint.at(0) == coney::hud::RadarTint::Grey);
+    CHECK_FALSE(guest.counterPanels().panels()[0].used);
+
+    // HideHud on the host hides the guest's HUD and its panels.
+    host.hideAll();
+    guest.applyStanding(host.standing());
+    CHECK_FALSE(guest.visible());
+    CHECK_FALSE(guest.panel(1).shown());
+}

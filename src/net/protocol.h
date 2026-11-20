@@ -185,6 +185,63 @@ struct SnapshotHudEntry {
     friend bool operator==(const SnapshotHudEntry&, const SnapshotHudEntry&) = default;
 };
 
+/// The HUD's standing state travels as elements, each named by a key (docs/guides/snapshots.md#hud-standing): each
+/// player slot's (keys 0 to 3, the slot), the five counter panels, the four generic bars, the chase gauge, the six
+/// scoreboard rows, the stopwatch and the HUD's settings. The key decides the element's field table
+/// (hudElementKind()).
+inline constexpr std::uint8_t kHudElementPlayers = 0;    ///< 0 to 3: each player slot's standing state.
+inline constexpr std::uint8_t kHudElementCounters = 4;   ///< 4 to 8: the counter panels.
+inline constexpr std::uint8_t kHudElementBars = 9;       ///< 9 to 12: the generic bars.
+inline constexpr std::uint8_t kHudElementGauge = 13;     ///< The chase gauge.
+inline constexpr std::uint8_t kHudElementScoreRows = 14; ///< 14 to 19: the scoreboard's rows.
+inline constexpr std::uint8_t kHudElementStopWatch = 20; ///< The stopwatch.
+inline constexpr std::uint8_t kHudElementSettings = 21;  ///< The HUD's settings.
+/// How many element keys there are: every key below it names one.
+inline constexpr std::size_t kHudElements = 22;
+/// Bits an element key takes in a Snapshot.
+inline constexpr int kHudElementBits = 5;
+static_assert(kHudElements <= 1U << kHudElementBits);
+/// The most fields an element's table has (the player slot's).
+inline constexpr std::size_t kMaxHudElementFields = static_cast<std::size_t>(HudPlayerField::Count);
+static_assert(kMaxHudElementFields < 32, "a SnapshotHudElementEntry's changed bits are one 32-bit word");
+
+/// The field table of element `key` (below kHudElements).
+[[nodiscard]] ReplicatedKind hudElementKind(std::uint8_t key);
+/// How many fields element `key` has: its table's size.
+[[nodiscard]] std::size_t hudElementFieldCount(std::uint8_t key);
+/// Every field's changed bit of element `key` set: what an element the baseline does not hold carries.
+[[nodiscard]] std::uint32_t allHudElementFields(std::uint8_t key);
+/// Whether element `key` has a text (a HUD text of the same key): a player's prompt, a counter's, a bar's or a row's
+/// label, the stopwatch's; the gauge and the settings have none.
+[[nodiscard]] bool hudElementHasText(std::uint8_t key);
+
+/// An element's fields as they travel: each field's fieldWord(), in its table's order; the words past its table are 0.
+using HudElementWords = std::array<std::uint32_t, kMaxHudElementFields>;
+
+/// One element of the HUD's standing state in a Snapshot: gone, or the fields that differ from the baseline's (every
+/// field for an element the baseline does not hold).
+struct SnapshotHudElementEntry {
+    std::uint8_t key = 0; ///< below kHudElements
+    bool removed = false; ///< the element is gone (a panel released, a bar removed, a row cleared); `changed` is 0
+    /// Bit i set: field i is written; 0 only for a removal. An element the baseline does not hold has every bit set.
+    std::uint32_t changed = 0;
+    HudElementWords words{}; ///< each changed field's word; the others are 0
+
+    friend bool operator==(const SnapshotHudElementEntry&, const SnapshotHudElementEntry&) = default;
+};
+
+/// The longest HUD text a Snapshot carries, bytes; a longer one is cut there (net::snapshotHudStanding()).
+inline constexpr std::size_t kMaxHudTextBytes = 255;
+
+/// One HUD text in a Snapshot, named by its element's key: gone, or the text when it differs from the baseline's.
+struct SnapshotHudTextEntry {
+    std::uint8_t key = 0; ///< an element key with a text (hudElementHasText())
+    bool removed = false; ///< the text is gone (empty, or its element gone); `text` is empty
+    std::string text{};   ///< 1 to kMaxHudTextBytes bytes when not removed
+
+    friend bool operator==(const SnapshotHudTextEntry&, const SnapshotHudTextEntry&) = default;
+};
+
 /// The state of the humans a client needs and of each player's HUD, as a delta against a snapshot it has acknowledged
 /// (its baseline), or in full when it has none. Sent every step, UnreliableSequenced: a lost one is repaired by the
 /// next, which is a delta against an older baseline (docs/guides/snapshots.md).
@@ -194,13 +251,19 @@ struct SnapshotHudEntry {
 /// most), the number of entries (a varint), then each entry: its NetId (kNetIdBits), a removed bit and, when not
 /// removed, for each human field a changed bit followed by the field's word (its bits) when set. Then the number of
 /// HUD entries (a varint, at most kMaxPlayerSlots) and each: its slot (kPlayerSlotBits), a removed bit and, when not
-/// removed, for each HUD field a changed bit followed by the field's word when set (protocol 7).
+/// removed, for each HUD field a changed bit followed by the field's word when set (protocol 7). Then the number of
+/// HUD elements (a varint, at most kHudElements) and each: its key (kHudElementBits), a removed bit and, when not
+/// removed, for each of its fields a changed bit followed by the word when set; then the number of HUD texts (a
+/// varint, at most kHudElements) and each: its key (kHudElementBits), a removed bit and, when not removed, the text (a
+/// varint length of 1 to kMaxHudTextBytes, then its bytes) (protocol 8).
 struct Snapshot {
     std::uint32_t sequence = 1;           ///< 1 for a client's first, one more for each after
     std::uint32_t baseline = 0;           ///< the sequence it is a delta against; 0 for none (a full snapshot)
     std::uint32_t step = 0;               ///< the server's step it shows
     std::vector<SnapshotEntry> humans;    ///< in strictly rising id order
     std::vector<SnapshotHudEntry> huds{}; ///< in strictly rising slot order
+    std::vector<SnapshotHudElementEntry> hudElements{}; ///< in strictly rising key order
+    std::vector<SnapshotHudTextEntry> hudTexts{};       ///< in strictly rising key order
 
     friend bool operator==(const Snapshot&, const Snapshot&) = default;
 };
@@ -322,9 +385,16 @@ struct MovieDone {
 /// Bits `entry` takes in a Snapshot's packet: what the server's snapshot budget counts.
 [[nodiscard]] std::size_t snapshotHudEntryBits(const SnapshotHudEntry& entry);
 
-/// Bits a Snapshot's packet takes besides its entries (the message id and the HUD entries' count included) with
-/// `entries` human entries and `hudEntries` HUD entries.
-[[nodiscard]] std::size_t snapshotHeaderBits(const Snapshot& snapshot, std::size_t entries, std::size_t hudEntries = 0);
+/// Bits `entry` takes in a Snapshot's packet: what the server's snapshot budget counts.
+[[nodiscard]] std::size_t snapshotHudElementEntryBits(const SnapshotHudElementEntry& entry);
+
+/// Bits `entry` takes in a Snapshot's packet: what the server's snapshot budget counts.
+[[nodiscard]] std::size_t snapshotHudTextEntryBits(const SnapshotHudTextEntry& entry);
+
+/// Bits a Snapshot's packet takes besides its entries (the message id and the counts included) with `entries` human
+/// entries, `hudEntries` HUD entries, `elementEntries` HUD elements and `textEntries` HUD texts.
+[[nodiscard]] std::size_t snapshotHeaderBits(const Snapshot& snapshot, std::size_t entries, std::size_t hudEntries = 0,
+                                             std::size_t elementEntries = 0, std::size_t textEntries = 0);
 
 /// Whether two pads travel as the same bits: both disconnected, or both connected with the same buttons, sticks and
 /// pressures.

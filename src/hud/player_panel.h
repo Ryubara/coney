@@ -34,6 +34,20 @@ struct PanelValues {
     friend bool operator==(const PanelValues&, const PanelValues&) = default;
 };
 
+/// A panel's flags that the scripts and the HUD set, not its values: what network play carries of a panel besides
+/// them (docs/guides/snapshots.md#hud-standing). Plain data: copied and compared.
+/// @coney-only network play's view of a panel's flags
+struct PanelFlags {
+    bool attached = false;         ///< `+0x40f8`.
+    std::uint32_t banner = 0x31;   ///< The banner's sheet-table record.
+    bool shown = false;            ///< `+0x40fc`.
+    bool mayShow = true;           ///< `+0x4108`.
+    bool forceShow = false;        ///< `+0x4104`.
+    std::uint32_t flashFrames = 0; ///< `+0x4114`.
+
+    friend bool operator==(const PanelFlags&, const PanelFlags&) = default;
+};
+
 /// Whether an action prompt `text` wakes the player panel: it names `Spray`, `Flash`, `Blades` or `Give Mon` (the
 /// dealers' offers and the money one). **Coney's reading**: "names" as contains, matched in any language as the
 /// English words (the research gives only these).
@@ -88,6 +102,13 @@ class PlayerPanel {
     /// FlashRageBar (`+0x4114`): the meter drawn `frames` frames and skipped as many, repeating; 0 draws it always.
     void setFlashFrames(std::uint32_t frames);
     [[nodiscard]] std::uint32_t flashFrames() const { return m_flashFrames; }
+    /// The panel's flags now.
+    /// @coney-only network play's view of a panel's flags
+    [[nodiscard]] PanelFlags flags() const;
+    /// Takes `flags` as they are: a guest's HUD taking the host's (Hud::applyStanding()). Becoming attached starts the
+    /// fade clock as attach() does; a changed flash count restarts its blinking as setFlashFrames() does.
+    /// @coney-only network play; the original has none
+    void setFlags(const PanelFlags& flags);
 
     /// One frame at game time `nowMs`: the values (counting, popups, the counters' slots), the activity that restarts
     /// the fade (a changed score, money or count, SELECT on `pad`, ForceShow), the full meter's sound, the flash

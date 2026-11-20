@@ -15,6 +15,7 @@
 
 #include "core/game_events.h"
 #include "core/pads.h"
+#include "hud/hud.h"
 #include "net/event_channel.h"
 #include "net/link_conditioner.h"
 #include "net/net_client.h"
@@ -88,10 +89,15 @@ class NetPlay final {
     void setGameHumans(std::span<const net::SnapshotHuman> humans);
     /// Hosting: each player slot's HUD in the host's game this step (net::GameHumans::huds()), which afterStep() sends
     /// with the humans in each joined player's snapshot. Handed over and kept as setGameHumans()'s humans are.
-    void setGameHuds(std::span<const net::SnapshotHud> huds);
+    void setGameHuds(std::span<const net::SnapshotHud> huds, std::span<const net::SnapshotHudElement> elements = {},
+                     std::span<const net::SnapshotHudText> texts = {});
     /// Joined: each player slot's HUD the newest decoded snapshot holds, by slot: what this game draws each player's
     /// panel from (net::playerHudState() of the words). Empty when not joined, and when hosting (a host draws its own).
     [[nodiscard]] net::SnapshotHuds arrivedHuds() const;
+    /// Joined: the HUD's standing state the newest decoded snapshot holds (net::hudStanding() of its elements and
+    /// texts), which this game's HUD takes (hud::Hud::applyStanding()). The HUD's defaults when not joined, and when
+    /// hosting.
+    [[nodiscard]] hud::HudStanding arrivedHudStanding() const;
     /// Where each snapshot's digest goes (`--digest-net`, docs/guides/multiplayer.md#digest): hosting, a line for each
     /// snapshot afterStep() sends player 2, with what it leaves them holding (net::SnapshotSender::holding()); joined,
     /// a line for each snapshot the session decoded, by the host's step it shows. Empty for none.

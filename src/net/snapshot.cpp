@@ -95,7 +95,8 @@ SnapshotSender::SnapshotSender(std::size_t budgetBytes) : m_budgetBytes(budgetBy
 }
 
 Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman> humans,
-                               std::span<const SnapshotHud> huds) {
+                               std::span<const SnapshotHud> huds, std::span<const SnapshotHudElement> /*elements*/,
+                               std::span<const SnapshotHudText> /*texts*/) {
     CONEY_ASSERT(m_sequence < 0xffffffffU); // four and a half years of snapshots at 30 a second
     Snapshot snapshot;
     snapshot.sequence = ++m_sequence;
@@ -336,6 +337,38 @@ const SnapshotHuds& SnapshotReceiver::huds() const {
 const SnapshotHuds* SnapshotReceiver::holdingHuds(std::uint32_t sequence) const {
     const Received& received = m_received.at(sequence % kSnapshotHistory);
     return sequence != 0 && received.sequence == sequence ? &received.huds : nullptr;
+}
+
+const SnapshotHudElements* SnapshotSender::holdingHudElements(std::uint32_t sequence) const {
+    const Sent& sent = m_sent.at(sequence % kSnapshotHistory);
+    return sequence != 0 && sent.sequence == sequence ? &sent.elements : nullptr;
+}
+
+const SnapshotHudTexts* SnapshotSender::holdingHudTexts(std::uint32_t sequence) const {
+    const Sent& sent = m_sent.at(sequence % kSnapshotHistory);
+    return sequence != 0 && sent.sequence == sequence ? &sent.texts : nullptr;
+}
+
+const SnapshotHudElements& SnapshotReceiver::hudElements() const {
+    static const SnapshotHudElements none;
+    const SnapshotHudElements* newest = holdingHudElements(m_newest);
+    return newest == nullptr ? none : *newest;
+}
+
+const SnapshotHudElements* SnapshotReceiver::holdingHudElements(std::uint32_t sequence) const {
+    const Received& received = m_received.at(sequence % kSnapshotHistory);
+    return sequence != 0 && received.sequence == sequence ? &received.elements : nullptr;
+}
+
+const SnapshotHudTexts& SnapshotReceiver::hudTexts() const {
+    static const SnapshotHudTexts none;
+    const SnapshotHudTexts* newest = holdingHudTexts(m_newest);
+    return newest == nullptr ? none : *newest;
+}
+
+const SnapshotHudTexts* SnapshotReceiver::holdingHudTexts(std::uint32_t sequence) const {
+    const Received& received = m_received.at(sequence % kSnapshotHistory);
+    return sequence != 0 && received.sequence == sequence ? &received.texts : nullptr;
 }
 
 const SnapshotHumans* SnapshotReceiver::holding(std::uint32_t sequence) const {
