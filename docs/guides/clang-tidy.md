@@ -56,7 +56,7 @@ CI failed, with the local pass against an MSVC `ci` compile database of the same
 
 | Pull request | CI's findings | Found here | Not found here, and why |
 | --- | --- | --- | --- |
-| [#1487](issue:1487) | `tests/warriors/xbox_save_test.cpp:309` `bugprone-unchecked-optional-access` | MEASURE-1487 | MEASURE-1487-WHY |
+| [#1487](issue:1487) | `tests/warriors/xbox_save_test.cpp:309` `bugprone-unchecked-optional-access` | it | nothing; the local run also gave `src/fileio/qcow2_image.h:39` `bugprone-exception-escape` in the defaulted move constructor, which CI did not: Microsoft's `std::map` allocates a node when moved, libstdc++'s does not, so the constructor can throw only on Windows (advice here, below) |
 | [#1488](issue:1488) | `src/gui/mod_ui/ui_model.cpp:45` `bugprone-unused-return-value`; `src/gui/mod_ui/ui_screen.cpp:447` `bugprone-optional-value-conversion` | the first | the second: the check matches the shape of `std::optional`'s converting constructor, which libstdc++ and Microsoft's library write differently, so `event(kind, *chosen)` into a `std::optional` parameter is not matched here |
 | [#1492](issue:1492) | `tests/net/event_channel_test.cpp:345` and `:346` `bugprone-implicit-widening-of-multiplication-result` | MEASURE-1492 | MEASURE-1492-WHY |
 | [#1493](issue:1493) | `src/debug/lua_console.cpp:76` `bugprone-exception-escape` | none | `bugprone-exception-escape` follows `throw` expressions through the function bodies it can see: libstdc++ throws `std::bad_alloc` and `std::length_error` from inline code in its headers, Microsoft's library from functions compiled into its DLL (`_Xlength_error`, `_Xbad_alloc`), so a destructor that may allocate looks safe here |
@@ -64,6 +64,12 @@ CI failed, with the local pass against an MSVC `ci` compile database of the same
 So the local check catches most of what CI reports, and the rest is of two kinds: a finding in the standard library's
 shape (`bugprone-exception-escape` through an allocation, `bugprone-optional-value-conversion`), and a finding in
 code only Linux compiles. Those still arrive as CI annotations and are fixed on the branch.
+
+**Advice.** `bugprone-exception-escape` differs both ways, so on Windows its findings are printed as advice
+(`advice, not a failure (may differ from CI): ...`) and fail nothing; on Linux, where the library is CI's, they fail
+the check as any other. The checks treated so are `ci.tidy.local_advisory` of
+[.github/conventions.yml](repo:.github/conventions.yml); a check joins the list only when it is measured to differ
+both ways, since a check that only misses findings here costs nothing to keep failing on.
 
 ## On a pull request {#on-a-pull-request}
 

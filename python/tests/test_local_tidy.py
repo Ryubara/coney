@@ -175,3 +175,24 @@ def test_the_versioned_name_on_path_comes_before_the_plain_one(tmp_path: Path, m
 def test_no_compile_database_cannot_run(tmp_path: Path) -> None:
     with pytest.raises(TidyUnavailable, match="no compile database"):
         local_tidy.compile_database(tmp_path, "ci")
+
+
+def test_on_windows_a_check_that_follows_the_standard_library_is_advice_not_a_failure(tree: Path) -> None:
+    advisory = CONVENTIONS.ci.tidy.local_advisory[0]
+    output = f"{tree}/src/a.cpp:1:1: error: may throw [{advisory},-warnings-as-errors]\n"
+    database = tree / "build" / "compile_commands.json"
+    entries = json.loads(database.read_text(encoding="utf-8"))
+    entries.append({**entries[0], "file": str(tree / "src/b.cpp")})
+    database.write_text(json.dumps(entries), encoding="utf-8")
+
+    def run(windows: bool) -> local_tidy.LocalResult:
+        tidy = Tidy({"src/a.cpp": (1, output)})
+        return run_local(
+            tree, "main", CONVENTIONS, tidy, program="t", build_dir=tree / "build", jobs=1, diff=DIFF, windows=windows
+        )
+
+    here = run(windows=True)
+    assert here.ok and here.result.findings == [] and [item.check for item in here.advisory] == [advisory]
+    assert here.lines() == [f"advice, not a failure (may differ from CI): src/a.cpp:1:1 [{advisory}] may throw"]
+    # on Linux the library is CI's, so the same finding fails
+    assert not run(windows=False).ok

@@ -1414,6 +1414,12 @@ ci:
     # `clang-tidy` check runs here (the Windows download of `workspace init --fetch clang-tidy` is of this major, at the
     # version the runner installs; a test keeps the three equal): another major reports other findings.
     llvm_major: 19
+    # Checks whose findings follow the standard library's own code: the local run on Windows reads Microsoft's, CI
+    # libstdc++, and the two differ both ways (MSVC's std::map move constructor allocates, so a defaulted move
+    # constructor holding a map is reported here and not in CI; libstdc++ throws std::bad_alloc from inline code, MSVC
+    # from its DLL, so an allocating destructor is reported in CI and not here). The local run prints their findings as
+    # advice and does not fail on them (docs/guides/clang-tidy.md#differences); CI still fails on them.
+    local_advisory: [bugprone-exception-escape]
   # A failed run on the default branch (the nightly build, a push, a manual run) opens a P-critical issue, or comments
   # on the one that is still open for the same workflow (`coney-tools ci report-failure`, workflow ci-failure.yml).
   failure:

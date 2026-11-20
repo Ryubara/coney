@@ -20,6 +20,8 @@ Where it differs from CI, and why (docs/guides/clang-tidy.md#local has the measu
   filter is applied here, after clang-tidy, instead of by clang-tidy's `--line-filter` (`RunOptions.line_filter`).
 * **A build-setup change** (`ci.tidy.whole_when`) makes CI check every file; here only the change's own sources are
   checked, and CI's whole-codebase pass covers the rest.
+* **Advice.** On Windows the findings of the checks `ci.tidy.local_advisory` names (they follow the standard library's
+  own code: `bugprone-exception-escape`) are printed as advice and fail nothing, as they differ from CI's both ways.
 
 The program is `clang_tidy_program` of coney.local.toml, else the copy `workspace init --fetch clang-tidy` put in the
 workspace's tools folder, else `clang-tidy-<major>` or `clang-tidy` on PATH; its major version must be CI's
@@ -59,18 +61,27 @@ class LocalResult:
     result: ci_tidy.TidyResult
     program: str
     notes: list[str] = field(default_factory=list)
+    #: Findings of the checks `ci.tidy.local_advisory` names, on Windows: printed as advice, never a failure (they
+    #: follow the standard library's own code, which differs from CI's). `result.findings` holds the rest.
+    advisory: list[ci_tidy.Finding] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
-        """True when nothing was found on the changed lines and clang-tidy ran on every source."""
+        """True when nothing but advice was found on the changed lines and clang-tidy ran on every source."""
         return self.result.ok
 
     def lines(self) -> list[str]:
-        """Each finding as `path:line:column [check] message`, then each failure of clang-tidy itself."""
-        found = [
-            f"{item.path}:{item.line}:{item.column} [{item.check}] {item.message}" for item in self.result.findings
-        ]
-        return found + [f"clang-tidy failed: {failure}" for failure in self.result.failures]
+        """Each finding as `path:line:column [check] message`, then each failure of clang-tidy itself, then the advice
+        (marked as such)."""
+        found = [_line(item) for item in self.result.findings]
+        failed = [f"clang-tidy failed: {failure}" for failure in self.result.failures]
+        advice = [f"advice, not a failure (may differ from CI): {_line(item)}" for item in self.advisory]
+        return found + failed + advice
+
+
+def _line(item: ci_tidy.Finding) -> str:
+    """A finding as `path:line:column [check] message`."""
+    return f"{item.path}:{item.line}:{item.column} [{item.check}] {item.message}"
 
 
 def header_filter(config_text: str, windows: bool) -> str | None:
@@ -205,4 +216,6 @@ def run_local(
     runnable = ci_tidy.TidyPlan([unit for unit in plan.units if unit.source in known], plan.lines, plan.notes)
     result = ci_tidy.run_plan(runnable, root, build_dir, program, jobs, run, options)
     result.failures += [f"{source}: not in the compile database of {build_dir}; build again" for source in missing]
-    return LocalResult(plan, result, program, notes)
+    advisory = [item for item in result.findings if windows and item.check in settings.local_advisory]
+    result.findings = [item for item in result.findings if item not in advisory]
+    return LocalResult(plan, result, program, notes, advisory)

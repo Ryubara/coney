@@ -231,7 +231,10 @@ def clang_tidy_step(context: StepContext) -> StepResult:
     if not count:
         return StepResult("clang-tidy", True, "no C++ source to check on the changed lines")
     if local.ok:
-        return StepResult("clang-tidy", True, f"clean on the changed lines ({checked})")
+        advice = f"; {len(local.advisory)} advice that may differ from CI" if local.advisory else ""
+        return StepResult(
+            "clang-tidy", True, f"clean on the changed lines ({checked}{advice})", output=tuple(local.lines())
+        )
     found = len(local.result.findings)
     detail = f"{found} finding{'' if found == 1 else 's'} on the changed lines ({checked})"
     if local.result.failures and not found:
