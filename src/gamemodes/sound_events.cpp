@@ -25,11 +25,13 @@ constexpr std::size_t kKeptBeforePrune = 64;
 // A volume as it travels: thousandths, 0 to 1000.
 constexpr float kVolumeScale = 1000.0F;
 
+// @coney-only a volume as a guest's event carries it (network play)
 // `volume` (0-1) in thousandths.
 std::uint32_t thousandths(float volume) {
     return static_cast<std::uint32_t>(std::lround(std::clamp(volume, 0.0F, 1.0F) * kVolumeScale));
 }
 
+// @coney-only bounds the sounds kept for a guest's later stop and move (network play)
 // Lets go of the kept sounds `sound` says no longer play, once there are kKeptBeforePrune of them.
 template <typename Key, typename Value, typename HandleOf>
 void pruneEnded(std::map<Key, Value>& kept, const script::SoundHost* sound, HandleOf handleOf) {
