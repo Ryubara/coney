@@ -21,7 +21,8 @@ namespace coney::scenes {
 /// One scene a script builds a scene table for, as research/references/scenes.yaml records it: the scene's name, then
 /// its Cast and Props, one entry per role or object slot in order, separated by spaces. An entry is a character model
 /// or object type, `a|b` when the script makes the human as either type, `player` for the player, `-` for a role or
-/// slot the script leaves unbound and `?` for one the scripts' walk did not resolve.
+/// slot the script leaves unbound and `?` for one the scripts' walk did not resolve (and for a door's leaf, which is
+/// no object type the preview can make).
 struct ScriptedSceneCast {
     std::string_view scene;
     std::string_view cast;

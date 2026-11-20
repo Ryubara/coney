@@ -1125,9 +1125,21 @@ later sound update), a cinematic's start waits for it, event 13 starts whatever 
 cinematic given up stops it; otherwise it plays on past the scene's end. The music ducks to 0.75 while a cinematic
 runs. The log says `scene sound: <hash> prepared` (or `pending`) and `scene sound: started`; events 14 and 71 play at
 the human the scene holds, else unplaced on the effects bus. **Coney stand-ins:**
-captions, particles and rumble are counted; a puppet's model follows its role's name (`warrcl` is Cleon's `warr_cl`,
-and so on); a cast human keeps running its brain while a scene poses it.
+captions, particles and rumble are counted; a cast human keeps running its brain while a scene poses it.
 `--scene NAME` with `--play-level` plays one scene at once ([Running Coney](../guides/running.md#playing-a-level)).
+
+**The preview's cast** (`--scene`, Coney's test aid; `repo:src/scenes/scene_casts.h`). A preview has no script to bind
+its roles, so it binds them as the scripts would ([Cast and props](#cast)): each role whose scene the scripts build a
+table for is drawn as the character type that table binds to it (`l99_c1`'s Ash, role 7 `warrashcv`, is `warr_ty_cv`
+and its Vermin `warr_ve_gen`, as [the runtime read](#cast-runtime) found), a role the table leaves unbound (`-`, or past
+its end) plays nothing, `player` is player 1, and each object slot gets a new, pinned object of the type the table binds
+(`Coney_Sub2`'s and `Coney_Sub4`'s six `dyn_s_train_med_full` cars), pinned as `Scene_BindObject` (`0x00354280`) pins a
+bound object's record. The bindings are the Cast and Props columns of the [scenes list](../references/scenes.md), which
+`coney-tools refs render` writes into `repo:src/scenes/scene_casts_table.cpp`. **Coney stand-ins** where the list says
+nothing: a scene no script plays, or a role the scripts' walk did not resolve (`?`), is drawn from its role's name (the
+level99 names, `warrcl` as `warr_cl` and so on; any other name as player 1's model); of two or more types (`a|b`) the
+first is drawn; a slot bound to a door's leaf, or unresolved, stays empty; and player 1 takes `warrrecv` when the table
+names no `player`.
 
 **In play** (`--play-level level99`, headless): at checkpoint 1 `StartAmbient` runs `SuperRunScene(IntroScene)`, and
 `l99_c1` plays through the scripts with its seven bound humans posed on the stage; it ends after 2,026 frames, calls
@@ -1149,8 +1161,9 @@ trace above.
 - Event 30's argument layout (colour at `+8` and cone at `+0x10` overlap as three floats).
 - How a role's model is decided (answered: by the bound human's character type; the name is a label, [Cast and
   props](#cast), confirmed at runtime for `l99_c1`, [Cast at runtime](#cast-runtime)). Still open: the 204 roles
-  and 41 props of scripted scenes the static walk does not resolve, and which of two or more `HuCreate` types a
-  level's checkpoint picks in the other either-or roles (the `scene_cast_state` scenario reads them from a state
+  and 41 props of scripted scenes the static walk does not resolve (the preview draws such a role from its name), and
+  which of two or more `HuCreate` types a level's checkpoint picks in the other either-or roles (the preview draws the
+  first) (the `scene_cast_state` scenario reads them from a state
   saved before each scene starts; only `level99` and `level80` states exist). What the object bound to the subway
   scenes' `train_sound` slot is (no world-object type).
 - Which level a scene plays in (answered for the 333 scenes a script, a Subtitles chunk or a movie places,

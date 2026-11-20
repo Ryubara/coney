@@ -482,9 +482,11 @@ uv run --project python coney-tools refs render [--check]
 ```
 
 Checks every list against its schema and writes `docs/references/index.md` (with the families of
-`still-to-list.yaml`) and one page per list. With `--check` it
-writes nothing and exits with 1 when a page is out of date; CI runs it that way. A list that fails its schema stops
-both, with each problem named (exit code 2).
+`still-to-list.yaml`) and one page per list, and the C++ tables the engine reads from the lists:
+`src/scenes/scene_casts_table.cpp`, the Cast and Props of every scene that has them, which the scene preview
+(`--scene`) plays a scene with ([Scenes: Coney's implementation](../research/scenes.md#coneys-implementation)). With
+`--check` it writes nothing and exits with 1 when a page or a table is out of date; CI runs it that way. A list that
+fails its schema stops both, with each problem named (exit code 2).
 
 ```sh
 uv run --project python coney-tools refs compress-images [FOLDER]

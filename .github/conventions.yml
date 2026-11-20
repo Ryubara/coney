@@ -113,6 +113,7 @@ paths:
     - {path: "docs/guides/pcsx2-recipes/", by: "coney-tools pcsx2 recipes render"}
     - {path: "docs/guides/console-commands.md", by: "coney-tools console render"}
     - {path: "src/console/commands_table.cpp", by: "coney-tools console render-cpp"}
+    - {path: "src/scenes/scene_casts_table.cpp", by: "coney-tools refs render"}
   # The agent entry files hold one line that imports AGENTS.md and nothing of their own, so the rules cannot drift.
   pointer_files: {files: ["CLAUDE.md", "GEMINI.md"], line: "@AGENTS.md", max_bytes: 400}
   # Only these files may hold the repository's or the docs site's address.
