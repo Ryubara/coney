@@ -161,8 +161,10 @@ void Gl3Renderer::drawHuman(const graphics::FrameDescription& frame, const graph
     if (characterSkinPalette(&atomic) != nullptr) {
         if (!m_palette) {
             m_palette = std::make_unique<BonePalette>();
-            m_palette->fill(0.0F);
         }
+        // Zeros past the draw's bones, as a mesh's own palette is before its first pose, so no matrix of the human
+        // drawn before is left in it.
+        m_palette->fill(0.0F);
         std::vector<anim::Mat34> skinning;
         for (const graphics::Transform3d& bone : frame.bonesOf(draw)) {
             skinning.push_back(anim::Mat34{.x = {bone.right[0], bone.right[1], bone.right[2]},

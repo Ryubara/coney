@@ -65,9 +65,9 @@ class PlayLighting {
     /// pass), blended by the texture's alpha with no alpha test, Z tested and written, lit and fogged as the first.
     /// Onto the frame description with his pose (RenderEngine::drawScene(), docs/engine/renderer.md#frame-description),
     /// or, while the debug tools' mesh views are on or his meshes are not held by id, through the rig. Records the
-    /// passes drawn in `mesh` (CharacterMesh::drawnPasses()) and returns them: 0 too far, 1, or 2 with the blood layer.
+    /// passes drawn in `mesh` (CharacterMesh::drawnPasses()): 0 too far, 1, or 2 with the blood layer.
     /// @orig 0x00174320 HumanRender_Draw (HumanRender.cpp)
-    std::size_t drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood);
+    void drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood);
     /// Keeps a blob shadow for a human standing at `feet` (game axes) on `mesh`, for this frame's drawShadows().
     void addShadow(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
     /// Draws and forgets this frame's blob shadows.

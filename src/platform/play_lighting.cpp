@@ -100,10 +100,10 @@ void PlayLighting::step(const WorldView& view, const raycast::CollisionMesh& mes
     m_scene->stepped();
 }
 
-std::size_t PlayLighting::drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood) {
+void PlayLighting::drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood) {
     rw::Atomic* atomic = mesh.atomic();
     // Faded out from 60 to 70 m from the camera, and not drawn beyond. **Coney's choice** (a stand-in): the distance is
-    // the posed body's sphere centre's, and the first second's fade-in is not drawn.
+    // the posed body's sphere centre's, and the first second's fade-in is not drawn (#1526).
     const rw::Sphere* sphere = atomic->getWorldBoundingSphere();
     const world::Vec3 eye = m_scene->pose().position;
     const float dx = sphere->center.x - eye.x;
@@ -112,7 +112,7 @@ std::size_t PlayLighting::drawHumanPasses(CharacterMesh& mesh, bool player, rw::
     const float fade = graphics::humanDistanceFade(std::sqrt((dx * dx) + (dy * dy) + (dz * dz)));
     if (fade <= 0.0F) {
         mesh.setDrawnPasses(0);
-        return 0;
+        return;
     }
     // His materials' own colours (HuColor is white) times the player's shadow dimming, the alpha the fade; the blood
     // layer takes the same colours, so both passes are lit alike, as the original's vertex colours are equal.
@@ -129,7 +129,7 @@ std::size_t PlayLighting::drawHumanPasses(CharacterMesh& mesh, bool player, rw::
     if (!held || m_scene->meshViewsOn()) {
         drawHumanInRig(mesh, material, hidden, blood);
         mesh.setDrawnPasses(passes);
-        return passes;
+        return;
     }
     // The frame description's draw: the body by id with the blood layer as its dual layer, the placement, the pose,
     // the colours, the humans' states as the play mode set them and his lights, selected once for both passes as the
@@ -153,7 +153,6 @@ std::size_t PlayLighting::drawHumanPasses(CharacterMesh& mesh, bool player, rw::
     const std::vector<graphics::SceneLight> lights = m_scene->humanLights(atomic, hidden);
     m_engine.drawScene(draw, lights, bones, blood);
     mesh.setDrawnPasses(passes);
-    return passes;
 }
 
 void PlayLighting::drawHumanInRig(CharacterMesh& mesh, const graphics::Material3d& material, bool hidden,
