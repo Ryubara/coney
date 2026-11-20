@@ -252,9 +252,9 @@ The approach and the takedown, confirmed (code) at `0x0027e040`, `0x0027da10`, `
    (`Player_LockOnTarget`) and sets state `0x8` (the L1 target bit), but **does not lock on** (`Player_LockOn` is
    skipped while hidden) and does not enter the fight stance, so the player keeps the stealth walk. Letting go of
    L1 clears `0x8` (and sets `0x20000000`, the anim rebuild) and a re-lock delay (record `+0xf4` = now + 264 ms),
-   and only then ends a throw aim (`Human_ExitThrowAim`): unlike the release out of hiding (`0x0027c120`), which in
-   a throw aim ends the aim instead of `Player_OnL1Released`, the clear and the delay are not skipped in the aim. L1
-   while sprinting does nothing.
+   and only then ends a throw aim (`Human_ExitThrowAim`): unlike the release out of hiding (`0x0027c120`, confirmed
+   (code)), which in a throw aim ends the aim instead of `Player_OnL1Released`, the clear and the delay are not
+   skipped in the aim. L1 while sprinting does nothing.
 2. **The creep**: hidden with a target (`Human_IsStalkingTarget`, states `0x8` and `0x200000`) the idle and walk mix
    in the ready clips 635 `STEALTH_READY_IDLE` / 636 `STEALTH_READY_WALK` (`Human_SetStealthReadyBlend`): weight 1
    within the kill clip's far range (637: 1.5 m) of the target, falling linearly to 0 at 1 m beyond it. The speed is
