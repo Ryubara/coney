@@ -490,7 +490,7 @@ TEST_CASE("The UI model refuses a long text, a long list and a fifth HUD screen"
 }
 
 TEST_CASE("Destroying an open menu screen closes it and gives the screen under it the focus") {
-    // Expected: Coney's own rule, docs/guides/studio/ui.md#screens
+    // Expected: Coney's own rule, docs/guides/studio/ui.md#widgets
     Driver d;
     const UiScreenId under = menuScreen(d.model);
     const UiWidgetId underList = widget(d.model, under, UiWidgetKind::List, "list");
@@ -519,7 +519,7 @@ TEST_CASE("Destroying an open menu screen closes it and gives the screen under i
 }
 
 TEST_CASE("Destroying a HUD screen takes it off the shown ones and a screen never opened queues nothing") {
-    // Expected: Coney's own rule, docs/guides/studio/ui.md#screens
+    // Expected: Coney's own rule, docs/guides/studio/ui.md#widgets
     UiModel model;
     model.registerProject(kProject, "Yard Brawl");
     const UiScreenId hud =
