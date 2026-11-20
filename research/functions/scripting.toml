@@ -977,6 +977,22 @@ coney = "src/scripting/level_bindings.cpp:makeCfgSetDatabaseSizes"
 status = "legacy"
 
 [[function]]
+address = 0x0036c3d8
+name = "lua_GetDifficulty"
+page = "../references/bindings/level.md#getdifficulty"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeGetDifficulty"
+status = "compared"
+
+[[function]]
+address = 0x0036c440
+name = "lua_SetDifficulty"
+page = "../references/bindings/level.md#setdifficulty"
+level = "confirmed-code"
+coney = "src/scripting/script_bindings.cpp:makeSetDifficulty"
+status = "compared"
+
+[[function]]
 address = 0x0036ca18
 name = "lua_GetPosition"
 page = "../references/bindings/util.md#getposition"

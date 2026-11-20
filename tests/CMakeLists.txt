@@ -302,6 +302,7 @@ add_executable(coney_tests
     scripting/trigger_bindings_test.cpp
     scripting/world_bindings_test.cpp
     warriors/created_humans_test.cpp
+    warriors/difficulty_test.cpp
     warriors/disk_profile_store_test.cpp
     warriors/game_over_test.cpp
     warriors/level_table_test.cpp

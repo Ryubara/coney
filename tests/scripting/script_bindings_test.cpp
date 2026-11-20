@@ -141,6 +141,32 @@ TEST_CASE("the getters follow tolua's conventions: true is the number 1, false i
     CHECK(h.first("GetLevelId").number() == 0.0);
 }
 
+TEST_CASE("SetDifficulty keeps the byte GetDifficulty reads, as an unsigned number cut to its low byte",
+          "[script_bindings]") {
+    // Expected: difficulty.md#setting, confirmed (code)
+    Harness h;
+    h.call("SetDifficulty", {Value(3.0)});
+    CHECK(h.state.difficulty == 3);
+    CHECK(h.first("GetDifficulty").number() == 3.0);
+    // The profile's difficulty is another byte: SetDifficulty leaves it alone.
+    CHECK(h.first("GetProfileDifficulty").number() == 1.0);
+    h.call("SetDifficulty", {Value(4.0)});
+    CHECK(h.first("GetDifficulty").number() == 4.0);
+    // Truncated toward zero, then cut to the byte: 2.9 is 2, 260 is 4, 255 stays 255.
+    h.call("SetDifficulty", {Value(2.9)});
+    CHECK(h.first("GetDifficulty").number() == 2.0);
+    h.call("SetDifficulty", {Value(260.0)});
+    CHECK(h.first("GetDifficulty").number() == 4.0);
+    h.call("SetDifficulty", {Value(255.0)});
+    CHECK(h.first("GetDifficulty").number() == 255.0);
+    // A negative number is 0, and so is a missing argument.
+    h.call("SetDifficulty", {Value(-1.0)});
+    CHECK(h.first("GetDifficulty").number() == 0.0);
+    h.call("SetDifficulty", {Value(2.0)});
+    h.call("SetDifficulty");
+    CHECK(h.first("GetDifficulty").number() == 0.0);
+}
+
 TEST_CASE("CfgLevelName fills the level table that GetLevelId reads", "[script_bindings]") {
     Harness h;
     h.call("CfgLevelName", levelArgs(0, "level100", 100));
@@ -213,11 +239,12 @@ TEST_CASE("the front-end bindings reach the host", "[script_bindings]") {
 
 TEST_CASE("stubs return their defaults; recording stubs keep their arguments; strings reach the table",
           "[script_bindings]") {
+    // Expected: scripting.md#coneys-implementation, Coney's own behaviour (the stubs' documented defaults)
     Harness h;
     const double firstHandle = h.first("ObjSpawn", {str("object")}).number().value_or(-1.0);
     CHECK(firstHandle >= 1.0);
     // A stub with no result gives none.
-    CHECK(h.call("SetDifficulty", {Value(1.0)}).empty());
+    CHECK(h.call("SetCopGuardArrestedRange", {Value(1.0)}).empty());
     // Without a scene system the scene bindings outside the stand-in (below) play nothing and give nil.
     CHECK(h.first("SceneIsPreloaded", {str("scene")}).isNil());
     CHECK(h.first("SceneLength", {Value(1.0)}).isNil());

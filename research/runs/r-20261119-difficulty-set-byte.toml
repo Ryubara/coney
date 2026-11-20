@@ -1,0 +1,34 @@
+version = 1
+id = "r-20261119-difficulty-set-byte"
+date = "2026-11-19"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "5e40717fab502ff56d3db76c26584720dcbc88109b14c74c5ed654c40ab7b79b"
+
+[who]
+agent = "unknown"
+type = "unknown"
+model = "unknown"
+source = "unverified"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level99 street: the lua recipe ran SetDifficulty(260), SetDifficulty(-1) and SetDifficulty(2.9) in turn; after each the byte W_GameState+0x154 (game state at 0x01fd8400, read through the pcsx2 MCP debug server) was read"
+
+[values]
+after_260 = 4
+after_minus_1 = 0
+after_2_9 = 2
+
+[addresses]
+game_state = 0x01fd8400
+difficulty = 0x01fd8554
+GameState_SetDifficulty = 0x0041d810

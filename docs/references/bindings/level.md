@@ -1308,7 +1308,7 @@ Sets the difficulty in force (`W_GameState + 0x154`). Each `config_<difficulty>.
 - **Evidence:** confirmed (code) at `0x0041d810`; detail: traced
 - **Wrapper** `0x0036c440` (registered by `RegisterBindings`); **calls** `0x0041d810`
 - **Used by** 6 of 467 script chunks (6 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetGameMode {#setgamemode}
 

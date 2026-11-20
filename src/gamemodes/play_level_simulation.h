@@ -412,9 +412,9 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // 665 already plays. **Coney's stand-in**: the full-health rage use (upgrade (6, 8)) is not built.
     // @orig 0x002843f8 Player_UseItemCommand (unknown)
     void stepFlash();
-    // `Flash_Use`: one flash spent, interface sound 23 (`vags/misc/flash`), the health filled and wounding ended, and
-    // the HUD's ring request. **Coney's stand-in**: always the full heal (Coney has no difficulty setting; above
-    // normal the original heals a player by half), and the player's screen effect reset is not built.
+    // `Flash_Use`: one flash spent, interface sound 23 (`vags/misc/flash`), the heal (in full up to hard, half the
+    // maximum on fury and in the Rumble, difficulty::flashHealth()) with wounding ended, and the HUD's ring request.
+    // The player's screen effect reset is not built.
     // @orig 0x00284280 Flash_Use (unknown)
     void useFlash(human::Human& human);
     // Player 1's square may strike the world objects that are strike targets, the cars he faces and the level's whole
@@ -616,13 +616,14 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     std::vector<world_objects::CarHitEffect> m_carHitEffects; // the cars' hit effects of the newest step
     GameOverCheck* m_gameOver = nullptr;                      // the game-over check (GameState::gameOver); not owned
     const std::array<PadOptions, 2>* m_padOptions = nullptr;  // the pads' options (GameState::saved.pads); not owned
-    std::function<void(std::string_view)> m_missionFailed;    // opens the mission-failed mode with a title
-    bool m_failShown = false;                                 // the failure's first hand-off update ran
-    bool m_wasMugging = false;                                // player 1 was mugging at the last step
-    std::optional<bool> m_mugEnding;                          // a decided mugging's result, until its end clip finishes
-    std::uint32_t m_mugEndClip = 0;                           // that end clip
-    LevelPickups* m_pickups = nullptr;                        // the level's loose objects for the pick-up; not owned
-    int m_theftStage = 0;                                     // the theft's stage the panel last showed
+    const std::uint8_t* m_difficulty = nullptr;            // the difficulty in force (GameState::difficulty); not owned
+    std::function<void(std::string_view)> m_missionFailed; // opens the mission-failed mode with a title
+    bool m_failShown = false;                              // the failure's first hand-off update ran
+    bool m_wasMugging = false;                             // player 1 was mugging at the last step
+    std::optional<bool> m_mugEnding;                       // a decided mugging's result, until its end clip finishes
+    std::uint32_t m_mugEndClip = 0;                        // that end clip
+    LevelPickups* m_pickups = nullptr;                     // the level's loose objects for the pick-up; not owned
+    int m_theftStage = 0;                                  // the theft's stage the panel last showed
     std::optional<world_objects::LockPick> m_lockPick;
     int m_lockPickDifficulty = 0;
     bool m_flashRingRequest = false;      // a flash used: the HUD's ring request (docs/research/hud.md)
