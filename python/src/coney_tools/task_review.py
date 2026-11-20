@@ -54,16 +54,26 @@ from coney_tools import (
     orig_pairs,
     orig_review,
     pr_diff,
+    pr_proof,
     pr_review,
     pr_text,
     pr_text_file,
+    review_delta,
     review_verdict,
     stamps,
     task_overlap,
     unit,
 )
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.conventions import REVIEW_KINDS, Conventions, TaskReview, load_conventions_leniently
+from coney_tools.conventions import (
+    REVIEW_KINDS,
+    Conventions,
+    ConventionsError,
+    DeltaReview,
+    TaskReview,
+    load_conventions_leniently,
+    load_release_rules_at,
+)
 from coney_tools.repo_checks import check_docs, check_title
 from coney_tools.unit_record import UnitRecordError, log_task_of, read_record
 
@@ -110,6 +120,10 @@ class ReviewEnv:
     #: The `who` of the stamp this command writes.
     who: Mapping[str, Any]
     clock: Callable[[], datetime] = lambda: datetime.now(UTC)
+    #: The delta rules of the default branch (`delta_rules_of`), never the branch's own; None: every review is full.
+    delta_rules: DeltaReview | None = None
+    #: Why `delta_rules` is None when the default branch's rules could not be read (said as the reason for a full one).
+    delta_note: str = ""
 
     @property
     def folder(self) -> Path:
@@ -259,9 +273,10 @@ def _text_problems(env: ReviewEnv, files: list[str], text: pr_text_file.TextFile
 
 
 def _full_pass_problem(report: stamps.Report, diff: str, pairs_set: str) -> list[str]:
-    """For a text review: the newest full review must be a pass that still covers the code and the pairs."""
+    """For a text review: the newest review of the code (full, or a delta stacked on a full one) must be a pass that
+    still covers the code and the pairs."""
     for stamp in reversed(report.stamps):
-        if stamp.step == "reviewed" and stamp.detail.get("scope") == "full":
+        if stamp.step == "reviewed" and stamp.detail.get("scope") in review_delta.CODE_SCOPES:
             if (
                 stamp.result == "pass"
                 and stamp.covers.get(stamps.CHANGE) == diff
@@ -344,7 +359,13 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
     else:
         problems += _text_problems(env, files, text)
     tests = []
-    if mode == "full":
+    plan = None
+    if mode == review_delta.DELTA:
+        plan = _plan(env, report, base, tip, diff, found, pairs_set, text)
+        if plan.delta is None:
+            problems += [f"delta: {reason} (run a full review: `task review --full`)" for reason in plan.reasons]
+    delta = plan.delta if plan is not None else None
+    if mode in review_delta.CODE_SCOPES:
         problems += function_problems
         problems += [f"copy-check: {p}" for p in env.copy_problems(worktree, env.base_ref)]
         problems += [f"docs check: {p}" for p in env.docs_problems(worktree, env.base_ref)]
@@ -361,6 +382,13 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
                 problems.append(f'fails-first: "{name}": {stale} (run `orig fails-first`)')
     else:
         problems += _full_pass_problem(report, diff, pairs_set)
+    # A delta review judges the delta alone: its files, the `@orig` functions whose comments, tag or declaration it
+    # edits, those that moved in it, and the description, read against what the delta changes
+    # (docs/guides/review/task.md#delta).
+    judged = list(delta.files) if delta is not None else files
+    moved_judged = [dict(f) for f in delta.moved] if delta is not None else moved
+    functions_judged = [dict(f) for f in delta.functions] if delta is not None else functions
+    kinds = _kinds(judged, functions_judged, moved_judged, env, "full" if mode != "text" else mode)
     packet: dict[str, Any] = {
         "v": review_verdict.VERSION,
         "task": env.unit.task,
@@ -368,14 +396,14 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
         "tip": tip,
         "base": base,
         "diff_sha256": diff,
-        "kinds": _kinds(files, functions, moved, env, mode),
-        "files": files,
-        "functions": functions if mode == "full" else [],
+        "kinds": kinds,
+        "files": judged,
+        "functions": functions_judged if mode in review_delta.CODE_SCOPES else [],
         # Functions that kept their code and tags under another class, name or file: their compare stands, but the
         # reviewer diffs the two copies and their declarations (docs/guides/review/orig.md#moved).
-        "moved": moved if mode == "full" else [],
+        "moved": moved_judged if mode in review_delta.CODE_SCOPES else [],
         "pairs_set_sha256": pairs_set,
-        "pages": _pages(files, env, tip) if mode == "full" else [],
+        "pages": _pages(judged, env, tip) if mode in review_delta.CODE_SCOPES else [],
         "tests": tests,
         "text": {
             "file": env.text_file.name,
@@ -397,7 +425,92 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
         },
         "rubric_version": env.conventions.pull_requests.orig_review.rubric_version,
     }
+    if delta is not None:
+        packet["delta"] = review_delta.packet_entry(delta, delta_file(env))
     return packet, problems
+
+
+def delta_file(env: ReviewEnv) -> Path:
+    """Where the reviewer reads the delta: in the review folder, named by `tasks.review.delta.diff_file`."""
+    rules = env.delta_rules
+    return env.folder / (rules.diff_file if rules is not None else "DELTA.diff")
+
+
+def delta_rules_of(worktree: Path, own: Conventions) -> tuple[DeltaReview | None, str]:
+    """The delta rules of `origin/<default branch>`, as `pr verify` reads its release rules (`load_release_rules_at`):
+    a branch that edits its own `tasks.review.delta` (`full_when`, `test_paths`) must not decide its own review. None
+    when the default branch has none (every review is a full one), with why when its rules cannot be read (said only
+    as the reason the review is a full one, so a full review is not held up by it)."""
+    try:
+        ref = f"{pr_proof.RULES_REMOTE}/{pr_proof.default_branch(worktree)}"
+        rules, _ = load_release_rules_at(worktree, ref, own)
+    except (ConfigError, ConventionsError) as error:
+        return None, str(error)
+    return rules.tasks.review.delta, ""
+
+
+def _plan(
+    env: ReviewEnv,
+    report: stamps.Report,
+    base: str,
+    tip: str,
+    diff: str,
+    found: Mapping[str, Any],
+    pairs_set: str,
+    text: pr_text_file.TextFile,
+) -> review_delta.Plan:
+    """Whether the change as read gets a delta review (`review_delta.plan`)."""
+    if tip == base:
+        return review_delta.Plan(None, ("nothing to review",))
+    if env.delta_rules is None and env.delta_note:
+        return review_delta.Plan(None, (f"the default branch's delta rules cannot be read: {env.delta_note}",))
+    now = review_delta.Now(
+        base=base,
+        tip=tip,
+        diff=diff,
+        functions=found["functions"],
+        moved=found["moved"],
+        pairs_set=pairs_set,
+        text={
+            "title_sha256": text.title_sha256 if text.title else "",
+            "paragraph_sha256": text.paragraph_sha256 if text.paragraph else "",
+            "images_sha256": text.images_sha256,
+        },
+    )
+    return review_delta.plan(
+        env.worktree, report, now, env.base_ref, env.conventions.tasks.review, env.folder, env.delta_rules
+    )
+
+
+def delta_plan(env: ReviewEnv) -> review_delta.Plan:
+    """Whether `task review` without `--full` or `--text` gives this change a delta review, and why not when it does
+    not: the git reads `build_packet` makes, without the page and copy checks."""
+    worktree = env.worktree
+    tip = _git(worktree, "rev-parse", "--verify", "HEAD").strip()
+    base = _git(worktree, "merge-base", env.base_ref, tip).strip()
+    report = stamps.verify(env.unit.stamps, env.conventions.stamps)
+    found = orig_review.pr_stamp(worktree, tip, base) if tip != base else {"functions": [], "moved": []}
+    pairs_set = _function_problems(env, found["functions"], report, tip)[1]
+    try:
+        text = pr_text_file.read(env.text_file, env.unit.dir)
+    except ConfigError:
+        text = pr_text_file.TextFile(env.text_file, "", "", (), ())
+    diff = env.change_hash(worktree, base, tip)
+    return _plan(env, report, base, tip, diff, found, pairs_set, text)
+
+
+def choose_mode(env: ReviewEnv) -> str:
+    """The review a change gets when the caller names none: a delta review when an earlier passing review still holds
+    for the rest, else a full one; why it is full is said on stderr."""
+    plan = delta_plan(env)
+    if plan.delta is not None:
+        _say(
+            f"task review {env.unit.task}: a delta review since stamp #{plan.delta.since.seq} "
+            f"({len(plan.delta.files)} file(s)); --full reviews the whole change"
+        )
+        return review_delta.DELTA
+    _say(f"task review {env.unit.task}: a full review ({'; '.join(plan.reasons)})")
+    return "full"
 
 
 # --- dry run ---------------------------------------------------------------------------------------------------------
@@ -415,6 +528,12 @@ def dry_run(env: ReviewEnv, mode: str) -> int:
     models = required_models(packet["kinds"], rules)
     print(f"task review {env.unit.task}: dry run, {mode} review of {packet['tip'][:12]} (nothing is written)")
     print(f"  kinds: {', '.join(packet['kinds'])}")
+    if "delta" in packet:
+        delta = packet["delta"]
+        print(
+            f"  delta since stamp #{delta['since_seq']} (full review #{delta['full_seq']}): "
+            f"{', '.join(delta['files']) or 'no file'}"
+        )
     if models:
         print(f"  reverse-engineering review ({', '.join(kinds)}): the reviewer must run on {' or '.join(models)}")
     else:
@@ -462,6 +581,14 @@ def prepare(env: ReviewEnv, mode: str) -> int:
         (env.folder / name).unlink(missing_ok=True)
     packet_path = env.folder / rules.packet_file
     packet_path.write_text(json.dumps(packet, indent=2) + "\n", encoding="utf-8")
+    delta_path = delta_file(env)
+    delta_path.unlink(missing_ok=True)
+    if "delta" in packet:
+        plan = delta_plan(env)
+        assert plan.delta is not None  # the packet has a delta only when the plan gives one
+        delta_path.write_text(
+            review_delta.diff_text(env.worktree, plan.delta, packet["base"], packet["tip"]), encoding="utf-8"
+        )
     functions = (
         ", ".join(f"{f['coney']} {' '.join(review_verdict.review_addresses(f))}" for f in packet["functions"]) or "none"
     )
@@ -473,12 +600,24 @@ def prepare(env: ReviewEnv, mode: str) -> int:
         moved = ", ".join(f"{f['coney']} (was {f['was']})" for f in packet["moved"])
         print(f"  @orig functions moved, their compare kept, copies to diff: {moved}")
     print(f"  research pages: {', '.join(p['path'] for p in packet['pages']) or 'none'}")
+    if "delta" in packet:
+        delta = packet["delta"]
+        print(
+            f"  delta since the passing review #{delta['since_seq']} of {delta['since_tip'][:12]}: "
+            f"{', '.join(delta['files']) or 'no file'}; judge only these, in {delta_path}"
+        )
+        if delta["rebased"]:
+            print(
+                "  main changed these too (the delta shows the branch's patch then and now): "
+                f"{', '.join(delta['rebased'])}"
+            )
     print("  the tool part passed")
     print(f"  {_description_note(packet)}")
     print(f"  {_clip_note(packet)}")
     print(f"  packet: {packet_path}")
     print(
-        f"  write {rules.verdict_file} and {rules.report_file} in {env.folder}, then run `task review {task} --record`"
+        f"  write {rules.verdict_file} and {rules.report_file} in {env.folder}, then run "
+        f"`task review {task}{mode_flag(mode)} --record`"
     )
     return 0
 
@@ -565,6 +704,8 @@ def record(env: ReviewEnv, mode: str) -> int:
         return 1
     report = stamps.verify(env.unit.stamps, env.conventions.stamps)
     found = _reviewer_problems(env, packet, report)
+    # A delta review checks as many addresses of each research page in it as a full one: a claim wrapped over two lines
+    # can change on a line no claim pattern matches, so the delta's research pages are graded like a full review's.
     found += review_verdict.problems(verdict, packet, rules.pages_min_addresses)
     if found:
         return _refuse(task, "the verdict was not recorded", found)
@@ -576,10 +717,15 @@ def record(env: ReviewEnv, mode: str) -> int:
         "images_sha256": packet["text"]["images_sha256"],
         "review_sha256": hashlib.sha256(raw).hexdigest(),
     }
+    if mode == review_delta.DELTA and env.delta_rules is not None:
+        # The rules the delta was planned under, which `pr verify` holds to the default branch's.
+        covers["delta_rules_sha256"] = review_delta.rules_sha256(env.delta_rules)
     detail = review_verdict.stamp_detail(verdict)
     detail["reviewer"] = dict(env.who.get("agent", identity.Identity().agent()))
     if mode == "text":
         _carry_full_review(report, detail)
+    elif "delta" in packet:
+        _carry_delta(env, packet["delta"], detail)
     result = str(verdict["verdict"])
     newest = report.latest("reviewed")
     if newest is not None and _same(newest, result, packet["tip"], covers):
@@ -620,6 +766,11 @@ def next_review(task: str, mode: str) -> str:
     because `--text` needs a passing full review of the same change (`_full_pass_problem`)."""
     if mode == "text":
         return f"next: the engineer fixes the description; then `task review {task} --text --run`"
+    if mode == review_delta.DELTA:
+        return (
+            f"next: the engineer fixes the findings; then `task review {task} --run` again, a delta from the last "
+            "passing review (the failed delta is passed over)"
+        )
     return (
         f"next: the engineer fixes the findings; then a full `task review {task} --run` (after `task check` when the "
         "code changed): --text reviews a description edited after a passing full review, so it cannot follow a "
@@ -628,32 +779,72 @@ def next_review(task: str, mode: str) -> str:
 
 
 def _carry_full_review(report: stamps.Report, detail: dict[str, Any]) -> None:
-    """A text review keeps what the full review it rests on said about the functions and the pages."""
+    """A text review keeps what the review of the code it rests on said about the functions and the pages; `full_seq`
+    names the full review at the bottom of that stack and `since_seq` the review it rests on, which `pr verify` walks
+    down from."""
     for stamp in reversed(report.stamps):
-        if stamp.step == "reviewed" and stamp.detail.get("scope") == "full":
+        if stamp.step == "reviewed" and stamp.detail.get("scope") in review_delta.CODE_SCOPES:
             for key in ("functions", "function_count", "pages"):
                 if key in stamp.detail:
                     detail[key] = stamp.detail[key]
                 else:
                     detail.pop(key, None)
-            detail["full_seq"] = stamp.seq
+            detail["full_seq"] = review_delta.full_seq_of(stamp)
+            detail["since_seq"] = stamp.seq
             return
 
 
+def _carry_delta(env: ReviewEnv, delta: Mapping[str, Any], detail: dict[str, Any]) -> None:
+    """A delta review keeps what the review it stacks on said about the functions and the pages, with the pages it
+    judged itself, and names that review (`since_seq`) and the full one at the bottom (`full_seq`), so `pr verify`
+    reads the whole stack."""
+    report = stamps.verify(env.unit.stamps, env.conventions.stamps)
+    since = next((s for s in report.stamps if s.seq == delta["since_seq"]), None)
+    detail["since_seq"] = delta["since_seq"]
+    detail["full_seq"] = delta["full_seq"]
+    if since is None:
+        return
+    # The stack's classes, each function the delta judged again replaced by its new class.
+    own = detail.pop("functions", {})
+    carried = review_delta.stack_functions(env.folder, report, since)
+    detail.pop("function_count", None)
+    if carried is None:
+        detail["function_count"] = since.detail.get("function_count", 0)
+    else:
+        detail["functions"] = {**carried, **(own if isinstance(own, dict) else {})}
+    detail["pages"] = sorted(set(since.detail.get("pages", [])) | set(detail.get("pages", [])))
+    if len(json.dumps(detail, sort_keys=True, separators=(",", ":"))) > review_verdict.DETAIL_ROOM:
+        # Too long beside the reviewer's identity: `pr verify` reads the list from the stack's recorded verdicts.
+        functions = detail.pop("functions", {})
+        detail["function_count"] = len(functions) if isinstance(functions, dict) else 0
+
+
 # --- run -------------------------------------------------------------------------------------------------------------
+
+
+def mode_flag(mode: str) -> str:
+    """The option that names `mode` on the command line, with its leading space: `--record` must be told the mode the
+    packet was prepared in, since without one it chooses a delta review whenever it can."""
+    return {"text": " --text", "full": " --full", review_delta.DELTA: " --delta"}.get(mode, "")
 
 
 def review_prompt(env: ReviewEnv, mode: str) -> str:
     """The task the headless reviewer is given: where everything is and how to finish."""
     rules = env.conventions.tasks.review
     task = env.unit.task
-    flag = " --text" if mode == "text" else ""
+    flag = mode_flag(mode)
     return (
         f"Review task {task} ({mode} review). The branch is checked out in {env.worktree}.\n"
         f"- The tool part passed. The packet is {env.folder / rules.packet_file}: read it, then the checklists for its "
         "`kinds`, and judge the change as your instructions say.\n"
-        f"- The description file {env.text_file.name} is the engineer's; `pr text` generates the sections the packet's "
-        f"`text.generated_sections` lists into {generated_body(env)}. Judge those there and do not fail "
+        + (
+            f"- This is a delta review: judge only the files in the packet's `delta.files`, as {delta_file(env)} "
+            "shows them; the earlier passing review holds for the rest (docs/guides/review/task.md#delta).\n"
+            if mode == review_delta.DELTA
+            else ""
+        )
+        + f"- The description file {env.text_file.name} is the engineer's; `pr text` generates the sections the "
+        f"packet's `text.generated_sections` lists into {generated_body(env)}. Judge those there and do not fail "
         f"{env.text_file.name} for lacking them.\n"
         f"- Write {rules.verdict_file} and {rules.report_file} in {env.folder} and nothing else.\n"
         f"- Then run `uv run --project python coney-tools task review {task}{flag} --record` in {env.worktree} and "
@@ -779,8 +970,19 @@ def add_review_parser(commands: Any) -> None:
     )
     review.add_argument("--base", help="what the branch is compared with (default: origin/<default branch>)")
     review.add_argument("--pr-file", type=Path, help="the description file (default: <scratch>/<task>/PR.md)")
-    review.add_argument(
-        "--text", action="store_true", help="review the description alone (a full pass must still hold)"
+    scope = review.add_mutually_exclusive_group()
+    scope.add_argument(
+        "--text",
+        action="store_true",
+        help="review the description alone (a passing review of the code, full or a delta on one, must still hold)",
+    )
+    scope.add_argument(
+        "--full", action="store_true", help="review the whole change even when a delta review could be given"
+    )
+    scope.add_argument(
+        "--delta",
+        action="store_true",
+        help="review only the delta since the last passing review; refused when the change needs a full review",
     )
     which = review.add_mutually_exclusive_group()
     which.add_argument("--record", action="store_true", help="record the reviewer's verdict as a `reviewed` stamp")
@@ -846,6 +1048,7 @@ def environment(args: argparse.Namespace) -> ReviewEnv:
         if worktree != here:
             _say(f"task review {task}: reviewing {worktree}, the worktree the unit record names (this is {here})")
     conventions = load_conventions_leniently(worktree, _say)
+    delta_rules, delta_note = delta_rules_of(worktree, conventions)
     # A fix task works in its parent's unit: the parent's log is stamped and the parent's PR.md is the description.
     # A record that cannot be read was refused above unless --worktree was given, which is the way out of it: then the
     # task is taken as its own.
@@ -873,6 +1076,8 @@ def environment(args: argparse.Namespace) -> ReviewEnv:
         copy_problems=default_copy_problems,
         identity=identity.current(),
         who=stamps.who_from_env("coney-tools task review"),
+        delta_rules=delta_rules,
+        delta_note=delta_note,
     )
 
 
@@ -880,7 +1085,7 @@ def run_review_command(args: argparse.Namespace) -> int:
     """Run `task review` for parsed arguments."""
     try:
         env = environment(args)
-        mode = "text" if args.text else "full"
+        mode = "text" if args.text else "full" if args.full else review_delta.DELTA if args.delta else choose_mode(env)
         if args.record:
             return record(env, mode)
         if args.dry_run:
