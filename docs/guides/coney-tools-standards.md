@@ -99,8 +99,10 @@ job of CI and the docs step of [`ci run`](coney-tools-ci.md#ci-run) hold it with
 `standards`, not `legacy`: that name is reserved for the retired review commands.
 
 `standards` is `standards_scan.py` (the scanners), `standards_file.py` (the legacy file), `standards_check.py`
-(the marks and the touch-it rule), `code_link_moves.py` and `comment_spans.py` (the comment link moves) and
-`standards_cli.py`; the C++ is read with the reader of `orig_scan.py`.
+(the marks and the touch-it rule), `standards_moved.py` (which lines a change touched once the code it only moved is
+left out), `code_link_moves.py` and `comment_spans.py` (the comment link moves) and `standards_cli.py`; the C++ is
+read with the reader of `orig_scan.py`. The move map the rule reads costs under a second ([the cost of
+it](orig-body-hash.md#cost)).
 
 <!-- command-reference:begin standards -->
 ## Parameters of `standards` {#standards-parameters}

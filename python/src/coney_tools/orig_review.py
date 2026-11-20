@@ -105,7 +105,7 @@ class Unit:
         start = self.key.find(f"{self.coney}(")
         if start < 0:
             return ""
-        # A key of a declaration ends in `;` and a repeated name in `'` (`_standings`): neither is a parameter.
+        # A key of a declaration ends in `;` and a repeated name in `'` (`standings`): neither is a parameter.
         text = self.key[start + len(self.coney) :].rstrip("';")
         return text if text.endswith(")") else ""
 
@@ -150,26 +150,48 @@ def resolve(root: Path, ref: str) -> str:
     return _git(root, "rev-parse", "--verify", f"{ref}^{{commit}}").decode().strip()
 
 
-def files_at(root: Path, commit: str, only: Collection[str] | None = None) -> dict[str, str]:
-    """Every C++ file under `src/` at `commit` -> its text; with `only`, just those of its paths that exist then."""
-    listing = _git(root, "ls-tree", "-r", "-z", "--name-only", commit, "--", SOURCE_DIR.as_posix()).decode()
-    paths = [
-        p
-        for p in listing.split("\0")
-        if p and PurePosixPath(p).suffix in SOURCE_SUFFIXES and (only is None or p in only)
-    ]
-    if not paths:
-        return {}
-    out = _git(root, "cat-file", "--batch", stdin="".join(f"{commit}:{p}\n" for p in paths).encode())
+def _blob_id(text: str, length: int) -> str:
+    """The id git gives a blob of `text` (UTF-8), in an object format whose ids are `length` hex digits long."""
+    data = text.encode("utf-8", "replace")
+    digest = hashlib.sha1 if length == 40 else hashlib.sha256
+    return digest(b"blob %d\0" % len(data) + data).hexdigest()
+
+
+def files_at(
+    root: Path,
+    commit: str,
+    only: Collection[str] | None = None,
+    known: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """Every C++ file under `src/` at `commit` -> its text; with `only`, just those of its paths that exist then.
+
+    `known` is text the caller already holds under a path (the files as they are on disk): the text of a file the commit
+    has byte for byte as that is taken from it, and git is asked for the rest, so a commit that differs from the disk
+    in a few files costs a few reads, not all of `src/`.
+    """
+    listing = _git(root, "ls-tree", "-r", "-z", commit, "--", SOURCE_DIR.as_posix()).decode()
+    blobs: dict[str, str] = {}  # path -> the id of its blob at the commit
+    for entry in listing.split("\0"):
+        info, _, path = entry.partition("\t")
+        if path and PurePosixPath(path).suffix in SOURCE_SUFFIXES and (only is None or path in only):
+            blobs[path] = info.rsplit(" ", 1)[-1]
     texts: dict[str, str] = {}
-    offset = 0
-    for path in paths:
-        header_end = out.index(b"\n", offset)
-        size = int(out[offset:header_end].split()[2])
-        start = header_end + 1
-        texts[path] = out[start : start + size].decode("utf-8", "replace")
-        offset = start + size + 1
-    return texts
+    unread: list[str] = []
+    for path, blob in blobs.items():
+        if known is not None and path in known and _blob_id(known[path], len(blob)) == blob:
+            texts[path] = known[path]
+        else:
+            unread.append(path)
+    if unread:
+        out = _git(root, "cat-file", "--batch", stdin="".join(f"{commit}:{p}\n" for p in unread).encode())
+        offset = 0
+        for path in unread:
+            header_end = out.index(b"\n", offset)
+            size = int(out[offset:header_end].split()[2])
+            start = header_end + 1
+            texts[path] = out[start : start + size].decode("utf-8", "replace")
+            offset = start + size + 1
+    return {path: texts[path] for path in blobs}
 
 
 #: The token classes, tried in this order at every position: a comment (a `//` one goes on over a backslash and a
@@ -506,18 +528,52 @@ def moves(before: Iterable[Unit], after: Iterable[Unit]) -> Changes:
 _STANDING = "\x00standing:{state}:{comment}"
 
 
-def standings(texts: Mapping[str, str]) -> dict[str, Unit]:
+def _function_key(path: str, function: Function, seen: Collection[str]) -> str:
+    """The key of a function in `standings`: its file, qualified name and parameters, a `;` after them for a
+    declaration; one name twice in a file (a platform variant) is told apart by a `'` for each earlier one."""
+    key = f"{path}::{function.qualified}({function.params}){'' if function.body else ';'}"
+    while key in seen:
+        key += "'"
+    return key
+
+
+def _function_keys(sources: Mapping[str, SourceFile]) -> dict[str, Function]:
+    """Every function of these files by its `standings` key, in the order of the files and of the functions in them."""
+    found: dict[str, Function] = {}
+    for path, source in sources.items():
+        for function in source.functions:
+            found[_function_key(path, function, found.keys())] = function
+    return found
+
+
+def standings(
+    texts: Mapping[str, str],
+    wanted: Collection[str] | None = None,
+    parsed: Mapping[str, SourceFile] | None = None,
+) -> dict[str, Unit]:
     """Every function of these files, a definition or a separate declaration, tagged or not, as a unit that `moves`
     can read: its key names its file (so moving it to another file is a new key) and, for a declaration, ends in `;`;
     its names are its tags' names, or its own name when it has none (an untagged function is a move only under its
-    own name: it has no address to tell it by), and its standing (`_STANDING`)."""
-    sources = {path: read_source(path, text) for path, text in sorted(texts.items())}
+    own name: it has no address to tell it by), and its standing (`_STANDING`).
+
+    `wanted` limits the units built to those with these keys (every function is still read for what a tag or a
+    declaration in another file says of it); `parsed` holds files already read."""
+    sources = {
+        path: parsed[path] if parsed and path in parsed else read_source(path, text)
+        for path, text in sorted(texts.items())
+    }
     coverage = TagCoverage(list(sources.values()))
     declarations = _declarations(sources)
     found: dict[str, Unit] = {}
+    seen: set[str] = set()
     for path, source in sources.items():
-        lines = texts[path].splitlines()
+        lines: list[str] | None = None
         for function in source.functions:
+            key = _function_key(path, function, seen)
+            seen.add(key)
+            if wanted is not None and key not in wanted:
+                continue
+            lines = texts[path].splitlines() if lines is None else lines
             tags = [*function.tags, *function.body_tags]
             if not tags:
                 tags = [t for other in coverage.declarations(function) for t in (*other.tags, *other.body_tags)]
@@ -530,9 +586,6 @@ def standings(texts: Mapping[str, str]) -> dict[str, Unit]:
                 text = _statement_text(lines, function)
                 body = hashlib.sha256(text.encode("utf-8")).hexdigest()
                 moved = hashlib.sha256(_normal_form(text, function).encode("utf-8")).hexdigest()
-            key = f"{path}::{function.qualified}({function.params}){'' if function.body else ';'}"
-            while key in found:  # one name twice in a file (a platform variant): told apart by their order
-                key += "'"
             found[key] = Unit(
                 key,
                 path,
@@ -554,14 +607,48 @@ def function_moves(before: Mapping[str, str], after: Mapping[str, str]) -> dict[
     name left out), its tags and its standing (its marker state and whether a comment stands above it), by the rules
     of `moves`, which `orig review-stamp` reads for the `@orig` units; an untagged function also keeps its name. `orig
     check-tags` and the touch-it rule of `standards check` read it, so a function a change only moved keeps the
-    standing it had (docs/guides/orig-body-hash.md#moved)."""
-    found = moves(standings(before).values(), standings(after).values()).moved
+    standing it had (docs/guides/orig-body-hash.md#moved).
+
+    It reads what a move can depend on and no more, and gives the map that reading every function of both trees gives
+    (`moves` over their `standings`): a key holds its file, so only a file that differs has a new or a gone one, and a
+    move needs both; a function's tags and standing come from the declarations of its own name and the marker of its
+    own file pair, so a file that does not say the name cannot change them. A change that adds or removes no function
+    reads only the files it changed (docs/guides/orig-body-hash.md#cost).
+    """
+    differing = sorted(path for path in before.keys() | after.keys() if before.get(path) != after.get(path))
+    old_files = {path: read_source(path, before[path]) for path in differing if path in before}
+    new_files = {path: read_source(path, after[path]) for path in differing if path in after}
+    old, new = _function_keys(old_files), _function_keys(new_files)
+    gone, fresh = old.keys() - new.keys(), new.keys() - old.keys()
+    if not gone or not fresh:
+        return {}
+    names = {word for function in (*(old[k] for k in gone), *(new[k] for k in fresh)) for word in _words(function)}
+    stems = {_stem(path) for path in differing}
+    related = {
+        path: read_source(path, text)
+        for path, text in sorted(after.items())
+        if path not in old_files
+        and path not in new_files
+        and path in before
+        and (_stem(path) in stems or any(word in text for word in names))
+    }
+    wanted = gone | fresh
+    was = standings({p: before[p] for p in [*old_files, *related]}, wanted, {**old_files, **related})
+    now = standings({p: after[p] for p in [*new_files, *related]}, wanted, {**new_files, **related})
+    found = moves(was.values(), now.values()).moved
     return {(move.unit.path, move.unit.line): move.was for move in found}
+
+
+def _words(function: Function) -> list[str]:
+    """The words a function's name is written with: what a file that declares or defines it must contain (`operator`
+    for any operator, the name without a `~` for a destructor)."""
+    return re.findall(r"\w+", function.name) or [function.name]
 
 
 def moves_since(root: Path, since: str) -> dict[tuple[str, int], Unit]:
     """`function_moves` from the commit `since` to the files of `src/` as they are on disk."""
-    return function_moves(files_at(root, since), texts_now(root))
+    now = texts_now(root)
+    return function_moves(files_at(root, since, known=now), now)
 
 
 def pr_stamp(root: Path, tip_ref: str, base_ref: str) -> dict[str, Any]:
