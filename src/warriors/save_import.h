@@ -16,23 +16,28 @@
 
 namespace coney {
 
-/// The kinds of original save the importer reads. The PS2's containers today; the Xbox build's save is #1421's, and its
-/// reader returns an OriginalSave of a kind of its own.
+/// The kinds of original save the importer reads: the PS2's containers and the Xbox build's.
 ///
-/// Research: docs/research/save.md#import-containers
+/// Research: docs/research/save.md#import-containers, docs/research/save.md#xbox-containers
 enum class SaveSourceKind : std::uint8_t {
-    Ps2CardImage,  ///< A whole card's image: PCSX2's `.ps2` file (with the pages' spares) or a raw dump (without).
-    Ps2FolderCard, ///< PCSX2's folder card: a folder with `_pcsx2_superblock` and a folder per save.
-    Ps2SaveFolder, ///< A copy of the save folder (`BASLUS-21215/`), or of a card's root that holds it.
-    Ps2DataFile,   ///< The save's data file `BASLUS-21215` alone.
-    Ps2Psu,        ///< A single-save export in the PSU format (uLaunchELF, mymc).
+    Ps2CardImage,   ///< A whole card's image: PCSX2's `.ps2` file (with the pages' spares) or a raw dump (without).
+    Ps2FolderCard,  ///< PCSX2's folder card: a folder with `_pcsx2_superblock` and a folder per save.
+    Ps2SaveFolder,  ///< A copy of the save folder (`BASLUS-21215/`), or of a card's root that holds it.
+    Ps2DataFile,    ///< The save's data file `BASLUS-21215` alone.
+    Ps2Psu,         ///< A single-save export in the PSU format (uLaunchELF, mymc).
+    XboxSaveFolder, ///< A copy of Xbox save folders: one save's, the title folder `5454009b`, or `UDATA` above it.
+    XboxDataFile,   ///< One Xbox save's data file `profile.dat` alone.
+    XboxQcow2Image, ///< xemu's hard-disk image (qcow2).
+    XboxHddImage,   ///< A raw image of a whole Xbox hard disk.
+    XboxFatxImage,  ///< A raw image of one FATX volume: the data partition or a memory unit.
 };
 
 /// What a source kind is called in the importer's messages ("PCSX2 card image").
 /// @coney-only the importer's wording
 [[nodiscard]] std::string_view describe(SaveSourceKind kind);
 
-/// One profile found in an original save, with the save system's slot it was in (0-5).
+/// One profile found in an original save, with the save system's slot it was in on a PS2 card (0-5), or for an Xbox
+/// save its save folder's place in OriginalSave::folders.
 struct ImportCandidate {
     ProfileRecord record;
     std::size_t slot = 0;
@@ -45,7 +50,13 @@ struct OriginalSave {
     std::string source;
     std::vector<ImportCandidate> profiles;
     std::vector<std::string> skipped;
+    std::vector<std::string> folders; ///< An Xbox save's save folders by ImportCandidate::slot; empty for a PS2 save.
 };
+
+/// Where a profile of `save` was, for messages: "card slot 2" on a PS2 card, "save folder 0123456789AB" or
+/// "profile.dat" for an Xbox save.
+/// @coney-only the importer's wording
+[[nodiscard]] std::string placeOf(const OriginalSave& save, const ImportCandidate& candidate);
 
 /// The NTSC-U game's save folder on the card, and its data file in it (docs/research/save.md#card-files).
 inline constexpr std::string_view kPs2SaveName = "BASLUS-21215";
@@ -64,16 +75,19 @@ inline constexpr std::uintmax_t kLargestOriginalSave = std::uintmax_t{64} * 1024
 [[nodiscard]] std::expected<std::vector<ImportCandidate>, Error> readPs2DataFile(std::span<const std::byte> bytes,
                                                                                  std::vector<std::string>& skipped);
 
-/// Reads an original save from a file's bytes: a card image, a PSU export or the bare data file, told apart by their
-/// content. `source` names it in messages. Fails with ErrorCode::Invalid naming the problem: not a save Coney knows, a
-/// card or export with no save of the game (naming what it holds instead), a damaged card, a data file of the wrong
-/// size, or a save with no profile the game could load.
+/// Reads an original save from a file's bytes: a card image, a PSU export, the bare data file (the PS2's or an Xbox
+/// save's), or a small Xbox disk image (a memory unit's FATX volume), told apart by their content. `source` names it in
+/// messages. Fails with ErrorCode::Invalid naming the problem: not a save Coney knows, a card or export with no save of
+/// the game (naming what it holds instead), a damaged card, a data file of the wrong size, or a save with no profile
+/// the game could load.
 /// @coney-only the importer: the original reads its own card only
 [[nodiscard]] std::expected<OriginalSave, Error> readOriginalSave(std::span<const std::byte> bytes, std::string source);
 
-/// Reads the original save at `path`: a file as readOriginalSave(bytes) does, or a folder (a PCSX2 folder card, a copy
-/// of a card's root or of the save folder itself). Fails with ErrorCode::NotFound when there is nothing there or the
-/// folder holds no save of the game, and as readOriginalSave(bytes) otherwise. The save is only read, never written.
+/// Reads the original save at `path`: a file as readOriginalSave(bytes) does, an Xbox disk image of any size (read on
+/// demand, as readXboxImage() does), or a folder (a PCSX2 folder card, a copy of a card's root or of the save folder
+/// itself, or the Xbox's save folders as readXboxFolder() finds them). Fails with ErrorCode::NotFound when there is
+/// nothing there or the folder holds no save of the game, and as readOriginalSave(bytes) otherwise. The save is only
+/// read, never written.
 /// @coney-only the importer: the original reads its own card only
 [[nodiscard]] std::expected<OriginalSave, Error> readOriginalSave(const std::filesystem::path& path);
 

@@ -27,7 +27,7 @@ void PmImport::setUp() {
     m_title = std::string(kImportText);
     m_scan = {};
     m_listed.clear();
-    m_sources.clear();
+    m_from.clear();
     if (m_shared.profiles != nullptr) {
         if (const std::optional<std::filesystem::path> folder = m_shared.profiles->importFolder()) {
             m_scan = scanImportFolder(*folder);
@@ -42,7 +42,7 @@ void PmImport::setUp() {
             }
             items.push_back({candidate.record.name, static_cast<int>(m_listed.size())});
             m_listed.push_back(candidate);
-            m_sources.push_back(save.source);
+            m_from.push_back(std::format("From {}, {}", save.source, placeOf(save, candidate)));
         }
     }
     // Two a row, as PM_Load lays out the profiles.
@@ -61,7 +61,7 @@ void PmImport::setUp() {
     } else if (!m_scan.problems.empty()) {
         showLine(m_scan.problems.front(), true);
     } else {
-        showLine("No PS2 save to import was found", true);
+        showLine("No save to import was found", true);
     }
 }
 
@@ -90,7 +90,7 @@ int PmImport::direction(MenuCommand command) {
 void PmImport::describeSelected() {
     const std::size_t index = m_choices.selected();
     if (index < m_listed.size()) {
-        showLine(std::format("From {}, card slot {}", m_sources[index], m_listed[index].slot + 1), false);
+        showLine(m_from[index], false);
     }
 }
 

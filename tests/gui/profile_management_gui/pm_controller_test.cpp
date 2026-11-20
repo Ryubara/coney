@@ -31,6 +31,7 @@
 #include "support/optional_value.h"
 #include "support/ps2_card_fixtures.h"
 #include "support/recording_device.h"
+#include "support/xbox_save_fixtures.h"
 #include "warriors/disk_profile_store.h"
 #include "warriors/game_state.h"
 #include "warriors/profile_record.h"
@@ -844,4 +845,33 @@ TEST_CASE("PM_Profile: a press counts while a fade out is still at level 0, not 
         h.tap(coney::pad::kCross);
         CHECK(h.controller->currentName() == "PM_Profile");
     }
+}
+
+TEST_CASE("PM_Import: an Xbox save folder in the import folder is offered and imported", "[profile_manager]") {
+    // Expected: frontend.md#pm-import; save.md#xbox-import
+    coney::test::TempDir dir;
+    coney::ProfileRecord record;
+    record.name = "SWAN";
+    dir.write("import/5454009b/00112233AABB/profile.dat", coney::test::xboxDataFile(coney::test::xboxRecord(record)));
+    Harness h;
+    coney::DiskProfileStore disk(dir.path(), h.state);
+    h.shared.profiles = &disk;
+    toStory(h);
+    REQUIRE(h.controller->currentName() == "PM_Profile");
+    const coney::gui::PmListScreen* profile = listOnTop(h);
+    REQUIRE(profile != nullptr);
+    REQUIRE(profile->choices().items().size() == 3); // create, reload, import
+    press(h, coney::pad::kDown);
+    press(h, coney::pad::kDown);
+    press(h, coney::pad::kCross);
+    REQUIRE(h.controller->currentName() == "PM_Import");
+    const auto* import = dynamic_cast<const coney::gui::PmImport*>(h.controller->current());
+    REQUIRE(import != nullptr);
+    REQUIRE(import->choices().items().size() == 1);
+    CHECK(import->choices().items()[0].text == "SWAN");
+    CHECK(import->line() == "From 5454009b, save folder 00112233AABB");
+    press(h, coney::pad::kCross);
+    REQUIRE(h.controller->currentName() == "PM_Profile");
+    REQUIRE(disk.profile(0) != nullptr);
+    CHECK(disk.profile(0)->name == "SWAN");
 }

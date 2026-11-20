@@ -1,0 +1,33 @@
+version = 1
+id = "r-20261119-xbox-signature-key-source"
+date = "2026-11-19"
+kind = "method"
+tool = "xemu record-run"
+digest = "8756090d7fc32f636cabde1a0dfc8a02fb6b5d4e1009466fe2ff770c6544eac9"
+
+[who]
+agent = "a522723df779a2b42"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[xemu]
+version = "v0.8.139"
+copy = "xemu"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "Booted the Xbox game in xemu to its intro, read the kernel thunk XboxSignatureKey at Xbox 0x0040fcac (the pointer XCalculateSignatureBegin uses), read the 16 bytes it points to and the 16 bytes of the XBE certificate's signature key at Xbox 0x00010254 (certificate 0x00010184 + 0xd0), and compared them in a script that printed only the count of equal bytes, never the keys"
+
+[values]
+key_bytes = 16
+equal_bytes = 0
+
+[addresses]
+thunk = 0x0040fcac
+kernel_key = 0x8003b118
+cert_signature_key = 0x00010254

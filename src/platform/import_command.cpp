@@ -5,6 +5,7 @@
 #include <format>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "platform/profile_folder.h"
 #include "warriors/disk_profile_store.h"
@@ -34,7 +35,10 @@ int runImportCommand(const Options& options, std::FILE* out) {
         say(out, save.error().message);
         return 1;
     }
-    say(out, std::format("{}: a {} with {} profile(s)", save->source, describe(save->kind), save->profiles.size()));
+    // "an Xbox save folder", "a PCSX2 card image": of the kinds' names only "Xbox" is said with a vowel first.
+    const std::string_view kind = describe(save->kind);
+    say(out, std::format("{}: {} {} with {} profile(s)", save->source, kind.starts_with("Xbox") ? "an" : "a", kind,
+                         save->profiles.size()));
     for (const std::string& skipped : save->skipped) {
         say(out, std::format("left out {}", skipped));
     }
@@ -45,13 +49,13 @@ int runImportCommand(const Options& options, std::FILE* out) {
     for (const ImportCandidate& candidate : save->profiles) {
         const auto slot = importProfile(candidate.record, store);
         if (!slot) {
-            say(out, std::format("{} (card slot {}) not imported: {}", candidate.record.name, candidate.slot + 1,
+            say(out, std::format("{} ({}) not imported: {}", candidate.record.name, placeOf(*save, candidate),
                                  slot.error().message));
             continue;
         }
         ++imported;
-        say(out, std::format("imported {} (card slot {}) as profile {} in {}", candidate.record.name,
-                             candidate.slot + 1, *slot + 1, folder->string()));
+        say(out, std::format("imported {} ({}) as profile {} in {}", candidate.record.name, placeOf(*save, candidate),
+                             *slot + 1, folder->string()));
     }
     say(out, std::format("{} of {} profile(s) imported", imported, save->profiles.size()));
     return imported > 0 ? 0 : 1;
