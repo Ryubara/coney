@@ -659,3 +659,17 @@ role = "`CfgSetOutdoorMode`: `+0x3e4`"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
 status = "legacy"
+
+[[function]]
+address = 0x00488c58
+name = "RwTexDictionaryDestroy"
+page = "graphics.md#texture-lifetime"
+role = "destroys a texture dictionary: `RwTextureDestroy` on each texture, then unlinks it"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00488d90
+name = "RwTextureDestroy"
+page = "graphics.md#texture-lifetime"
+role = "drops one reference to a texture (count at `+0x54`), freeing it at 0"
+level = "confirmed-code"

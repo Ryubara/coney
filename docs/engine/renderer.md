@@ -303,30 +303,33 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
 
 #### Texture lifetime {#texture-lifetime}
 
-`SceneAssets::addAtomic` notes each material's `TextureId` once, when a part loads, and `WorldSet` drops a part's
-dictionary's textures when the part unloads. Because materials find their textures by name through every loaded
-dictionary ([Finding textures by name](../research/graphics.md#texture-lookup); how the original reads a part's
-dictionary: [Part file](../research/world.md#part-file)), a part's material could take its texture
-from another loaded part's dictionary; its id would then go stale when that part unloads. GL3 would still draw it
-through librw (the material holds a reference on the librw texture), but the GPU renderer (item 13) would draw it
-untextured.
+`SceneAssets::addAtomic` notes each material's `TextureId` once, when a mesh goes in: a sector's when its part loads,
+an object's or a car part's when its model is loaded (`addObjectMesh`). Materials find their textures by name through
+every loaded dictionary ([Finding textures by name](../research/graphics.md#texture-lookup); how the original reads a
+part's dictionary: [Part file](../research/world.md#part-file)), so a mesh's material can take its texture from a
+dictionary that goes before the mesh does: an object's materials after the first (the objects and cars of item 8 add
+only their dictionary's first texture themselves, taken before its raster is converted) can find a streamed part's
+texture, and a part's material could find another loaded part's. `WorldSet` drops a part's dictionary's textures when
+the part unloads.
 
-**The disc has none** (NTSC-U PS2, counts only): the disc check *no part's material takes its texture from
-another part's dictionary* (`disc_world_streaming_test.cpp`) loads every part of each of the 80 levels, then loads each
-of the 1,564 parts again with every other part loaded, so the lookup could reach any other part's dictionary before the
-worlds' (parts are newer). Of 88,406 textured materials (19 have no texture), **0** take their texture from another
-part; each comes from its own part's dictionary or a world's, and the worlds' stay loaded as long as the `WorldSet`.
+**A texture is held while anything uses it**, as RenderWare keeps one while a material references it
+([Texture lifetime](../research/graphics.md#texture-lifetime)): `SceneAssets` counts each `addTexture` (the
+dictionary's hold, by `WorldSet` or the object loaders) and each held mesh's material that names the texture.
+`removeTexture` lets go of one hold and `removeMesh` of its materials', and the texture leaves the store at the last.
+So when a part unloads while an object whose material took one of its textures stays, the object's mesh still names a
+texture the store holds, and the GPU renderer draws it textured, as GL3 does through librw (the material holds a
+reference on the librw texture, which outlives its dictionary). Resolving the id at draw time alone would not have
+helped, as the texture would be gone from the store by then. Two synthetic tests (`world_set_test.cpp`) cover it: an
+object's material that takes a part's texture, and a part's material that takes another part's, each keep it after
+that part unloads, and the object's is dropped when its mesh goes.
 
-So the ids stay noted once, and a guard stands in for a fix: `WorldSet::loadPart` counts such materials
-(`WorldSet::borrowedTextures()`) and logs a `World` warning naming the part, so a modded file that does it is not
-missed. A synthetic test (`world_set_test.cpp`) has part 2 use a texture only part 1 holds and checks the count. If one
-ever matters, the fix is to keep a texture alive while a mesh uses it (a use count in `SceneAssets` beside the
-dictionary's hold): resolving the id at draw time alone would not help, as the texture is gone from the store by then.
-
-The objects and cars of item 8 note only their dictionary's first texture (taken before its raster is converted); an
-object's materials after the first find their texture by name when the model is read, which can be a streamed part's
-texture whose id goes stale when that part unloads. GL3 is unaffected, as above; the GPU renderer would draw such a
-material untextured, a case the guard above does not cover: follow-up [#1452](issue:1452).
+**Between parts the disc has none** (NTSC-U PS2, counts only): the disc check *no part's material takes its texture
+from another part's dictionary* (`disc_world_streaming_test.cpp`) loads every part of each of the 80 levels, then loads
+each of the 1,564 parts again with every other part loaded, so the lookup could reach any other part's dictionary
+before the worlds' (parts are newer). Of 88,406 textured materials (19 have no texture), **0** take their texture from
+another part; each comes from its own part's dictionary or a world's, and the worlds' stay loaded as long as the
+`WorldSet`. `WorldSet::borrowedTextures()` still counts such materials for that check (a synthetic test has part 2 use a
+texture only part 1 holds); it no longer warns, as such a material now keeps its texture.
 
 ### Testing while it grows {#migration-testing}
 
