@@ -76,7 +76,8 @@ struct DrawLights {
 /// modulated by them (else the shaders take white): the mesh's own colours changed as `material` says, as the GL3
 /// renderer changes the librw materials (platform::MaterialChange): under MaterialColour::Fade every alpha is the fade;
 /// under Tint the first colour is the tint and the mesh is modulated while the tint is not opaque white; under Paint
-/// every colour is the tint. A mesh is otherwise modulated when MeshData::modulate says so.
+/// every colour is the tint; under Shade the first colour is the tint's red, green and blue times the shade (held to 0
+/// to 1, truncated) with the fade as its alpha. A mesh is otherwise modulated when MeshData::modulate says so.
 struct DrawColours {
     std::vector<Rgba> colours;
     bool modulate = false;

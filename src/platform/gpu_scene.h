@@ -31,12 +31,12 @@ struct SDL_GPUShader;
 
 namespace coney::platform {
 
-/// Draws a frame description's scene passes (the streamed world's sectors, the world objects and the parked cars) for
-/// the GPU renderer (GpuRenderer, gpu_renderer.h) with Coney's own shaders, `scene3d.vert.hlsl` and
-/// `scene3d.frag.hlsl` (docs/engine/gpu-renderer.md#scene): each mesh and texture of the asset store uploaded the first
-/// time a frame draws it and kept by id, then each sub-mesh drawn through its pass's camera in the states, lights,
-/// colours, passes and texture level librw's GL3 device would give it (graphics/scene_batch.h), so the two renderers
-/// draw the same picture.
+/// Draws a frame description's scene passes (the streamed world's sectors, the world objects and the parked cars; not
+/// yet the humans) for the GPU renderer (GpuRenderer, gpu_renderer.h) with Coney's own shaders, `scene3d.vert.hlsl`
+/// and `scene3d.frag.hlsl` (docs/engine/gpu-renderer.md#scene): each mesh and texture of the asset store uploaded the
+/// first time a frame draws it and kept by id, then each sub-mesh drawn through its pass's camera in the states,
+/// lights, colours, passes and texture level librw's GL3 device would give it (graphics/scene_batch.h), so the two
+/// renderers draw the same picture.
 ///
 /// A frame is drawn in steps the renderer interleaves with its own: prepare() reads the frame, layUploads(),
 /// writeUploads() and recordUploads() put what is new on the GPU in the renderer's copy pass, and draw() draws one
@@ -65,7 +65,8 @@ class GpuScene {
     /// Reads `frame`'s scene passes with the meshes and textures of `store` (frame number `frameNumber`, the caches'
     /// clock): what to upload and every sub-mesh's draw. `white` is the texture an untextured material samples. A scene
     /// pass with no camera, a mesh the store does not hold and a sub-mesh SDL cannot make a buffer or pipeline for are
-    /// left out, as a missing part of the picture.
+    /// left out, as a missing part of the picture; so is a posed draw (a human, graphics::needsSkinning()) until the
+    /// renderer skins (#1206).
     void prepare(const graphics::FrameDescription& frame, const graphics::AssetStore& store, std::uint64_t frameNumber,
                  SDL_GPUTexture* white);
     /// Places prepare()'s uploads in the renderer's upload buffer from `offset` on and returns where they end.

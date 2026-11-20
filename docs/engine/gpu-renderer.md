@@ -54,10 +54,11 @@ present.
 
 The GPU backend opens librw exactly as the NULL backend does, so texture dictionaries, streams and PS2 rasters load and
 the game runs; `drawsPixels()` is false, so nothing converts textures for librw's GL3 device, and what still draws
-through librw (the level's background, the humans, the effects) is not drawn (items 14 and 20 of
-[Order](renderer.md#order)). `drawsScene()` is true, as on GL3 (`drawsSceneOn()`), so play loads the world objects and
-parked cars, their textures held as read, for the scene passes ([below](#scene)). What draws the 2D layers
-runs on either windowed backend; the movie player picks its screen with `makeMovieScreen()` by backend.
+through librw (the level's background, the effects) is not drawn (item 20 of [Order](renderer.md#order)), nor are the
+humans, which come through the description but wait for the GPU renderer's skinning (item 14, [below](#scene)).
+`drawsScene()` is true, as on GL3 (`drawsSceneOn()`), so play loads the world objects and parked cars, their textures
+held as read, for the scene passes ([below](#scene)). What draws the 2D layers runs on either windowed backend; the
+movie player picks its screen with `makeMovieScreen()` by backend.
 
 ## Drawing the 2D passes {#drawing}
 
@@ -108,8 +109,11 @@ VU1 pipelines and the GS, which GL3 already stands in for.
 (as the headless recording does) and the world pass's draws, objects and cars still go into the frame description; the
 draws librw would make go nowhere, librw being open for data only ([above](#librw)). Each scene pass carries the camera
 its draws are seen through (`graphics::SceneCamera`, set by `RenderEngine::setSceneCamera()` from the world pass's
-view: `sceneCameraOf()`). The humans' librw draws, which do not go through the draw layer yet, are skipped while the
-draw layer does not forward (item 14 draws them; item 9 moves them onto the description).
+view: `sceneCameraOf()`). The humans come as scene draws too since item 9, each with his pose (his skinning matrices,
+`FrameDescription::bonesOf()`) and his blood layer, but `GpuScene` leaves out every posed draw, its dual layer with it
+(`needsSkinning()`), rather than stand him in his bind pose: the scene shaders do not skin, the converted character
+meshes have no skin weights and the blood textures are not in the scene assets, all three item 14's
+([#1206](issue:1206)).
 
 **The steps.** In the renderer's one command buffer:
 
@@ -131,7 +135,7 @@ draw layer does not forward (item 14 draws them; item 9 moves them onto the desc
 | --- | --- | --- |
 | Camera | librw's view (the camera's frame inverted, its x flipped back) and perspective (the view window, the near and far planes); OpenGL's depth from -w to w taken onto 0 to w, so both depth buffers hold the same values | `viewMatrixOf()`, `projectionOf()` |
 | Lights | none for a geometry without RenderWare's LIGHT flag; the ambients summed and times the material's ambient; the directional lights, then the point and spot lights whose sphere meets the mesh's (both only with normals), eight at most, times its diffuse; prelighting (black for a mesh without it) plus the lights, clamped, times the material colour | `lightsFor()`, `scene3d.vert.hlsl` |
-| Colours | a sector's fade, an object's tint (with MODULATE while it is not opaque white), a car part's paint, as `MaterialChange` writes them into librw's materials; white for a mesh that does not modulate; a dual layer at its base's first alpha | `coloursOf()`, `layerColoursOf()` |
+| Colours | a sector's fade, an object's tint (with MODULATE while it is not opaque white), a car part's paint, a human's colour times his shadow dimming at his fade (`Shade`, for item 14), as `MaterialChange` writes them into librw's materials; white for a mesh that does not modulate; a dual layer at its base's first alpha | `coloursOf()`, `layerColoursOf()` |
 | Blending | on only for vertex alpha (prelighting not opaque), a material colour not opaque or a texture with a texel that is not; then the draw's blend (source alpha, or replace) and its alpha test as the render states stand at the draw, against librw's start reference (10 of 255) | `drawPassesOf()`, `vertexAlphaOf()`, `hasAlpha()` |
 | GS alpha test | a first pass (alpha test "at least") of a blended mesh that writes depth is drawn twice, as librw emulates the GS's FB_ONLY: the fragments at or above 128 of 255 with depth written, then the rest without ([shared state](../research/rendering.md#shared-state)); a dual layer with the test off | `drawPassesOf()` |
 | Depth and culling | tested less or equal (always while off but written), written as the pass says; back or front faces dropped, counter-clockwise the front | `GpuScene::pipelineFor()` |
@@ -154,10 +158,10 @@ sign, a lit window, the wall behind the fence), and what showed through instead 
 **Not yet:** the level's background, which still draws through librw and so never reaches the GPU renderer (the sky and
 cloud boxes, the skyline and the level world's light glows, which the original draws inside `WorldManager_Render`
 itself): no item of [Order](renderer.md#order) held it when the world was drawn, so it is left for [#1527](issue:1527),
-which item 20's parity needs. The humans and the hats they wear are item 14, the effects drawn through librw (the water,
-the see-through panes, the throw arc, particles, blob shadows, rings and coronas) item 20. A frame on `--renderer gpu`
-misses them; `--scene-only` leaves them out on both renderers, so that the frames can be compared on the part both draw
-([How pictures are compared](renderer.md#comparing)).
+which item 20's parity needs. The humans are item 14 (left out, [above](#scene)), the effects drawn through librw
+(the water, the see-through panes, the throw arc, particles, blob shadows, rings and coronas) item 20. A frame on
+`--renderer gpu` misses them; `--scene-only` leaves them out on both renderers, so that the frames can be compared on
+the part both draw ([How pictures are compared](renderer.md#comparing)).
 
 ## Textures {#textures}
 

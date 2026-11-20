@@ -596,9 +596,10 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   today, is recorded as "no camera" by both camera begin and end and reaches librw in neither, forwarding or not.
   Not forwarding, a state nobody has set reads back as librw's GL3 device starts it (`resetRenderState`: alpha test
   "at least 10 of 255", depth on, no culling, source-alpha blending, white fog), as live (item 13); a recording holds
-  only the states set. It read 0 ("always") before, so three synthetic hashes moved: the 2D scene's to
-  `0x602c8c03483a7de4`, the object scene's to `0x952ee961e9bcbbc1`, the world scene's to `0x0d90e4b7a17f8c7f`. Live
-  drawing does not read the layer's states, so the disc frames' hashes do not move.
+  only the states set. It read 0 ("always") before, so four synthetic hashes moved: the 2D scene's to
+  `0x602c8c03483a7de4`, the object scene's to `0x952ee961e9bcbbc1`, the world scene's to `0x0d90e4b7a17f8c7f` and the
+  human scene's (item 9's) to `0x374f7363903b7a91`. Live drawing does not read the layer's states, so the disc frames'
+  hashes do not move.
 - **Synthetic scenes** in [draw_calls_test.cpp](repo:tests/platform/draw_calls_test.cpp), drawn headless: a 2D scene
   through `RenderEngine` (the fill, quads, alpha-tested triangles, a view wash, a window rectangle), a textured Im3D
   mesh under a placed camera with a Coney-made checkerboard, the throw arc's ribbon drawn by `ThrowArcRenderer`, and the

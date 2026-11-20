@@ -162,12 +162,13 @@ TEST_CASE("the human scene's draw stream has its expected hash", "[platform][dra
     // Expected: ../engine/renderer.md#comparing, Coney's own recording: taken from this scene when the humans' renders
     // were routed through the draw layer, which the move onto the frame description kept, then taken again when each
     // human's colour became his white HuColor times the dimming in place of the material's own
-    // (docs/research/graphics.md#human-draw, step 3).
+    // (docs/research/graphics.md#human-draw, step 3). Taken again when the headless layer's unset states began to read
+    // back as librw's GL3 device starts them (#1205), as the object scene's was.
     const DrawStream stream = drawHumanScene(sceneHumans());
     // Each human one draw of his body, and the three with the blood layer (docs/research/rendering.md#characters) one
     // more: 7 atomic draws of the fixture's 4 vertices each.
     CHECK(stream.counts().atomicDraws == 7);
-    CHECK(stream.hash() == 0x719927e6aff04f6eULL);
+    CHECK(stream.hash() == 0x374f7363903b7a91ULL);
 }
 
 TEST_CASE("the human scene hashes the same twice and sees a pose, the blood and the fade",

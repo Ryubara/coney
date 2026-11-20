@@ -143,10 +143,9 @@ DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, c
 }
 
 bool needsSkinning(const FrameDescription& frame, const Draw3d& draw) {
-    // Stub for the test commit: no draw is left out yet.
-    (void)frame;
-    (void)draw;
-    return false;
+    // A human comes posed by his skinning matrices; the scene shaders have no skinning yet and the converted character
+    // meshes no weights, so he would stand in his bind pose (#1206).
+    return !frame.bonesOf(draw).empty();
 }
 
 DrawColours coloursOf(const MeshData& mesh, const Material3d& material) {
@@ -171,10 +170,17 @@ DrawColours coloursOf(const MeshData& mesh, const Material3d& material) {
     case MaterialColour::Paint:
         std::fill(out.colours.begin(), out.colours.end(), material.tint);
         break;
-    default:
-        // A colour change this batch does not know yet (unit 1201 adds MaterialColour::Shade for the humans, which
-        // item 14 draws) keeps the mesh's own colours on purpose: the GPU draw is then only uncoloured, and whichever
-        // of the two changes lands second still builds instead of failing -Wswitch.
+    case MaterialColour::Shade:
+        // The human's colour times the shade (truncated) with the fade as its alpha, in place of the first material's
+        // own, the mesh's modulation as it is: platform::MaterialChange's HumanRender_Draw colour.
+        if (!out.colours.empty()) {
+            const float shade = std::clamp(material.shade, 0.0F, 1.0F);
+            const auto scaled = [shade](std::uint8_t channel) {
+                return static_cast<std::uint8_t>(static_cast<float>(channel) * shade);
+            };
+            out.colours[0] =
+                Rgba{scaled(material.tint.r), scaled(material.tint.g), scaled(material.tint.b), material.fade};
+        }
         break;
     }
     return out;

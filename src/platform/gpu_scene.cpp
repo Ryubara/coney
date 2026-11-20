@@ -356,8 +356,10 @@ void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::
         const graphics::SceneCamera& camera = *scene->camera;
         const std::size_t first = m_draws.size();
         for (const graphics::Draw3d& draw : scene->draws) {
+            // A human (a posed draw) waits for the GPU renderer's skinning (#1206): left out, not drawn in his bind
+            // pose, his blood layer with him.
             const graphics::MeshData* mesh = store.mesh(draw.mesh);
-            if (mesh == nullptr) {
+            if (mesh == nullptr || graphics::needsSkinning(frame, draw)) {
                 continue;
             }
             // The base mesh, then its dual layer right after it at the base's first alpha.
