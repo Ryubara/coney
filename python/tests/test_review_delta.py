@@ -114,8 +114,8 @@ def test_a_fix_the_rebase_also_touches_reads_patch_against_patch(rig: Rig) -> No
     plan = task_review.delta_plan(rig.env())
     assert plan.delta is not None and plan.delta.files == ()
     # A fix of a line of that file outside the function is in the delta, read patch against patch.
-    source = (rig.root / "src/ai/brain.cpp").read_text(encoding="utf-8")
-    fix(rig, {"src/ai/brain.cpp": "// Brains think.\n" + source}, diff="4" * 64)
+    text = (rig.root / "src/ai/brain.cpp").read_text(encoding="utf-8")
+    fix(rig, {"src/ai/brain.cpp": "// Brains think.\n" + text}, diff="4" * 64)
     plan = task_review.delta_plan(rig.env())
     assert plan.delta is not None and plan.delta.files == ("src/ai/brain.cpp",)
     assert plan.delta.rebased == ("src/ai/brain.cpp",)
