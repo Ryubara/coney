@@ -12,23 +12,31 @@ the files whose own change differs between the change that was reviewed and the 
 * **Rebase noise is left out**: a file is in the delta when the branch's own removed and added lines of it (`git diff
   -U0`, without the hunk headers, as the change hash reads them, `pr_diff`) differ between the two changes. A rebase
   onto a newer main moves line numbers and context, not those lines.
+* **The rules are the default branch's**: `task review` reads `tasks.review.delta` from `origin/<default branch>`
+  (`task_review.delta_rules_of`) and the stamp covers them (`rules_sha256`), so a branch cannot loosen its own review
+  by editing `full_when` or `test_paths`; `pr verify` holds the stamp to the default branch's rules.
 * **A full review instead**, by `tasks.review.delta.full_when` in `.github/conventions.yml`: the delta changes an
-  `@orig` function's body or addresses (or the pairs it was compared with), a claim line of research work (an address
-  or an evidence level, `claim_patterns`), or the code of any file under `test_paths` (a test, a helper, a fixture, a
-  conftest, a data file). Those are what a reviewer must see against the original or against what the test proves.
+  `@orig` function's body or addresses (or the pairs it was compared with), or drops the tags of one (or the function);
+  a claim line of research work (an address or an evidence level, `claim_patterns`); or the code of any file under
+  `test_paths` (a test, a helper, a fixture, a conftest, a data file). Those are what a reviewer must see against the
+  original or against what the test proves.
 
 The delta's checklists and model follow from the delta alone: the orig checklist for an `@orig` function whose comments,
 tag or declaration the delta edits (its body hash leaves comments out, but a comment at a difference is what makes the
-difference deliberate) and for one that moved in the delta, the research one for a research file in it (without a
-claim change), so the reviewer needs Opus only then; the description is read with every delta.
+difference deliberate), whether the reviewed change changed it or moved it, and for one that moved in the delta; the
+research one for a research file in it (without a claim line change), with the full review's address minimum, since a
+claim wrapped over two lines can change on a line no claim pattern matches; so the reviewer needs Opus only then. The
+description is read with every delta.
 
-The per-file comparison here reads `git diff -U0` itself; it can use the per-file hash of `pr_diff` once that exists.
+The per-file comparison here reads `git diff -U0` itself, keeping bytes that are not UTF-8 apart (a binary file that
+differs only in such bytes still differs); it can use the per-file hash of `pr_diff` once that exists.
 Standard library only, besides the repository's own modules.
 """
 
 from __future__ import annotations
 
 import ast
+import dataclasses
 import hashlib
 import json
 import re
@@ -51,10 +59,11 @@ DELTA = "delta"
 CODE_SCOPES = ("full", DELTA)
 #: The endings of a C++ file under the test paths, read as code (comments and layout are no change).
 _CPP_TESTS = (".cpp", ".h", ".hpp", ".inl")
-#: How many lines a separate declaration may run over, up to its `;`.
-_DECLARATION_LINES = 8
 #: The keys of an `@orig` function that, changed in the delta, change what was compared with the original.
 _FUNCTION_IDENTITY = ("key", "body_sha256", "addresses", "xbox")
+#: How text read for a comparison is decoded: a byte that is not UTF-8 stays itself (a lone surrogate), so two files
+#: that differ only in such bytes still read differently. Never written out: what the reviewer reads uses `replace`.
+_COMPARE = "surrogateescape"
 #: The header lines of a patch that say a file's mode changed, or that it was added or deleted.
 _MODE_LINES = ("old mode", "new mode", "new file mode", "deleted file mode")
 #: The description's hashes, as a `reviewed` stamp covers them.
@@ -98,14 +107,15 @@ class Plan:
 # --- git -------------------------------------------------------------------------------------------------------------
 
 
-def _git(worktree: Path, *args: str, check: bool = True) -> str | None:
-    """Run git in `worktree`: its output, None when it fails and `check` is off, else a ConfigError."""
+def _git(worktree: Path, *args: str, check: bool = True, errors: str = "replace") -> str | None:
+    """Run git in `worktree`: its output, None when it fails and `check` is off, else a ConfigError. `errors` is how
+    bytes that are not UTF-8 are decoded (`_COMPARE` for a comparison)."""
     done = subprocess.run(
         ["git", "-C", str(worktree), "-c", "core.quotepath=false", *args],
         capture_output=True,
         text=True,
         encoding="utf-8",
-        errors="replace",
+        errors=errors,
         check=False,
     )
     if done.returncode != 0:
@@ -122,13 +132,15 @@ def _names(worktree: Path, old: str, new: str) -> set[str]:
 
 
 def _show(worktree: Path, ref: str, path: str) -> str:
-    """The text of `path` at `ref`, empty when it does not exist there."""
-    return _git(worktree, "show", f"{ref}:{path}", check=False) or ""
+    """The text of `path` at `ref` for a comparison (bytes that are not UTF-8 kept apart, `_COMPARE`), empty when it
+    does not exist there."""
+    return _git(worktree, "show", f"{ref}:{path}", check=False, errors=_COMPARE) or ""
 
 
 def file_change(worktree: Path, base: str, tip: str, path: str) -> str:
     """What `tip` does to `path` since `base`: its mode lines and its removed and added lines, without hunk headers,
-    line numbers or blob ids, so the same edit on a moved main reads the same (the change hash's rule, `pr_diff`)."""
+    line numbers or blob ids, so the same edit on a moved main reads the same (the change hash's rule, `pr_diff`).
+    Bytes that are not UTF-8 are kept apart (`_COMPARE`), so two binary versions never read the same."""
     patch = _git(
         worktree,
         "diff",
@@ -143,6 +155,7 @@ def file_change(worktree: Path, base: str, tip: str, path: str) -> str:
         tip,
         "--",
         path,
+        errors=_COMPARE,
     )
     kept: list[str] = []
     in_hunk = False
@@ -228,14 +241,36 @@ def _orig_reasons(
     return reasons
 
 
+def _dropped_reasons(worktree: Path, old: Mapping[str, Any], now: Now, since_base: str, since_tip: str) -> list[str]:
+    """The `@orig` functions the delta deletes or untags: one of main's that the change now removes and the reviewed
+    change did not, or one the reviewed change added, changed or moved that is no `@orig` function now under any name.
+    Its code may stay, unmarked: what the code checklist's tag item and the orig review must see."""
+    then = {unit.key for unit in orig_review.removed_units(worktree, since_base, since_tip)}
+    dropped = {
+        unit.key: (unit.coney, unit.where)
+        for unit in orig_review.removed_units(worktree, now.base, now.tip)
+        if unit.key not in then
+    }
+    present = {str(f[key]) for f in [*now.functions, *now.moved] for key in ("key", "was") if f.get(key)}
+    for function in [*old["functions"], *old["moved"]]:
+        key = str(function.get("key"))
+        if key not in present and key not in dropped:
+            dropped[key] = (str(function.get("coney")), str(function.get("where")))
+    return [
+        f"orig-body: the delta drops the @orig function or its tags: {coney} ({where})"
+        for coney, where in sorted(dropped.values())
+    ]
+
+
 def _span(lines: Sequence[str], function: Function) -> str:
     """A function's whole text as written: its comment block, then its definition through the closing brace, or its
     declaration through the `;`; trailing space dropped, comments kept."""
     if function.body:
         statement = lines[function.line - 1 : function.line - 1 + function.lines]
     else:
+        # However long the declaration runs (a parameter per line, a default argument at the end), all of it to its `;`.
         statement = []
-        for line in lines[function.line - 1 : function.line - 1 + _DECLARATION_LINES]:
+        for line in lines[function.line - 1 :]:
             statement.append(line)
             if ";" in line:
                 break
@@ -292,7 +327,7 @@ def python_test_bodies(text: str) -> dict[str, str]:
     parse. Names the tests a changed file holds."""
     try:
         tree = ast.parse(text)
-    except SyntaxError:
+    except (SyntaxError, ValueError):
         return {"<file>": text}
     found: dict[str, str] = {}
 
@@ -311,14 +346,14 @@ def python_test_bodies(text: str) -> dict[str, str]:
 
 def test_code(path: str, text: str) -> str:
     """What a file under the test paths says as code: a C++ file without comments and layout
-    (`orig_review.code_text`), a Python file as the parser reads it (the whole text when it does not parse), any other
-    file (a fixture's data) as it is."""
+    (`orig_review.code_text`), a Python file as the parser reads it (the whole text when it does not parse or holds
+    bytes that are not UTF-8), any other file (a fixture's data, a reference picture) as it is, byte for byte."""
     if path.endswith(_CPP_TESTS):
         return orig_review.code_text(text)
     if path.endswith(".py"):
         try:
             return ast.dump(ast.parse(text))
-        except SyntaxError:
+        except (SyntaxError, ValueError):
             return text
     return text
 
@@ -367,12 +402,27 @@ class Now:
     text: Mapping[str, str]
 
 
-def plan(worktree: Path, report: stamps.Report, now: Now, base_ref: str, review: TaskReview, folder: Path) -> Plan:
+def rules_sha256(rules: DeltaReview) -> str:
+    """The hash of a set of delta rules, which a delta review's stamp covers (`delta_rules_sha256`): `pr verify` holds
+    it to the default branch's rules, so a branch's own edit of them decides nothing."""
+    text = json.dumps(dataclasses.asdict(rules), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def plan(
+    worktree: Path,
+    report: stamps.Report,
+    now: Now,
+    base_ref: str,
+    review: TaskReview,
+    folder: Path,
+    rules: DeltaReview | None,
+) -> Plan:
     """Whether the change gets a delta review, and of what; or why it gets a full one. `folder` is the review's
-    folder, where the earlier review's verdict was kept."""
-    rules = review.delta
+    folder, where the earlier review's verdict was kept; `rules` are the default branch's delta rules
+    (`task_review.delta_rules_of`), never the branch's own."""
     if rules is None:
-        return Plan(None, ("the conventions have no tasks.review.delta",))
+        return Plan(None, ("the default branch's conventions have no tasks.review.delta",))
     since = earlier_review(report, now.diff)
     if since is None:
         return Plan(None, ("no earlier passing review of the code to stack on",))
@@ -396,6 +446,7 @@ def plan(worktree: Path, report: stamps.Report, now: Now, base_ref: str, review:
     reasons: list[str] = []
     if "orig-body" in rules.full_when:
         reasons += _orig_reasons(old["functions"], now.functions, since, now.pairs_set)
+        reasons += _dropped_reasons(worktree, old, now, since_base, since_tip)
     if "research-claim" in rules.full_when:
         reasons += _claim_reasons(worktree, files, since_tip, now.tip, review, rules)
     if "test-body" in rules.full_when:
@@ -404,7 +455,10 @@ def plan(worktree: Path, report: stamps.Report, now: Now, base_ref: str, review:
         return Plan(None, tuple(reasons))
     kept = {_identity(function) for function in [*old["moved"], *old["functions"]]}
     moved = tuple(dict(function) for function in now.moved if _identity(function) not in kept)
-    touched = touched_functions(worktree, files, since_tip, now.tip, now.functions)
+    # A function the reviewed change moved keeps its body hash and its place in `now.moved`; its comments, tag and
+    # declaration are judged again like those of a changed one. One that moved in the delta is in `moved` already.
+    still_moved = [function for function in now.moved if _identity(function) in kept]
+    touched = touched_functions(worktree, files, since_tip, now.tip, [*now.functions, *still_moved])
     return Plan(
         Delta(
             since=since,
@@ -527,6 +581,7 @@ __all__ = [
     "packet_entry",
     "plan",
     "python_test_bodies",
+    "rules_sha256",
     "stack_functions",
     "stamp_functions",
     "test_code",

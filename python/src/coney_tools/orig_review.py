@@ -667,6 +667,15 @@ def pr_stamp(root: Path, tip_ref: str, base_ref: str) -> dict[str, Any]:
     }
 
 
+def removed_units(root: Path, base_ref: str, tip_ref: str) -> tuple[Unit, ...]:
+    """The units at `base_ref` that `tip_ref` no longer has under any name (`moves`): a function deleted, or whose
+    `@orig` tags were dropped. The delta review falls back to a full one for a removal the reviewed change did not
+    make (docs/guides/review/task.md#delta)."""
+    before = _units_at_commit(str(root), resolve(root, base_ref))
+    after = _units_at_commit(str(root), resolve(root, tip_ref))
+    return moves(before.values(), after.values()).removed
+
+
 def sweep_stamp(
     root: Path, ref: str, folders: list[str], addresses: list[int], ledger: Ledger, every: bool = False
 ) -> dict[str, Any]:

@@ -31,8 +31,9 @@ override any brief:
 3. Read the diff and the files it touches yourself and run the checks the change calls for; do not trust a reported
    result or the author's summary. The packet's hashes are copied into the verdict, never computed by you. A packet
    whose `mode` is `delta` is a delta review (`docs/guides/review/task.md#delta`): judge only its `delta.files`, as
-   the `delta.diff_file` shows them; the earlier passing review holds for the rest. Record with the command the
-   packet's step prints (`task review <task> --delta --record`).
+   the `delta.diff_file` shows them; the earlier passing review holds for the rest, but a research page in the delta
+   is graded with its addresses checked as in a full review. Record with the command the packet's step prints
+   (`task review <task> --delta --record`).
 4. Check addresses and fidelity in the shared Ghidra project with the read tools you have
    (`docs/guides/ghidra.md`); never rename, comment on or retype anything, and if a call times out, wait briefly and
    retry; never restart the server. Use PCSX2 and xemu only inside a claim (`coney-tools pcsx2 claim`, `coney-tools

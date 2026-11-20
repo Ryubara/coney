@@ -54,6 +54,7 @@ from coney_tools import (
     orig_pairs,
     orig_review,
     pr_diff,
+    pr_proof,
     pr_review,
     pr_text,
     pr_text_file,
@@ -64,7 +65,15 @@ from coney_tools import (
     unit,
 )
 from coney_tools.config import ConfigError, find_repo_root
-from coney_tools.conventions import REVIEW_KINDS, Conventions, TaskReview, load_conventions_leniently
+from coney_tools.conventions import (
+    REVIEW_KINDS,
+    Conventions,
+    ConventionsError,
+    DeltaReview,
+    TaskReview,
+    load_conventions_leniently,
+    load_release_rules_at,
+)
 from coney_tools.repo_checks import check_docs, check_title
 from coney_tools.unit_record import UnitRecordError, log_task_of, read_record
 
@@ -111,6 +120,10 @@ class ReviewEnv:
     #: The `who` of the stamp this command writes.
     who: Mapping[str, Any]
     clock: Callable[[], datetime] = lambda: datetime.now(UTC)
+    #: The delta rules of the default branch (`delta_rules_of`), never the branch's own; None: every review is full.
+    delta_rules: DeltaReview | None = None
+    #: Why `delta_rules` is None when the default branch's rules could not be read (said as the reason for a full one).
+    delta_note: str = ""
 
     @property
     def folder(self) -> Path:
@@ -419,8 +432,21 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
 
 def delta_file(env: ReviewEnv) -> Path:
     """Where the reviewer reads the delta: in the review folder, named by `tasks.review.delta.diff_file`."""
-    rules = env.conventions.tasks.review.delta
+    rules = env.delta_rules
     return env.folder / (rules.diff_file if rules is not None else "DELTA.diff")
+
+
+def delta_rules_of(worktree: Path, own: Conventions) -> tuple[DeltaReview | None, str]:
+    """The delta rules of `origin/<default branch>`, as `pr verify` reads its release rules (`load_release_rules_at`):
+    a branch that edits its own `tasks.review.delta` (`full_when`, `test_paths`) must not decide its own review. None
+    when the default branch has none (every review is a full one), with why when its rules cannot be read (said only
+    as the reason the review is a full one, so a full review is not held up by it)."""
+    try:
+        ref = f"{pr_proof.RULES_REMOTE}/{pr_proof.default_branch(worktree)}"
+        rules, _ = load_release_rules_at(worktree, ref, own)
+    except (ConfigError, ConventionsError) as error:
+        return None, str(error)
+    return rules.tasks.review.delta, ""
 
 
 def _plan(
@@ -436,6 +462,8 @@ def _plan(
     """Whether the change as read gets a delta review (`review_delta.plan`)."""
     if tip == base:
         return review_delta.Plan(None, ("nothing to review",))
+    if env.delta_rules is None and env.delta_note:
+        return review_delta.Plan(None, (f"the default branch's delta rules cannot be read: {env.delta_note}",))
     now = review_delta.Now(
         base=base,
         tip=tip,
@@ -449,7 +477,9 @@ def _plan(
             "images_sha256": text.images_sha256,
         },
     )
-    return review_delta.plan(env.worktree, report, now, env.base_ref, env.conventions.tasks.review, env.folder)
+    return review_delta.plan(
+        env.worktree, report, now, env.base_ref, env.conventions.tasks.review, env.folder, env.delta_rules
+    )
 
 
 def delta_plan(env: ReviewEnv) -> review_delta.Plan:
@@ -674,10 +704,9 @@ def record(env: ReviewEnv, mode: str) -> int:
         return 1
     report = stamps.verify(env.unit.stamps, env.conventions.stamps)
     found = _reviewer_problems(env, packet, report)
-    # A delta review lists each research page it touches but need not check addresses: the delta has no claim change
-    # (a claim change makes the review a full one).
-    minimum = 0 if mode == review_delta.DELTA else rules.pages_min_addresses
-    found += review_verdict.problems(verdict, packet, minimum)
+    # A delta review checks as many addresses of each research page in it as a full one: a claim wrapped over two lines
+    # can change on a line no claim pattern matches, so the delta's research pages are graded like a full review's.
+    found += review_verdict.problems(verdict, packet, rules.pages_min_addresses)
     if found:
         return _refuse(task, "the verdict was not recorded", found)
     covers = {
@@ -688,6 +717,9 @@ def record(env: ReviewEnv, mode: str) -> int:
         "images_sha256": packet["text"]["images_sha256"],
         "review_sha256": hashlib.sha256(raw).hexdigest(),
     }
+    if mode == review_delta.DELTA and env.delta_rules is not None:
+        # The rules the delta was planned under, which `pr verify` holds to the default branch's.
+        covers["delta_rules_sha256"] = review_delta.rules_sha256(env.delta_rules)
     detail = review_verdict.stamp_detail(verdict)
     detail["reviewer"] = dict(env.who.get("agent", identity.Identity().agent()))
     if mode == "text":
@@ -939,7 +971,11 @@ def add_review_parser(commands: Any) -> None:
     review.add_argument("--base", help="what the branch is compared with (default: origin/<default branch>)")
     review.add_argument("--pr-file", type=Path, help="the description file (default: <scratch>/<task>/PR.md)")
     scope = review.add_mutually_exclusive_group()
-    scope.add_argument("--text", action="store_true", help="review the description alone (a full pass must still hold)")
+    scope.add_argument(
+        "--text",
+        action="store_true",
+        help="review the description alone (a passing review of the code, full or a delta on one, must still hold)",
+    )
     scope.add_argument(
         "--full", action="store_true", help="review the whole change even when a delta review could be given"
     )
@@ -1012,6 +1048,7 @@ def environment(args: argparse.Namespace) -> ReviewEnv:
         if worktree != here:
             _say(f"task review {task}: reviewing {worktree}, the worktree the unit record names (this is {here})")
     conventions = load_conventions_leniently(worktree, _say)
+    delta_rules, delta_note = delta_rules_of(worktree, conventions)
     # A fix task works in its parent's unit: the parent's log is stamped and the parent's PR.md is the description.
     # A record that cannot be read was refused above unless --worktree was given, which is the way out of it: then the
     # task is taken as its own.
@@ -1039,6 +1076,8 @@ def environment(args: argparse.Namespace) -> ReviewEnv:
         copy_problems=default_copy_problems,
         identity=identity.current(),
         who=stamps.who_from_env("coney-tools task review"),
+        delta_rules=delta_rules,
+        delta_note=delta_note,
     )
 
 

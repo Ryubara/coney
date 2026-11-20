@@ -164,6 +164,8 @@ class Rig:
             "clock": self.clock,
         }
         values.update(changes)
+        # The delta rules are main's (`task_review.delta_rules_of`); here, those of the conventions the run is given.
+        values.setdefault("delta_rules", values["conventions"].tasks.review.delta)
         return task_review.ReviewEnv(**values)
 
     def stamp(

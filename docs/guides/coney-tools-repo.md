@@ -782,7 +782,7 @@ coney-tools task review [TASK] [--worktree WORKTREE] [--base BASE] [--pr-file PR
 | `--worktree WORKTREE` | path | none | the unit's worktree (default: the one the unit record names, else the current checkout) |
 | `--base BASE` | text | none | what the branch is compared with (default: origin/\<default branch\>) |
 | `--pr-file PR_FILE` | path | none | the description file (default: \<scratch\>/\<task\>/PR.md) |
-| `--text` | flag | off | review the description alone (a full pass must still hold). Not with `--full`, `--delta`. |
+| `--text` | flag | off | review the description alone (a passing review of the code, full or a delta on one, must still hold). Not with `--full`, `--delta`. |
 | `--full` | flag | off | review the whole change even when a delta review could be given. Not with `--text`, `--delta`. |
 | `--delta` | flag | off | review only the delta since the last passing review; refused when the change needs a full review. Not with `--text`, `--full`. |
 | `--record` | flag | off | record the reviewer's verdict as a `reviewed` stamp. Not with `--dry-run`, `--run`. |

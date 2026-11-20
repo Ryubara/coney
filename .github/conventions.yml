@@ -628,15 +628,16 @@ tasks:
     # The delta review (docs/guides/review/task.md#delta; maintainer 2026-11-20): a change whose earlier review of the
     # code passed is reviewed only where its own change differs from the one reviewed (rebase noise left out), with the
     # checklists and the model of that delta. It is a full review instead when the delta does one of `full_when`:
-    # changes an @orig function's body or addresses, or the pairs it was compared with (orig-body); adds, removes or
-    # edits a claim line of research work, one that matches a `claim_patterns` expression (research-claim); or changes
-    # the code of any file under `test_paths`, a test, helper, fixture, conftest or data file (test-body). An @orig
-    # function whose comments, tag or declaration the delta edits is judged again (orig checklist, Opus) without a full
-    # review. `pr verify` accepts a passing delta stamp stacked on a passing full one.
+    # changes an @orig function's body or addresses, the pairs it was compared with, or drops its tags (orig-body);
+    # adds, removes or edits a claim line of research work, one that matches a `claim_patterns` expression
+    # (research-claim); or changes the code of any file under `test_paths`, a test, helper, fixture, conftest or data
+    # file (test-body). An @orig function whose comments, tag or declaration the delta edits is judged again (orig
+    # checklist, Opus) without a full review. These rules are read from the default branch, never the branch's own,
+    # and `pr verify` accepts a passing delta stamp stacked on a passing full one only under them.
     delta:
       full_when: [orig-body, research-claim, test-body]
       claim_patterns: ['0x[0-9a-fA-F]{8}', '(?i)\b(confirmed|inferred|speculative)\b']
-      test_paths: [tests/, python/tests/]
+      test_paths: [tests/, python/tests/, tools/claude-mod/tests/]
       diff_file: DELTA.diff                       # in the review folder: what the reviewer reads of the delta
 
 labels:

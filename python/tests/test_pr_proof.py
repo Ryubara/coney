@@ -43,6 +43,7 @@ from coney_tools import (
     orig_review,
     pr_diff,
     pr_proof,
+    review_delta,
     review_verdict,
     stamps,
 )
@@ -1263,15 +1264,26 @@ def test_a_check_whose_python_tests_do_not_cover_the_change_is_refused(tmp_path:
 # --- a delta review stacked on a full one (docs/guides/review/task.md#delta) -----------------------------------------
 
 
-def delta_on_full(tmp_path: Path, reviewer: dict[str, Any] | None = None, **detail: Any) -> tuple[Built, stamps.Stamp]:
-    """A unit whose full review passed, then a fix and a passing delta review of it stacked on the full one."""
+def delta_covers(built: Built) -> dict[str, str]:
+    """The cover a delta review's stamp adds: the hash of the default branch's delta rules it was planned under."""
+    rules = built.conventions.tasks.review.delta
+    assert rules is not None
+    return {"delta_rules_sha256": review_delta.rules_sha256(rules)}
+
+
+def delta_on_full(
+    tmp_path: Path, reviewer: dict[str, Any] | None = None, rules_sha256: str | None = None, **detail: Any
+) -> tuple[Built, stamps.Stamp]:
+    """A unit whose full review passed, then a fix and a passing delta review of it stacked on the full one, planned
+    under the delta rules of the default branch (`rules_sha256` names others)."""
     built = make(tmp_path)
     full = built.subject().report.latest("reviewed")
     assert full is not None
     built.edit("src/ai/placeholder.cpp", "// a clang-tidy fix\n")
     info: dict[str, Any] = {"scope": "delta", "kinds": ["code", "commits"], "since_seq": full.seq, "full_seq": full.seq}
     info.update(detail)
-    built.review(reviewer=reviewer or agent("reviewer", 2, "claude-sonnet-5-5")["agent"], **info)
+    covers = {"delta_rules_sha256": rules_sha256} if rules_sha256 else delta_covers(built)
+    built.review(reviewer=reviewer or agent("reviewer", 2, "claude-sonnet-5-5")["agent"], covers=covers, **info)
     return built, full
 
 
@@ -1314,7 +1326,9 @@ def test_a_delta_review_whose_full_reviewer_worked_on_the_task_is_refused(tmp_pa
     built.review(reviewer=ENGINEER["agent"])
     full = built.subject().report.latest("reviewed")
     assert full is not None
-    built.review(scope="delta", kinds=["code", "commits"], since_seq=full.seq, full_seq=full.seq)
+    built.review(
+        covers=delta_covers(built), scope="delta", kinds=["code", "commits"], since_seq=full.seq, full_seq=full.seq
+    )
     assert texts(built.verify(), "reviewed") == ["reviewed: reviewer engineer-1 also worked on this task"]
 
 
@@ -1332,7 +1346,7 @@ def test_a_delta_review_that_left_its_functions_out_reads_them_from_the_full_rev
     recorded.parent.mkdir(parents=True, exist_ok=True)
     recorded.write_bytes(verdict)
     delta = {"scope": "delta", "kinds": ["code", "commits"], "since_seq": full.seq, "full_seq": full.seq}
-    built.stamp("reviewed", covers=dict(inline.covers), detail=detail | delta, who=REVIEWER)
+    built.stamp("reviewed", covers=dict(inline.covers) | delta_covers(built), detail=detail | delta, who=REVIEWER)
     assert texts(built.verify(), "reviewed") == []
     # A verdict file the full stamp does not cover is not read.
     recorded.write_bytes(verdict.replace(b"clean", b"diff-bug"))
@@ -1358,4 +1372,25 @@ def test_a_text_review_over_a_delta_walks_the_stack_below_it(tmp_path: Path) -> 
     assert text is not None
     assert texts(built.verify(), "reviewed") == [
         f"reviewed: the text review #{text.seq} names no earlier review it stacks on"
+    ]
+
+
+def test_a_delta_review_planned_under_other_rules_than_the_default_branchs_is_refused(tmp_path: Path) -> None:
+    # The delta rules decide what a delta may leave to a smaller model: a branch that edits its own (test_paths,
+    # full_when) must not decide its own review, so the stamp names the rules it was planned under.
+    built, _ = delta_on_full(tmp_path, rules_sha256="0" * 64)
+    delta = built.subject().report.latest("reviewed")
+    assert delta is not None
+    ref = built.subject().remote_ref
+    assert texts(built.verify(), "reviewed") == [
+        f"reviewed: the delta review #{delta.seq} was planned under other delta rules than {ref}'s"
+    ]
+    assert redo(built.verify(), "reviewed: the delta") == ["task review"]
+    # A default branch whose rules have no delta review allows none.
+    built, _ = delta_on_full(tmp_path / "b")
+    delta = built.subject().report.latest("reviewed")
+    assert delta is not None
+    none = with_rules(built, ("tasks.review.delta", REMOVE))
+    assert texts(built.verify(conventions=none), "reviewed") == [
+        f"reviewed: the delta review #{delta.seq} was planned under other delta rules than {ref}'s"
     ]

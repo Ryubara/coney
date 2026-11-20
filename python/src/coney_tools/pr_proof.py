@@ -1102,7 +1102,20 @@ def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
         return [*found, refuse(broken, "task review --full")]
     for reviewed in stack:
         found += [r for r in _reviewer(subject, reviewed, refuse) if r not in found]
+        found += _delta_rules(subject, reviewed, refuse)
     return found
+
+
+def _delta_rules(subject: Subject, stamp: stamps.Stamp, refuse: Callable[..., Refusal]) -> list[Refusal]:
+    """A delta review planned under other delta rules than the default branch's (or when it has none): the rules
+    decide what a delta may leave out of a full review and to a smaller model, so a branch's own edit of
+    `tasks.review.delta` must decide nothing; a new `task review` plans under the default branch's."""
+    if stamp.detail.get("scope") != review_delta.DELTA:
+        return []
+    rules = subject.conventions.tasks.review.delta
+    if rules is not None and stamp.covers.get("delta_rules_sha256") == review_delta.rules_sha256(rules):
+        return []
+    return [refuse(f"the delta review #{stamp.seq} was planned under other delta rules than {subject.remote_ref}'s")]
 
 
 def _reviewer(subject: Subject, stamp: stamps.Stamp, refuse: Callable[..., Refusal]) -> list[Refusal]:

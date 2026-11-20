@@ -5,16 +5,18 @@ the earlier full review. Git is real (a temporary repository); the diff hash and
 test_task_review. Invented code, names and addresses only."""
 
 import json
+from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 from conventions_support import REMOVE, changed
 from git_support import git
 from review_support import make_verdict
 from test_task_review import PAGE, PR_TEXT, REVIEWER, Rig, rig
 
 from coney_tools import identity, review_delta, stamps, task_review
-from coney_tools.conventions import ConventionsError, parse_conventions
+from coney_tools.conventions import CONVENTIONS_FILE, ConventionsError, parse_conventions
 
 __all__ = ["rig"]  # the fixture, shared with test_task_review
 
@@ -360,8 +362,9 @@ def test_a_recorded_verdict_the_stamp_does_not_cover_gives_no_base(rig: Rig) -> 
     assert plan.delta.files == ("src/ai/util.cpp",)
 
 
-def test_a_function_that_moved_in_the_delta_needs_opus(rig: Rig) -> None:
-    # Main gains a second function the branch does not change; the review passes; then the fix renames it.
+def main_gains_rest(rig: Rig) -> str:
+    """Main gains a second `@orig` function, which the branch does not change; the branch is rebased onto it. Returns
+    the function's file."""
     git(rig.root, "checkout", "-q", "origin/main")
     rest = (
         '#include "ai/brain.h"\nnamespace coney::ai {\n/// Rests.\n/// @orig 0x00100040 Brain_Rest (Brain.cpp)\n'
@@ -372,6 +375,12 @@ def test_a_function_that_moved_in_the_delta_needs_opus(rig: Rig) -> None:
     git(rig.root, "commit", "-q", "-m", "main adds rest")
     git(rig.root, "checkout", "-q", "feature")
     git(rig.root, "rebase", "-q", "origin/main")
+    return rest
+
+
+def test_a_function_that_moved_in_the_delta_needs_opus(rig: Rig) -> None:
+    # The review passes; then the fix renames main's second function.
+    rest = main_gains_rest(rig)
     full_review(rig)
     (rig.root / "src/ai/rest.cpp").write_text(rest.replace("int rest(", "int doze("), encoding="utf-8")
     git(rig.root, "commit", "-q", "-a", "-m", "rename rest")
@@ -407,6 +416,9 @@ def test_a_delta_stamp_stacks_on_the_full_review_and_keeps_what_it_judged(
     stamp = stamps.verify(rig.unit.stamps, rig.rules).stamps[-1]
     assert stamp.step == "reviewed" and stamp.result == "pass" and stamp.covers["diff_sha256"] == "2" * 64
     assert stamp.detail["scope"] == "delta" and stamp.detail["kinds"] == ["code", "text", "commits"]
+    # It names the delta rules it was planned under, which `pr verify` holds to the default branch's.
+    rules = rig.conventions.tasks.review.delta
+    assert rules is not None and stamp.covers["delta_rules_sha256"] == review_delta.rules_sha256(rules)
     assert stamp.detail["since_seq"] == full.seq and stamp.detail["full_seq"] == full.seq
     # What the full review said of the function and the page is carried, so `pr verify` reads it from the newest stamp.
     assert stamp.detail["functions"] == {"0x00100010": "c"} and stamp.detail["pages"] == ["docs/research/ai/brain.md"]
@@ -451,3 +463,126 @@ def test_a_text_review_rests_on_a_delta_as_on_a_full_one(rig: Rig) -> None:
     delta = stamps.verify(rig.unit.stamps, rig.rules).stamps[-2]
     assert delta.detail["scope"] == "delta" and stamp.detail["since_seq"] == delta.seq
     assert stamp.detail["functions"] == {"0x00100010": "c"}
+
+
+# --- what a delta may not leave out (review #9) ----------------------------------------------------------------------
+
+
+def commit_bytes(rig: Rig, path: str, data: bytes, diff: str) -> None:
+    """A commit on the branch that writes `data` to `path` as it is, and the change hash after it."""
+    (rig.root / path).parent.mkdir(parents=True, exist_ok=True)
+    (rig.root / path).write_bytes(data)
+    git(rig.root, "add", "-A")
+    git(rig.root, "commit", "-q", "-m", f"bytes of {path}")
+    rig.diff = diff
+
+
+def test_a_comment_edit_of_a_function_the_reviewed_change_moved_opens_the_orig_checklist(rig: Rig) -> None:
+    # The reviewed change renamed main's function (a move: its compare stands); the fix then edits a comment inside it.
+    rest = main_gains_rest(rig)
+    moved = rest.replace("int rest(", "int doze(")
+    fix(rig, {"src/ai/rest.cpp": moved}, diff=rig.diff)
+    full_review(rig)
+    fix(rig, {"src/ai/rest.cpp": moved.replace("    return hours", "    // Twice, as the original.\n    return hours")})
+    plan = task_review.delta_plan(rig.env())
+    assert plan.delta is not None, plan.reasons
+    # It moved in the reviewed change, not in the delta, but its text changed: it is judged again.
+    assert plan.delta.moved == ()
+    assert [f["coney"] for f in plan.delta.functions] == ["doze"]
+    packet, problems = delta_packet(rig)
+    assert problems == [], problems
+    assert "orig" in packet["kinds"] and [f["coney"] for f in packet["functions"]] == ["doze"]
+    assert task_review.required_models(packet["kinds"], rig.conventions.tasks.review) == ("opus",)
+
+
+WRAPPED = PAGE + (
+    "\nBrain_Wait waits 3 frames before the next thought, as the loop that counts them at\n"
+    "0x00100020 reads it (confirmed (code)).\n"
+)
+
+
+def test_a_wrapped_claim_changed_in_a_delta_keeps_the_address_minimum(rig: Rig) -> None:
+    # The value is on one line, its address and evidence level on the next: the line alone holds no claim pattern,
+    # so the delta stays a delta, and the research page in it is held to the full review's address minimum.
+    page = "docs/research/ai/brain.md"
+    fix(rig, {page: WRAPPED}, diff=rig.diff)
+    full_review(rig)
+    fix(rig, {page: WRAPPED.replace("3 frames", "4 frames")})
+    packet, problems = delta_packet(rig)
+    assert problems == [], problems
+    assert "research" in packet["kinds"] and [p["path"] for p in packet["pages"]] == [page]
+    verdict = make_verdict(packet)
+    verdict["pages"][0]["checked"] = []
+    rig.verdict_path().write_text(json.dumps(verdict), encoding="utf-8")
+    assert task_review.record(rig.env(), review_delta.DELTA) == 1
+    assert record_delta(rig) == 0
+
+
+def test_binaries_that_differ_only_in_bytes_that_are_not_utf8_still_differ(rig: Rig) -> None:
+    commit_bytes(rig, "assets/brain.bin", b"\x89BIN\x80\n", rig.diff)
+    commit_bytes(rig, "tests/pictures/reference/brain.png", b"\x89PNG\x80\n", rig.diff)
+    full_review(rig)
+    commit_bytes(rig, "assets/brain.bin", b"\x89BIN\x81\n", "2" * 64)
+    plan = task_review.delta_plan(rig.env())
+    assert plan.delta is not None and plan.delta.files == ("assets/brain.bin",), plan
+    # The same under the test paths: a reference picture is what a test compares with.
+    commit_bytes(rig, "tests/pictures/reference/brain.png", b"\x89PNG\x81\n", "3" * 64)
+    plan = task_review.delta_plan(rig.env())
+    assert plan.delta is None
+    assert any(r.startswith("test-body:") and "brain.png" in r for r in plan.reasons), plan.reasons
+
+
+def test_a_delta_that_drops_the_orig_tags_of_a_function_falls_back(rig: Rig) -> None:
+    full_review(rig)
+    header = (rig.root / "src/ai/brain.h").read_text(encoding="utf-8")
+    fix(rig, {"src/ai/brain.h": header.replace("    /// @orig 0x00100010 Brain_Think (Brain.cpp)\n", "")})
+    plan = task_review.delta_plan(rig.env())
+    assert plan.delta is None
+    assert (
+        "orig-body: the delta drops the @orig function or its tags: Brain::think (src/ai/brain.cpp:3)" in plan.reasons
+    )
+
+
+def test_an_edit_far_down_a_long_declaration_reopens_the_function(rig: Rig) -> None:
+    header = (rig.root / "src/ai/brain.h").read_text(encoding="utf-8")
+    long = header.replace("int think(int hunger);", "int think(" + "\n" * 12 + "        int hunger = 3);")
+    fix(rig, {"src/ai/brain.h": long}, diff=rig.diff)
+    full_review(rig)
+    fix(rig, {"src/ai/brain.h": long.replace("= 3", "= 4")})
+    plan = task_review.delta_plan(rig.env())
+    assert plan.delta is not None, plan.reasons
+    assert [f["coney"] for f in plan.delta.functions] == ["Brain::think"]
+
+
+def test_without_delta_rules_on_main_every_review_is_full(rig: Rig) -> None:
+    full_review(rig)
+    fix(rig, {"src/ai/util.cpp": "int helper() { return 1; }\n"})
+    plan = task_review.delta_plan(rig.env(delta_rules=None))
+    assert plan.delta is None and plan.reasons == ("the default branch's conventions have no tasks.review.delta",)
+    # Rules that could not be read say why.
+    plan = task_review.delta_plan(rig.env(delta_rules=None, delta_note="origin/HEAD is not set here"))
+    assert plan.reasons == ("the default branch's delta rules cannot be read: origin/HEAD is not set here",)
+
+
+def test_the_delta_rules_are_the_default_branchs_whatever_the_branch_sets(tmp_path: Path) -> None:
+    root = tmp_path / "checkout"
+    (root / ".github").mkdir(parents=True)
+
+    def main_has(data: dict[str, Any]) -> None:
+        """Commit `data` as main's conventions and point origin/main and origin/HEAD at it."""
+        (root / CONVENTIONS_FILE).write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+        git(root, "add", "-A")
+        git(root, "commit", "-q", "-m", "rules")
+        git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+        git(root, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
+
+    git(root, "init", "-q", "-b", "main")
+    main_has(changed())
+    # The branch's own file empties full_when and drops its test paths; main's rules are read all the same.
+    own = parse_conventions(changed(("tasks.review.delta.full_when", []), ("tasks.review.delta.test_paths", ["docs/"])))
+    rules, note = task_review.delta_rules_of(root, own)
+    assert rules is not None and note == ""  # no note: the rules were read
+    assert rules.full_when == ("orig-body", "research-claim", "test-body") and "tests/" in rules.test_paths
+    main_has(changed(("tasks.review.delta", REMOVE)))
+    rules, note = task_review.delta_rules_of(root, own)
+    assert rules is None and note == ""
