@@ -262,8 +262,10 @@ class GameplayMode final : public GameMode {
     void setMoviePlayer(MoviePlayer* player) { m_moviePlayer = player; }
     /// Makes each level's scene system (over the disc's scene list); null or empty: no scenes.
     using SceneMaker = std::function<std::unique_ptr<scenes::SceneSystem>()>;
-    /// Gives the mode its scene maker.
-    void setSceneMaker(SceneMaker maker) { m_sceneMaker = std::move(maker); }
+    /// Gives the mode its scene maker; each scene system it makes gets the mode's crew hooks (scenes::SceneCrew).
+    /// @coney-only the scene system's link to the gameplay mode, made here so the level's enter keeps the original's
+    /// steps
+    void setSceneMaker(SceneMaker maker);
     /// Plays the glass panes' and doors' sounds through `sounds` (the audio's ObjectSounds; null: none), which must
     /// outlive the mode or be replaced first.
     void setObjectSounds(world_objects::ObjectServices* sounds) { m_objectServices.setSounds(sounds); }

@@ -379,7 +379,6 @@ void GameplayMode::enter() {
             std::vector<script::Value> values(args.begin(), args.end());
             m_scripts.call(function, values);
         });
-        m_scenes->setCrew(&m_sceneCrew);
         m_scenesBefore = m_context.scenes;
         m_context.scenes = m_scenes.get();
     }

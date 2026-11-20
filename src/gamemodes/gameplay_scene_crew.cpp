@@ -3,6 +3,8 @@
 // docs/research/scenes.md#gang): his bums sent away at the start; his menu unlocked, the follow forced and one gang
 // update at the end. Each hook does nothing while there is no player 1, as the original's steps test his handle first.
 #include <cstddef>
+#include <memory>
+#include <utility>
 
 #include "ai/brain.h"
 #include "ai/crew.h"
@@ -10,10 +12,26 @@
 #include "ai/scripted_brains.h"
 #include "ai/scripted_hub.h"
 #include "gamemodes/gameplay_mode.h"
+#include "scenes/scene_player.h"
 #include "scripting/story_bindings.h"
 #include "warriors/story_state.h"
 
 namespace coney {
+
+// Wraps the maker so each level's scene system reaches player 1's gang through the hooks below.
+void GameplayMode::setSceneMaker(SceneMaker maker) {
+    if (!maker) {
+        m_sceneMaker = nullptr;
+        return;
+    }
+    m_sceneMaker = [this, maker = std::move(maker)]() {
+        std::unique_ptr<scenes::SceneSystem> scenes = maker();
+        if (scenes) {
+            scenes->setCrew(&m_sceneCrew);
+        }
+        return scenes;
+    };
+}
 
 const HumanCreation* GameplayMode::SceneCrewHooks::chief() const {
     return m_mode->m_scripted ? m_mode->m_humans.player(1) : nullptr;
