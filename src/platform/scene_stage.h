@@ -151,6 +151,8 @@ class SceneStage final : public scenes::SceneHost {
     [[nodiscard]] float barHeight(std::uint64_t nowMs) const { return m_letterbox.barHeight(nowMs); }
     /// How many puppets the stage holds (humans the play mode does not draw, loaded as characters).
     [[nodiscard]] std::size_t puppetCount() const { return m_puppets.size(); }
+    /// The model the bound human `human` is drawn as: empty when the play mode draws it, or when it is not bound.
+    [[nodiscard]] std::string modelOf(double human) const;
     /// One line of counts for the summary.
     [[nodiscard]] std::string summary() const;
 

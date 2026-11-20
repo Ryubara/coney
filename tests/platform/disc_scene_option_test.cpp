@@ -127,3 +127,87 @@ TEST_CASE("a scene's posed puppets are handed to the caller's draw, each its own
     CHECK((drawn[0] == first || drawn[1] == first));
     std::printf("scene puppets: 2 joined, 0 then 1 then 2 distinct meshes drawn as they were posed\n");
 }
+
+namespace {
+
+// The preview's stand-ins take handle 1000 + their role (play_level_scene.cpp); `l99_c1`'s Ash is role 7.
+constexpr double kAshStandIn = 1007.0;
+// A level99 checkpoint whose start plays no scene of its own, so the preview's is the only one.
+constexpr int kQuietCheckpoint = 2;
+
+// Starts level99 at kQuietCheckpoint with `scene` played through `--scene`'s set-up; false when it did not start.
+bool startPreview(coney::test::DiscSession& run, std::string_view scene, std::string& failure) {
+    bool played = false;
+    run.session().setFirstLevelSetup([&](coney::platform::PlayLevelMode& mode) -> std::expected<void, coney::Error> {
+        auto result = mode.playScene(scene);
+        played = result.has_value();
+        if (!result) {
+            failure = result.error().message;
+            return std::unexpected(std::move(result.error()));
+        }
+        return {};
+    });
+    run.session().startAtLevel("level99", kQuietCheckpoint);
+    return run.runUntilPlay() && played;
+}
+
+} // namespace
+
+TEST_CASE("the disc's level99: --scene l99_c1 draws Ash as the type its script binds, warr_ty_cv",
+          "[disc][scenes][options]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    coney::test::DiscSession run(*wad, "");
+    std::string failure;
+    const bool played = startPreview(run, "l99_c1", failure);
+    INFO(failure);
+    REQUIRE(played);
+    run.run(kLookAt);
+    coney::platform::PlayLevelMode* play = run.session().play();
+    REQUIRE(play != nullptr);
+    // docs/research/scenes.md#cast-runtime: role 7 (`warrashcv`) is bound to Ash, character type 40, `warr_ty_cv`;
+    // role 1 (`warrve`) to Vermin, `warr_ve_gen`; role 3 to nobody, so it is no puppet.
+    const std::string ash = play->stage().modelOf(kAshStandIn);
+    const std::string vermin = play->stage().modelOf(1001.0);
+    std::printf("--scene l99_c1 in level99: Ash drawn as %s, Vermin as %s, role 3 bound %s, %zu puppets\n", ash.c_str(),
+                vermin.c_str(), play->stage().holds(1003.0) ? "yes" : "no", play->stage().puppetCount());
+    CHECK(ash == "warr_ty_cv");
+    CHECK(vermin == "warr_ve_gen");
+    CHECK_FALSE(play->stage().holds(1003.0));
+}
+
+TEST_CASE("the disc's level99: --scene Coney_Sub2 moves dyn_s_train_med_full cars in its slots",
+          "[disc][scenes][options]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    coney::test::DiscSession run(*wad, "");
+    std::string failure;
+    std::size_t before = 0;
+    bool played = false;
+    run.session().setFirstLevelSetup([&](coney::platform::PlayLevelMode& mode) -> std::expected<void, coney::Error> {
+        before = mode.standingObjectsOf("dyn_s_train_med_full");
+        auto result = mode.playScene("Coney_Sub2");
+        played = result.has_value();
+        if (!result) {
+            failure = result.error().message;
+            return std::unexpected(std::move(result.error()));
+        }
+        return {};
+    });
+    run.session().startAtLevel("level99", kQuietCheckpoint);
+    REQUIRE(run.runUntilPlay());
+    INFO(failure);
+    REQUIRE(played);
+    run.run(kLookAt);
+    coney::platform::PlayLevelMode* play = run.session().play();
+    REQUIRE(play != nullptr);
+    // docs/research/scenes.md#cast-runtime: the script binds slots 0-2 and 4-6 to objects of type
+    // `dyn_s_train_med_full`; slot 3 (`train_sound`) to an object with no world-object type, which the preview leaves.
+    const std::size_t after = play->standingObjectsOf("dyn_s_train_med_full");
+    std::printf("--scene Coney_Sub2 in level99: %zu dyn_s_train_med_full objects before, %zu after\n", before, after);
+    CHECK(after == before + 6);
+}

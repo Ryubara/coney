@@ -91,6 +91,11 @@ std::optional<WorldView> SceneStage::cameraView(float alpha, float aspect) const
 
 bool SceneStage::holds(double human) const { return m_bound.contains(human); }
 
+std::string SceneStage::modelOf(double human) const {
+    const auto found = m_bound.find(human);
+    return found != m_bound.end() ? found->second.model : std::string();
+}
+
 std::optional<scenes::RoleFrame> SceneStage::frameOf(double human, float alpha) const {
     const auto found = m_bound.find(human);
     if (found == m_bound.end()) {
