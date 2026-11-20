@@ -729,6 +729,36 @@ it, sending the object message `0x1b` at once; the `+0x70` slide applies when ob
 path the event's position is not multiplied by the human's scale. A left-hand or hat pick-up clip has no type-9 event,
 so nothing is attached.
 
+The steps of `Human_PlaceItemInHand` (`0x0024c280`, `h, name, record, guard`), confirmed (code) at that address:
+
+1. The type record of `name` is looked up (`ObjType_FindByName`) and copied. With `guard` set, a human with held flag
+   `0x4000` (mid pick-up, `Human_HasHeld4000` `0x00228408`) gets nothing and 0 is returned. The binding passes
+   `record` = 1 and `guard` = 1, and has already refused a human with something in hand or with that flag
+   (`0x00238540`); `Human_Init`'s class weapon passes the same ([Human creation: the weapon](human-init.md#weapon)).
+2. A type of pick-up kind 5 (`+0x65`) is not put in the hand: it becomes the human's **carried prop**
+   (`Human_CreateCarriedProp` `0x0024cbb0`: attach point `0x13`, held at `+0x34c`,
+   [Combat: power-move props](combat-grabs.md#power-move-props)), so `+0x338` stays empty.
+3. Otherwise anything in the hand is dropped (`Human_DropHeld` `0x00257f38`), and the object is made by name
+   (`Task_CreateObjectByName`) at the human's position now (his vtable `+0xac`) with no turn (the identity quaternion
+   at `0x00511790`). No object made (an unknown name) returns 0.
+4. With `record` set, a spawn record is added for it (`ObjRecord_Add`, flags `0x41`) and pinned; then
+   `Human_PlaceObjectInHandByPickupClip` (`0x0024c6d8`) attaches it as above and, when the take succeeded, unpins the
+   record (the held object is kept alive by its holder).
+
+**At runtime** (confirmed (runtime), run r-20261120-level54-scripted-bats): `level54` checkpoint 3, where the script
+makes the eight `StreetPursuit` Furies after the opening scene and puts a `dyn_bat_fury` in each hand. All eight held
+one, each object attached (`+0x54` = `0x8021a091`, bit `0x10`) to its Fury on bone 25 at local position
+(0.151, −0.288, −0.005), the same offset as a bat the swap places ([A weapon given to a Warrior](#given-weapon)), and the
+frames showed the bats in their right hands.
+
+**In Coney** (issue #739): the binding (`ScriptedHumans::placeItemInHand`, `repo:src/ai/scripted_humans.cpp`) gives
+the human the new handle and the type's name; the level simulation's next step makes it
+(`PlayLevelSimulation::placeItemInHand`, `repo:src/gamemodes/play_level_held.cpp`): a spawn record of the type at his
+feet with no turn, pinned, held by him (`LevelPickups::placeInHand`), which the held draw then poses from his pick-up
+clip like any held object. Differences: the record stays pinned while held (Coney's take does the same; the
+original unpins it); the object is made on the step after the call, not in it; an unknown type empties the hand; and a
+kind-5 type is a **stand-in**: no carried prop is made and the hand stays empty. The `0x4000` guard is issue #695's.
+
 **Drop** (`0x00257f38`, triangle with nothing to take, a pick-up of a two-handed or hat object, a scene's release;
 confirmed (code)): pops the anim set the object pushed, records the human as its last holder (object `+0x11c`) unless
 the type is 24 or 27, makes its physics body (`Obj_CreatePhysicsBody`), reschedules its task, and sends it message
@@ -2342,6 +2372,11 @@ the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
   one goes at once, where the original's class answers the message (a `dyn_masks` prop hits itself, [Breakable
   props](#breakable-props)). Which scripts destroy a worn hat or a carried prop, or another class by message, is not
   checked.
+- **A kind-5 object a script puts in a hand**{#q-placed-carried-prop}: `Human_PlaceItemInHand` (`0x0024c280`) makes a
+  type of pick-up kind 5 the human's carried prop (`Human_CreateCarriedProp` `0x0024cbb0`), not a held object
+  ([Scripted placement](#held)). Coney's carried props come only from clip events, so its stand-in makes nothing and
+  leaves the hand empty. Which `HuPlaceItemInHand` calls on the disc name a kind-5 type is not checked; one that does
+  needs the carried prop made from the placement too.
 - Where a cabin door's wreck pieces and a barrier's boards appear (its leaves are removed at the break,
   [Breaking a door](#door-break)).
 - Cash register ([Script types](script-types.md#dyn-cashreg)): how many throws or swings break a lifted register at

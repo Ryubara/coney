@@ -26,6 +26,25 @@ coney = "src/combat/throw_aim.h:ThrowAimState::step"
 status = "legacy"
 
 [[function]]
+address = 0x0024c280
+name = "Human_PlaceItemInHand"
+page = "objects.md#held"
+role = "makes an object by name and puts it in a human's hand (the script's and the class weapon's path)"
+level = "confirmed-code"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::placeItemInHand"
+status = "compared"
+
+[[function.gaps]]
+what = "the held flag 0x4000 guard (a human mid pick-up gets nothing)"
+relation = "not-ported"
+issue = 695
+
+[[function.gaps]]
+what = "a type of pick-up kind 5 becomes a carried prop (Human_CreateCarriedProp); Coney makes nothing"
+relation = "stand-in"
+question = "objects.md#q-placed-carried-prop"
+
+[[function]]
 address = 0x0024c6d8
 name = "Human_PlaceObjectInHandByPickupClip"
 page = "objects.md#held"

@@ -146,6 +146,18 @@ TakeResult LevelPickups::takeByAi(double handle, double taker) {
     return TakeResult::InHand;
 }
 
+bool LevelPickups::placeInHand(double handle, double holder) {
+    world_objects::SpawnRecord* record = m_records.find(handle);
+    if (record == nullptr || record->removed || m_inHand.contains(handle)) {
+        return false;
+    }
+    // Held as a take holds it: the record stays, pinned, so the streaming keeps it while it is in the hand.
+    record->pinned = true;
+    m_inHand.insert(handle);
+    m_holders[handle] = holder;
+    return true;
+}
+
 void LevelPickups::takeOwned(world_objects::SpawnRecord& record, double taker) {
     record.owned = false;
     if (m_ownedTaken) {

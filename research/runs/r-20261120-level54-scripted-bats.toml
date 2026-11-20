@@ -1,0 +1,36 @@
+version = 1
+id = "r-20261120-level54-scripted-bats"
+date = "2026-11-20"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "fe4e0f6ceecfe15da73003a2bace97e1cb3b0e0cae98a6f6ed479ac100f3ca3d"
+
+[who]
+agent = "a6bee927aab3959d9"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level54 checkpoint 3 loaded with the load-checkpoint recipe from the street-end-run state; after the opening scene the eight StreetPursuit Furies (humans 4-11) each held a handle (+0x338) resolving through the handle table 0x006ebd38 to a world object with +0x54 = 0x8021a091 (bit 0x10, attached), +0x58 = its Fury, +0x6d = 25 (right hand), local +0x10 = (0.1514, -0.2882, -0.0046) and model hash +0xc4 = crc32(dyn_bat_fury); read on two loads (copies pcsx2 and pcsx2-b), the same each time; frames show the bats in their right hands"
+
+[values]
+armed = 8
+attached_bit = 16
+bone = 25
+local_x = 0.1514
+local_y = -0.2882
+local_z = -0.0046
+
+[addresses]
+handle_table = 0x006ebd38
+place_item_in_hand = 0x0024c280

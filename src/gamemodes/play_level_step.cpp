@@ -103,6 +103,7 @@ ModeResult PlayLevelSimulation::update(GameModeStack& stack, const FrameTime& fr
         CONEY_PERF_ZONE("play.ai_capture");
         m_ai->capture();
     }
+    stepPlacedHeld();
     stepPickups();
     stepThrowAim(actionPad);
     stepMugMeter(m_player->human(), actionPad);

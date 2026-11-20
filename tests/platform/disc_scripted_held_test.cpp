@@ -7,8 +7,8 @@
 // eight Furies of `StreetPursuit` and puts a `dyn_bat_fury` in each one's hand. In the original
 // `Human_PlaceItemInHand` (`0x0024c280`) makes the object by name at the human, records it, and attaches it at the
 // bone and offset of its low pick-up clip's first take event (`0x0024c6d8`). At runtime all eight held one, attached
-// (object `+0x54` bit `0x10`) to its Fury on bone 25, the right hand (confirmed (runtime), PCSX2 copy `pcsx2`,
-// 2026-11-19, the checkpoint loaded with the `load-checkpoint` recipe). So each bat must be a spawn record of its type,
+// (object `+0x54` bit `0x10`) to its Fury on bone 25, the right hand (confirmed (runtime), run
+// r-20261120-level54-scripted-bats). So each bat must be a spawn record of its type,
 // held (in no pick-up search), and among the objects drawn in a hand, on bone 25, where his hand can hold it. It runs
 // only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
