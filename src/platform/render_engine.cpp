@@ -19,6 +19,7 @@
 #include <rw.h>
 
 #include "core/assert.h"
+#include "core/log.h"
 #include "core/perf.h"
 #include "core/window_display.h"
 #include "platform/character_skin.h"
@@ -788,6 +789,11 @@ void RenderEngine::present() {
             ++m_shown;
         }
         // A clip takes the frame as read back before the debug menus drew over it, as on GL3 above.
+        // A frame that could not be read back is said, so a clip short of a frame has a cause in the log.
+        if (m_frameTap && !presented.game) {
+            logging::warn(logging::Category::Engine,
+                          "coney: the GPU renderer could not read this frame back; the clip skips it");
+        }
         if (m_frameTap && presented.game) {
             tapGpuFrame(*presented.game);
         }

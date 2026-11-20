@@ -216,7 +216,8 @@ overlay, the console bar), into a second buffer (`GpuRenderer::ReadBack::Game`, 
 them), waited for with the same fence, and the logical screen's rectangle of it handed to the tap
 (`RenderEngine::tapGpuFrame()`), as the GL3 renderer reads that rectangle from its frame buffer before the debug menus.
 So a clip on either renderer shows the game alone, and `clips pair --renderer gpu` records the GPU renderer's picture.
-Each recorded frame waits for the GPU, which test mode's fixed step allows.
+Each recorded frame waits for the GPU, which test mode's fixed step allows. A frame whose copy cannot be made or read
+is left out of the clip with a warning in the log, so a clip one frame short says why.
 
 ## What the scene assets cost {#scene-assets}
 

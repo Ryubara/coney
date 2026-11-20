@@ -416,8 +416,8 @@ struct Options {
     std::optional<ReferenceKind> referenceKind;
     /// `--renderer gl3|gpu`: the renderer a windowed run draws with (docs/engine/renderer.md#migration); unset takes
     /// the saved `Display/Renderer` setting outside test mode, else GL3 (chooseRenderer()). `gpu`
-    /// needs a window and records no clip or reference render, so it cannot be combined with `--headless`, `--load`,
-    /// `--record` or `--render-references`.
+    /// needs a window and draws no reference render, so it cannot be combined with `--headless`, `--load` or
+    /// `--render-references`; it records a clip with `--record` (docs/engine/gpu-renderer.md#capture).
     std::optional<RendererKind> renderer;
     /// `--preset ps2|xbox|enhanced|high`: the display preset (docs/engine/renderer.md#presets). Outside test mode it is
     /// chosen at the start, over the saved settings, and the player may change it after; in test mode it is what
