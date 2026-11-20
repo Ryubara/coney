@@ -551,7 +551,7 @@ coney = "src/gamemodes/gameplay_mode.h:GameplayMode::stepCrew"
 status = "compared"
 
 [[function.gaps]]
-what = "the record's slot and pad, the enemy lists cleared, the player list and HUD panel, the brain reset, the war-chief choice, the damage scale, the class flags and gear, the gang's update with 1 after the follow, and the body and move-style settings are not ported"
+what = "the record's slot and pad, the enemy lists cleared, the player list and HUD panel, the brain reset, the war-chief choice, the damage scale, the class flags and gear, the gang's update after the level start's follow (a switch runs it), and the body and move-style settings are not ported"
 relation = "not-ported"
 issue = 1520
 
