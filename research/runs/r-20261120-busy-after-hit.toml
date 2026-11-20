@@ -1,0 +1,42 @@
+version = 1
+id = "r-20261120-busy-after-hit"
+date = "2026-11-20"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "c0a12c46facda16de9b97e18ae73958a28d9b434b336b2f35852d07bf351d763"
+
+[who]
+agent = "a3979171306343676"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = []
+
+[run]
+name = ""
+method = "paused; wrote 30 to the pending damage (record +0x118) of the AI PoizoCiv (power class 2, human +0x1b8) and advanced 2 frames, then read his record +0x108, health and the game time (game state +0x48); then the same on the player Rembrandt"
+
+[values]
+ai_class = 2
+ai_game_time_before_ms = 586676
+ai_busy_until_ms = 587459
+ai_game_time_after_ms = 587243
+ai_busy_minus_hit_frame_ms = 750
+ai_health_before = 600
+ai_health_after = 570
+player_busy_until_ms = 0
+player_health_before = 314
+player_health_after = 284
+
+[addresses]
+ai_human = 0x00641350
+ai_record = 0x0065a6c0
+player_record = 0x0065a840
+game_state_ptr = 0x0050b734
