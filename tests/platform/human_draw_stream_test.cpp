@@ -160,12 +160,14 @@ DrawStream drawHumanScene(const std::vector<SceneHuman>& humans, const SceneInsp
 
 TEST_CASE("the human scene's draw stream has its expected hash", "[platform][draw-stream][humans]") {
     // Expected: ../engine/renderer.md#comparing, Coney's own recording: taken from this scene when the humans' renders
-    // were routed through the draw layer; the move onto the frame description keeps it.
+    // were routed through the draw layer, which the move onto the frame description kept, then taken again when each
+    // human's colour became his white HuColor times the dimming in place of the material's own
+    // (docs/research/graphics.md#human-draw, step 3).
     const DrawStream stream = drawHumanScene(sceneHumans());
     // Each human one draw of his body, and the three with the blood layer (docs/research/rendering.md#characters) one
     // more: 7 atomic draws of the fixture's 4 vertices each.
     CHECK(stream.counts().atomicDraws == 7);
-    CHECK(stream.hash() == 0x8dd4a6c636a76957ULL);
+    CHECK(stream.hash() == 0x719927e6aff04f6eULL);
 }
 
 TEST_CASE("the human scene hashes the same twice and sees a pose, the blood and the fade",
@@ -196,7 +198,7 @@ TEST_CASE("the human scene's humans are drawn from the frame description with th
     // character's space) at his placement (characterPlacement()), lit by the objects' lights selected once for his
     // sphere (HumanRender_Draw's one call of LightManager_SelectLights, docs/research/lighting.md#select), in the
     // humans' states (Z tested and written, back faces culled: docs/research/graphics.md#human-draw). His colour is
-    // his materials' own times the shadow dimming, 1 for every human here (graphics::ShadowDim starts long since lit),
+    // his HuColor (white) times the shadow dimming, 1 for every human here (graphics::ShadowDim starts long since lit),
     // and his alpha the distance fade: 255 near, (70 - d) / 10 of it from 60 to 70 m (graphics.md#human-draw, step 4).
     const std::vector<SceneHuman> humans = sceneHumans();
     drawHumanScene(humans, [&](const RenderEngine& engine, const std::vector<std::unique_ptr<CharacterMesh>>& meshes,
@@ -225,6 +227,7 @@ TEST_CASE("the human scene's humans are drawn from the frame description with th
             CHECK(draw.dualPass == coney::graphics::DualPass::Blood);
             CHECK(draw.material.colour == coney::graphics::MaterialColour::Shade);
             CHECK(draw.material.shade == 1.0F);
+            CHECK(draw.material.tint == coney::graphics::kWhite);
             CHECK_FALSE(draw.material.distanceLevels);
             CHECK(draw.states.depthTest);
             CHECK(draw.states.depthWrite);
