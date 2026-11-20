@@ -810,7 +810,7 @@ void Doors::hitStore(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     // Stand-in (#707): the original plays the hit sound at the door on every hit; Coney only on the breaking one.
     playSound(door, kDoorHitSound, world);
     playPair(world, material::kGlass, material::kGlass, door.position);
-    // Not ported (#707), from the original's break: the door's collision body removed, the call 0x00219320 on the
+    // Not ported (#707), from the original's break: the door's collision body removed, the call 0x003a65a8 on the
     // attacker, the two bursts 1 m up, and both leaves' next models (message 0x19). The store never reaches wreck().
     setTrianglesEnabled(world, door.triangles, false);
     openAway(door, hit.attackerAt, world);
