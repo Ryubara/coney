@@ -372,6 +372,19 @@ def test_a_recently_merged_pull_request_marks_its_unit(layout: Layout) -> None:
     assert row["pr"] == {"number": 799, "state": "merged", "ci": None, "causes": [], "merged_at": iso(ago(minutes=4))}
 
 
+def test_a_forks_pull_request_with_a_units_branch_name_is_no_units(layout: Layout) -> None:
+    # #1522: task 285's fixes were briefed against a contributor's pull request whose fork branch had its name.
+    make_task(layout.scratch, "add-task-start", (799,))
+    answers = github_answers()
+    fork = {"headRepositoryOwner": {"login": "contributor"}, "isCrossRepository": True}
+    for state in ("merged", "all", "open"):
+        key = ("pr", "list", "--state", state)
+        answers[key] = [{**pull, **fork} for pull in answers[key]]
+    report = collect(sources(layout, FakeGh(answers)), github=True)
+    assert unit(report, "fix-frame-812")["pr"] is None and unit(report, "add-task-start")["pr"] is None
+    assert [pull["branch"] for pull in report["prs"]["prs"]] == ["contributor:fix-frame-812"]
+
+
 def test_the_issues_section_holds_claimed_unit_and_critical_issues_only(layout: Layout) -> None:
     issues = collect(sources(layout, FakeGh(github_answers())), github=True)["issues"]
     assert [i["number"] for i in issues["issues"]] == [741, 790]

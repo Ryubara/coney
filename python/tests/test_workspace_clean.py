@@ -493,8 +493,17 @@ def test_clean_honours_the_busy_marker_of_the_conventions(space: Space) -> None:
 class FakeGh:
     """A stand-in for `gh`: records each command and answers the merged-pull-request list from a table."""
 
-    def __init__(self, merged: dict[str, list[str]], *, code: int = 0, text: str | None = None) -> None:
+    def __init__(
+        self,
+        merged: dict[str, list[str]],
+        *,
+        code: int = 0,
+        text: str | None = None,
+        forks: dict[str, list[str]] | None = None,
+    ) -> None:
         self.merged = merged
+        #: Merged pull requests from a contributor's fork, by branch name.
+        self.forks = forks or {}
         self.code = code
         self.text = text
         self.calls: list[list[str]] = []
@@ -504,8 +513,14 @@ class FakeGh:
         if self.text is not None:
             body = self.text
         else:
+            ours = [(name, oid, False) for name, oids in self.merged.items() for oid in oids]
+            forks = [(name, oid, True) for name, oids in self.forks.items() for oid in oids]
             body = json.dumps(
-                [{"headRefName": name, "headRefOid": oid} for name, oids in self.merged.items() for oid in oids]
+                [
+                    {"headRefName": name, "headRefOid": oid, "isCrossRepository": cross}
+                    | ({"headRepositoryOwner": {"login": "contributor"}} if cross else {})
+                    for name, oid, cross in ours + forks
+                ]
             )
         return subprocess.CompletedProcess(command, self.code, body, "boom" if self.code else "")
 
@@ -534,8 +549,16 @@ def test_the_one_call_asks_for_the_merged_pull_requests_of_every_branch(tmp_path
     (command,) = gh.calls
     assert command[:3] == ["gh", "pr", "list"] and "--head" not in command
     assert command[command.index("--state") + 1] == "merged"
-    assert command[command.index("--json") + 1] == "headRefName,headRefOid"
+    assert set(command[command.index("--json") + 1].split(",")) >= {"headRefName", "headRefOid", "isCrossRepository"}
     assert int(command[command.index("--limit") + 1]) >= 1000
+
+
+def test_a_forks_merged_pull_request_of_the_same_branch_name_is_no_worktrees(tmp_path: Path) -> None:
+    # #1522: a contributor's fork branch can carry a unit's name; its merge says nothing of the unit's branch.
+    gh = FakeGh({"ours": ["a" * 40]}, forks={"285-add-x": ["b" * 40], "ours": ["c" * 40]})
+    lookup = workspace_clean.gh_merged_heads(tmp_path, gh)
+    assert lookup("285-add-x") == []
+    assert lookup("ours") == ["a" * 40]
 
 
 @pytest.mark.parametrize(

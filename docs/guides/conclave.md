@@ -108,6 +108,11 @@ with nothing new is left alone, and the idle wake stays Tether's ([boundary](#bo
 | `question` | `QUESTION.md` or `QUESTION-<n>.md` in the scratch folder of a task unit or of any branch with a worktree ([Questions](#questions)) | `question:<task>:<file>:<time the file changed>` | An `ANSWER.md` (`ANSWER-<n>.md`) written at or after the question's last change | Read it and answer |
 | `disk-low` | A [watched drive](workspace.md#watched-drives) is under its floor (`workspace.disk_min_free_gb`, or the limit `watch_paths` gives it), whichever drive it is: the build drive can fill while the workspace drive has room | `disk-low:<drive>` (`disk-low:E:`), so it is told once while the drive stays low and again if it recovers and falls | Never: it leaves the list when the drive is above its floor again | Run `coney-tools workspace clean --apply` before builds fail, and free a drive it cannot (a scratch or emulator folder) by hand |
 
+**A unit's pull request is matched by head repository too.** A unit is given the pull request whose head is its branch
+in this repository; a fork's pull request from a branch of the same name shows as `owner:branch` and is no unit's, so it
+never releases a unit, makes one look opened or merged, or gets a unit's `conflict-fix` or fix brief
+([The head match](pr.md#head-match); #1522, where task 285's fixes were briefed against a contributor's pull request).
+
 An event that can come back once handled (a pull request problem, when a hold runs out) stays in the list as
 `handled` with who holds it and until when, so the mod can tell the change. The others leave the list when they are
 handled. A kind whose source could not be read is named in `unread`: what is missing from it says nothing.

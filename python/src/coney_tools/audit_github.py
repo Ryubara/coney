@@ -24,6 +24,7 @@ from coney_tools.audit_text import NUMBER_REFERENCE
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions, IssueForm, Wording
 from coney_tools.log_scan import ScanResult
+from coney_tools.pr_head import HEAD_FIELDS, head_label
 from coney_tools.repo_checks import (
     affected_issues,
     check_body,
@@ -184,7 +185,8 @@ def parse_snapshot(data: Mapping[str, Any]) -> Snapshot:
                 updated=_time(item.get("updatedAt")),
                 merged=_time(item.get("mergedAt")) if item.get("mergedAt") else None,
                 base=str(item.get("baseRefName", "")),
-                head=str(item.get("headRefName", "")),
+                # `owner:branch` for a fork's, so a base branch of ours never matches it (#1522).
+                head=head_label(item),
                 draft=bool(item.get("isDraft", False)),
                 auto_merge=bool(item.get("autoMergeRequest")),
                 closes=tuple(int(ref["number"]) for ref in item.get("closingIssuesReferences") or []),
@@ -233,7 +235,7 @@ def run_gh(arguments: list[str], timeout: float = 300) -> str:
 
 ISSUE_FIELDS = "number,title,body,state,stateReason,labels,assignees,createdAt,updatedAt,url"
 PULL_FIELDS = (
-    "number,title,body,state,labels,createdAt,updatedAt,mergedAt,baseRefName,headRefName,isDraft,"
+    f"number,title,body,state,labels,createdAt,updatedAt,mergedAt,baseRefName,{HEAD_FIELDS},isDraft,"
     "autoMergeRequest,closingIssuesReferences,url"
 )
 

@@ -33,6 +33,7 @@ from coney_tools import build_cli, check_progress, pcsx2_claims_cli, pcsx2_proc,
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.config import ConfigError, find_repo_root, main_checkout
 from coney_tools.conventions import load_conventions
+from coney_tools.pr_head import HEAD_FIELDS, head_label
 from coney_tools.workspace_clean import list_worktrees
 
 #: Action kinds that only a `--github` read can tell.
@@ -353,7 +354,8 @@ def _prs(src: Sources, now: datetime) -> dict[str, Any]:
     prs: list[dict[str, Any]] = [
         {
             "number": int(pull["number"]),
-            "branch": str(pull.get("headRefName", "")),
+            # A fork's pull request is `owner:branch`, so a unit of the same branch name never takes it (#1522).
+            "branch": head_label(pull),
             "base": str(pull.get("baseRefName", "")),
             "draft": bool(pull.get("isDraft")),
             "mergeable": pull.get("mergeable"),
@@ -383,11 +385,12 @@ def _released(src: Sources, units: list[dict[str, Any]]) -> None:
     it was released; otherwise it is queued while its worktree exists."""
     raw = _gh_json(
         src,
-        ["pr", "list", "--state", "all", "--limit", str(LIMIT), "--json", "number,headRefName,state,closedAt"],
+        ["pr", "list", "--state", "all", "--limit", str(LIMIT), "--json", f"number,{HEAD_FIELDS},state,closedAt"],
     )
     by_branch: dict[str, list[dict[str, Any]]] = {}
     for pull in raw:
-        by_branch.setdefault(str(pull.get("headRefName", "")), []).append(pull)
+        # By `head_label`: a fork's pull request of the same branch name does not release the unit (#1522).
+        by_branch.setdefault(head_label(pull), []).append(pull)
     for unit in units:
         pulls = sorted(by_branch.get(unit["branch"], []), key=lambda p: int(p["number"]), reverse=True)
         opened = next((p for p in pulls if p.get("state") == "OPEN"), None)

@@ -152,9 +152,21 @@ def write_text(run: Run, proof: Proof, published: pr_publish.Published) -> tuple
 
 
 def find(run: Run) -> PullRequest | None:
-    """The branch's pull request, read from GitHub."""
+    """The branch's pull request in this repository, read from GitHub (a fork's of the same branch name is noted and
+    left out: `pr_head`)."""
     assert run.record is not None
-    return pr_publish.find_pr(run.env.gh, run.repo, run.record.branch)
+    return pr_publish.find_pr(run.env.gh, run.repo, run.record.branch, run.say)
+
+
+def confirm_head(run: Run, pr: PullRequest, *, pushed: bool) -> None:
+    """Read `pr` back and Stop(1) unless its head is the unit's branch in this repository: nothing of it is edited,
+    reopened or merged otherwise, whatever found it (#1522: a fork's pull request of the same branch name was retitled
+    before the read-back after the edit noticed). `pushed` says whether the branch was pushed already (the message)."""
+    assert run.record is not None
+    problem = pr_publish.view_pr(run.env.gh, run.repo, pr.number).head_problem(run.record.branch, run.repo)
+    if problem is not None:
+        done = "the branch was pushed, the pull request left as it was" if pushed else "nothing was pushed or changed"
+        raise Stop(EXIT_REFUSED, f"#{pr.number} is not the pull request of this branch: {problem}; {done}")
 
 
 def check_existing(run: Run, existing: PullRequest | None) -> None:
@@ -307,6 +319,9 @@ def publish(run: Run, proof: Proof, existing: PullRequest | None, published: pr_
     if existing is None:
         base = run.default_branch
         pr = pr_publish.create_pr(gh, repo, base, run.record.branch, generated.title, body_file, attach, cwd)
+        # The new pull request is read back before auto-merge goes on; one found existing was before the push (`_run`).
+        published.number, published.url = pr.number, pr.url
+        confirm_head(run, pr, pushed=True)
     else:
         pr = existing
         if existing.state == "CLOSED":

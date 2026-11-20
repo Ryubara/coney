@@ -29,12 +29,13 @@ def over(built: Built, tmp_path: Path, released: bool = True) -> Sources:
     """Conclave's sources over the made-up unit, whose branch `work` has pull request 5 in conflict with `main`."""
     answers = github_answers()
     answers[("pr", "list", "--state", "all")] = [
-        {"number": PR, "headRefName": "work", "state": "OPEN", "closedAt": None}
+        {"number": PR, "headRefName": "work", "isCrossRepository": False, "state": "OPEN", "closedAt": None}
     ]
     answers[("pr", "list", "--state", "open")] = [
         {
             "number": PR,
             "headRefName": "work",
+            "isCrossRepository": False,
             "baseRefName": "main",
             "isDraft": False,
             "mergeable": "CONFLICTING",

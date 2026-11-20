@@ -13,7 +13,7 @@ import pytest
 import yaml
 from conventions_support import changed
 from git_support import git
-from pr_open_support import OPENER, PNG, REPO, Open, make_open, picture, show
+from pr_open_support import OPENER, PNG, REPO, Open, make_open, picture, plant_fork_pr, show
 from pr_support import UNVERIFIED, Built, make
 
 from coney_tools import clips, conventions, identity, pr_open, pr_open_unit, pr_proof, pr_publish, pr_ready, unit_record
@@ -207,6 +207,92 @@ def test_a_closed_pull_request_needs_reopen(tmp_path: Path) -> None:
     assert "pr open: #812 was closed; --reopen to continue it" in opened.text() and opened.gh.writes() == []
     assert opened.run(reopen=True) == 0, opened.text()
     assert "pr reopen" in opened.gh.names() and opened.gh.prs[812]["state"] == "OPEN"
+
+
+# --- the head repository (#1522) -------------------------------------------------------------------------------------
+
+
+def _fork_untouched(opened: Open, number: int, before: dict[str, object]) -> None:
+    """The contributor's pull request is as it was (`before`), and no call that writes named it."""
+    assert opened.gh.prs[number] == before
+    assert opened.gh.prs[number]["title"] == "a contributor's own title"
+    assert not [args for args in opened.gh.writes() if str(number) in args]
+
+
+@pytest.mark.parametrize("state", ["OPEN", "CLOSED", "MERGED"])
+def test_a_forks_pull_request_with_the_same_branch_name_is_never_taken_for_ours(tmp_path: Path, state: str) -> None:
+    # Task 285, 2026-11-20: a contributor's fork had a branch named like ours, and pr open retitled their #1415.
+    opened = docs_unit(tmp_path)
+    plant_fork_pr(opened.gh, 1415)
+    opened.gh.prs[1415]["state"] = "CLOSED" if state == "CLOSED" else "OPEN"
+    opened.gh.prs[1415]["merged"] = state == "MERGED"
+    before = dict(opened.gh.prs[1415])
+    assert opened.run() == 0, opened.text()
+    assert "pr create" in opened.gh.names()
+    assert opened.said[-1].startswith("opened #812"), opened.text()
+    assert opened.gh.prs[812]["head_repo"] == REPO
+    _fork_untouched(opened, 1415, before)
+    assert "#1415 has the branch name work but its head is contributor/widgets:work" in opened.text()
+    # The next run finds our own pull request, not the fork's, and updates it.
+    opened.gh.calls.clear()
+    assert opened.run() == 0, opened.text()
+    assert opened.said[-1].startswith("updated #812"), opened.text()
+    _fork_untouched(opened, 1415, before)
+
+
+def test_a_pull_request_whose_head_is_not_ours_is_refused_before_anything_is_pushed_or_edited(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Whatever found it: the pull request is read back and its head checked before any push, edit or auto-merge.
+    opened = docs_unit(tmp_path)
+    plant_fork_pr(opened.gh, 1415)
+    before = dict(opened.gh.prs[1415])
+    fork = pr_publish.PullRequest(1415, "OPEN", opened.gh.prs[1415]["url"])
+    monkeypatch.setattr(pr_publish, "find_pr", lambda *args, **kwargs: fork)
+    assert opened.run() == 1
+    assert (
+        "pr open: #1415 is not the pull request of this branch: its head is contributor/widgets:work, "
+        f"not {REPO}:work; nothing was pushed or changed"
+    ) in opened.text()
+    assert opened.gh.writes() == []
+    viewed = next(args for args, _ in opened.gh.calls if args[:2] == ["pr", "view"])
+    assert viewed[:5] == ["pr", "view", "1415", "--repo", REPO]
+    assert not [args for args in opened.git_calls if args and args[0] == "push"]
+    _fork_untouched(opened, 1415, before)
+
+
+def test_a_dry_run_also_refuses_a_pull_request_whose_head_is_not_ours(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    opened = docs_unit(tmp_path)
+    plant_fork_pr(opened.gh, 1415)
+    fork = pr_publish.PullRequest(1415, "OPEN", opened.gh.prs[1415]["url"])
+    monkeypatch.setattr(pr_publish, "find_pr", lambda *args, **kwargs: fork)
+    assert opened.run(dry_run=True) == 1
+    assert "#1415 is not the pull request of this branch" in opened.text() and opened.gh.writes() == []
+
+
+def test_a_created_pull_request_whose_head_is_not_ours_gets_no_auto_merge(tmp_path: Path) -> None:
+    # The read-back before auto-merge covers the pull request just created too.
+    opened = docs_unit(tmp_path)
+    real = opened.gh.__call__
+
+    def created_elsewhere(args: Sequence[str], cwd: Path | None) -> str:
+        answer = real(args, cwd)
+        if list(args[:2]) == ["pr", "create"]:
+            opened.gh.prs[812]["head_repo"] = "contributor/widgets"
+        return answer
+
+    assert pr_open.run_open(opened.request(), _with_gh(opened, created_elsewhere)) == 1
+    assert "#812 is not the pull request of this branch" in opened.text()
+    assert not [args for args in opened.gh.writes() if args[:2] == ["pr", "merge"]]
+
+
+def _with_gh(opened: Open, gh: pr_publish.Gh) -> pr_open.Env:
+    """The unit's `Env` with another `gh`."""
+    env = opened.env()
+    env.gh = gh
+    return env
 
 
 # --- 27, 28: the rebase ----------------------------------------------------------------------------------------------

@@ -249,6 +249,7 @@ def test_a_start_writes_the_pending_work_into_the_task_file(world: World) -> Non
                     "number": 5,
                     "title": "docs: Add a page",
                     "headRefName": "b5",
+                    "isCrossRepository": False,
                     "isDraft": False,
                     "files": [{"path": "docs/guides/a.md"}],
                 }

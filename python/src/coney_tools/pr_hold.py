@@ -18,6 +18,10 @@ refuses it to the other roles).
 A waiver may cover a conflict only when its note names a maintainer decision (`conclave.watch.conflict_waiver`): a
 conflict is work for the fix track (docs/guides/conclave.md#conflicts), and parking one with a bare waiver is how stale
 pull requests sat open for days. Anything else on a conflict needs `--who`, a live agent.
+
+A hold by an agent on a fork's pull request is made with a note: its branch is matched by head repository as well as
+name (`pr_head`, the match `pr open` and Conclave use), so it is no unit's pull request here even when a unit's branch
+has the same name (#1522: task 285's fixes were briefed against a contributor's pull request).
 """
 
 from __future__ import annotations
@@ -37,6 +41,7 @@ from coney_tools.audit_github import run_gh
 from coney_tools.build_cli import scratch_root
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.conventions import PR_HEALTH_CAUSES, ConclaveWatch, load_conventions
+from coney_tools.pr_head import HEAD_FIELDS, head_label, is_own
 
 #: The `who` of a waiver: a known wait, with nobody working on it.
 WAIVED = "waived"
@@ -297,12 +302,15 @@ def run_hold(
     err: Callable[[str], None],
     head_of: Callable[[int], str],
     conflicting: Callable[[int], bool] | None = None,
+    fork_of: Callable[[int], str | None] | None = None,
 ) -> int:
     """`pr hold` against the store in `folder` at `now`: 0 done, 1 nothing to release, 2 a refused request.
 
     `head_of` gives a pull request's head commit (OSError when it cannot be read): a hold is made on that head.
     `conflicting` says whether the pull request is in conflict now (OSError when it cannot be read); it is asked only
-    for a waiver that covers every cause, which would cover a conflict without naming it."""
+    for a waiver that covers every cause, which would cover a conflict without naming it. `fork_of` gives a fork's
+    pull request's `owner:branch` and None for one of this repository (OSError when it cannot be read); it is asked for
+    a hold by an agent, which is then told when the pull request is a fork's."""
     if args.list:
         if args.pr is not None or args.release or args.who is not None:
             err("pr hold: --list takes no pull request and no other option but --json")
@@ -354,6 +362,8 @@ def run_hold(
     except OSError as error:
         err(f"pr hold: cannot read the head commit of #{args.pr}: {error}")
         return 2
+    if args.who is not None and fork_of is not None:
+        _note_fork(args.pr, args.who, fork_of, err)
     held = Hold(
         pr=args.pr,
         who=args.who or WAIVED,
@@ -371,6 +381,32 @@ def run_hold(
 def _stderr(line: str) -> None:
     """Print one line to stderr."""
     print(line, file=sys.stderr)
+
+
+def _note_fork(number: int, who: str, fork_of: Callable[[int], str | None], err: Callable[[str], None]) -> None:
+    """Tell, on `err`, that pull request `number` is a fork's, when it is: the agent `who` would fix a contributor's
+    branch, never a unit's of the same name. A pull request whose head cannot be read is held without the note."""
+    try:
+        label = fork_of(number)
+    except OSError:
+        return
+    if label is not None:
+        err(
+            f"pr hold: note: #{number} comes from a fork ({label}), so it is no unit's pull request here, even when a "
+            f"unit's branch has the same name; {who} fixes the fork's branch, not a unit's"
+        )
+
+
+def fork_of(number: int) -> str | None:
+    """A pull request's head as `owner:branch` when it comes from a fork, None when it is a branch of this repository
+    (`pr_head`); OSError when `gh` cannot say."""
+    try:
+        data = json.loads(run_gh(["pr", "view", str(number), "--json", HEAD_FIELDS]))
+    except ValueError as error:
+        raise OSError(f"gh pr view printed no JSON for #{number} ({error})") from error
+    if not isinstance(data, dict):
+        raise OSError(f"gh pr view printed no pull request for #{number}")
+    return None if is_own(data) else head_label(data)
 
 
 def _head_of(number: int) -> str:
@@ -405,4 +441,4 @@ def run(args: argparse.Namespace) -> int:
     except ConfigError as error:
         _stderr(f"pr hold: {error}")
         return 2
-    return run_hold(args, folder, rules, datetime.now(UTC), print, _stderr, _head_of, conflicting_now)
+    return run_hold(args, folder, rules, datetime.now(UTC), print, _stderr, _head_of, conflicting_now, fork_of)

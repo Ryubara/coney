@@ -222,6 +222,7 @@ def test_the_failed_pulls_are_mine_open_not_draft_with_a_required_check_failed(
         return {
             "number": number,
             "headRefName": f"branch-{number}",
+            "isCrossRepository": False,
             "headRefOid": "abcdef1234",
             "isDraft": draft,
             "closingIssuesReferences": [{"number": 40 + number}],
