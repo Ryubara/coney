@@ -466,21 +466,28 @@ class GameplayMode final : public GameMode {
       public:
         // Hooks on `mode`, which must outlive them.
         explicit SceneCrewHooks(GameplayMode& mode) : m_mode(&mode) {}
-        // `Gang_ClearBums` on player 1's gang (ai::ScriptedHub::clearBums()).
+        // `Gang_ClearBums` on player 1's gang (ai::ScriptedHub::clearBums(), the port).
+        // @coney-only glue: a scene task's step done on this mode's state; the scene task cites the original
         void clearBums() override;
         // Whether `human` was made a player by `HuCreate`.
+        // @coney-only glue: a scene task's step done on this mode's state; the scene task cites the original
         [[nodiscard]] bool isPlayer(double human) override;
         // Never: the hit-back count is not built (a stand-in, at the definition).
+        // @coney-only glue: a scene task's step done on this mode's state; the scene task cites the original
         [[nodiscard]] bool hitBack() override;
         // Player 1's menu unlocked (StoryState::menuLocked).
+        // @coney-only glue: a scene task's step done on this mode's state; the scene task cites the original
         void unlockCommandMenu() override;
         // Follow forced through the Warrior command dispatcher (script::issueWarriorCommand()).
+        // @coney-only glue: a scene task's step done on this mode's state; the scene task cites the original
         void followForced() override;
         // Player 1's gang's update (ai::Gang::update()).
+        // @coney-only glue: a scene task's step done on this mode's state; the scene task cites the original
         void updateGang() override;
 
       private:
         // Player 1 as the scripts made him; null without one or without the level's brains.
+        // @coney-only lookup for the hooks above
         [[nodiscard]] const HumanCreation* chief() const;
         GameplayMode* m_mode;
     };
