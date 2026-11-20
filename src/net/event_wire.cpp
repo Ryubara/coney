@@ -93,7 +93,7 @@ std::expected<NetEvent, Error> readEvent(BitReader& in) {
         event.subject = *subject;
     }
     // id, value and extra in that order, each only when the kind carries it.
-    for (const auto [field, target] :
+    for (const auto& [field, target] :
          {std::pair{kEventId, &event.id}, std::pair{kEventValue, &event.value}, std::pair{kEventExtra, &event.extra}}) {
         if ((fields & field) == 0) {
             continue;

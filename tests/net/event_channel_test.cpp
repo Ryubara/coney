@@ -342,8 +342,8 @@ TEST_CASE("event channel: over loss, repeats and reordering, reliable events arr
     for (const auto& [key, count] : seen) {
         CHECK(count == 1);
     }
-    CHECK(reliable == 40 * 14);
-    CHECK(oneShots <= 40 * 8);
+    CHECK(reliable == std::size_t{40} * 14);
+    CHECK(oneShots <= std::size_t{40} * 8);
     CHECK(oneShots > 0);
     CHECK(pair.client->state() == ClientState::Connected);
 }
