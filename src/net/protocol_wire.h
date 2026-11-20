@@ -39,7 +39,7 @@ void writeEventBatchBody(BitWriter& out, const EventBatch& batch);
 [[nodiscard]] std::expected<EventBatch, Error> readEventBatchBody(BitReader& in);
 
 /// Writes a level message (LoadLevel, LevelLoaded, MissionEnd, MovieDone) with its message id, as its comment lays it
-/// out. One that breaks its rules (a load of 0, a checkpoint of 0, a level name empty or over kMaxLevelNameBytes) is
+/// out. One that breaks its rules (a load of 0, a checkpoint of 0, a level name validLevelName() refuses) is
 /// a programmer error, as encode() says.
 /// @coney-only network play; the original has none
 void writeLevelMessage(BitWriter& out, const LoadLevel& message);

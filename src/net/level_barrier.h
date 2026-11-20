@@ -47,8 +47,8 @@ class LevelBarrier {
     /// A barrier with no level and no players.
     explicit LevelBarrier(LevelBarrierConfig config = {});
 
-    /// The host's game starts loading `level` at `checkpoint` (1 or more; a name of 1 to kMaxLevelNameBytes bytes,
-    /// else CONEY_ASSERT): the order for every joined player, numbered one more than the last, a Restart when it is the
+    /// The host's game starts loading `level` at `checkpoint` (1 or more; a name validLevelName() accepts, else
+    /// CONEY_ASSERT): the order for every joined player, numbered one more than the last, a Restart when it is the
     /// level already current and a Change otherwise. Every joined player is loading it from now.
     const LoadLevel& load(const std::string& level, std::uint16_t checkpoint);
     /// The current level's order; nothing before the first load().

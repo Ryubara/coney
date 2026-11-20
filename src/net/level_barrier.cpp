@@ -15,7 +15,7 @@ LevelBarrier::LevelBarrier(LevelBarrierConfig config) : m_config(config) {}
 
 const LoadLevel& LevelBarrier::load(const std::string& level, std::uint16_t checkpoint) {
     CONEY_ASSERT(checkpoint != 0);
-    CONEY_ASSERT(!level.empty() && level.size() <= kMaxLevelNameBytes);
+    CONEY_ASSERT(validLevelName(level));
     // The same level again is a restart at a checkpoint (a retry, or the mission going on); any other, a change.
     const bool restart = m_current.has_value() && m_current->level == level;
     m_current = LoadLevel{.load = ++m_loads,

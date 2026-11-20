@@ -32,7 +32,7 @@ std::expected<std::uint32_t, Error> readLoad(BitReader& in, const char* what) {
 
 void writeLevelMessage(BitWriter& out, const LoadLevel& message) {
     CONEY_ASSERT(message.load != 0 && message.checkpoint != 0);
-    CONEY_ASSERT(!message.level.empty() && message.level.size() <= kMaxLevelNameBytes);
+    CONEY_ASSERT(validLevelName(message.level));
     out.writeU8(static_cast<std::uint8_t>(MessageId::LoadLevel));
     out.writeVarUint(message.load);
     out.writeU8(static_cast<std::uint8_t>(message.reason));
@@ -84,8 +84,9 @@ std::expected<Message, Error> readLoadLevelBody(BitReader& in) {
     if (*checkpoint == 0) {
         return fail(ErrorCode::Invalid, "network level order names checkpoint 0");
     }
-    if (level->empty()) {
-        return fail(ErrorCode::Invalid, "network level order names no level");
+    // A name off the network is never a path or a byte no level name has (validLevelName()).
+    if (!validLevelName(*level)) {
+        return fail(ErrorCode::Invalid, "network level order names no level, or a name with a foreign character");
     }
     return LoadLevel{.load = *load,
                      .level = std::move(*level),

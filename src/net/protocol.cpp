@@ -407,6 +407,21 @@ bool validPlayerName(std::string_view name) {
     return visible;
 }
 
+bool validLevelName(std::string_view name) {
+    if (name.empty() || name.size() > kMaxLevelNameBytes) {
+        return false;
+    }
+    // Letters, digits, '_' and '-' only: a level name off the network is used to find the level's files.
+    for (const char c : name) {
+        const bool letter = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        const bool digit = c >= '0' && c <= '9';
+        if (!letter && !digit && c != '_' && c != '-') {
+            return false;
+        }
+    }
+    return true;
+}
+
 std::string_view describe(RejectReason reason) {
     switch (reason) {
     case RejectReason::VersionMismatch:

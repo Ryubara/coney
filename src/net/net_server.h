@@ -115,6 +115,8 @@ class NetServer {
     /// The host's game starts loading `level` at `checkpoint` (LevelBarrier::load()): every joined player is told to
     /// load it (LoadLevel) and gets no snapshots or events until they have; one who joins later is told on joining.
     /// Returns the load's number. Works while not running too, so a host that starts later still tells its players.
+    /// A checkpoint of 0, or a name net::validLevelName() refuses (empty, over 32 bytes, a character other than a
+    /// letter, digit, '_' or '-'), is a programmer error (CONEY_ASSERT).
     std::uint32_t loadLevel(const std::string& level, std::uint16_t checkpoint);
     /// The host's mission in the current level has ended: every joined player is told how (MissionEnd). Nothing
     /// happens with no level.

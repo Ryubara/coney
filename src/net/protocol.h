@@ -51,10 +51,10 @@ enum class MessageId : std::uint8_t {
     Snapshot = 10,     ///< server to client: the humans the client needs, as a delta (protocol 4; HUDs 7)
     SnapshotAck = 11,  ///< client to server: the newest snapshot the client has decoded (protocol 4)
     EventBatch = 12,   ///< server to client: what the game made its players see or hear in one step (protocol 5)
-    LoadLevel = 13,    ///< server to client: load this level at this checkpoint (protocol 7)
-    LevelLoaded = 14,  ///< client to server: the level of a LoadLevel is loaded (protocol 7)
-    MissionEnd = 15,   ///< server to client: the host's mission has ended, and how (protocol 7)
-    MovieDone = 16 ///< client to server: this client's copy of the host's movie has ended or was skipped (protocol 7)
+    LoadLevel = 13,    ///< server to client: load this level at this checkpoint (protocol 8)
+    LevelLoaded = 14,  ///< client to server: the level of a LoadLevel is loaded (protocol 8)
+    MissionEnd = 15,   ///< server to client: the host's mission has ended, and how (protocol 8)
+    MovieDone = 16 ///< client to server: this client's copy of the host's movie has ended or was skipped (protocol 8)
 };
 
 /// Why a server refused a Hello.
@@ -69,7 +69,7 @@ enum class ByeReason : std::uint8_t {
     Quit = 1,          ///< the player left, or the host stopped the server
     TimedOut = 2,      ///< nothing heard from the other side for too long
     ProtocolError = 3, ///< the other side sent a message that does not decode, or one out of turn
-    LoadTimedOut = 4,  ///< the client did not load the server's level within its time-out (protocol 7)
+    LoadTimedOut = 4,  ///< the client did not load the server's level within its time-out (protocol 8)
 };
 
 /// Asks to join. Its first two fields keep this layout in every protocol version, so a server can always read a
@@ -271,10 +271,11 @@ enum class LoadReason : std::uint8_t {
 /// answered with LevelLoaded (the loading barrier). Reliable.
 ///
 /// The packet: the load (a varint, 32 bits at most), the reason (8 bits), the checkpoint (16 bits, as the original's,
-/// docs/research/characters.md#level-starts), the level name (a string of at most kMaxLevelNameBytes bytes).
+/// docs/research/characters.md#level-starts), the level name (a string of at most kMaxLevelNameBytes bytes, only
+/// letters, digits, '_' and '-': validLevelName()).
 struct LoadLevel {
     std::uint32_t load = 1;       ///< 1 for the session's first load, one more for each after
-    std::string level;            ///< the level's name, 1 to kMaxLevelNameBytes bytes
+    std::string level;            ///< the level's name: validLevelName()
     std::uint16_t checkpoint = 1; ///< 1 or more
     LoadReason reason = LoadReason::Change;
 
@@ -338,7 +339,7 @@ using Message = std::variant<Hello, Welcome, Reject, Bye, Ping, Pong, InputComma
 /// among the kSnapshotHistory before it, ids not valid and rising, a kept entry with nothing changed, a removal with
 /// something), an EventBatch that breaks its rules (sequence 0, no events or more than kMaxBatchEvents, an event of
 /// the other delivery, ordinals not rising, a field its kind does not carry set, a text over kMaxGameEventText) and a
-/// level message that breaks its rules (a load or checkpoint of 0, a level name empty or over kMaxLevelNameBytes) are
+/// level message that breaks its rules (a load or checkpoint of 0, a level name validLevelName() refuses) are
 /// programmer errors.
 [[nodiscard]] std::vector<std::byte> encode(const Message& message);
 
@@ -359,6 +360,12 @@ using Message = std::variant<Hello, Welcome, Reject, Bye, Ping, Pong, InputComma
 /// Whether `name` may be a player's or a server's name: 1 to kMaxNameBytes printable ASCII characters (space to
 /// tilde), not all spaces.
 [[nodiscard]] bool validPlayerName(std::string_view name);
+
+/// Whether `name` may be a LoadLevel's level name: 1 to kMaxLevelNameBytes ASCII letters, digits, '_' and '-'. The
+/// original's levels are named like `level34` (docs/references/levels.md); nothing else is allowed, so a name off the
+/// network can never be a path (no slash, no dot, so no "..") or hold a NUL or a control byte.
+/// @coney-only network play; the original has none
+[[nodiscard]] bool validLevelName(std::string_view name);
 
 /// Short English text for the Network page and the log.
 [[nodiscard]] std::string_view describe(RejectReason reason);

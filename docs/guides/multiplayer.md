@@ -146,7 +146,7 @@ unnoticed.
 | 10 | Snapshot | server to client | the humans as a delta against an acknowledged snapshot ([The packet](snapshots.md#packet)); since version 4 (version 7 added each player slot's HUD entries, [HUD state](snapshots.md#hud-state)) | unreliable, sequenced |
 | 11 | SnapshotAck | client to server | the newest snapshot decoded (varint); since version 4 | unreliable |
 | 12 | EventBatch | server to client | a step's game events of one delivery ([The batch](#event-batch)); since version 5 (version 6 added a sound's instance, SoundStop and SoundMove) | reliable, or unreliable for one-shots |
-| 13 | LoadLevel | server to client | the load (varint, from 1), the reason (8: change, restart, join), the checkpoint (16), the level name (string, 32 bytes at most); since version 8 ([Levels](#levels)) | reliable |
+| 13 | LoadLevel | server to client | the load (varint, from 1), the reason (8: change, restart, join), the checkpoint (16), the level name (string, 32 bytes at most, only letters, digits, `_` and `-`); since version 8 ([Levels](#levels)) | reliable |
 | 14 | LevelLoaded | client to server | the load it has loaded (varint, not 0); since version 8 | reliable |
 | 15 | MissionEnd | server to client | the load (varint, not 0), the outcome (8: passed, failed, quit); since version 8 | reliable |
 | 16 | MovieDone | client to server | the step of the movie's MovieStart (varint), skipped (1 bit); since version 8 | reliable |
@@ -492,8 +492,11 @@ are sent the current load straight after their Welcome. The checkpoint travels i
 original's does (`W_GameState + 0x33a`, confirmed (code), [Where a level puts the
 player](../research/characters.md#level-starts)); a level name is at most 32 bytes (Coney's choice: the original's level
 record keeps the name in 16, [The level record](../research/level-loading.md#the-level-record), and Coney's own levels
-may be longer). The client keeps the newest order for its game (`NetClient::takeLevelOrder()`, a newer one replacing one
-not yet taken) and is **loading** until its game calls `levelLoaded(load)`, which sends **LevelLoaded** at once.
+may be longer) of ASCII letters, digits, `_` and `-` only (`net::validLevelName()`): the original's are named like
+`level34` ([Levels](../references/levels.md)), and a name off the network then can never be a path (no slash, no dot)
+or hold a NUL or a control byte. A LoadLevel with any other name does not decode, and a host that orders one asserts.
+The client keeps the newest order for its game (`NetClient::takeLevelOrder()`, a newer one replacing one not yet taken)
+and is **loading** until its game calls `levelLoaded(load)`, which sends **LevelLoaded** at once.
 
 **The barrier.** `LevelBarrier` (`src/net/level_barrier.h`, plain data in the server's steps) holds which joined players
 are loading the current load. `NetServer::levelReady()` is true when none is, and `NetPlay::holdsStep()` says the host's

@@ -109,7 +109,9 @@ class NetPlay final {
     /// The host's game starts loading `level` at `checkpoint` (a level change or a checkpoint restart,
     /// docs/guides/multiplayer.md#levels): hosting, every joined guest is told to load it and holdsStep() holds the
     /// host's steps until they have; a guest who joins later is told on joining. Kept while offline too, so hosting
-    /// later in the level tells the guests that join.
+    /// later in the level tells the guests that join. A checkpoint of 0, or a name net::validLevelName() refuses
+    /// (empty, over 32 bytes, a character other than a letter, digit, '_' or '-'), is a programmer error
+    /// (CONEY_ASSERT).
     void loadLevel(const std::string& level, std::uint16_t checkpoint);
     /// Hosting: the host's mission has ended, and every joined guest is told how. Nothing otherwise.
     void endMission(net::MissionOutcome outcome);
