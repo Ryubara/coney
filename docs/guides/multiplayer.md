@@ -142,7 +142,7 @@ unnoticed.
 | 9 | InputTiming | server to client | the client's lead (zigzag varint, 32 bits at most), the target lead (8); since version 3 | unreliable |
 | 10 | Snapshot | server to client | the humans as a delta against an acknowledged snapshot ([The packet](snapshots.md#packet)); since version 4 | unreliable, sequenced |
 | 11 | SnapshotAck | client to server | the newest snapshot decoded (varint); since version 4 | unreliable |
-| 12 | EventBatch | server to client | a step's game events of one delivery ([The batch](#event-batch)); since version 5 | reliable, or unreliable for one-shots |
+| 12 | EventBatch | server to client | a step's game events of one delivery ([The batch](#event-batch)); since version 5 (version 6 added a sound's instance, SoundStop and SoundMove) | reliable, or unreliable for one-shots |
 
 **A pad** is connected (1 bit) and, only when connected, the button word (16 bits, the PS2 layout of `core/pad.h`),
 the four raw stick bytes (right x, right y, left x, left y) and, for each of the 12 pressure bytes, a bit saying
@@ -484,7 +484,7 @@ simulation's effects pass:
 
 | Where | Raises | How |
 | --- | --- | --- |
-| `coney::SoundEvents` (`src/gamemodes/sound_events.h`), the binding context's sound | Sound2D, Sound3D, HumanSound (an animation sound, the held sound's stop, rage's start), Hit (an impact's materials), MusicStart, MusicStop, LoopStart, LoopStop, Speech, Command, SpeechStop | it wraps the game's sound: every call goes on unchanged, with what it returns, and the ones a player hears are raised first; a line or command only when it plays |
+| `coney::SoundEvents` (`src/gamemodes/sound_events.h`), the binding context's sound | Sound2D, Sound3D (each with the sound's instance), SoundStop, SoundMove, HumanSound (an animation sound, the held sound's stop, rage's start), Hit (an impact's materials), MusicStart, MusicStop, LoopStart, LoopStop, Speech, Command, SpeechStop | it wraps the game's sound: every call goes on unchanged, with what it returns, and the ones a player hears are raised first; a line or command only when it plays; a playing sound's stop and move as [A playing sound](#sound-instances) says |
 | `coney::LevelObjectServices` (`src/gamemodes/level_object_services.h`), the world objects' sounds | Sound3D (a door's or a hit's sound), Cue (an object's cue, at its place), MaterialPair (a pane's, a prop's or a thrown object's impact and break) | before it passes the sound on to the audio's `ObjectSounds` |
 | `coney::playHudCue()`, the cues gameplay plays on the HUD | Cue (for the player whose HUD it is; a revive's for every player) | a revive's and a flash's sound, a theft's stages |
 | `effects::ParticleSystems::spawn()` | ParticleStart (type, place, turn, parent, colour, rectangle) | only the start asked for, not the systems that start makes in turn (a flash's puff, an explosion's parts), which a guest's own start makes again; a pane's shards (`spawnShard()`) raise one start each, up to 158 for a pane, without the size the pane gives each, so a guest's shards take the type's size |
@@ -497,17 +497,33 @@ simulation's effects pass:
 gives itself follow from the HUD's state, which a guest's HUD is given (the messages, objectives and hints here, each
 player's HUD state in the snapshot: #1447), so its own HUD plays them. A scene's sounds and a movie's sound play from
 the scene or the movie, which travel as their start and end. The lock pick's click plays nothing yet (it is counted).
-A sound's later stop or move (`stopSound()`, `moveSound()` on a handle: a radio's track) sends nothing yet: #1473.
 The sound's settings (`enableAmbientEmitter()`, `setAmbientEmitterVolume()`, `setAmbientTrackVolume()`,
 `setMusicVolume()`, and a script's `SoundPauseSound`) are lasting state, not a sound played: as events a guest who
 joined later would never get them, so they belong with the state a guest is given, which carries none of the sound's
 yet. The pause menu's and the mission-failed screen's `pauseSound()` pause this machine's sound under a menu each
 player has his own of.
 
+<span id="sound-instances"></span>**A playing sound.** A sound handle is local to each machine, so a sound's later stop
+or move (`SoundHost::stopSound()`, `moveSound()` on the handle its start returned: a radio's track, through
+GameplayMode's `HostSound`, and the radios' stop when the level goes) names the sound by an **instance** the host gives
+it instead. While it records, `SoundEvents` numbers each sound it starts (`play2D()`, `play3D()`) from 1 and the start
+carries the number (Sound2D's and Sound3D's `value`); it keeps the handle the sound returned under it. A stop of that
+handle raises a SoundStop and lets it go; a move raises a SoundMove only when the place or the volume (to the
+thousandth) changes, because a radio follows its own place every frame. A handle it did not start while recording (one
+started offline, a start the sound refused, one stopped already) raises nothing. A sound that ends by itself is never
+stopped, so each side lets go of the sounds that no longer play once it keeps 64. On the guest `coney::SoundEventPlayer`
+plays the host's sound starts on its own sound and keeps the handle each gave under the host's instance; the host's
+SoundStop and SoundMove act on that handle, and an instance it never started (a lost start, one before it joined) is
+nothing to act on. `stopAll()` stops what it keeps when the session ends. A world object's Sound3D
+(`LevelObjectServices`) carries instance 0: nothing stops or moves it. The stop and the move go reliably, so a guest's
+radio never plays on, or stays where it was, after a lost packet; the start stays a one-shot. Nothing in the running
+game makes a `SoundEventPlayer` yet: the client game mode that draws the snapshots will (until then a guest runs its own
+game, whose own sound already plays its radios).
+
 **Delivery.** One-shots (the sounds, hits, material pairs, cues, particle starts and breaks) go **Unreliable**: a lost
 one is a sound nobody misses, and one resent late would play out of time. The music, the loop, the messages, the
 objectives, the hints, the lines and commands said and stopped, the scenes and the movies go **ReliableOrdered**
-(`reliableGameEvent()`). After each step `NetPlay` takes the step's events
+(`reliableGameEvent()`), and so do a playing sound's stop and move. After each step `NetPlay` takes the step's events
 and the server sends each joined player that step's batches (`NetServer::sendEvents()`, before the step's flush),
 numbered by the host's step counted from 0 (`NetPlay::steps()`). A player who joins later gets none of the events
 before. Each event's subject travels as the network id `NetPlay::setEventSubjectIds()` maps its handle to; until the
@@ -517,11 +533,14 @@ game's humans and objects carry ids in a session, none is set and every subject 
 (`NetClient::takeEvents(step)`, `NetPlay::takeArrivedEvents(step)`), then hands it over once, in step order and
 within a step in the order it was raised (its ordinal), whichever delivery brought it. A repeated batch is dropped by
 its sequence (one-shots remember the last 64); a one-shot whose step was already handed over is dropped as late; a
-reliable event is handed over at the next take however late it comes. Nothing plays the events on a guest yet: the
-client game mode that draws the snapshots will, and each player's HUD state in the snapshot is #1447.
+reliable event is handed over at the next take however late it comes. `net::toGameEvent()` turns an arrived event back
+into the event raised, without its subject (a client has no handle for the server's ids yet). Only the sound starts,
+stops and moves have a player on a guest (`SoundEventPlayer`, [A playing sound](#sound-instances)), and nothing makes it
+yet: the client game mode that draws the snapshots will play the events, and each player's HUD state in the snapshot
+is #1447.
 
 **For the session record.** `coney::describe(const GameEvent&)` gives an event's one-line text (`sound3d id=0x22
-at=1.500,-2.000,0.250`), the form a session record writes beside its `event STEP TEXT` lines.
+value=1 at=1.500,-2.000,0.250`), the form a session record writes beside its `event STEP TEXT` lines.
 
 ### The batch {#event-batch}
 
@@ -536,8 +555,8 @@ sequence is a protocol error.
 
 | Kind | Id | Fields |
 | --- | --- | --- |
-| Sound2D | 1 | id: the sound's hash |
-| Sound3D | 2 | id, position |
+| Sound2D | 1 | id (the sound's hash), value (its instance; 0 none) |
+| Sound3D | 2 | id, value (its instance; 0 none), position |
 | HumanSound | 3 | subject, id (the `SA` id), value (0 animation sound, 1 the held sound's stop, 2 rage's start), position |
 | Hit | 4 | subject, id (striking material), value (struck material), position |
 | MusicStart | 5 | id (track), value (bit 0 looping, bit 1 system music), extra (fade in bars) |
@@ -556,6 +575,8 @@ sequence is a protocol error.
 | MaterialPair | 20 | id (material), value (the other), extra (volume in thousandths), position |
 | Cue | 21 | subject (whose HUD; none for an object's, or for a cue every player hears), id (cue), value (1 at the position), position |
 | Hint | 22 | id (0 queued, 1 the showing one cleared, 2 flushed, 3 the game's hints on or off), value (priority; on), text |
+| SoundStop | 23 | value (the instance its start gave it) |
+| SoundMove | 24 | value (the instance), extra (volume in thousandths, 1000 full), position |
 
 A command travels as its id and voice set: which of the set's lines says it is the guest's own sound's choice, as the
 host's sound chooses it outside the simulation.
@@ -592,7 +613,9 @@ and sends a host's events to its guest; `tests/net/event_channel_test.cpp` pins 
 covers the sender's batches and the receiver's repeats, late one-shots and order, and over the loopback hands every
 kind of event raised on the server over once on the client at its step, with a clean link and with loss, repeats and
 reordering; `tests/core/game_events_test.cpp`, `tests/gamemodes/sound_events_test.cpp` and the particle, HUD binding
-and movie tests cover the one call and the places that raise; the [two-process checks](#two-processes) run `coney` itself;
+and movie tests cover the one call and the places that raise (a sound's instance, its stop and move, and the guest's
+`SoundEventPlayer` included); `net_play_test.cpp` also starts, moves and stops a sound on a host and checks that the
+guest's own sound does each once, at the host's step; the [two-process checks](#two-processes) run `coney` itself;
 `tests/gamemodes/game_mode_stack_test.cpp` checks that `beforeStep` comes before the pads are read;
 `tests/debug/net_page_test.cpp` drives the Network page over a fake
 `NetControls`; and the `coney.hosts_headless` smoke test runs `coney --headless --frames 3 --host 127.0.0.1:0`.

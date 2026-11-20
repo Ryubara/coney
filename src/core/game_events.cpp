@@ -19,13 +19,14 @@ bool validGameEventKind(std::uint8_t kind) {
 
 std::uint8_t gameEventFields(GameEventKind kind) {
     switch (kind) {
-    case GameEventKind::Sound2D:
     case GameEventKind::LoopStart:
     case GameEventKind::SceneStart:
     case GameEventKind::SceneEnd:
         return kEventId;
+    case GameEventKind::Sound2D:
+        return kEventId | kEventValue;
     case GameEventKind::Sound3D:
-        return kEventId | kEventPosition;
+        return kEventId | kEventValue | kEventPosition;
     case GameEventKind::HumanSound:
     case GameEventKind::Hit:
         return kEventSubject | kEventId | kEventValue | kEventPosition;
@@ -33,8 +34,6 @@ std::uint8_t gameEventFields(GameEventKind kind) {
         return kEventId | kEventValue | kEventExtra;
     case GameEventKind::MusicStop:
     case GameEventKind::LoopStop:
-    case GameEventKind::SoundStop:
-    case GameEventKind::SoundMove:
         return 0;
     case GameEventKind::ParticleStart:
         return kEventSubject | kEventId | kEventValue | kEventPosition | kEventText | kEventRotation;
@@ -59,6 +58,10 @@ std::uint8_t gameEventFields(GameEventKind kind) {
         return kEventSubject | kEventId | kEventValue | kEventPosition;
     case GameEventKind::Hint:
         return kEventId | kEventValue | kEventText;
+    case GameEventKind::SoundStop:
+        return kEventValue;
+    case GameEventKind::SoundMove:
+        return kEventValue | kEventExtra | kEventPosition;
     }
     return 0;
 }
@@ -91,6 +94,8 @@ bool reliableGameEvent(GameEventKind kind) {
     case GameEventKind::Command:
     case GameEventKind::SpeechStop:
     case GameEventKind::Hint:
+    // A playing sound's stop and move are sent only when they change it: a lost one would leave a guest's radio
+    // playing, or where it was, for good.
     case GameEventKind::SoundStop:
     case GameEventKind::SoundMove:
         return true;
@@ -145,8 +150,9 @@ std::string_view describe(GameEventKind kind) {
     case GameEventKind::Hint:
         return "hint";
     case GameEventKind::SoundStop:
+        return "sound_stop";
     case GameEventKind::SoundMove:
-        break;
+        return "sound_move";
     }
     return "unknown";
 }
