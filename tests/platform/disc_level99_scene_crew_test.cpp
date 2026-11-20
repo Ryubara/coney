@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <expected>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -67,6 +68,88 @@ std::optional<coney::io::Wad> openDisc() {
     auto wad = coney::io::Wad::open(std::move(*disc));
     REQUIRE(wad.has_value());
     return wad ? std::optional<coney::io::Wad>(std::move(*wad)) : std::nullopt;
+}
+
+// What a test reads of level99's intro playing: the play mode, its stack and timer, the level's scripts and scenes.
+struct IntroPlay {
+    coney::GameplayMode& gameplay;
+    coney::GameModeStack& stack;
+    coney::GameTimer& timer;
+    coney::LevelScripts& scripts;
+    coney::scenes::SceneSystem& system;
+};
+
+// Plays level99 at checkpoint 1 as --play-level plays it, headless, 10 s into its intro l99_c1 (player 1 bound in
+// it, playing), then hands what plays to `body`.
+void playIntro(coney::io::Wad& wad, const std::function<void(IntroPlay&)>& body) {
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    coney::platform::RenderEngine& renderer = **engine;
+    coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
+    std::vector<std::string> log;
+    const auto print = [&log](std::string_view line) { log.emplace_back(line); };
+
+    // The scripts with the game's random table; the play mode draws the scripts' HUD.
+    coney::LevelScriptOptions options;
+    std::vector<std::uint32_t> table;
+    if (auto words = coney::io::readExecutableWords(wad.disc(), coney::GameRandom::kExecutableName,
+                                                    coney::GameRandom::kTableAddress, coney::GameRandom::kTableSize)) {
+        table = std::move(*words);
+        options.randomTable = table;
+    }
+    coney::LevelScripts scripts(coney::script::wadScriptSource(wad), "level99", 1, print, options);
+    coney::GameplayMode::LevelLoader loader =
+        [&renderer, &wad, &budget, &scripts,
+         &print](const coney::LevelStart& start,
+                 const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+        std::optional<coney::human::PlayerStart> playerStart;
+        coney::platform::PlayerSetup setup;
+        setup.ai = coney::ai::aiConfigFrom(scripts.recorded());
+        setup.types = coney::characters::CharacterTypes::fromRecorded(scripts.recorded());
+        if (start.player) {
+            const coney::HumanCreation& player = *start.player;
+            const std::array<float, 3> p = player.position.value_or(std::array<float, 3>{});
+            playerStart = coney::human::PlayerStart{.position = coney::anim::Vec3{p[0], p[1], p[2]},
+                                                    .headingDegrees = player.headingDegrees};
+            setup.model = player.model.empty() ? std::string(coney::human::kPlayerModel) : player.model;
+            setup.type = player.type;
+        }
+        auto mode = coney::platform::PlayLevelMode::create(renderer, wad, start.level, budget, print, playerStart,
+                                                           setup, &cast);
+        if (!mode) {
+            return std::unexpected(std::move(mode.error()));
+        }
+        (*mode)->useHud(scripts.hud());
+        return std::unique_ptr<coney::GameMode>(std::move(*mode));
+    };
+    // The level's scenes over the disc's scene list, as the game makes them.
+    auto sceneList = coney::scenes::loadSceneList(wad);
+    REQUIRE(sceneList.has_value());
+    coney::GameplayMode gameplay(renderer, scripts.scripts(), scripts.context(), scripts.state(), scripts.humans(),
+                                 scripts.flags(), scripts.recorded(), std::move(loader), print);
+    gameplay.setLevel("level99");
+    gameplay.setSceneMaker([&wad, &sceneList] {
+        return std::make_unique<coney::scenes::SceneSystem>(*sceneList, coney::scenes::wadSceneSource(wad),
+                                                            coney::scenes::SceneSystem::ScriptCall{});
+    });
+
+    // The pad at rest throughout, 10 s in.
+    auto input = coney::parseInputScript("");
+    REQUIRE(input.has_value());
+    coney::ScriptedInput pad(std::move(*input));
+    coney::GameModeStack stack;
+    stack.setInput(&pad);
+    stack.push(gameplay);
+    coney::GameTimer timer;
+    timer.setFixedStep(true);
+    stack.runUntilEmpty(timer, {}, 300);
+    coney::scenes::SceneSystem* system = scripts.context().scenes;
+    REQUIRE(system != nullptr);
+    const std::optional<std::uint32_t> intro = system->idOf("l99_c1");
+    REQUIRE(intro.has_value());
+    REQUIRE(system->state(*intro) == coney::scenes::SceneState::Playing);
+    IntroPlay play{.gameplay = gameplay, .stack = stack, .timer = timer, .scripts = scripts, .system = *system};
+    body(play);
 }
 
 } // namespace
@@ -185,4 +268,58 @@ TEST_CASE("the disc's level99: the intro scene's end gives player 1's crew the f
     CHECK(tactic->started());
     std::printf("  level99 l99_c1: ended after %d more steps; crew of %zu, tactic %#x started %d\n", steps,
                 crew->members().size(), static_cast<unsigned>(tactic->type()), tactic->started() ? 1 : 0);
+}
+
+TEST_CASE("the disc's level99: a switch of player 1 during the intro gives his crew only the end's follow",
+          "[disc][story][scenes][crew]") {
+    // Expected: scenes.md#gang, confirmed (code): Human_MakePlayer (0x00229c40) dispatches the follow at once, and the
+    // dispatcher (0x0041c4e0) refuses it while the scene camera is current or the menu is locked; SceneTask_End
+    // (0x0039f450) gives one follow at the cinematic's end (a player, player 2's human, is still bound in it), and
+    // nothing gives another after it. So the new player 1's crew gets one new tactic, the end's.
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    playIntro(*wad, [](IntroPlay& play) {
+        // As in the test above: every command enabled, the automatic commands off, hold his last, his menu locked.
+        coney::CharacterRules& rules = play.scripts.state().characters;
+        rules.warriorCommands.at(0).fill(true);
+        play.scripts.state().autoSwitch = false;
+        rules.lastWarriorCommand.at(0) = 3;
+        play.scripts.state().story.menuLocked.at(0) = true;
+        // Player 1 handed, while the intro plays, to another human the scene does not hold.
+        const coney::ai::ScriptedBrains* scripted = play.gameplay.scripted();
+        REQUIRE(scripted != nullptr);
+        const coney::HumanCreation* chief = play.scripts.humans().player(1);
+        REQUIRE(chief != nullptr);
+        double next = 0.0;
+        for (const coney::HumanCreation& human : play.scripts.humans().all()) {
+            if (human.handle != chief->handle && !play.system.inScene(human.handle) &&
+                scripted->brain(human.handle) != nullptr && scripted->brain(human.handle)->gang() != nullptr) {
+                next = human.handle;
+                break;
+            }
+        }
+        REQUIRE(next != 0.0);
+        play.scripts.humans().setPlayer(1, next);
+        const coney::ai::Brain* brain = scripted->brain(next);
+        REQUIRE(brain != nullptr);
+        const coney::ai::Gang* crew = brain->gang();
+        REQUIRE(crew != nullptr);
+        const std::uint32_t tacticsBefore = crew->tacticsSet();
+
+        // To the update in which the scene ends, then 3 s more.
+        const std::uint64_t endedBefore = play.system.stats().ended;
+        int steps = 0;
+        while (play.system.stats().ended == endedBefore && steps < 2400) {
+            play.stack.runUntilEmpty(play.timer, {}, 1);
+            ++steps;
+        }
+        REQUIRE(play.system.stats().ended == endedBefore + 1);
+        play.stack.runUntilEmpty(play.timer, {}, 90);
+        CHECK(play.scripts.scripts().errors() == 0);
+        CHECK(crew->tacticsSet() == tacticsBefore + 1);
+        std::printf("  level99 l99_c1, player 1 switched: ended after %d more steps; %u new tactics 3 s later\n", steps,
+                    static_cast<unsigned>(crew->tacticsSet() - tacticsBefore));
+    });
 }
