@@ -2,6 +2,7 @@
 """Tests for the clang-tidy result cache (`ci tidy-run --cache`): made-up compile databases, files and outcomes."""
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -40,10 +41,57 @@ def depfile(root: Path, folder: Path, *names: str) -> Path:
 FINDING = Finding("src/a.h", 1, 1, "error", "bugprone-x", "bad")
 
 
-def test_the_dependency_arguments_reach_the_front_end_in_either_driver() -> None:
+def test_the_dependency_arguments_are_joined_so_the_tooling_cannot_strip_them() -> None:
+    # clang tooling drops every word starting with -M (and the word after -MT) from a GCC/Clang-style command, so a
+    # separate `-Xclang -MT` pair would leave `-Xclang tidy` behind; `-Xclang=<word>` starts with neither
     words = depfile_arguments(Path("d/deps.d"))
-    assert words[::2] == ["-Xclang"] * 5
-    assert words[1::2] == ["-dependency-file", str(Path("d/deps.d")), "-MT", "tidy", "-sys-header-deps"]
+    assert words == [
+        f"-Xclang={word}" for word in ("-dependency-file", str(Path("d/deps.d")), "-MT", "tidy", "-sys-header-deps")
+    ]
+    assert not any(word.startswith("-M") for word in words)
+
+
+def pinned_clang_tidy() -> str | None:
+    """The clang-tidy of CI's major version that `ci tidy-local` would run on this machine, or None without one."""
+    from coney_tools.conventions import load_conventions
+    from coney_tools.local_tidy import TidyUnavailable, find_program
+
+    root = Path(__file__).parents[2]
+    try:
+        return find_program(root, load_conventions(root).ci.tidy.llvm_major)
+    except TidyUnavailable:
+        return None
+
+
+@pytest.mark.parametrize(
+    "compiler",
+    ["/usr/bin/clang++-19 -std=c++20", "clang++ -std=c++20", "cl.exe /nologo /std:c++latest /showIncludes"],
+)
+def test_the_real_clang_tidy_writes_the_dependency_file_for_either_driver(tmp_path: Path, compiler: str) -> None:
+    program = pinned_clang_tidy()
+    if program is None:
+        pytest.skip("no clang-tidy of CI's major version on this machine")
+    root = tmp_path / "coney"
+    source = write(root, "src/a.cpp", '#include "a.h"\n#include <cstddef>\nint f() { return g(); }\n')
+    write(root, "src/a.h", "inline int g() { return 1; }\n")
+    folder = root / "build" / "ci"
+    output = "/Foa.obj" if compiler.startswith("cl.exe") else "-o a.o -MD -MT a.o -MF a.o.d"
+    command = f"{compiler} -c {source.as_posix()} {output}"
+    database = [{"directory": folder.as_posix(), "command": command, "file": source.as_posix()}]
+    write(root, "build/ci/compile_commands.json", json.dumps(database))
+    deps = tmp_path / "deps.d"
+    arguments = [f"--extra-arg={word}" for word in depfile_arguments(deps)]
+    done = subprocess.run(
+        [program, "-p", str(folder), "--quiet", "--checks=-*,misc-unused-parameters", *arguments, str(source)],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=300,
+    )
+    assert done.returncode == 0, done.stdout + done.stderr
+    names = [Path(path).name for path in read_depfile(deps.read_text(encoding="utf-8"))]
+    assert names[:2] == ["a.cpp", "a.h"]
+    assert "cstddef" in names  # system headers are named too
 
 
 def test_a_dependency_file_is_read_with_continuations_escaped_spaces_and_no_repeats() -> None:

@@ -436,7 +436,8 @@ def _run_unit(
     unit: Unit, plan: TidyPlan, root: Path, build_dir: Path, tool: str, run: Runner, options: RunOptions
 ) -> UnitOutcome:
     """Run clang-tidy on one source, or take its outcome from the cache; a clean outcome or one with findings is kept
-    in the cache, a failure of the tool never."""
+    in the cache, a failure of the tool never, nor a source that does not compile: a missing include is not in the
+    dependency file, so a kept compile error would outlive the arrival of the header it lacked."""
     cache = options.cache
     if cache is not None:
         kept = cache.get(unit.source)
@@ -447,7 +448,8 @@ def _run_unit(
         code, output = run(_tidy_command(tool, build_dir, plan, unit.source, options, depfile), root)
         findings = tuple(parse_findings(output, root))
         tail = next((line.strip() for line in reversed(output.splitlines()) if line.strip()), "no output")
-        if cache is not None and depfile is not None and (code == 0 or findings):
+        compiled = not any(item.check == COMPILE_ERROR for item in findings)
+        if cache is not None and depfile is not None and (code == 0 or findings) and compiled:
             cache.put(unit.source, tidy_cache.Entry(code, findings), depfile)
     return UnitOutcome(code, findings, tail)
 

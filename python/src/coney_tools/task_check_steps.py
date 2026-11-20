@@ -206,6 +206,16 @@ def actionlint_step(context: StepContext) -> StepResult:
     return _commands("actionlint", [["actionlint"]], context, "workflows are clean")
 
 
+def clang_tidy_preflight(root: Path, conventions: Conventions) -> None:
+    """Find the clang-tidy the `clang-tidy` check will run before the run starts: the check comes after the build and
+    the whole test run, so a machine without the program would learn it hours in. CheckUnavailable when there is none
+    of CI's major version. The compile database is not looked for here: the build writes it."""
+    try:
+        local_tidy.find_program(root, conventions.ci.tidy.llvm_major)
+    except local_tidy.TidyUnavailable as error:
+        raise CheckUnavailable(str(error)) from error
+
+
 def clang_tidy_step(context: StepContext) -> StepResult:
     """clang-tidy with the repository's `.clang-tidy` on the lines the change touches in its C++ files, against the
     compile database of the build preset (`proof.build.preset`), as CI's `clang-tidy` job checks the pull request
@@ -253,3 +263,9 @@ IMPLEMENTED: dict[str, Step] = {
     "actionlint": actionlint_step,
     "clang-tidy": clang_tidy_step,
 }
+
+
+#: What a check needs that can be looked for before the run starts (checkout, conventions; CheckUnavailable when it is
+#: missing), by check name: only for a check that comes late, so its absence does not cost the checks before it.
+Preflight = Callable[[Path, Conventions], None]
+PREFLIGHT: dict[str, Preflight] = {"clang-tidy": clang_tidy_preflight}

@@ -297,8 +297,10 @@ jobs:
         with:
           sarif_file: ${{ runner.temp }}/clang-tidy.sarif
           category: clang-tidy
-      # Only main's runs (a push, the nightly and manual runs) save the cache, as with ccache: a pull request's cache is
-      # scoped to its own ref, so no other run could restore it, and it would push main's entries out. A run cancelled
+      # Every run but a pull request's saves the cache, as with ccache, into its own ref's scope: main's pushes and
+      # nightly runs, which every run restores, and manual runs and release/** pushes, which only that ref's later runs
+      # restore. A pull request's cache is scoped to its own ref, so no other run could restore it, and it would push
+      # main's entries out. A run cancelled
       # by a newer push still saves: every entry is written whole as its source finishes, so the next run starts from
       # what this one checked instead of from nothing.
       - if: ${{ always() && github.event_name != 'pull_request' && steps.plan.outputs.run == 'true' }}

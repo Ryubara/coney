@@ -11,7 +11,12 @@ An entry holds clang-tidy's exit code, every finding it printed (unfiltered: a c
 the cache, so one entry serves any change) and the **files it read**: the dependency file clang-tidy writes when asked
 (`depfile_arguments`, system headers included), each with its SHA-256. `get` gives the entry back only while every one
 of those files still has that hash, as ccache's direct mode does; a file that changed or went missing is a miss and
-clang-tidy runs again. A failure of the tool (an exit code with no finding) is never kept.
+clang-tidy runs again. A failure of the tool (an exit code with no finding) is never kept, nor a source that does not
+compile (ci_tidy.py).
+
+A known limit: the dependency file names only the files that were read, so a **newly added** header that shadows an
+include (a file of the same name in an earlier include directory) or that makes a `__has_include` true is not seen,
+and the kept outcome stands until another input of the source changes (docs/guides/clang-tidy.md#cache).
 
 The folder is plain files, one JSON per entry, so CI keeps it between runs with actions/cache. Paths are written
 relative to the checkout when they are inside it, so an entry made in one checkout reads the same in another.
@@ -31,14 +36,20 @@ if TYPE_CHECKING:
     from coney_tools.ci_tidy import Finding
 
 #: The format of an entry; an entry of another version is a miss.
-VERSION = 1
+VERSION = 2
 
 
 def depfile_arguments(depfile: Path) -> list[str]:
-    """The arguments that make clang-tidy write the files it reads to `depfile`, system headers included. They are the
-    compiler front end's own options (behind -Xclang), so they mean the same to clang and to clang-cl."""
+    """The arguments that make clang-tidy write the files it reads to `depfile`, system headers included.
+
+    They are the compiler front end's own options, each joined to its `-Xclang=`, so they mean the same to clang and
+    to clang-cl. Joined, because clang tooling strips dependency options from a GCC/Clang-style command before it
+    runs: every word that starts with `-M`, and the word after `-MT`. A separate `-Xclang -MT -Xclang tidy` would
+    lose its `-MT` and leave `-Xclang tidy`, an input file named `tidy`; `-Xclang=-MT` starts with neither.
+    test_tidy_cache.py runs the real clang-tidy on a clang++ and a cl.exe compile database to prove both.
+    """
     words = ["-dependency-file", str(depfile), "-MT", "tidy", "-sys-header-deps"]
-    return [part for word in words for part in ("-Xclang", word)]
+    return [f"-Xclang={word}" for word in words]
 
 
 def read_depfile(text: str) -> list[str]:

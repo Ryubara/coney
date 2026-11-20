@@ -678,9 +678,9 @@ class DepTidy(FakeTidy):
     """A clang-tidy stand-in that also writes the dependency file the cache asks for: the source alone."""
 
     def __call__(self, command: list[str], cwd: Path) -> tuple[int, str]:
-        words = [arg.removeprefix("--extra-arg=") for arg in command]
+        words = [arg.removeprefix("--extra-arg=").removeprefix("-Xclang=") for arg in command]
         if "-dependency-file" in words:
-            target = Path(words[words.index("-dependency-file") + 2])
+            target = Path(words[words.index("-dependency-file") + 1])
             target.write_text(f"tidy: {cwd / command[-1]}\n", encoding="utf-8")
         return super().__call__(command, cwd)
 
@@ -723,6 +723,18 @@ def test_a_failure_of_the_tool_is_never_cached(tree: Path, tmp_path: Path) -> No
     build = database(tree, "src/other.cpp", "src/ai/brain.cpp")
     options = RunOptions(cache=TidyCache.open(tmp_path / "cache", tree, build, "19.1.1", "Checks: x"))
     run_plan(a_plan(tree), tree, build, "clang-tidy", 1, DepTidy({"src/other.cpp": (1, "crash\n")}), options)
+    again = DepTidy()
+    options = RunOptions(cache=TidyCache.open(tmp_path / "cache", tree, build, "19.1.1", "Checks: x"))
+    run_plan(a_plan(tree), tree, build, "clang-tidy", 1, again, options)
+    assert [command[-1] for command in again.commands] == ["src/other.cpp"]
+
+
+def test_a_source_that_does_not_compile_is_never_cached(tree: Path, tmp_path: Path) -> None:
+    # a missing include is not in the dependency file, so a kept "does not compile" would outlive the header's arrival
+    build = database(tree, "src/other.cpp", "src/ai/brain.cpp")
+    text = f"{tree}/src/other.cpp:1:10: error: 'gen.inc' file not found [clang-diagnostic-error]\n"
+    options = RunOptions(cache=TidyCache.open(tmp_path / "cache", tree, build, "19.1.1", "Checks: x"))
+    run_plan(a_plan(tree), tree, build, "clang-tidy", 1, DepTidy({"src/other.cpp": (1, text)}), options)
     again = DepTidy()
     options = RunOptions(cache=TidyCache.open(tmp_path / "cache", tree, build, "19.1.1", "Checks: x"))
     run_plan(a_plan(tree), tree, build, "clang-tidy", 1, again, options)

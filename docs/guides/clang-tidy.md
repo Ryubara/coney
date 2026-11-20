@@ -40,7 +40,8 @@ at the version CI's runner installs (19.1.1) and keeps only `clang-tidy.exe` and
 `tools/clang-tidy-19.1.1` ([the downloads](workspace.md#fetch)). On Linux install `clang-tidy-19` with apt, on macOS
 Homebrew's `llvm@19`. `clang_tidy_program` of coney.local.toml names another copy. A clang-tidy of another major
 version, or none, makes the check "cannot run" (no stamp, nothing wrong with the change): a newer one reports what CI
-would not, an older one misses what it would.
+would not, an older one misses what it would. `task check` looks for the program before it starts, so a machine
+without one learns it at once, not after the build and the tests.
 
 **Windows paths.** clang-tidy sees a header's path with backslashes on Windows (`<checkout>\src\core/pad.h`), so the
 check hands it `.clang-tidy`'s `HeaderFilterRegex` with each `/` widened to either slash, and applies the line filter
@@ -113,8 +114,11 @@ on `main` reports it.
 clang-tidy needs the compile database and the headers the build generates, not the object files. The job therefore
 builds, after configuring, only the targets `coney-tools ci tidy-deps` prints for the plan's sources: for each, the
 order-only target CMake's Ninja generator writes for the target that compiles it
-(`cmake_object_order_depends_target_<target>`: that target's generated headers and its dependencies', nothing
-compiled), or the source's object file when there is no such target. Coney generates one file this way, the embedded
+(`cmake_object_order_depends_target_<target>`: that target's generated headers and the targets it depends on), or the
+source's object file when there is no such target. Mostly nothing is compiled, but an order-only target also holds
+the targets its target depends on: `coney-studio`'s pulls in `coney` (the executable, built and linked), and `coney`'s
+the copied assets, so a plan with a `studio_*.cpp` source, and every pass over the whole codebase, still builds
+`coney`. Coney generates one file this way, the embedded
 shader data of `src/platform/shaders/`; SDL3's and Catch2's configuration headers are written by the configure step.
 The build job is the one that reports compile errors, so a failure here does not stop the job.
 
@@ -125,13 +129,25 @@ An entry is named by clang-tidy's version, the text of `.clang-tidy` and the sou
 clang-tidy's exit code, every finding it printed (all lines: the change's lines are chosen after the cache, so one entry
 serves any pull request) and the SHA-256 of every file the source read, system headers included, from the dependency
 file clang-tidy writes when asked. A later run takes the entry instead of running clang-tidy while every one of those
-files is unchanged; a changed or missing file is a miss. A failure of clang-tidy itself is never kept.
+files is unchanged; a changed or missing file is a miss. A failure of clang-tidy itself is never kept, nor the outcome
+of a source that does not compile (a `clang-diagnostic-error` finding): a missing include is not in the dependency
+file, so a kept compile error would stay after the header it lacked appears (a generated header `ci tidy-deps` failed
+to build, say).
+
+One change the hashes cannot see: a **newly added** header that shadows an include (an earlier include directory
+gains a file of the same name) or that makes a `__has_include` true. Neither is in the dependency file, which names
+only the files that were read, so such a change gets the kept outcome until another input of the source changes. It
+is rare here (no Coney header shares a name with another on the include path); the pass over every file nightly runs
+through the same cache, so a suspect entry is cleared by changing `.clang-tidy` or by deleting the cache entry in the
+repository's Actions caches.
 
 In CI the folder is an `actions/cache` entry, `clang-tidy-results-<hash of .clang-tidy>-<run id>`: every run restores
-the newest one `main` saved for the same `.clang-tidy`, and only `main`'s runs save (a pull request's cache is scoped
-to its own ref, so nobody else could restore it), also when a newer push cancels the run, since each entry is written
-whole as its source finishes. The `cache-prune` job keeps one such entry per branch, like the compiler caches
-([CI caches](building.md#ci-caches)). A change to `.clang-tidy` starts from an empty cache.
+the newest one saved for the same `.clang-tidy` in its own ref's scope or `main`'s. Pull requests never save (a pull
+request's cache is scoped to its own ref, so nobody else could restore it, and it would push `main`'s entries out);
+every other run saves into its own ref's scope: `main`'s pushes and nightly runs, which every run reads, and manual
+runs and `release/**` pushes, which only later runs of that same ref read. A run saves also when a newer push
+cancels it, since each entry is written whole as its source finishes. The `cache-prune` job keeps one such entry per
+branch, like the compiler caches ([CI caches](building.md#ci-caches)). A change to `.clang-tidy` starts from an empty cache.
 
 ## The checks {#checks}
 

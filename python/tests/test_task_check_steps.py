@@ -207,6 +207,30 @@ def test_the_clang_tidy_check_cannot_run_without_a_program(monkeypatch: pytest.M
         task_check_steps.clang_tidy_step(context(Commands()))
 
 
+def test_the_clang_tidy_program_is_looked_for_before_the_run_and_not_its_database(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert task_check_steps.PREFLIGHT["clang-tidy"] is task_check_steps.clang_tidy_preflight
+    asked: list[int] = []
+
+    def found(root: Path, major: int) -> str:
+        asked.append(major)
+        return "clang-tidy"
+
+    monkeypatch.setattr(local_tidy, "find_program", found)
+    monkeypatch.setattr(local_tidy, "compile_database", lambda root, preset: pytest.fail("the build writes it"))
+    conventions = load_conventions(REPO)
+    task_check_steps.clang_tidy_preflight(REPO, conventions)
+    assert asked == [conventions.ci.tidy.llvm_major]
+
+    def missing(root: Path, major: int) -> str:
+        raise local_tidy.TidyUnavailable("clang-tidy 19 is not installed")
+
+    monkeypatch.setattr(local_tidy, "find_program", missing)
+    with pytest.raises(CheckUnavailable, match="not installed"):
+        task_check_steps.clang_tidy_preflight(REPO, conventions)
+
+
 def fake_local(monkeypatch: pytest.MonkeyPatch, result: local_tidy.LocalResult) -> None:
     """Make the clang-tidy check find a program and a database and return `result` without running anything."""
     monkeypatch.setattr(local_tidy, "find_program", lambda root, major: "clang-tidy")

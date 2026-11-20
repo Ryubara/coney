@@ -630,7 +630,7 @@ worktree before review ([clang-tidy here](clang-tidy.md#local); [#1496](issue:14
 failed CI's clang-tidy after their reviews had passed). CI's required `clang-tidy` check
 still runs the same pass on the pull request, and every file on `main` and nightly ([clang-tidy](clang-tidy.md)). It
 catches what MSVC lets through, such as an unchecked `std::optional` access (`bugprone-unchecked-optional-access`) or
-a use after a move. The local run reads the code through MSVC's headers, so a few findings only CI's Linux run makes
+a use after a move. The local run reads the code through MSVC's headers, so a few findings come only from CI's Linux run
 ([the differences](clang-tidy.md#differences)); one of those is an annotation on the pull request, fixed as a fix
 task on the branch ([Tracks](how-we-work.md#slots)). A designated initializer that
 skips a field (`-Wmissing-designated-field-initializers`) is caught by the GCC and Clang builds instead, whose `-Wall -Wextra`
