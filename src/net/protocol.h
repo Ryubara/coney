@@ -27,7 +27,7 @@ namespace coney::net {
 
 /// The protocol's version. Bump it with any change to a message's layout or meaning: a client and a server of
 /// different versions refuse each other in the handshake rather than misread each other.
-inline constexpr std::uint16_t kProtocolVersion = 6;
+inline constexpr std::uint16_t kProtocolVersion = 7;
 /// The first field of Hello, "CONY" read as a little-endian number: a packet from another program is refused.
 inline constexpr std::uint32_t kProtocolMagic = 0x594e4f43U;
 /// The UDP port a server listens on unless told otherwise.
@@ -48,7 +48,7 @@ enum class MessageId : std::uint8_t {
     // 7 was PadInput (protocol 2: one step's pad per packet), replaced by InputCommands; never reused.
     InputCommands = 8, ///< client to server: the client's pads in its latest few steps (protocol 3)
     InputTiming = 9,   ///< server to client: how early the client's input commands arrive (protocol 3)
-    Snapshot = 10,     ///< server to client: the humans the client needs, as a delta (protocol 4)
+    Snapshot = 10,     ///< server to client: the humans the client needs, as a delta (protocol 4; HUDs 7)
     SnapshotAck = 11,  ///< client to server: the newest snapshot the client has decoded (protocol 4)
     EventBatch = 12    ///< server to client: what the game made its players see or hear in one step (protocol 5)
 };
@@ -151,19 +151,51 @@ struct SnapshotEntry {
     friend bool operator==(const SnapshotEntry&, const SnapshotEntry&) = default;
 };
 
-/// The state of the humans a client needs, as a delta against a snapshot it has acknowledged (its baseline), or in
-/// full when it has none. Sent every step, UnreliableSequenced: a lost one is repaired by the next, which is a delta
-/// against an older baseline (docs/guides/snapshots.md).
+/// The player slots a snapshot can carry a HUD for: the host's 0 and up to three remote players (ServerConfig's
+/// maxClients, Coney's choice of 3).
+inline constexpr std::size_t kMaxPlayerSlots = 4;
+/// Bits a player slot takes in a Snapshot's HUD entry.
+inline constexpr int kPlayerSlotBits = 2;
+static_assert(kMaxPlayerSlots == 1U << kPlayerSlotBits);
+
+/// The fields of a player's HUD (fieldTable(ReplicatedKind::PlayerHud)), in HudField order.
+inline constexpr std::size_t kHudFieldCount = static_cast<std::size_t>(HudField::Count);
+/// Every HUD field's changed bit set (SnapshotHudEntry::changed): what an entry for a slot the baseline does not hold
+/// carries.
+inline constexpr std::uint32_t kAllHudFields = (1U << kHudFieldCount) - 1U;
+static_assert(kHudFieldCount < 32, "a SnapshotHudEntry's changed bits are one 32-bit word");
+
+/// A player's HUD fields as they travel: each field's fieldWord(), in HudField order.
+using HudWords = std::array<std::uint32_t, kHudFieldCount>;
+
+/// One player slot's HUD in a Snapshot: gone, or the fields that differ from the baseline's (every field for a slot
+/// the baseline does not hold).
+struct SnapshotHudEntry {
+    std::uint8_t slot = 0; ///< below kMaxPlayerSlots
+    bool removed = false;  ///< the slot has no player (or no HUD) any more; `changed` is 0
+    /// Bit i set: field i is written; 0 only for a removal. A slot the baseline does not hold has every bit set.
+    std::uint32_t changed = 0;
+    HudWords words{}; ///< each changed field's word; the others are 0
+
+    friend bool operator==(const SnapshotHudEntry&, const SnapshotHudEntry&) = default;
+};
+
+/// The state of the humans a client needs and of each player's HUD, as a delta against a snapshot it has acknowledged
+/// (its baseline), or in full when it has none. Sent every step, UnreliableSequenced: a lost one is repaired by the
+/// next, which is a delta against an older baseline (docs/guides/snapshots.md).
 ///
 /// The packet: the sequence (a varint, 32 bits at most), how many snapshots back the baseline is (a varint, 0 for
 /// none, else 1 to kSnapshotHistory and no further back than the first), the server's step (a varint, 32 bits at
 /// most), the number of entries (a varint), then each entry: its NetId (kNetIdBits), a removed bit and, when not
-/// removed, for each human field a changed bit followed by the field's word (its bits) when set.
+/// removed, for each human field a changed bit followed by the field's word (its bits) when set. Then the number of
+/// HUD entries (a varint, at most kMaxPlayerSlots) and each: its slot (kPlayerSlotBits), a removed bit and, when not
+/// removed, for each HUD field a changed bit followed by the field's word when set (protocol 7).
 struct Snapshot {
-    std::uint32_t sequence = 1;        ///< 1 for a client's first, one more for each after
-    std::uint32_t baseline = 0;        ///< the sequence it is a delta against; 0 for none (a full snapshot)
-    std::uint32_t step = 0;            ///< the server's step it shows
-    std::vector<SnapshotEntry> humans; ///< in strictly rising id order
+    std::uint32_t sequence = 1;           ///< 1 for a client's first, one more for each after
+    std::uint32_t baseline = 0;           ///< the sequence it is a delta against; 0 for none (a full snapshot)
+    std::uint32_t step = 0;               ///< the server's step it shows
+    std::vector<SnapshotEntry> humans;    ///< in strictly rising id order
+    std::vector<SnapshotHudEntry> huds{}; ///< in strictly rising slot order
 
     friend bool operator==(const Snapshot&, const Snapshot&) = default;
 };
@@ -224,8 +256,12 @@ struct EventBatch {
 /// Bits `entry` takes in a Snapshot's packet: what the server's snapshot budget counts.
 [[nodiscard]] std::size_t snapshotEntryBits(const SnapshotEntry& entry);
 
-/// Bits a Snapshot's packet takes before its entries (the message id included) with `entries` entries.
-[[nodiscard]] std::size_t snapshotHeaderBits(const Snapshot& snapshot, std::size_t entries);
+/// Bits `entry` takes in a Snapshot's packet: what the server's snapshot budget counts.
+[[nodiscard]] std::size_t snapshotHudEntryBits(const SnapshotHudEntry& entry);
+
+/// Bits a Snapshot's packet takes besides its entries (the message id and the HUD entries' count included) with
+/// `entries` human entries and `hudEntries` HUD entries.
+[[nodiscard]] std::size_t snapshotHeaderBits(const Snapshot& snapshot, std::size_t entries, std::size_t hudEntries = 0);
 
 /// Whether two pads travel as the same bits: both disconnected, or both connected with the same buttons, sticks and
 /// pressures.

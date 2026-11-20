@@ -14,9 +14,10 @@
 #include "net/protocol.h"
 #include "net/replicated_fields.h"
 
-// Snapshots: what each client is told of the humans, as deltas against a snapshot it has acknowledged, in Quake 3's
-// way, within a budget of bytes that a priority accumulator fills. The server keeps a SnapshotSender per client and
-// the client a SnapshotReceiver. Coney's own; the original has no network play (docs/guides/snapshots.md).
+// Snapshots: what each client is told of the humans and the players' HUDs, as deltas against a snapshot it has
+// acknowledged, in Quake 3's way, within a budget of bytes that a priority accumulator fills. The server keeps a
+// SnapshotSender per client and the client a SnapshotReceiver. Coney's own; the original has no network play
+// (docs/guides/snapshots.md).
 
 namespace coney::net {
 
@@ -37,6 +38,27 @@ using SnapshotHumans = std::map<NetId, HumanWords>;
 /// word over its field's range here is a programmer error (CONEY_ASSERT).
 /// @coney-only network play; the original has none
 [[nodiscard]] std::array<FieldValue, kHumanFieldCount> humanValues(const HumanWords& words);
+
+/// The players' HUDs a snapshot leaves a client holding, by player slot: each one's fields as words. A map, so it is
+/// walked in slot order on every machine.
+using SnapshotHuds = std::map<std::uint8_t, HudWords>;
+
+/// A player's HUD fields as words (fieldWord() of each), from their values in HudField order. The same programmer
+/// errors as humanWords().
+/// @coney-only network play; the original has none
+[[nodiscard]] HudWords hudWords(std::span<const FieldValue, kHudFieldCount> values);
+
+/// The values a player's HUD words stand for (fieldValue() of each); a word over its field's range is a programmer
+/// error (CONEY_ASSERT), as for humanValues().
+/// @coney-only network play; the original has none
+[[nodiscard]] std::array<FieldValue, kHudFieldCount> hudValues(const HudWords& words);
+
+/// One player slot's HUD as the server's game hands it to a snapshot.
+/// @coney-only network play; the original has none
+struct SnapshotHud {
+    std::uint8_t slot = 0; ///< below kMaxPlayerSlots, and once in a step's list
+    HudWords words{};      ///< hudWords() of its fields this step
+};
 
 /// One human as the server's game hands it to a snapshot.
 /// @coney-only network play; the original has none
@@ -64,9 +86,12 @@ class SnapshotSender {
     /// full human (CONEY_ASSERT).
     explicit SnapshotSender(std::size_t budgetBytes = kSnapshotBudgetBytes);
 
-    /// The next snapshot of `humans` (the humans this client needs at the server's `step`, in any order): a delta
-    /// against the newest acknowledged snapshot still kept, or full. Remembers what it leaves the client holding.
-    [[nodiscard]] Snapshot build(std::uint32_t step, std::span<const SnapshotHuman> humans);
+    /// The next snapshot of `humans` (the humans this client needs at the server's `step`, in any order) and `huds`
+    /// (each player slot's HUD, in any order): a delta against the newest acknowledged snapshot still kept, or full.
+    /// Remembers what it leaves the client holding. The HUDs go before the humans' changes: a handful of small entries
+    /// a client's panels need every step.
+    [[nodiscard]] Snapshot build(std::uint32_t step, std::span<const SnapshotHuman> humans,
+                                 std::span<const SnapshotHud> huds = {});
 
     /// The client has decoded snapshot `sequence`; later snapshots may take it as their baseline. False, and nothing
     /// changes, when it is not newer than the one acknowledged before (a late or repeated acknowledgement) or no
@@ -79,6 +104,8 @@ class SnapshotSender {
     [[nodiscard]] std::uint32_t sequence() const { return m_sequence; }
     /// What snapshot `sequence` leaves the client holding, while it is kept; null when it is not.
     [[nodiscard]] const SnapshotHumans* holding(std::uint32_t sequence) const;
+    /// The players' HUDs snapshot `sequence` leaves the client holding, while it is kept; null when it is not.
+    [[nodiscard]] const SnapshotHuds* holdingHuds(std::uint32_t sequence) const;
     /// A human's priority now: what it has grown to while its change waited; 0 when it has none waiting.
     [[nodiscard]] std::uint64_t priority(NetId id) const;
     /// The packet budget, bytes.
@@ -89,6 +116,7 @@ class SnapshotSender {
     struct Sent {
         std::uint32_t sequence = 0;
         SnapshotHumans holding;
+        SnapshotHuds huds;
     };
 
     std::size_t m_budgetBytes = kSnapshotBudgetBytes;
@@ -112,8 +140,8 @@ enum class SnapshotApplied : std::uint8_t {
 class SnapshotReceiver {
   public:
     /// Decodes `snapshot` against its baseline. Fails with Invalid when it breaks what its baseline allows: a
-    /// removal of a human the baseline does not hold, a new human with fields left out, or a changed field whose word
-    /// is the baseline's.
+    /// removal of a human or a HUD the baseline does not hold, a new one with fields left out, or a changed field whose
+    /// word is the baseline's.
     [[nodiscard]] std::expected<SnapshotApplied, Error> apply(const Snapshot& snapshot);
 
     /// The newest sequence decoded; 0 for none.
@@ -124,6 +152,10 @@ class SnapshotReceiver {
     [[nodiscard]] const SnapshotHumans& humans() const;
     /// The humans decoded snapshot `sequence` holds, while it is kept; null when it is not.
     [[nodiscard]] const SnapshotHumans* holding(std::uint32_t sequence) const;
+    /// The players' HUDs the newest snapshot holds, by slot.
+    [[nodiscard]] const SnapshotHuds& huds() const;
+    /// The players' HUDs decoded snapshot `sequence` holds, while it is kept; null when it is not.
+    [[nodiscard]] const SnapshotHuds* holdingHuds(std::uint32_t sequence) const;
     /// The server's step decoded snapshot `sequence` shows, while it is kept; nothing when it is not. With holding(),
     /// what a client's jitter buffer takes of each snapshot decoded since it last looked, not only the newest.
     [[nodiscard]] std::optional<std::uint32_t> heldStep(std::uint32_t sequence) const;
@@ -134,6 +166,7 @@ class SnapshotReceiver {
         std::uint32_t sequence = 0;
         std::uint32_t step = 0;
         SnapshotHumans holding;
+        SnapshotHuds huds;
     };
 
     std::uint32_t m_newest = 0;

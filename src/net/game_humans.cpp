@@ -86,6 +86,8 @@ void GameHumans::capture(const ai::Brains& brains) {
     }
 }
 
+void GameHumans::captureHuds(std::span<const hud::PlayerHudState> /*slots*/) {}
+
 void GameHumans::clear() {
     std::vector<const human::Human*> all;
     m_table.forEach([&all](NetId, const human::Human* handle) { all.push_back(handle); });

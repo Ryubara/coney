@@ -59,13 +59,18 @@ std::array<FieldValue, kHumanFieldCount> humanValues(const HumanWords& words) {
     return values;
 }
 
+HudWords hudWords(std::span<const FieldValue, kHudFieldCount> /*values*/) { return {}; }
+
+std::array<FieldValue, kHudFieldCount> hudValues(const HudWords& /*words*/) { return {}; }
+
 SnapshotSender::SnapshotSender(std::size_t budgetBytes) : m_budgetBytes(budgetBytes) {
     // Room for the header and one human in full, or a new human might never fit.
     const std::size_t fullHuman = kNetIdBits + 1 + kHumanFieldCount + fieldsBits(fieldTable(ReplicatedKind::Human));
     CONEY_ASSERT(budgetBytes * 8 >= kMostHeaderBits + fullHuman);
 }
 
-Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman> humans) {
+Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman> humans,
+                               std::span<const SnapshotHud> /*huds*/) {
     CONEY_ASSERT(m_sequence < 0xffffffffU); // four and a half years of snapshots at 30 a second
     Snapshot snapshot;
     snapshot.sequence = ++m_sequence;
@@ -166,6 +171,11 @@ const SnapshotHumans* SnapshotSender::holding(std::uint32_t sequence) const {
     return sequence != 0 && sent.sequence == sequence ? &sent.holding : nullptr;
 }
 
+const SnapshotHuds* SnapshotSender::holdingHuds(std::uint32_t sequence) const {
+    const Sent& sent = m_sent.at(sequence % kSnapshotHistory);
+    return sequence != 0 && sent.sequence == sequence ? &sent.huds : nullptr;
+}
+
 std::uint64_t SnapshotSender::priority(NetId id) const {
     const auto found = m_priority.find(id);
     return found == m_priority.end() ? 0 : found->second;
@@ -218,6 +228,13 @@ const SnapshotHumans& SnapshotReceiver::humans() const {
     const SnapshotHumans* newest = holding(m_newest);
     return newest == nullptr ? noHumans() : *newest;
 }
+
+const SnapshotHuds& SnapshotReceiver::huds() const {
+    static const SnapshotHuds none;
+    return none;
+}
+
+const SnapshotHuds* SnapshotReceiver::holdingHuds(std::uint32_t /*sequence*/) const { return nullptr; }
 
 const SnapshotHumans* SnapshotReceiver::holding(std::uint32_t sequence) const {
     const Received& received = m_received.at(sequence % kSnapshotHistory);

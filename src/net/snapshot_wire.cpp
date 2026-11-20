@@ -182,7 +182,9 @@ std::size_t snapshotEntryBits(const SnapshotEntry& entry) {
     return bits;
 }
 
-std::size_t snapshotHeaderBits(const Snapshot& snapshot, std::size_t entries) {
+std::size_t snapshotHudEntryBits(const SnapshotHudEntry& /*entry*/) { return 0; }
+
+std::size_t snapshotHeaderBits(const Snapshot& snapshot, std::size_t entries, std::size_t /*hudEntries*/) {
     return 8 + varUintBits(snapshot.sequence) +
            varUintBits(snapshot.baseline == 0 ? 0 : snapshot.sequence - snapshot.baseline) +
            varUintBits(snapshot.step) + varUintBits(entries);

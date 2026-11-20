@@ -151,7 +151,8 @@ void NetServer::send() {
     m_transport.flush();
 }
 
-void NetServer::sendSnapshots(std::uint32_t step, std::span<const SnapshotHuman> humans) {
+void NetServer::sendSnapshots(std::uint32_t step, std::span<const SnapshotHuman> humans,
+                              std::span<const SnapshotHud> /*huds*/) {
     if (!m_running) {
         return;
     }

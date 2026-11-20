@@ -283,6 +283,10 @@ void NetPlay::setGameHumans(std::span<const net::SnapshotHuman> humans) {
     m_gameHumans.assign(humans.begin(), humans.end());
 }
 
+void NetPlay::setGameHuds(std::span<const net::SnapshotHud> /*huds*/) {}
+
+net::SnapshotHuds NetPlay::arrivedHuds() const { return {}; }
+
 void NetPlay::sendSnapshots(std::uint32_t step) {
     m_server->sendSnapshots(step, m_gameHumans);
     if (!m_snapshotDigests) {
