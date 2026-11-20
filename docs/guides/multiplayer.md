@@ -18,7 +18,9 @@ tables ([Network ids](#net-ids)); and [snapshots](snapshots.md) of humans, delta
 baselines within a 1,200-byte budget; and [the client's world](client-world.md), the jitter buffer and the blends that
 draw a client's humans from them; the host's game's humans in those snapshots, sent to the guest every step;
 [game events](#events), what the host's game makes its players see or hear (a sound, a particle start, a HUD message,
-a scene or a movie) sent to the guest at its step; and the proof of it without a person: the [state digest](#digest),
+a scene or a movie) sent to the guest at its step; [level loads, checkpoints and the loading barrier](#levels), the
+session's side of a level change, a checkpoint restart, a mid-level join and a movie's wait; and the proof of it
+without a person: the [state digest](#digest),
 [two processes](#two-processes) over ENet in CI and [replays](#replays). The guest does not see the host's game yet:
 no client game mode draws the snapshots it decodes or plays the events.
 **Next:** the layers under [The plan](#plan).
@@ -63,6 +65,7 @@ no client game mode draws the snapshots it decodes or plays the events.
 | The game's humans | `src/net/game_humans.h` | the server's humans as snapshots take them: their state read from the game, their ids |
 | State digest | `src/net/state_digest.h` | a hash of the replicated state at a step; the first difference; the digest files |
 | Session record | `src/net/session_record.h` | a host's record of port 2's pad and the session's events, and its replay |
+| Level loads | `src/net/level_barrier.h` | the host's level and checkpoint, who has loaded it, the load and movie time-outs ([Levels](#levels)) |
 | Game events | `src/core/game_events.h`, `src/net/event_channel.h` | the one call the game raises what its players see or hear through, and those events' way to a client ([Game events](#events)) |
 | ENet | `src/platform/enet_transport.h` | the transport over UDP |
 
@@ -125,7 +128,7 @@ the loopback; the Network page will put it in front of ENet.
 
 ## Protocol {#protocol}
 
-Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 7)
+Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 8)
 changes with any change to a layout or a meaning; a test pins the encoding byte for byte so a change cannot slip in
 unnoticed.
 
@@ -134,7 +137,7 @@ unnoticed.
 | 1 | Hello | client to server | magic `CONY` (32 bits), protocol version (16), player name (string, 32 bytes at most) | reliable |
 | 2 | Welcome | server to client | player slot (8), step rate in Hz (16), server name | reliable |
 | 3 | Reject | server to client | reason (8): version mismatch, server full, bad name; server's version (16) | reliable |
-| 4 | Bye | either | reason (8): quit, timed out, protocol error | reliable |
+| 4 | Bye | either | reason (8): quit, timed out, protocol error, did not load the level in time (since version 8) | reliable |
 | 5 | Ping | either | sequence (varint, 32 bits at most) | unreliable |
 | 6 | Pong | either | the Ping's sequence | unreliable |
 | 7 | PadInput | retired: one step's pad (version 2 only); the id is never reused | | |
@@ -143,6 +146,10 @@ unnoticed.
 | 10 | Snapshot | server to client | the humans as a delta against an acknowledged snapshot ([The packet](snapshots.md#packet)); since version 4 (version 7 added each player slot's HUD entries, [HUD state](snapshots.md#hud-state)) | unreliable, sequenced |
 | 11 | SnapshotAck | client to server | the newest snapshot decoded (varint); since version 4 | unreliable |
 | 12 | EventBatch | server to client | a step's game events of one delivery ([The batch](#event-batch)); since version 5 (version 6 added a sound's instance, SoundStop and SoundMove) | reliable, or unreliable for one-shots |
+| 13 | LoadLevel | server to client | the load (varint, from 1), the reason (8: change, restart, join), the checkpoint (16), the level name (string, 32 bytes at most, only letters, digits, `_` and `-`); since version 8 ([Levels](#levels)) | reliable |
+| 14 | LevelLoaded | client to server | the load it has loaded (varint, not 0); since version 8 | reliable |
+| 15 | MissionEnd | server to client | the load (varint, not 0), the outcome (8: passed, failed, quit); since version 8 | reliable |
+| 16 | MovieDone | client to server | the step of the movie's MovieStart (varint), skipped (1 bit); since version 8 | reliable |
 
 **A pad** is connected (1 bit) and, only when connected, the button word (16 bits, the PS2 layout of `core/pad.h`),
 the four raw stick bytes (right x, right y, left x, left y) and, for each of the 12 pressure bytes, a bit saying
@@ -470,6 +477,65 @@ recorded port 2 over the run's own pads with no session, with the host's input s
 `--digest` lines again, step for step. `net::SessionReplay` reads a record strictly (a malformed line or a step
 recorded twice is refused, naming the line) and ignores the events.
 
+## Levels, checkpoints and the loading barrier {#levels}
+
+The host's game is the story, and the guest plays in it ([Story](network-architecture.md#story)): when the host's game
+loads a level, restarts it at a checkpoint or ends a mission, the guest's does too, and the host never steps a level the
+guest has not loaded. The session's side of it is built and tested on the loopback; the game's main loop does not call
+it yet ([What is not wired yet](#levels-not-wired)).
+
+**A load.** `NetServer::loadLevel(level, checkpoint)` (`NetPlay::loadLevel()` in the game) numbers the load (1, 2, ...
+in a session) and sends each joined player a **LoadLevel**: the level's name, the checkpoint and why. The reason is a
+**restart** when the level is the one already current (a retry after a failed mission, or the mission going on at its
+next checkpoint), a **change** for any other level, and **join** for a player who joins a host already in a level: they
+are sent the current load straight after their Welcome. The checkpoint travels in 16 bits and counts from 1, as the
+original's does (`W_GameState + 0x33a`, confirmed (code), [Where a level puts the
+player](../research/characters.md#level-starts)); a level name is at most 32 bytes (Coney's choice: the original's level
+record keeps the name in 16, [The level record](../research/level-loading.md#the-level-record), and Coney's own levels
+may be longer) of ASCII letters, digits, `_` and `-` only (`net::validLevelName()`): the original's are named like
+`level34` ([Levels](../references/levels.md)), and a name off the network then can never be a path (no slash, no dot)
+or hold a NUL or a control byte. A LoadLevel with any other name does not decode, and a host that orders one asserts.
+The client keeps the newest order for its game (`NetClient::takeLevelOrder()`, a newer one replacing one not yet taken)
+and is **loading** until its game calls `levelLoaded(load)`, which sends **LevelLoaded** at once.
+
+**The barrier.** `LevelBarrier` (`src/net/level_barrier.h`, plain data in the server's steps) holds which joined players
+are loading the current load. `NetServer::levelReady()` is true when none is, and `NetPlay::holdsStep()` says the host's
+game must hold its next step until then: the server waits for every client before the level's first step. While a
+player loads:
+
+- they get **no snapshots and no events**: they are not in the level. Their first snapshot once loaded is a delta
+  against the last they acknowledged; a player who joined mid-level has acknowledged none, so theirs is **full**, every
+  human. On their side, a snapshot or a one-shot event batch that arrives while loading is from the level they are
+  leaving and is dropped; a reliable batch keeps its place in the sequence;
+- the keep-alive's 10 s silence does not drop them, since a game loading a level may run no steps until it has;
+- a player still loading after `ServerConfig::loadTimeoutSteps` (1,800 steps, 60 s; Coney's choice, four times the
+  original's 15 s preload budget of a story level, [The level record](../research/level-loading.md#the-level-record)) is
+  **dropped** with Bye (did not load the level in time), so the host never waits for ever.
+
+A LevelLoaded for an earlier load (overtaken by a newer order) is ignored; one for a load never ordered, or from a
+connection that has not joined, is a protocol error. A LoadLevel or MissionEnd sent to the server, or a LevelLoaded or
+MovieDone sent to a client, is one too.
+
+**The end of a mission.** `NetServer::endMission(outcome)` sends each joined player a **MissionEnd** with the current
+load and the outcome (passed, failed, quit); the client keeps them for its game (`takeMissionEnds()`). What follows (the
+restart or the next level) comes as its own LoadLevel.
+
+**A movie waits for every client.** A movie starts on the host as a MovieStart game event ([Game events](#events)); the
+host's game calls `NetPlay::startMovie()`, which names the movie by the step it starts in, and every player who has
+loaded the level is then **watching** it. Each client says when its own copy ended or was skipped
+(`NetClient::movieDone(movieStep, skipped)`, **MovieDone**). The host goes on (`movieMayEnd()`) once its own copy has
+ended (`endHostMovie()`) and every player watching has ended theirs, or `ServerConfig::movieTimeoutSteps` (300 steps,
+10 s; Coney's choice) after its own ended; a player who is slower is waited for, not dropped. A client's skip shows as
+`movieSkipped()`: the host then ends its own copy, as any pad's skip does in the original
+([Story](network-architecture.md#story)), and the MovieEnd event tells the others.
+
+<span id="levels-not-wired"></span>**What is not wired yet.** Nothing in the running game calls these yet: the host's
+`GameSession` does not report its level starts, restarts and mission ends to `NetPlay`, its step gate does not hold on
+`holdsStep()`, the guest's game does not jump to the ordered level (`GameSession::jumpToLevel()`) or report it loaded,
+and `MovieMode` neither waits for `movieMayEnd()` nor reports its end. A guest still runs its own whole game until the
+client game mode that draws the snapshots is built, and a held host step reuses its step's number, which the digest
+lines and the session record must allow for first. That wiring is #1530.
+
 ## Game events {#events}
 
 What the simulation makes a player see or hear, beyond the state snapshots carry, travels as **game events**: a sound, a
@@ -621,6 +687,10 @@ and movie tests cover the one call and the places that raise (a sound's instance
 `SoundEventPlayer` included); `net_play_test.cpp` also starts, moves and stops a sound on a host and checks that the
 guest's own sound does each once, at the host's step; the [two-process checks](#two-processes) run `coney` itself;
 `tests/gamemodes/game_mode_stack_test.cpp` checks that `beforeStep` comes before the pads are read;
+`tests/net/level_sync_test.cpp` pins the level messages' bytes and refusals and runs a level change, a checkpoint
+restart, a mid-level join with its full snapshot, a client that never loads dropped after the time-out, and a movie's
+wait, skip and time-out between a `NetServer` and its clients on the loopback, and `net_play_test.cpp` the host's held
+steps, the order a guest gets on joining and the movie's wait through `NetPlay`;
 `tests/debug/net_page_test.cpp` drives the Network page over a fake
 `NetControls`; and the `coney.hosts_headless` smoke test runs `coney --headless --frames 3 --host 127.0.0.1:0`.
 
@@ -641,5 +711,6 @@ Each step is a pull request that builds and is tested on its own.
    two-process tests and replays (built: [Proof without a person](#proof)).
 6. **AI humans, events, mission state:** the rest of what a client must see and hear: the game events (built: [Game
    events](#events)), each player's panel state in the snapshot (built: [HUD state](snapshots.md#hud-state)), the
-   AI humans and the mission state.
+   AI humans and the mission state; level loads, checkpoints and the loading barrier (the session's side built:
+   [Levels](#levels); the game's main loop to call it: #1530).
 7. **Prediction:** the local player predicted and corrected from the server's snapshots.

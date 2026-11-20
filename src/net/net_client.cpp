@@ -49,6 +49,9 @@ std::expected<void, Error> NetClient::connect(std::string_view address, std::uin
     m_snapshots = SnapshotReceiver{};
     m_events = EventReceiver{};
     m_ackDue = 0;
+    m_levelOrder.reset();
+    m_loading.reset();
+    m_missionEnds.clear();
     return {};
 }
 
@@ -159,8 +162,9 @@ void NetClient::handle(const Message& message) {
             m_timing = *timing;
         }
     } else if (const auto* snapshot = std::get_if<Snapshot>(&message); snapshot != nullptr) {
-        // Unreliable and on another channel than Welcome, so it may overtake it: decoded only once joined.
-        if (m_state != ClientState::Connected) {
+        // Unreliable and on another channel than Welcome, so it may overtake it: decoded only once joined. One that
+        // arrives while this game loads the host's level is from before the order, of the level it is leaving.
+        if (m_state != ClientState::Connected || m_loading) {
             return;
         }
         const auto applied = m_snapshots.apply(*snapshot);
@@ -172,16 +176,47 @@ void NetClient::handle(const Message& message) {
             m_ackDue = m_snapshots.newest();
         }
     } else if (const auto* batch = std::get_if<EventBatch>(&message); batch != nullptr) {
-        // A one-shots' batch is unreliable and may overtake Welcome: taken only once joined, as a snapshot.
-        if (m_state != ClientState::Connected) {
+        // A one-shots' batch is unreliable and may overtake Welcome: taken only once joined, as a snapshot, and not
+        // while loading, as it is from the level being left. A reliable one keeps its place in the sequence.
+        if (m_state != ClientState::Connected || (m_loading && !batch->reliable)) {
             return;
         }
         if (!m_events.apply(*batch)) {
             finish(ClientEnd::ProtocolError, true, ByeReason::ProtocolError);
         }
+    } else if (const auto* order = std::get_if<LoadLevel>(&message); order != nullptr) {
+        // Reliable and ordered behind Welcome, so it never comes before it; a newer order replaces one not yet taken.
+        if (m_state != ClientState::Connected) {
+            finish(ClientEnd::ProtocolError, true, ByeReason::ProtocolError);
+            return;
+        }
+        m_levelOrder = *order;
+        m_loading = *order;
+    } else if (const auto* end = std::get_if<MissionEnd>(&message); end != nullptr) {
+        if (m_state != ClientState::Connected) {
+            finish(ClientEnd::ProtocolError, true, ByeReason::ProtocolError);
+            return;
+        }
+        m_missionEnds.push_back(*end);
     } else {
-        // A Hello, an InputCommands or a SnapshotAck only ever goes from a client to a server.
+        // A Hello, an InputCommands, a SnapshotAck, a LevelLoaded or a MovieDone only ever goes from a client to a
+        // server.
         finish(ClientEnd::ProtocolError, true, ByeReason::ProtocolError);
+    }
+}
+
+void NetClient::levelLoaded(std::uint32_t load) {
+    if (m_state != ClientState::Connected || !m_loading || m_loading->load != load) {
+        return;
+    }
+    // At once rather than at the next send(): the host holds its steps until it hears.
+    sendToServer(LevelLoaded{.load = load});
+    m_loading.reset();
+}
+
+void NetClient::movieDone(std::uint32_t movieStep, bool skipped) {
+    if (m_state == ClientState::Connected) {
+        sendToServer(MovieDone{.movieStep = movieStep, .skipped = skipped});
     }
 }
 

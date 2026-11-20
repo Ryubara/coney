@@ -135,8 +135,9 @@ TEST_CASE("the encoding is pinned: a change to it must bump kProtocolVersion", "
     CHECK(encode(InputTiming{.lead = 2, .target = 1}) == bytes({0x09, 0x04, 0x01}));
     // Version 5 added EventBatch (its bytes are pinned in event_channel_test.cpp); version 6 a sound's instance on
     // its start, and its stop and move (#1473); version 7 the players' HUDs in a Snapshot (pinned in snapshot_test.cpp
-    // and player_huds_test.cpp).
-    CHECK(kProtocolVersion == 7);
+    // and player_huds_test.cpp); version 8 the level messages (their bytes are pinned in level_sync_test.cpp) and a
+    // Bye for a load that timed out (#557).
+    CHECK(kProtocolVersion == 8);
 }
 
 // Expected: unverified, #547 (Coney's own protocol; the original has no network play)

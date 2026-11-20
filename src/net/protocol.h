@@ -27,7 +27,7 @@ namespace coney::net {
 
 /// The protocol's version. Bump it with any change to a message's layout or meaning: a client and a server of
 /// different versions refuse each other in the handshake rather than misread each other.
-inline constexpr std::uint16_t kProtocolVersion = 7;
+inline constexpr std::uint16_t kProtocolVersion = 8;
 /// The first field of Hello, "CONY" read as a little-endian number: a packet from another program is refused.
 inline constexpr std::uint32_t kProtocolMagic = 0x594e4f43U;
 /// The UDP port a server listens on unless told otherwise.
@@ -50,7 +50,11 @@ enum class MessageId : std::uint8_t {
     InputTiming = 9,   ///< server to client: how early the client's input commands arrive (protocol 3)
     Snapshot = 10,     ///< server to client: the humans the client needs, as a delta (protocol 4; HUDs 7)
     SnapshotAck = 11,  ///< client to server: the newest snapshot the client has decoded (protocol 4)
-    EventBatch = 12    ///< server to client: what the game made its players see or hear in one step (protocol 5)
+    EventBatch = 12,   ///< server to client: what the game made its players see or hear in one step (protocol 5)
+    LoadLevel = 13,    ///< server to client: load this level at this checkpoint (protocol 8)
+    LevelLoaded = 14,  ///< client to server: the level of a LoadLevel is loaded (protocol 8)
+    MissionEnd = 15,   ///< server to client: the host's mission has ended, and how (protocol 8)
+    MovieDone = 16 ///< client to server: this client's copy of the host's movie has ended or was skipped (protocol 8)
 };
 
 /// Why a server refused a Hello.
@@ -65,6 +69,7 @@ enum class ByeReason : std::uint8_t {
     Quit = 1,          ///< the player left, or the host stopped the server
     TimedOut = 2,      ///< nothing heard from the other side for too long
     ProtocolError = 3, ///< the other side sent a message that does not decode, or one out of turn
+    LoadTimedOut = 4,  ///< the client did not load the server's level within its time-out (protocol 8)
 };
 
 /// Asks to join. Its first two fields keep this layout in every protocol version, so a server can always read a
@@ -250,6 +255,64 @@ struct EventBatch {
     friend bool operator==(const EventBatch&, const EventBatch&) = default;
 };
 
+/// The longest level name a LoadLevel carries, in bytes. Coney's choice: the original's level record keeps the name in
+/// 16 bytes (docs/research/level-loading.md#the-level-record), and Coney's own levels may be longer.
+inline constexpr std::size_t kMaxLevelNameBytes = 32;
+
+/// Why a server orders a level load (docs/guides/multiplayer.md#levels).
+enum class LoadReason : std::uint8_t {
+    Change = 1,  ///< the host's game went on to another level
+    Restart = 2, ///< the host's game restarts the level it plays, at a checkpoint (a retry, or the next checkpoint)
+    Join = 3,    ///< the client has just joined a host already in a level
+};
+
+/// Load this level at this checkpoint: the host's game has started loading it (Change, Restart) or is in it (Join).
+/// The server sends no snapshots or events to a client loading, and holds its own steps until every joined client has
+/// answered with LevelLoaded (the loading barrier). Reliable.
+///
+/// The packet: the load (a varint, 32 bits at most), the reason (8 bits), the checkpoint (16 bits, as the original's,
+/// docs/research/characters.md#level-starts), the level name (a string of at most kMaxLevelNameBytes bytes, only
+/// letters, digits, '_' and '-': validLevelName()).
+struct LoadLevel {
+    std::uint32_t load = 1;       ///< 1 for the session's first load, one more for each after
+    std::string level;            ///< the level's name: validLevelName()
+    std::uint16_t checkpoint = 1; ///< 1 or more
+    LoadReason reason = LoadReason::Change;
+
+    friend bool operator==(const LoadLevel&, const LoadLevel&) = default;
+};
+
+/// The client has loaded the level of LoadLevel `load` and is ready for its first step. Reliable.
+///
+/// The packet: the load (a varint, 32 bits at most, not 0).
+struct LevelLoaded {
+    std::uint32_t load = 1;
+};
+
+/// How the host's mission ended.
+enum class MissionOutcome : std::uint8_t {
+    Passed = 1, ///< completed; the next level or checkpoint follows
+    Failed = 2, ///< failed; a restart or the front end follows
+    Quit = 3,   ///< the host left it through the pause menu
+};
+
+/// The host's mission in the level of LoadLevel `load` has ended. Reliable.
+///
+/// The packet: the load (a varint, 32 bits at most, not 0), the outcome (8 bits).
+struct MissionEnd {
+    std::uint32_t load = 1;
+    MissionOutcome outcome = MissionOutcome::Passed;
+};
+
+/// This client's copy of the host's movie has ended, or its player skipped it. The movie is named by the host's step
+/// its MovieStart event came in. Reliable.
+///
+/// The packet: the movie's step (a varint, 32 bits at most), skipped (1 bit).
+struct MovieDone {
+    std::uint32_t movieStep = 0;
+    bool skipped = false;
+};
+
 /// Bits `event` takes in an EventBatch's packet: what an EventSender's budget counts.
 [[nodiscard]] std::size_t eventBits(const NetEvent& event);
 
@@ -269,13 +332,14 @@ struct EventBatch {
 
 /// Any message.
 using Message = std::variant<Hello, Welcome, Reject, Bye, Ping, Pong, InputCommands, InputTiming, Snapshot, SnapshotAck,
-                             EventBatch>;
+                             EventBatch, LoadLevel, LevelLoaded, MissionEnd, MovieDone>;
 
 /// The packet for `message`. A Hello or Welcome whose name is over kMaxNameBytes, an InputCommands with no pads, more
 /// than kMaxInputCommands or one for a step below 0, a Snapshot that breaks its rules (sequence 0, a baseline not
 /// among the kSnapshotHistory before it, ids not valid and rising, a kept entry with nothing changed, a removal with
-/// something) and an EventBatch that breaks its rules (sequence 0, no events or more than kMaxBatchEvents, an event of
-/// the other delivery, ordinals not rising, a field its kind does not carry set, a text over kMaxGameEventText) are
+/// something), an EventBatch that breaks its rules (sequence 0, no events or more than kMaxBatchEvents, an event of
+/// the other delivery, ordinals not rising, a field its kind does not carry set, a text over kMaxGameEventText) and a
+/// level message that breaks its rules (a load or checkpoint of 0, a level name validLevelName() refuses) are
 /// programmer errors.
 [[nodiscard]] std::vector<std::byte> encode(const Message& message);
 
@@ -283,18 +347,25 @@ using Message = std::variant<Hello, Welcome, Reject, Bye, Ping, Pong, InputComma
 /// enumerator, the wrong magic, a name over kMaxNameBytes, a pressure byte flagged as above 0 but written as 0, an
 /// older pad written in full that is the same as the step after it, a pad for a step below 0, a Snapshot that breaks
 /// the rules encode() asserts or has a field word over its range, an EventBatch that breaks the rules encode() asserts
-/// or names an unknown kind, trailing bytes. A Hello
+/// or names an unknown kind, a level message with a load or checkpoint of 0, no level name or an unknown reason or
+/// outcome, trailing bytes. A Hello
 /// of another version decodes to its version alone (an empty name), since the rest of its layout is that version's.
 [[nodiscard]] std::expected<Message, Error> decode(std::span<const std::byte> packet);
 
-/// How a message travels: the handshake, Bye and a reliable EventBatch reliably and in order, a Snapshot unreliably
-/// but never older after newer (UnreliableSequenced), Ping, Pong, InputCommands, InputTiming, SnapshotAck and a
-/// one-shots' EventBatch unreliably.
+/// How a message travels: the handshake, Bye, the level messages and a reliable EventBatch reliably and in order, a
+/// Snapshot unreliably but never older after newer (UnreliableSequenced), Ping, Pong, InputCommands, InputTiming,
+/// SnapshotAck and a one-shots' EventBatch unreliably.
 [[nodiscard]] Delivery deliveryOf(const Message& message);
 
 /// Whether `name` may be a player's or a server's name: 1 to kMaxNameBytes printable ASCII characters (space to
 /// tilde), not all spaces.
 [[nodiscard]] bool validPlayerName(std::string_view name);
+
+/// Whether `name` may be a LoadLevel's level name: 1 to kMaxLevelNameBytes ASCII letters, digits, '_' and '-'. The
+/// original's levels are named like `level34` (docs/references/levels.md); nothing else is allowed, so a name off the
+/// network can never be a path (no slash, no dot, so no "..") or hold a NUL or a control byte.
+/// @coney-only network play; the original has none
+[[nodiscard]] bool validLevelName(std::string_view name);
 
 /// Short English text for the Network page and the log.
 [[nodiscard]] std::string_view describe(RejectReason reason);
