@@ -38,17 +38,21 @@ bool reactionHolds(GoalType type, const human::Human& human) {
 }
 
 bool humanBusy(const human::Human& human) {
-    if ((human.animator().flags() & human::kBusyFlags) != 0 || human.airborne()) {
-        return true;
-    }
-    // A hit keeps an AI busy until his record's +0x108 (Fighter::busyUntilMs()), on his own clock as it was set.
-    if (human.nowMs() < human.fighter().busyUntilMs()) {
-        return true;
-    }
+    // The reaction states that count as busy.
     constexpr std::array<GoalType, 5> kBusyStates{GoalType::ReactGrabbed, GoalType::ReactTackling,
                                                   GoalType::ReactTackled, GoalType::ReactKnockedDown,
                                                   GoalType::ReactStunned};
-    return std::ranges::any_of(kBusyStates, [&human](GoalType type) { return reactionHolds(type, human); });
+    // Coney stand-in for the state mask 0x1f80974000: the record's busy bits, the air and the reaction states Coney's
+    // fighter models. Every Coney human has a record, so the original's test for none has no counterpart.
+    const bool busyState =
+        (human.animator().flags() & human::kBusyFlags) != 0 || human.airborne() ||
+        std::ranges::any_of(kBusyStates, [&human](GoalType type) { return reactionHolds(type, human); });
+    if (busyState) {
+        return true;
+    }
+    // Otherwise busy while the game time is below the hit timer, record +0x108 (Fighter::busyUntilMs()), read on the
+    // human's own clock as it was set.
+    return human.nowMs() < human.fighter().busyUntilMs();
 }
 
 std::unique_ptr<Goal> reactionGoalFor(const human::Human& human) {
