@@ -1184,7 +1184,7 @@ proof:
   # other headers), or the C++ tests of what changed are the whole suite anyway. `pr verify` recomputes all of it.
   fix:
     max_files: 10
-    max_header_includers: 40
+    max_header_includers: 400                    # 60 of the 750 headers (core/error.h: 1534) at the time of writing
     full_when:
       - "CMakeLists.txt"
       - "*/CMakeLists.txt"

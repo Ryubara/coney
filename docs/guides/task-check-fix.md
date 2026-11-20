@@ -29,7 +29,10 @@ The rule is `proof.fix` in [.github/conventions.yml](repo:.github/conventions.ym
 * more files changed than `max_files` (10);
 * a file matching `full_when` changed: the CMake files, the presets, `cmake/`, any `.cmake` file, `tests/support/` and
   the Python tests' fixtures;
-* a header changed that more than `max_header_includers` (40) C++ files include, directly or through other headers;
+* a header changed that more than `max_header_includers` (400) C++ files include, directly or through other headers.
+  The engine's core includes itself in one large cycle, so half of the 750 headers have more than 94 includers; 400
+  picks out the 60 most shared (`core/error.h` with 1534, `core/pad.h`, `graphics/render_device.h`, ...) at the time
+  of writing;
 * the C++ tests of what changed come out as the whole suite anyway (a deleted file, a path the tests cannot be traced
   from);
 * or the anchor's commit cannot be read, or no longer gives the change its stamp covers.
