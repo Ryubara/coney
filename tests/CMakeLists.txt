@@ -604,6 +604,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/time_scale_test.cpp
         debug/display_tunables_test.cpp
         debug/tunables_test.cpp
+        debug/world_page_test.cpp
         debug/world_split_test.cpp
         gamemodes/play_level_step_test.cpp
         gamemodes/sheet_viewer_mode_test.cpp

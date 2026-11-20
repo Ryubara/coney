@@ -565,6 +565,13 @@ class Human final : public Holdable {
     [[nodiscard]] std::uint32_t blockedUpdates() const { return m_blockedUpdates; }
     /// Updates spent in the air since the last landing.
     [[nodiscard]] std::uint32_t airborneUpdates() const { return m_airborneUpdates; }
+    /// The World page's gravity (docs/guides/debug-menu.md#world), after an update: where that update pulled the human
+    /// down by the original's gravity (airborne from its second airborne update, not flying, held or out of the world),
+    /// adds the difference `gravity` − kGravity a second to its vertical speed, capped at the fastest fall, so it falls
+    /// as under `gravity`. Nothing at kGravity. The ported update is left as the original's; the pull lands one update
+    /// after the update's own move, which only debug values ever see.
+    /// @coney-only the World page's gravity: debug tooling outside the ported Human_StateUpdate
+    void addGravityPull(float gravity);
     /// `HuSetScale`: the body's scale, not range-checked. Coney's body (its capsule, its walls' radius, its root
     /// motion) is sized from the scale at each use, so the body follows at once. Before the human's first update it
     /// is also the size the human is made at, configuredScale(): `Human_Init`'s class size comes this way

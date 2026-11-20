@@ -1579,6 +1579,9 @@ void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     updateActions(input.targets, mesh);
 }
 
+// Stub: no pull, as before the change.
+void Human::addGravityPull(float /*gravity*/) {}
+
 // **Coney stand-in** for Human_StepAnimation's two tests: every Coney human has its animator (the original steps only
 // one with an instance, +0xd8), and Coney poses on demand, so there is no bone cache to mark stale.
 void Human::animate(const raycast::CollisionMesh* mesh) {

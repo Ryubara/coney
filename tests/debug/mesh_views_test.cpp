@@ -182,6 +182,35 @@ TEST_CASE("with every mesh view off each model gets the game's own draw alone", 
     CHECK_FALSE(coney::debug::meshPassesOn(defaults.mesh));
 }
 
+TEST_CASE("the World page's parts hide the models of their kind and no other", "[debug][mesh][world_page]") {
+    // Expected: unverified, #216 (Coney's own debug tooling: the World page's parts, docs/guides/debug-menu.md#world)
+    coney::graphics::WorldParts parts;
+    CHECK_FALSE(coney::debug::hidesMeshes(parts));
+    for (const MeshKind kind : {MeshKind::Scenery, MeshKind::Human, MeshKind::Object}) {
+        CHECK_FALSE(coney::debug::meshHidden(parts, kind));
+    }
+    parts.scenery = false;
+    CHECK(coney::debug::hidesMeshes(parts));
+    CHECK(coney::debug::meshHidden(parts, MeshKind::Scenery));
+    CHECK_FALSE(coney::debug::meshHidden(parts, MeshKind::Human));
+    CHECK_FALSE(coney::debug::meshHidden(parts, MeshKind::Object));
+    parts = {};
+    parts.humans = false;
+    CHECK(coney::debug::meshHidden(parts, MeshKind::Human));
+    CHECK_FALSE(coney::debug::meshHidden(parts, MeshKind::Scenery));
+    parts = {};
+    parts.objects = false;
+    CHECK(coney::debug::meshHidden(parts, MeshKind::Object));
+    // The parts that are no model (the background, the water, the glass, the effects, the rings) hide none.
+    parts = {};
+    parts.background = false;
+    parts.water = false;
+    parts.glass = false;
+    parts.effects = false;
+    parts.rings = false;
+    CHECK_FALSE(coney::debug::hidesMeshes(parts));
+}
+
 TEST_CASE("the wireframe switch picks the selection, every human or everything", "[debug][mesh]") {
     // Expected: unverified, #210
     MeshViewOptions options;

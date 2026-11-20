@@ -4,7 +4,9 @@
 #include <cstdint>
 #include <optional>
 
+#include "graphics/level_lighting.h"
 #include "graphics/light_manager.h"
+#include "graphics/render_device.h"
 
 namespace coney::graphics {
 
@@ -30,9 +32,46 @@ struct LightingLayers {
     friend bool operator==(const LightingLayers&, const LightingLayers&) = default;
 };
 
-/// What the lighting lab switches on the drawing side of the lighting frame (docs/guides/realtime-lighting.md#lab).
-/// Read by the renderer's lighting rig only, never by the simulation; the defaults draw the faithful picture, and test
-/// mode never changes them.
+/// The World page's fog (docs/guides/debug-menu.md#world): drawing-side overrides of the level's own fog, each none
+/// (the default) for the level's value.
+struct FogSwitches {
+    std::optional<Rgba> colour; ///< In place of the level's colour (`SetFogColor`), which is also the background.
+    std::optional<float> start; ///< In place of the level's start (`SetFogDistance`), a fraction of the far clip.
+
+    friend bool operator==(const FogSwitches&, const FogSwitches&) = default;
+};
+
+/// The most a fog start can be: just short of the far clip, where the fog plane would meet the far plane and the fog's
+/// slope divide by nothing. The sandbox's fog plane keeps the same margin (sandbox_renderer.cpp).
+inline constexpr float kMaxFogStart = 0.99F;
+
+/// The fog a frame is drawn with: `level`'s, with `switches`' colour and start in place of its own where set, the
+/// switches' start held between 0 and kMaxFogStart (the level's own is left as its scripts set it).
+/// @coney-only the World page's fog (docs/guides/debug-menu.md#world)
+[[nodiscard]] WorldFog shownFog(const WorldFog& level, const FogSwitches& switches);
+
+/// The World page's parts of the scene (docs/guides/debug-menu.md#world): each a switch on the drawing side, all on by
+/// default (the faithful picture). The coronas and the blob shadows are the lighting layers' (LightingLayers), which
+/// the page shows among these.
+struct WorldParts {
+    /// The streamed world's sectors; off also hides the background, which the mesh views' hook sees as the same kind
+    /// of model (scenery).
+    bool scenery = true;
+    bool background = true; ///< The sky box, the cloud box, the skyline and the level world's light glows.
+    bool humans = true;     ///< The humans, with what they wear and carry.
+    bool objects = true;    ///< The world objects, the doors and the cars.
+    bool glass = true;      ///< The glass panes.
+    bool water = true;      ///< The water.
+    bool effects = true;    ///< The particles, the glints and the throw-aim arc.
+    bool rings = true;      ///< The health rings and the L1 markers.
+
+    friend bool operator==(const WorldParts&, const WorldParts&) = default;
+};
+
+/// What the lighting lab and the World page switch on the drawing side of the lighting frame
+/// (docs/guides/realtime-lighting.md#lab, docs/guides/debug-menu.md#world). Read by the renderer's lighting rig and the
+/// play mode's drawing only, never by the simulation; the defaults draw the faithful picture, and test mode never
+/// changes them.
 struct LightingSwitches {
     /// Keep the light view and the time of the step it was held on (the flicker, the pulse and every selection) while
     /// no step runs; a step moves it on by one.
@@ -43,10 +82,16 @@ struct LightingSwitches {
     bool lightFromGameCamera = true;
     LightingLayers layers;
     LightingView view = LightingView::Final;
+    FogSwitches fog;  ///< The World page's fog.
+    WorldParts parts; ///< The World page's parts.
 
-    /// Whether these draw the faithful picture: every layer on and the final view (hold and the camera aside).
-    /// @coney-only the lighting lab's switches
-    [[nodiscard]] bool faithfulPicture() const { return layers == LightingLayers{} && view == LightingView::Final; }
+    /// Whether these draw the faithful picture: every layer and part on, the final view and the level's fog (hold and
+    /// the camera aside).
+    /// @coney-only the lighting lab's and the World page's switches
+    [[nodiscard]] bool faithfulPicture() const {
+        // Stub: the lab's switches only, as before the change.
+        return layers == LightingLayers{} && view == LightingView::Final;
+    }
 };
 
 /// The lights of `selection` that `layers` and `view` keep for the draw, in order; the selection itself is untouched

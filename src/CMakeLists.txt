@@ -607,6 +607,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/pages_play.cpp
         debug/pages_scripts.cpp
         debug/pages_time.cpp
+        debug/pages_world.cpp
         debug/story_missions.cpp
         debug/time_control.cpp
         debug/time_series.cpp

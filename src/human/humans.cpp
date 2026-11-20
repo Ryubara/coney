@@ -40,6 +40,14 @@ bool Humans::held(const Human& human) const {
     return found != m_humans.end() && m_held[static_cast<std::size_t>(std::distance(m_humans.begin(), found))];
 }
 
+GravityTuning& gravityTuning() {
+    static GravityTuning tuning;
+    return tuning;
+}
+
+// Stub: no pull, as before the change.
+void Humans::pullByGravity(float /*gravity*/) {}
+
 // @coney-only glue: who fights whom in Coney's step, from the gangs' hook or the pad split
 bool Humans::opposed(std::size_t slot, std::size_t other) const {
     if (m_opposition) {

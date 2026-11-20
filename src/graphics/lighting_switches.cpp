@@ -45,6 +45,9 @@ LightColour layeredColour(const LightManager& manager, std::uint16_t index, cons
                        record.current.a};
 }
 
+// Stub: the level's fog, as before the change.
+WorldFog shownFog(const WorldFog& level, const FogSwitches& /*switches*/) { return level; }
+
 // The held moment while held and no step ran since it was chosen; else the one asked for, which is then held.
 // @coney-only the lighting lab's Hold lighting
 LitMoment LightingHold::choose(const LitMoment& wanted, bool hold) {

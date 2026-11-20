@@ -100,6 +100,12 @@ bool inMeshScope(MeshScope scope, MeshKind kind, bool selected) {
     return false;
 }
 
+// Stub: nothing hidden, as before the change.
+bool meshHidden(const graphics::WorldParts& /*parts*/, MeshKind /*kind*/) { return false; }
+
+// Stub: nothing hidden, as before the change.
+bool hidesMeshes(const graphics::WorldParts& /*parts*/) { return false; }
+
 MeshDrawPlan meshPlanFor(const MeshViewOptions& options, MeshKind kind, bool selected) {
     MeshDrawPlan plan;
     const bool viewed = options.view != MeshShading::Shaded && inMeshScope(options.viewScope, kind, selected);
