@@ -258,9 +258,13 @@ class Gang {
     /// it was used.
     /// @orig 0x00164c20 Gang_OnEvent (unknown)
     bool onEvent(Brain& member, const BrainEvent& event);
-    /// The gang's update without its spawners (`0x00166708` with 0), as a scene's end runs it: its tactic processed
-    /// (and so started on the first) when it has one and members (docs/research/ai-gangs.md#gang-update).
-    void update() {}
+    /// The gang's update (`0x00166708`) as far as Coney has it: its tactic processed (and so started on the first)
+    /// when it has one and members. A scene's end runs it with 0, without the spawners (docs/research/scenes.md#gang).
+    /// Coney stand-in: the player cache, the crime level, the wanted state and
+    /// the downed count are not built (#645), nor the spawner step of the call with 1 (Spawners::update() runs them).
+    /// Research: docs/research/ai-gangs.md#gang-update
+    /// @orig 0x00166708 Gang_CachePlayerInfo (unknown)
+    void update();
 
   private:
     friend class Gangs;

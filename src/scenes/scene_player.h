@@ -194,6 +194,12 @@ class SceneSystem {
     [[nodiscard]] SceneHost& host() { return m_host != nullptr ? *m_host : m_defaultHost; }
     // Queues a Lua call for the end of the update (or makes it now outside one).
     void callLua(std::string_view function, std::span<const double> args);
+    // The crew, or the defaults.
+    [[nodiscard]] SceneCrew& crew() { return m_crew != nullptr ? *m_crew : m_defaultCrew; }
+    // Queues a call on the crew for the end of the update, in order with the Lua calls (or makes it now outside one).
+    // **Coney's glue**: the original makes them in place; queued, a command callback a follow fires never runs inside
+    // the tasks' loop.
+    void callCrew(const std::function<void(SceneCrew&)>& call);
     // The task playing `id`; null when none.
     [[nodiscard]] SceneTask* taskOf(std::uint32_t id) const;
     SceneCache m_cache;
@@ -201,13 +207,14 @@ class SceneSystem {
     SceneHost* m_host = nullptr;
     SceneHost m_defaultHost;
     SceneCrew* m_crew = nullptr;
+    SceneCrew m_defaultCrew;
     std::vector<std::unique_ptr<SceneTask>> m_tasks;
     std::string m_globalCallback;
     std::uint64_t m_nowMs = 0;
     bool m_chainSkip = false;
     int m_sceneState = 0; // the cinematic step at 0x0051489c + 0x410
     bool m_inUpdate = false;
-    std::vector<std::pair<std::string, std::vector<double>>> m_pendingCalls;
+    std::vector<std::function<void()>> m_pendingCalls; // the Lua and crew calls of the update, in order
     SceneStats m_stats;
 };
 

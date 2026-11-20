@@ -379,6 +379,7 @@ void GameplayMode::enter() {
             std::vector<script::Value> values(args.begin(), args.end());
             m_scripts.call(function, values);
         });
+        m_scenes->setCrew(&m_sceneCrew);
         m_scenesBefore = m_context.scenes;
         m_context.scenes = m_scenes.get();
     }
@@ -1606,12 +1607,7 @@ void GameplayMode::stepCrew(std::uint64_t nowMs) {
         m_crewFollowDue = m_crewFollowDue || m_crewChief != 0.0;
         m_crewChief = player->handle;
     }
-    // A scene that held him has ended.
     const bool inScene = playerInScene();
-    if (m_crewInScene && !inScene) {
-        m_crewFollowDue = true;
-    }
-    m_crewInScene = inScene;
     const bool sceneCamera = m_cameras && m_cameras->current().kind == camera::CameraKind::Scene;
     if (m_crewFollowDue && !inScene && !sceneCamera) {
         m_crewFollowDue = false;

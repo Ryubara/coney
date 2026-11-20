@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <format>
+#include <functional>
 #include <limits>
 #include <numbers>
 #include <utility>
@@ -236,6 +237,8 @@ class SceneTask {
         // the scene camera's start.
         if (m_request.cinematic && m_system.m_sceneState < 2) {
             if (m_system.m_sceneState == 0) {
+                // With the step from 0, player 1's bums are sent away (docs/research/scenes.md#gang).
+                m_system.callCrew([](SceneCrew& crew) { crew.clearBums(); });
                 m_system.m_sceneState = 1;
                 return;
             }
@@ -899,20 +902,24 @@ class SceneTask {
         }
     }
 
-    // State 7: everything given back, then state 8 and the end function.
+    // State 7: everything given back, then state 8 and the end function. A scene given up (`aborted`) does the
+    // same without the end function and without the end's changes to player 1's gang (abort()).
     // @orig 0x0039f450 SceneTask_End (SceneTask.cpp)
-    void end(bool callEndFunction = true) {
+    void end(bool aborted = false) {
         SceneHost& host = m_system.host();
         const SceneHeader& header = *m_slot.header;
         if (m_request.cinematic) {
             m_system.m_sceneState = 0;
         }
-        // The humans: a skipped scene puts them at their end poses; the join goal is popped.
+        // The humans: a skipped scene puts them at their end poses; the join goal is popped. Whether any was a player
+        // is noted for the gang's steps below.
+        bool playerBound = false;
         for (std::size_t role = 0; role < m_slot.roleHandles.size(); ++role) {
             const double human = m_slot.roleHandles[role];
             if (human == 0.0) {
                 continue;
             }
+            playerBound = m_system.crew().isPlayer(human) || playerBound;
             if (role < m_roles.size() && m_roles[role].inScene) {
                 leave(role);
             }
@@ -964,6 +971,16 @@ class SceneTask {
         if (m_request.cinematic && begun()) {
             host.screenEffect(ScreenEffect::LetterboxOut, kLetterboxSeconds);
         }
+        // A cinematic in which a player took part, or whose player 1 has a Warrior hitting back at him, gives his crew
+        // back: his menu unlocked, follow forced and one gang update, which starts the follow
+        // (docs/research/scenes.md#gang).
+        if (m_request.cinematic && !aborted && (playerBound || m_system.crew().hitBack())) {
+            m_system.callCrew([](SceneCrew& crew) {
+                crew.unlockCommandMenu();
+                crew.followForced();
+                crew.updateGang();
+            });
+        }
         if (m_request.freeze && begun()) {
             host.suspendBrains(false);
         }
@@ -975,7 +992,7 @@ class SceneTask {
         ++m_system.m_stats.ended;
         logging::info(logging::Category::World, std::format("cutscene: end {} (id {}){}", m_slot.header->name,
                                                             m_slot.id, m_skipped ? ", skipped" : ""));
-        if (callEndFunction) {
+        if (!aborted) {
             callEnd();
         }
         if (m_request.cinematic && !m_request.final && header.camera) {
@@ -1000,7 +1017,11 @@ class SceneTask {
         if (m_request.cinematic) {
             m_system.host().soundtrackStop();
         }
-        end(false);
+        end(true);
+        // A cinematic given up gives player 1's crew only the follow, forced (docs/research/scenes.md#gang).
+        if (m_request.cinematic) {
+            m_system.callCrew([](SceneCrew& crew) { crew.followForced(); });
+        }
     }
 
     SceneSystem& m_system;
@@ -1076,7 +1097,10 @@ void SceneSystem::callLua(std::string_view function, std::span<const double> arg
         return;
     }
     if (m_inUpdate) {
-        m_pendingCalls.emplace_back(std::string(function), std::vector<double>(args.begin(), args.end()));
+        m_pendingCalls.emplace_back(
+            [this, name = std::string(function), values = std::vector<double>(args.begin(), args.end())] {
+                callLua(name, values);
+            });
         return;
     }
     ++m_stats.callbacks;
@@ -1209,12 +1233,20 @@ void SceneSystem::update(std::uint64_t nowMs, std::uint16_t heldButtons) {
         }
     }
     m_inUpdate = false;
-    // The Lua calls made during the update, in order (the original makes them in place).
-    std::vector<std::pair<std::string, std::vector<double>>> calls = std::move(m_pendingCalls);
+    // The Lua and crew calls made during the update, in order (the original makes them in place).
+    std::vector<std::function<void()>> calls = std::move(m_pendingCalls);
     m_pendingCalls.clear();
-    for (const auto& [function, args] : calls) {
-        callLua(function, args);
+    for (const std::function<void()>& call : calls) {
+        call();
     }
+}
+
+void SceneSystem::callCrew(const std::function<void(SceneCrew&)>& call) {
+    if (m_inUpdate) {
+        m_pendingCalls.emplace_back([this, call] { callCrew(call); });
+        return;
+    }
+    call(crew());
 }
 
 bool SceneSystem::playing() const {
