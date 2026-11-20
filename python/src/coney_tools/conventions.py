@@ -218,12 +218,15 @@ class DocsNone:
 
 @dataclass(frozen=True)
 class Closing:
-    """How a pull request closes the issues it finishes (`Fixes #N`, one per line)."""
+    """How a pull request closes the issues it finishes (`Fixes #N`, one per line), and names those it only advances."""
 
     keyword: str
     form: str
     one_per_line: bool
     section: str
+    #: The keyword of a line that names an issue without closing it (`Refs #N`), for a task that leaves part of its Done
+    #: section to a follow-up; optional in the file (`Refs` when absent).
+    refs: str = "Refs"
 
 
 @dataclass(frozen=True)
@@ -342,6 +345,20 @@ class ClipRule:
 
 
 @dataclass(frozen=True)
+class SummaryRule:
+    """How long the Summary may be: a few short paragraphs, not a wall of text (#1284)."""
+
+    #: The most paragraphs it may hold (blank-line separated blocks, not counting the `Fixes`, `Refs` and `Docs: none`
+    #: lines).
+    max_paragraphs: int
+    #: The most characters one paragraph may have.
+    max_paragraph_characters: int
+    #: When the rule began (UTC): a pull request opened earlier is not held to it, so the audit and the next push of an
+    #: open one are not refused for a summary written under the older one-paragraph rule.
+    since: datetime
+
+
+@dataclass(frozen=True)
 class WrittenBy:
     """Who wrote the commits: one of the choices."""
 
@@ -430,7 +447,7 @@ class Images:
 class Markers:
     """The names of the two generated blocks of a description, written `<!-- name -->` ... `<!-- /name -->`."""
 
-    #: The engineer's one paragraph.
+    #: The engineer's summary paragraphs.
     summary: str
     #: The facts block: which stages passed, with their hashes.
     facts: str
@@ -471,6 +488,8 @@ class PullRequests:
     auto_merge_manual_paths: bool
     #: The before and after clips a visible change shows; None when the file has no `clips` key (asks for none).
     clips: ClipRule | None = None
+    #: The Summary's length limits; None when the file has no `summary` key (asks for no limit).
+    summary: SummaryRule | None = None
 
 
 @dataclass(frozen=True)
@@ -2074,7 +2093,8 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
     # `auto_merge_manual_paths` is optional so that a tool which has it can still read a default branch that does not
     # yet (`pr open` on the very branch that adds it); a file without it means on, the maintainer's 2026-11-01 grant.
     # `clips` is optional for the same reason: a default branch older than the rule asks for no clips.
-    table = _table(data, where, keys, ("auto_merge_manual_paths", "clips"))
+    # `summary` is optional like `clips`: a default branch older than the rule sets no length limit.
+    table = _table(data, where, keys, ("auto_merge_manual_paths", "clips", "summary"))
     sections = _texts(table["sections"], _at(where, "sections"))
     filled = _texts(table["filled"], _at(where, "filled"))
     _names_in(filled, sections, _at(where, "filled"), "one of the sections")
@@ -2083,7 +2103,10 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
         return _table(table[name], _at(where, name), fields), _at(where, name)
 
     docs_none, docs_none_where = sub("docs_none", "line", "when_changed", "unless_changed")
-    closing, closing_where = sub("closing", "keyword", "form", "one_per_line", "section")
+    closing_where = _at(where, "closing")
+    # `refs` is optional: `pr text` reads the default branch's rules, which lack it until the pull request that adds it
+    # merges; a file without it means `Refs`.
+    closing = _table(table["closing"], closing_where, ("keyword", "form", "one_per_line", "section"), ("refs",))
     checklist, checklist_where = sub("checklist", "section", "unchecked", "since", "legacy_label")
     affected, affected_where = sub("issues_affected", "section", "none", "reason", "example", "since")
     screenshots, screenshots_where = sub("screenshots", "section", "none", "reason", "uploaded_only")
@@ -2157,6 +2180,7 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             form=_text(closing["form"], _at(closing_where, "form")),
             one_per_line=_flag(closing["one_per_line"], _at(closing_where, "one_per_line")),
             section=closing["section"],
+            refs=_text(closing.get("refs", "Refs"), _at(closing_where, "refs")),
         ),
         checklist=Checklist(
             section=checklist["section"],
@@ -2229,6 +2253,17 @@ def _read_pull_requests(data: object, where: str) -> PullRequests:
             table.get("auto_merge_manual_paths", True), _at(where, "auto_merge_manual_paths")
         ),
         clips=_read_clip_rule(table["clips"], _at(where, "clips"), sections) if "clips" in table else None,
+        summary=_read_summary_rule(table["summary"], _at(where, "summary")) if "summary" in table else None,
+    )
+
+
+def _read_summary_rule(data: object, where: str) -> SummaryRule:
+    """The `pull_requests.summary` table: the limits of the Summary and the moment they began."""
+    table = _table(data, where, ("max_paragraphs", "max_paragraph_characters", "since"))
+    return SummaryRule(
+        max_paragraphs=_count(table["max_paragraphs"], _at(where, "max_paragraphs")),
+        max_paragraph_characters=_count(table["max_paragraph_characters"], _at(where, "max_paragraph_characters")),
+        since=_moment(table["since"], _at(where, "since")),
     )
 
 

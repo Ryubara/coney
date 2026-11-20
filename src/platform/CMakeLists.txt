@@ -7,7 +7,7 @@ add_library(coney_platform STATIC asset_convert.cpp draw_calls.cpp draw_stream.c
 # The streamed-world viewer (docs/research/world.md#coneys-implementation).
 target_sources(coney_platform PRIVATE level_file.cpp lit_atomic.cpp scene_assets.cpp texture_lookup.cpp world_renderer.cpp world_set.cpp world_viewer_mode.cpp front_end_scene.cpp)
 # Dynamic objects' models, drawn where the scripts and scenes put them (docs/research/objects.md#coneys-implementation).
-target_sources(coney_platform PRIVATE object_models.cpp placed_objects.cpp)
+target_sources(coney_platform PRIVATE object_draw.cpp object_models.cpp placed_objects.cpp)
 # The character viewer (docs/research/characters.md#coneys-implementation).
 target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp character_skin.cpp)
 target_sources(coney_platform PRIVATE blood_textures.cpp play_lighting.cpp scene_lighting.cpp)
@@ -58,7 +58,7 @@ target_sources(coney_platform PRIVATE game_run.cpp)
 target_sources(coney_platform PRIVATE game_console.cpp game_console_links.cpp game_settings.cpp)
 # Network play over UDP with ENet, and the game's side of it (host, join, the Network page's figures); the sessions
 # themselves are coney_net (docs/guides/multiplayer.md).
-target_sources(coney_platform PRIVATE enet_transport.cpp net_play.cpp)
+target_sources(coney_platform PRIVATE enet_transport.cpp net_game.cpp net_play.cpp)
 coney_target_defaults(coney_platform)
 # Never coney_debug or Dear ImGui: the game reaches the debug tools only through hooks it offers
 # (docs/guides/building.md#debug-tools).

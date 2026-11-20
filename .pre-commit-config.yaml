@@ -87,7 +87,8 @@ repos:
         language: pygrep
         entry: '\b(SDL_GetTicks(NS)?|SDL_GetPerformance(Counter|Frequency)|SDL_Delay(NS|Precise)?|steady_clock|system_clock|high_resolution_clock|QueryPerformanceCounter|clock_gettime|timeGetTime|GetTickCount(64)?|sleep_for|sleep_until)\b'
         files: ^(src|tests)/.*\.(h|cpp)$
-        exclude: ^src/platform/(frame_pacer|clip_recorder|perf_probes)\.cpp$
+        # The network checks' driver waits on the output of the coney processes it runs, outside any game.
+        exclude: ^(src/platform/(frame_pacer|clip_recorder|perf_probes)|tests/support/net_pair_check)\.cpp$
       # The commit message's trailers (`commits.trailers` in .github/conventions.yml): the only trailer is the AI
       # co-author line, no other e-mail address, and when an agent commits through Claude Code (whose hooks write an
       # identity file, coney_tools.identity) the line names that agent's model. Checked before the commit exists, for

@@ -625,7 +625,8 @@ beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Me
   ([Combat reactions: the knocked-out bit](combat-reactions.md#knocked-out-bit)); the stance, dying (`0x80000000`),
   the dead high half and the other bits stay 0, so Coney's fighter is out from his knock-out or wound, not from the
   lethal hit. `g_alert` is -1 (the alert state is not modelled, [Gang fights: Coney](gang-fights.md#coney) item 9),
-  `g_order` -1 (no team-up order is built) and `g_tactic` 1 for a tactic the research names no vtable for. Coney has
+  `g_order` the running team-up order's draw number (-1 for none; Rumble's sides never have team-ups) and
+  `g_tactic` 1 for a tactic the research names no vtable for. Coney has
   no hooks, so it counts per human, in its own columns, the help calls (`help_calls`, one per call at
   `broadcastHelpCall`, however many hear it), the helpers sent (`helpers_sent`) and its target changes by cause
   (`target_causes`, rule 7): each change is counted under the cause its caller names (`ai::TargetCause`), the causes

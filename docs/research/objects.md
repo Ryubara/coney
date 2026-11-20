@@ -159,12 +159,15 @@ A world object's tint is a colour word at `+0xc8`, copied at `+0xcc`: `0xRRGGBBA
 **Drawing** (`ObjectRender_Draw`, `0x0017fd78`, confirmed (code); the copy also confirmed (runtime)): each
 update `WorldObject_Update` (`0x00395b70`) copies `+0xcc` into `+0xc8`, so a class that writes `+0xcc` sees it take
 effect one update later. The model instance holds the word as bytes r, g, b, a (instance `+0x24`-`+0x27`, equal to
-`+0xc8` in PCSX2), and the draw sets them as the colour of the instance's geometry before rendering it: the tint
-multiplies the model's own colours and its alpha the model's opacity. The alpha is first scaled by the size fade
-([The model](#models)), the `ObjShow` distance (below), a fade-in over the first second after the instance appears
-(instance `+0x2c`; skipped while object flags `0x800010` has a bit set) and the camera fade (×0.3 for an object
-between the camera and the player, instance `+0x34`, eased over 200 ms); **an alpha under 10 is not drawn**. While
-the camera fade is below 1 the draw turns z-writing off (RenderWare render state 8) for that object.
+`+0xc8` in PCSX2), and the draw writes them as the colour of the geometry's **first material** before rendering it
+(the material at geometry `+0x20`'s first entry, colour `+0x4`, `0x00180660`), replacing that material's own colour;
+the other materials keep theirs, and nothing puts the first one back (the next object of the type writes it again).
+Through the material colour the tint multiplies the model's lit colours and its alpha the model's opacity. The alpha
+is first scaled by the size fade ([The model](#models)), the `ObjShow` distance (below), a fade-in over the first
+second after the instance appears (instance `+0x2c`; skipped while object flags `0x800010` has a bit set) and the
+camera fade (×0.3 for an object between the camera and the player, instance `+0x34`, eased over 200 ms); **an alpha
+under 10 is not drawn**. While the camera fade is below 1 the draw turns z-writing off (RenderWare render state 8) for
+that object.
 
 **The `ObjShow` distance** (`+0x138`, `ObjectRender_ApplyFadeDistance` `0x0017fa80`): when it is above 0 and the
 camera is farther than the distance − 2 m, the alpha is multiplied by (distance − camera distance) / 2, fading the
@@ -2074,9 +2077,11 @@ with the model's vertices taken in the game's axes (z up) and carried into Rende
 (x, z, −y)`; the model's own atomic frame is left out. **Coney's reading**: the frames are either the identity or the
 turn of z up into RenderWare's y up, some with a stray offset (the column's 2.69 m, the Wonder Wheel neons' 35 m), and
 only without the frame does the objective disc (an identity frame, its centre 1.4 m up) stand upright on its column
-as the runtime sees it. The draw (`PlacedObjects::draw`) follows [The tint](#tint): the tint word multiplies the
-materials' colours and alpha, then the size cull (the model's bounding sphere), the `ObjShow` distance and the alpha
-floor of 10; opaque objects first, then the translucent ones. Not modelled: the camera fade and the second dictionary.
+as the runtime sees it. The draw (`PlacedObjects::draw`) follows [The tint](#tint): the tint's alpha is faded by the
+size cull (the model's bounding sphere) and the `ObjShow` distance, an alpha under 10 is not drawn, and the tint
+becomes the first material's colour for the draw; opaque objects first, then the translucent ones. Not modelled: the
+camera fade and the second dictionary. Each object is one 3D draw of the frame description, its model's mesh and
+texture held by id, its tint as the draw's colour change ([Renderer](../engine/renderer.md#frame-description)).
 The front end draws the live records' objects this way, without a camera (no cull), each lit as a world object
 ([Front end](frontend.md#coneys-implementation)); the eight Wonder Wheel types' frames are all the z-up turn, so
 leaving the frame out draws them as turning by it would.

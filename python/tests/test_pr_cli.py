@@ -53,6 +53,51 @@ def test_verify_refuses_a_visible_change_with_no_clips_and_no_reason(
     assert "clips: '## Screenshots' needs a 'Before:' and an 'After:' clip" in out and "redo: engineer" in out
 
 
+def leave_an_item(built: Built, finishes: bool) -> None:
+    """The task's Done section leaves an item to a follow-up, and its front block says whether it finishes its issue."""
+    path = built.unit.dir / "TASK.md"
+    task = path.read_text(encoding="utf-8")
+    task = task.replace("kind: feature", "kind: feature" + ("" if finishes else "\nfinishes: false"))
+    task = task.replace("- A test proves it.", "- A test proves it (left for #1500).")
+    assert "(left for #1500)" in task
+    path.write_text(task, encoding="utf-8")
+
+
+def test_verify_refuses_a_task_that_leaves_a_done_item_and_still_closes_its_issue(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    built = make(tmp_path)
+    leave_an_item(built, finishes=True)
+    assert run(built, monkeypatch, "verify") == 1
+    out = capsys.readouterr().out
+    assert "done: Done item 'A test proves it' is left for #1500" in out and "finishes: false" in out
+    assert "redo: engineer" in out and "refused: 1 problem" in out
+    assert run(built, monkeypatch, "verify", "--json") == 1
+    refusals = json.loads(capsys.readouterr().out)["refusals"]
+    assert [r["stage"] for r in refusals] == ["done"]
+
+
+def test_verify_accepts_a_left_item_when_the_task_says_it_does_not_finish_its_issue(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    built = make(tmp_path)
+    leave_an_item(built, finishes=False)
+    assert run(built, monkeypatch, "verify") == 0
+    assert "ok:" in capsys.readouterr().out
+
+
+def test_text_writes_refs_not_fixes_for_a_task_that_leaves_an_item(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    built = make(tmp_path)
+    leave_an_item(built, finishes=False)
+    assert run(built, monkeypatch, "text") == 0
+    body = (built.unit.dir / "PR-BODY.md").read_text(encoding="utf-8")
+    assert "\nRefs #757\n" in body and "Fixes" not in body
+    title = (built.unit.dir / "PR-TITLE.txt").read_text(encoding="utf-8").strip()
+    assert main(["pr", "check-body", "--body", str(built.unit.dir / "PR-BODY.md"), "--title", title]) == 0
+
+
 def add_unknown_key(built: Built) -> None:
     """A conventions file with a section the tool in these tests does not know (a branch that adds a rule)."""
     path = built.root / CONVENTIONS_FILE

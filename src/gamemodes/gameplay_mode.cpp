@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "ai/ai_config.h"
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "ai/gangs.h"
@@ -1311,6 +1312,9 @@ void GameplayMode::wireHub() {
         return at ? std::optional<anim::Vec3>(anim::Vec3{(*at)[0], (*at)[1], (*at)[2]}) : std::nullopt;
     };
     m_scripted->hubHost().setLookups(std::move(lookups));
+    // The gangs' team-ups draw from the game's random numbers, by the gang kinds' `CfgGang` strategies.
+    m_brains->gangs().setGameRandom(&m_state.random);
+    m_brains->gangs().setStrategies(ai::gangStrategiesFrom(m_recorded));
 }
 
 // @coney-only Coney's handle lookup (a human, a flag or a spawn record)

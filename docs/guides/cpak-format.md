@@ -6,10 +6,10 @@ write another reader or writer, and the design of the install folder built from 
 and the order in which Coney looks an asset up. The decisions behind it are a maintainer's, on the tracking issue
 [#798](issue:798); the details this page settles itself say why next to them.
 
-**Status.** The format, the engine's reader and writer and `coney-tools cpak` are built. The folder layout, the
-catalogue and the lookup order are the design for the steps that follow (#798 steps 3 to 5: the installer, the
-loader, mods): today's installer still copies the disc's files as they are
-([The install folder](asset-and-script-architecture.md#install-folder)).
+**Status.** The format, the engine's reader and writer, `coney-tools cpak` and the lookup order's rules
+(`cpak::Lookup`, [The tools](#tools)) are built. The folder layout and the catalogue are the design for the steps that
+follow (#798 steps 3 to 5: the installer, the loader, mods), and nothing calls the lookup yet: today's installer still
+copies the disc's files as they are ([The install folder](asset-and-script-architecture.md#install-folder)).
 
 ## Why a format of Coney's own {#why}
 
@@ -227,7 +227,7 @@ person can still read it. It is written by the installer and never edited.
 | Field | Meaning |
 | --- | --- |
 | `name` | The entry's name, its `game:/` path without the root ([Names](#names)); the same in the archive |
-| `kind` | What it is, for the lookup order and Studio: `script`, `text`, `data`, `world`, `collision`, `objects`, `model`, `animation`, `character`, `scene`, `texture`, `sound`, `music`, `bank`, `movie`. Each is a simulation or a presentation kind ([Layers](asset-and-script-architecture.md#asset-layers)) |
+| `kind` | What it is, for the lookup order and Studio: `script`, `text`, `data`, `world`, `collision`, `objects`, `model`, `animation`, `character`, `scene`, `texture`, `sound`, `music`, `bank`, `movie`. Each is a simulation or a presentation kind ([Kinds](#kinds)) |
 | `source` | `ps2` or `xbox`: the disc the bytes came from |
 | `format` | The original format of the bytes, which Studio's exporter and importer are picked by, never by guessing from the bytes; an edited entry is imported back into this format |
 | `archive` | The archive's path from `game/` (`textures/hud.cpak`, `xbox/textures/hud.cpak`), or `null` for a movie file |
@@ -238,17 +238,33 @@ person can still read it. It is written by the installer and never edited.
 A reader refuses a `version` it does not know. The list of `format` values is the installer's (step 3) and is added to
 this page with it.
 
+### Kinds {#kinds}
+
+Each kind is a simulation kind, which changes what happens in the game, or a presentation kind, which changes only what
+is seen or heard ([Layers](asset-and-script-architecture.md#asset-layers)). The lookup order and the Xbox rule below
+read the split; this table is where it is decided for the catalogue's kinds:
+
+| Simulation | Presentation |
+| --- | --- |
+| `script`, `data` (executable tables, character data, sound tables: which sound plays, its class and channels), `world`, `collision`, `objects`, `animation` (clip timing drives combat), `character`, `scene` | `text`, `model` (a model's look), `texture`, `sound` (the recordings), `music`, `bank`, `movie` |
+
 ## Lookup order {#lookup}
 
 How Coney finds an asset once the loader reads the install (step 4), for a `game:/` name and a kind:
 
-1. **Enabled mods**, in the load order. #798 planned them as patch archives under `mods/`; the Studio design proposes
-   `.cmod` packages in their place ([Mods: the `.cmod` package](studio/mods.md#cmod)), and whether a `.cmod` uses this
-   container or zip is a maintainer's to confirm. A mod that changes a simulation kind marks a co-op session as
-   modded.
-2. **Texture packs** in `packs/`, by the original texture's hash, for textures only.
+1. **Enabled mods**, in the load order: the **later** mod that holds the name wins, as
+   [Load order](studio/mods.md#load-order) says for two mods replacing one asset. #798 planned mods as patch archives
+   under `mods/`; the Studio design proposes `.cmod` packages in their place
+   ([Mods: the `.cmod` package](studio/mods.md#cmod)), and whether a `.cmod` uses this container or zip is a
+   maintainer's to confirm. A mod's entry is of the kind of the game's entry it replaces. A mod that replaces or adds
+   an entry of a simulation kind marks a co-op session as modded.
+2. **Texture packs** in `packs/`, by the original texture's hash, for textures only. A pack replaces one texture
+   inside a dictionary, not an entry, so it is asked after the dictionary is found: only a dictionary the game's
+   archives served takes textures from a pack (a mod's replacement is the mod's whole), and the later pack in the list
+   that holds the texture wins, as for mods.
 3. **The game's archives**, through the catalogue: for a presentation kind, the `xbox` row when the Xbox disc was
-   installed, else the `ps2` row; for a simulation kind, the `ps2` row only.
+   installed, else the `ps2` row; for a simulation kind, the `ps2` row only. A catalogue that gives a name an `xbox`
+   row of a simulation kind, two rows from one disc, or two kinds is refused.
 
 Test mode (`--headless`, `--input-script`, the disc tests) reads only the `ps2` rows, so reference comparisons never
 see a mod, a pack or an Xbox entry.
@@ -259,6 +275,11 @@ see a mod, a pack or an Xbox entry.
   read from a stream), [`cpak_archive.h`](repo:src/core/cpak_archive.h) (an archive in memory, read in place) and
   [`cpak_writer.h`](repo:src/core/cpak_writer.h). Every failure is a `coney::Error`; the tests build archives byte
   by byte from this page (`tests/core/cpak_*_test.cpp`).
+- **The lookup order**: `cpak::Lookup` in [`cpak_lookup.h`](repo:src/core/cpak_lookup.h), built from the catalogue's
+  rows, the enabled mods' entries and the packs' texture keys the caller has read, so it opens no file. It answers
+  which layer and archive serve a name and kind ([Lookup order](#lookup)), which pack replaces a texture, and whether
+  the mods mark the session modded, with the [kinds](#kinds) split; `tests/core/cpak_lookup_test.cpp` covers each
+  rule on synthetic catalogues.
 - **`coney-tools cpak list`, `show` and `verify`** read an archive with a second implementation, in Python
   ([the commands](coney-tools-disc.md#cpak)). Both write the [example](#example) byte for byte, which their tests
   check.

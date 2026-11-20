@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "core/assert.h"
+
 namespace coney::graphics {
 
 namespace {
@@ -363,6 +365,20 @@ void LightManager::addCorona(const LightRecord& record, const LightView& view) {
         .rgba = {toByte(record.current.r), toByte(record.current.g), toByte(record.current.b),
                  static_cast<std::uint8_t>(alpha)},
     });
+}
+
+void LightManager::setViewportLists(const ViewportLists& lists) {
+    // Every index must name a record in use: select() reads each one's position and radius.
+    for (const auto* list : {&lists.world, &lists.objects, &lists.pulse, &lists.points, &lists.worldPoints}) {
+        for (const std::uint16_t index : *list) {
+            CONEY_ASSERT(index < m_records.size() && m_records[index].inUse);
+        }
+    }
+    m_listA = lists.world;
+    m_listB = lists.objects;
+    m_listC = lists.pulse;
+    m_points = lists.points;
+    m_worldPoints = lists.worldPoints;
 }
 
 LightSelection LightManager::select(float distSq, const LightSphere& sphere, bool objects, bool pointLights, bool pulse,

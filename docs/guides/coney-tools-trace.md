@@ -54,6 +54,18 @@ when one is not and 2 when a trace cannot be read. With `--scenario`, the column
 step (the first update of input) come from the scenario's `[diff]` table; flags override them.
 [Comparing with Coney](research-traces.md#comparing-with-coney) explains the alignment and the start frame.
 
+**Two light-selection files** (the original's from [`trace lights`](#trace-lights) and a frame of the lighting lab's
+*Dump this frame*, `lighting-<n>-selections.csv`, both in the same columns) are compared atomic by atomic instead, and
+the step options do not apply ([Realtime lighting: testing](realtime-lighting.md#test-selection)). Each of the
+original's rows is matched to Coney's row of the same caller whose sphere centre is nearest, within 5 cm; a trace spans
+several frames, so several of its rows may match one of Coney's, and a row with none is counted as unmatched. Each
+matched pair's lights are compared slot by slot: the same RenderWare type, the position and radius within 1 cm and each
+colour component within 1/255. It prints the rows of each file, the rows matched and the lists equal, then a line per
+pair that differs with the first slot and both lights there, and exits with 1 when a list differs or nothing matched.
+Not handled yet: a flickering light, which the original's trace and Coney's frame catch at different colours (neither
+file holds a light's base colour), and a car, which Coney draws as an object (its rows say `object`, the original's
+`car`).
+
 ```sh
 uv run --project python coney-tools trace fight-report TRACE... [--humans] [--hz N] [--exclude HUMAN ...]
     [--engage-distance METRES] [--from STEP] [--original-gangs ID,ID,...]
@@ -186,11 +198,12 @@ It writes three files, each light as values (RenderWare type, radius, colour, it
 | `<stem>.calls.csv` | One per call (`call` is the row of `CSV`, counting from 0): the game's tick (`0x005104f4`), the caller, the human's glow byte (`+0x647`, empty with no human) and the length of each list |
 | `<stem>.lists.csv` | One per light of each list of each call: `call`, the list (`a`, `b`, `c`, `objects` for the manager's `+0x20`, `world` for `+0x30`), its slot and the light |
 
-The two inputs files are what a replay of Coney's selection needs ([#1252](issue:1252)), except in a call that adds
-the [glow](../research/lighting.md#glow): the glow light is the manager's light at `+0x84`, placed and coloured per
-call (through `0x0017c840`) before it is appended, and is in no list, so it shows only among the lights chosen. A glow
-call is not covered: the human's glow byte in `.calls.csv` says which calls they are, and a replay compares the lights
-after the glow ([#1253](issue:1253)). The files measure the game:
+The two inputs files are what the replay of Coney's selection reads ([Realtime lighting:
+testing](realtime-lighting.md#test-selection)), except in a call that adds the [glow](../research/lighting.md#glow):
+the glow light is the manager's light at `+0x84`, placed and coloured per call (through `0x0017c840`) before it is
+appended, and is in no list, so it shows only among the lights chosen. The human's glow byte in `.calls.csv` says which
+calls they are; the replay takes the glow's place and colour from the light chosen after the copied list and compares
+the lights after it ([#1253](issue:1253)). The files measure the game:
 they are refused inside the repository. `--run-record` also writes the run's [record](research-evidence.md#run-records)
 (`r-<date>-light-selection`, or `--run-name`): the calls by caller, the frames, the lights chosen by kind, the calls
 with a glow, the largest count, the addresses read and the SHA-256 of each file. The game is stopped while each call is
@@ -276,8 +289,8 @@ coney-tools trace diff ORIGINAL CONEY [--scenario SCENARIO] [--columns COLUMN [C
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `ORIGINAL` | path | required | the original's trace (trace original) |
-| `CONEY` | path | required | Coney's trace (coney --trace, or trace coney) |
+| `ORIGINAL` | path | required | the original's trace (trace original, or trace lights) |
+| `CONEY` | path | required | Coney's trace (coney --trace, trace coney, or the lab's light dump) |
 | `--scenario SCENARIO` | path | none | take the columns, tolerances, start and frame from a scenario |
 | `--columns COLUMN [COLUMN ...]` | text | none | compare these (default: every shared one) |
 | `--tolerance COLUMN=VALUE [COLUMN=VALUE ...]` | text | none | per column; \*=VALUE for all |

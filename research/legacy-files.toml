@@ -82,7 +82,7 @@ tag = 13
 tag = 12
 
 ["src/ai/fight_trace.cpp"]
-tag = 10
+tag = 9
 
 ["src/ai/formations.cpp"]
 tag = 11
@@ -91,7 +91,7 @@ tag = 11
 comment = 4
 
 ["src/ai/gangs.cpp"]
-tag = 18
+tag = 17
 
 ["src/ai/give_way.cpp"]
 tag = 4
@@ -995,7 +995,7 @@ tag = 15
 tag = 5
 
 ["src/human/fighter_victim.cpp"]
-tag = 8
+tag = 9
 
 ["src/human/holdable.h"]
 comment = 1
@@ -1157,9 +1157,6 @@ comment = 3
 
 ["src/platform/imgui_ui_scale.h"]
 comment = 3
-
-["src/platform/parked_cars.cpp"]
-comment = 1
 
 ["src/platform/placed_objects.cpp"]
 comment = 2
@@ -1515,9 +1512,6 @@ citation = 6
 
 ["tests/ai/crew_test.cpp"]
 citation = 17
-
-["tests/ai/disc_ai_config_test.cpp"]
-citation = 1
 
 ["tests/ai/disc_route_test.cpp"]
 citation = 3

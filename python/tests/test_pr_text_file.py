@@ -122,6 +122,18 @@ def test_a_file_without_a_title_or_a_summary_is_refused(tmp_path: Path, body: st
         pr_text_file.read(write(tmp_path, body))
 
 
+def test_a_summary_of_several_paragraphs_is_the_paragraph_the_review_binds_to(tmp_path: Path) -> None:
+    first = "Adds the thing so the tools can do the other thing."
+    two = TEXT.replace(first, first + "\n\nIt also says why.")
+    one = pr_text_file.read(write(tmp_path / "one"))
+    found = pr_text_file.read(write(tmp_path / "two", two))
+    assert found.paragraph == first + "\n\nIt also says why."
+    assert found.paragraph_sha256 != one.paragraph_sha256
+    # runs of blank lines are layout, not content
+    spaced = pr_text_file.read(write(tmp_path / "three", two.replace(first + "\n\n", first + "\n\n\n\n")))
+    assert spaced.paragraph_sha256 == found.paragraph_sha256
+
+
 def test_an_unreadable_file_is_an_error(tmp_path: Path) -> None:
     with pytest.raises(ConfigError, match="cannot be read"):
         pr_text_file.read(tmp_path / "missing.md")

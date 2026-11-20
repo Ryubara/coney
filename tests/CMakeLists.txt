@@ -12,6 +12,7 @@ add_executable(coney_tests
     core/clip_recording_test.cpp
     core/cpak_archive_test.cpp
     core/cpak_index_test.cpp
+    core/cpak_lookup_test.cpp
     core/cpak_writer_test.cpp
     core/deferred_input_test.cpp
     core/event_log_test.cpp
@@ -33,9 +34,11 @@ add_executable(coney_tests
     core/sha1_test.cpp
     core/sha256_test.cpp
     core/story_chapter_test.cpp
+    core/story_choices_test.cpp
     core/story_graph_test.cpp
     core/story_manifest_test.cpp
     core/story_merge_test.cpp
+    core/story_view_test.cpp
     core/mesh_view_option_test.cpp
     core/world_edit_option_test.cpp
     core/draw_hash_option_test.cpp
@@ -123,9 +126,11 @@ add_executable(coney_tests
     gui/disc_text_test.cpp
     gui/markup_test.cpp
     gui/menu_input_test.cpp
+    gui/mods_story_list_test.cpp
     gui/message_paging_test.cpp
     gui/circled_text_header_test.cpp
     gui/game_stats_test.cpp
+    gui/mission_select_test.cpp
     gui/control_menu_test.cpp
     gui/option_menu_test.cpp
     gui/pause_menu_test.cpp
@@ -198,6 +203,7 @@ add_executable(coney_tests
     platform/disc_pause_options_test.cpp
     platform/disc_pause_stats_test.cpp
     platform/disc_game_stats_test.cpp
+    platform/disc_mission_select_test.cpp
     platform/disc_level99_class_steps_test.cpp
     platform/disc_level99_player2_test.cpp
     platform/disc_hub_workout_test.cpp
@@ -250,6 +256,8 @@ add_executable(coney_tests
     platform/world_renderer_test.cpp
     platform/world_set_test.cpp
     platform/world_draw_stream_test.cpp
+    platform/object_draw_stream_test.cpp
+    platform/material_change_test.cpp
     physics/overlaps_test.cpp
     physics/sphere_box_sweep_test.cpp
     raycast/collision_mesh_test.cpp
@@ -495,7 +503,9 @@ target_sources(coney_tests PRIVATE
     ai/spawners_test.cpp
     ai/rumble_tactics_test.cpp
     ai/swap_prompt_test.cpp
+    ai/sub_tactics_test.cpp
     ai/tactic_attack_test.cpp
+    ai/team_up_test.cpp
     ai/taunt_action_test.cpp
     ai/tactics_test.cpp
     ai/targeting_test.cpp
@@ -510,11 +520,13 @@ target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cp
 # (docs/guides/multiplayer.md).
 target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/input_buffer_test.cpp net/link_conditioner_test.cpp
                                    net/link_quality_test.cpp net/loopback_transport_test.cpp net/net_id_test.cpp net/protocol_test.cpp net/replicated_fields_test.cpp net/snapshot_test.cpp
-                                   net/jitter_buffer_test.cpp net/client_world_test.cpp
+                                   net/jitter_buffer_test.cpp net/client_world_test.cpp net/state_digest_test.cpp net/game_humans_test.cpp net/session_record_test.cpp
                                    net/sessions_test.cpp platform/enet_transport_test.cpp platform/net_play_test.cpp
                                    platform/game_console_test.cpp platform/game_settings_test.cpp)
 # What the console takes from the running game, apart from the list above so that its tests' registration stays theirs.
 target_sources(coney_tests PRIVATE platform/game_console_links_test.cpp)
+# Network play's proof files in one run: NetGame's replay, record and refusals (docs/guides/multiplayer.md#digest).
+target_sources(coney_tests PRIVATE platform/net_game_test.cpp)
 # The helper that registers one test case per item, so that ctest runs a long disc test's items in parallel
 # (docs/guides/testing.md#one-test-per-item).
 target_sources(coney_tests PRIVATE support/each_case_test.cpp)
@@ -551,6 +563,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/fighter_spawn_test.cpp
         debug/human_shapes_test.cpp
         debug/input_gate_test.cpp
+        debug/light_trace_test.cpp
         debug/lighting_page_test.cpp
         debug/lua_console_test.cpp
         debug/menu_navigator_test.cpp
@@ -606,6 +619,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_tandem_test.cpp
         platform/gpu_timer_test.cpp
         platform/imgui_model_view_test.cpp
+        platform/imgui_overlay_test.cpp
         platform/imgui_ui_scale_test.cpp
         platform/lighting_rows_test.cpp
         platform/mesh_views_test.cpp
@@ -670,6 +684,48 @@ if(MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
              COMMAND ${CMAKE_COMMAND} -DCHECK_EXE=$<TARGET_FILE:error_dialogs_check>
                      -DHANG_GUARD=${CONEY_TEST_HANG_GUARD} -P
                      "${CMAKE_CURRENT_SOURCE_DIR}/support/error_dialogs_check.cmake")
+endif()
+
+# Network play proved without a person (support/net_pair_check.cpp, docs/guides/multiplayer.md#two-processes): two
+# coney processes over ENet on 127.0.0.1 compare the digests of the snapshots sent and decoded, a replay of the host's
+# session record gives its digests again, and offline play is the same with a session nobody joins. Without the disc
+# the games have no humans, so the digests cover the pads and the snapshots' plumbing; the disc-backed pair below
+# plays level99 with its humans. Each run's frames are paced at 30 a second for the whole run when --host or --join
+# is given, so the host's 600 frames take twenty seconds, ample for a guest started under load to join and play its
+# script.
+# The digest's options are the debug build's (main.cpp), so the release-only build has none of these.
+if(CONEY_DEBUG_TOOLS)
+    add_executable(net_pair_check support/net_pair_check.cpp)
+    coney_target_defaults(net_pair_check)
+    target_link_libraries(net_pair_check PRIVATE coney_platform)
+    set(_net_host_script ${CMAKE_CURRENT_SOURCE_DIR}/support/net_host.txt)
+    set(_net_guest_script ${CMAKE_CURRENT_SOURCE_DIR}/support/net_guest.txt)
+    add_test(NAME coney.net.two_processes
+             COMMAND net_pair_check pair --coney $<TARGET_FILE:coney> --work ${CMAKE_CURRENT_BINARY_DIR}/net_pair
+                     --host-script ${_net_host_script} --guest-script ${_net_guest_script} --frames 600
+                     --guest-frames 200)
+    add_test(NAME coney.net.offline_unchanged
+             COMMAND net_pair_check offline --coney $<TARGET_FILE:coney> --work ${CMAKE_CURRENT_BINARY_DIR}/net_offline
+                     --host-script ${_net_host_script} --frames 300)
+    set_tests_properties(coney.net.two_processes coney.net.offline_unchanged PROPERTIES TIMEOUT
+                                                                                    ${CONEY_TEST_HANG_GUARD})
+    # The same with the disc: the host plays level99, whose crew and gang are humans the snapshots carry. The guest
+    # starts once the host's intro movie is skipped, the level's first frame of play: the load before it can take longer
+    # than the guest's whole run. Counts and hashes only.
+    if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
+        set(_net_level --disc "$ENV{CONEY_DISC}" --play-level level99 --skip-movies)
+        add_test(NAME coney.net.two_processes_level99
+                 COMMAND net_pair_check pair --coney $<TARGET_FILE:coney> --work
+                         ${CMAKE_CURRENT_BINARY_DIR}/net_pair_level99 --host-script ${_net_host_script} --guest-script
+                         ${_net_guest_script} --frames 600 --guest-frames 200 --guest-after "L99_IN skipped" --
+                         ${_net_level})
+        add_test(NAME coney.net.offline_unchanged_level99
+                 COMMAND net_pair_check offline --coney $<TARGET_FILE:coney> --work
+                         ${CMAKE_CURRENT_BINARY_DIR}/net_offline_level99 --host-script ${_net_host_script} --frames
+                         300 -- ${_net_level})
+        set_tests_properties(coney.net.two_processes_level99 coney.net.offline_unchanged_level99
+                             PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD} LABELS disc)
+    endif()
 endif()
 
 # Coney's Lua 4.0 compiler behind luac's command line, for the decompiler's round trip (support/coney_luac.cpp,

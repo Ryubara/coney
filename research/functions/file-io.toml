@@ -33,8 +33,8 @@ address = 0x00155180
 name = "MissionSelect_Show"
 page = "file-io.md#original-structure"
 level = "confirmed-code"
-coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
-status = "legacy"
+coney = "src/gamemodes/mission_select_mode.h:MissionSelectMode::launch"
+status = "compared"
 
 [[function]]
 address = 0x001551e0

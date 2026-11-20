@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/tactic_attack.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -17,6 +18,9 @@
 #include "ai/gangs.h"
 #include "ai/hub_goals.h"
 #include "ai/melee_goal.h"
+#include "ai/reaction_goals.h"
+#include "ai/targeting.h"
+#include "core/game_random.h"
 
 namespace coney::ai {
 
@@ -50,6 +54,12 @@ std::span<const std::string_view> cowerClips(const Gang& gang) {
     }
     return {};
 }
+
+// The team-up orders' time limits and Guard's deadline, ms.
+constexpr std::int64_t kChargeLimitMs = 10000;
+constexpr std::int64_t kThrowLimitMs = 20000;
+constexpr std::int64_t kLeaderLimitMs = 15000;
+constexpr std::uint64_t kGuardDeadlineMs = 15000;
 
 // The squared distance between two members' positions.
 float squaredDistance(const Brain& a, const Brain& b) {
@@ -202,7 +212,16 @@ int TacticAttack::update(Gang& gang) {
             }
         }
     }
-    // 3. The team-up timer is Unit 3's (not built).
+    // 3. The team-up timer, with no order running and not fled: armed 7 s ahead, then once past it disarmed and a draw
+    // made. An attempt that starts nothing re-arms it on the next update.
+    if (!strategy() && !m_fled) {
+        if (m_teamUpAtMs == 0) {
+            m_teamUpAtMs = now + kTeamUpDelayMs;
+        } else if (now > m_teamUpAtMs) {
+            m_teamUpAtMs = 0;
+            startSubTactic(gang);
+        }
+    }
     return 0;
 }
 
@@ -210,8 +229,8 @@ bool TacticAttack::event(Gang& gang, Brain& member, const BrainEvent& event) {
     switch (event.id) {
     case kEventDamaged:
     case kEventEnemyAdded:
-        // An own member with no fight goal (and no order running: none is built) melees.
-        if (member.gang() == &gang && !member.hasFightGoal()) {
+        // Melee unless an order runs. Stand-in: a StandInOrder gives no goals, so its members get neither (<= 20 s).
+        if (member.gang() == &gang && !member.hasFightGoal() && !strategy()) {
             pushMelee(member);
         }
         break;
@@ -303,6 +322,100 @@ void TacticAttack::checkFlee(Gang& gang) {
     // 4. Fled only once someone ran: a gang that sent nobody keeps reporting 9 when its enemies are gone.
     if (sent) {
         m_fled = true;
+    }
+}
+
+int drawTeamUp(const GangStrategy& weights, GameRandom& random) {
+    int total = 0;
+    for (const std::uint8_t weight : weights) {
+        total += weight;
+    }
+    // Random_Int(total): 0 to the total inclusive, so the total itself falls through to the fallback.
+    const int roll = random.range(RandomStream::Tactics, 0, total);
+    int reach = 0;
+    for (std::size_t draw = 0; draw < weights.size(); ++draw) {
+        reach += weights[draw];
+        if (roll < reach) {
+            return static_cast<int>(draw);
+        }
+    }
+    return kFallbackDraw;
+}
+
+void TacticAttack::startSubTactic(Gang& gang) {
+    // 1. Team-ups on, a leader who is not busy, and at least two living members. Coney stand-in: humanBusy() reads
+    // Human_IsBusy (0x00228258), whose state mask 0x1f80974000 and hit timer (record +0x108) Coney does not keep.
+    if (!gang.orders().attackStrategies) {
+        return;
+    }
+    const Brain* leader = gang.leader();
+    if (leader == nullptr || humanBusy(leader->human())) {
+        return;
+    }
+    const int living = gang.living();
+    if (living < 2) {
+        return;
+    }
+    // 2. The enemy gang in the leader's sight: the first by id that may be fought, whose living count is E. The search
+    // returns one gang at most, so the original's sort of its results and their sum over two come to that one.
+    Gangs& gangs = gang.owner();
+    const Gang* enemy = gangs.findWithinRadius(sightRangeOf(*leader), gang, canJoinFightAgainst);
+    if (enemy == nullptr) {
+        return;
+    }
+    const int enemyLiving = enemy->living();
+    // 3. The draw over the gang kind's seven weights.
+    GangStrategy weights{};
+    for (std::size_t draw = 0; draw < weights.size(); ++draw) {
+        weights[draw] = static_cast<std::uint8_t>(gangs.strategyWeight(gang.kind(), draw));
+    }
+    const int draw = drawTeamUp(weights, gangs.gameRandom());
+    // 4. The order the draw names, with its count and limit: Charge and Throw take max(L / 2, L - E) members.
+    const int share = std::max(living / 2, living - enemyLiving);
+    OrderArgs args;
+    switch (draw) {
+    case 0:
+        // Coney stand-in for ChargeSubTactic_Init until #338.
+        args = {.kind = OrderKind::Charge, .count = share, .flag = false, .limitMs = kChargeLimitMs, .deadlineAtMs = 0};
+        break;
+    case 3:
+    case 5:
+        // Coney stand-in for ThrowSubTactic_Init until #340.
+        args = {
+            .kind = OrderKind::Throw, .count = share, .flag = draw == 3, .limitMs = kThrowLimitMs, .deadlineAtMs = 0};
+        break;
+    case 4:
+        // Coney stand-in for LeaderSubTactic_Init until #338.
+        args = {.kind = OrderKind::Leader,
+                .count = living - 1,
+                .flag = false,
+                .limitMs = kLeaderLimitMs,
+                .deadlineAtMs = 0};
+        break;
+    case 6:
+        // Coney stand-in for GrabSubTactic_Init until #338.
+        args = {.kind = OrderKind::Grab, .count = 0, .flag = false, .limitMs = -1, .deadlineAtMs = 0};
+        break;
+    default:
+        // Draws 1 and 2: Guard times itself from now (its record's limit is none); 2 backs off. Coney stand-in for
+        // GuardSubTactic_Init until #339.
+        args = {.kind = OrderKind::Guard,
+                .count = 0,
+                .flag = draw == 2,
+                .limitMs = -1,
+                .deadlineAtMs = gangs.nowMs() + kGuardDeadlineMs};
+        break;
+    }
+    // Into the pool (nothing when it is full) and into the slot. Coney stand-in: StandInOrder until Units 4 to 6.
+    setStrategy(gang, gangs.subTactics().allocate(std::make_unique<StandInOrder>(gang.id(), args)));
+}
+
+void TacticAttack::strategyEnded(Gang& gang, const SubTactic& order) {
+    // A guard order leaves the members in formation: they melee again. The others end without it. Coney stand-in: a
+    // StandInOrder guard took nobody out of the fight, and the Melee's pop to the goal base would cut the fights the
+    // members are in, so its end gives nothing (until #339 ports the guard).
+    if (order.kind() == OrderKind::Guard && dynamic_cast<const StandInOrder*>(&order) == nullptr) {
+        giveMelee(gang);
     }
 }
 

@@ -101,7 +101,7 @@ so motion is smooth above 30 frames a second and the game's speed never changes
 | `--vsync on\|off` | wait for the display's vertical blank when presenting (on, the default) or not (frames may tear) |
 | `--line-blend on\|off` | an optional PS2 look: soften the picture as the PS2's video output does, each shown line the mean of two neighbouring lines of the original's 448 (on; [Rendering](../research/rendering.md#output)), or show the frame as drawn (off, the default); reference renders are never blended |
 | `--show-fps` | print the frame and step rates once a second, and the totals when Coney stops |
-| `--renderer gl3\|gpu` | draw with librw's OpenGL 3.3 (`gl3`, the default) or start SDL3's GPU API (`gpu`: Vulkan, Direct3D 12 or Metal), which so far draws the 2D layers (the front end, the legal screens, the movies, the HUD) and no 3D scene ([Renderer](../engine/gpu-renderer.md)); unset, a windowed run takes the saved `Display/Renderer` setting outside test mode, except that a saved 1 starts GL3, with a warning, while the GPU renderer draws no developer overlay ([The way back to GL3](../engine/gpu-renderer.md#way-back)). A `gpu` start that finds no GPU device says why in the run log and draws with GL3 |
+| `--renderer gl3\|gpu` | draw with librw's OpenGL 3.3 (`gl3`, the default) or start SDL3's GPU API (`gpu`: Vulkan, Direct3D 12 or Metal), which so far draws the 2D layers (the front end, the legal screens, the movies, the HUD) and no 3D scene ([Renderer](../engine/gpu-renderer.md)); unset, a windowed run takes the saved `Display/Renderer` setting outside test mode ([The way back to GL3](../engine/gpu-renderer.md#way-back)). A `gpu` start that finds no GPU device says why in the run log and draws with GL3 |
 | `--preset ps2\|xbox\|enhanced\|high` | the display preset ([Presets](../engine/renderer.md#presets)): outside test mode chosen at the start, over the saved `Display/Preset` and its values, and changeable after on the Tunables page; in test mode, where drawing is otherwise pinned to *PS2* whatever a player saved, the preset drawn instead. Nothing draws a preset's values yet, so each draws today's picture ([Presets: Built](../engine/renderer.md#presets-built)) |
 
 The default, no cap with vsync on, draws one frame per refresh of the display. On the GPU renderer the two choose its
@@ -165,6 +165,29 @@ run prints one `net:` line at the end with the state and the bytes sent and rece
 build/dev/src/platform/coney --host --net-name Cleon            # the host
 build/dev/src/platform/coney --join 192.168.1.20 --net-name Swan # another machine on the network
 build/dev/src/platform/coney --headless --frames 3 --host 127.0.0.1:0
+```
+
+A test-mode run with `--host` or `--join` still makes each frame wait for a real 1/30 s, one step a frame; why, and
+how the two-process tests rely on it, is in [Two processes](multiplayer.md#two-processes).
+
+Four options write the files that prove network play without a person
+([The state digest](multiplayer.md#digest), [Replays](multiplayer.md#replays)); each takes a path, which it replaces:
+
+- `--digest FILE`: one line a step, the state digest of the game's humans and of the pads the step played. It makes
+  the run test mode, and works offline too.
+- `--digest-net FILE`, with `--host` or `--join`: one line per snapshot, a host's for what each one it sent leaves the
+  guest holding, a guest's for each one it decoded.
+- `--net-record FILE`, with `--host`: the session record, each step's pad on port 2 and the session's events.
+- `--net-replay FILE`: plays a record's port 2 with no session (so not with `--host` or `--join`); with the host's own
+  input script the run writes the host's digest again.
+
+```sh
+build/dev/src/platform/coney --headless --frames 300 --input-script tests/support/net_host.txt --host 127.0.0.1:0 \
+    --digest host.txt --digest-net host-net.txt --net-record session.txt
+build/dev/src/platform/coney --headless --frames 200 --input-script tests/support/net_guest.txt \
+    --join 127.0.0.1:PORT --digest-net guest-net.txt
+build/dev/src/platform/coney --headless --frames 300 --input-script tests/support/net_host.txt \
+    --net-replay session.txt --digest replay.txt
 ```
 
 ## The debug menus {#the-debug-menus}

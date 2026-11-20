@@ -1208,18 +1208,24 @@ Confirmed (code) at the addresses below.
 ### `GUI/MissionSelectHUD.cpp` {#fn-missionselecthud}
 
 The mission select screen of `HUDShowMissionSelect` (`MissionSelect_Show`, mode functions `MissionSelect_Enter` /
-`_Update` / `_Exit` at `0x0015d648` / `0x0015d890` / `0x0015d728`): a map with one marker per area, and per area a
-list of the missions already completed, each with its checkpoints. The object (vtable `0x0053a408`, input interface
+`_Update` / `_Exit` at `0x0015d648` / `0x0015d890` / `0x0015d728`): a map with one marker per area, and per area a list
+of the missions already completed, each with its checkpoints. The object (vtable `0x0053a408`, input interface
 `0x0053a3e0` at `+0x6c`) is built by `0x0015d4f8`. Areas are `MS_Area` records (`0x230` bytes), missions `MS_Mission`
 (`0x8c0` bytes), both allocated with those class strings. The mission records are the story table at W_GameState
 `+0x14d4` (`0x84` bytes each, count `+0x56d4`; level `+0x04`, checkpoint count `+0x08`, name `+0x49`, icon sprite
-`+0x78`, `+0x80` passed to the entry). The rest of the file is HUD code ([HUD](hud-functions-panels.md#fn-missionselecthud-hud)).
+`+0x78`, `+0x80` passed to the entry); confirmed (code) at `0x0015d4f8`, `0x001bc930` and `0x001bca70`. The rest of the
+file is HUD code ([HUD](hud-functions-panels.md#fn-missionselecthud-hud)).
 
 **Layout** (`MissionSelect_Init` `0x001bcdd8` writes the globals per video mode, `MissionSelect_Build` `0x001bc5a8` and
 `MissionSelect_FillArea` `0x001bd838` use them; GUI coordinates; confirmed (code)):
 
-- background: centred at (0.5, 0.5), size **bg**, grey 144, sheet-table record 20 rectangle 0; the gang logo over it
-  at the same place, size **logo**, white, `gang_logos` rectangle 11 with a shadow; the frame, size **frame**, grey 128;
+- background (the subway map): centred at (0.5, 0.5), size **bg**, grey 144, sheet-table record 20 rectangle 0; the gang
+  logo over it, white, with a shadow (`MissionSelect_Build` sets it up as `gang_logos` rectangle 11);
+  `MissionSelect_UpdateWidget` then moves it to the shown area's logo point (`LevelRecord_GetMapPos2`) and gives it the
+  sprite word at `+0x78` of the area's first mission (the Warriors' logo over Coney, the Hi-Hats' over Soho), sized by
+  its texture rectangle × **logo** (× `0x0050e884` across); the widget this page called the frame, sized from
+  **marker**, grey 128, is the **halo** around the shown area's marker. Confirmed (code) at `0x001bc5a8` and
+  `0x001be198`; the logo per area confirmed (runtime), run r-20261119-mission-select;
 - the area title: a [`CircledText`](gui.md#fn-circledtext) at (**x**, **y**), text offset (**tx**, **ty**), circle
   offset 0.008, circles 0.055 × 0.055, `Font_Size(1.25)`, back sprite record 20 rectangle 1, circles rectangle 3;
 - the area's mission list: a `ScrollingMenu` at (**x**, **y** + **ty** + 0.01), item gap 0.01; each entry a
@@ -1229,23 +1235,26 @@ list of the missions already completed, each with its checkpoints. The object (v
   back black; its description is the mission's `MS_Mission` tile, set up with **cw** × **ch** and the height **tile**;
 - the usage line (string `0x20`) left-aligned at (**ux**, **uy**).
 
-With the alternative sheet (record 21, `0x0050e894` = 1) the title and entries use rectangles 1 and 2 and the frame 3.
+With the alternative sheet (record 21, `0x0050e894` = 1) the title and entries use rectangles 1 and 2 and the halo 3;
+confirmed (code) at `0x001bc5a8` and `0x001bd838`.
 
-| Global | Meaning | Default | 16:9 (`0x04`) | Progressive (`0x20`, static values) | `0x02` | `0x02` + `0x04` |
-| --- | --- | --- | --- | --- | --- | --- |
-| `0x0050e850` / `0x0050e854` | **x**, **y** | 0.8, 0.083 | 0.852, 0.022 | 0.78, 0.077 | 0.785, 0.173 | 0.843, 0.153 |
-| `0x0050e858` / `0x0050e85c` | **tx**, **ty** | 0.44, 0.074 | 0.52, 0.083 | 0.415, 0.065 | 0.43, 0.057 | 0.508, 0.067 |
-| `0x0050e86c` | **tile** | 0.35 | 0.423 | 0.415 | 0.27 | 0.25 |
-| `0x0050e870` / `0x0050e874` | **cw**, **ch** | 0.045, 0.07 | 0.057, 0.08 | 0.05, 0.07 | 0.04, 0.056 | 0.04, 0.056 |
-| `0x0050e878` | **bg** | 1.12 | 1.64 | 1.05 | 1.05 | 1.6 |
-| `0x0050e880` | **logo** | 0.8 | 0.8 | 0.8 | 0.6 | 0.6 |
-| `0x0050e888` | **frame** | 0.0147 | 0.0147 | 0.0147 | 0.01 | 0.012 |
-| `0x0050e88c` / `0x0050e890` | **ux**, **uy** | 0, 0.81 | −0.1, 0.85 | 0.03, 0.83 | 0.045, 0.75 | −0.08, 0.76 |
-| `0x0050e894` | alternative sheet | 0 | 1 | 1 | 0 | 1 |
+| Global | Meaning | Default | 16:9 (`0x04`) | Progressive (`0x20`, static values) | `0x02` | `0x02` + `0x04` | Evidence |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `0x0050e850` / `0x0050e854` | **x**, **y** | 0.8, 0.083 | 0.852, 0.022 | 0.78, 0.077 | 0.785, 0.173 | 0.843, 0.153 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e858` / `0x0050e85c` | **tx**, **ty** | 0.44, 0.074 | 0.52, 0.083 | 0.415, 0.065 | 0.43, 0.057 | 0.508, 0.067 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e86c` | **tile** | 0.35 | 0.423 | 0.415 | 0.27 | 0.25 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e870` / `0x0050e874` | **cw**, **ch** | 0.045, 0.07 | 0.057, 0.08 | 0.05, 0.07 | 0.04, 0.056 | 0.04, 0.056 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e878` | **bg** | 1.12 | 1.64 | 1.05 | 1.05 | 1.6 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e880` | **logo** | 0.8 | 0.8 | 0.8 | 0.6 | 0.6 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e888` | **marker** (the halo's base) | 0.0147 | 0.0147 | 0.0147 | 0.01 | 0.012 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e88c` / `0x0050e890` | **ux**, **uy** | 0, 0.81 | −0.1, 0.85 | 0.03, 0.83 | 0.045, 0.75 | −0.08, 0.76 | confirmed (code) at `0x001bcdd8` |
+| `0x0050e894` | alternative sheet | 0 | 1 | 1 | 0 | 1 | confirmed (code) at `0x001bcdd8` |
 
-`0x0050e87c` (1.05 by default) and `0x0050e884` (1.4286, 2.0 with `0x02`) are written too but read elsewhere (not
-traced). The tile's back-strip factor `0x0050ecd4` is 0.745, 0.755 with 16:9, 0.77 with `0x02`, 0.69 with `0x02` +
-`0x04` (`0x001d31e8`; progressive mode leaves the static value).
+`0x0050e87c` (1.05 by default, 1.2 with 16:9, 0.82 with `0x02`, 0.88 with `0x02` + `0x04`) is the map's second size
+(`BaseWidget_SetSize(bg, 0x0050e87c)` each update) and `0x0050e884` (10/7, 1.4285714, 2.0 with `0x02`) the logo's width
+factor, both read by `MissionSelect_UpdateWidget` (`0x001be198`; confirmed (code)). The tile's back-strip factor
+`0x0050ecd4` is 0.745, 0.755 with 16:9, 0.77 with `0x02`, 0.69 with `0x02` + `0x04` (`0x001d31e8`; progressive mode
+leaves the static value).
 
 **Input.** On the area menu (`MissionSelect_OnMenuCommand`, `0x001be070`, jump table `0x00554c50`): up shows the next
 area and down the previous one (cue 4, or `0xe` and the refused flag at either end); left and right are not taken;
@@ -1254,6 +1263,65 @@ accept moves the focus to the area's mission list (`ScrollingMenu_Focus`, cue 8)
 between the missions (the menu's own input) until accept **opens** the selected mission (its tile highlighted); then up
 and down step its checkpoint letter down and up within the record's checkpoint count, a second accept **starts** it,
 and back closes the mission (or, when none is open, returns the focus to the area menu), cue `0xf`. Confirmed (code).
+The list's handler runs first: with no mission open it leaves up and down (returns 0) to the list's own moves
+(confirmed (code) at `0x001bde18`). A refused letter step sets the refused flag too, which only an area change clears
+(`MissionSelect_ShowArea` `0x001bdc10`); the flag makes the area menu's d-pad pass the plain query instead of the
+auto-repeating one (`MenuInput_PadPlainPass` against `MenuInput_PadRepeatPass`, mask `0xf000`, in `0x001be198`;
+confirmed (code)). Up moving to the next area, the second accept opening the mission and the third starting it are
+confirmed (runtime), run r-20261119-mission-select.
+
+**The areas** (`MissionSelect_BuildAreas` `0x001bcc48`, `MissionSelect_AddArea` `0x001bca70`, `MissionSelect_AddMission`
+`0x001bc930`, `MissionSelect_FindArea` `0x001bca30`; confirmed (code)): every level record in index order that
+`MissionSelect_IsMissionListed` passes goes into the area whose `+0x04` is the CRC-32 (`Crc32_Hash`, no case folding) of
+the text after the `:` of its second name (`LevelRecord_GetAreaName` `0x0041f3e8`); a new hash makes a new `MS_Area`
+whose first mission (`+0x00`) gives its marker's place (`LevelRecord_GetMapPos`: record 20 rectangle 5, grey 170 at
+set-up, the menus' grey `0x005fd310` each update). The areas are then sorted by that place's y, the larger first, and
+each area's missions by their label read with `strtol` (`0x00433a68`), the smaller first (both `std::sort`; [the story
+order's readers](story-progress.md#replay)). With 8 levels complete (99, 80, 87, 34, 2, 3, 5, 31) the original made 7
+areas in the order of the first missions 1, 3, 6, 4, 7, 5, 11 (records' mission bytes 1, 3, 6, 4, 7, 5, 11: y 0.947,
+0.916, 0.622, 0.411, 0.325, 0.198, 0.134), Coney's with 99 and 80 and hash `0xc92e8281` = CRC-32 of `Coney`, East
+Coney's `0xe2592394`; confirmed (runtime), run r-20261119-mission-select. The area title is the same area name, set when
+a new area is shown (`0x001be198`).
+
+**The map tables** (`LevelRecord_GetMapPos` `0x0041f540`, `LevelRecord_GetMapPos2` `0x0041f5f8`; confirmed (code)): two
+tables of 23 rows (mission bytes 1-23) × 5 columns × (x, y) floats, at `0x005148e0` (the markers) and `0x00514c78` (the
+logos); the column is 3 (4 with 16:9) under flag `0x02`, else 2 progressive, else 1 with 16:9, else 0. Row 1 column 0 is
+(0.36, 0.947) and (0.36, 0.744). Bytes 1, 2, 8, 9, 18 and 20 share one point. Coney keeps both tables
+(`repo:src/gui/mission_select_areas.cpp`).
+
+**The marker's pulse** (`0x001be198`; confirmed (code)): when a new area is shown its pulse starts shrinking; each 400
+ms (`+0x698`) the way turns. Its size is `0x0050e888` × f, f going from 2 to 1 or from 1 to 2 over the 400 ms
+(`Math_MapRange`); the halo is 1.55 × that, at the same place, in `LevelRecord_GetAreaColour2` of the area's first
+mission (1 (186, 139, 53), 2 (48, 137, 81), 3 (64, 95, 142), 4 (76, 53, 44)) × the map's grey / 255. The other markers
+keep `0x0050e888`. The area drawn is the shown one (`+0x580`), which the update takes before its pad pass: the logo, the
+pulsing marker, the halo and the list (`MissionSelect_Render` `0x001be848` draws the menu of `+0x580` too), so an area
+the pad moves to is drawn, and its pulse started, from the next frame (confirmed (code) at both addresses).
+
+**The start and the mode** (confirmed (code) at the cited addresses): the second accept in an open mission sets `+0x69c`
+= 1 and nothing else: the start stamp `+0x6a0` is written only by `MissionSelect_Init`, a 0 (`0x001bd394`, the only
+store to that offset in the program). `MissionSelect_UpdateWidget` then reads no pad and, on the first frame the
+real-time clock (`0x0050b8b8` slot `+0x34`, milliseconds since the machine started) is more than 2,300 (`0x8fc`) past
+that 0, calls `MissionSelect_OnAccept` (`0x001bdd38`); in play, with the clock long past 2.3 s, that is the next frame,
+so the start has no delay of its own (this page read it as 2,300 ms after the start before). Cue 8, the mission's level
+number into `0x0050c764`, the letter + 1 into `0x0050c768`, the chosen flag `0x0050c760`; from checkpoint 2 on also
+`Inventory_Reset(W_GameState + 0x480, 1)` (`0x0041e040`: the four callback names cleared, both players' counts zeroed,
+the checkpoint copy taken), `Stats_ResetPlayers` (`0x00422930`) and `Stats_SaveCheckpoint` (`0x00422c60`).
+`MissionSelect_Show` (`0x00155180`) stores the two callback names and pushes mode 0x10 unless it is on top.
+`MissionSelect_Enter` (`0x0015d648`) clears the cancelled and chosen flags (level 0, checkpoint 1), loads the `menu`
+bank unless current, sets the task manager's phase 0 and runs `MissionSelect_Init`. `MissionSelect_Update`
+(`0x0015d890`) runs a world frame, then the screen (a 1 s fade in once it is loaded); once it is done
+(`MissionSelect_IsDone` `0x0015d5b0`: cancelled or chosen) it queues a 1 s fade out after a cancel, or stops the music
+and queues 1.5 s after a choice, and the mode leaves when the fade is over. `MissionSelect_Exit` (`0x0015d728`) shuts
+the screen and, when cancelled with an `onCancel`, loads the `sound` bank and calls `onCancel()`; otherwise, when chosen
+with an `onChoose`, calls `onChoose(level, checkpoint)`. The original called `onChoose(3, 2)` after up moved the cursor
+two areas on (to area 2, the third: Soho, level 3) and that mission was started at letter B; confirmed (runtime), run
+r-20261119-mission-select.
+
+**In Coney.** `coney::gui::MissionSelectScreen` (`repo:src/gui/mission_select.h`), `buildMissionSelectAreas`
+(`repo:src/gui/mission_select_areas.h`) and `coney::MissionSelectMode` (`repo:src/gamemodes/mission_select_mode.h`),
+which `HUDShowMissionSelect` pushes through the start-up flow. Stand-ins: the selected mission's tile (`MS_Mission`,
+below) shows only its letter until the tile is ported; no world frame runs under the screen; the entries are stacked an
+item gap apart without the list's scroll animation.
 
 **The tiles' lines** (`MSMission_Setup`, `0x001d31e8`): line 1 is string `0x6d` and the mission's best score, red
 (134, 26, 26) once it reaches the level's score target, gold (128, 100, 0) below it; line 2 is string `0x64` and the
@@ -1271,7 +1339,7 @@ level has none (both from `Unlockables_GetLevelTargets`, [the counts](player-sta
 | `0x001bc328`, `0x001bc3b8` | `MissionSelect_CreateFrameBatch`, `_CreateMapBatch` | batches over sheet-table record 20 (21 when `0x0050e894` is set: 16:9 or progressive): 40 sprites at depth 8,700 (`+0x8c`), 50 at 8,000 (`+0x90`) | confirmed (code) |
 | `0x001bc440` | `MissionSelect_CreateLogoBatch` | 2 sprites of record 25 (`gang_logos`) at depth 8,500 (`+0x94`) | confirmed (code) |
 | `0x001bc4b8`, `0x001bc530` | `MissionSelect_CreateIconBatchA`, `_B` | 12 sprites of record 22 (`+0x98`) and of record 23 (`+0x9c`), depth 8,500 | confirmed (code) |
-| `0x001bc5a8` | `MissionSelect_Build` | the batches, the background (rectangle 0, grey 144), the gang logo (`gang_logos` rectangle 11, white, with a shadow), a frame (rectangle 2, or 3 in the other set, grey 128), the area title (`CircledTextHeader`, `0x600` bytes, `+0x80`), the usage line (string `0x20`), placed from `0x0050e850`-`0x0050e890` | confirmed (code) |
+| `0x001bc5a8` | `MissionSelect_Build` | the batches, the background (rectangle 0, grey 144), the gang logo (`gang_logos` rectangle 11, white, with a shadow), the halo (rectangle 2, or 3 in the other set, grey 128), the area title (`CircledTextHeader`, `0x600` bytes, `+0x80`), the usage line (string `0x20`), placed from `0x0050e850`-`0x0050e890` | confirmed (code) |
 | `0x001bc930` | `MissionSelect_AddMission` | appends an `MS_Mission` to its area (found by the CRC-32 of the mission's area name) | confirmed (code) |
 | `0x001bca30` | `MissionSelect_FindArea` | the area with that name hash | confirmed (code) |
 | `0x001bca70` | `MissionSelect_AddArea` | a new `MS_Area` for a new area: its marker (record 20 rectangle 5, (170, 170, 170)) at the area's map point | confirmed (code) |
@@ -1286,9 +1354,9 @@ level has none (both from `Unlockables_GetLevelTargets`, [the counts](player-sta
 | `0x001bde18` | `MissionSelect_OnListCommand` | with the mission list open (`+0x6a4`): commands 0 and 1 step the checkpoint down or up within the mission's count (cue 4, or `0xe` at the ends); accept (4) opens the list, or with it open starts (`+0x69c` = 1), cue 8; back (5) closes the list, cue `0xf` | confirmed (code) |
 | `0x001be070` | `MissionSelect_OnMenuCommand` | commands 0-5 through the jump table `0x00554c50` while the area menu has focus | confirmed (code) |
 | `0x001be130` | `MissionSelect_OnCommand` | the input handler: one of the two above | confirmed (code) |
-| `0x001be198` | `MissionSelect_UpdateWidget` | slot `+0x30`: the d-pad (auto-repeat mask `0xf000`, or the plain query after a refusal) and buttons; a new area updates the title; the chosen area's marker pulses between 1× and 2× its size every 400 ms with a halo 1.55× its size in the area's colour; 2,300 ms after a start, `MissionSelect_OnAccept` | confirmed (code) |
+| `0x001be198` | `MissionSelect_UpdateWidget` | slot `+0x30`: the d-pad (auto-repeat mask `0xf000`, or the plain query after a refusal) and buttons; a new area updates the title; the chosen area's marker pulses between 1× and 2× its size every 400 ms with a halo 1.55× its size in the area's colour; after a start, `MissionSelect_OnAccept` once the clock is past 2,300 ms (in play the next frame) | confirmed (code) |
 | `0x001bdd38` | `MissionSelect_OnAccept` | cue 8; the next level is the mission's (`0x0015d540`), the checkpoint the chosen one + 1 (`0x0015d560`), the start flag set (`0x0015d5a0`); from checkpoint 2 on it also resets the inventory (W_GameState `+0x480`, `0x0041e040`) and the players' stats | confirmed (code) |
-| `0x001be848` | `MissionSelect_Render` | background, map, halo, every marker, the title, the area menu, the usage line | confirmed (code) |
+| `0x001be848` | `MissionSelect_Render` | the map (`+0xa0`), the gang logo (`+0x1b0`), the halo (`+0x590`), every marker, the title, the area menu, the usage line | confirmed (code) |
 
 ### After `GUI/RadarHUD.cpp` (no path string): the message box {#fn-after-radarhud}
 
@@ -2039,8 +2107,8 @@ the file's first path-string function sit after the player panel's static initia
 
 ### Game-state functions {#warriors-functions}
 
-Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
-workers) that belong to this page, by address.
+Functions of the game-state module (`0x00417af0`-`0x00424e50`, inferred from the addresses listed below: inventory,
+statistics, flags, configuration workers) that belong to this page, by address.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -2055,9 +2123,9 @@ workers) that belong to this page, by address.
 | `0x0041dd90` | `Game_CheckMultiplayer` | `GameState_SyncPlayers(-1)` when the game state exists | confirmed (code) |
 | `0x0041f0e0` | `LevelTable_CountPacked` | counts the level records whose `+0x10` is 1 into `+0x4204` of the table (`W_GameState + 0x56d8`); from `Gm_LevelFlow_Resume` | confirmed (code) |
 | `0x0041f298` / `0x0041f340` | `LevelRecord_GetAreaColour` / `LevelRecord_GetAreaColour2` | two colours (RGB, alpha 255) chosen by the record's area byte `+0x7c` (1-4); used by the mission-select screen and the end-of-mission list | confirmed (code) |
-| `0x0041f3e8` / `0x0041f428` | `LevelRecord_LabelLength` / `LevelRecord_GetLabel` | in the record's second name (`+0x24`): one past the position of its `:` (0 when none) / the text before the `:`, at most 3 characters; used by the mission select, the end-of-mission list and the Rumble soldier screen | confirmed (code) |
+| `0x0041f3e8` / `0x0041f428` | `LevelRecord_GetAreaName` / `LevelRecord_GetLabel` | in the record's second name (`+0x24`, `<label>:<area>`): a pointer to the text after its first `:` (null when none; this row read it as a length before) / the text before the `:`, at most 3 characters; the area name groups the mission select's missions by its CRC-32 and titles the area, the label is circled by the mission select, the end-of-mission list and the Rumble soldier screen | confirmed (code) |
 | `0x0041f4d0` | `LevelTable_FindPacked(n)` | the index of the n-th record whose `+0x10` is 1, 0 when there is none | confirmed (code) |
-| `0x0041f540` / `0x0041f5f8` | `LevelRecord_GetMapPos` / `LevelRecord_GetMapPos2` | a pair of floats for the record's byte `+0x0c` (1-based) from the tables `0x005148e0` / `0x00514c78`, 5 columns chosen by the video mode flags (`*0x0050cdb4` bits 2, 4, `0x20`); `(0, 0)` when the byte is 0 | confirmed (code); that they are screen positions inferred |
+| `0x0041f540` / `0x0041f5f8` | `LevelRecord_GetMapPos` / `LevelRecord_GetMapPos2` | a pair of floats for the record's byte `+0x0c` (1-based) from the tables `0x005148e0` / `0x00514c78`, 5 columns chosen by the video mode flags (`*0x0050cdb4` bits 2, 4, `0x20`); when the byte is 0 the static result is returned unchanged (the last call's point; Coney gives (0, 0)) | confirmed (code); that they are screen positions inferred |
 | `0x00424298` | `Unlockables_GetLevelTargets` | counts a level's targets for the mission screens: the highest item of its group-0 records × 1000 (the score target), type-4 and type-2 records (total and unlocked) and group-1 distinct items (total and unlocked); level 60 stands for all Armies levels 60-64 and 101 for 101-137 | confirmed (code) |
 
 ## Coney's implementation

@@ -63,6 +63,14 @@ struct LevelRecord {
     /// `GameStats_PickThumbBatch` splits the levels (docs/research/game-stats.md#block).
     static constexpr std::size_t kSubwayValue = 10;
     static constexpr std::size_t kPictureValue = 11;
+    /// Where in `values` the section count (`+0x08`) is: the `sections` column, the checkpoints the mission select
+    /// offers (docs/research/frontend.md#fn-missionselecthud). Inferred: the column's values are the field's uses.
+    static constexpr std::size_t kSectionsValue = 0;
+    /// Where in `values` the gang logo's sprite word (`+0x78`) is: record 25 (`gang_logos`) words such as `0x19000b`,
+    /// which the mission select shows over an area (docs/research/frontend.md#fn-missionselecthud). Inferred: the
+    /// column's words name rectangles of record 25 (confirmed (runtime): the Warriors' logo over Coney, the Hi-Hats'
+    /// over Soho).
+    static constexpr std::size_t kLogoValue = 9;
 };
 
 /// The game state's level table: up to 128 records by index, filled by `CfgLevelName` (`config_preload3.lua` sets

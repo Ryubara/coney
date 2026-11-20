@@ -71,7 +71,12 @@ page = "graphics.md#code-car-render"
 role = "[Drawing a car](graphics.md#car-draw)"
 level = "confirmed-code"
 coney = "src/platform/parked_cars.h:ParkedCars::draw"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the lights selected per part atomic rather than once for the clump's sphere; the seen bits, the last drawn frame and the result not kept"
+relation = "stand-in"
+issue = 657
 
 [[function]]
 address = 0x00174320
@@ -197,7 +202,12 @@ page = "graphics.md#code-models"
 role = "[World objects](objects.md), [Lighting](lighting.md)"
 level = "confirmed-code"
 coney = "src/platform/placed_objects.h:PlacedObjects::draw"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "no camera fade of an object in the player's way, pulse, small-object lights, parent's fade distance, instance timer or per-draw MatFX textures from the second dictionary; Z writes off for a translucent look"
+relation = "stand-in"
+issue = 657
 
 [[function]]
 address = 0x00181170

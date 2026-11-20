@@ -66,6 +66,16 @@ class SceneLighting {
     /// description's draw of the sector (docs/engine/renderer.md#frame-description). Counts the atomic as drawn and
     /// adds the lighting frame's row of its selection, as drawWorldAtomic() does.
     [[nodiscard]] std::vector<graphics::SceneLight> worldLights(rw::Atomic* atomic);
+    /// The lights a world object's or car part's atomic is drawn with (the objects' lights for its squared distance to
+    /// the camera and the point lights its sphere overlaps), by value, as drawObjectAtomic() would put them in librw's
+    /// world, with the lighting lab's layers applied: for the frame description's draw of it (drawObject()). Counts the
+    /// atomic as drawn and adds the lighting frame's row of its selection, as drawObjectAtomic() does.
+    [[nodiscard]] std::vector<graphics::SceneLight> objectLights(rw::Atomic* atomic);
+    /// The lights a car part's atomic is drawn with (the objects' lights at squared distance 0 and the point lights its
+    /// sphere overlaps), by value, as drawCarAtomic() would put them in librw's world, with the lighting lab's layers
+    /// applied: for the frame description's draw of it (drawObject()). Counts the atomic as drawn and adds the lighting
+    /// frame's row of its selection, as drawCarAtomic() does.
+    [[nodiscard]] std::vector<graphics::SceneLight> carLights(rw::Atomic* atomic);
     /// Whether the debug tools' mesh views are set (setMeshViews()): they decide per atomic what is drawn, so the world
     /// renderer then draws its sectors through drawWorldAtomic().
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
@@ -84,8 +94,17 @@ class SceneLighting {
     void drawBlobShadows(std::span<const graphics::BlobShadow> shadows) const;
     /// Draws a world object's atomic with the objects' lights for its squared distance to the camera and the point
     /// lights its sphere overlaps, as a human's (docs/research/objects.md#models: the lights are chosen per object).
+    /// The tag covers ObjectRender_Draw's light selection alone (its call of LightManager_SelectLights, 0x0017de10);
+    /// the rest of the function (the fades, the tint, the states) is PlacedObjects::draw's. The selection's stand-ins,
+    /// point lights looked for even for a small object and never the pulse, are commented at PlacedObjects::draw.
     /// @orig 0x0017fd78 ObjectRender_Draw (unknown)
     void drawObjectAtomic(rw::Atomic* atomic);
+    /// Draws a car part's atomic with the objects' lights at squared distance 0 and the point lights its sphere
+    /// overlaps (docs/research/lighting.md#select). The tag covers CarInstance_Render's light selection alone; the rest
+    /// of it is ParkedCars::draw's. Its one stand-in, each part lit for its own sphere rather than once for the
+    /// clump's, is commented at the play mode's draw of the cars.
+    /// @orig 0x00172c70 CarInstance_Render (unknown)
+    void drawCarAtomic(rw::Atomic* atomic);
     /// Draws the glass panes (game axes) from `part_page1`, each a quad of its rectangle in its colour: alpha blended,
     /// Z tested, no Z write, no culling, no fog.
     /// @orig 0x001831c0 Instance_DrawOneSpriteIm3D (unknown)
@@ -147,12 +166,16 @@ class SceneLighting {
     // kind the caller's DrawKindScope names; first adds the lighting frame's row of its selection (recordSelection()).
     void renderInRig(rw::Atomic* atomic);
     // Draws `atomic` inside the rig's world, so librw lights it with the rig's lights, with its dual layer
-    // (drawLitAtomic()), through the draw layer while m_routed is set (the world's atomics, item 7 of
-    // docs/engine/renderer.md#order), else on librw directly (the objects and humans, which items 8 and 9 route).
+    // (drawLitAtomic()), through the draw layer while m_routed is set (the world's atomics, the objects' and the cars',
+    // items 7 and 8 of docs/engine/renderer.md#order), else on librw directly (the humans, which item 9 routes).
     void renderLit(rw::Atomic* atomic);
     // Adds the row of the selection useLights() kept to the lighting frame, for `atomic`: its caller from the draw
     // kind, its sphere and the inputs the draw functions pass (docs/research/lighting.md#select).
     void recordSelection(rw::Atomic* atomic);
+    // The lights of `selection` that the lab's layers keep, by value, for `atomic`'s frame-description draw: keeps the
+    // selection for the frame's row, counts the atomic as drawn and adds the row (recordSelection()).
+    [[nodiscard]] std::vector<graphics::SceneLight> lightsOf(const graphics::LightSelection& selection,
+                                                             rw::Atomic* atomic);
     // The light record `index` as the rig draws it: its type, the colour the lab's layers leave, its place.
     [[nodiscard]] graphics::SceneLight sceneLightOf(std::uint16_t index) const;
     // The librw light that mirrors record `index`, made on first use with the record's type.
@@ -173,9 +196,10 @@ class SceneLighting {
     std::optional<graphics::LightView> m_gameView;          // setGameView()
     graphics::LightingHold m_hold;                          // Hold lighting's moment
     std::optional<graphics::LightSelection> m_pending;      // useLights()'s selection, until its atomic is drawn
-    bool m_background = false;                              // the atomic drawn next is the background's
-    bool m_hiddenHuman = false;                             // noteHiddenHuman()
-    bool m_routed = false;                                  // the atomic drawn next goes through the draw layer
+    bool m_carPart = false;     // the atomic drawn next is a car part's, its selection at squared distance 0
+    bool m_background = false;  // the atomic drawn next is the background's
+    bool m_hiddenHuman = false; // noteHiddenHuman()
+    bool m_routed = false;      // the atomic drawn next goes through the draw layer
 };
 
 } // namespace coney::platform

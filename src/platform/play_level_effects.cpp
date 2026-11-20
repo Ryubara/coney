@@ -23,11 +23,12 @@ PlayLevelEffects::PlayLevelEffects(RenderEngine& engine, const io::Wad& wad, con
     : m_engine(engine), m_effects(effects), m_particles(wad, engine.drawsPixels(), print), m_smoke(wad, print),
       m_water(wad, print) {
     if (cars != nullptr) {
-        m_cars = std::make_unique<ParkedCars>(wad, *cars, engine.drawsPixels(), std::move(print));
+        m_cars =
+            std::make_unique<ParkedCars>(wad, *cars, engine.drawsPixels(), std::move(print), &engine.sceneAssets());
     }
 }
 
-void PlayLevelEffects::drawCars(const std::function<void(rw::Atomic*)>& render, graphics::CarPass pass) {
+void PlayLevelEffects::drawCars(const std::function<void(const ObjectDraw&)>& render, graphics::CarPass pass) {
     if (m_cars && m_engine.drawsPixels()) {
         m_cars->draw(render, pass);
     }

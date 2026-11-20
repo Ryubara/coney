@@ -9,19 +9,33 @@
 #include "characters/character_list.h"
 #include "gamemodes/load_entry_mode.h"
 #include "platform/level_file.h"
+#include "platform/scene_assets.h"
 #include "world/level_object.h"
 
 namespace coney::platform {
 
 std::expected<FirstTexture, Error> loadFirstTexture(const io::Wad& wad, const io::WadEntry& entry,
-                                                    const chunk::ChunkHandlerTable& table, bool forDrawing) {
+                                                    const chunk::ChunkHandlerTable& table, bool forDrawing,
+                                                    SceneAssets* assets) {
     auto dictionaries = loadTextureDictionaries(wad, entry, table);
     if (!dictionaries) {
         return std::unexpected(std::move(dictionaries.error()));
     }
+    // The first texture into the scene assets while its raster is as loaded; one that does not convert keeps no id.
+    graphics::TextureId id;
+    if (assets != nullptr && !dictionaries->empty()) {
+        if (const std::vector<rw::Texture*> textures = dictionaries->front().textures(); !textures.empty()) {
+            if (auto added = assets->addTexture(*textures.front()); added) {
+                id = *added;
+            }
+        }
+    }
     // The NULL engine cannot convert; its textures stay as read.
     for (TextureDictionary& dictionary : *dictionaries) {
         if (auto converted = forDrawing ? dictionary.convertForDrawing() : std::expected<void, Error>{}; !converted) {
+            if (assets != nullptr) {
+                assets->removeTexture(id);
+            }
             return std::unexpected(std::move(converted.error()));
         }
     }
@@ -31,11 +45,13 @@ std::expected<FirstTexture, Error> loadFirstTexture(const io::Wad& wad, const io
         result.texture = textures.empty() ? nullptr : textures.front();
     }
     result.dictionaries = std::move(*dictionaries);
+    result.id = id;
     return result;
 }
 
 std::expected<ObjectModel, ObjectFailure> loadObjectModel(const io::Wad& wad, const world_objects::ObjectRecord& record,
-                                                          const chunk::ChunkHandlerTable& table, bool forDrawing) {
+                                                          const chunk::ChunkHandlerTable& table, bool forDrawing,
+                                                          SceneAssets* assets) {
     const auto failed = [](bool noModel, Error error) {
         return std::unexpected(ObjectFailure{noModel, std::move(error)});
     };
@@ -54,7 +70,7 @@ std::expected<ObjectModel, ObjectFailure> loadObjectModel(const io::Wad& wad, co
     if (models.empty() || models.front().object == nullptr) {
         return failed(true, Error{ErrorCode::Invalid, std::format("model {:#010x}: no model", record.modelHash)});
     }
-    auto texture = loadFirstTexture(wad, **texturesEntry, table, forDrawing);
+    auto texture = loadFirstTexture(wad, **texturesEntry, table, forDrawing, assets);
     if (!texture) {
         return failed(false, texture.error());
     }

@@ -132,6 +132,9 @@ FetchContent_Declare(SDL3 GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
 # Windows and macOS. A librw build has exactly one platform, fixed at compile time; Coney's headless mode installs
 # librw's NULL device at run time instead (src/platform/render_engine.cpp), so no second build is needed.
 # The library target is librw::librw (an alias of librw).
+# Coney relies on librw's internal layout at this pin: src/platform/draw_calls.cpp (ps2Texels) reads a PS2 raster's data
+# block through rw::ps2::Ps2Raster (src/ps2/rwps2.h, readNativeTexture in src/ps2/ps2raster.cpp) to hash only the
+# texels and palette from the disc. Check that function against the new source whenever this pin moves.
 set(LIBRW_PLATFORM "GL3" CACHE STRING "" FORCE)
 set(LIBRW_GL3_GFXLIB "SDL3" CACHE STRING "" FORCE)
 set(LIBRW_TOOLS OFF CACHE BOOL "" FORCE)
@@ -226,14 +229,16 @@ if(CONEY_SHADERS)
 endif()
 
 # Dear ImGui as a static library, with the debug tools only. Its OpenGL 3 backend loads the GL functions itself (its
-# bundled loader), so it needs no GL import library; on Linux and macOS the loader opens the GL library with dlopen.
+# bundled loader), so it needs no GL import library; on Linux and macOS the loader opens the GL library with dlopen. Its
+# SDL GPU backend (the GPU renderer's overlay, docs/engine/gpu-renderer.md#overlay) carries its own shaders.
 if(CONEY_DEBUG_TOOLS)
     FetchContent_MakeAvailable(imgui)
     add_library(imgui STATIC
         ${imgui_SOURCE_DIR}/imgui.cpp ${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
         ${imgui_SOURCE_DIR}/imgui_widgets.cpp
         ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
-        ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp)
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlgpu3.cpp)
     target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
                                                    ${imgui_SOURCE_DIR}/misc/cpp)
     # No ImGui API that a later version removes, so an update fails loudly instead of compiling against stale names.

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <limits>
 #include <system_error>
+#include <utility>
 
 namespace coney::debug {
 
@@ -331,6 +332,45 @@ std::vector<std::string> selectionColumns() {
         }
     }
     return columns;
+}
+
+std::vector<TraceLight> traceLightsOf(const graphics::FrameSelection& selection) {
+    std::vector<TraceLight> lights;
+    for (const graphics::ChosenLight& l : selection.chosen()) {
+        lights.push_back(TraceLight{renderWareLightType(l.type), l.radius, l.colour, l.position});
+    }
+    return lights;
+}
+
+std::vector<std::string> originalSelectionLines(std::span<const TraceCall> trace,
+                                                const graphics::FrameSelection& selection) {
+    const TraceCall* call = traceCallNear(trace, selectionCallerAddress(selection.caller), selection.sphere.centre);
+    if (call == nullptr) {
+        return {
+            std::format("no {} call of the trace within 5 cm of this atomic", selectionCallerName(selection.caller))};
+    }
+    // The first slot where the two lists differ, the shorter's length when one runs out first.
+    const std::vector<TraceLight> coney = traceLightsOf(selection);
+    std::size_t first = 0;
+    while (first < call->chosen.size() && first < coney.size() && sameLight(call->chosen[first], coney[first])) {
+        ++first;
+    }
+    const bool same = first == call->chosen.size() && first == coney.size();
+    const auto row = static_cast<std::size_t>(call - trace.data());
+    std::vector<std::string> lines{
+        std::format("trace call {} (tick {}): {} lights, {}", row, call->tick, call->chosen.size(),
+                    same ? std::string("the same as Coney's") : std::format("differs from Coney's at slot {}", first))};
+    // One line per slot of either list: the original's light, then Coney's where it is another.
+    for (std::size_t slot = 0; slot < std::max(call->chosen.size(), coney.size()); ++slot) {
+        const bool mine = slot < call->chosen.size();
+        const bool theirs = slot < coney.size();
+        std::string line = std::format("#{} {}", slot, mine ? traceLightText(call->chosen[slot]) : "none");
+        if (!mine || !theirs || !sameLight(call->chosen[slot], coney[slot])) {
+            line += std::format("; Coney's: {}", theirs ? traceLightText(coney[slot]) : "none");
+        }
+        lines.push_back(std::move(line));
+    }
+    return lines;
 }
 
 std::string selectionsCsv(const graphics::LightingFrame& frame) {

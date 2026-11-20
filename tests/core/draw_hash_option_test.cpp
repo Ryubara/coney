@@ -21,7 +21,9 @@ template <std::size_t N> auto parse(const std::array<std::string_view, N>& args)
 
 TEST_CASE("the draw hash option needs frames and a run that draws frames", "[options]") {
     // Expected: --draw-hash prints the last frame's stream (docs/engine/renderer.md#comparing), so it needs --frames,
-    // works headless and with a window, and not with the console job --load or with --render-references.
+    // works headless and with a window, and not with the console job --load (refused with a message naming
+    // --draw-hash). --render-references is refused before this rule is reached (it cannot take --frames at all), so
+    // it is not a case here.
     auto headless = parse(std::array<std::string_view, 4>{"--frames", "3", "--draw-hash", "--headless"});
     REQUIRE(headless.has_value());
     CHECK(headless->drawHash);
@@ -31,5 +33,9 @@ TEST_CASE("the draw hash option needs frames and a run that draws frames", "[opt
     CHECK_FALSE(parse(std::array<std::string_view, 0>{}).value_or(coney::Options{}).drawHash);
     CHECK_FALSE(parse(std::array<std::string_view, 1>{"--draw-hash"}).has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 4>{"--draw-hash", "--draw-hash", "--frames", "1"}).has_value());
+    auto withLoad =
+        parse(std::array<std::string_view, 7>{"--disc", "x", "--load", "level1.lev", "--frames", "1", "--draw-hash"});
+    REQUIRE_FALSE(withLoad.has_value());
+    CHECK(withLoad.error().message.find("--draw-hash") != std::string::npos);
     CHECK(coney::usageText().find("--draw-hash") != std::string_view::npos);
 }

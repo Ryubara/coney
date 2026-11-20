@@ -571,7 +571,8 @@ ordinary claim.
 
 The task file starts with a small YAML block the tools read (`task`, `issues`, `kind`, `claimant`, `claimed_at`,
 `scope`, `terms`, `parent` in a fix task, and `finishes: false` in a task that does not finish its issue, so the pull
-request has no `Fixes` line and the issue stays open) and has these sections, in this order: Issues, Goal, Done, Scope,
+request says `Refs #N` instead of `Fixes #N` and the issue stays open; a task that marks a Done item `(left for #N)`
+must say it: [Done items](pr.md#done-items)) and has these sections, in this order: Issues, Goal, Done, Scope,
 Where to look, Searched, not related, Expected tests, Decision points, Related PRs and open questions. Goal and Done
 start as the issue's Summary and "What done means", quoted line by line (with a leading `>`) so that no line of issue
 text can start a section of the file; Expected tests says "no fails-first test" for `docs` and `tooling`; the
@@ -799,11 +800,15 @@ that cite it ([Merging safely](how-we-work.md#merging)):
 
 A pull request merges only when every task in it is finished. Its Checklist lists what it finishes, each item ticked,
 and CI's `body` check refuses a description with an unticked `- [ ]` item, the template's `...` placeholder included
-(`coney-tools pr check-body`, rules in `pull_requests.checklist` of `.github/conventions.yml`). There is no
-"Remaining" list: work the pull request does not finish is not part of it and is not named in it, and a pull request
-that finishes an issue says `Fixes #N` in its Summary. Pull requests merged before the rule's own pull request did
-(2026-10-12 at 10:39 UTC) keep the Remaining lists they were written with; their items are open issues and go
-through the normal queue, and the audit still holds those lists to the older rule (each unchecked item names an
+(`coney-tools pr check-body`, rules in `pull_requests.checklist` of `.github/conventions.yml`). There is no "Remaining"
+list: work the pull request does not finish is not part of it and is not named in it, and a pull request that finishes
+an issue says `Fixes #N` in its Summary. There is one narrow exception, for the task's own Done section: an item that
+task deliberately leaves to a follow-up is marked `(left for #N)` in `TASK.md`, and the generated description lists it
+under `Left for a follow-up (not part of this pull request):` with that note, as a plain bullet and never a checkbox, so
+the Checklist's ticked items still claim only what the pull request finishes; the task then says `finishes: false` and
+the Summary says `Refs #N`, not `Fixes` ([Done items](pr.md#done-items)). Pull requests merged before the rule's own
+pull request did (2026-10-12 at 10:39 UTC) keep the Remaining lists they were written with; their items are open issues
+and go through the normal queue, and the audit still holds those lists to the older rule (each unchecked item names an
 issue as `#N`).
 
 - **The author** finishes the task it was given. Work it finds on the way that is not part of the task (a bug, a gap, an

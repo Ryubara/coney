@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "core/story_choices.h"
 #include "core/story_graph.h"
 #include "core/story_manifest.h"
 
@@ -17,8 +18,26 @@ namespace coney::story {
 
 /// An enabled story mod, as the merge takes it: its name and its manifest's `[story]` section.
 struct StoryMod {
-    std::string name;   ///< The mod's `[project] name`; its missions' ids are `<name>.<id>`.
-    StorySection story; ///< Its missions, in manifest order.
+    std::string name;          ///< The mod's `[project] name`; its missions' ids are `<name>.<id>`.
+    StorySection story;        ///< Its missions, in manifest order.
+    std::string title{};       ///< What the Mods screen calls the mod; its name when empty.
+    std::string packageHash{}; ///< The package hash `enabled.toml` records; what a story choice is kept with.
+};
+
+/// A set of missions the merge has to put in some order: two or more missions of the enabled mods with one `after`
+/// anchor, or with one `replace` target (the first takes the place, the others are refused). Refused missions are
+/// members too, so a choice names the whole group.
+struct StoryGroup {
+    GroupKind kind = GroupKind::Anchor;
+    std::string anchor; ///< The `after` or `replace` value the missions share, as the manifests write it.
+    std::vector<std::string>
+        defaultOrder; ///< The members' story ids in turn order: mods in load order, then manifest order.
+    std::vector<std::string>
+        order{};         ///< The order the merge uses: the player's choice when one applies, else the default.
+    bool chosen = false; ///< The player's choice applies, so `order` is theirs.
+    bool stale = false;  ///< A stored choice for this group was ignored: a mod's package or the group changed.
+
+    friend bool operator==(const StoryGroup&, const StoryGroup&) = default;
 };
 
 /// A mission the merge placed in the chain.
@@ -49,7 +68,16 @@ struct StoryMerge {
     std::vector<PlacedMission> placed;  ///< The missions placed, in the order the merge placed them.
     std::vector<StoryRefusal> refusals; ///< The missions refused, in the order they were refused.
     bool modded = false;                ///< Any story mod was given: every story game is then a modded session.
+    std::vector<StoryGroup> groups;     ///< Every group of two or more missions on one anchor or one replaced mission.
 };
+
+/// The groups of `storyMods`' missions that share an anchor or a replaced mission, in the order their first mission
+/// takes its turn, each with the order the merge uses. A stored choice applies to a group when it has the group's kind
+/// and anchor, names exactly the group's missions, and every mission's mod has the package hash the choice records;
+/// otherwise the group keeps its default order and is marked stale.
+/// @coney-only the story graph for mods (docs/guides/studio/mission-mods.md#graph-merge); the original has no mods
+[[nodiscard]] std::vector<StoryGroup> storyGroups(std::span<const StoryMod> storyMods,
+                                                  std::span<const StoryChoice> choices = {});
 
 /// Merges the missions of `storyMods` (the enabled mods with a `[story]` section, in load order) into `seed` (the
 /// original's chain): each mod's missions in manifest order, mods in load order. A mission goes right after its `after`
@@ -61,7 +89,12 @@ struct StoryMerge {
 /// guard that does not name the step after the anchor at the mission's turn, every mission of a cycle (one message),
 /// the second replacement of a mission, a replacement of a hub chapter and an id already in the story. With no story
 /// mod the graph is `seed`, its hash unchanged.
+///
+/// `choices` are the player's, from `enabled.toml`: the missions of each group they apply to (storyGroups()) take
+/// their turns in the chosen order, in the group's own turn slots, so the first of two missions on one anchor is
+/// placed nearest it, and the first of two replacements takes the place. Every other rule is unchanged.
 /// @coney-only the story graph for mods (docs/guides/studio/mission-mods.md#story-graph); the original has no mods
-[[nodiscard]] StoryMerge mergeStory(const StoryGraph& seed, std::span<const StoryMod> storyMods);
+[[nodiscard]] StoryMerge mergeStory(const StoryGraph& seed, std::span<const StoryMod> storyMods,
+                                    std::span<const StoryChoice> choices = {});
 
 } // namespace coney::story

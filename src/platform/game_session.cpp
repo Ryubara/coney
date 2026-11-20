@@ -354,6 +354,8 @@ std::expected<std::unique_ptr<GameMode>, Error> GameSession::loadLevel(const Lev
     if (m_humansTrace) {
         (*mode)->traceHumansTo(m_humansTrace);
     }
+    // Network play's view of the humans: the host's snapshots and `--digest`.
+    (*mode)->shareHumansWith(m_netHumans);
     if (LevelSetup setup = std::exchange(m_firstLevelSetup, LevelSetup{}); setup) {
         if (auto done = setup(**mode); !done) {
             return std::unexpected(std::move(done.error()));

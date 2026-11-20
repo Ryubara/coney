@@ -1566,7 +1566,9 @@ called with the entry's level number and its 1-based checkpoint.
 **Notes.** The choice comes from 0x001bdd38: level = level record +0x14d8 of the entry's level index, checkpoint = entry
 +0x70 + 1; for a checkpoint above 1 it also calls 0x0041e040(W_GameState + 0x480, 1) and resets and re-copies the
 statistics (0x00422930, 0x00422c60) before the callback. Callbacks run through the script system by name, so dotted
-names work. The menu's list and layout are not traced.
+names work. The screen's areas, list, input and layout: [Front end: mission
+select](../../research/frontend.md#fn-missionselecthud); Coney's is MissionSelectMode, whose selected mission shows only
+its checkpoint letter until #1451.
 
 - **Evidence:** confirmed (code) at `0x00155180`, `0x0015d5e0`, `0x0015d728`; detail: traced
 - **Wrapper** `0x0036ec40` (registered by `RegisterBindings`); **calls** `0x00155180` `MissionSelect_Show`, `0x0015d5e0`

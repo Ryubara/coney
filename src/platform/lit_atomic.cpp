@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/lit_atomic.h"
 
+#include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 
 #include <rw.h>
 
@@ -40,6 +43,41 @@ void destroyLight(rw::Light* light) {
     if (frame != nullptr) {
         frame->destroy();
     }
+}
+
+// Sets render state `state` to `value` only when it differs from the one in force: a 3D draw's states are those the
+// pass set before it, so nothing is set again and the draw stream sees what it saw before
+// (docs/engine/renderer.md#comparing).
+void setIfChanged(rw::int32 state, rw::uint32 value) {
+    if (draw::getRenderState(state) != value) {
+        draw::setRenderState(state, value);
+    }
+}
+
+// librw's cull mode for `faces`.
+rw::uint32 rwCull(graphics::CullFaces faces) {
+    switch (faces) {
+    case graphics::CullFaces::None:
+        return rw::CULLNONE;
+    case graphics::CullFaces::Back:
+        return rw::CULLBACK;
+    case graphics::CullFaces::Front:
+        return rw::CULLFRONT;
+    }
+    return rw::CULLBACK;
+}
+
+// librw's alpha test function for `test`.
+rw::uint32 rwAlphaTest(graphics::AlphaTest test) {
+    switch (test) {
+    case graphics::AlphaTest::Always:
+        return rw::ALPHAALWAYS;
+    case graphics::AlphaTest::GreaterEqual:
+        return rw::ALPHAGREATEREQUAL;
+    case graphics::AlphaTest::Less:
+        return rw::ALPHALESS;
+    }
+    return rw::ALPHAALWAYS;
 }
 
 } // namespace
@@ -152,6 +190,109 @@ void LightRig::use(std::span<const graphics::SceneLight> lights) {
         placeLight(*light, values);
         m_world->addLight(light);
         ++m_inWorld;
+    }
+}
+
+void applySceneStates(const graphics::SceneStates& states) {
+    setIfChanged(rw::ZTESTENABLE, states.depthTest ? 1 : 0);
+    setIfChanged(rw::ZWRITEENABLE, states.depthWrite ? 1 : 0);
+    setIfChanged(rw::CULLMODE, rwCull(states.cull));
+    setIfChanged(rw::FOGENABLE, states.fog ? 1 : 0);
+    // librw packs the fog colour red in the low byte.
+    const graphics::Rgba fog = states.fogColour;
+    setIfChanged(rw::FOGCOLOR, static_cast<rw::uint32>(fog.r) | static_cast<rw::uint32>(fog.g) << 8U |
+                                   static_cast<rw::uint32>(fog.b) << 16U | static_cast<rw::uint32>(fog.a) << 24U);
+    setIfChanged(rw::SRCBLEND, states.alphaBlend ? rw::BLENDSRCALPHA : rw::BLENDONE);
+    setIfChanged(rw::DESTBLEND, states.alphaBlend ? rw::BLENDINVSRCALPHA : rw::BLENDZERO);
+    setIfChanged(rw::ALPHATESTFUNC, rwAlphaTest(states.alphaTest));
+}
+
+graphics::SceneStates sceneStatesInForce() {
+    graphics::SceneStates states;
+    states.depthTest = draw::getRenderState(rw::ZTESTENABLE) != 0;
+    states.depthWrite = draw::getRenderState(rw::ZWRITEENABLE) != 0;
+    switch (draw::getRenderState(rw::CULLMODE)) {
+    case rw::CULLNONE:
+        states.cull = graphics::CullFaces::None;
+        break;
+    case rw::CULLFRONT:
+        states.cull = graphics::CullFaces::Front;
+        break;
+    default:
+        states.cull = graphics::CullFaces::Back;
+        break;
+    }
+    states.fog = draw::getRenderState(rw::FOGENABLE) != 0;
+    // librw packs the fog colour red in the low byte.
+    const std::uint32_t fog = draw::getRenderState(rw::FOGCOLOR);
+    states.fogColour = graphics::Rgba{static_cast<std::uint8_t>(fog & 0xFFU), static_cast<std::uint8_t>(fog >> 8U),
+                                      static_cast<std::uint8_t>(fog >> 16U), static_cast<std::uint8_t>(fog >> 24U)};
+    states.alphaBlend = draw::getRenderState(rw::SRCBLEND) == rw::BLENDSRCALPHA;
+    switch (draw::getRenderState(rw::ALPHATESTFUNC)) {
+    case rw::ALPHAGREATEREQUAL:
+        states.alphaTest = graphics::AlphaTest::GreaterEqual;
+        break;
+    case rw::ALPHALESS:
+        states.alphaTest = graphics::AlphaTest::Less;
+        break;
+    default:
+        states.alphaTest = graphics::AlphaTest::Always;
+        break;
+    }
+    return states;
+}
+
+MaterialChange::MaterialChange(rw::Atomic& atomic, const graphics::Material3d& material) : m_geometry(atomic.geometry) {
+    rw::Geometry* geometry = m_geometry;
+    switch (material.colour) {
+    case graphics::MaterialColour::Fade:
+        // Written only where it differs, as the original does.
+        for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
+            rw::Material* changed = geometry->matList.materials[i];
+            if (changed->color.alpha != material.fade) {
+                changed->color.alpha = material.fade;
+            }
+        }
+        break;
+    case graphics::MaterialColour::Tint: {
+        // The tint becomes the first material's colour, replacing it, and the others stay as they are, as
+        // ObjectRender_Draw writes it (docs/research/objects.md#tint). The materials are shared by every object of a
+        // type, so the first one's own colour is kept to put back (the original leaves it: every object's draw writes
+        // it again, so nothing else sees it).
+        const graphics::Rgba tint = material.tint;
+        if (geometry->matList.numMaterials > 0) {
+            rw::RGBA& colour = geometry->matList.materials[0]->color;
+            m_own.push_back({colour.red, colour.green, colour.blue, colour.alpha});
+            colour = rw::RGBA{tint.r, tint.g, tint.b, tint.a};
+        }
+        // librw multiplies by the material's colour only for a geometry that modulates: set for the draw when the
+        // colour changes anything.
+        m_flags = geometry->flags;
+        m_restore = true;
+        if (tint != graphics::kWhite) {
+            geometry->flags |= rw::Geometry::MODULATE;
+        }
+        break;
+    }
+    case graphics::MaterialColour::Paint: {
+        const rw::RGBA colour{material.tint.r, material.tint.g, material.tint.b, material.tint.a};
+        for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
+            geometry->matList.materials[i]->color = colour;
+        }
+        break;
+    }
+    }
+}
+
+// Puts back what a tint changed: the geometry's flags and the first material's own colour.
+MaterialChange::~MaterialChange() {
+    if (!m_restore) {
+        return;
+    }
+    m_geometry->flags = m_flags;
+    for (std::size_t i = 0; i < m_own.size(); ++i) {
+        const std::array<std::uint8_t, 4>& own = m_own[i];
+        m_geometry->matList.materials[i]->color = rw::RGBA{own[0], own[1], own[2], own[3]};
     }
 }
 

@@ -711,6 +711,37 @@ def test_a_wrong_clip_rule_is_refused(change: tuple[str, object], where: str) ->
         conventions_with(change)
 
 
+def test_the_summary_rule_is_read_and_optional() -> None:
+    """A default branch cut before the key (what `pr text` reads) asks for no limit; the real file sets one."""
+    rule = conventions_with().pull_requests.summary
+    assert rule is not None and rule.max_paragraphs >= 2 and rule.max_paragraph_characters > 0
+    assert rule.since.utcoffset() == timedelta(0)
+    assert conventions_with(("pull_requests.summary", REMOVE)).pull_requests.summary is None
+
+
+@pytest.mark.parametrize(
+    ("change", "where"),
+    [
+        (("pull_requests.summary.max_paragraphs", 0), r"pull_requests\.summary\.max_paragraphs"),
+        (("pull_requests.summary.max_paragraph_characters", 0), r"pull_requests\.summary\.max_paragraph_characters"),
+        (("pull_requests.summary.since", "soon"), r"pull_requests\.summary\.since"),
+        (("pull_requests.summary.since", REMOVE), r"pull_requests\.summary"),
+        (("pull_requests.summary.max_paragraphs", REMOVE), r"pull_requests\.summary"),
+    ],
+)
+def test_a_wrong_summary_rule_is_refused(change: tuple[str, object], where: str) -> None:
+    with pytest.raises(ConventionsError, match=where):
+        conventions_with(change)
+
+
+def test_the_closing_rule_names_the_refs_keyword_and_is_optional_in_the_file() -> None:
+    assert conventions_with().pull_requests.closing.refs == "Refs"
+    assert conventions_with(("pull_requests.closing.refs", REMOVE)).pull_requests.closing.refs == "Refs"
+    assert conventions_with(("pull_requests.closing.refs", "Part of")).pull_requests.closing.refs == "Part of"
+    with pytest.raises(ConventionsError, match=r"pull_requests\.closing\.refs"):
+        conventions_with(("pull_requests.closing.refs", ""))
+
+
 def test_a_runtime_area_must_be_a_commit_title_area() -> None:
     with pytest.raises(ConventionsError, match=r"pull_requests\.runtime\.areas.*commits\.title\.areas"):
         conventions_with(("pull_requests.runtime.areas", ["gameplay", "not-an-area"]))

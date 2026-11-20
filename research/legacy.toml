@@ -83,7 +83,6 @@ verified = 1
 evidence = 20
 address-resolve = 1
 history = 2
-stale-wording = 2
 
 ["docs/research/characters.md"]
 front-matter = 1

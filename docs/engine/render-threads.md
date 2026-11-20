@@ -16,7 +16,7 @@ changes is the thread that runs it and what drawing may read.
 ## What it gains {#threads-gain}
 
 The gain is an even frame time, not more frames a second. A step costs about 1.9 ms in the hub, about 3-3.7 ms with
-50 fighters ([Baseline](renderer.md#baseline)) and about 4 ms with 100 in free roam (the frame-spike study in
+50 fighters ([Baseline](renderer-performance.md#baseline)) and about 4 ms with 100 in free roam (the frame-spike study in
 [Performance](../guides/performance.md)); drawing costs about 1.4-3.6 ms (the Baseline's render plus present: 1.4 ms in
 the hub, 1.7 in the street, 3.6 with 50 fighters).
 

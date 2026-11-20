@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The named scenes of `coney-tools perf bench --scene` (docs/engine/renderer.md#benchmark).
+"""The named scenes of `coney-tools perf bench --scene` (docs/engine/renderer-performance.md#benchmark).
 
 A scene is the same work on every run: a lockstep test-mode run of one level and checkpoint with a pinned camera, a
 fixed seed (Coney's bench seeds its crowd) and a fixed number of fighters, frames and render size. The renderer work
