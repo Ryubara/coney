@@ -179,7 +179,8 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
     // An AI the hit does not kill is busy for his class's +0x32 ms (record +0x108, which Human_IsBusy reads). The
     // original writes it after its block test, so a blocked or ducked hit, which has returned above, sets nothing.
     // Coney stand-in: not being a player stands for the brain kind not 0, and a lethal hit sets nothing even while
-    // falling (states 0x1c00000000, which Coney's fighter does not keep).
+    // falling (states 0x1c00000000). The original's branch for that is left out because it can hardly run: the
+    // function returns at entry for a falling human (0x00266020), so only a state set during the update reaches it.
     if (!m_player && hit.damage != 0 && !m_health.depleted()) {
         m_busyUntilMs = input.nowMs + static_cast<std::uint64_t>(std::max(0, m_victim.powerClass().busyAfterHitMs));
     }
