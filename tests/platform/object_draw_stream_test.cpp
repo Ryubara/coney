@@ -200,13 +200,15 @@ DrawStream drawObjectScene(const ObjectScene& scene, const SceneInspection& insp
 
 TEST_CASE("the object scene's draw stream has its expected hash", "[platform][draw-stream][objects]") {
     // Expected: ../engine/renderer.md#comparing, Coney's own recording: taken from this scene when the objects' and
-    // cars' renders were routed through the draw layer; the move onto the frame description keeps it.
+    // cars' renders were routed through the draw layer; the move onto the frame description keeps it. Taken again
+    // when the headless layer's unset states began to read back as librw's GL3 device starts them (#1205): the alpha
+    // test the draws record is then GEQUAL, as live.
     const DrawStream stream = drawObjectScene(ObjectScene{});
     // Two crates and the car's 26 parts, one draw each (20 opaque, then the 6 glass parts: graphics::kCarGlassMask);
     // no dual layer (no MatFX material) and no world.
     CHECK(stream.counts().atomicDraws == 28);
     CHECK(stream.counts().vertices == 112); // each atomic's four strip vertices
-    CHECK(stream.hash() == 0xd5c9dce7264f1f19ULL);
+    CHECK(stream.hash() == 0x952ee961e9bcbbc1ULL);
 }
 
 TEST_CASE("the object scene hashes the same twice and sees a tint and a paint", "[platform][draw-stream][objects]") {

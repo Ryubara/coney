@@ -78,6 +78,12 @@ rw::Atomic* atomicOf(const chunk::LoadedObject* object) { return levelAtomic(obj
 
 void placeWorldCamera(rw::Camera* camera, const WorldView& view) { placeCamera(camera, view); }
 
+graphics::SceneCamera sceneCameraOf(const WorldView& view) {
+    // Stub for the test commit: a default camera.
+    (void)view;
+    return {};
+}
+
 world::FrameMatrix cloudFrame(const world::FrameMatrix& base, std::uint64_t nowMs) {
     // Each row, and the position, turned by -a about y, as the original's camera turned by +a shows the model:
     // (x, y, z) -> (x cos a - z sin a, y, x sin a + z cos a), clockwise seen from above.

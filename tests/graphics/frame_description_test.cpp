@@ -320,3 +320,45 @@ TEST_CASE("a skinned scene draw keeps its pose in the frame's bones", "[graphics
     frame.addSceneDraw(still, {}, {}, {});
     CHECK(frame.bonesOf(std::get<ScenePass>(frame.passes()[0]).draws[0]).empty());
 }
+
+TEST_CASE("a scene camera starts a scene pass that later scene passes of the frame keep",
+          "[graphics][frame-description]") {
+    // Expected: ../engine/renderer.md#frame-description; FrameDescription::setSceneCamera's contract
+    // (src/graphics/frame_description.h): the draws after it are seen through it, a scene pass with no draw yet takes
+    // it, a scene pass begun after a 2D draw keeps it, and the next frame forgets it.
+    FrameDescription frame;
+    frame.begin(FrameStart{});
+    coney::graphics::SceneCamera sky;
+    sky.farClip = 5.0F;
+    coney::graphics::SceneCamera world;
+    world.farClip = 300.0F;
+    world.fogStart = 150.0F;
+    frame.setSceneCamera(sky);
+    frame.setSceneCamera(world); // no draw yet: the same pass takes it
+    Draw3d draw;
+    draw.mesh = MeshId{1};
+    frame.addSceneDraw(draw, {}, {}, {});
+    const LogicalQuad quad{0.0F, 0.0F, 10.0F, 10.0F, UvRect{}, Rgba{}};
+    frame.addQuads(Material2d{}, std::span<const LogicalQuad>(&quad, 1), kPillarbox);
+    frame.addSceneDraw(draw, {}, {}, {});
+    coney::graphics::SceneCamera other = world;
+    other.nearClip = 2.0F;
+    frame.setSceneCamera(other); // after a draw: a new pass
+    frame.addSceneDraw(draw, {}, {}, {});
+
+    REQUIRE(frame.passes().size() == 4);
+    const auto cameraOf = [&frame](std::size_t at) { return std::get<ScenePass>(frame.passes()[at]).camera; };
+    REQUIRE(std::holds_alternative<ScenePass>(frame.passes()[0]));
+    CHECK(cameraOf(0) == world);
+    CHECK(std::get<ScenePass>(frame.passes()[0]).draws.size() == 1);
+    REQUIRE(std::holds_alternative<ScenePass>(frame.passes()[2]));
+    CHECK(cameraOf(2) == world);
+    REQUIRE(std::holds_alternative<ScenePass>(frame.passes()[3]));
+    CHECK(cameraOf(3) == other);
+
+    // The next frame forgets it: a scene draw before any camera has none.
+    frame.begin(FrameStart{});
+    frame.addSceneDraw(draw, {}, {}, {});
+    REQUIRE(frame.passes().size() == 1);
+    CHECK_FALSE(cameraOf(0).has_value());
+}

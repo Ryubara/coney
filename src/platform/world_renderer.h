@@ -38,6 +38,11 @@ struct WorldView {
 /// the far clip, and the fog plane at the view's fog start of it. Shared by the world renderer and the sandbox's.
 void placeWorldCamera(rw::Camera* camera, const WorldView& view);
 
+/// The frame description's camera for `view`, as placeWorldCamera() places librw's: at the view's position with its
+/// axes (the screen's right as `right`), its view window, the near clip, the draw distance as the far clip and the fog
+/// from the view's fog start of it (docs/engine/renderer.md#frame-description).
+[[nodiscard]] graphics::SceneCamera sceneCameraOf(const WorldView& view);
+
 /// Draws a level with librw in the order of the original's viewport pass, as far as Coney has its parts: the level's
 /// background (LevelObject_RenderBackground: sky box, turning cloud box, skyline, then a Z-only clear), then the world
 /// pass (WorldManager_Render): the level world's light glows, the `s` world's collected sectors and the `d` world's,

@@ -56,7 +56,9 @@ enum class MeshTopology : std::uint8_t {
 /// it; the frame description resolves it to a TextureId when it draws.
 struct MeshMaterial {
     Rgba colour{255, 255, 255, 255};
-    std::string texture; ///< Empty for an untextured material.
+    std::string texture;  ///< Empty for an untextured material.
+    float ambient = 1.0F; ///< RenderWare's surface property: how much of the ambient light the material takes.
+    float diffuse = 1.0F; ///< How much of the other lights it takes.
 
     friend bool operator==(const MeshMaterial&, const MeshMaterial&) = default;
 };
@@ -88,6 +90,10 @@ struct MeshData {
     MeshAttributes attributes;
     MeshTopology topology = MeshTopology::TriangleList;
     MeshBounds bounds;
+    /// Lit by the scene's lights (RenderWare's geometry flag LIGHT); else drawn by its prelighting alone.
+    bool lit = false;
+    /// Its colours multiplied by its materials' colours (the geometry flag MODULATE); else by white.
+    bool modulate = false;
 
     friend bool operator==(const MeshData&, const MeshData&) = default;
 };

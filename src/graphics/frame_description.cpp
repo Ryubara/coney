@@ -19,6 +19,7 @@ void FrameDescription::begin(const FrameStart& start) {
     m_lights.clear();
     m_sceneTextures.clear();
     m_bones.clear();
+    m_camera.reset();
 }
 
 FrameTextureId FrameDescription::texture(const Texture* texture) {
@@ -98,6 +99,11 @@ ScenePass& FrameDescription::scene() {
 }
 
 void FrameDescription::addScreenPass(const ScreenPass& pass) { m_passes.emplace_back(pass); }
+
+void FrameDescription::setSceneCamera(const SceneCamera& camera) {
+    // Stub for the test commit: the camera is not kept yet.
+    (void)camera;
+}
 
 void FrameDescription::addSceneDraw(Draw3d draw, std::span<const SceneLight> lights,
                                     std::span<const TextureId> textures, std::span<const TextureId> dualTextures,

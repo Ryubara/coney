@@ -7,6 +7,7 @@
 // through the draw layer (item 7's first commit), and the move of the sectors onto the frame description must leave it
 // as it is. A change to it fails CI until the pull request explains it and updates the hash. The original has no
 // counterpart.
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -174,12 +175,14 @@ DrawStream drawWorldScene(const WorldScene& scene) {
 
 TEST_CASE("the world scene's draw stream has its expected hash", "[platform][draw-stream][world]") {
     // Expected: ../engine/renderer.md#comparing, Coney's own recording: taken from this scene when the world's
-    // renders were routed through the draw layer; the move onto the frame description keeps it.
+    // renders were routed through the draw layer; the move onto the frame description keeps it. Taken again when the
+    // headless layer's unset states began to read back as librw's GL3 device starts them (#1205): the alpha test the
+    // sectors record is then GEQUAL, as live.
     const DrawStream stream = drawWorldScene(WorldScene{});
     // Both sectors, one draw each: no dual layer (their material has no MatFX), no background (no level).
     CHECK(stream.counts().atomicDraws == 2);
     CHECK(stream.counts().vertices == 8); // each sector's four strip vertices
-    CHECK(stream.hash() == 0x09fed123f922c187ULL);
+    CHECK(stream.hash() == 0x0d90e4b7a17f8c7fULL);
 }
 
 TEST_CASE("the world scene hashes the same twice and sees a sector's fade", "[platform][draw-stream][world]") {
@@ -289,6 +292,92 @@ TEST_CASE("the world scene's sectors are drawn from the frame description", "[pl
         CHECK(texture->name == (first ? "brick" : "slate"));
         CHECK_FALSE(frame.lightsOf(draw).empty());
     }
+}
+
+TEST_CASE("the world scene's sectors are seen through the world pass's camera",
+          "[platform][world][frame-description]") {
+    // Expected: ../engine/renderer.md#frame-description: the scene pass carries the camera placeWorldCamera() gives
+    // librw (platform/world_renderer.cpp): the view's position and axes, its view window, the near clip, the draw
+    // distance as the far clip and the fog from the level's fog start of it; the view is the test's own (sceneView()).
+    auto engine = startHeadless();
+    const SceneDisc disc;
+    coney::world::SectorBudget budget(10'000);
+    const std::vector<std::string> names{"scene"};
+    auto set = WorldSet::load(*disc.wad, names, budget, false, engine->sceneAssets());
+    REQUIRE(set.has_value());
+    coney::world::StreamedWorld& world = *(*set)->worlds()[0];
+    for (const std::uint32_t part : {1U, 2U}) {
+        auto requested = coney::world::requestPart(world, 0, part, budget, **set, 100);
+        REQUIRE(requested.has_value());
+        REQUIRE(*requested);
+    }
+    float fogStart = 0.0F;
+    {
+        WorldRenderer renderer;
+        renderer.recordHeadless(true);
+        renderer.render(*engine, **set, nullptr, sceneView(), 1000.0F, 2000);
+        fogStart = renderer.lighting().fog().start;
+    }
+    const ScenePass* scene = nullptr;
+    for (const auto& pass : engine->frame().passes()) {
+        if (const auto* found = std::get_if<ScenePass>(&pass); found != nullptr) {
+            scene = found;
+        }
+    }
+    REQUIRE(scene != nullptr);
+    CHECK(scene->draws.size() == 2);
+    REQUIRE(scene->camera.has_value());
+    const coney::graphics::SceneCamera& camera = coney::test::got(scene->camera);
+    CHECK(camera.frame.position == std::array<float, 3>{10.0F, 5.0F, -20.0F});
+    CHECK(camera.frame.right == std::array<float, 3>{-1.0F, 0.0F, 0.0F}); // the pose's: the screen's right
+    CHECK(camera.frame.up == std::array<float, 3>{0.0F, 1.0F, 0.0F});
+    CHECK(camera.frame.at == std::array<float, 3>{0.0F, 0.0F, 1.0F});
+    CHECK(camera.halfWidth == 0.6F);
+    CHECK(camera.halfHeight == 0.45F);
+    CHECK(camera.nearClip == 0.5F);
+    CHECK(camera.farClip == 100.0F);
+    CHECK(camera.fogStart == 100.0F * fogStart);
+}
+
+TEST_CASE("on the GPU backend the world scene's sectors are drawn from the frame description",
+          "[platform][world][frame-description][window]") {
+    // Expected: ../engine/gpu-renderer.md#scene: with the GPU backend, which has no librw camera, the world pass still
+    // adds each sector to the frame description, through its camera, for the GPU renderer to draw. Needs SDL's video
+    // and a GPU device, and skips where there is none.
+    coney::platform::WindowDesc desc;
+    desc.activate = false;
+    desc.hidden = true;
+    desc.width = 320;
+    desc.height = 224;
+    auto started = RenderEngine::start(RenderBackend::Gpu, desc);
+    if (!started || (*started)->backend() != RenderBackend::Gpu) {
+        SKIP("no display or no GPU device here");
+    }
+    RenderEngine& engine = **started;
+    const SceneDisc disc;
+    coney::world::SectorBudget budget(10'000);
+    const std::vector<std::string> names{"scene"};
+    auto set = WorldSet::load(*disc.wad, names, budget, false, engine.sceneAssets());
+    REQUIRE(set.has_value());
+    coney::world::StreamedWorld& world = *(*set)->worlds()[0];
+    for (const std::uint32_t part : {1U, 2U}) {
+        auto requested = coney::world::requestPart(world, 0, part, budget, **set, 100);
+        REQUIRE(requested.has_value());
+        REQUIRE(*requested);
+    }
+    {
+        WorldRenderer renderer;
+        renderer.render(engine, **set, nullptr, sceneView(), 1000.0F, 2000);
+    }
+    const ScenePass* scene = nullptr;
+    for (const auto& pass : engine.frame().passes()) {
+        if (const auto* found = std::get_if<ScenePass>(&pass); found != nullptr) {
+            scene = found;
+        }
+    }
+    REQUIRE(scene != nullptr);
+    CHECK(scene->draws.size() == 2);
+    CHECK(scene->camera.has_value());
 }
 
 TEST_CASE("the scene assets count what they converted and hold", "[platform][world][scene-assets]") {

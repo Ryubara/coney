@@ -88,6 +88,13 @@ std::expected<graphics::TextureId, Error> SceneAssets::addTexture(rw::Texture& t
     return *id;
 }
 
+std::expected<graphics::TextureId, Error> SceneAssets::addTexture(rw::Texture& texture, graphics::TextureData data) {
+    // Stub for the test commit: nothing is taken yet.
+    (void)texture;
+    (void)data;
+    return std::unexpected(Error{ErrorCode::Invalid, "not taken yet"});
+}
+
 void SceneAssets::removeTexture(graphics::TextureId id) { release(id); }
 
 void SceneAssets::release(graphics::TextureId id) {

@@ -150,6 +150,18 @@ TEST_CASE("a GPU start where no GPU device opens fails with a clear message and 
     CHECK(headless.has_value());
 }
 
+TEST_CASE("the GPU backend draws the scene, so a level loads its objects and cars for it", "[render][renderer]") {
+    // Expected: ../engine/gpu-renderer.md#scene. The GPU renderer draws the world, objects and cars from the frame
+    // description, so play loads them on it as on GL3 (their textures held as read, not converted for librw); the
+    // NULL backend draws no scene and loads none.
+    CHECK(drawsSceneOn(RenderBackend::OpenGl));
+    CHECK(drawsSceneOn(RenderBackend::Gpu));
+    CHECK_FALSE(drawsSceneOn(RenderBackend::Null));
+    auto engine = RenderEngine::start(RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    CHECK_FALSE((*engine)->drawsScene());
+}
+
 TEST_CASE("the GPU renderer claims its window and presents cleared frames where a GPU device opens",
           "[render][renderer][window]") {
     // Expected: ../engine/gpu-renderer.md#device and #present-mode, Coney's own start.
@@ -168,6 +180,7 @@ TEST_CASE("the GPU renderer claims its window and presents cleared frames where 
     CHECK(engine.backend() == RenderBackend::Gpu);
     CHECK(engine.librwDataOnly());
     CHECK_FALSE(engine.drawsPixels());
+    CHECK(engine.drawsScene());
     CHECK(engine.window().has_value());
     CHECK(engine.camera() == nullptr);
     CHECK_FALSE(engine.gpuDriver().empty());

@@ -46,6 +46,9 @@ enum class RenderBackend : std::uint8_t {
     Gpu,
 };
 
+/// Whether `backend` draws the 3D scene, so that play loads the world's objects and cars for it. Stub: GL3 only.
+[[nodiscard]] constexpr bool drawsSceneOn(RenderBackend backend) { return backend == RenderBackend::OpenGl; }
+
 /// A frame read back from the screen by RenderEngine::requestCapture().
 struct CapturedFrame {
     graphics::Extent size;
@@ -93,6 +96,8 @@ class RenderEngine final : public graphics::RenderDevice {
     /// Whether librw's GL3 device draws the picture: true for OpenGL only. Textures can be converted for librw's
     /// drawing only then, and the 3D scene, which still draws through librw, is drawn only then.
     [[nodiscard]] bool drawsPixels() const { return m_backend == RenderBackend::OpenGl; }
+    /// Whether the 3D scene is drawn: drawsSceneOn() for this backend.
+    [[nodiscard]] bool drawsScene() const { return drawsSceneOn(m_backend); }
     /// Whether librw runs its NULL device, reading RenderWare data and drawing nothing: the NULL and GPU backends.
     [[nodiscard]] bool librwDataOnly() const { return m_backend != RenderBackend::OpenGl; }
     /// The GPU backend's SDL driver (`vulkan`, `direct3d12`, `metal`); empty for the others.
@@ -294,6 +299,10 @@ class RenderEngine final : public graphics::RenderDevice {
     /// beginFrame() and present() (checked by CONEY_ASSERT).
     void drawScene(const graphics::Draw3d& draw, std::span<const graphics::SceneLight> lights,
                    std::span<const graphics::Transform3d> bones = {}, const rw::Texture* dualTexture = nullptr);
+    /// Sees the 3D draws added after it through `camera` (graphics::FrameDescription::setSceneCamera()): the camera
+    /// the GPU renderer draws them through, placed as librw's camera is for the GL3 renderer. Only between beginFrame()
+    /// and present() (checked by CONEY_ASSERT).
+    void setSceneCamera(const graphics::SceneCamera& camera);
 
   private:
     // Only start() makes one, which then fills it in as librw comes up.

@@ -243,13 +243,15 @@ DrawStream drawThrowArcScene(const coney::io::Wad& wad) {
 } // namespace
 
 TEST_CASE("the 2D scene's draw stream has its expected hash", "[platform][draw-stream]") {
-    // Expected: recorded from this scene when the layer was written (docs/engine/renderer.md#comparing).
+    // Expected: recorded from this scene when the layer was written (docs/engine/renderer.md#comparing), and again
+    // when the headless layer's unset states began to read back as librw's GL3 device starts them (#1205): the alpha
+    // test the triangles put back is then GEQUAL 10, as live, not 0.
     auto engine = startHeadless();
     const DrawStream stream = drawTwoDimensionalScene(*engine);
     // The fill, the three quads in one draw, the triangles, the wash and the window rectangle.
     CHECK(stream.counts().im2dDraws == 5);
     CHECK(stream.counts().vertices == 4 + 12 + 6 + 4 + 4);
-    CHECK(stream.hash() == 0xd663d06f6ca2e312ULL);
+    CHECK(stream.hash() == 0x602c8c03483a7de4ULL);
 }
 
 TEST_CASE("the textured mesh scene's draw stream has its expected hash", "[platform][draw-stream]") {
@@ -340,6 +342,32 @@ TEST_CASE("headless the draw layer records without reaching librw or OpenGL", "[
     CHECK(stream->counts().rasterOps == 2); // made, its levels set
     CHECK(stream->hash() == 0xe7a0be90f5dddce0ULL);
     // NOLINTEND(bugprone-unchecked-optional-access)
+}
+
+TEST_CASE("headless the draw layer's states start as librw's GL3 device starts them", "[platform][draw-stream]") {
+    // Expected: ../engine/gpu-renderer.md#scene and librw's resetRenderState (gl3device.cpp): a state nobody has set
+    // reads back as GL3 would give it, so the GPU renderer, which reads them from this layer, draws a scene in the
+    // states GL3 draws it in (the alpha test GEQUAL 10 above all: read as "always", a see-through fence wrote depth
+    // over its clear texels and hid what was drawn behind it).
+    auto engine = startHeadless();
+    REQUIRE_FALSE(draw::forwarding());
+    CHECK(draw::getRenderState(rw::ALPHATESTFUNC) == rw::ALPHAGREATEREQUAL);
+    CHECK(draw::getRenderState(rw::ALPHATESTREF) == 10);
+    CHECK(draw::getRenderState(rw::GSALPHATEST) == 0);
+    CHECK(draw::getRenderState(rw::GSALPHATESTREF) == 128);
+    CHECK(draw::getRenderState(rw::ZTESTENABLE) == 1);
+    CHECK(draw::getRenderState(rw::ZWRITEENABLE) == 1);
+    CHECK(draw::getRenderState(rw::CULLMODE) == rw::CULLNONE);
+    CHECK(draw::getRenderState(rw::SRCBLEND) == rw::BLENDSRCALPHA);
+    CHECK(draw::getRenderState(rw::DESTBLEND) == rw::BLENDINVSRCALPHA);
+    CHECK(draw::getRenderState(rw::FOGENABLE) == 0);
+    CHECK(draw::getRenderState(rw::FOGCOLOR) == 0xFFFFFFFFU);
+    CHECK(draw::getRenderState(rw::STENCILFUNCTION) == rw::STENCILALWAYS);
+    CHECK(draw::getRenderState(rw::STENCILFAIL) == rw::STENCILKEEP);
+    CHECK(draw::getRenderState(rw::STENCILFUNCTIONMASK) == 0xFFFFFFFFU);
+    // A state set is read back as set.
+    draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+    CHECK(draw::getRenderState(rw::ALPHATESTFUNC) == rw::ALPHAALWAYS);
 }
 
 TEST_CASE("a null camera is recorded and never forwarded, in begin and in end alike", "[platform][draw-stream]") {

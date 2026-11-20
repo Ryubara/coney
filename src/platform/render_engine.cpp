@@ -645,6 +645,11 @@ void RenderEngine::drawScene(const graphics::Draw3d& draw, std::span<const graph
     drawDescribed();
 }
 
+void RenderEngine::setSceneCamera(const graphics::SceneCamera& camera) {
+    CONEY_ASSERT(m_inFrame);
+    m_frame.setSceneCamera(camera);
+}
+
 void RenderEngine::startFrame(graphics::Rgba clear, const graphics::FrameStart& start) {
     CONEY_ASSERT(!m_inFrame);
     m_inFrame = true;

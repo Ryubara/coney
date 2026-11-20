@@ -380,6 +380,8 @@ struct Options {
     /// animation, the scripts), so every frame shows the same picture; the scenery still streams round the camera and
     /// the fixed step still runs. Requires playLevel.
     bool freezeWorld = false;
+    /// `--scene-only`: play draws only the 3D the GPU renderer draws. Stub: never parsed yet.
+    bool sceneOnly = false;
     /// `--light-trace FILE`: the original's light-selection trace (`coney-tools trace lights`: this selections file and
     /// its two inputs files beside it), which the Lighting page sets beside Coney's lights
     /// (docs/guides/realtime-lighting.md#lab-built). Requires playLevel.

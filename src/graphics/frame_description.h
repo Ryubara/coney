@@ -243,10 +243,30 @@ struct Draw3d {
     friend bool operator==(const Draw3d&, const Draw3d&) = default;
 };
 
-/// A pass of 3D draws through the frame's camera, in their order: the streamed world's sectors (item 7 of
-/// docs/engine/renderer.md#order), the world objects and the parked cars (item 8) and the humans (item 9); the effects
-/// join it with item 10.
+/// The camera a scene pass's draws are seen through, as the world pass places librw's camera
+/// (platform/world_renderer.cpp): where it stands and its axes, its view window and its clip and fog planes. A renderer
+/// makes its view and projection from it (graphics::viewMatrixOf(), projectionOf()); the GL3 renderer draws through
+/// librw's camera, placed the same way, and does not read it.
+struct SceneCamera {
+    /// Where the camera stands and its axes in RenderWare's world: `right` the screen's right, `up` its up and `at`
+    /// the way it looks.
+    Transform3d frame;
+    float halfWidth = 0.5F;  ///< librw's view window: half the view's width at a distance of 1.
+    float halfHeight = 0.5F; ///< Half its height at a distance of 1.
+    float nearClip = 0.1F;   ///< The near clip plane's distance.
+    float farClip = 100.0F;  ///< The far clip plane's distance: fully fogged there.
+    float fogStart = 50.0F;  ///< The distance fog starts at (librw's fog plane).
+
+    friend bool operator==(const SceneCamera&, const SceneCamera&) = default;
+};
+
+/// A pass of 3D draws through its camera, in their order: the streamed world's sectors (item 7 of
+/// docs/engine/renderer.md#order), the world objects and the parked cars (item 8) and the humans (item 9); the
+/// effects join it with item 10.
 struct ScenePass {
+    /// The camera its draws are seen through (FrameDescription::setSceneCamera()); none when the frame set none before
+    /// them, and a renderer that needs one draws nothing of the pass.
+    std::optional<SceneCamera> camera;
     std::vector<Draw3d> draws;
 };
 
@@ -305,6 +325,10 @@ class FrameDescription {
     /// to a new one; the next 2D draw starts a new overlay pass.
     void addSceneDraw(Draw3d draw, std::span<const SceneLight> lights, std::span<const TextureId> textures,
                       std::span<const TextureId> dualTextures, std::span<const Transform3d> bones = {});
+    /// Sees the 3D draws added after it through `camera`: they start a new scene pass with it (the last pass takes
+    /// it instead when it is a scene pass with no draw yet), and any later scene pass of the frame keeps it until the
+    /// next call.
+    void setSceneCamera(const SceneCamera& camera);
 
     /// The passes, in the order they draw.
     [[nodiscard]] std::span<const FramePass> passes() const { return m_passes; }
@@ -341,6 +365,7 @@ class FrameDescription {
     std::vector<SceneLight> m_lights;
     std::vector<TextureId> m_sceneTextures; // the 3D draws' textures, then each one's dual layer's
     std::vector<Transform3d> m_bones;       // the skinned 3D draws' poses
+    std::optional<SceneCamera> m_camera;    // the camera setSceneCamera() last set this frame
 };
 
 } // namespace coney::graphics
