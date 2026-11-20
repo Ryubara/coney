@@ -164,8 +164,8 @@ struct TargetPick {
 struct FighterInput {
     combat::CommandId command = combat::command::kNone; ///< From the command matcher.
     std::uint16_t buttons = 0;                          ///< The held buttons.
-    combat::Stick stick;                                ///< The camera-turned stick in the facing frame.
-    combat::Stick padStick;                             ///< The stick as the pad reads it (the minigames').
+    combat::Stick stick{};                              ///< The camera-turned stick in the facing frame.
+    combat::Stick padStick{};                           ///< The stick as the pad reads it (the minigames').
     Gait gait = Gait::Standing;
     anim::Vec3 position;                   ///< The player's feet.
     float heading = 0.0F;                  ///< The player's heading, radians.
