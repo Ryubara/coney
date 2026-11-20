@@ -835,8 +835,8 @@ slot read over PINE) it went from state 5 to 7 with its camera track at 10.77 s 
 
 What a cinematic (task `+0xed`) does to player 1's gang, the Warriors, in order. Only player 1's gang is touched
 (game state `0x0051489c + 0x228`); a fixed scene or an animation does none of the engine steps below, only the
-[reset at the join](#join-reset) of the humans it binds. Confirmed (code) at the addresses given; not checked at
-runtime.
+[reset at the join](#join-reset) of the humans it binds. Confirmed (code) at the addresses given; the end's follow
+confirmed (runtime), run r-20261120-scene-crew-follow (below).
 
 **Before the scene** (the scripts, [`SuperRunScene`](#superrunscene), read as bytecode): unless `NoClearWanted`, the
 Warriors' wanted state is cleared (`GangClearWanted(GangWarriors)`: police neutral to them again, the wanted HUD
@@ -851,27 +851,43 @@ and revived. Then each bound Warrior is [reset as it joins](#join-reset): his gr
 taken into his crew. A class-7 bum and every other member stay. Nothing else in the start touches the gang:
 members that are not bound keep their brains and their tactic (the follow tactic, usually) through the scene unless
 the scene freezes ([Starting](#starting) step 9; `SuperRunScene`'s scenes do not), and they are neither moved nor
-hidden. The same `Gang_ClearBums` is the `GangClearBums` binding.
+hidden. The same `Gang_ClearBums` is the `GangClearBums` binding. Confirmed (code) at `0x0039d870`, `0x0016b8d0`.
 
 **At the end** (`SceneTask_End`, `0x0039f450`, step 5 of [Ending](#ending)), after the camera is popped and the
-letterbox goes out, and before the end function is called:
+letterbox goes out, and before the end function is called; confirmed (code) at `0x0039f450`:
 
 1. Each bound Warrior's join goal is popped (step 2), which gives a player his pad back and an AI Warrior his brain.
-2. Only when one of the scene's bound humans was a player (human `+0x1b0` not −1), or else player 1's brain `+0x2e4`
-   is set (a Warrior hitting back at his chief, [AI](ai-gangs.md#warrior-follow)): that player's command menu is unlocked
-   (game state `+0x42e` + player = 0), and **command 0, follow, is dispatched forced** for player 1
-   (`WarriorCommand_Dispatch(state, player 1, 0, 1, 0, 1)` at `0x0039ff5c`). A forced dispatch is silent, still
-   refused while commands are locked or follow is disabled, and otherwise clears the gang's tactic and shared target,
-   records follow as the last command and builds a new follow tactic ([AI: commands](ai-gangs.md#warrior-follow)).
+2. Only when player 1 exists and one of the scene's bound humans was a player (human `+0x1b0` not −1), or else
+   player 1's brain `+0x2e4` is set (a Warrior hitting back at his chief, [AI](ai-gangs.md#warrior-follow)): player
+   1's command menu is unlocked (game state `+0x42e` + his player number = 0), and **command 0, follow, is
+   dispatched forced** for player 1 (`WarriorCommand_Dispatch(state, player 1, 0, 1, 0, 1)` at `0x0039ff5c`). A
+   forced dispatch is silent, still refused while commands are locked or follow is disabled, and otherwise clears the
+   gang's tactic and shared target, records follow as the last command and builds a new follow tactic
+   ([AI: commands](ai-gangs.md#warrior-follow)). Confirmed (code) at `0x0039ff5c`, `0x0041c4e0`.
 3. In the same case, one **gang update** is run at once (`0x00166708(gang, 0)` at `0x0039ff70`; Ghidra calls it
    `Gang_CachePlayerInfo`): with 0 it skips the spawner step, refreshes the cached player position, runs the new
    tactic once (`Tactic_Process`, which starts the follow tactic and hands out its goals) and the wanted level's
    update ([AI: the gang update](ai-gangs.md#gang-update)). It is not an "alert clear" as this page used to say.
+   Confirmed (code) at `0x0039ff70`, `0x00166708`.
 4. With `freeze`, every brain is resumed (step 6).
 
 **A cinematic given up** (`SceneTask_Abort`, `0x0039ec60`, after 10 s without starting) does less: fade in at once on
 every view, then follow dispatched forced for player 1 (`0x0039f3f0`) without the menu unlock, the player test or
-the gang update, and the HUD shown again.
+the gang update, and the HUD shown again. Confirmed (code) at `0x0039ec60`.
+
+Ghidra's decompile of the end shows the player test the other way round (the brain's `+0x2e4` read when a player
+*was* bound); the disassembly settles it: at `0x0039ff1c` a set bound-player flag branches (`bnel`) straight to the
+menu unlock and the dispatch, and only with it clear is the brain byte read at `0x0039ff2c`, skipping all three steps
+when it is 0. Confirmed (code). The bound-player flag is gathered over every human still in a role slot as the end
+releases them (`0x0039f450`, the role loop), so a human left out of the start for being in a grab counts too.
+
+**At runtime** (PCSX2 2.9.94, state `pedestrian-grab`, level99 checkpoint 2 with Ash in Rembrandt's crew; confirmed
+(runtime), run r-20261120-scene-crew-follow): with every command enabled, the automatic commands off and hold ordered,
+`l99_c5` played as a cinematic with Rembrandt bound to role 0 kept the hold tactic in force (vtable `0x005439e0`)
+while it played; in the first read after `SceneDone` turned true the follow tactic (vtable `0x005438c0`) was in force,
+already started, and the command in force (game state `+0x41a`) was 0. Player 1's menu lock byte could not be held
+at 1 there (a written 1 read back 0 at once), so the unlock was not seen at runtime. With the automatic commands on,
+the chief's own commands can change the tactic during a scene, so a check of the end's follow turns them off first.
 
 So after any cinematic in which the player took part, the crew is back under a fresh follow command with no target,
 whatever the command was before (attack, hold, scatter): a scene resets the player's last command. The wanted state
@@ -1035,6 +1051,9 @@ then plays the other ten `l99_` scenes with a soundtrack in turn, one to 430 upd
 heard through its scene.
 `[disc][story][combat][scenes]` plays checkpoint 1 through lesson 6, whose power move still holds a bum as `l99_c7`
 starts (1 human holding, 1 held), and finds no human holding, held or grabbed 90 updates after the scene.
+`[disc][story][scenes][crew]` plays level99's intro `l99_c1` with player 1 bound, every command enabled, the automatic
+commands off, hold written as his last command and his menu locked: in the update the scene ends his menu is
+unlocked, follow is his last command and his crew has one new tactic, the follow, already started.
 
 **Coney choices** where the page is silent:
 
@@ -1063,7 +1082,20 @@ starts (1 human holding, 1 held), and finds no human holding, held or grabbed 90
 - Event 73 holds its intro card as [Intro cards](#intro-cards) says (`heldObjectPose`, tested in
   `coney_tests "[scenes]"`); the host says whether the game is 16:9 (Coney's play is 4:3 so far). Coney does not
   stop the room smoke while a card shows. Before this, the cards stayed parked underground and never showed.
-- A scene with roles but none bound ends when its tracks do; an aborted scene's end function is not called.
+- What a cinematic does to player 1's gang ([The player's gang](#gang)) goes through `scenes::SceneCrew`, which the
+  gameplay mode implements over its brains, scripts and game state (`repo:src/gamemodes/gameplay_scene_crew.cpp`):
+  the start's step of the scene state from 0 to 1 sends his bums away (`ScriptedHub::clearBums`); the end, after the
+  letterbox goes out and before the brains are resumed and the end function is called, unlocks his menu, gives the
+  follow forced through the Warrior command dispatcher and runs his gang's update without its spawners
+  (`ai::Gang::update`), when a bound human was a player; a cinematic given up gives only the follow. They are made in
+  place, as in the original, so a follow's command callback runs before the end function (which Coney calls at the end
+  of the scene update). **Coney stand-in**: the chief's hit-back count (brain
+  `+0x2e4`) is never set, as `WarriorBrain_OnHitByChief` is not built (`ai::Brain::hittingBack`), so only a bound
+  player gives the end's three steps. Before this the gameplay mode's crew step gave the follow and the unlock itself
+  once player 1 was out of the scene and no scene camera was current, after the end function and without the gang
+  update; it now gives the follow only when player 1 changes.
+- A scene with roles but none bound ends when its tracks do; an aborted scene's end function is not called. The
+  abort's other steps (its fade in at once, the end function, the end poses, the HUD) are #673's.
 - A track's events fire against the scene's frame (the part's start frame plus its time), the header's and the
   current part's alike.
 - A skip flushes the tracks as [Skipping](#skipping) says: in the end, each bound object's pending events (then its
@@ -1113,6 +1145,9 @@ trace above.
 - Where a scene's captions come from (answered): the level's Subtitles chunk, by the scene's name
   ([Movies](movies.md#caption-text)).
 - Event 30's argument layout (colour at `+8` and cone at `+0x10` overlap as three floats).
+- **The chief's hit-back count in Coney**{#q-hit-back}: the end's gang steps also run, with no player bound, while
+  player 1's brain `+0x2e4` is set ([The player's gang](#gang)); that count is set by `WarriorBrain_OnHitByChief`
+  ([AI](ai-code.md#brain-types)), which Coney does not build, so Coney's `SceneCrew::hitBack` always answers no.
 - How a role's model is decided (answered: by the bound human's character type; the name is a label, [Cast and
   props](#cast), confirmed at runtime for `l99_c1`, [Cast at runtime](#cast-runtime)). Still open: the 204 roles
   and 41 props of scripted scenes the static walk does not resolve, and which of two or more `HuCreate` types a

@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <cmath>
 #include <format>
-#include <functional>
 #include <limits>
 #include <numbers>
 #include <utility>
@@ -238,7 +237,7 @@ class SceneTask {
         if (m_request.cinematic && m_system.m_sceneState < 2) {
             if (m_system.m_sceneState == 0) {
                 // With the step from 0, player 1's bums are sent away (docs/research/scenes.md#gang).
-                m_system.callCrew([](SceneCrew& crew) { crew.clearBums(); });
+                m_system.crew().clearBums();
                 m_system.m_sceneState = 1;
                 return;
             }
@@ -975,11 +974,10 @@ class SceneTask {
         // back: his menu unlocked, follow forced and one gang update, which starts the follow
         // (docs/research/scenes.md#gang).
         if (m_request.cinematic && !aborted && (playerBound || m_system.crew().hitBack())) {
-            m_system.callCrew([](SceneCrew& crew) {
-                crew.unlockCommandMenu();
-                crew.followForced();
-                crew.updateGang();
-            });
+            SceneCrew& crew = m_system.crew();
+            crew.unlockCommandMenu();
+            crew.followForced();
+            crew.updateGang();
         }
         if (m_request.freeze && begun()) {
             host.suspendBrains(false);
@@ -1022,7 +1020,7 @@ class SceneTask {
         end(true);
         // A cinematic given up gives player 1's crew only the follow, forced (docs/research/scenes.md#gang).
         if (m_request.cinematic) {
-            m_system.callCrew([](SceneCrew& crew) { crew.followForced(); });
+            m_system.crew().followForced();
         }
     }
 
@@ -1099,10 +1097,7 @@ void SceneSystem::callLua(std::string_view function, std::span<const double> arg
         return;
     }
     if (m_inUpdate) {
-        m_pendingCalls.emplace_back(
-            [this, name = std::string(function), values = std::vector<double>(args.begin(), args.end())] {
-                callLua(name, values);
-            });
+        m_pendingCalls.emplace_back(std::string(function), std::vector<double>(args.begin(), args.end()));
         return;
     }
     ++m_stats.callbacks;
@@ -1235,20 +1230,12 @@ void SceneSystem::update(std::uint64_t nowMs, std::uint16_t heldButtons) {
         }
     }
     m_inUpdate = false;
-    // The Lua and crew calls made during the update, in order (the original makes them in place).
-    std::vector<std::function<void()>> calls = std::move(m_pendingCalls);
+    // The Lua calls made during the update, in order (the original makes them in place).
+    std::vector<std::pair<std::string, std::vector<double>>> calls = std::move(m_pendingCalls);
     m_pendingCalls.clear();
-    for (const std::function<void()>& call : calls) {
-        call();
+    for (const auto& [function, args] : calls) {
+        callLua(function, args);
     }
-}
-
-void SceneSystem::callCrew(const std::function<void(SceneCrew&)>& call) {
-    if (m_inUpdate) {
-        m_pendingCalls.emplace_back([this, call] { callCrew(call); });
-        return;
-    }
-    call(crew());
 }
 
 bool SceneSystem::playing() const {

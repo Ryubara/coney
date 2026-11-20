@@ -270,8 +270,13 @@ name = "SceneTask_Start"
 page = "scenes.md#original-structure"
 role = "waits for everything, then starts; re-entered until it does"
 level = "confirmed-code"
-coney = "src/scenes/scene_player.cpp:SceneTask::hasLoopPoint"
-status = "legacy"
+coney = "src/scenes/scene_player.cpp:SceneTask::start"
+status = "compared"
+
+[[function.gaps]]
+what = "the wait while game state +0x14c is set, the human's state flag 0x800000, the HUD's hide, the system music off, the caption system's title card, the counter at 0x00597198 and the speech stop of a cinematic with no roles are not ported; the delay and the human-ready test follow Coney's order"
+relation = "not-ported"
+issue = 673
 
 [[function]]
 address = 0x0039ec60
@@ -280,7 +285,12 @@ page = "scenes.md#original-structure"
 role = "gives up a scene that did not start in 10 s"
 level = "confirmed-code"
 coney = "src/scenes/scene_player.cpp:SceneTask::abort"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the end poses, the cameras put back, the end function's calls, the system music, the fade in at once and the HUD shown are not ported"
+relation = "not-ported"
+issue = 673
 
 [[function]]
 address = 0x0039f450
@@ -288,8 +298,18 @@ name = "SceneTask_End"
 page = "scenes.md#original-structure"
 role = "gives everything back"
 level = "confirmed-code"
-coney = "src/gamemodes/gameplay_mode.h:GameplayMode::stepCrew"
-status = "legacy"
+coney = "src/scenes/scene_player.cpp:SceneTask::end"
+status = "compared"
+
+[[function.gaps]]
+what = "the system music, the human's speech stop and scene slot, the hat message, every player's rumble zeroed by the pop and the `_end` preload round the player camera are not ported"
+relation = "not-ported"
+issue = 673
+
+[[function.gaps]]
+what = "the gang steps' other case, player 1's brain `+0x2e4` (a Warrior hitting back at him), never holds: the hit-back is not built"
+relation = "stand-in"
+question = "scenes.md#q-hit-back"
 
 [[function]]
 address = 0x003a00b8

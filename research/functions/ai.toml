@@ -149,8 +149,13 @@ name = "Gang_CachePlayerInfo"
 page = "ai-gangs.md#original-structure"
 role = "The players' state for the gang, and whether its spawners may run (the cap)"
 level = "confirmed-code"
-coney = "src/ai/spawners.h:Spawners::update"
-status = "legacy"
+coney = "src/ai/gangs.h:Gang::update"
+status = "compared"
+
+[[function.gaps]]
+what = "the player cache, the crime level, the wanted state, the leader's nearby list and the downed count are not built; the spawner step is Spawners::update"
+relation = "not-ported"
+issue = 645
 
 [[function]]
 address = 0x00166b60

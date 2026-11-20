@@ -1,0 +1,36 @@
+version = 1
+id = "r-20261120-scene-crew-follow"
+date = "2026-11-20"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "1f24781213e11c571af1e5023e756f186c5d893c238b2b83c8307c90e50a6446"
+
+[who]
+agent = "a87c2d686e18b7315"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level99 cp 2, Ash in Rembrandt's crew. Lua recipe: all Warrior commands enabled, automatic commands off (WCEnableAutomaticSwitching(0)), IssueWarriorCommand(3, 1) (hold), ScenePreload('l99_c5'), GoalJoinCinematic(player 1, scene, role 0), ScenePlayCinematic(scene, 0, nil, bars 1, nil, nil, nil, 0, final 1). Crew recipe read while it played and after SceneDone turned true: hold in force during it; follow in force and started in the first read after the end. The menu lock byte read back 0 right after a write of 1, so the unlock was not observed."
+
+[values]
+command_during = 3
+command_after = 0
+tactic_vtable_during = 5519840
+tactic_vtable_after = 5519552
+tactic_started_after = 1
+
+[addresses]
+SceneTask_End = 0x0039f450
+WarriorCommand_Dispatch = 0x0041c4e0
+Gang_CachePlayerInfo = 0x00166708
