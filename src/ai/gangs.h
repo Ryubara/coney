@@ -258,6 +258,9 @@ class Gang {
     /// it was used.
     /// @orig 0x00164c20 Gang_OnEvent (unknown)
     bool onEvent(Brain& member, const BrainEvent& event);
+    /// The gang's update without its spawners (`0x00166708` with 0), as a scene's end runs it: its tactic processed
+    /// (and so started on the first) when it has one and members (docs/research/ai-gangs.md#gang-update).
+    void update() {}
 
   private:
     friend class Gangs;

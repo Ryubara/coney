@@ -109,6 +109,8 @@ class SceneSystem {
     void setHost(SceneHost* host);
     /// Replaces the Lua caller (a new script state).
     void setScriptCall(ScriptCall call) { m_call = std::move(call); }
+    /// Attaches player 1's gang as a cinematic changes it (null: SceneCrew's defaults). It must outlive the attachment.
+    void setCrew(SceneCrew* crew) { m_crew = crew; }
 
     // ---- The bindings' workers ----
 
@@ -198,6 +200,7 @@ class SceneSystem {
     ScriptCall m_call;
     SceneHost* m_host = nullptr;
     SceneHost m_defaultHost;
+    SceneCrew* m_crew = nullptr;
     std::vector<std::unique_ptr<SceneTask>> m_tasks;
     std::string m_globalCallback;
     std::uint64_t m_nowMs = 0;
