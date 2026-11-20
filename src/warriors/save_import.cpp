@@ -10,6 +10,8 @@
 #include "fileio/file_stream.h"
 #include "fileio/ps2_memory_card.h"
 #include "fileio/reader.h"
+#include "fileio/stream.h"
+#include "warriors/xbox_save.h"
 
 namespace coney {
 
@@ -31,7 +33,7 @@ std::expected<std::vector<std::byte>, Error> readFile(const std::filesystem::pat
     if (size > kLargestOriginalSave) {
         return fail(ErrorCode::Invalid,
                     std::format("{}: too large to be a PS2 save: {} bytes, and the largest, a 64 MB "
-                                "PCSX2 card, is {}",
+                                "PCSX2 card, is {}; nor is it an Xbox disk image",
                                 name, size, kLargestOriginalSave));
     }
     auto stream = io::FileStream::open(path, 0, size);
@@ -70,7 +72,7 @@ std::string joined(const std::vector<std::string>& names) {
 // @coney-only the importer's container step
 std::expected<OriginalSave, Error> fromDataFile(std::span<const std::byte> data, SaveSourceKind kind,
                                                 std::string source) {
-    OriginalSave save{kind, std::move(source), {}, {}};
+    OriginalSave save{kind, std::move(source), {}, {}, {}};
     auto profiles = readPs2DataFile(data, save.skipped);
     if (!profiles) {
         return fail(profiles.error().code, std::format("{}: {}", save.source, profiles.error().message));
@@ -149,8 +151,13 @@ std::expected<OriginalSave, Error> fromFolder(const std::filesystem::path& path)
         }
     }
     std::ranges::sort(names);
-    return fail(ErrorCode::NotFound, std::format("{}: the {} holds no save of The Warriors ({}); its folders: {}",
-                                                 source, describe(kind), kPs2SaveName, joined(names)));
+    // No PS2 save: the Xbox's save folders, if the folder holds them.
+    if (auto xbox = readXboxFolder(path)) {
+        return std::move(*xbox);
+    }
+    return fail(ErrorCode::NotFound,
+                std::format("{}: the {} holds no save of The Warriors ({}, nor the Xbox's UDATA/{}); its folders: {}",
+                            source, describe(kind), kPs2SaveName, kXboxTitleFolder, joined(names)));
 }
 
 } // namespace
@@ -167,8 +174,33 @@ std::string_view describe(SaveSourceKind kind) {
         return "PS2 save file";
     case SaveSourceKind::Ps2Psu:
         return "PSU export";
+    case SaveSourceKind::XboxSaveFolder:
+        return "Xbox save folder";
+    case SaveSourceKind::XboxDataFile:
+        return "Xbox save file";
+    case SaveSourceKind::XboxQcow2Image:
+        return "xemu hard-disk image";
+    case SaveSourceKind::XboxHddImage:
+        return "Xbox hard-disk image";
+    case SaveSourceKind::XboxFatxImage:
+        return "FATX volume image";
     }
     return "save";
+}
+
+std::string placeOf(const OriginalSave& save, const ImportCandidate& candidate) {
+    switch (save.kind) {
+    case SaveSourceKind::XboxDataFile:
+        return std::string(kXboxDataFileName);
+    case SaveSourceKind::XboxSaveFolder:
+    case SaveSourceKind::XboxQcow2Image:
+    case SaveSourceKind::XboxHddImage:
+    case SaveSourceKind::XboxFatxImage:
+        return candidate.slot < save.folders.size() ? std::format("save folder {}", save.folders[candidate.slot])
+                                                    : std::format("save {}", candidate.slot + 1);
+    default:
+        return std::format("card slot {}", candidate.slot + 1);
+    }
 }
 
 std::expected<std::vector<ImportCandidate>, Error> readPs2DataFile(std::span<const std::byte> bytes,
@@ -224,6 +256,22 @@ std::expected<OriginalSave, Error> readOriginalSave(std::span<const std::byte> b
     if (bytes.size() == kPs2DataFileSize) {
         return fromDataFile(bytes, SaveSourceKind::Ps2DataFile, std::move(source));
     }
+    // The Xbox's: a memory unit's FATX volume (or any disk image small enough to be read whole), or one save's
+    // profile.dat alone.
+    io::MemoryStream stream(bytes);
+    if (auto xbox = readXboxImage(stream, source)) {
+        return std::move(*xbox);
+    }
+    if (bytes.size() == kXboxDataFileSize && io::Reader(bytes).readU32Le().value_or(0) == ProfileRecord::kVersion) {
+        OriginalSave save{SaveSourceKind::XboxDataFile, std::move(source), {}, {}, {""}};
+        save.profiles = readXboxSaveFolders({{"", std::vector<std::byte>(bytes.begin(), bytes.end()), std::nullopt, 0}},
+                                            save.skipped);
+        if (save.profiles.empty()) {
+            return fail(ErrorCode::Invalid,
+                        std::format("{}: no profile the game could load ({})", save.source, joined(save.skipped)));
+        }
+        return save;
+    }
     // A card that was never formatted is all ones (an erased card's bytes): PCSX2 makes its new card files so.
     if (looksErased(bytes)) {
         return fail(ErrorCode::Invalid,
@@ -236,8 +284,9 @@ std::expected<OriginalSave, Error> readOriginalSave(std::span<const std::byte> b
                                                     source, bytes.size()));
     }
     return fail(ErrorCode::Invalid, std::format("{}: not a PS2 save Coney can import: neither a memory card image, a "
-                                                "PSU export nor the game's 7,704-byte save file {}",
-                                                source, kPs2SaveName));
+                                                "PSU export nor the game's 7,704-byte save file {}; nor an Xbox save "
+                                                "(its 1,230-byte {}, a FATX volume or an Xbox or xemu disk image)",
+                                                source, kPs2SaveName, kXboxDataFileName));
 }
 
 std::expected<OriginalSave, Error> readOriginalSave(const std::filesystem::path& path) {
@@ -247,6 +296,14 @@ std::expected<OriginalSave, Error> readOriginalSave(const std::filesystem::path&
     }
     if (!std::filesystem::is_regular_file(path, ec)) {
         return fail(ErrorCode::NotFound, std::format("{}: no such file or folder", path.string()));
+    }
+    // An Xbox disk image is read on demand, whatever its size: xemu's is a gigabyte or more, a raw disk 8 GB.
+    if (const std::uintmax_t size = std::filesystem::file_size(path, ec); !ec) {
+        if (auto stream = io::FileStream::open(path, 0, size)) {
+            if (auto xbox = readXboxImage(*stream, path.filename().string())) {
+                return std::move(*xbox);
+            }
+        }
     }
     const auto bytes = readFile(path);
     if (!bytes) {

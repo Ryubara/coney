@@ -310,3 +310,42 @@ TEST_CASE("L1 tapped during an attack's recovery picks no target", "[human][comb
         CHECK_FALSE(targeted[update]);
     }
 }
+
+TEST_CASE("cross + square with a bat during an attack's recovery picks no throw target", "[human][combat][targeting]") {
+    // Expected: combat-throws.md#armed-special, confirmed (code). Player_UpdateActions 0x0027c120 returns on the busy
+    // gate (record +0x08 & 0x5c7fee0, which holds the recovery 0x40000) before Player_ArmedSpecial (0x00288838), which
+    // alone takes the throw's target; an enemy 6 m ahead is out of the swing's reach but inside the throw's search.
+    const auto run = [](int press) {
+        Fight fight(sweepCharacter(), 6.0F);
+        fight.makeCalm(fight.target());
+        std::string script = "2 tap square\n";
+        if (press >= 0) {
+            script += std::format("{} press cross\n{} tap square\n{} release cross\n", press, press + 1, press + 3);
+        }
+        std::vector<std::uint32_t> flags;
+        std::vector<bool> targeted;
+        fight.run(script, 40, [&](std::uint64_t frame) {
+            flags.push_back(fight.human().animator().flags());
+            targeted.push_back(fight.human().fighter().target() != nullptr);
+            // The bat goes into the hand once the unarmed swing has started, so the swing itself picks as unarmed.
+            if (frame == 3) {
+                fight.human().fighter().setAnimSet(3);
+            }
+        });
+        return std::pair{flags, targeted};
+    };
+    // The combination goes in on the first update of the recovery, so the press, the square and the release all fall
+    // inside it.
+    const auto probe = run(-1);
+    const std::vector<std::uint32_t>& flags = probe.first;
+    const auto recovery = std::ranges::find_if(flags, [](std::uint32_t f) { return (f & 0x40000U) != 0; });
+    REQUIRE(recovery != flags.end());
+    const auto start = static_cast<std::size_t>(recovery - flags.begin());
+    REQUIRE(start + 5 < flags.size());
+    REQUIRE((flags[start + 4] & 0x40000U) != 0);
+    const std::vector<bool> targeted = run(static_cast<int>(start) + 1).second;
+    for (std::size_t update = 0; update < targeted.size(); ++update) {
+        INFO("update " << update);
+        CHECK_FALSE(targeted[update]);
+    }
+}

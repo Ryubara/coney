@@ -99,7 +99,7 @@ The STORY profiles are saved as one file each (`profile-1.sav` to `profile-6.sav
 (`%APPDATA%\Coney\Coney\` on Windows, `~/.local/share/Coney/Coney/` on Linux, `~/Library/Application
 Support/Coney/Coney/` on macOS); `--profiles DIR` names another folder. A test-mode run without `--profiles` keeps
 its profiles in memory, so tests never touch yours ([Profiles and saving](../research/save.md#coney)). A profile from
-a PS2 save comes in with `--import-save` or from the `import` folder beside them ([below](#import-save)).
+a PS2 or Xbox save comes in with `--import-save` or from the `import` folder beside them ([below](#import-save)).
 
 ## Installing from your disc {#install}
 
@@ -161,25 +161,32 @@ replace one of the game's scripts, or that is a compiled Lua chunk, is refused w
 runs. An edited game script is a patch ([Script patches](#script-patches)). The naming rules and warnings:
 [Replacing a WAD entry](asset-and-script-architecture.md#file-overrides).
 
-## Importing a PS2 save {#import-save}
+## Importing a save {#import-save}
 
-`--import-save PATH` brings the profiles of your PS2 save of the game into Coney, then exits. `PATH` is any of the
-forms a PS2 save comes in ([The containers](../research/save.md#import-containers)): a PCSX2 card file (`Mcd001.ps2`)
-or folder card, a dump of a real card (MemCard PRO, SD2PSX, a card tool), a `.psu` export (uLaunchELF, mymc), the
-save's folder `BASLUS-21215` or its data file. The save is only read, never changed.
+`--import-save PATH` brings the profiles of your PS2 or Xbox save of the game into Coney, then exits. `PATH` is any of
+the forms a PS2 save comes in ([The containers](../research/save.md#import-containers)): a PCSX2 card file
+(`Mcd001.ps2`) or folder card, a dump of a real card (MemCard PRO, SD2PSX, a card tool), a `.psu` export (uLaunchELF,
+mymc), the save's folder `BASLUS-21215` or its data file. Or any of the forms an Xbox save comes in ([The Xbox
+containers](../research/save.md#xbox-containers)): xemu's hard-disk image (`xbox_hdd.qcow2`, with xemu closed), a raw
+image of an Xbox hard disk or memory unit, the save folders copied off a console (one save's folder, the title folder
+`5454009b`, or `UDATA` or a copy of `E:` above it), or one save's `profile.dat`. The save is only read, never changed.
 
 ```sh
 build/dev/src/platform/coney --import-save PCSX2/memcards/Mcd001.ps2
 build/dev/src/platform/coney --import-save usb/BASLUS-21215 --profiles ../../profiles
+build/dev/src/platform/coney --import-save xemu/xbox_hdd.qcow2
+build/dev/src/platform/coney --import-save ftp/E/UDATA/5454009b
 ```
 
-Each profile on the card becomes a new Coney profile in the first free slot of the profiles folder (`--profiles DIR`,
-else your own, [Starting Coney](#run-coney)), with its unlocks, mission records, money and options as the PS2 kept
-them. A profile whose name is already used is left out (two profiles never share a name), and so is any once all six
-slots are used. Coney prints one line per profile and a count, and exits 0 when it imported at least one and 1 when it
-imported none, with the reason: a file that is not a save it knows, a card with no save of the game (naming the saves
-it holds), a damaged card, or a save file of the wrong size. In the game, put the same files in the `import` folder
-beside your profiles and choose IMPORT PROFILE on the profile screen ([PM_Import](../research/frontend.md#pm-import)).
+Each Xbox save holds one profile, and its signature is not checked ([Importing an Xbox
+save](../research/save.md#xbox-import)). Each profile on the card or disk becomes a new Coney profile in the first free
+slot of the profiles folder (`--profiles DIR`, else your own, [Starting Coney](#run-coney)), with its unlocks, mission
+records, money and options as the original kept them. A profile whose name is already used is left out (two profiles
+never share a name), and so is any once all six slots are used. Coney prints one line per profile and a count, and exits
+0 when it imported at least one and 1 when it imported none, with the reason: a file that is not a save it knows, a card
+with no save of the game (naming the saves it holds), a damaged card or disk, or a save file of the wrong size. In the
+game, put the same files in the `import` folder beside your profiles and choose IMPORT PROFILE on the profile screen
+([PM_Import](../research/frontend.md#pm-import)).
 
 ## Script patches {#script-patches}
 

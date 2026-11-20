@@ -557,24 +557,27 @@ TEST_CASE("with a bat, a second square in the swing is not kept: 34 chains into 
     }
 }
 
-TEST_CASE("with a bat, cross + square is no special: no 653, no power spent, and the cross's release swings 36",
+TEST_CASE("with a melee weapon and its target within 2 m, cross + square is no special and no throw: no 653, no "
+          "power spent, and the cross's release swings",
           "[combat]") {
-    // Expected: combat/index.md#run-attacks, confirmed (code)
-    // The original's Player_Special refuses a pad player holding an object (it throws a melee weapon first when the
-    // throw is allowed, which Coney does not build); cross's own 0x10 then plays 36 on the release
-    // (docs/research/combat-throws.md#bat-cross).
-    for (const int set : {1, 2, 3, 4, 5, 6}) {
+    // Expected: combat-throws.md#armed-special, confirmed (code)
+    // The armed special refuses the throw at a target within 2.0 m; Player_Special then refuses a pad player holding
+    // an object, and cross's own 0x10 plays the set's swing on the release (combat-throws.md#bat-cross, confirmed
+    // (runtime)). Sets 4 and 6 never reach the armed special and are refused the same way.
+    for (const int set : {1, 2, 3, 4, 6}) {
         INFO("anim set " << set);
         Runner runner(nullptr);
         const auto frames = runner.run("10 press cross\n11 tap square\n13 release cross\n", 30,
                                        [set](std::uint64_t, CombatInput& input) {
                                            input.animSet = set;
                                            input.holdingObject = true;
+                                           input.throwTargetNear = true;
                                        });
         CHECK(frames[11].command == command::kCrossSquare);
         for (const Frame& frame : frames) {
             CHECK(frame.out.startAnim != anim_id::kSpecial);
             CHECK(frame.out.startAnim != anim_id::kSpecialRage);
+            CHECK_FALSE(frame.out.meleeThrow);
         }
         CHECK(runner.combat().power().value() >= 390);
         // The melee sets swing on the release.
@@ -582,6 +585,73 @@ TEST_CASE("with a bat, cross + square is no special: no 653, no power spent, and
             CHECK(starts(frames) == Starts{{13, set == 1 ? 47 : set == 2 ? 41 : 36}});
         }
     }
+}
+
+TEST_CASE("with a melee weapon and nobody within 2 m, cross + square throws it: 502 for a bat, 491 for a knife or a "
+          "baton, no power spent and no swing on the release",
+          "[combat]") {
+    // Expected: combat-throws.md#armed-special, confirmed (code)
+    // At runtime the bat's 0x22 with nobody near played 502 and the release's 0x10 was dropped
+    // (combat-throws.md#bat-cross, confirmed (runtime)).
+    for (const int set : {1, 2, 3}) {
+        INFO("anim set " << set);
+        Runner runner(nullptr);
+        const auto frames = runner.run("10 press cross\n11 tap square\n13 release cross\n", 40,
+                                       [set](std::uint64_t, CombatInput& input) {
+                                           input.animSet = set;
+                                           input.holdingObject = true;
+                                       });
+        CHECK(frames[11].command == command::kCrossSquare);
+        CHECK(starts(frames) == Starts{{11, set == 3 ? anim_id::kSwingableThrow : anim_id::kKnifeThrow}});
+        CHECK(frames[11].out.meleeThrow);
+        CHECK(runner.combat().power().value() >= 390);
+    }
+}
+
+TEST_CASE("a melee weapon's throw goes by the gait, and a free sprint, the no-throw flag, the aiming state or an "
+          "attack's phases refuse it",
+          "[combat]") {
+    // Expected: combat-throws.md#armed-special, confirmed (code)
+    const auto thrown = [](const std::function<void(CombatInput&)>& set) {
+        Runner runner(nullptr);
+        const auto frames = runner.run("10 press cross\n11 tap square\n13 release cross\n", 20,
+                                       [&set](std::uint64_t frame, CombatInput& input) {
+                                           input.animSet = 3;
+                                           input.holdingObject = true;
+                                           if (frame == 11) {
+                                               set(input);
+                                           }
+                                       });
+        return frames[11].out.meleeThrow ? frames[11].out.startAnim : anim_id::kNone;
+    };
+    CHECK(thrown([](CombatInput& input) { input.gait = Gait::Walk; }) == anim_id::kOneHandedThrowFromWalk);
+    CHECK(thrown([](CombatInput& input) { input.gait = Gait::Jog; }) == anim_id::kOneHandedThrowFromRun);
+    CHECK(thrown([](CombatInput& input) { input.gait = Gait::Run; }) == anim_id::kOneHandedThrowFromRun);
+    CHECK(thrown([](CombatInput& input) {
+              input.gait = Gait::Walk;
+              input.fightStance = true;
+          }) == anim_id::kSwingableThrow);
+    CHECK(thrown([](CombatInput& input) { input.gait = Gait::Sprint; }) == anim_id::kNone);
+    CHECK(thrown([](CombatInput& input) { input.noThrowWeapon = true; }) == anim_id::kNone);
+    CHECK(thrown([](CombatInput& input) { input.throwAiming = true; }) == anim_id::kNone);
+    CHECK(thrown([](CombatInput& input) { input.phase = kPhaseWindUp; }) == anim_id::kNone);
+}
+
+TEST_CASE("with a set 5 object, cross + square throws it as square and cross do, whatever the melee throw's 2 m test",
+          "[combat]") {
+    // Expected: combat-throws.md#armed-special, confirmed (code)
+    // The armed special sends a set 5 object to Player_CrossWithWeapon, which has no 2.0 m test. (That function's smash
+    // of a human in reach, 473 / 475, is not built in Coney; this checks only that the melee throw's test is skipped.)
+    Runner runner(nullptr);
+    const auto frames =
+        runner.run("10 press cross\n11 tap square\n13 release cross\n", 20, [](std::uint64_t, CombatInput& input) {
+            input.animSet = 5;
+            input.holdingObject = true;
+            input.throwTargetNear = true;
+        });
+    CHECK(frames[11].command == command::kCrossSquare);
+    CHECK(starts(frames) == Starts{{11, anim_id::kOneHandedThrow}});
+    CHECK_FALSE(frames[11].out.meleeThrow);
 }
 
 TEST_CASE("with a bat, circle + cross is no strong grapple, even with a target in reach", "[combat]") {

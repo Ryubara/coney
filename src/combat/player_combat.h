@@ -50,7 +50,14 @@ struct CombatInput {
     bool player = true;         ///< A player's human (`+0x1b0` not -1; Fighter::player()), not one no player controls.
     bool padControlled = true;  ///< The per-player record's `+0x1b`: the pad drives the human, not its brain.
     bool hasSprayPaint = false; ///< Spray paint left (`Human_GetSprayPaint`, `0x00222818`, not 0).
-    bool fightStance = false;   ///< In a fight stance (SquareInput::fightStance).
+    /// Human flag `0x4000000000` (`HuSetNoThrowWeapon`): the armed special never throws a melee weapon.
+    bool noThrowWeapon = false;
+    /// The armed special's target is within 2.0 m (the fighter's search, human::Fighter::armedSpecialTarget()): it
+    /// refuses to throw a melee weapon at it (docs/research/combat-throws.md#armed-special).
+    bool throwTargetNear = false;
+    /// In the throw's aiming state (`Human_MoveThrowAim` is the human's move function): no melee weapon is thrown.
+    bool throwAiming = false;
+    bool fightStance = false;       ///< In a fight stance (SquareInput::fightStance).
     bool grabTargetInReach = false; ///< The search found someone to grab for this circle or circle + cross.
     /// Both grab-block flags on the player (`0x40000000` and `0x80000000`, `HuBlockGrab`): circle starts no grab.
     bool grabBlocked = false;
@@ -96,6 +103,12 @@ struct CombatOutput {
     /// The tandem starts with the set whose first id this is (combat::tandemSet()); anim_id::kNone otherwise. The
     /// fighter plays the three humans' clips; startAnim stays anim_id::kNone.
     int tandemBase = anim_id::kNone;
+    /// startAnim is the armed special's throw of a melee weapon (491, 502, or 471 / 472 on the move): the fighter turns
+    /// to the throw's target and plays it as `Human_StartMeleeThrow` does (human::Fighter::playMeleeThrow()).
+    bool meleeThrow = false;
+    /// The armed special took its target (the fighter's CombatInput::throwTargetNear search) as the target, whether it
+    /// then threw or refused at a target within 2.0 m: the fighter makes it its target.
+    bool throwTargetTaken = false;
 };
 
 /// The player's combat state and its per-update decisions.
@@ -192,10 +205,18 @@ class PlayerCombat {
     // 653 (645 in rage), which needs and spends a quarter of the power meter; the fighter adds 2 from the target's rear
     // (Fighter::playAttack()). Circle + cross: strongGrapple(). Circle + triangle: the spray 664, which a pad-driven
     // human needs paint for; the caller drops what is held and takes one paint (CombatOutput::sprayed). All three are
-    // refused on kSpecialRefusingPhases and for a player holding any object (with a melee weapon the original's armed
-    // command throws it first, which is not built; either way no special, docs/research/combat-throws.md#bat-cross).
+    // refused on kSpecialRefusingPhases and for a player holding any object (cross + square with a weapon he may throw
+    // has gone to armedSpecial() first; either way no special, docs/research/combat-throws.md#bat-cross).
     // @orig 0x00287730 Player_Special (unknown)
     void special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
+    // Cross + square with an object the special may throw in hand (heldIsThrowable() for any human): for a player, the
+    // armed special's turn before special()'s. Refused in an attack's phases and with nothing in hand; it empties the
+    // chain's buffer. A set 4-6 object (in practice set 5) is thrown as square and cross throw it (throwAttack()); a
+    // melee weapon (sets 1-3) is thrown (meleeThrowAttack(), CombatOutput::meleeThrow) unless the human has the
+    // no-throw flag or the target the fighter picked is within 2.0 m. Returns whether a throw started; when it did not,
+    // special() runs, which refuses a player holding an object (docs/research/combat-throws.md#armed-special).
+    // @orig 0x00288838 Player_ArmedSpecial (unknown)
+    bool armedSpecial(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // Circle + cross outside a hold: the strong grapple, a grab whose connect is the strike 657 (649 in rage), with no
     // power check or cost; with nobody to grab, nothing (docs/research/combat-grabs.md#strong-grapple). special() has
     // already refused it as it refuses the special.
@@ -216,6 +237,7 @@ class PlayerCombat {
     /// @orig 0x00284920 Player_GrabOrTackle (unknown)
     void grabOrTackle(const CombatInput& input, CombatOutput& out);
     // The commands of a free player.
+    // @coney-only Coney's split of the dispatcher: the commands part of `Player_UpdateActions`, which update() ports
     void updateCommands(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
 
     const AnimRangeList* m_ranges;

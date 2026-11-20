@@ -12,8 +12,10 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/options.h"
+#include "fileio/fatx_volume.h"
 #include "support/fixtures.h"
 #include "support/ps2_card_fixtures.h"
+#include "support/xbox_save_fixtures.h"
 #include "warriors/disk_profile_store.h"
 #include "warriors/game_state.h"
 #include "warriors/profile_record.h"
@@ -88,6 +90,45 @@ TEST_CASE("coney --import-save imports every profile of a card into the profiles
     CHECK(again == 1);
     CHECK(againText.find("a profile named SNAKE exists already") != std::string::npos);
     CHECK(againText.find("0 of 2 profile(s) imported") != std::string::npos);
+}
+
+TEST_CASE("coney --import-save imports the Xbox saves of a save folder copy and of xemu's disk image",
+          "[import_command]") {
+    // Expected: save.md#xbox-import
+    TempDir dir;
+    std::vector<coney::test::FatxFile> files;
+    for (const std::string name : {"SNAKE", "AJAX"}) {
+        ProfileRecord record;
+        record.name = name;
+        record.progress.bankedMoney = name == "SNAKE" ? 100 : 101;
+        files.push_back({"UDATA/5454009b/" + name + "00000000/profile.dat",
+                         coney::test::xboxDataFile(coney::test::xboxRecord(record))});
+    }
+    coney::Options options;
+    options.profilesDir = (dir.path() / "profiles").string();
+    SECTION("a copy of the title folder") {
+        for (const coney::test::FatxFile& file : files) {
+            dir.write("copy/" + file.path, file.data);
+        }
+        options.importSave = (dir.path() / "copy" / "UDATA" / "5454009b").string();
+    }
+    SECTION("xemu's disk image") {
+        const auto volume = coney::test::buildFatx(coney::io::kXboxDataPartitionSize, files);
+        options.importSave =
+            dir.write("xbox_hdd.qcow2",
+                      coney::test::buildQcow2(std::uint64_t{8} << 30,
+                                              coney::test::shifted(volume, coney::io::kXboxDataPartitionOffset)))
+                .string();
+    }
+    const auto [code, text] = run(options);
+    CAPTURE(text);
+    CHECK(code == 0);
+    CHECK(text.find("imported AJAX (save folder AJAX00000000) as profile 1") != std::string::npos);
+    CHECK(text.find("imported SNAKE (save folder SNAKE00000000) as profile 2") != std::string::npos);
+    coney::GameState state;
+    coney::DiskProfileStore store(dir.path() / "profiles", state);
+    REQUIRE(store.record(1) != nullptr);
+    CHECK(store.record(1)->progress.bankedMoney == 100);
 }
 
 TEST_CASE("coney --import-save names the problem with a file that is not a save", "[import_command]") {

@@ -151,13 +151,12 @@ The original's rules are in one place: [Timing](combat-moves.md#timing), [Input]
 
 - **Sets 4-6** (barrels, bottles, the ghetto blaster): square and cross play the unarmed moves; the original throws
   (505-507, 467-472, 551-553) or smashes (473 / 475) ([Weapons](combat-throws.md#weapons)).
-- **Knife and bottle kills** (484-496) and **throwing a melee weapon** (491 / 502, next entry) are not built.
-- **Throwing a melee weapon with cross + square** (`0x22`, 502 / 491): the original throws a knife, baton or bat unless
-  a target is within 2.0 m (then it does nothing, and the cross's release swings 36). Coney refuses the command for a
-  player holding any object, as `Player_Special` (`0x00287730`, confirmed (code)) does, and never throws: with nobody
-  near the cross's release swings where the original throws. The special 653 and circle + cross's strong grapple do
-  not start with an object in hand ([Cross with a bat in hand](combat-throws.md#bat-cross)).
-  Coney: `repo:src/combat/player_combat.cpp`.
+- **Knife and bottle kills** (484-496) are not built.
+- **Throwing a melee weapon with cross + square** (`0x22`, 502 / 491, 471 / 472 on the move): built as
+  the original's armed special ([Cross + square with a weapon in hand](combat-throws.md#armed-special)), with
+  stand-ins in its target search (the counter search, distances across the ground, the object filter). When it is
+  refused (a target within 2.0 m) the special is refused for a player holding an object and the cross's release
+  swings, as in the original. Coney: `repo:src/combat/player_combat.cpp`, `repo:src/human/fighter.cpp`.
 - **Clip lengths**: Coney ends a clip when its time reaches its duration, ceil(F / rate) updates; the original ends
   it on the update its frame would reach F, one update sooner on 50 of the 174 clips in the move tables (19, 20, 34
   and the dive among them) and on 389, which they do not list ([When a clip ends](formats/animation.md#clip-end)).

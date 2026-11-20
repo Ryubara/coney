@@ -35,6 +35,10 @@ inline constexpr int kArmedAttackFromRun = 501;
 inline constexpr int kOneHandedThrow = 467;
 inline constexpr int kOneHandedThrowFromWalk = 471;
 inline constexpr int kOneHandedThrowFromRun = 472;
+/// The standing throws of a melee weapon (docs/research/combat-throws.md#armed-special): `KNIFE_THROW` (a knife or a
+/// baton) and `SWINGABLE_OBJECT_THROW` (a bat). Each has one clip event of type 10, the release.
+inline constexpr int kKnifeThrow = 491;
+inline constexpr int kSwingableThrow = 502;
 inline constexpr int kBarrelThrow = 505;
 inline constexpr int kBarrelThrowFromWalk = 506;
 inline constexpr int kBarrelThrowFromRun = 507;

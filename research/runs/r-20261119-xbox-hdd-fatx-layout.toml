@@ -1,0 +1,42 @@
+version = 1
+id = "r-20261119-xbox-hdd-fatx-layout"
+date = "2026-11-19"
+kind = "method"
+tool = "xemu record-run"
+digest = "b9dceace22381826140a524913cabaa9fea67496edead070711a881e7f6ad729"
+
+[who]
+agent = "a522723df779a2b42"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[xemu]
+version = "v0.8.139"
+copy = "xemu"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "Read the claimed copy's own hard-disk image (xemu's qcow2, on which the game had made its title folder) with a separate read-only script: the qcow2 header and cluster tables, the FATX superblock of the E partition at its fixed offset, its FAT and directories down to UDATA and the game's title folder; only names, sizes and counts printed"
+
+[values]
+qcow2_version = 3
+qcow2_cluster_bytes = 65536
+virtual_disk_bytes = 8589934592
+e_partition_offset = 2884108288
+e_partition_bytes = 5132779520
+sectors_per_cluster = 32
+root_cluster = 1
+clusters = 313280
+fat_entry_bytes = 4
+fat_bytes = 1253376
+udata_title_folders = 4
+title_folder_entries = 3
+titlemeta_bytes = 50
+titleimage_bytes = 10240
+saveimage_bytes = 4096
+title_id = 1414791323

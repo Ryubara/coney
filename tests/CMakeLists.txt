@@ -68,7 +68,9 @@ add_executable(coney_tests
     effects/blur_pulse_test.cpp
     fileio/disc_test.cpp
     fileio/executable_test.cpp
+    fileio/fatx_volume_test.cpp
     fileio/ps2_memory_card_test.cpp
+    fileio/qcow2_image_test.cpp
     fileio/reader_test.cpp
     fileio/stream_test.cpp
     fileio/wad_index_test.cpp
@@ -314,6 +316,7 @@ add_executable(coney_tests
     warriors/save_import_test.cpp
     warriors/tag_game_test.cpp
     warriors/unlock_counts_test.cpp
+    warriors/xbox_save_test.cpp
     world/debug_camera_test.cpp
     world/level_object_test.cpp
     world/path_map_test.cpp

@@ -1,0 +1,34 @@
+version = 1
+id = "r-20261119-xbox-profile-record-size"
+date = "2026-11-19"
+kind = "method"
+tool = "xemu record-run"
+digest = "f011346c1b8cfd8aba52b379e46c64839a8d9a60224545cd8cd9356730112233"
+
+[who]
+agent = "a522723df779a2b42"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[xemu]
+version = "v0.8.139"
+copy = "xemu"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "Booted the Xbox game in xemu to its intro and read the save system object at Xbox 0x005ba518 (the static initialiser at Xbox 0x0035c820 builds it): its vtable word, the record length at +0xb4 that SaveSystem_BuildTemplate measures, the six-slot image length at +0xb8, and the save drive index at +0xcc"
+
+[values]
+vtable = 4485448
+record_length = 1210
+image_length = 7260
+drive_index = 0
+
+[addresses]
+save_system = 0x005ba518
+record_length = 0x005ba5cc

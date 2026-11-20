@@ -59,8 +59,10 @@ add_library(coney_core STATIC
     core/sha256.cpp
     fileio/disc.cpp
     fileio/executable.cpp
+    fileio/fatx_volume.cpp
     fileio/file_stream.cpp
     fileio/ps2_memory_card.cpp
+    fileio/qcow2_image.cpp
     fileio/reader.cpp
     fileio/stream.cpp
     fileio/wad.cpp
@@ -248,6 +250,7 @@ add_library(coney_core STATIC
     warriors/tag_session.cpp
     warriors/unlock_records.cpp
     warriors/unlockables.cpp
+    warriors/xbox_save.cpp
     world/debug_camera.cpp
     world/level_object.cpp
     world/path_map.cpp

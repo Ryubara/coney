@@ -20,7 +20,10 @@ owns:
 ---
 # Profiles, options and saving
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`).
+Verified against: `SLUS_212.15` (SHA1 `e9cb2cc4...`) and Xbox `default.xbe` (SHA1 `fe246a74...`), both NTSC-U.
+
+The PS2 is the reference for every behaviour on this page; the Xbox sections describe the Xbox build's save, which the
+importer reads.
 
 ## Purpose
 
@@ -172,6 +175,135 @@ the indirect FAT list named cluster 8.
 compressed), SharkPort and X-Port (`.sps`, `.xps`) and the PS3's `.psv` exports; a player converts one to a PSU with a
 card tool first. Whether the PAL and Japanese builds' saves (another folder name) hold the same record is not known
 ([Open questions](#open-questions)).
+
+### The Xbox build's save {#xbox-save}
+
+The Xbox build keeps the same profile, laid out a little differently, in a save of the console's own kind: one save
+folder per profile, each signed. Every claim in this section and the next two is about the Xbox build (the NTSC-U
+`default.xbe`); the PS2 stays the reference for what a profile holds.
+
+**Where it lives.** The game's saves are the console's: the title folder `UDATA/5454009b` (the XBE certificate's title
+id `0x5454009b`) on the hard disk's data partition (`E:`, which the game reaches as `U:`) or on a memory unit (`F:` to
+`M:`), and in it one folder per save, named by twelve upper-case hexadecimal digits that the Xbox library makes from
+the save's name. A save folder holds the dashboard's `SaveMeta.xbx` (UTF-16 with its byte-order mark, a line `Name=`
+and the save's name) and the game's data file `profile.dat`; the title's `TitleMeta.xbx`, `TitleImage.xbx` and
+`SaveImage.xbx` sit in the title folder beside the save folders. The game's load (Xbox `0x0033efe0`) walks the drive's
+saves with `XFindFirstSaveGame` and `XFindNextSaveGame`, at most six, opens each with `XCreateSaveGame` (Xbox
+`0x00347324`) and reads its `profile.dat` into the next of the six slots, naming the slot after the save (its first
+eight characters); the save step (Xbox `0x0033f510`) creates the save under the slot's name and writes the slot's record
+there (Xbox `0x0033f360`). Confirmed (code) at those Xbox addresses. Confirmed (runtime), run
+r-20261119-xbox-profile-save-signature: on the Xbox in xemu, a save made by calling the save step for slot 0 named
+`CONEY` gave a folder of twelve hexadecimal digits under `UDATA/5454009b` holding a 26-byte `SaveMeta.xbx` (the
+byte-order mark, `Name=CONEY` and a line break) and a 1,230-byte `profile.dat`.
+
+**The data file** is the record ([below](#xbox-record)) followed by a 20-byte signature: the HMAC-SHA1 of the record,
+keyed by the title's signature key, as the Xbox library's `XCalculateSignatureBegin(0)` (a roamable signature, so a
+save copied to another console still loads), `XCalculateSignatureUpdate` and `XCalculateSignatureEnd` make it. The
+Xbox load (Xbox `0x0033eda0`) refuses a file whose size is not the record's and 20 more, reads the record, signs it
+again and compares the 20 bytes; a save that fails either check is marked **not loadable** (slot `+0x1f`), and its slot
+keeps the save's name. Confirmed (code) at Xbox `0x0033eda0` and `0x0033f360`. Confirmed (runtime), run
+r-20261119-xbox-profile-save-signature: the Xbox save's last 20 bytes equalled the HMAC-SHA1 of the 1,210 bytes before
+them under the kernel's key.
+
+**The key is the console's, not the XBE's.** The Xbox library's `XCalculateSignatureBegin` (Xbox `0x00346e2f`,
+`0x00346c57`) keys the HMAC with the Xbox kernel's exported `XboxSignatureKey` (its thunk at Xbox `0x0040fcac`), 16
+bytes, or with one of the `XboxAlternateSignatureKeys` for another title id. Confirmed (code) at those Xbox addresses.
+That key is not the 16 bytes of the XBE certificate's signature key (certificate `+0xd0`, Xbox `0x00010254`): in xemu
+the two differed in all 16 bytes, confirmed (runtime), run r-20261119-xbox-signature-key-source. The Xbox kernel makes
+the key from the certificate's when it starts the game, with a key of its own (the HMAC-SHA1 of the certificate's key
+under the kernel's `XboxCERTKey`, inferred from the console's public documentation; the step is in the kernel, which
+the XBE does not hold). So the key cannot be read from the player's XBE alone.
+
+**The slots.** The Xbox save system (Xbox `0x005ba518`, vtable Xbox `0x00447148`, built by the static initialiser at
+Xbox `0x0035c820`) keeps six slot records of `0x1d` bytes (used `+0x04`, the name `+0x05`, not loadable `+0x1f`, the
+fourth-difficulty unlock `+0x20`), the record length (`+0xb4`), the six-slot image (`+0xb8`, its memory file `+0xbc`)
+and the drive (`+0xcc`, an index into `UFGHIJKLM`). After the load, the Xbox `SaveSystem_ReadHeaders` (Xbox
+`0x0033c3f0`) runs `ProfileHeader_Read` (Xbox `0x0033bc60`) on each slot not marked not loadable: version `0x11`, or
+else the "bad version" flag (`+0xc8`); then the record's name over the save's, the slot **used when the name's first
+byte is not zero**, and the unlock byte. Confirmed (code) at those Xbox addresses. Confirmed (runtime), run
+r-20261119-xbox-profile-record-size: on the Xbox in xemu, `+0xb4` read 1,210, `+0xb8` 7,260 and `+0xcc` 0 (`U:`, the
+hard disk).
+
+#### The Xbox record {#xbox-record}
+
+Confirmed (code) at the Xbox addresses cited unless a line says otherwise.
+
+The Xbox `Profile_Write` (Xbox `0x0033bae0`) and `Profile_Read` (Xbox `0x0033bcf0`) write and read the PS2's fields in
+the PS2's order, with three differences: the fourth-difficulty unlock and the options are one byte each, not words; the
+Rumble store's gangs are 4 bytes shorter; and there is no Video setting. The record is **1,210 bytes** (`0x4ba`),
+measured as on the PS2, by the Xbox `SaveSystem_BuildTemplate` (Xbox `0x0033c2d0`); confirmed (runtime), run
+r-20261119-xbox-profile-record-size.
+
+| Offset | Size | Field | On the PS2 ([The profile record](#record)) |
+| --- | --- | --- | --- |
+| `0x000` | 4 | version, `0x11` | the same |
+| `0x004` | 8 | the name | the same |
+| `0x00c` | 1 | story finished on HARDCORE SOLDIER | a word |
+| `0x00d` | 0x168 | the per-mission best records (Xbox `0x005ba300`) | the same |
+| `0x175` | 0x50 + 0x50 | the unlockables' locked and "new" sets, twenty words each (Xbox `0x0033e650`) | the same |
+| `0x215` | 0x22c | the Rumble store (Xbox `0x004fbdc8`, below) | 0x254 bytes |
+| `0x441` | 0x40 | the store's first 512 bits, packed (Xbox `0x0012c6d0`) | the same |
+| `0x481` | 4 | the banked money (`W_GameState + 0x458`) | the same |
+| `0x485` | 0x14 | the option block (`W_GameState + 0x5e80`): the brightness byte `+0x04` (`Gamma_Set`, Xbox `0x000ddd50`), the two volumes `+0x08` and `+0x0c` | the same |
+| `0x499` | 3 × 2 | per pad, P1 then P2: invert camera (Xbox `0x00334eb0`), auto-adjust camera (Xbox `0x00334ed0`), vibration (Xbox `0x00335cc0`) | words |
+| `0x49f` | 1 | 2P split-screen merge (Xbox `0x00334ef0`) | a word |
+| `0x4a0` | 1 | subtitles (`W_GameState + 0x422`) | a word |
+| `0x4a1` | 1 | a sound manager setting (Xbox `0x00026610`, `+0x423e8`) in the PS2's Pro Logic II place; its name in the Xbox menu is not traced | a word |
+| | | no Video setting | a word |
+| `0x4a2` | 4 | difficulty (a byte, `W_GameState + 0x423`) | the same |
+| `0x4a6` | 4 | `W_GameState + 0x00` | the same |
+| `0x4aa` | 0x10 | the script flags 1-128 (`W_GameState + 0x56e8`) | the same |
+
+**The unlockables' bit order.** The Xbox `Unlockables_Write` (Xbox `0x0033e650`) packs unlockable *w* × 32 + *b* into
+bit *b* of word *w*, so in the little-endian record unlockable *i* is byte *i* / 8, bit *i* % 8; the Rumble store's
+packed bits (Xbox `0x0012c6d0`) are laid out the same way. Confirmed (code) at those Xbox addresses. That the PS2's
+`Unlockables_Write` (`0x00424a20`) packs them the same way is inferred from the two builds sharing the record's fields
+and order ([Open questions](#open-questions)).
+
+**The Xbox Rumble store** (the store's functions at Xbox `0x0012c330`-`0x0012c5c0`): the 512 owned bits (`+0x000`), ten
+gangs of `0x30` bytes from `+0x040` (in use, a byte, `+0x00`; the name, 10 characters at `+0x01` and `+0x0b` = 0; the
+nine members' character types, words from `+0x0c`, `0x160` for none), the gang being edited `+0x220`, the member being
+edited `+0x224` and "changed" `+0x228` (a byte, cleared after each write). The PS2's gang is the same with a word for
+"in use" and the name at `+0x04` ([the store](frontend.md#rumble-gangs)), so every field has its place in the other.
+
+### The Xbox containers players have {#xbox-containers}
+
+None of this is the game's code, which reaches the disk through the Xbox kernel. A player's Xbox save of the game is
+the title folder `UDATA/5454009b` with its save folders, in one of these containers:
+
+| Container | What it is | How it is told apart |
+| --- | --- | --- |
+| A copied save folder | save folders copied off the console (FTP from a modded console, a memory-unit tool): one save's folder, the title folder `5454009b`, or `UDATA` or the whole `E:` above it | a folder holding `profile.dat` or `SaveMeta.xbx`, or `5454009b` (alone or under `UDATA`) |
+| `profile.dat` alone | one save's data file | 1,230 bytes starting with the version `0x11` |
+| xemu's hard-disk image (`xbox_hdd.qcow2`) | the console's whole 8 GB disk in QEMU's copy-on-write format | starts with `QFI` and `0xfb` |
+| A raw hard-disk image | the same disk byte for byte (a dump of a console's disk, or xemu's converted) | a FATX volume at `0xabe80000` |
+| A FATX volume image | one partition, or a memory unit's 8 MB | starts with `FATX` |
+
+The values the run recorded are confirmed (runtime), run r-20261119-xbox-hdd-fatx-layout, read from an xemu copy's own
+disk image on which the Xbox game had made its title folder: a qcow2 image of version 3 with 64 KB clusters and an 8 GB
+disk; at `0xabe80000` the data partition, `0x131f00000` bytes, a FATX volume of 32 sectors per cluster (16 KB), its
+root at cluster 1, 313,280 clusters with 4-byte FAT entries and a FAT of `0x132000` bytes; `UDATA` holding four title
+folders, and `5454009b` its `TitleMeta.xbx` (50 bytes), `TitleImage.xbx` (10,240) and `SaveImage.xbx` (4,096). The
+rest of this section is inferred from the formats as QEMU and the open-source Xbox disk tools read them.
+
+**FATX.** Little-endian. A volume starts with a 4 KB superblock: the magic `FATX`, a volume id `+0x04`, sectors per
+cluster `+0x08` (512-byte sectors), the root folder's first cluster `+0x0c`. The FAT follows at `0x1000`, one entry per
+cluster of the volume (its size divided by the cluster size), 16-bit while there are fewer than `0xfff0` clusters and
+32-bit from there, padded to a multiple of 4 KB; cluster 1 starts right after it. An entry of 0 is free, the highest
+values (from `0xfff0`, or `0xfffffff0`) end a chain, and any other names the next cluster. A folder is a chain of
+64-byte entries: the name's length `+0x00` (`0xe5` a deleted entry, `0x00` or `0xff` the end of the folder), attributes
+`+0x01` (`0x10` a folder), the name `+0x02` (up to 42 characters, compared ignoring case), the first cluster `+0x2c`,
+the size `+0x30`, then three dates and times. The retail hard disk's partitions are at fixed places, and the data
+partition (`E:`) is at `0xabe80000`, `0x131f00000` bytes, on every disk.
+
+**qcow2.** Big-endian. The header: the magic, the version `+0x04` (2 or 3), a backing file's name `+0x08` (its offset)
+and `+0x10` (its length), the cluster bits `+0x14`, the disk's size `+0x18`, the encryption method `+0x20`, the L1
+table's entries `+0x24` and offset `+0x28`; version 3 adds incompatible feature bits `+0x48` (bit 0 not closed cleanly,
+1 corrupt, 2 an external data file, 3 a compression type, 4 extended L2 entries). A disk cluster's place in the file is
+found in two steps: L1 entry *c* / (cluster size / 8) gives an L2 table's offset (bits 9-55), and that table's entry
+*c* % (cluster size / 8) the cluster's offset (bits 9-55; bit 62 marks a compressed cluster, and bit 0 in version 3 a
+cluster of zeros). An offset of 0 at either step is a cluster never written, which reads as zeros. Internal snapshots
+keep tables of their own and leave the current disk's alone.
 
 ## Behaviour
 
@@ -578,7 +710,8 @@ outside the rules) has no name, and only a file without the magic is listed unde
 ### Importing a PS2 save {#import}
 
 A player brings a profile over from a PS2 save once: the importer reads the save, never writes it, and makes each
-profile a new Coney save in a free slot. The Xbox build's save is [#1421](issue:1421).
+profile a new Coney save in a free slot. The Xbox build's save comes in the same way ([Importing an Xbox
+save](#xbox-import)).
 
 - **Reading.** [`readOriginalSave`](repo:src/warriors/save_import.h) takes a path (a file or a folder) and tells the
   [container](#import-containers) apart by its content; [`Ps2MemoryCard`](repo:src/fileio/ps2_memory_card.h) reads a
@@ -600,8 +733,44 @@ profile a new Coney save in a free slot. The Xbox build's save is [#1421](issue:
   `BASLUS-21215` (naming the saves it holds), a damaged card, a data file of the wrong size, a save with no loadable
   profile (naming why each slot was left out).
 - **Where.** `coney --import-save PATH [--profiles DIR]` imports every profile of one save
-  ([Importing a PS2 save](../guides/running.md#import-save)); in the front end, PM_Profile offers IMPORT PROFILE when
+  ([Importing a save](../guides/running.md#import-save)); in the front end, PM_Profile offers IMPORT PROFILE when
   the `import` folder beside the profiles holds something ([PM_Import](frontend.md#pm-import)).
+
+### Importing an Xbox save {#xbox-import}
+
+A player brings a profile over from the Xbox build the same way, once: the importer reads the save, never writes it, and
+makes each profile a new Coney save in a free slot, with `importProfile` and the same rules as a PS2 profile
+([Importing a PS2 save](#import)).
+
+- **Reading.** `readOriginalSave` tells the Xbox [containers](#xbox-containers) apart by their content
+  ([`xbox_save.h`](repo:src/warriors/xbox_save.h)): a folder through `readXboxFolder` (one save's folder, the title
+  folder, `UDATA` or a copy of `E:` above it), a disk image through `readXboxImage`, read on demand whatever its size
+  ([`Qcow2Image`](repo:src/fileio/qcow2_image.h) for xemu's, [`FatxVolume`](repo:src/fileio/fatx_volume.h) for the
+  file system), and `profile.dat` alone by its size and version. Every chain is followed through the FAT, and one that
+  loops, leaves the volume or meets a free cluster before the file's size is refused as a damaged volume, and so is a
+  folder whose chain runs past 256 KB (4,096 entries, **Coney's choice**: it bounds what a crafted FAT can cost); a
+  qcow2 image whose header or L1 table the file cuts short is refused before anything is allocated for it; a qcow2 image
+  with a backing file, encryption, an external data file, extended L2 entries or the corrupt mark is refused, and a
+  compressed cluster fails the read that reaches it (xemu writes none).
+- **The save folders** are read one profile each, as the game's load reads them (`readXboxSaveFolders`), in name
+  order (**Coney's choice**: the game's load at Xbox `0x0033efe0` takes them in the order the console's save search,
+  `XFindFirstSaveGame` and `XFindNextSaveGame`, returns them, confirmed (code) there; the order only changes the label
+  of each profile's place): a save whose `profile.dat` is missing or not 1,230 bytes, whose record is of another
+  version, or whose profile has no name is left out and named, by its `SaveMeta.xbx` name when it has one. **Coney's choice**:
+  every save folder is read, where the game's load takes the first six the drive lists; and a record of another
+  version is left out, where the game's header read (Xbox `0x0033bc60`) raises its "bad version" flag (`+0xc8`) and
+  keeps the slot listed under the save's name, confirmed (code) there.
+- **The record** (`parseXboxRecord`) becomes the PS2's [record](#record) field for field: the bytes of the options
+  become its flags, the Rumble store's gangs move to the PS2 store's places (`0x30` to `0x34` bytes each), and the
+  Video setting, which the Xbox does not save, is Normal (**Coney's choice**). What is written is then the same Coney
+  save a PS2 profile makes.
+- **Stand-in: the signature is not checked.** The game refuses a save whose 20-byte signature does not match its
+  record, but the key is the Xbox kernel's, made from a key of the console's ([The Xbox build's save](#xbox-save)),
+  and Coney has neither; the importer checks the size and the version instead, so a damaged or edited record that keeps
+  its size imports. Open question: [q-xbox-signature](#q-xbox-signature).
+- **Where.** `coney --import-save PATH` takes any of the containers
+  ([Importing a save](../guides/running.md#import-save)), and the front end's `import` folder lists them beside PS2
+  saves ([PM_Import](frontend.md#pm-import)); a profile's line says which save folder it came from.
 
 ## Open questions
 
@@ -609,7 +778,9 @@ profile a new Coney save in a free slot. The Xbox build's save is [#1421](issue:
   `BASLUS-21215` only.
 - The option block's `+0x00` and `+0x10` and the record's `W_GameState + 0x00` word: what they hold.
 - The second 640-bit unlockables set (`0x006fe948`): that it marks new unlocks is inferred.
-- The bit order of the unlockable and script-flag sets in the record (byte *i* / 8, bit *i* % 8 is inferred).
+- The bit order of the unlockable and script-flag sets in the PS2 record (byte *i* / 8, bit *i* % 8 is inferred; the
+  Xbox build's unlockables are packed so, confirmed (code) at Xbox `0x0033e650`, [The Xbox record](#xbox-record)).
+- The Xbox record's sound byte (Xbox `0x00026610`, the PS2's Pro Logic II place): what the Xbox options menu calls it.
 - Which message a slot-1 card change shows (`0xa1`-`0xa4`) in each case, not traced.
 
 ### Where the importer reads more loosely than the game {#q-import-choices}
@@ -619,6 +790,15 @@ check the icon files' sizes (`PS2Save_CheckFileSizes`, `0x0041fcc8`), so a data 
 names a slot of another version in a message instead of raising the "bad version" flag (`ProfileHeader_Read`,
 `0x004219d0`). Whether a save with wrong icon sizes should be refused as the game would refuse it is open; no player
 save with such icons has been seen.
+
+### The Xbox save's signature {#q-xbox-signature}
+
+The importer reads an Xbox save without checking its signature ([Importing an Xbox save](#xbox-import)), because the
+key is the Xbox kernel's, made from the XBE certificate's key with a key of the console's (confirmed (runtime) that it
+is not the certificate's key, run r-20261119-xbox-signature-key-source; the derivation inferred from the console's
+public documentation). Checking it as the game does would need that key from the player's own console files (the
+kernel in the flash BIOS image xemu is given). Whether that is worth doing, and whether a save whose signature fails
+should then be refused as the game refuses it, is open.
 
 ### The two unreachable profile screens {#q-xbox-profile-screens}
 
@@ -640,6 +820,20 @@ caller then hands the script, and whether any script lists more than 32 records 
 (speculative). Coney sets all 32 slots of the script's table in both cases and drops matches past 32: stand-ins.
 
 ## How this was checked
+
+The Xbox sections were read in a Ghidra project of `default.xbe` (the open-source XBE loader, as on [Xbox
+executable](xbox-executable.md)) and checked in xemu 0.8.139 on an XISO of the maintainer's own disc: the save
+system's record length read at the intro (run r-20261119-xbox-profile-record-size), the kernel's key compared with the
+certificate's by a script that printed only the count of equal bytes (run r-20261119-xbox-signature-key-source), and a
+save made by calling the game's own save step through xemu's debugger stub, then read from the copy's disk image by a
+read-only script (runs r-20261119-xbox-profile-save-signature and r-20261119-xbox-hdd-fatx-layout). No key, save or disk
+image left the scratch folder.
+
+The Xbox importer read that same save on the copy's own disk image: `coney --import-save xbox_hdd.qcow2` found its one
+save folder through the qcow2 and FATX readers, named it by its `SaveMeta.xbx` (`CONEY`), and left it out because its
+record's name is empty (the save step wrote the blank template record; only the save's name had been set), as the
+Xbox's `ProfileHeader_Read` (Xbox `0x0033bc60`) marks a slot with no name unused, confirmed (code) there. A copy of the
+folder in scratch with `CONEY` written into the record's name imported as profile 1.
 
 The importer was checked against a real card as well as the synthetic ones its tests build: the card of run
 r-20261118-ps2-card-save (copied to scratch, never committed) read with `coney --import-save` gave its one profile, with

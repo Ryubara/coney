@@ -12,13 +12,13 @@
 
 namespace coney::gui {
 
-/// PM_Import, Coney's screen for bringing a profile over from a PS2 save: PM_Profile's IMPORT PROFILE item leads here
-/// when the save system's import folder (ProfileStore::importFolder()) holds something and a slot is free. It is laid
-/// out as PM_Load: the title, then one item per profile found (its name; code = its place in the list), two a row, at
-/// most six. A line above the title says where the selected profile comes from (grey), or why nothing can be imported
-/// (red). Accept imports the profile into the first free slot (warriors/save_import.h) and returns kToProfile, back to
-/// PM_Profile, which then offers it under USE EXISTING PROFILE; an import that is refused (the name is taken, no free
-/// slot) plays the refused cue and shows why, in red, and the screen stays. Back pops.
+/// PM_Import, Coney's screen for bringing a profile over from a PS2 or Xbox save: PM_Profile's IMPORT PROFILE item
+/// leads here when the save system's import folder (ProfileStore::importFolder()) holds something and a slot is free.
+/// It is laid out as PM_Load: the title, then one item per profile found (its name; code = its place in the list), two
+/// a row, at most six. A line above the title says where the selected profile comes from (grey), or why nothing can be
+/// imported (red). Accept imports the profile into the first free slot (warriors/save_import.h) and returns kToProfile,
+/// back to PM_Profile, which then offers it under USE EXISTING PROFILE; an import that is refused (the name is taken,
+/// no free slot) plays the refused cue and shows why, in red, and the screen stays. Back pops.
 ///
 /// The text is Coney's own, in English for every language: the game's string tables have nothing for it.
 ///
@@ -60,12 +60,12 @@ class PmImport final : public PmListScreen {
   private:
     // Shows `text` on the line above the title, red for a problem, grey otherwise.
     void showLine(std::string text, bool problem);
-    // The line for the selected profile: its save and card slot.
+    // The line for the selected profile: its save and where in it.
     void describeSelected();
 
     ImportScan m_scan;
     std::vector<ImportCandidate> m_listed;
-    std::vector<std::string> m_sources;
+    std::vector<std::string> m_from; // Each listed profile's line: its save and where in it.
     TextWidget m_line;
     std::string m_lineText;
 };
