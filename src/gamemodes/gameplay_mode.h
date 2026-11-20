@@ -456,9 +456,10 @@ class GameplayMode final : public GameMode {
     // @orig 0x00227d28 Human_IsInSceneState (unknown)
     [[nodiscard]] bool playerInScene() const;
     // Player 1's crew this frame: the follow the game issues itself (forced) at once when another human is made
-    // player 1, which the dispatcher refuses during a scene; then his automatic commands (ai::CrewOrders), and his
-    // menu unlocked every 10 updates (docs/research/ai-gangs.md#warrior-follow, #warrior-auto-commands). The follow
-    // after a scene is the scene's end's (SceneCrewHooks, docs/research/scenes.md#gang).
+    // player 1, which the dispatcher refuses during a scene, and his gang's update right after it; then his automatic
+    // commands (ai::CrewOrders), and his menu unlocked every 10 updates (docs/research/ai-gangs.md#warrior-follow,
+    // #warrior-auto-commands). The follow after a scene is the scene's end's (SceneCrewHooks,
+    // docs/research/scenes.md#gang).
     // @orig 0x00229c40 Human_MakePlayer (unknown)
     // @orig 0x003035d8 PlayerBrain_Update (unknown)
     void stepCrew(std::uint64_t nowMs);

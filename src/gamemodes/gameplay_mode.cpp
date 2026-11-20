@@ -1601,18 +1601,25 @@ void GameplayMode::stepCrew(std::uint64_t nowMs) {
         return;
     }
     CharacterRules& rules = m_state.characters;
-    // A switch of player 1 gives his crew the follow forced at once, with no unlock, as Human_MakePlayer does (the
-    // level's start gives it as he is made, above). The dispatcher refuses it while a scene camera is current or his
-    // menu is locked; only a cinematic's end gives one after it (SceneTask::end()).
+    // A switch of player 1 gives his crew the follow forced at once, with no unlock, then runs his gang's update so
+    // the new tactic starts in this call, as Human_MakePlayer does (the spawner part of its update with 1 is
+    // Spawners::update()'s; the level's start gives the follow as he is made, above, without the update yet, #1520).
+    // The dispatcher refuses the follow while a scene camera is current or his menu is locked; only a cinematic's end
+    // gives one after it (SceneTask::end()).
     if (player->handle != m_crewChief) {
         const bool switched = m_crewChief != 0.0;
         m_crewChief = player->handle;
         if (switched) {
             script::issueWarriorCommand(m_scripts, m_context, player->handle, ai::kCrewFollow, true);
+            if (ai::Gang* crew = chief->gang(); crew != nullptr) {
+                crew->update();
+            }
         }
     }
-    // The automatic commands, his menu unlocked every 10 updates, while they are on (game state `+0x431`,
-    // `WCEnableAutomaticSwitching`; the Rumble arenas turn them off).
+    // PlayerBrain_Update's crew steps: the automatic commands, his menu unlocked every 10 updates, while they are on
+    // (game state `+0x431`, `WCEnableAutomaticSwitching`; the Rumble arenas turn them off). Not built yet (#1520): a
+    // target no longer up dropped, the near-enemy scan every 2 s, the crew range check every 40 updates (with his
+    // heading cached) and the TauntPlayer ring while a Warrior hits back at him.
     if (!m_state.autoSwitch) {
         return;
     }

@@ -1093,8 +1093,9 @@ unlocked, follow is his last command and his crew has one new tactic, the follow
   bound player gives the end's three steps. Before this the gameplay mode's crew step gave the follow and the unlock itself
   once player 1 was out of the scene and no scene camera was current, after the end function and without the gang
   update. It now gives only `Human_MakePlayer`'s follow when another human becomes player 1 (`0x00229c40`):
-  forced, at once and with no unlock, so the dispatcher refuses it while a scene camera is current or his menu is
-  locked, and nothing follows after the scene's end but the end's own steps.
+  forced, at once and with no unlock, followed by his gang's update (`0x00166708`, its spawner part being
+  `Spawners::update`'s) so the new tactic starts in the same update. The dispatcher refuses that follow while a scene
+  camera is current or his menu is locked, and nothing follows after the scene's end but the end's own steps.
 - A scene with roles but none bound ends when its tracks do; an aborted scene's end function is not called. The
   abort's other steps (its fade in at once, the end function, the end poses, the HUD) are #673's.
 - A track's events fire against the scene's frame (the part's start frame plus its time), the header's and the
