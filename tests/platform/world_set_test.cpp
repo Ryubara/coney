@@ -264,6 +264,40 @@ TEST_CASE("a part material taking another part's texture keeps it after that par
     CHECK(assets.store().texture(lent) != nullptr);
 }
 
+// Expected: graphics.md#texture-lifetime, confirmed (code): as above; the debug tools' refresh of a sector's mesh
+// (WorldSet::refreshMesh(), Coney's own) converts it again under a new id, and the new mesh still names the borrowed
+// texture, though the old mesh was its last holder once the lending part unloaded.
+TEST_CASE("a refreshed part mesh keeps a texture it took from a part since unloaded", "[world_set]") {
+    auto engine = RenderEngine::start(RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    coney::platform::SceneAssets& assets = (*engine)->sceneAssets();
+    REQUIRE(assets.converting());
+    TempDir dir;
+    const coney::io::Wad wad =
+        openWorldDisc(dir,
+                      coney::test::partFile(0, {{0, stripAtomic("own")}},
+                                            coney::test::texDictionary({coney::test::rgbaTexture2x2("own"),
+                                                                        coney::test::rgbaTexture2x2("lent")})),
+                      coney::test::partFile(0, {{1, stripAtomic("lent")}}));
+    coney::world::SectorBudget budget(10'000);
+    const std::vector<std::string> names{"test"};
+    auto set = WorldSet::load(wad, names, budget, false, assets);
+    REQUIRE(set.has_value());
+    coney::world::StreamedWorld& world = *(*set)->worlds()[0];
+    REQUIRE(coney::world::requestPart(world, 0, 1, budget, **set, 100).has_value());
+    REQUIRE(coney::world::requestPart(world, 0, 2, budget, **set, 100).has_value());
+    (*set)->unloadPart(0, 1);
+    world.markPartUnloaded(1);
+
+    (*set)->refreshMesh(0, 1);
+    const WorldSet::SectorMesh* sector = (*set)->sectorMesh(0, 1);
+    REQUIRE(sector != nullptr);
+    REQUIRE(assets.materialTextures(sector->mesh).size() == 1);
+    const coney::graphics::TextureId lent = assets.materialTextures(sector->mesh)[0];
+    CHECK(lent.valid());
+    CHECK(assets.store().texture(lent) != nullptr);
+}
+
 TEST_CASE("textures are found by name across every registered dictionary, newest first", "[texture_lookup]") {
     auto engine = RenderEngine::start(RenderBackend::Null, {});
     REQUIRE(engine.has_value());
