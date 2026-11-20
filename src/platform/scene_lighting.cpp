@@ -260,6 +260,13 @@ std::vector<graphics::SceneLight> SceneLighting::carLights(rw::Atomic* atomic) {
     return lights;
 }
 
+std::vector<graphics::SceneLight> SceneLighting::humanLights(rw::Atomic* atomic, bool hidden) {
+    // The selection drawHumanAtomic() makes.
+    const graphics::LightSphere sphere = sphereOf(atomic);
+    return lightsOf(m_lighting.lights.select(distanceSq(sphere.centre, m_pose.position), sphere, true, !hidden, false),
+                    atomic);
+}
+
 std::vector<graphics::SceneLight> SceneLighting::lightsOf(const graphics::LightSelection& selection,
                                                           rw::Atomic* atomic) {
     // The selection kept for the lighting frame's row, and the lights the lab's layers keep, by value.

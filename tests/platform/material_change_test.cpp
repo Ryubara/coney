@@ -66,3 +66,38 @@ TEST_CASE("an object's tint replaces its first material's colour for the draw an
     CHECK(sameColour(materials[1]->color, second));
     atomic->destroy();
 }
+
+TEST_CASE("a human's colour times his shade replaces his material's colour and stays",
+          "[platform][humans][frame-description]") {
+    // Expected: docs/research/graphics.md#human-draw, steps 3 and 4, confirmed (code): HumanRender_Draw (0x00174320)
+    // writes the first material's colour as the human's instance colour (HuColor, white unless a script sets it) with
+    // R, G and B times the shadow dimming f, truncated, and its alpha the distance fade, replacing the material's own
+    // colour (the disc's 0x969696) and leaving it there; the other materials are not touched.
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const rw::RGBA first = rw::makeRGBA(0x96, 0x96, 0x96, 255);
+    const rw::RGBA second = rw::makeRGBA(10, 20, 255, 240);
+    rw::Atomic* atomic = twoMaterialAtomic(first, second);
+    const rw::Material* const* materials = atomic->geometry->matList.materials;
+    {
+        // A white human (no HuColor) at half the dimming: 255 x 0.5 = 127.5, truncated.
+        const coney::platform::MaterialChange change(
+            *atomic,
+            coney::graphics::Material3d{.colour = coney::graphics::MaterialColour::Shade, .fade = 0x60, .shade = 0.5F});
+        CHECK(sameColour(materials[0]->color, rw::makeRGBA(127, 127, 127, 0x60)));
+        CHECK(sameColour(materials[1]->color, second));
+    }
+    // Kept once the draw is done: the Entity inspector reads the alpha as the fade he was last drawn at.
+    CHECK(sameColour(materials[0]->color, rw::makeRGBA(127, 127, 127, 0x60)));
+    CHECK(sameColour(materials[1]->color, second));
+    {
+        // A coloured human undimmed takes his colour as it is, whatever the material held before.
+        const coney::platform::MaterialChange change(
+            *atomic, coney::graphics::Material3d{.colour = coney::graphics::MaterialColour::Shade,
+                                                 .fade = 0xFF,
+                                                 .tint = coney::graphics::Rgba{200, 100, 50, 255},
+                                                 .shade = 1.0F});
+        CHECK(sameColour(materials[0]->color, rw::makeRGBA(200, 100, 50, 0xFF)));
+    }
+    atomic->destroy();
+}

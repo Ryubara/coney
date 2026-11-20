@@ -240,6 +240,7 @@ nav:
       - Mesh and texture formats: engine/asset-formats.md
       - Renderer: engine/renderer.md
       - Renderer performance: engine/renderer-performance.md
+      - Anti-aliasing, scaling and HDR: engine/renderer-scaling.md
       - Simulation and drawing threads: engine/render-threads.md
       - GPU renderer: engine/gpu-renderer.md
   - Game references:

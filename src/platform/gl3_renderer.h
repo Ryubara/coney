@@ -9,11 +9,13 @@
 #include "graphics/frame_description.h"
 #include "graphics/render_device.h"
 #include "graphics/texture_grid.h"
+#include "platform/character_skin.h"
 #include "platform/lit_atomic.h"
 #include "platform/scene_assets.h"
 
 // librw's types, declared rather than included: <rw.h> brings in SDL and the OpenGL loader.
 namespace rw {
+struct Atomic;
 struct Camera;
 struct Raster;
 } // namespace rw
@@ -26,10 +28,11 @@ namespace coney::platform {
 /// difference: the motion blur keeps its frame as a bare raster, with no librw texture around it, and its draw binds
 /// the raster and sets the filter as render states; the picture is the same.
 ///
-/// The 3D draws (the streamed world's sectors, item 7) are drawn as the world drew them before: each mesh's librw
-/// atomic, found in the scene assets, with the draw's states, fade and lights, through drawLitAtomic().
+/// The 3D draws (the streamed world's sectors, item 7; the objects and cars, item 8; the humans, item 9) are drawn as
+/// they were drawn before: each mesh's librw atomic, found in the scene assets, with the draw's states, colours and
+/// lights, through drawLitAtomic(); a human with his pose (the skinned pipeline's palette) and his blood pass.
 ///
-/// While the rest of the 3D scene still goes to librw directly (until items 8 to 10 of docs/engine/renderer.md#order),
+/// While the rest of the 3D scene still goes to librw directly (until item 10 of docs/engine/renderer.md#order),
 /// the RenderEngine calls drawNew() after each part it adds, so the parts draw in their place among the 3D drawing.
 /// The 2D and 3D draws are made with a camera or while the draw layer records (the NULL backend records what it would
 /// draw); the screen passes, which copy the frame, only with a camera.
@@ -84,10 +87,14 @@ class Gl3Renderer {
     void drawOverlay(const graphics::FrameDescription& frame, const graphics::Draw2d& draw, const Target& target);
     // One screen pass.
     void drawScreenPass(const graphics::ScreenPass& pass, const Target& target);
-    // One 3D draw of `frame`: a streamed sector's atomic as WorldRenderer::renderSectorAtomic records it (the port of
-    // World_RenderSectorAtomic), its fade written into its materials where it changes, lit by the draw's lights, then
-    // its dual layer.
+    // One 3D draw of `frame`: a sector's, an object's, a car part's or a human's atomic as its draw function records
+    // it, its colours changed as the draw says (Material3d), lit by the draw's lights, then its dual layer (a human's
+    // through drawHuman()).
     void drawScene(const graphics::FrameDescription& frame, const graphics::Draw3d& draw, const Target& target);
+    // A human's draw, after drawScene() set its states, colours and lights: his body with the draw's pose, then his
+    // blood layer `blood` (null: none) as PlayLighting::drawHumanPasses drew it through the rig.
+    void drawHuman(const graphics::FrameDescription& frame, const graphics::Draw3d& draw, rw::Atomic& atomic,
+                   rw::Atomic* blood);
     /// The blur pulse's drawing (device slot `+0x108`, docs/research/graphics.md#blur-pulse).
     /// @orig 0x00193d80 RwDevice_BlurPass (unknown)
     void drawBlurPulse(const graphics::BlurPulse& blur, const graphics::ScreenRect& viewport, const Target& target);
@@ -118,7 +125,8 @@ class Gl3Renderer {
     rw::Raster* m_halfRaster = nullptr;
     std::vector<KeptCopy> m_kept;
     graphics::ScreenCopyId m_nextCopy = 1;
-    std::unique_ptr<LightRig> m_lights; // the 3D draws' lights, made with the first one
+    std::unique_ptr<LightRig> m_lights;     // the 3D draws' lights, made with the first one
+    std::unique_ptr<BonePalette> m_palette; // a human's pose for the skinned pipeline, made with the first
 };
 
 } // namespace coney::platform

@@ -25,11 +25,11 @@ struct RGBA;
 ///
 /// Routed here: the render states, Im2D, Im3D, the camera's clear, begin, end and show, raster creation, locks and
 /// uploads, the named operations, the world's atomic renders (the streamed sectors with their dual layers and the
-/// level's background, item 7) and the world objects' and parked cars' (item 8, with the render states ParkedCars::draw
-/// and PlacedObjects::draw set). Not yet: the humans' renders, whose pipelines call OpenGL themselves (items 9 and 10
-/// of docs/engine/renderer.md#order). The render states set around them are routed, except in
-/// PlayLighting::drawHumanPasses, which item 9 routes with its renders and which sets them on librw directly: a live
-/// record's states can be stale after it (docs/engine/renderer.md#comparing).
+/// level's background, item 7), the world objects' and parked cars' (item 8, with the render states ParkedCars::draw
+/// and PlacedObjects::draw set) and the humans' (item 9: both passes of PlayLighting::drawHumanPasses with the states
+/// set round them, and the VERTEXALPHA state the default and skinned pipelines set inside each draw, so a live
+/// record's states are librw's). Not yet: the effects drawn as models (item 10 of docs/engine/renderer.md#order). What
+/// a pipeline then draws inside a render, and the skinned pipeline's vertex buffer, is librw's and the pipeline's.
 ///
 /// What a record holds:
 ///
@@ -103,8 +103,10 @@ void im3dEnd();
 /// texture levels are picked by distance (setDistanceMipmaps()), its frame's matrix, its geometry (flags, the first
 /// morph target's positions and normals, the prelighting, every texture-coordinate set and the triangles), each
 /// material (colour, texture raster as writeRaster() writes one, the texture's filter and addressing, the surface
-/// properties) and each light (type, flags, colour, its frame's position and direction, radius and cone). What the
-/// pipeline then does inside the draw is librw's (docs/engine/renderer.md#comparing).
+/// properties), each light (type, flags, colour, its frame's position and direction, radius and cone) and, for a
+/// character on the skinned pipeline (platform/character_skin.h), what poses it: each vertex's weights and bones and
+/// the palette's matrices they reach (a CPU-skinned character's posed vertices are its geometry's). What the pipeline
+/// then does inside the draw is librw's (docs/engine/renderer.md#comparing).
 void renderAtomic(rw::Atomic* atomic);
 
 /// rw::Camera::clear.

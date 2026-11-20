@@ -286,10 +286,14 @@ class RenderEngine final : public graphics::RenderDevice {
     /// The scene assets, to read.
     [[nodiscard]] const SceneAssets& sceneAssets() const { return m_assets; }
 
-    /// Adds the 3D draw `draw`, lit by `lights`, to the frame description with its meshes' material textures from the
-    /// scene assets, and has the GL3 renderer draw it at once, in its place among the 3D drawing that still goes to
-    /// librw directly. Only between beginFrame() and present() (checked by CONEY_ASSERT).
-    void drawScene(const graphics::Draw3d& draw, std::span<const graphics::SceneLight> lights);
+    /// Adds the 3D draw `draw`, lit by `lights` and posed by `bones` (a skinned mesh's skinning matrices; none for any
+    /// other), to the frame description with its meshes' material textures from the scene assets, and has the GL3
+    /// renderer draw it at once, in its place among the 3D drawing that still goes to librw directly. `dualTexture`,
+    /// when given, is every dual-layer material's texture this frame in place of the one noted when the mesh was held
+    /// (a human's blood texture, picked by his health at each draw: docs/research/graphics.md#human-draw). Only between
+    /// beginFrame() and present() (checked by CONEY_ASSERT).
+    void drawScene(const graphics::Draw3d& draw, std::span<const graphics::SceneLight> lights,
+                   std::span<const graphics::Transform3d> bones = {}, const rw::Texture* dualTexture = nullptr);
 
   private:
     // Only start() makes one, which then fills it in as librw comes up.

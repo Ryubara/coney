@@ -193,7 +193,7 @@ bool SceneStage::humanReady(double human) {
     }
     Puppet puppet;
     const characters::CharacterModel& model = loaded->character->assets().model;
-    puppet.mesh = std::make_unique<CharacterMesh>(model, textureOf(loaded->dictionaries), Skinning::Gpu);
+    puppet.mesh = std::make_unique<CharacterMesh>(model, textureOf(loaded->dictionaries), Skinning::Gpu, m_assets);
     puppet.loaded = std::move(*loaded);
     m_puppets.emplace(human, std::move(puppet));
     return true;

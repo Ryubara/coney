@@ -29,6 +29,8 @@
 
 namespace coney::platform {
 
+class SceneAssets;
+
 /// One line of a scene system's counts for the play mode's summary (`; scenes: ...`).
 [[nodiscard]] std::string scenesSummary(const scenes::SceneStats& stats);
 
@@ -68,6 +70,10 @@ class SceneStage final : public scenes::SceneHost {
     SceneStage& operator=(const SceneStage&) = delete;
     SceneStage(SceneStage&&) = delete;
     SceneStage& operator=(SceneStage&&) = delete;
+
+    /// Holds the puppets' meshes made from now on in `assets` (the RenderEngine's, which must outlive the stage), so
+    /// they are drawn from the frame description (docs/engine/renderer.md#frame-description); null: nowhere.
+    void setSceneAssets(SceneAssets* assets) { m_assets = assets; }
 
     /// Starts a step at game time `nowMs`: the newest camera and puppet states become the previous ones.
     void beginStep(std::uint64_t nowMs);
@@ -201,6 +207,7 @@ class SceneStage final : public scenes::SceneHost {
     CharacterLoader m_load;
     ModelOf m_modelOf;
     std::function<void(std::string_view)> m_print;
+    SceneAssets* m_assets = nullptr; // setSceneAssets()
     std::vector<std::string> m_roleNames;
     std::map<double, Bound> m_bound;
     std::map<double, Puppet> m_puppets;
