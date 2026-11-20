@@ -7,6 +7,7 @@
 #include <rw.h>
 
 #include "core/assert.h"
+#include "platform/draw_calls.h"
 #include "platform/texture_lod.h"
 
 namespace coney::platform {
@@ -149,7 +150,9 @@ void renderSkinned(rw::Atomic* atomic, rw::gl3::InstanceDataHeader* header) {
         rw::Material* material = inst->material;
         rw::gl3::setMaterial(flags, material->color, material->surfaceProps);
         rw::gl3::setTexture(0, material->texture);
-        rw::SetRenderState(rw::VERTEXALPHA, inst->vertexAlpha || material->color.alpha != 0xFF);
+        // Through the draw layer, so the states it records after this draw are librw's
+        // (docs/engine/renderer.md#comparing).
+        draw::setRenderState(rw::VERTEXALPHA, inst->vertexAlpha || material->color.alpha != 0xFF ? 1 : 0);
         setTextureLodFor(material);
         const bool lit = (lightBits & rw::gl3::VSLIGHT_MASK) != 0;
         const bool tested = rw::gl3::getAlphaTest() != 0;
@@ -229,6 +232,22 @@ void useCharacterSkin(rw::Atomic* atomic, const SkinVertexData& vertices, const 
     *PLUGINOFFSET(const SkinVertexData*, atomic->geometry, verticesOffset) = &vertices;
     *PLUGINOFFSET(const BonePalette*, atomic, paletteOffset) = &palette;
     atomic->pipeline = pipeline;
+}
+
+const BonePalette* characterSkinPalette(const rw::Atomic* atomic) {
+    // Only an atomic on the skinned pipeline holds a palette; the plugin is registered with the engine, before any
+    // atomic exists, so its slot is there on every atomic.
+    if (atomic == nullptr || pipeline == nullptr || atomic->pipeline != pipeline) {
+        return nullptr;
+    }
+    return *PLUGINOFFSET(const BonePalette*, atomic, paletteOffset);
+}
+
+const SkinVertexData* characterSkinVertices(const rw::Atomic* atomic) {
+    if (characterSkinPalette(atomic) == nullptr) {
+        return nullptr;
+    }
+    return *PLUGINOFFSET(const SkinVertexData*, atomic->geometry, verticesOffset);
 }
 
 } // namespace coney::platform

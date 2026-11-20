@@ -8,6 +8,7 @@
 #include <rw.h>
 
 #include "graphics/texture_lod.h"
+#include "platform/draw_calls.h"
 
 namespace coney::platform {
 
@@ -105,7 +106,9 @@ void renderWithLod(rw::Atomic* atomic, rw::gl3::InstanceDataHeader* header) {
         rw::Material* material = inst->material;
         rw::gl3::setMaterial(flags, material->color, material->surfaceProps);
         rw::gl3::setTexture(0, material->texture);
-        rw::SetRenderState(rw::VERTEXALPHA, inst->vertexAlpha || material->color.alpha != 0xFF);
+        // Through the draw layer, so the states it records after this draw are librw's
+        // (docs/engine/renderer.md#comparing).
+        draw::setRenderState(rw::VERTEXALPHA, inst->vertexAlpha || material->color.alpha != 0xFF ? 1 : 0);
         setTextureLodFor(material);
         const bool lit = (lightBits & rw::gl3::VSLIGHT_MASK) != 0;
         const bool tested = rw::gl3::getAlphaTest() != 0;

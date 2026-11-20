@@ -130,6 +130,11 @@ class SceneLighting {
     /// for the lighting frame's rows of them; the caller of drawHumanAtomic() says so before each human.
     /// @coney-only the lighting frame's selection rows
     void noteHiddenHuman(bool hidden) { m_hiddenHuman = hidden; }
+    /// Whether the atomics drawn from now on go through the draw layer (draw::renderAtomic(), recorded) rather than to
+    /// librw directly: PlayLighting turns it on around the humans' draws through the rig (item 9 of
+    /// docs/engine/renderer.md#order), as the world's, the objects' and the cars' draw functions do around theirs.
+    /// @coney-only the draw-stream hashes' draw layer (docs/engine/renderer.md#comparing)
+    void setRouted(bool routed) { m_routed = routed; }
     /// Whether the humans' blob shadows are drawn: off only under the lighting lab's layer.
     /// @coney-only the lighting lab's layers (docs/guides/realtime-lighting.md#lab)
     [[nodiscard]] bool drawsBlobShadows() const { return m_switches == nullptr || m_switches->layers.blobShadows; }
@@ -167,7 +172,7 @@ class SceneLighting {
     void renderInRig(rw::Atomic* atomic);
     // Draws `atomic` inside the rig's world, so librw lights it with the rig's lights, with its dual layer
     // (drawLitAtomic()), through the draw layer while m_routed is set (the world's atomics, the objects' and the cars',
-    // items 7 and 8 of docs/engine/renderer.md#order), else on librw directly (the humans, which item 9 routes).
+    // items 7 and 8 of docs/engine/renderer.md#order, and the humans', item 9: setRouted()), else on librw directly.
     void renderLit(rw::Atomic* atomic);
     // Adds the row of the selection useLights() kept to the lighting frame, for `atomic`: its caller from the draw
     // kind, its sphere and the inputs the draw functions pass (docs/research/lighting.md#select).
@@ -199,7 +204,7 @@ class SceneLighting {
     bool m_carPart = false;     // the atomic drawn next is a car part's, its selection at squared distance 0
     bool m_background = false;  // the atomic drawn next is the background's
     bool m_hiddenHuman = false; // noteHiddenHuman()
-    bool m_routed = false;      // the atomic drawn next goes through the draw layer
+    bool m_routed = false;      // the atomic drawn next goes through the draw layer (setRouted())
 };
 
 } // namespace coney::platform

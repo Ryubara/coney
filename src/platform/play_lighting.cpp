@@ -10,6 +10,7 @@
 #include <rw.h>
 
 #include "core/chunk_system.h"
+#include "platform/draw_calls.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
 
@@ -128,7 +129,10 @@ bool PlayLighting::drawHuman(rw::Atomic* atomic, bool player) {
     }
     const bool hidden = player && m_playerDim.hidden();
     m_scene->noteHiddenHuman(hidden);
+    // Through the draw layer, so the draw-stream hashes see the humans (item 9 of docs/engine/renderer.md#order).
+    m_scene->setRouted(true);
     m_scene->drawHumanAtomic(atomic, hidden);
+    m_scene->setRouted(false);
     return true;
 }
 
@@ -146,13 +150,15 @@ void PlayLighting::drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture
     mesh.setBloodTexture(blood);
     // GS context 2 (rendering.md#characters): ALPHA 0x44 (source over by the texture's alpha), alpha test off, the
     // same Z test with Z write. Equal depths pass librw's LEQUAL test.
-    rw::SetRenderState(rw::VERTEXALPHA, 1);
-    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
-    rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+    draw::setRenderState(rw::VERTEXALPHA, 1);
+    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+    m_scene->setRouted(true);
     m_scene->drawHumanAtomic(mesh.bloodAtomic(), player && m_playerDim.hidden());
-    rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAGREATEREQUAL);
-    rw::SetRenderState(rw::VERTEXALPHA, 0);
+    m_scene->setRouted(false);
+    draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAGREATEREQUAL);
+    draw::setRenderState(rw::VERTEXALPHA, 0);
 }
 
 void PlayLighting::addShadow(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {

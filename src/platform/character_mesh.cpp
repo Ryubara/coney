@@ -159,6 +159,9 @@ SkinVertexData packSkinVertices(std::span<const characters::SkinVertex> vertices
     for (const characters::SkinVertex& vertex : vertices) {
         data.weights.push_back(vertex.weights);
         data.indices.push_back(vertex.bones);
+        for (const std::uint8_t bone : vertex.bones) {
+            data.bones = std::max(data.bones, static_cast<std::size_t>(bone) + 1);
+        }
     }
     return data;
 }

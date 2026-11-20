@@ -36,8 +36,9 @@ void placeLight(rw::Light& light, const graphics::SceneLight& values);
 /// reference, so a fainter pixel is still blended but writes no Z (docs/research/rendering.md#shared-state). Then
 /// `layer`, the atomic's dual layer when not null (docs/research/rendering.md#dual): blended by its texture's alpha
 /// with no alpha test, writing Z, at the alpha of the atomic's first material. `routed` draws through the draw layer
-/// (draw::renderAtomic(): the world's atomics, the objects' and the cars'), else on librw directly (the humans until
-/// item 9 of docs/engine/renderer.md#order routes theirs).
+/// (draw::renderAtomic(): the world's atomics, the objects', the cars' and, since item 9 of
+/// docs/engine/renderer.md#order, the humans'), else on librw directly, unrecorded, as the rig draws an atomic no draw
+/// function of it marks as routed (SceneLighting::setRouted()).
 void drawLitAtomic(rw::Atomic* atomic, rw::Atomic* layer, rw::World* lights, bool routed);
 
 /// Sets a 3D draw's fixed states (graphics::SceneStates) on the draw layer, each only where it differs from the one in
