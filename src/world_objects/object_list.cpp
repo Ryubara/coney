@@ -55,7 +55,11 @@ const ObjectRecord* ObjectList::findByHash(std::uint32_t nameHash) const {
     return found == m_records.end() ? nullptr : &*found;
 }
 
-std::uint32_t ObjectList::nextModelOf(std::uint32_t /*nameHash*/) const { return 0; }
+std::uint32_t ObjectList::nextModelOf(std::uint32_t nameHash) const {
+    // The model's record, then its next-model word; no record, no next model.
+    const ObjectRecord* record = findByHash(nameHash);
+    return record != nullptr ? record->nextModel : 0;
+}
 
 std::expected<ObjectList, Error> loadObjectList(const io::Wad& wad) {
     auto entry = wad.lookup("warriors.glr");

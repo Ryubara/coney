@@ -151,6 +151,9 @@ inline constexpr int kLeafSwingTicks = 28;
 struct DoorLeaf {
     double handle = kNoObject; ///< `GetLeftDoorHandle` / `GetRightDoorHandle`.
     std::string model{};       ///< Its object type (`dyn_dr_*`).
+    /// The model it is drawn with, a name hash: 0 for its type's (`model`), or the damaged model a cabin door's hit
+    /// gave it (docs/research/objects.md#leaf-damage).
+    std::uint32_t modelHash = 0;
     anim::Vec3 position{};
     anim::Quat base{};     ///< The closed pose.
     anim::Quat target{};   ///< Where message `0x35` last turned it (data `+0x00`).
@@ -365,8 +368,14 @@ class Doors {
     static void runSlidingCommand(Door& door, int command, ObjectWorld& world);
     // The breakable swinging doors' and the barriers' hits.
     static void hitStore(Door& door, const ObjectHit& hit, ObjectWorld& world);
-    // A cabin door's hit: damage, then both leaves broken below 7.
+    // A cabin door's hit: damage, the leaves damaged on every hit below 7, and the break at 0.
     static void hitCabin(Door& door, const ObjectHit& hit, ObjectWorld& world);
+    // A cabin door's leaf step below 7: the left leaf and a drawn one take the damaged model, with a burst.
+    static void damageLeaves(Door& door, ObjectWorld& world);
+    // The damaged model a cabin's leaf takes: its model's next model, or its own (0 for no leaf).
+    [[nodiscard]] static std::uint32_t damagedModel(const DoorLeaf* leaf, const ObjectWorld& world);
+    // Where a door's second leaf is hinged.
+    [[nodiscard]] static anim::Vec3 secondHinge(const Door& door);
     // A splintering door's hit: damage, splinters, its model stages, then the break or a sound.
     static void hitSplinters(Door& door, const ObjectHit& hit, ObjectWorld& world);
     // The model stage a splintering door's hit crosses, read at `hitpoints`, its sound at `at`.

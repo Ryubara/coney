@@ -4,11 +4,13 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <utility>
 
 #include "core/name_hash.h"
 #include "raycast/collision_mesh.h"
 #include "world_objects/nav_links.h"
+#include "world_objects/object_list.h"
 
 namespace coney::world_objects {
 
@@ -146,6 +148,8 @@ constexpr std::uint8_t kBreakOther = 121;
 // 0.5 m up too.
 constexpr int kBreakSplinters = 40;
 constexpr float kBreakRise = 0.5F;
+// A cabin door's bursts: 1 m above a leaf's hinge (docs/research/objects.md#leaf-damage).
+constexpr anim::Vec3 kCabinBurstRise{0.0F, 0.0F, 1.0F};
 constexpr int kDclubBreakBursts = 3;
 
 // Hitpoints a door type no CfgObj named gets (Coney's stand-in): the disc's value for most types.
@@ -812,31 +816,80 @@ void Doors::hitStore(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     openAway(door, hit.attackerAt, world);
 }
 
-// A cabin door's hit: the sound, the leaves' break below 7 and the wreck at 0 (docs/research/objects.md#door-break).
+// A cabin door's hit: the sound, the leaves' damage on every hit below 7 and the break at 0
+// (docs/research/objects.md#door-break, #leaf-damage).
 // @orig 0x003f9ad0 DoorSwing_Hit (unknown)
 void Doors::hitCabin(Door& door, const ObjectHit& hit, ObjectWorld& world) {
     playSound(door, kDoorHitSound, world);
     door.hitpoints -= hitDamage(hit.kind);
-    if (door.hitpoints <= 0) {
-        wreck(door, world);
+    // Every hit that leaves fewer than 7 hitpoints damages the leaves, the breaking one too, before the break test.
+    if (door.hitpoints < kCabinLeafBreak && !door.leaves.empty()) {
+        damageLeaves(door, world);
+    }
+    if (door.hitpoints > 0) {
         return;
     }
-    // Below 7 both leaves are broken and one, at random, takes its next model with a burst. Stand-in (#707): the
-    // original runs this step on every hit below 7, and before the break test; Coney once (leavesBroken), and not
-    // on the breaking hit.
-    if (door.hitpoints < kCabinLeafBreak && !door.leavesBroken && !door.leaves.empty()) {
-        door.leavesBroken = true;
-        for (DoorLeaf& leaf : door.leaves) {
-            leaf.broken = true;
-        }
-        const DoorLeaf& chosen =
-            door.leaves.at(static_cast<std::size_t>(randomBelow(world.random, static_cast<int>(door.leaves.size()))));
-        if (world.services != nullptr) {
-            world.services->nextModel(chosen.handle);
-            // Stand-in (#707): the original's burst is at the leaf's hinge 1 m up.
-            world.services->burst(chosen.position);
-        }
+    // The break: the door's collision body removed, two bursts 1 m above the two hinges, the GLASS x GLASS pair at
+    // the door, and both leaves given the damaged model again (they go in wreck()'s state 6 at once). Not ported
+    // (#707): the call 0x003a65a8 on the attacker. Stand-in (#707): the bursts without their size and direction.
+    if (world.services != nullptr) {
+        world.services->setBody(door.handle, false);
+        world.services->burst(anim::add(door.position, kCabinBurstRise));
+        world.services->burst(anim::add(secondHinge(door), kCabinBurstRise));
     }
+    playPair(world, material::kGlass, material::kGlass, door.position);
+    const std::uint32_t damaged = damagedModel(door.leaves.empty() ? nullptr : &door.leaves.front(), world);
+    for (DoorLeaf& leaf : door.leaves) {
+        leaf.modelHash = damaged;
+    }
+    wreck(door, world);
+}
+
+// The leaf step of a cabin door's hit below 7 hitpoints: both leaves flagged broken, the left one given its damaged
+// model, and the one a draw picks given it too, with a burst 1 m above its hinge
+// (docs/research/objects.md#leaf-damage).
+// @orig 0x003f9ad0 DoorSwing_Hit (unknown)
+void Doors::damageLeaves(Door& door, ObjectWorld& world) {
+    door.leavesBroken = true;
+    for (DoorLeaf& leaf : door.leaves) {
+        leaf.broken = true;
+    }
+    // The left leaf takes the damaged model whichever leaf the draw then picks. Stand-in (#707): Coney keeps one model
+    // per leaf, where the original changes the left leaf's drawn instance here but its model word +0xc4 only when the
+    // draw picks it (message 0x19).
+    DoorLeaf& left = door.leaves.front();
+    const std::uint32_t damaged = damagedModel(&left, world);
+    left.modelHash = damaged;
+    // Random_Int(1): 0 the left leaf, 1 the right (a one-leaf door has only the left).
+    const bool right = randomBelow(world.random, 2) == 1 && door.leaves.size() > 1;
+    DoorLeaf& chosen = right ? door.leaves.at(1) : left;
+    chosen.modelHash = damaged;
+    if (world.services != nullptr) {
+        // Stand-in (#707): the burst without its size (0.07) and its push along the door's turned +y.
+        world.services->burst(anim::add(right ? secondHinge(door) : door.position, kCabinBurstRise));
+    }
+}
+
+// The model `leaf` takes as Obj_SetModel(leaf, 0), Model_FindByHash and Obj_SetModel(leaf, next) give it: its type's
+// model's next model, or its type's model when that has none (docs/research/objects.md#leaf-damage).
+// @orig 0x003f9ad0 DoorSwing_Hit (unknown)
+std::uint32_t Doors::damagedModel(const DoorLeaf* leaf, const ObjectWorld& world) {
+    if (leaf == nullptr) {
+        return 0;
+    }
+    const std::uint32_t own = crc32(leaf->model);
+    // Coney's choice: without the Object List (a host that loads none) a leaf keeps its own model. A next model the
+    // list has no record of would leave the original's leaf with no instance; Coney's draw falls back to the leaf's
+    // stand-in model then (doorDraws).
+    const std::uint32_t next = world.models != nullptr ? world.models->nextModelOf(own) : 0;
+    return next != 0 ? next : own;
+}
+
+// Where a door's second leaf is hinged: the door's position plus its rotation times (-2w, 0, 0)
+// (docs/research/objects.md#leaves).
+// @coney-only helper for a position DoorSwing_SetUpType and DoorSwing_Hit compute alike
+anim::Vec3 Doors::secondHinge(const Door& door) {
+    return anim::add(door.position, rotate(door.rotation, anim::Vec3{-2.0F * door.leafWidth, 0.0F, 0.0F}));
 }
 
 // dyn_door_liz's, dyn_door_dclub's and dyn_door_stall's hit: dust, splinters, the model stages, then the break or a
@@ -926,11 +979,8 @@ void Doors::takeModelStage(Door& door, int hitpoints, anim::Vec3 at, ObjectWorld
 // @orig 0x003f9ad0 DoorSwing_Hit (unknown)
 // @orig 0x003fa438 DoorSwing_HitBreakable (unknown)
 void Doors::wreck(Door& door, ObjectWorld& world) {
-    // Not ported (#707), from the original's break:
-    // - a cabin's (DoorSwing_Hit): the door's collision body removed, the call 0x00219320 on the attacker, the two
-    //   bursts 1 m up, the GLASS x GLASS pair at the door and both leaves' next models (message 0x19);
-    // - stall's (DoorSwing_HitBreakable): its leaves removed (liz and dclub did at a model stage); hitSplinters()
-    //   makes the splintering types' own pairs, dust, splinters and bursts.
+    // hitCabin() makes a cabin's own break steps first, and hitSplinters() the splintering types' pairs, dust,
+    // splinters and bursts. Not ported (#707): stall's leaves removed (liz and dclub did at a model stage).
     // A cabin's leaves, removed at the break, and stall's go with the door here when it ends at its next update.
     setTrianglesEnabled(world, door.triangles, false);
     if (world.services != nullptr) {
@@ -1274,8 +1324,9 @@ std::vector<DoorDraw> doorDraws(const Doors& doors) {
                 if (leaf.removed) {
                     continue;
                 }
+                // A cabin door's leaf keeps the damaged model its hits gave it.
                 draws.push_back(DoorDraw{.handle = leaf.handle,
-                                         .modelHash = crc32(leaf.model),
+                                         .modelHash = leaf.modelHash != 0 ? leaf.modelHash : crc32(leaf.model),
                                          .fallbackHash = crc32(fallbackModelOf(door.type)),
                                          .position = leaf.position,
                                          .rotation = leaf.rotation,

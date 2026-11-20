@@ -140,8 +140,6 @@ class ObjectServices {
     virtual void destroyObject(double /*object*/) {}
     /// Moves an object to `at` (a cash register's drawer jumping open).
     virtual void moveObject(double /*object*/, anim::Vec3 /*at*/) {}
-    /// Gives an object its next model (message `0x19`, a damaged door's or leaf's next stage).
-    virtual void nextModel(double /*object*/) {}
     /// Gives an object the model named by `modelHash`.
     virtual void setModel(double /*object*/, std::uint32_t /*modelHash*/) {}
     /// Sets an object's value (`+0x124`): a `dyn_money`'s dollars.
@@ -151,7 +149,7 @@ class ObjectServices {
     virtual void dust(anim::Vec3 /*at*/, float /*radius*/) {}
     /// `count` splinters at `at` (`0x003c5b00`).
     virtual void splinters(anim::Vec3 /*at*/, int /*count*/) {}
-    /// The small burst of a leaf taking its next model (`0x003c6038`).
+    /// The small burst of a leaf taking its damaged model (`0x003c6038`).
     virtual void burst(anim::Vec3 /*at*/) {}
     /// Stops every human whose object target is `object` (`0x0022e400`).
     virtual void stopHumansTargeting(double /*object*/) {}

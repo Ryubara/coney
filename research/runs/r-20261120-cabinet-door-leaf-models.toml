@@ -1,0 +1,41 @@
+version = 1
+id = "r-20261120-cabinet-door-leaf-models"
+date = "2026-11-20"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "6cdad1fba84517d43308203c13cf9434682cf04d186ba5e06b023b6e06fb5dd4"
+
+[who]
+agent = "unknown"
+type = "unknown"
+model = "unknown"
+source = "unverified"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "glass-shelf-loot"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level99 store, Doors.CabA24 (dyn_door_cabin_a): BreakObjectsInRadius(door, 0.3) via the lua recipe for one kind-0 hit at a time; after each hit the door's data +0x08 (hitpoints) and each leaf's model word +0xc4 read over the debug server (objects resolved through the handle table 0x006ebd38); two runs from the state. Screenshots before, after hit 2 and after hit 3 show the damaged leaf skewed and, at the break, both leaves gone and two pieces on the floor. Run 1 chose the right leaf, run 2 the left. 1076156162 = CRC-32 of dyn_dr_cabin_a, 117046200 = dyn_dr_cabin_aa."
+
+[values]
+hitpoints_start = 12
+hitpoints_after_hit1 = 8
+hitpoints_after_hit2 = 4
+hitpoints_word_after_hit3 = 0
+run1_left_model_after_hit2 = 1076156162
+run1_right_model_after_hit2 = 117046200
+run2_left_model_after_hit2 = 117046200
+run2_right_model_after_hit2 = 1076156162
+leaf_models_after_hit1_changed = 0
+
+[addresses]
+DoorSwing_Hit = 0x003f9ad0
+SubSwingingDoor_OnMessage = 0x003fb430
+Model_FindByHash = 0x003a4d10
+handle_table = 0x006ebd38

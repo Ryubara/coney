@@ -61,13 +61,12 @@ void PlayLevelMode::makeWorldObjects(const ScriptedCast& cast) {
     if (m_records == nullptr || m_objectTypes == nullptr || !m_engine.drawsPixels()) {
         return;
     }
-    // The models come by the Object List; without it the objects are stepped but not drawn.
-    auto list = world_objects::loadObjectList(m_wad);
-    if (!list) {
-        m_print(std::format("objects: no Object List, no world objects drawn: {}\n", list.error().message));
+    // The models come by the Object List, which bindObjects() loaded; without it the objects are stepped but not
+    // drawn.
+    if (m_objectList == nullptr) {
+        m_print("objects: no Object List, no world objects drawn\n");
         return;
     }
-    m_objectList = std::make_unique<world_objects::ObjectList>(std::move(*list));
     m_placed = std::make_unique<PlacedObjects>(m_wad, *m_objectList, m_print, true, &m_engine.sceneAssets());
 }
 

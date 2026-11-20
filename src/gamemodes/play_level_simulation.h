@@ -54,6 +54,7 @@
 #include "world_objects/lock_pick.h"
 #include "world_objects/loose_objects.h"
 #include "world_objects/object_bodies.h"
+#include "world_objects/object_list.h"
 #include "world_objects/object_tasks.h"
 #include "world_objects/pickups.h"
 
@@ -633,6 +634,9 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     double m_playerHandle = 0.0; // player 1's handle in the scripts and the scenes
     // The level's glass panes and doors (gameplay's; null without them), the lock pick under way, and its difficulty.
     world_objects::LevelObjects* m_objects = nullptr;
+    // The Object List (bindObjects() loads it; null when the disc has none): the objects' models, and the next model
+    // a damaged one swaps to (world_objects::ObjectWorld::models).
+    std::unique_ptr<world_objects::ObjectList> m_objectList;
     double m_heldObject = 0.0;             // what player 1 held at the last step (world_objects::kNoObject for nothing)
     world_objects::Cars* m_cars = nullptr; // the level's parked cars, for their stereos; not owned
     std::optional<double> m_theftCar;      // the car whose stereo player 1 is stealing

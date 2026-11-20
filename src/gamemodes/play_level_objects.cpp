@@ -175,12 +175,20 @@ constexpr int kLastStageCue = 0x23;
 
 void PlayLevelSimulation::bindObjects(world_objects::LevelObjects* objects, const script::RecordedCalls* recorded) {
     m_objects = objects;
+    // The Object List: the models the objects are drawn with, and the next model a damaged one swaps to (a cabin
+    // door's leaves, docs/research/objects.md#leaf-damage); without it the objects keep their own models.
+    if (m_objectList == nullptr) {
+        if (auto list = world_objects::loadObjectList(m_wad); list) {
+            m_objectList = std::make_unique<world_objects::ObjectList>(std::move(*list));
+        }
+    }
     if (m_objects == nullptr) {
         return;
     }
     // The doors and panes the level script spawned before the mesh was loaded write their triangle flags now.
     m_objects->world.bindCollision(m_scenery->objectCollision());
     m_objects->world.paths = m_scenery->objectPaths();
+    m_objects->world.models = m_objectList.get();
     // An object knocked loose (a broken trash can's bottle) flies from its record's pose as a loose object.
     m_objects->world.knock = [this](double object, anim::Vec3 velocity, anim::Vec3 spin) {
         const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(object) : nullptr;
