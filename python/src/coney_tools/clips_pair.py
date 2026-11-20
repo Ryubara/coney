@@ -157,10 +157,13 @@ def check_run(run: PairRun, rules: Clips) -> None:
 
 def coney_arguments(executable: Path, disc: str, run: PairRun, out: Path, renderer: str | None = None) -> list[str]:
     """Coney's command line that plays `run` from the level's first frame of play and records `run.seconds` of it from
-    its start frame to `out` (`--record-from-frame`, none for a clip that starts with play). `--record`
-    puts Coney in test mode (one step and one render a frame, no clock), so the same line gives the same frames; it
-    needs a window, so the run is never `--headless` (test mode does not take the focus)."""
+    its start frame to `out` (`--record-from-frame`, none for a clip that starts with play), drawn by `renderer` (`gl3`
+    or `gpu`; none for Coney's own choice, GL3 in test mode). `--record` puts Coney in test mode (one step and one
+    render a frame, no clock), so the same line gives the same frames; it needs a window, so the run is never
+    `--headless` (test mode does not take the focus)."""
     args = [str(executable), "--disc", disc, "--play-level", run.level]
+    if renderer is not None:
+        args += ["--renderer", renderer]
     if run.checkpoint is not None:
         args += ["--checkpoint", str(run.checkpoint)]
     if run.skip_movies:
@@ -539,14 +542,22 @@ class PairSettings:
 
 
 def _record(
-    side: str, executable: Path, checkout: Path, disc: str, run: PairRun, out: Path, ffmpeg: Path, env: PairEnv
+    side: str,
+    executable: Path,
+    checkout: Path,
+    disc: str,
+    run: PairRun,
+    out: Path,
+    ffmpeg: Path,
+    env: PairEnv,
+    renderer: str | None = None,
 ) -> Recording:
-    """Record `run` with Coney `executable`, run from `checkout`, into `out`; the recording its line describes. Coney
-    finds FFmpeg through CONEY_FFMPEG, set to the one the tools found when it is not set."""
+    """Record `run` with Coney `executable`, run from `checkout` and drawn by `renderer`, into `out`; the recording its
+    line describes. Coney finds FFmpeg through CONEY_FFMPEG, set to the one the tools found when it is not set."""
     variables = dict(os.environ)
     if not variables.get("CONEY_FFMPEG"):
         variables["CONEY_FFMPEG"] = str(ffmpeg)
-    done = env.coney(coney_arguments(executable, disc, run, out), checkout, variables)
+    done = env.coney(coney_arguments(executable, disc, run, out, renderer), checkout, variables)
     if done.returncode != 0 or not out.is_file():
         tail = " | ".join((done.stdout + done.stderr).strip().splitlines()[-8:])
         raise ClipError(f"{side}: Coney failed (exit {done.returncode}): {tail}")
@@ -573,7 +584,9 @@ def run_pair(
 ) -> int:
     """`clips pair`: build the task's checkout and its merge base with `base_ref`, record `run` on both into the task's
     clips folder, check they are the same run, and stack them (with the original first when `original` names a PCSX2
-    state) into `compare.mp4` and, with `gif`, `compare.gif`. Returns 0, the build's exit code when a build fails, or
+    state) into `compare.mp4` and, with `gif`, `compare.gif`. `renderers` names the renderer each side (before, after)
+    draws with (none: Coney's own choice), so a change to the GPU renderer can show its picture after against GL3's
+    before; a side's label then names it. Returns 0, the build's exit code when a build fails, or
     1 when both recordings hold the same frames (the change shows nothing in that run). ClipError for a run that
     breaks the rules or two recordings that are not the same run."""
     env = env or PairEnv()
@@ -609,17 +622,44 @@ def run_pair(
             env.say(f"the base build failed (exit {code})")
             return code
         before = _record(
-            "before", coney_executable(base, preset), base, disc, run, paths["before"], settings.ffmpeg, env
+            "before",
+            coney_executable(base, preset),
+            base,
+            disc,
+            run,
+            paths["before"],
+            settings.ffmpeg,
+            env,
+            renderers[0],
         )
         mark_used(base)
     after = _record(
-        "after", coney_executable(checkout, preset), checkout, disc, run, paths["after"], settings.ffmpeg, env
+        "after",
+        coney_executable(checkout, preset),
+        checkout,
+        disc,
+        run,
+        paths["after"],
+        settings.ffmpeg,
+        env,
+        renderers[1],
     )
     same = same_frames(before, after)
     record = {
         "run": {**asdict(run), "input_script": str(run.input_script)},
-        "before": {"commit": commit, "frames": before.frames, "frames_hash": before.frames_hash},
-        "after": {"commit": tip, "uncommitted": dirty, "frames": after.frames, "frames_hash": after.frames_hash},
+        "before": {
+            "commit": commit,
+            "frames": before.frames,
+            "frames_hash": before.frames_hash,
+            "renderer": renderers[0],
+        },
+        "after": {
+            "commit": tip,
+            "uncommitted": dirty,
+            "frames": after.frames,
+            "frames_hash": after.frames_hash,
+            "renderer": renderers[1],
+        },
         "same": same,
     }
     (folder / f"{named}pair.json").write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
@@ -638,7 +678,11 @@ def run_pair(
         env.original(original, math.ceil(seconds), paths["original"], agent)
         panels.append(("Original", paths["original"], 0))
     # Coney's clips start at the run's start frame already, so no panel is trimmed at its front.
-    panels += [("Before", paths["before"], 0), ("After", paths["after"], 0)]
+    labels = [
+        side if renderer is None else f"{side} {renderer.upper()}"
+        for side, renderer in zip(("Before", "After"), renderers, strict=True)
+    ]
+    panels += [(labels[0], paths["before"], 0), (labels[1], paths["after"], 0)]
     _compose(panels, paths["compare"], settings, seconds, slow, gif, env)
     return 0
 
@@ -659,7 +703,7 @@ def _compose(
     try:
         height = settings.rules.pair.mp4_heights[0]
         made = [
-            Panel(clip, label_image(label, height, parts / f"{label.lower()}.png"), start)
+            Panel(clip, label_image(label, height, parts / f"{label.lower().replace(' ', '-')}.png"), start)
             for label, clip, start in panels
         ]
         targets = [out, out.with_suffix(".gif")] if gif else [out]
@@ -718,6 +762,7 @@ def run_pair_command(
     base_ref: str | None,
     task: str | None,
     cwd: Path | None = None,
+    renderers: tuple[str | None, str | None] = (None, None),
 ) -> int:
     """`clips pair` from the command line: the checkout around `cwd`, its task's clips folder, the conventions."""
     from coney_tools import unit
@@ -745,6 +790,7 @@ def run_pair_command(
         slow=slow,
         prefix=prefix,
         base_ref=base,
+        renderers=renderers,
     )
 
 

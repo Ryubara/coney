@@ -998,6 +998,14 @@ def _add_clips_pair_commands(commands: Any) -> None:
     pair.add_argument("--disc", help="the disc for Coney; default: game_dir of coney.local.toml")
     pair.add_argument("--base", help="the branch whose merge base is the before (default origin/main)")
     pair.add_argument("--task", help="the task whose clips folder takes the clips (default: the checkout's)")
+    pair.add_argument(
+        "--renderer", choices=("gl3", "gpu"), help="the renderer both sides draw with (default: Coney's own, GL3)"
+    )
+    pair.add_argument(
+        "--before-renderer",
+        choices=("gl3", "gpu"),
+        help="the renderer the before draws with, in place of --renderer (a GPU after against GL3's before)",
+    )
     encode = commands.add_parser(
         "encode", help="re-encode a clip for GitHub: a GIF for a .gif, else a silent MP4, fitted to the size limits"
     )
@@ -1034,6 +1042,7 @@ def _run_clips_pair(args: argparse.Namespace) -> int:
         prefix=args.prefix,
         base_ref=args.base,
         task=args.task,
+        renderers=(args.before_renderer or args.renderer, args.renderer),
     )
 
 
