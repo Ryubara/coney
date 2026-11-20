@@ -305,6 +305,10 @@ struct Options {
     std::optional<std::uint32_t> aiSeed;
     /// `--record-seconds`: the clip's length, 1 to clips::kMaxClipSeconds; unset: the cap. Requires recordPath.
     std::optional<int> recordSeconds;
+    /// `--record-from-frame N`: the clip starts at the N-th frame of play (counted as an input script is, from 0), so a
+    /// run longer than the clip can be recorded at its end; unset: the first frame of play. Requires recordPath and
+    /// playLevel.
+    std::optional<std::uint64_t> recordFromFrame;
     /// `--record-debug-draw`: the clip keeps the Debug draw page's lines in the 3D scene that the run switched on (the
     /// world edits' collision wireframe); the menus and the developer overlay stay out of it. Requires recordPath.
     bool recordDebugDraw = false;
