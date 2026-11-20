@@ -164,8 +164,9 @@ bool UiScreen::setVisible(UiWidgetId id, bool visible, std::uint64_t nowMs, Menu
         }
         m_focus.reset();
         takeFocus(nowMs, input);
-    } else if (visible && !m_focus && !m_dialog) {
-        // A screen left with no focus would hear no command: the first widget that can take it now does.
+    } else if (visible && !m_focus && !m_dialog && m_def.layer == UiLayer::Menu) {
+        // A menu screen left with no focus would hear no command: the first widget that can take it now does. A HUD
+        // screen never takes its player's pad, so it stays without one.
         takeFocus(nowMs, input);
     }
     return true;

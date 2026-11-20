@@ -23,8 +23,8 @@ unchanged.
 | Host on a menu's flow | `src/gui/mod_ui/ui_flow_screen.h` | A screen-flow state (the profile manager's flow) that runs a slot's mod screens and pops when they close |
 | Host over play | `src/gamemodes/ui_screen_mode.h` | Game mode `0x109`, over gameplay while a screen that pauses play is open (`UiModel::pausesPlay`) |
 
-Tests: in `tests/gui/mod_ui/`, one file per part (`ui_model_test.cpp`, `ui_view_test.cpp`, `ui_input_mask_test.cpp`,
-`ui_flow_screen_test.cpp`), and `tests/gamemodes/ui_screen_mode_test.cpp`.
+Tests: in `tests/gui/mod_ui/`, one file per part (`ui_model_test.cpp`, `ui_screen_test.cpp`, `ui_view_test.cpp`,
+`ui_input_mask_test.cpp`, `ui_flow_screen_test.cpp`), and `tests/gamemodes/ui_screen_mode_test.cpp`.
 
 ## Screens and widgets {#widgets}
 
@@ -118,8 +118,9 @@ screens read the ports as the device gave them (`rawPad`).
 ## Limits {#limits}
 
 Per project, refused with a `UiRefusal`: 16 screens alive, 512 widgets alive over all of them, 4 HUD screens shown at
-once, 2,048 bytes in one text, 100 items in one list (a grid holds `OptionGrid`'s 50), 32 characters typed on the
-keyboard. They are the design's first guesses ([Limits](studio/ui.md#limits)).
+once, 2,048 bytes in one text (the design says characters; Coney counts bytes, so multi-byte text reaches it
+sooner), 100 items in one list (a grid holds `OptionGrid`'s 50), 32 characters typed on the keyboard. They are the
+design's first guesses ([Limits](studio/ui.md#limits)).
 
 ## Coney's choices {#choices}
 
