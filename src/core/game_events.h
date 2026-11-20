@@ -57,6 +57,8 @@ enum class GameEventKind : std::uint8_t {
                        ///< `HUDEnableGameTutorialText`): `id` 0 queued (`text` it, `value` its priority), 1 the
                        ///< showing hint cleared, 2 flushed (`value` the priority), 3 the game's own hints on or off
                        ///< (`value` 1 on).
+    SoundStop = 23,    ///< Stub (#1473).
+    SoundMove = 24,    ///< Stub (#1473).
 };
 
 /// The first and last GameEventKind, for loops and range checks.

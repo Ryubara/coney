@@ -2,6 +2,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <span>
@@ -107,6 +108,19 @@ class SoundEvents final : public script::SoundHost {
 
     script::SoundHost* m_inner;
     GameEvents* m_events;
+};
+
+/// Stub (#1473).
+class SoundEventPlayer {
+  public:
+    /// Stub.
+    explicit SoundEventPlayer(script::SoundHost* /*sound*/) {}
+    /// Stub.
+    void apply(const GameEvent& /*event*/) {}
+    /// Stub.
+    void stopAll() {}
+    /// Stub.
+    [[nodiscard]] std::size_t instances() const { return 0; }
 };
 
 /// Plays interface cue `cue` through the HUD's `sound`, raising it first on `events` (null: none) as a Cue for

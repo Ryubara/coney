@@ -33,6 +33,8 @@ std::uint8_t gameEventFields(GameEventKind kind) {
         return kEventId | kEventValue | kEventExtra;
     case GameEventKind::MusicStop:
     case GameEventKind::LoopStop:
+    case GameEventKind::SoundStop:
+    case GameEventKind::SoundMove:
         return 0;
     case GameEventKind::ParticleStart:
         return kEventSubject | kEventId | kEventValue | kEventPosition | kEventText | kEventRotation;
@@ -89,6 +91,8 @@ bool reliableGameEvent(GameEventKind kind) {
     case GameEventKind::Command:
     case GameEventKind::SpeechStop:
     case GameEventKind::Hint:
+    case GameEventKind::SoundStop:
+    case GameEventKind::SoundMove:
         return true;
     }
     return true;
@@ -140,6 +144,9 @@ std::string_view describe(GameEventKind kind) {
         return "cue";
     case GameEventKind::Hint:
         return "hint";
+    case GameEventKind::SoundStop:
+    case GameEventKind::SoundMove:
+        break;
     }
     return "unknown";
 }

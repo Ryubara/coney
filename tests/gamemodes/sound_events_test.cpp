@@ -25,11 +25,14 @@ using coney::GameEventKind;
 
 namespace {
 
-// A sound that writes down the calls a player hears and answers with fixed handles.
+// A sound that writes down the calls a player hears and answers with fixed handles (or, with `counting`, a new handle
+// from 21 for each sound started).
 class RecordingSound final : public coney::script::SoundHost {
   public:
     std::vector<std::string> calls;
-    bool speaks = true; ///< whether a line or command asked for plays
+    bool speaks = true;    ///< whether a line or command asked for plays
+    bool counting = false; ///< each sound started takes the next handle from 21
+    double next = 21.0;    ///< the next handle when counting
 
     void configureMusicTrack(std::uint32_t /*track*/, float /*barMs*/, float /*volume*/) override {}
     void setInterfaceSound(int /*cue*/, std::uint32_t /*sound*/) override {}
@@ -49,11 +52,16 @@ class RecordingSound final : public coney::script::SoundHost {
     void pauseSound(bool /*on*/) override {}
     double play2D(std::uint32_t sound) override {
         calls.push_back(std::format("2d {:#x}", sound));
-        return 11.0;
+        return counting ? next++ : 11.0;
     }
-    double play3D(std::uint32_t sound, const std::array<float, 3>& /*position*/) override {
-        calls.push_back(std::format("3d {:#x}", sound));
-        return 12.0;
+    double play3D(std::uint32_t sound, const std::array<float, 3>& position) override {
+        calls.push_back(counting ? std::format("3d {:#x} at {} -> {}", sound, position[0], next)
+                                 : std::format("3d {:#x}", sound));
+        return counting ? next++ : 12.0;
+    }
+    void stopSound(double handle) override { calls.push_back(std::format("stop {}", handle)); }
+    void moveSound(double handle, const std::array<float, 3>& position, float volume) override {
+        calls.push_back(std::format("move {} to {} at {}", handle, position[0], volume));
     }
     void stopAmbientTrack() override { calls.emplace_back("ambient stop"); }
     void setAmbientTrackVolume(float /*volume*/) override {}
@@ -135,8 +143,10 @@ TEST_CASE("sound events: the calls a player hears are raised and played, the res
                                                   "speak l99_no", "command 76", "bank level99"});
     const std::vector<GameEvent> raised = events.take();
     REQUIRE(raised.size() == 13);
-    CHECK(raised[0] == GameEvent{.kind = GameEventKind::Sound2D, .id = 0x10});
-    CHECK(raised[1] == GameEvent{.kind = GameEventKind::Sound3D, .id = 0x20, .position = {1.0F, 2.0F, 3.0F}});
+    // Each sound started names its instance, from 1.
+    CHECK(raised[0] == GameEvent{.kind = GameEventKind::Sound2D, .id = 0x10, .value = 1});
+    CHECK(raised[1] ==
+          GameEvent{.kind = GameEventKind::Sound3D, .id = 0x20, .value = 2, .position = {1.0F, 2.0F, 3.0F}});
     CHECK(raised[2] == GameEvent{.kind = GameEventKind::LoopStart, .id = 0x30});
     CHECK(raised[3] == GameEvent{.kind = GameEventKind::LoopStop});
     CHECK(raised[4] == GameEvent{.kind = GameEventKind::MusicStart, .id = 0x40, .value = 0});
@@ -163,7 +173,9 @@ TEST_CASE("sound events: offline the sound plays the same and nothing is kept", 
     coney::SoundEvents seam(&sound, &events);
     CHECK(seam.play2D(0x10) == 11.0);
     seam.stopMusic();
-    CHECK(sound.calls.size() == 2);
+    seam.moveSound(11.0, {1.0F, 0.0F, 0.0F}, 0.5F);
+    seam.stopSound(11.0);
+    CHECK(sound.calls == std::vector<std::string>{"2d 0x10", "music stop", "move 11 to 1 at 0.5", "stop 11"});
     CHECK(events.size() == 0);
     // With no sound at all, nothing plays and the defaults come back.
     coney::SoundEvents silent(nullptr, nullptr);
@@ -171,6 +183,91 @@ TEST_CASE("sound events: offline the sound plays the same and nothing is kept", 
     CHECK_FALSE(silent.soundPlaying(11.0));
     CHECK_FALSE(silent.sayCommand({}, {}).has_value());
     CHECK(silent.loadSoundMatrix("x"));
+}
+
+// Expected: unverified, #1473 (Coney's own network play; the original has none)
+TEST_CASE("sound events: a sound's stop and move name the instance its start gave it", "[gamemodes][events]") {
+    RecordingSound sound;
+    sound.counting = true;
+    coney::GameEvents events;
+    events.setRecording(true);
+    coney::SoundEvents seam(&sound, &events);
+
+    const double radio = seam.play3D(0x20, {1.0F, 2.0F, 3.0F}); // instance 1, handle 21
+    const double other = seam.play2D(0x10);                     // instance 2, handle 22
+    // A move to where it plays, at the full volume it started at, changes nothing a guest hears: none raised.
+    seam.moveSound(radio, {1.0F, 2.0F, 3.0F}, 1.0F);
+    // A scene halves the volume; the radio moves; a repeat of the same changes nothing.
+    seam.moveSound(radio, {1.0F, 2.0F, 3.0F}, 0.5F);
+    seam.moveSound(radio, {4.0F, 2.0F, 3.0F}, 0.5F);
+    seam.moveSound(radio, {4.0F, 2.0F, 3.0F}, 0.5F);
+    seam.stopSound(radio);
+    // A handle stopped already, or one no start of this seam gave, names no instance: passed on, nothing raised.
+    seam.stopSound(radio);
+    seam.moveSound(99.0, {0.0F, 0.0F, 0.0F}, 1.0F);
+    seam.stopSound(other);
+
+    CHECK(sound.calls == std::vector<std::string>{"3d 0x20 at 1 -> 21", "2d 0x10", "move 21 to 1 at 1",
+                                                  "move 21 to 1 at 0.5", "move 21 to 4 at 0.5", "move 21 to 4 at 0.5",
+                                                  "stop 21", "stop 21", "move 99 to 0 at 1", "stop 22"});
+    const std::vector<GameEvent> raised = events.take();
+    REQUIRE(raised.size() == 6);
+    CHECK(raised[0] ==
+          GameEvent{.kind = GameEventKind::Sound3D, .id = 0x20, .value = 1, .position = {1.0F, 2.0F, 3.0F}});
+    CHECK(raised[1] == GameEvent{.kind = GameEventKind::Sound2D, .id = 0x10, .value = 2});
+    // The volume travels in thousandths.
+    CHECK(raised[2] ==
+          GameEvent{.kind = GameEventKind::SoundMove, .value = 1, .extra = 500, .position = {1.0F, 2.0F, 3.0F}});
+    CHECK(raised[3] ==
+          GameEvent{.kind = GameEventKind::SoundMove, .value = 1, .extra = 500, .position = {4.0F, 2.0F, 3.0F}});
+    CHECK(raised[4] == GameEvent{.kind = GameEventKind::SoundStop, .value = 1});
+    CHECK(raised[5] == GameEvent{.kind = GameEventKind::SoundStop, .value = 2});
+}
+
+// Expected: unverified, #1473 (Coney's own network play; the original has none)
+TEST_CASE("sound events: a sound started before recording, or refused, can raise no stop", "[gamemodes][events]") {
+    RecordingSound sound;
+    sound.counting = true;
+    coney::GameEvents events;
+    coney::SoundEvents seam(&sound, &events);
+    const double before = seam.play3D(0x20, {0.0F, 0.0F, 0.0F}); // offline: no instance kept
+    events.setRecording(true);
+    seam.stopSound(before);
+    CHECK(events.take().empty());
+    // A start the sound refused (handle 0) still raises its start, with an instance nothing can stop.
+    coney::SoundEvents silent(nullptr, &events);
+    CHECK(silent.play3D(0x30, {0.0F, 0.0F, 0.0F}) == 0.0);
+    silent.stopSound(0.0);
+    const std::vector<GameEvent> raised = events.take();
+    REQUIRE(raised.size() == 1);
+    CHECK(raised[0].kind == GameEventKind::Sound3D);
+    CHECK(raised[0].value == 1);
+}
+
+// Expected: unverified, #1473 (Coney's own network play; the original has none)
+TEST_CASE("sound event player: a guest starts, moves and stops its own sound by the host's instance",
+          "[gamemodes][events]") {
+    RecordingSound sound;
+    sound.counting = true;
+    coney::SoundEventPlayer player(&sound);
+    player.apply(GameEvent{.kind = GameEventKind::Sound3D, .id = 0x20, .value = 7, .position = {1.0F, 2.0F, 3.0F}});
+    player.apply(GameEvent{.kind = GameEventKind::Sound2D, .id = 0x10, .value = 8});
+    player.apply(GameEvent{.kind = GameEventKind::Sound2D, .id = 0x11, .value = 0}); // no instance: played, not kept
+    CHECK(player.instances() == 2);
+    player.apply(GameEvent{.kind = GameEventKind::SoundMove, .value = 7, .extra = 500, .position = {4.0F, 2.0F, 3.0F}});
+    player.apply(GameEvent{.kind = GameEventKind::SoundStop, .value = 7});
+    // An instance this guest never started (its start was lost, or came before it joined) is nothing to stop.
+    player.apply(GameEvent{.kind = GameEventKind::SoundStop, .value = 7});
+    player.apply(GameEvent{.kind = GameEventKind::SoundMove, .value = 9, .extra = 1000});
+    // The other kinds are the client game mode's to play: left alone here.
+    player.apply(GameEvent{.kind = GameEventKind::MusicStop});
+    CHECK(sound.calls ==
+          std::vector<std::string>{"3d 0x20 at 1 -> 21", "2d 0x10", "2d 0x11", "move 21 to 4 at 0.5", "stop 21"});
+    CHECK(player.instances() == 1);
+    // Leaving the session stops what still plays.
+    player.stopAll();
+    CHECK(sound.calls.back() == "stop 22");
+    CHECK(player.instances() == 0);
 }
 
 // Expected: unverified, #547 (Coney's own network play; the original has none)

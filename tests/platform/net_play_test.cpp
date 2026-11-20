@@ -7,7 +7,11 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <format>
+#include <functional>
 #include <memory>
+#include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -18,6 +22,8 @@
 #include "core/options.h"
 #include "core/pad.h"
 #include "core/pads.h"
+#include "gamemodes/sound_events.h"
+#include "net/event_channel.h"
 #include "net/loopback_transport.h"
 #include "net/net_id.h"
 #include "net/net_status.h"
@@ -25,6 +31,7 @@
 #include "net/state_digest.h"
 #include "net/transport.h"
 #include "platform/net_game.h"
+#include "scripting/sound_bindings.h"
 
 using coney::InputSource;
 using coney::PadSample;
@@ -105,6 +112,60 @@ struct TwoGames {
         REQUIRE(guest.join());
         run(4);
     }
+};
+
+// A game's sound that writes down each sound started, moved and stopped, with the step it was asked in; each start
+// takes the next handle from `next`.
+class StepSound final : public coney::script::SoundHost {
+  public:
+    explicit StepSound(double first) : next(first) {}
+    std::vector<std::string> calls;
+    std::uint32_t step = 0; ///< the step the calls are written down for
+    double next;
+
+    double play3D(std::uint32_t sound, const std::array<float, 3>& position) override {
+        calls.push_back(std::format("{}: start {:#x} at {}", step, sound, position[0]));
+        return next++;
+    }
+    void moveSound(double /*handle*/, const std::array<float, 3>& position, float volume) override {
+        calls.push_back(std::format("{}: move to {} at {}", step, position[0], volume));
+    }
+    void stopSound(double /*handle*/) override { calls.push_back(std::format("{}: stop", step)); }
+    // What this test does not use.
+    void configureMusicTrack(std::uint32_t /*track*/, float /*barMs*/, float /*volume*/) override {}
+    void setInterfaceSound(int /*cue*/, std::uint32_t /*sound*/) override {}
+    void allocateCharacterVoices(int /*count*/) override {}
+    void setCommandSoundPercent(int /*voiceSet*/, std::uint32_t /*command*/, std::uint32_t /*percent*/) override {}
+    void loadSoundBank(std::string_view /*name*/) override {}
+    void setNonDuckableDuck(float /*factor*/) override {}
+    void setPitchFactor(float /*factor*/) override {}
+    void humanSound(const coney::script::HumanSoundCall& /*call*/) override {}
+    void addAmbientSound(int /*index*/, std::uint32_t /*sound*/) override {}
+    double addAmbientEmitter(const coney::script::AmbientEmitterCall& /*call*/) override { return 0.0; }
+    void setAmbientEmitterPositions(std::string_view /*name*/,
+                                    std::span<const std::array<float, 3>> /*points*/) override {}
+    void playAmbientTrack(std::uint32_t /*sound*/) override {}
+    void pauseSound(bool /*on*/) override {}
+    double play2D(std::uint32_t /*sound*/) override { return 0.0; }
+    void stopAmbientTrack() override {}
+    void setAmbientTrackVolume(float /*volume*/) override {}
+    void playMusic(std::uint32_t /*track*/, bool /*loop*/, std::string_view /*callback*/) override {}
+    void stopMusic() override {}
+    void setMusicVolume(float /*volume*/) override {}
+    void setListener(int /*listener*/) override {}
+    bool speak(const coney::script::SpeechCall& /*call*/, std::string_view /*callback*/,
+               std::optional<double> /*callbackArg*/) override {
+        return false;
+    }
+    void shutUp(double /*human*/, bool /*force*/) override {}
+    std::optional<double> sayCommand(const coney::script::CommandCall& /*call*/,
+                                     std::string_view /*callback*/) override {
+        return std::nullopt;
+    }
+    void gameplayEntered() override {}
+    void levelLoadStarted(int /*levelNumber*/) override {}
+    void levelLoaded() override {}
+    void gameplayLeft() override {}
 };
 
 // Whether `log` has a line containing `text`.
@@ -445,4 +506,52 @@ TEST_CASE("a host's game events reach the joined guest once each, at the host's 
     games.host.disconnect();
     CHECK_FALSE(games.host.gameEvents().recording());
     CHECK(games.host.takeArrivedEvents(100).empty());
+}
+
+// Expected: unverified, #1473 (Coney's own network play; the original has none)
+TEST_CASE("a sound the host starts, moves and stops is started, moved and stopped once on the guest at those steps",
+          "[net][net_play][events]") {
+    TwoGames games;
+    games.connect();
+    // The host's game sound behind its events (as GameSession wires it), and the guest's own sound with the player
+    // that applies the host's events to it. Their handles differ: the host's from 100, the guest's from 500.
+    StepSound hostSound(100.0);
+    coney::SoundEvents seam(&hostSound, &games.host.gameEvents());
+    StepSound guestSound(500.0);
+    coney::SoundEventPlayer player(&guestSound);
+    // The guest applies the host's events step by step, at the host's step each happened in.
+    std::uint32_t shown = 0;
+    const auto guestCatchesUp = [&] {
+        for (; shown < games.host.steps(); ++shown) {
+            guestSound.step = shown;
+            for (const coney::net::ArrivedEvent& arrived : games.guest.takeArrivedEvents(shown)) {
+                player.apply(coney::net::toGameEvent(arrived.event));
+            }
+        }
+    };
+    guestCatchesUp();
+    // A radio's track: started, followed where it is (nothing to send), halved for a scene, then stopped; one host
+    // step for each call, with a step between.
+    double track = 0.0;
+    const std::array<std::function<void()>, 4> calls{
+        [&] { track = seam.play3D(0x42, {3.0F, 0.0F, 0.0F}); },
+        [&] { seam.moveSound(track, {3.0F, 0.0F, 0.0F}, 1.0F); },
+        [&] { seam.moveSound(track, {5.0F, 0.0F, 0.0F}, 0.5F); },
+        [&] { seam.stopSound(track); },
+    };
+    for (const std::function<void()>& call : calls) {
+        hostSound.step = games.host.steps();
+        call();
+        games.run(1);
+        games.run(1);
+    }
+    games.run(4);
+    guestCatchesUp();
+
+    CHECK(hostSound.calls.size() == 4);
+    // The host's move to where it already plays sends nothing; everything else plays once on the guest, at the
+    // step the host made it in, on the guest's own handle.
+    const std::vector<std::string> expected{hostSound.calls[0], hostSound.calls[2], hostSound.calls[3]};
+    CHECK(guestSound.calls == expected);
+    CHECK(player.instances() == 0);
 }
