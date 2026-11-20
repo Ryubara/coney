@@ -691,6 +691,7 @@ A human's bone transform (`0x0023bde8`, its vtable `+0xbc`) is the bone's entry 
 playing pose, model space) with the **position multiplied by the human's scale** (`+0x65c`, 0.97 for Rembrandt) and the
 rotation as is. The object itself is never scaled. `0x003a1ad8` (vtable `+0xac`, the pose extrapolated to now) does
 the same for an attached object, the local rotation advanced by its angular velocity (`+0x40`, zero while held).
+Confirmed (code) at `0x0023bde8` (`Human_GetBoneTransform`: the cached entry, its position scaled by `Human_GetScale`).
 
 **At runtime** (confirmed (runtime), PCSX2 2.9.94, slot 1 copy, the player 1 m behind a `dyn_bat_tuff`, triangle,
 then stick 60 % up for 35 updates, square, R1 held 30 updates, stick 100 % up for 30 updates, triangle): the bat's
@@ -710,7 +711,7 @@ human's handler is `0x00245920`):
 | `0x22` | `0xa2` | with a pick target and nothing in hand, as 9; otherwise the held object (`+0x338`) gets message `0x32`: **re-attach** at this bone and offset, nothing else. `GhettoPickUp`'s clips 549 / 550 carry one per frame from 13 to 39, animating the object in the hand |
 | `0x34` / `0x35` | `0xb4` / `0xb5` | as 9 / `0x22`, only for object types 24 and 27 |
 | `0x37` | `0xb7` | writes bone and offset straight into the object at human `+0x348` (or `+0x34c`); what those hold is not traced |
-| 10 | `0x8a` | **release** with something in hand: a throw (`0x002586d8`) under state flags `0x1000010`, else a drop (`0x00257f38`) under `0x4000` or in a scene |
+| 10 | `0x8a` | **release** with something in hand: a throw (`0x002586d8`) under state flags `0x1000010`, else a drop (`0x00257f38`) under `0x4000` or in a scene; confirmed (code) |
 
 **Take** (message `0x1b`; `melee_weapon` `0x003fe490`, `simple_object` `0x003ef188`, confirmed (code)): velocity and
 angular velocity zeroed, attached to the human at the bone, flags `0x6000000` cleared, the local pose set to the
@@ -735,15 +736,16 @@ The steps of `Human_PlaceItemInHand` (`0x0024c280`, `h, name, record, guard`), c
    `0x4000` (mid pick-up, `Human_HasHeld4000` `0x00228408`) gets nothing and 0 is returned. The binding passes
    `record` = 1 and `guard` = 1, and has already refused a human with something in hand or with that flag
    (`0x00238540`); `Human_Init`'s class weapon passes the same ([Human creation: the weapon](human-init.md#weapon)).
+   Confirmed (code).
 2. A type of pick-up kind 5 (`+0x65`) is not put in the hand: it becomes the human's **carried prop**
    (`Human_CreateCarriedProp` `0x0024cbb0`: attach point `0x13`, held at `+0x34c`,
-   [Combat: power-move props](combat-grabs.md#power-move-props)), so `+0x338` stays empty.
+   [Combat: power-move props](combat-grabs.md#power-move-props)), so `+0x338` stays empty. Confirmed (code).
 3. Otherwise anything in the hand is dropped (`Human_DropHeld` `0x00257f38`), and the object is made by name
    (`Task_CreateObjectByName`) at the human's position now (his vtable `+0xac`) with no turn (the identity quaternion
-   at `0x00511790`). No object made (an unknown name) returns 0.
+   at `0x00511790`). No object made (an unknown name) returns 0. Confirmed (code).
 4. With `record` set, a spawn record is added for it (`ObjRecord_Add`, flags `0x41`) and pinned; then
    `Human_PlaceObjectInHandByPickupClip` (`0x0024c6d8`) attaches it as above and, when the take succeeded, unpins the
-   record (the held object is kept alive by its holder).
+   record (the held object is kept alive by its holder). Confirmed (code).
 
 **At runtime** (confirmed (runtime), run r-20261120-level54-scripted-bats): `level54` checkpoint 3, where the script
 makes the eight `StreetPursuit` Furies after the opening scene and puts a `dyn_bat_fury` in each hand. All eight held
@@ -751,13 +753,13 @@ one, each object attached (`+0x54` = `0x8021a091`, bit `0x10`) to its Fury on bo
 (0.151, −0.288, −0.005), the same offset as a bat the swap places ([A weapon given to a Warrior](#given-weapon)), and the
 frames showed the bats in their right hands.
 
-**In Coney** (issue #739): the binding (`ScriptedHumans::placeItemInHand`, `repo:src/ai/scripted_humans.cpp`) gives
+**In Coney**: the binding (`ScriptedHumans::placeItemInHand`, `repo:src/ai/scripted_humans.cpp`) gives
 the human the new handle and the type's name; the level simulation's next step makes it
 (`PlayLevelSimulation::placeItemInHand`, `repo:src/gamemodes/play_level_held.cpp`): a spawn record of the type at his
 feet with no turn, pinned, held by him (`LevelPickups::placeInHand`), which the held draw then poses from his pick-up
 clip like any held object. Differences: the record stays pinned while held (Coney's take does the same; the
 original unpins it); the object is made on the step after the call, not in it; an unknown type empties the hand; and a
-kind-5 type is a **stand-in**: no carried prop is made and the hand stays empty. The `0x4000` guard is issue #695's.
+kind-5 type is a **stand-in**: no carried prop is made and the hand stays empty. The `0x4000` guard is not ported.
 
 **Drop** (`0x00257f38`, triangle with nothing to take, a pick-up of a two-handed or hat object, a scene's release;
 confirmed (code)): pops the anim set the object pushed, records the human as its last holder (object `+0x11c`) unless
@@ -783,8 +785,8 @@ by the holder's world rotation and set (vtable `+0x74`). Five model hashes (obje
 they take the holder's rotation and the angular velocity (−8π, 0, 0) rad/s (its vtable `+0x7c`) whether thrown or
 dropped. Otherwise a thrown object (velocity not zero) of anim set 1 or 2 takes the holder's rotation and (−4π, 0, 0);
 any other thrown object keeps its own rotation and gets (0, 0, −kπ), `k` random in 5-7; a drop keeps its rotation and
-gets no spin. The angular velocity is stored as given (`+0x7c` writes task `+0x40`,
-`0x003a19a0`) and the integrator applies it as `q += ½ ω ⊗ q dt` (`Quat_IntegrateAngular` `0x00335b08`), so it is in
+gets no spin. The angular velocity is stored as given (`+0x7c` writes task `+0x40`) and the integrator applies it as
+`q += ½ ω ⊗ q dt` (`Quat_IntegrateAngular` `0x00335b08`), so it is in
 **world axes**, not the object's or the thrower's: a set 1 or 2 weapon thrown along world y tumbles end over end, one
 thrown along world x rolls about its line of flight. Confirmed (code).
 `simple_object`'s detach only detaches.
@@ -813,7 +815,7 @@ the addresses cited unless marked.
    object (`pickup_anim` 5 or 6) has no type-9 event and stays on the ground (inferred, as for the scripted
    placement). The prompt that later offers it back ("Get Weapon", HUD string `0xd`, he holds) reads the same
    `+0x338` ([AI: the Warriors' think](ai-brain-types.md#think-warrior), step 7). **At runtime** (confirmed (runtime),
-   PCSX2 2.9.129 (the PCSX2-MCP fork), copy `pcsx2-c`, 2026-10-21, `level99` checkpoint 2 street (slot 6) with the
+   PCSX2 2.9.129 (the PCSX2-MCP fork), copy `pcsx2-c`, `level99` checkpoint 2 street (slot 6) with the
    `call-brains` hook): a Warrior made with the `spawn-crew` recipe 2 m in front of Rembrandt, a `dyn_bat` put in
    Rembrandt's hand with `HuPlaceItemInHand`, then `Human_SwapHeldObjects` (`0x00233b08`) called with the Warrior as
    receiver: Rembrandt's `+0x338` became the null handle, the Warrior's the bat's handle, and the bat object read
@@ -829,7 +831,7 @@ the addresses cited unless marked.
    (`0x0021b290`) adds the object type's `CfgObj` u16 `+0x58` and multiplies by the attacker's class record's first
    float when the held world object's body flags have `0x10000` (the melee weapons) (confirmed (code); whether this
    branch runs for any held weapon's swing is open, below).
-   **Correction** (issue #492, confirmed (runtime) for `dyn_bat` in the `level34` Furies' hands only): their bat
+   **Correction** (confirmed (runtime) for `dyn_bat` in the `level34` Furies' hands only): their bat
    swings (501, 36, 37) never reached `Strike_Contact`; each hit was the bat's own body touching the victim
    (`WorldObject_OnContact` `0x00394050` → `ThrownObject_HitHuman` `0x00392b88`), which deals `CfgObj` `+0x58` × the
    holder's class float, without the clip's damage ([Combat: a bat's hit](combat-throws.md#bat-knockdown)). Not
@@ -852,7 +854,7 @@ the addresses cited unless marked.
 **Coney fixes** (user item 37; the hand-over works, the member holds the object, `play_level_objects.cpp` gives him
 its anim set):
 
-1. **Done** (issue #78): every human's held object is drawn, not only player 1's. `PlayLevelMode::heldDrawOf`
+1. **Done**: every human's held object is drawn, not only player 1's. `PlayLevelMode::heldDrawOf`
    (`repo:src/platform/play_level_world.cpp`) poses any human's `script().heldObject` from his own animations' pick-up
    clip (the take event's bone and offset at his scale, the type's grip slide `CfgObj` `+0x70`) and his own pose, and
    `render()` queues player 1's and each AI human's with the hats and carried props (`drawAttachedObjects()`), a
@@ -873,7 +875,7 @@ its anim set):
 #### Two-handed objects {#two-handed}
 
 How the original decides that a held object is carried in **both** hands (the cash register, a drum, a chair, an
-amp) rather than hung from the right hand like a bat or a bottle. Asked by issue #433: in Coney the `level99`
+amp) rather than hung from the right hand like a bat or a bottle. In Coney the `level99`
 checkpoint 2 register is lifted with the right clip but then held like a one-handed prop.
 
 **There is no "two-handed" flag.** The look comes from two bytes of the object's **type record** (`CfgObj`,
@@ -895,10 +897,10 @@ alike because their take handlers are alike (below), and the class only decides 
 Confirmed (code), as on [Combat](combat-throws.md#bat).
 
 **2. The take** (the clip's type-9 event, human message `0x89` in `Human_HandleMessage` `0x00245920`) sends the
-object message `0x1b` with, in push order, the human, the event's **bone**, the event's position × the human's scale,
-its rotation, and whether the human is in a scene (`Human_IsInSceneState`). The two-handed classes' handlers
-(`OverheadWeapon_OnPickedUp` `0x003ff918`, `DynCashreg_OnPickUp` `0x003c0108`) zero the velocity and spin, attach the
-object at the event's bone (flag `0x10`) and then set its local pose:
+object message `0x1b` (confirmed (code)) with, in push order, the human, the event's **bone**, the event's position ×
+the human's scale, its rotation, and whether the human is in a scene (`Human_IsInSceneState`). The two-handed classes'
+handlers (`OverheadWeapon_OnPickedUp` `0x003ff918`, `DynCashreg_OnPickUp` `0x003c0108`) zero the velocity and spin,
+attach the object at the event's bone (flag `0x10`) and then set its local pose:
 
 ```text
 if not in a scene:  local position = type record +0x00 (holdPos, w = 1)      // ScriptObj_GetVectorProperty 11
@@ -915,7 +917,7 @@ its own `0x8000`.
 
 **3. The move style.** The handler then sends the human message **3** with itself. The human's case 3 reads the
 held object's type `+0x87` and, when it differs from the human's current style (`Human_GetMoveStyle`), calls
-`Human_SetCarryMoveStyle` (`0x00221ed0`):
+`Human_SetCarryMoveStyle` (`0x00221ed0`; confirmed (code)):
 
 - style 0 (`NONE_SET`): nothing;
 - the human in the hidden style `0x14` ([Stealth](stealth.md#sneaking)) and the object's style 4 or 6: the top style is
@@ -955,8 +957,8 @@ Styles 1-3 (knife, baton, bat) change only attack and block slots, which is why 
 and walk ([Combat: a bat in hand](combat-throws.md#bat)).
 
 **4. Letting go.** The drop (`Human_DropHeld`, `0x00257f38`, [Drop](#held)) and the throw pop the style the object
-pushed, so the slots go back to the defaults. Before a pick-up clip, a held object is dropped first when the new
-object's `pickupAnim` is 5 or 6 or the human's style is 4 or 6 ([Combat](combat-throws.md#bat)).
+pushed, so the slots go back to the defaults (confirmed (code)). Before a pick-up clip, a held object is dropped first
+when the new object's `pickupAnim` is 5 or 6 or the human's style is 4 or 6 ([Combat](combat-throws.md#bat)).
 
 **At runtime** (confirmed (runtime), PCSX2 2.9.94, quick-save slot 8 copy (`level99` checkpoint 2), scenario
 `repo:research/traces/scenarios/cashreg_carry.toml`: the player put at (53.23, 56.45) facing +y, 0.8 m south of the

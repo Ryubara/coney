@@ -86,6 +86,7 @@ std::optional<coney::platform::PlayLevelMode::HeldDraw> drawnIn(const coney::pla
 
 } // namespace
 
+// Expected: objects.md#held, confirmed (runtime), run r-20261120-level54-scripted-bats
 TEST_CASE("the disc's level54 checkpoint 3: the bats the script puts in the Furies' hands are objects drawn there",
           "[disc][story][pickup]") {
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
