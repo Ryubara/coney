@@ -102,8 +102,8 @@ void PlayLighting::step(const WorldView& view, const raycast::CollisionMesh& mes
 
 std::size_t PlayLighting::drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood) {
     rw::Atomic* atomic = mesh.atomic();
-    // Faded out from 60 to 70 m from the camera, and not drawn beyond. **Coney's reading**: the distance is the posed
-    // body's sphere centre's; the first second's fade-in is not drawn.
+    // Faded out from 60 to 70 m from the camera, and not drawn beyond. **Coney's choice** (a stand-in): the distance is
+    // the posed body's sphere centre's, and the first second's fade-in is not drawn.
     const rw::Sphere* sphere = atomic->getWorldBoundingSphere();
     const world::Vec3 eye = m_scene->pose().position;
     const float dx = sphere->center.x - eye.x;
