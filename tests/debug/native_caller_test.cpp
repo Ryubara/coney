@@ -47,7 +47,7 @@ TEST_CASE("the status comes from the state's native list", "[debug]") {
     const auto natives = sandbox.scripts().natives();
     CHECK(coney::debug::nativeStatus(natives, "GetPlatform") == NativeStatus::Implemented);
     CHECK(coney::debug::nativeStatus(natives, "PlayMovie") == NativeStatus::Partial);
-    CHECK(coney::debug::nativeStatus(natives, "SetDifficulty") == NativeStatus::Stub);
+    CHECK(coney::debug::nativeStatus(natives, "SetCopGuardArrestedRange") == NativeStatus::Stub);
     CHECK(coney::debug::nativeStatus(natives, "GoalPathBlocker") == NativeStatus::Missing);
     // A list without a native says it is missing, whatever the binding table holds.
     CHECK(coney::debug::nativeStatus({}, "GetPlatform") == NativeStatus::Missing);
@@ -83,7 +83,7 @@ TEST_CASE("a call goes through the VM: a real binding answers, a stub records, a
     REQUIRE(truncated->size() == 1);
     CHECK((*truncated)[0] == Value(3.0));
 
-    const auto stubbed = coney::debug::callNative(vm, "SetDifficulty", {});
+    const auto stubbed = coney::debug::callNative(vm, "SetCopGuardArrestedRange", {});
     REQUIRE(stubbed);
     CHECK(stubbed->empty()); // a stub with no result
 

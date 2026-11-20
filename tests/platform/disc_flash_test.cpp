@@ -569,3 +569,46 @@ TEST_CASE(
     checkUse(useFlash(run, driver, 0.0F, -1, SetUp::AsPlayed), "level99 story");
     CHECK(scripts.errors() == 0);
 }
+
+TEST_CASE("the disc's level80: the profile's difficulty picks the flash's heal, in full to hard and half on fury",
+          "[disc][story][flash][difficulty]") {
+    // Expected: difficulty.md#flash, confirmed (code)
+    // The profile's difficulty (PM_Difficulty's, W_GameState +0x43c) picks the difficulty script global.lua runs at
+    // the level's start (config_hard.lua, config_fury.lua), whose CfgDifficulty calls SetDifficulty: the difficulty in
+    // force (+0x154) that Flash_Use reads. Above hard a player's flash adds half his maximum health (Human_Heal's
+    // partial heal, capped); up to hard it fills it.
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    struct Case {
+        const char* name;
+        int profile;
+        std::uint8_t inForce;
+        bool full;
+    };
+    for (const Case& test : {Case{"level80 hard", 2, 2, true}, Case{"level80 fury", 3, 3, false}}) {
+        INFO(test.name);
+        FlashDriver driver;
+        coney::test::DiscSession run(*wad, driver);
+        run.session().flow().state().profileDifficulty = test.profile;
+        startPlaying(run, driver, "level80", 2);
+        CHECK(static_cast<int>(run.session().flow().state().difficulty) == static_cast<int>(test.inForce));
+
+        // A quarter of his health, so half the maximum on top stays under it.
+        auto& human = const_cast<coney::human::Human&>(run.session().play()->player().human());
+        coney::combat::Health& health = human.fighter().health();
+        run.session().flow().state().player.inventory.set(0, coney::item::kRevive, 1);
+        health.set(health.maximum() / 4);
+        const int hurt = health.value();
+        const Use use = useFlash(run, driver, 0.0F, -1, SetUp::AsPlayed);
+        const int expected = test.full ? health.maximum() : std::min(hurt + (health.maximum() >> 1), health.maximum());
+        std::printf("  %s: difficulty %d in force; health %d -> %d of %d (expected %d), spent at %d\n", test.name,
+                    static_cast<int>(run.session().flow().state().difficulty), hurt, use.healthAfter, use.healthMaximum,
+                    expected, use.healUpdate);
+        CHECK(use.played);
+        CHECK(use.flashesAfter == 0);
+        CHECK(use.healthAfter == expected);
+        CHECK(run.session().flow().scripts().errors() == 0);
+    }
+}

@@ -39,6 +39,7 @@
 #include "raycast/collision_mesh.h"
 #include "scripting/object_bindings.h"
 #include "scripting/sound_bindings.h"
+#include "warriors/difficulty.h"
 #include "warriors/inventory.h"
 #include "world_objects/glass.h"
 #include "world_objects/object_bodies.h"
@@ -632,7 +633,10 @@ void PlayLevelSimulation::useFlash(human::Human& human) {
     m_hud->hud().services().sound.playCue(kFlashSoundCue);
     combat::Health& health = human.fighter().health();
     human.setWounded(false);
-    health.set(health.maximum());
+    // The heal by the difficulty in force (normal without the game state's); useFlash serves player 1 alone
+    // (stepFlash()), so the human is always a player.
+    const std::uint8_t inForce = m_difficulty != nullptr ? *m_difficulty : difficulty::kNormal;
+    health.set(difficulty::flashHealth(health.value(), health.maximum(), true, inForce));
     // `Flash_Use` heals (`Human_Heal`): a new body, so he blocks other humans' walks again.
     human.heal();
     m_flashRingRequest = true;

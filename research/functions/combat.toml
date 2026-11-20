@@ -2577,7 +2577,12 @@ page = "combat-rage.md#flash"
 role = "spends a flash and heals"
 level = "confirmed-code"
 coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::useFlash"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the player's screen look reset (look 0) is not ported"
+relation = "not-ported"
+issue = 91
 
 [[function]]
 address = 0x00284340

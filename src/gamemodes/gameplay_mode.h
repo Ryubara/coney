@@ -152,6 +152,8 @@ struct ScriptedCast {
     /// Each pad's options as the profile and the Options screen keep them (GameState::saved.pads, P1 first): the
     /// level gives each player's camera its pad's Auto Adjust each update. Null for none (every camera keeps it on).
     const std::array<PadOptions, 2>* padOptions = nullptr;
+    /// The difficulty in force (GameState::difficulty), which the flash's heal reads; null for normal.
+    const std::uint8_t* difficulty = nullptr;
     /// Opens the mission-failed mode (0xc) with its title (the host's `launchMissionFailed`); empty for none.
     std::function<void(std::string_view title)> missionFailed;
 };

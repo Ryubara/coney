@@ -214,6 +214,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         m_sound = cast->sound;
         m_gameOver = cast->gameOver;
         m_padOptions = cast->padOptions;
+        m_difficulty = cast->difficulty;
         m_missionFailed = cast->missionFailed;
         makeWorldObjects(*cast);
     }

@@ -329,8 +329,8 @@ the type's own record and the rest after the [remap](#type-to-model) from the cl
 | Category | byte `+0x11b` | (read from the record) | 14 the Warriors: a player takes his Warrior's power class; 13 the bosses and big fighters; the money class and the civilian reactions ([Starting money](crimes.md#starting-money)) | confirmed (code) |
 | Speed class | byte `+0x11c` | record `+0x164`-`+0x17c` | the [speed class](#speed-classes), a fallback the clips' own speeds replace in play | confirmed (code) |
 | Power class | byte `+0x11d` | `+0x1b8`, `+0x1b9` | below; a Warriors player's `+0x1b9` is his Warrior's | confirmed (code) |
-| Health | s16 `+0x116` | record `+0x144` / `+0x146` | health and its maximum (1800 for every Warrior, 600 for the street civilian) | confirmed (runtime) ([Combat: damage](combat-reactions.md#damage)) |
-| Damage table × damage scale | s16 × 45 at `+0xb8` | the human's Anim Range List | written over the list's damages when the model is attached (`0x00217a98`); a player's first times his Warrior class's damage % ([Damage](combat/index.md#damage-table)) | confirmed (code), confirmed (runtime) |
+| Health | s16 `+0x116` | record `+0x144` / `+0x146` | health and its maximum (1800 for every Warrior, 600 for the street civilian) | confirmed (code); a Warrior's 1800 confirmed (runtime), run r-20261027-warrior-health-scale ([Combat: damage](combat-reactions.md#damage)) |
+| Damage table × damage scale | s16 × 45 at `+0xb8` | the human's Anim Range List | written over the list's damages when the model is attached (`0x00217a98`); a player's first times his Warrior class's damage % ([Damage](combat/index.md#damage-table)) | confirmed (code) |
 | Attack table | byte × 45 at `+0x11e` | brain `+0x298` | an AI's weight for each attack kind ([AI](ai/index.md)) | confirmed (code) |
 | Range table | float × 45 at `+0x00` (÷ 100) | not traced | no reader found | not traced |
 | Hat | string `+0x14c` | the hat object | worn from creation ([Hats](#hats)) | confirmed (code) |
@@ -345,12 +345,12 @@ the type's own record and the rest after the [remap](#type-to-model) from the cl
 
 | Stat | Field | What it does |
 | --- | --- | --- |
-| Power meter | s16 `+0x28`, `+0x2a` | maximum and refill per second (record `+0x148`); × `+0x18` while hurt (`0x00223068`); with the gym's power upgrade a player's maximum × (1 + byte 2 / 100) |
-| Stamina | s16 `+0x2c`, `+0x2e` | maximum and refill per second (record `+0x14a`, `Human_StaminaMax` `0x00223188`); with the gym's stamina upgrade a player's maximum × (1 + byte 3 / 100) |
-| Hurt threshold | float `+0x04` | below this share of maximum health the human is hurt (`0x00222ff8`) |
+| Power meter | s16 `+0x28`, `+0x2a` | maximum and refill per second (record `+0x148`); × `+0x18` while hurt (`0x00223068`, confirmed (code)); with the gym's power upgrade a player's maximum × (1 + byte 2 / 100) |
+| Stamina | s16 `+0x2c`, `+0x2e` | maximum and refill per second (record `+0x14a`, `Human_StaminaMax` `0x00223188`, confirmed (code)); with the gym's stamina upgrade a player's maximum × (1 + byte 3 / 100) |
+| Hurt threshold | float `+0x04` | below this share of maximum health the human is hurt (`0x00222ff8`, confirmed (code)) |
 | Stun, down | s16 `+0x30`, `+0x34`; floats `+0x10`, `+0x14` | a stun's and a knockdown's length, ms, and their factors while hurt ([Reactions](combat-reactions.md#reactions)) |
-| Weapon stun | float `+0x00` | as the attacker, scales the victim's stun for weapon hits of 20-49 damage (`0x0022f658`) |
-| Grab struggle | byte `+0x36` | the grabbed human's strike costs the grabber 1 / n of its power (`0x0027fd68`) |
+| Weapon stun | float `+0x00` | as the attacker, scales the victim's stun for weapon hits of 20-49 damage (`0x0022f658`, confirmed (code)) |
+| Grab struggle | byte `+0x36` | the grabbed human's strike costs the grabber 1 / n of its power (`0x0027fd68`, confirmed (code)) |
 | AI: block, counter, attack delay | floats `+0x08`, `+0x0c`, `+0x24`, `+0x1c`, `+0x20`; bytes `+0x37`, `+0x39` | the AI's block chances, counter chance, attack delay factors, pattern-reading threshold and throws at walls ([AI](ai-fights.md#block)) |
 | Health bar | byte `+0x40` | the pause Stats screen's Health bar (`+0x40` / 100, [Stats screen](pause.md#stats-screen)); the health rings' span ([HUD](hud-radar.md#the-health-rings)) |
 | Not traced | `+0x32`, `+0x38`, `+0x3a`-`+0x3f`, `+0x41`, `+0x42` | stored; no reader found |
@@ -362,7 +362,7 @@ Warriors, 9 everyone else), read through `0x00222b58`. Confirmed (code) at each 
 | Stat | Field | What it does |
 | --- | --- | --- |
 | Rage | s16 `+0x00`; bytes `+0x02`-`+0x04` | the rage maximum, the gain percentage, and the idle decay and the drain while raging, percent of the maximum per 20 s ([Rage](combat-rage.md#rage)) |
-| Health % | byte `+0x05` | when the human becomes a player (`Human_MakePlayer` `0x00229c40`) his health and maximum are times n %, rounded; divided back when he stops being one (`0x0022a2a8`). Rembrandt: 1800 × 50 % = 900 |
+| Health % | byte `+0x05` | when the human becomes a player (`Human_MakePlayer` `0x00229c40`, confirmed (code)) his health and maximum are times n %, rounded; divided back when he stops being one (`0x0022a2a8`). Rembrandt: 1800 × 50 % = 900 |
 | Damage % (Strength) | byte `+0x06` | a player's attack damages times n % ([Damage](combat/index.md#damage-table)); the Stats screen's Strength bar |
 | Context games | bytes `+0x07`-`+0x0c` | the cuffing hold, the uncuff mash, tagging, lock picking, the stereo theft and mugging |
 
@@ -378,9 +378,11 @@ unlockable is unlocked ([Unlockables](player-state.md#unlockables)): punch damag
 #### Coney's implementation {#stats-coney}
 
 Coney reads the four tables from the configuration calls the scripts make (`characters::CharacterTypes`,
-`ai::aiConfigFrom()`), on the one difficulty it runs: the boot set, which is normal's. A human gets its type's stats
-when it is made (`ai::AiHumans::spawn()`, from the cast of a level's scripts) and a player when he is made or changes
-type (`human::playerClassOf()`, `human::playerProfileOf()`):
+`ai::aiConfigFrom()`). Since `SetDifficulty` became real each level's start runs the difficulty script of the profile's
+difficulty after the boot set (normal's); whether every reader takes that script's values over the boot's is not checked
+yet ([The difficulty: q-difficulty-configuration](difficulty.md#q-difficulty-configuration)). A human gets its type's
+stats when it is made (`ai::AiHumans::spawn()`, from the cast of a level's scripts) and a player when he is made or
+changes type (`human::playerClassOf()`, `human::playerProfileOf()`):
 
 | Stat | Applied? | Where | Test |
 | --- | --- | --- | --- |
