@@ -89,7 +89,8 @@ then, in order, it:
    refused and the pair ends with its exit code. The worktree made before the refusal stays, small and without a
    build: the next pair builds in it, and `workspace clean` removes it once idle;
 3. records the run on the base (`before.mp4`) and on the task (`after.mp4`) with `coney --record`
-   ([Recording a clip](running-options.md#record)): test mode, the task's own input script on both sides, each run
+   ([Recording a clip](running-options.md#record)), from the scenario's start frame on: test mode, the task's own
+   input script on both sides, each run
    from its build's checkout, FFmpeg from `CONEY_FFMPEG` or the one the tools find;
 4. checks the two are the same run: both recorded as many frames, or it stops (`not the same run`). It prints both
    frame hashes and writes `pair.json` beside the clips (the run, both commits, frame counts and hashes; no game data).
@@ -110,9 +111,11 @@ reruns the same pair; `clips scenarios` lists them. Its keys are `description`, 
 input script, a path in the checkout, played from the level's first frame of play) and `seconds` (how long the clips
 show), and optionally `start_frame` (the frame of play the clips start at), `checkpoint`, `ai_seed` and `skip_movies`
 (default true); any other key is refused. Without a scenario, `--level` and `--input-script` give the same run
-(`--seconds` defaults to 10). Coney records from the level's first frame of play and for at most
-`workspace.clips.max_seconds` (10), so the start and the seconds together must fit in 10 s: from frame 150, 5 s is the
-most.
+(`--seconds` defaults to 10). The clips are at most `workspace.clips.max_seconds` (10) long, but the run before them
+is not: Coney plays the script from the level's first frame of play and starts recording at `start_frame` through
+[`--record-from-frame`](running-options.md#record), so a scenario can punch a cabinet 70 s into the level
+(`level99-cabinet`) and still show 8 s of it. `start_frame` and the input script's frames count the same way, from the
+level's first frame of play.
 
 **The encodes** port the ideas of GD Studio's capture tools to Coney's clips. `clips encode` re-encodes any clip the
 same way: a GIF for an `--out` ending in `.gif`, else a silent MP4. A bare `--out` name goes beside the clip, never

@@ -38,7 +38,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
       [--profiles DIR] [--dev-overlay N] [--console-open N] [--mesh-view SPEC] [--no-activate]
       [--window-display DISPLAY] [--event-log FILE]
-      [--pad-pipe] [--record FILE [--record-seconds N]]
+      [--pad-pipe] [--record FILE [--record-seconds N] [--record-from-frame N]]
       [--bench FILE [--bench-fighters N] [--bench-allies N] [--bench-god] [--bench-spawn-step N] [--bench-warmup N]
         [--bench-measure N] [--bench-frames FILE] [--bench-real-time] [--bench-place X,Y,Z,H]
         [--bench-neutrals N] [--bench-fps]]

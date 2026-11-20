@@ -1418,13 +1418,19 @@ int main(int argc, char** argv) {
         }
         const bool endsWithClip = !frameLimit && !playFrameLimit;
         hooks.beginFrame = [inner = std::move(hooks.beginFrame), &clip, &clipDone, &debugSession, &session,
-                            endsWithClip, armed = !commandLineLevel, keepLines = options->recordDebugDraw]() mutable {
+                            endsWithClip, armed = !commandLineLevel, keepLines = options->recordDebugDraw,
+                            fromFrame = options->recordFromFrame.value_or(0), playFrames = std::uint64_t{0}]() mutable {
             // The debug menus' lines in the 3D scene stay off while recording: a clip shows the game only, unless
             // `--record-debug-draw` keeps the lines the run itself switched on (the world edits' wireframe).
             debugSession.debugDraw() = coney::debug::recordedDebugDraw(debugSession.debugDraw(), keepLines);
+            // With `--play-level` the clip starts at the `--record-from-frame` frame of play (0 unless given), counted
+            // from the first frame the level plays as an input script is, so a long scripted run is recorded at its
+            // end.
             if (!armed && session && session->inPlay()) {
-                armed = true;
-                clip->start();
+                if (playFrames++ >= fromFrame) {
+                    armed = true;
+                    clip->start();
+                }
             }
             if (endsWithClip && clipDone) {
                 return false;
