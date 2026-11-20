@@ -66,7 +66,7 @@ from coney_tools.build_claims import SlotTimeout
 from coney_tools.config import INT_KEYS, ConfigError, find_repo_root, load_config, local_config_file
 from coney_tools.conventions import Conventions, load_conventions, load_proof_rules_at
 from coney_tools.local_gate import StepResult, run_command
-from coney_tools.task_check_steps import IMPLEMENTED, Runner, Step, StepContext, pytest_workers
+from coney_tools.task_check_steps import IMPLEMENTED, PREFLIGHT, Preflight, Runner, Step, StepContext, pytest_workers
 from coney_tools.unit_record import log_task_of
 
 #: Exit codes (see the module docstring).
@@ -136,6 +136,9 @@ class Env:
     memory_floor: Callable[[Path], int] = lambda root: -1
     #: Where the tests' disc comes from, as a line: part of what a resume compares (check_resume.Key.disc).
     disc_key: Callable[[Path], str] = lambda root: ""
+    #: What a late check needs, looked for before anything runs (task_check_steps.PREFLIGHT); the default looks for
+    #: nothing.
+    preflight: Mapping[str, Preflight] = field(default_factory=dict)
 
 
 def no_disc_reason(root: Path) -> str | None:
@@ -186,6 +189,7 @@ def default_env(max_wait: float = build_cli.DETACHED_MAX_WAIT) -> Env:
     progress = check_progress.Progress()
     return Env(
         steps=IMPLEMENTED,
+        preflight=PREFLIGHT,
         build=lambda root, agent, preset, task, label: build_cli.build_and_test(
             root, agent, preset, task=task, max_wait=max_wait, progress=progress, label=label
         ),
@@ -304,6 +308,9 @@ def _run(request: Request, env: Env) -> int:
         env.say("  dry run: nothing was run and no stamp was written")
         return 0
     _memory_floor(conventions, env, root)
+    for name in checks:  # a late check's missing program refuses the run now, not after the build
+        if name in env.preflight and not resume.taken(name):
+            env.preflight[name](root, conventions)
     if builds:
         why_not = env.disc(root)
         if why_not:

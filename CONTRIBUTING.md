@@ -23,9 +23,10 @@ with C++* and the component *C++ ATL for latest build tools*; Linux: GCC 13+ or 
 macOS: Xcode 16+), CMake 3.28+ and Ninja, Git, and [uv](https://docs.astral.sh/uv/) for the `coney-tools` command
 line. The exact versions and the Linux package list
 are in the [README](README.md#requirements) and [Building and testing](docs/guides/building.md#what-you-need).
-pre-commit downloads its own pinned Node.js, so you install none. clang-tidy needs no install: CI runs it on the lines
-of every pull request. For step 4, your own copy of the North American (NTSC-U) game: the research is checked against
-its executable `SLUS_212.15`; other releases are untested.
+pre-commit downloads its own pinned Node.js, so you install none. clang-tidy is optional: CI runs it on the lines of
+every pull request, and `coney-tools ci tidy-local` runs the same pass on your machine
+([clang-tidy here](docs/guides/clang-tidy.md#local)). For step 4, your own copy of the North American (NTSC-U) game:
+the research is checked against its executable `SLUS_212.15`; other releases are untested.
 Once uv is there, `uv run --project python coney-tools doctor` in the clone checks all of this, your disc
 included, and prints how to fix each problem ([Check your setup](docs/guides/building.md#doctor)).
 

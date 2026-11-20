@@ -3,8 +3,8 @@
 
 It is the step before handing a unit over (docs/guides/testing.md#local-gate). Each step runs only when the change
 touches what it checks; the command prints one line per step and exits 1 when any step fails. clang-tidy is not a step:
-CI tidies the lines of every pull request (`ci_tidy`) and the whole codebase nightly. `--detach` runs the whole gate in
-the background, as `build --detach` does, and `ci result` reads its outcome.
+`task check` runs it after its build (local_tidy.py) and CI on every pull request (`ci_tidy`). `--detach` runs the whole
+gate in the background, as `build --detach` does, and `ci result` reads its outcome.
 """
 
 from __future__ import annotations
@@ -362,7 +362,7 @@ def run_changed(base: str, only: list[str] | None, skip: list[str] | None) -> in
     if code:
         _say("coney-tools ci run: FAILED (CI would fail too)")
         return 1
-    _say("coney-tools ci run: ok. CI only: GCC-only warnings, macOS, sanitizers, clang-tidy on changed lines.")
+    _say("coney-tools ci run: ok. Not here: clang-tidy (task check); CI only: GCC-only warnings, macOS, sanitizers.")
     return 0
 
 

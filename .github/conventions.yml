@@ -1150,11 +1150,14 @@ proof:
       checks: [docs-check, mkdocs, pre-commit, ruff, mypy, pytest, actionlint]
     - name: full
       classes: [docs_only, tools_only, engine, unknown]
-      checks: [docs-check, mkdocs, pre-commit, ruff, mypy, pytest, actionlint, msvc-ci-build, ctest-full-disc]
+      checks: [docs-check, mkdocs, pre-commit, ruff, mypy, pytest, actionlint, msvc-ci-build, ctest-full-disc, clang-tidy]
   # A check that applies only when a changed path starts with one of these prefixes (a check not listed always applies
   # in a profile that names it).
   only_when:
     actionlint: [".github/workflows/", ".github/actions/"]
+    # clang-tidy on the changed lines of the C++ files (`ci.tidy`), with the compile database the build above just
+    # wrote: the pass CI's `clang-tidy` job makes on the pull request (docs/guides/clang-tidy.md#local).
+    clang-tidy: ["src/", "tests/"]
   # Which Python tests the `pytest` check runs (docs/guides/coney-tools-repo.md#task-check). A change whose every path
   # is of a `scoped` CI scope class (above, `paths`) and under none of `whole_when` runs only the tests marked
   # `@pytest.mark.reads(<class>)` for the classes it touches; any other change runs the whole suite, in parallel. A test
@@ -1407,6 +1410,16 @@ ci:
     # The build setup: a setting here reaches every file, so a pull request or push changing one of these (a folder
     # ending in /, or a file at that path) runs the whole-codebase pass of the nightly job instead of its changed lines.
     whole_when: [CMakeLists.txt, cmake/, CMakePresets.json, .clang-tidy]
+    # The clang-tidy CI runs (`clang-tidy-<major>` on its Ubuntu runner, build.yml) and the one `task check`'s
+    # `clang-tidy` check runs here (the Windows download of `workspace init --fetch clang-tidy` is of this major, at the
+    # version the runner installs; a test keeps the three equal): another major reports other findings.
+    llvm_major: 19
+    # Checks whose findings follow the standard library's own code: the local run on Windows reads Microsoft's, CI
+    # libstdc++, and the two differ both ways (MSVC's std::map move constructor allocates, so a defaulted move
+    # constructor holding a map is reported here and not in CI; libstdc++ throws std::bad_alloc from inline code, MSVC
+    # from its DLL, so an allocating destructor is reported in CI and not here). The local run prints their findings as
+    # advice and does not fail on them (docs/guides/clang-tidy.md#differences); CI still fails on them.
+    local_advisory: [bugprone-exception-escape]
   # A failed run on the default branch (the nightly build, a push, a manual run) opens a P-critical issue, or comments
   # on the one that is still open for the same workflow (`coney-tools ci report-failure`, workflow ci-failure.yml).
   failure:
@@ -1447,7 +1460,7 @@ ci:
     - {id: format, check: "Formatting", where: [local, ci, main, release, nightly, manual], jobs: ["build/format"], note: "applied by a git pre-commit hook, verified by CI"}
     - {id: compilers, check: "GCC 13, Clang 19 and AppleClang builds with the unit and smoke tests; MSVC and GCC release builds", where: [ci, main, release, nightly, manual], jobs: ["build/build"]}
     - {id: sanitizers, check: "Linux and macOS sanitizers", where: [ci, main, release, nightly, manual], jobs: ["build/sanitizers"]}
-    - {id: clang-tidy, check: "clang-tidy: the lines a change touches; the whole codebase nightly, in a manual run and for a build-setup change", where: [ci, main, release, nightly, manual], jobs: ["build/clang-tidy"]}
+    - {id: clang-tidy, check: "clang-tidy: the lines a change touches (here in task check, then on the pull request); the whole codebase on main, nightly, in a manual run and for a build-setup change", where: [local, ci, main, release, nightly, manual], jobs: ["build/clang-tidy"]}
     - {id: software-pictures, check: "Software pictures: Coney's synthetic scenes drawn through Mesa's llvmpipe in a pinned container, compared with the reference pictures", where: [ci, main, release, nightly, manual], jobs: ["build/software-pictures"]}
     - {id: python, check: "Python: ruff, mypy, pytest, the repository, render and progress checks", where: [local, ci, main, release], jobs: ["python/python", "python/python-ok"]}
     - {id: docs, check: "Docs: mkdocs strictly, markdownlint, actionlint, the page standards", where: [local, ci, main, release], jobs: ["docs/mkdocs", "docs/markdownlint", "docs/actionlint"]}

@@ -2,7 +2,8 @@
 
 What CI checks: [`ci`](#ci), the local gate that runs CI's checks on the files a change touched ([`ci run`](#ci-run))
 and on a whole pull request ([`ci pr`](#ci-pr)), and the commands the CI workflows run (the `dependencies` check and its
-reruns, the changed-lines clang-tidy, the issue for a failure on `main`), and the whole C++ suite with the disc on
+reruns, clang-tidy, the issue for a failure on `main`), clang-tidy on this machine ([`tidy-local`](#tidy-local)), and
+the whole C++ suite with the disc on
 `main` after merges ([`ci disc-suite`](#disc-suite)). The repository's own rules are checked by
 [`repo`](coney-tools-repo.md#repo); the other groups are listed in [the command line overview](coney-tools.md#groups).
 
@@ -11,9 +12,11 @@ reruns, the changed-lines clang-tidy, the issue for a failure on `main`), and th
 ```sh
 uv run --project python coney-tools ci dependencies (--pr N | --body FILE)
 uv run --project python coney-tools ci rerun-dependencies [--apply]
-uv run --project python coney-tools ci tidy-plan --diff FILE|- --out FILE
+uv run --project python coney-tools ci tidy-plan (--diff FILE|- | --all) --out FILE
+uv run --project python coney-tools ci tidy-deps --plan FILE --build-dir DIR
 uv run --project python coney-tools ci tidy-run --plan FILE --build-dir DIR [--clang-tidy PROGRAM] [--jobs N]
-    [--sarif FILE] [--summary FILE] [--annotate]
+    [--sarif FILE] [--summary FILE] [--cache DIR] [--annotate]
+uv run --project python coney-tools ci tidy-local [--base REF] [--build-dir DIR] [--jobs N]   # this machine's pass
 uv run --project python coney-tools ci report-failure --run ID [--apply]
 uv run --project python coney-tools ci disc-suite --agent <id> [--apply]   # not a workflow's: see below
 ```
@@ -35,17 +38,25 @@ conventions could not be read. [What CI runs](building.md#what-ci-runs) says whe
   most `ci.dependencies.rerun_limit` runs are restarted in a pass (the rest are `capped` and the next push to `main`
   restarts them). The workflow runs it with `--apply` on every push to `main`, which is when a dependency merges.
 * `tidy-plan` reads a unified diff (`git diff -U0 --no-renames base...head`, `-` for stdin) and writes the plan of the
-  changed-lines clang-tidy (a pull request, a push): the sources to check and the changed lines to report. A changed
+  changed-lines clang-tidy (a pull request): the sources to check and the changed lines to report. A changed
   source is checked itself; a changed header through **one** source that includes it (the one with the header's name,
-  else the nearest). A header that no source includes is noted and left to the nightly pass. A change to the build setup
-  (`ci.tidy.whole_when`: the top `CMakeLists.txt`, `cmake/`, `CMakePresets.json`, `.clang-tidy`, also a deleted one)
-  makes it a plan for every file: the job then runs the whole-codebase pass instead of `tidy-run`, and `tidy-run`
-  refuses such a plan. It prints the files, and sets `run` and `all` (`true` or `false`) in `$GITHUB_OUTPUT` when that
-  is set: `all=true` sends the job to the whole pass. Only the folders and extensions of `ci.tidy` count otherwise
-  ([clang-tidy](clang-tidy.md)).
-* `tidy-run` runs `clang-tidy` on the plan's sources, `--jobs` at a time (default: the cores), against the compile
-  database in `--build-dir`, with the plan's line filter (one too long for an argument, over 100 KB, is left off and
-  applied afterwards, with the same result), and prints each finding as `file:line:col: error: message [check]`.
+  else the nearest). A header that no source includes is noted and left to the pass over every file. A change to the
+  build setup (`ci.tidy.whole_when`: the top `CMakeLists.txt`, `cmake/`, `CMakePresets.json`, `.clang-tidy`, also a
+  deleted one) makes it a plan for every file, and `--all` writes one without a diff (a push to `main`, the nightly
+  and manual runs). It prints the files, and sets `run` and `all` (`true` or `false`) in `$GITHUB_OUTPUT` when that is
+  set. Only the folders and extensions of `ci.tidy` count otherwise ([clang-tidy](clang-tidy.md)).
+* `tidy-deps` prints, one per line, the Ninja targets that make what the plan's sources need before clang-tidy can read
+  them: for each source, the order-only target CMake's Ninja generator writes for the target that compiles it
+  (`cmake_object_order_depends_target_<target>`: its generated headers and, built in full, the targets it depends on;
+  none of its own sources), or the source's object file when the build file has no such target. The job builds these
+  instead of the whole project ([Building only what it reads](clang-tidy.md#build)).
+* `tidy-run` runs `clang-tidy` on the plan's sources (for a plan of every file, every source of Coney's own the compile
+  database names, never one under `_deps/`), `--jobs` at a time (default: the cores), against the compile database in
+  `--build-dir`, with the plan's line filter (one too long for an argument, over 100 KB, is left off and applied
+  afterwards, with the same result; a plan of every file keeps every finding), and prints each finding as
+  `file:line:col: error: message [check]`. `--cache DIR` keeps each source's outcome in DIR and takes it back, without
+  running clang-tidy, while the source's compile command, clang-tidy's version, `.clang-tidy` and every file the
+  source read are unchanged; it prints how many sources came from it ([The result cache](clang-tidy.md#cache)).
   `--sarif FILE` writes the findings as SARIF 2.1.0 (also when there are none) for code scanning; `--summary FILE`
   appends a Markdown summary (`$GITHUB_STEP_SUMMARY`); `--annotate` also prints each as a `::error` workflow command,
   for a pull request from a fork whose token cannot upload SARIF. Exit 1 on any finding, and when clang-tidy itself
@@ -66,7 +77,8 @@ Every argument and option:
 | `dependencies` | `--pr N` | none | The pull request whose description is read from GitHub and checked |
 | `dependencies` | `--body FILE` | none | A file holding the description; with no `--pr` the pull request is not checked for depending on itself. One of the two is required |
 | `rerun-dependencies` | `--apply` | off | Restart the runs (`gh run rerun --failed`); without it they are only listed |
-| `tidy-plan` | `--diff FILE` | required | The unified diff of the change; `-` reads stdin |
+| `tidy-plan` | `--diff FILE` | one of the two | The unified diff of the change; `-` reads stdin |
+| `tidy-plan` | `--all` | one of the two | A plan for every file, without a diff |
 | `tidy-plan` | `--out FILE` | required | Where the plan (JSON) is written |
 | `tidy-run` | `--plan FILE` | required | The plan `tidy-plan` wrote |
 | `tidy-run` | `--build-dir DIR` | required | The folder holding `compile_commands.json`, relative to the checkout |
@@ -74,7 +86,13 @@ Every argument and option:
 | `tidy-run` | `--jobs N` | the cores | clang-tidy processes at once |
 | `tidy-run` | `--sarif FILE` | none | Write the findings as SARIF |
 | `tidy-run` | `--summary FILE` | none | Append a Markdown summary to this file |
+| `tidy-run` | `--cache DIR` | none | The result cache's folder, relative to the checkout |
 | `tidy-run` | `--annotate` | off | Also print the findings as `::error` workflow commands |
+| `tidy-deps` | `--plan FILE` | required | The plan `tidy-plan` wrote |
+| `tidy-deps` | `--build-dir DIR` | required | The configured folder holding `build.ninja` and `compile_commands.json` |
+| `tidy-local` | `--base REF` | `origin/main` | The branch the change is measured from (the diff is against the merge base) |
+| `tidy-local` | `--build-dir DIR` | the `ci` preset's folder | The folder holding `compile_commands.json` |
+| `tidy-local` | `--jobs N` | a check slot's share of the cores | clang-tidy processes at once |
 | `report-failure` | `--run ID` | required | The workflow run's id |
 | `report-failure` | `--apply` | off | Create the issue or the comment; without it the text is printed |
 
@@ -99,11 +117,10 @@ line, and any failure makes the command exit 1:
 | `docs` | a file matching `paths.docs_only` of `.github/conventions.yml` changed (`docs/`, `research/`, top-level Markdown, `mkdocs.yml`, the MkDocs hooks and theme overrides, the shared artwork, `requirements-docs.txt`, ...), or the python the build imports (`python/src/coney_tools/progress*.py`, `research*.py`, `config.py`) | [`docs check`](coney-tools-build.md#docs) on the changed pages, then `mkdocs build --strict` into a throwaway folder; both run, so one run shows every problem |
 | `python` | `python/` or `.claude/` changed (the tests also run the hooks) | `ruff check` and `ruff format --check` over `python` and `.claude/hooks`, `pytest python/tests` and `mypy --config-file python/pyproject.toml python/src python/tests` |
 
-**clang-tidy is not a step.** It is not run locally, on Windows least of all (no local WSL builds or clang-tidy
-runs): CI tidies every pull request on the lines it changes, in its own required check, and the whole codebase
-nightly ([building](clang-tidy.md)). A finding comes back as an annotation on the pull request and is fixed
-forward on the branch. Every program the command starts runs below normal priority, like a build's (Windows:
-below-normal priority class; elsewhere `nice -n 5`).
+**clang-tidy is not a step of `ci run`.** `task check` runs it on the lines a change touches, after its build
+([`tidy-local`](#tidy-local) is the same pass alone), and CI tidies every pull request in its own required check and
+every file on `main` and nightly ([clang-tidy](clang-tidy.md)). Every program the command starts runs below normal
+priority, like a build's (Windows: below-normal priority class; elsewhere `nice -n 5`).
 
 `--detach` runs the whole gate in the background, apart from the shell, and returns at once; `ci result` prints its
 output and exits with its code (75 while it runs, as `build result` does, and 1 when its process is gone; "still
@@ -116,7 +133,7 @@ handling of paths, programs and long command lines is tested on all three.
 `--only` and `--skip` take step names, for a rerun of the one that failed. Exit codes: 0 all passed, 1 a step failed, 2
 a setup problem (a program the step needs is missing), 75 from `ci result` while a detached run goes on. The command
 prints at most 40 lines of a failing step; run the step's tool by hand for the rest. What stays CI's: warnings only GCC
-emits, macOS, the sanitizers and clang-tidy (see [the local gate](testing.md#local-gate)).
+emits, macOS and the sanitizers; clang-tidy is `task check`'s (see [the local gate](testing.md#local-gate)).
 
 ### ci pr {#ci-pr}
 
@@ -153,13 +170,29 @@ hold a picture that is a local file (a picture has no address before the pull re
 exit codes are those of `ci run`: 0 all passed, 1 a step failed (CI would refuse the pull request too), 2 a setup
 problem (the description file cannot be read, a program is missing), 75 when the `python` step could not get a [check
 slot](coney-tools-build.md#check-slots) in time or the `engine` step's build gave up waiting for a slot (the command
-says so; run it again). What stays CI's: the other compilers, macOS, the sanitizers and clang-tidy on the changed lines,
-and the checks that need the pull request itself (the `Fixes #N` issues' state, `dependencies`).
+says so; run it again). What stays CI's: the other compilers, macOS, the sanitizers, clang-tidy on the changed lines
+(or [`tidy-local`](#tidy-local) here), and the checks that need the pull request itself (the `Fixes #N` issues' state, `dependencies`).
 
 CI's `pr` workflow (`title`, `docs`, `body`) runs on a fork's pull request without a maintainer's approval
 ([Workflows](repo-conventions.md#pr-workflow)); its `build`, `python` and `docs` workflows run the contributor's code, so
 GitHub holds them for a first-time contributor until a maintainer approves them. This command is how the contributor
 finds out first.
+
+### ci tidy-local {#tidy-local}
+
+```sh
+uv run --project python coney-tools ci tidy-local [--base REF] [--build-dir DIR] [--jobs N]
+```
+
+CI's pull-request clang-tidy pass on this machine, the same code `task check`'s `clang-tidy` check runs: the branch's
+diff against its merge base with `--base`, the sources `tidy-plan` would choose, clang-tidy against the compile
+database of the `ci` preset's build (build it first: `coney-tools build --preset ci`), and only the findings on the
+changed lines. It prints each as `path:line:column [check] message` and a last line with the verdict and the program.
+The program is clang-tidy of CI's major version (`ci.tidy.llvm_major`): `clang_tidy_program` of coney.local.toml, else
+the copy `workspace init --fetch clang-tidy` downloaded, else `clang-tidy-19` or `clang-tidy` on `PATH`. Exit 0 when
+clean, 1 on a finding or when clang-tidy failed on a source (it does not compile, or the compile database does not
+name it: build again), 2 when it cannot run (no clang-tidy of that version, no compile database). Where it can differ
+from CI: [clang-tidy here](clang-tidy.md#local).
 
 ### ci disc-suite {#disc-suite}
 
@@ -248,13 +281,16 @@ coney-tools ci disc-suite [--agent AGENT] [--apply] [--max-wait MIN]
 
 Choose the files and lines clang-tidy checks for a pull request's diff.
 
+Exactly one of `--diff`, `--all` is required.
+
 ```text
-coney-tools ci tidy-plan --diff FILE --out FILE
+coney-tools ci tidy-plan (--diff FILE | --all) --out FILE
 ```
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
-| `--diff FILE` | text | required | the diff; - reads stdin |
+| `--diff FILE` | text | none | the diff; - reads stdin. Not with `--all`. |
+| `--all` | flag | off | a plan for every file, without a diff. Not with `--diff`. |
 | `--out FILE` | text | required | where the plan (JSON) is written |
 
 ### `ci tidy-run` {#ci-tidy-run-usage}
@@ -263,7 +299,7 @@ Run clang-tidy as a plan says and report only the changed lines.
 
 ```text
 coney-tools ci tidy-run --plan FILE --build-dir DIR [--clang-tidy PROGRAM] [--jobs N] [--sarif FILE] [--summary FILE]
-    [--annotate]
+    [--cache DIR] [--annotate]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -274,11 +310,39 @@ coney-tools ci tidy-run --plan FILE --build-dir DIR [--clang-tidy PROGRAM] [--jo
 | `--jobs N` | integer | none | clang-tidy processes at once (default: the cores) |
 | `--sarif FILE` | text | none | write the findings as SARIF (also when there are none) |
 | `--summary FILE` | text | none | append a Markdown summary to this file |
+| `--cache DIR` | text | none | the result cache's folder (docs/guides/clang-tidy.md#cache) |
 | `--annotate` | flag | off | also print ::error workflow commands (a fork's token cannot upload SARIF) |
+
+### `ci tidy-deps` {#ci-tidy-deps-usage}
+
+Print the Ninja targets that make what clang-tidy needs for a plan's sources.
+
+```text
+coney-tools ci tidy-deps --plan FILE --build-dir DIR
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--plan FILE` | text | required | the plan `tidy-plan` wrote |
+| `--build-dir DIR` | text | required | the configured folder holding build.ninja |
+
+### `ci tidy-local` {#ci-tidy-local-usage}
+
+Run clang-tidy here on the lines this branch changes, as task check's clang-tidy check does.
+
+```text
+coney-tools ci tidy-local [--base REF] [--build-dir DIR] [--jobs N]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--base REF` | text | none | the branch the change is measured from (default: origin/main) |
+| `--build-dir DIR` | text | none | the folder holding compile_commands.json (default: ci's) |
+| `--jobs N` | integer | none | clang-tidy processes at once (default: a slot's cores) |
 
 ### `ci run` {#ci-run-usage}
 
-Pre-commit, docs, Python and repo checks on what changed (clang-tidy runs in CI).
+Pre-commit, docs, Python and repo checks on what changed (clang-tidy runs in task check and CI).
 
 ```text
 coney-tools ci run [--base BASE] [--only ONLY] [--skip SKIP] [--detach]

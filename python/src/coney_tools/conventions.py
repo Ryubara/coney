@@ -1605,6 +1605,11 @@ class CiTidy:
     findings_listed: int
     #: The build setup: a pull request changing one of these (a folder ending in /, or a file) is checked on every file.
     whole_when: tuple[str, ...]
+    #: The major version of LLVM's clang-tidy that CI runs (`clang-tidy-<major>`) and a local run must match.
+    llvm_major: int
+    #: Checks whose findings depend on the standard library's own code, so a local run against another library (MSVC's
+    #: on Windows) reports them as advice, never as a failure: they differ from CI's both ways.
+    local_advisory: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -3115,7 +3120,16 @@ def _read_ci(
     tidy = _table(
         table["tidy"],
         tidy_where,
-        ("folders", "sources", "headers", "sarif_category", "findings_listed", "whole_when"),
+        (
+            "folders",
+            "sources",
+            "headers",
+            "sarif_category",
+            "findings_listed",
+            "whole_when",
+            "llvm_major",
+            "local_advisory",
+        ),
     )
     folders = _texts(tidy["folders"], _at(tidy_where, "folders"))
     for folder in folders:
@@ -3189,6 +3203,8 @@ def _read_ci(
             sarif_category=_text(tidy["sarif_category"], _at(tidy_where, "sarif_category")),
             findings_listed=_count(tidy["findings_listed"], _at(tidy_where, "findings_listed")),
             whole_when=whole_when,
+            llvm_major=_count(tidy["llvm_major"], _at(tidy_where, "llvm_major")),
+            local_advisory=_texts(tidy["local_advisory"], _at(tidy_where, "local_advisory")),
         ),
         failure=CiFailure(
             workflows=_texts(failure["workflows"], _at(failure_where, "workflows")),

@@ -14,10 +14,12 @@ import os
 import sys
 from pathlib import Path
 
-from coney_tools import build_cli, ci_dependencies, ci_failure, ci_tidy, disc_suite, task_check
+from coney_tools import build_cli, ci_dependencies, ci_failure, ci_tidy, disc_suite, local_tidy, task_check
 from coney_tools.audit_github import Runner, run_gh
 from coney_tools.config import ConfigError, find_repo_root, main_checkout
 from coney_tools.conventions import load_conventions
+from coney_tools.local_gate import run_command
+from coney_tools.tidy_cache import TidyCache
 
 
 def add_ci_parser(
@@ -97,19 +99,24 @@ def add_ci_parser(
             "Reads a unified diff (git diff -U0 --no-renames base...head; - for stdin) and writes the plan: the "
             "sources to check (a changed source itself, a changed header through one source that includes it) and the "
             "changed lines to report. A change to the build setup (ci.tidy.whole_when) makes it a plan for every "
-            "file. Sets run and all (true or false) in $GITHUB_OUTPUT when it is set. Exit code 0."
+            "file, and so does --all (main, the nightly and manual runs). Sets run and all (true or false) in "
+            "$GITHUB_OUTPUT when it is set. Exit code 0."
         ),
     )
-    plan.add_argument("--diff", required=True, metavar="FILE", help="the diff; - reads stdin")
+    given = plan.add_mutually_exclusive_group(required=True)
+    given.add_argument("--diff", metavar="FILE", help="the diff; - reads stdin")
+    given.add_argument("--all", action="store_true", help="a plan for every file, without a diff")
     plan.add_argument("--out", required=True, metavar="FILE", help="where the plan (JSON) is written")
     tidy_run = commands.add_parser(
         "tidy-run",
         help="run clang-tidy as a plan says and report only the changed lines",
         description=(
             "Runs clang-tidy on each source of the plan (several at once) with the plan's line filter, against the "
-            "compile database of --build-dir. Prints each finding, writes a SARIF file (--sarif) for code scanning, "
-            "a summary (--summary, appended: $GITHUB_STEP_SUMMARY) and with --annotate workflow commands that "
-            "annotate the pull request's diff. Exit code 0 when clean, 1 on a finding or when clang-tidy failed, "
+            "compile database of --build-dir; a plan for every file runs every source of Coney's own in it and keeps "
+            "every finding. --cache keeps each source's outcome and gives it back while the source's compile command "
+            "and every file it read are unchanged. Prints each finding, writes a SARIF file (--sarif) for code "
+            "scanning, a summary (--summary, appended: $GITHUB_STEP_SUMMARY) and with --annotate workflow commands "
+            "that annotate the pull request's diff. Exit code 0 when clean, 1 on a finding or when clang-tidy failed, "
             "2 when the plan cannot be read."
         ),
     )
@@ -119,11 +126,38 @@ def add_ci_parser(
     tidy_run.add_argument("--jobs", type=int, metavar="N", help="clang-tidy processes at once (default: the cores)")
     tidy_run.add_argument("--sarif", metavar="FILE", help="write the findings as SARIF (also when there are none)")
     tidy_run.add_argument("--summary", metavar="FILE", help="append a Markdown summary to this file")
+    tidy_run.add_argument("--cache", metavar="DIR", help="the result cache's folder (docs/guides/clang-tidy.md#cache)")
     tidy_run.add_argument(
         "--annotate",
         action="store_true",
         help="also print ::error workflow commands (a fork's token cannot upload SARIF)",
     )
+    deps = commands.add_parser(
+        "tidy-deps",
+        help="print the Ninja targets that make what clang-tidy needs for a plan's sources",
+        description=(
+            "Prints, one per line, the Ninja targets that generate what the plan's sources need before clang-tidy can "
+            "read them (each source's CMake target's order-only target: its generated headers and the targets it "
+            "depends on, but none of its own sources; else its object file), so the job builds these instead of the "
+            "whole project. Exit code 0."
+        ),
+    )
+    deps.add_argument("--plan", required=True, metavar="FILE", help="the plan `tidy-plan` wrote")
+    deps.add_argument("--build-dir", required=True, metavar="DIR", help="the configured folder holding build.ninja")
+    local = commands.add_parser(
+        "tidy-local",
+        help="run clang-tidy here on the lines this branch changes, as task check's clang-tidy check does",
+        description=(
+            "The pull request's clang-tidy pass on this machine (docs/guides/clang-tidy.md#local): the branch's diff "
+            "against its merge base with --base, the sources CI would check, against the compile database of the "
+            "ci preset's build (build it first), with clang-tidy of CI's major version (ci.tidy.llvm_major). Prints "
+            "each finding as path:line:column [check] message. Exit code 0 when clean, 1 on a finding or when "
+            "clang-tidy failed, 2 when it cannot run (no clang-tidy of that version, no compile database)."
+        ),
+    )
+    local.add_argument("--base", metavar="REF", help="the branch the change is measured from (default: origin/main)")
+    local.add_argument("--build-dir", metavar="DIR", help="the folder holding compile_commands.json (default: ci's)")
+    local.add_argument("--jobs", type=int, metavar="N", help="clang-tidy processes at once (default: a slot's cores)")
     return commands
 
 
@@ -162,17 +196,22 @@ def _rerun_dependencies(args: argparse.Namespace, run: Runner) -> int:
 
 
 def _tidy_plan(args: argparse.Namespace) -> int:
-    """`ci tidy-plan`: write the plan for a diff and say what it will check."""
+    """`ci tidy-plan`: write the plan for a diff (or, with --all, for every file) and say what it will check."""
     root = find_repo_root(Path.cwd())
-    try:
-        text = sys.stdin.read() if args.diff == "-" else Path(args.diff).read_text(encoding="utf-8", errors="replace")
-    except OSError as error:
-        raise ConfigError(f"{args.diff}: cannot be read ({error})") from error
     settings = load_conventions(root).ci.tidy
-    plan = ci_tidy.make_plan(ci_tidy.changed_lines(text), root, settings, ci_tidy.touched_files(text))
+    if args.all:
+        plan = ci_tidy.TidyPlan(everything=True, notes=["every file: main, the nightly and manual runs"])
+    else:
+        try:
+            text = (
+                sys.stdin.read() if args.diff == "-" else Path(args.diff).read_text(encoding="utf-8", errors="replace")
+            )
+        except OSError as error:
+            raise ConfigError(f"{args.diff}: cannot be read ({error})") from error
+        plan = ci_tidy.make_plan(ci_tidy.changed_lines(text), root, settings, ci_tidy.touched_files(text))
     Path(args.out).write_text(json.dumps(plan.as_json(), indent=1) + "\n", encoding="utf-8")
     if plan.everything:
-        print("clang-tidy will check every file (the build setup changed): the job runs the whole-codebase pass.")
+        print("clang-tidy will check every file: the job runs the whole-codebase pass.")
     elif plan.units:
         print(f"clang-tidy will check {len(plan.units)} file{'' if len(plan.units) == 1 else 's'}:")
         for unit in plan.units:
@@ -190,21 +229,55 @@ def _tidy_plan(args: argparse.Namespace) -> int:
     return 0
 
 
-def _tidy_run(args: argparse.Namespace, runner: ci_tidy.Runner) -> int:
-    """`ci tidy-run`: run the plan; 1 on a finding or a failure of clang-tidy."""
-    root = find_repo_root(Path.cwd())
+def _read_plan(path: str) -> ci_tidy.TidyPlan:
+    """The plan `tidy-plan` wrote to `path`; a ConfigError when it is not one."""
     try:
-        plan = ci_tidy.TidyPlan.from_json(json.loads(Path(args.plan).read_text(encoding="utf-8")))
+        return ci_tidy.TidyPlan.from_json(json.loads(Path(path).read_text(encoding="utf-8")))
     except (OSError, ValueError, KeyError, TypeError) as error:
-        raise ConfigError(f"{args.plan}: not a plan that tidy-plan wrote ({error})") from error
+        raise ConfigError(f"{path}: not a plan that tidy-plan wrote ({error})") from error
+
+
+def _build_dir(root: Path, given: str) -> Path:
+    """A folder argument as given, relative to the checkout."""
+    folder = Path(given)
+    return folder if folder.is_absolute() else root / folder
+
+
+def _tidy_deps(args: argparse.Namespace) -> int:
+    """`ci tidy-deps`: print the Ninja targets the plan's sources need before clang-tidy reads them."""
+    root = find_repo_root(Path.cwd())
+    plan = _read_plan(args.plan)
+    build_dir = _build_dir(root, args.build_dir)
+    units = ci_tidy.every_source(build_dir, root, load_conventions(root).ci.tidy) if plan.everything else plan.units
+    for target in ci_tidy.build_targets(build_dir, root, units):
+        print(target)
+    return 0
+
+
+def _tidy_run(args: argparse.Namespace, runner: ci_tidy.Runner) -> int:
+    """`ci tidy-run`: run the plan (every source of the compile database for a plan of every file); 1 on a finding or
+    a failure of clang-tidy."""
+    root = find_repo_root(Path.cwd())
+    plan = _read_plan(args.plan)
+    conventions = load_conventions(root)
+    settings = conventions.ci.tidy
+    build_dir = _build_dir(root, args.build_dir)
     if plan.everything:
-        raise ConfigError(
-            f"{args.plan}: this plan checks every file; run the whole-codebase pass (run-clang-tidy) instead"
-        )
-    settings = load_conventions(root).ci.tidy
-    build_dir = Path(args.build_dir)
-    build_dir = build_dir if build_dir.is_absolute() else root / build_dir
-    result = ci_tidy.run_plan(plan, root, build_dir, args.clang_tidy, args.jobs or os.cpu_count() or 1, runner)
+        plan.units = ci_tidy.every_source(build_dir, root, settings)
+    cache = None
+    if args.cache:
+        config_file = root / conventions.repo.tools["tidy"]
+        try:
+            config = config_file.read_text(encoding="utf-8")
+        except OSError as error:
+            raise ConfigError(f"{config_file}: cannot be read ({error})") from error
+        version = ci_tidy.tool_version(args.clang_tidy, root, runner)
+        cache = TidyCache.open(_build_dir(root, args.cache), root, build_dir, version, config)
+    options = ci_tidy.RunOptions(cache=cache)
+    jobs = args.jobs or os.cpu_count() or 1
+    result = ci_tidy.run_plan(plan, root, build_dir, args.clang_tidy, jobs, runner, options)
+    if cache is not None:
+        print(f"clang-tidy cache: {cache.hits} of {cache.hits + cache.misses} sources taken from it")
     sources = [unit.source for unit in plan.units]
     for item in result.findings:
         print(f"{item.path}:{item.line}:{item.column}: {item.level}: {item.message} [{item.check}]")
@@ -216,13 +289,43 @@ def _tidy_run(args: argparse.Namespace, runner: ci_tidy.Runner) -> int:
     if args.sarif:
         version = ci_tidy.tool_version(args.clang_tidy, root, runner)
         Path(args.sarif).write_text(json.dumps(ci_tidy.to_sarif(result.findings, version), indent=1), encoding="utf-8")
-    summary = ci_tidy.summary_lines(result.findings, sources, settings.findings_listed, plan.notes)
+    summary = ci_tidy.summary_lines(
+        result.findings, sources, settings.findings_listed, plan.notes, everything=plan.everything
+    )
     summary += [f"- clang-tidy failed: {failure}" for failure in result.failures]
     print(summary[0])
     if args.summary:
         with Path(args.summary).open("a", encoding="utf-8") as handle:
             handle.write("\n".join(summary) + "\n")
     return 0 if result.ok else 1
+
+
+def _tidy_local(args: argparse.Namespace) -> int:
+    """`ci tidy-local`: clang-tidy here on the branch's changed lines; 1 on a finding, 2 when it cannot run."""
+    root = find_repo_root(Path.cwd())
+    conventions = load_conventions(root)
+    program = local_tidy.find_program(root, conventions.ci.tidy.llvm_major)
+    if args.build_dir:
+        build_dir = _build_dir(root, args.build_dir)
+    else:
+        build_dir = local_tidy.compile_database(root, conventions.proof.build.preset)
+    local = local_tidy.run_local(
+        root,
+        args.base or f"origin/{conventions.repo.default_branch}",
+        conventions,
+        run_command,
+        program=program,
+        build_dir=build_dir,
+        jobs=args.jobs or local_tidy.default_jobs(root),
+    )
+    for line in local.lines():
+        print(line)
+    for note in local.notes:
+        print(f"note: {note}")
+    count = len(local.plan.units)
+    verdict = "clean" if local.ok else f"{len(local.result.findings)} findings"
+    print(f"clang-tidy: {verdict} on the changed lines ({count} source{'' if count == 1 else 's'} checked, {program})")
+    return 0 if local.ok else 1
 
 
 def _report_failure(args: argparse.Namespace, run: Runner, git: ci_failure.GitRunner | None) -> int:
@@ -280,6 +383,10 @@ def run_ci(
             return _tidy_plan(args)
         if args.command == "tidy-run":
             return _tidy_run(args, tidy_runner)
+        if args.command == "tidy-deps":
+            return _tidy_deps(args)
+        if args.command == "tidy-local":
+            return _tidy_local(args)
         if args.command == "report-failure":
             return _report_failure(args, run, git_runner)
         if args.command == "disc-suite":

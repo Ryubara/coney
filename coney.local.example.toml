@@ -33,6 +33,7 @@ min_available_memory_gb = -1                            # the memory `task check
 test_jobs        = 0                                    # tests `build --test` runs in parallel (ctest -j); 0: half the cores, or a slot's share if more; `build -j N` beats it
 ccache_dir       = ""                                   # the compiler cache every checkout's `build` shares; default: ../../cache/ccache beside the main checkout
 ccache_program   = ""                                   # the ccache executable; default: the one `workspace init --fetch ccache` put in ../../tools, else PATH
+clang_tidy_program = ""                                 # clang-tidy for task check; default: the one `workspace init --fetch clang-tidy` put in ../../tools, else clang-tidy-19 or clang-tidy on PATH
 ccache_size_gb   = 25                                   # the compiler cache's size cap in GB; 0 turns the cache off
 deps_dir         = ""                                   # the fetched dependency sources every checkout's `build` shares; default: ../../cache/deps beside the main checkout
 jdk_home        = ""                                    # JDK 21 home; required for Ghidra

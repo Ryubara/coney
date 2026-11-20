@@ -353,8 +353,9 @@ uv run --project python coney-tools workspace init [--workspace DIR] [--repo-url
 
 Creates the missing folders of the [local workspace](workspace.md), clones the repository when run outside one
 (`--repo-url`), writes `coney.local.toml` from the example when there is none, checks the prerequisites and, with
-`--fetch ghidra|ghidra-mcp|pcsx2-mcp-release|pcsx2-mcp|ccache|lua|all`, downloads the research tools and, on
-Windows, the [compiler cache](building.md#compiler-cache) at pinned versions, checked by SHA-256 (`pcsx2-mcp-release`
+`--fetch ghidra|ghidra-mcp|pcsx2-mcp-release|pcsx2-mcp|ccache|clang-tidy|lua|all`, downloads the research tools and,
+on Windows, the [compiler cache](building.md#compiler-cache) and the [clang-tidy](clang-tidy.md#local) `task check`
+runs at pinned versions, checked by SHA-256 (`pcsx2-mcp-release`
 is the PCSX2-MCP fork's Windows release, the PCSX2 the copies run, `pcsx2 setup-copies`; the two MCP projects are
 cloned at a pinned commit; on Linux and macOS ccache comes from the package manager; `lua` builds Lua 4.0.1's `luac`
 from its source for [`lua decompile --roundtrip`](coney-tools-fidelity.md#lua)).
@@ -416,7 +417,7 @@ coney-tools workspace init [--workspace WORKSPACE] [--repo-url REPO_URL] [--fetc
 | --- | --- | --- | --- |
 | `--workspace WORKSPACE` | path | none | the workspace folder (default: found from the checkout) |
 | `--repo-url REPO_URL` | text | none | the repository to clone when not run inside a checkout |
-| `--fetch FETCH` | choice | none | also download a research tool, or ccache on Windows, at its pinned version (repeatable; never a BIOS or game files). One of `ghidra`, `ghidra-mcp`, `pcsx2-mcp`, `pcsx2-mcp-release`, `ccache`, `lua`, `all`. |
+| `--fetch FETCH` | choice | none | also download a research tool, or ccache or clang-tidy on Windows, at its pinned version (repeatable; never a BIOS or game files). One of `ghidra`, `ghidra-mcp`, `pcsx2-mcp`, `pcsx2-mcp-release`, `ccache`, `clang-tidy`, `lua`, `all`. |
 | `--dry-run` | flag | off | print the steps without doing any |
 
 ### `workspace clean` {#workspace-clean-usage}

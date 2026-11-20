@@ -17,6 +17,7 @@ import pytest
 from coney_tools.config import ConfigError
 from coney_tools.workspace_fetch import (
     CCACHE_VERSION,
+    CLANG_TIDY_VERSION,
     CLONED,
     LUA,
     MOVE_ATTEMPTS,
@@ -414,3 +415,52 @@ def test_luac_links_the_core_as_a_library(tmp_path: Path, platform: str) -> None
     else:
         assert core[0] == "cc" and archive[:2] == ["ar", "rcs"] and "-std=gnu89" in core
         assert "liblua.a" in text[2] and link[-1] == str(tmp_path / "bin" / "luac")
+
+
+@pytest.mark.reads("engine")
+def test_clang_tidy_is_fetched_on_windows_only_at_cis_major_version() -> None:
+    import re
+
+    import yaml
+
+    from coney_tools.conventions import load_conventions
+
+    root = Path(__file__).parents[2]
+    major = load_conventions(root).ci.tidy.llvm_major
+    (pin,) = PINS["clang-tidy"]("windows")
+    assert pin.version == CLANG_TIDY_VERSION and pin.version.split(".")[0] == str(major)
+    assert f"llvmorg-{CLANG_TIDY_VERSION}/" in pin.url and pin.url.endswith("-x86_64-pc-windows-msvc.tar.xz")
+    assert PINS["clang-tidy"]("linux") == [] and packaged("clang-tidy", "macos")
+    # CI installs clang-tidy-<major>, and .clang-tidy's list is the one that version enables
+    workflow = (root / ".github" / "workflows" / "build.yml").read_text(encoding="utf-8")
+    job = yaml.safe_load(workflow)["jobs"]["clang-tidy"]
+    names = set(re.findall(r"clang-tidy-(\d+)", "\n".join(str(step.get("run", "")) for step in job["steps"])))
+    assert names == {str(major)}
+    assert f"clang-tidy {major}" in (root / ".clang-tidy").read_text(encoding="utf-8")
+
+
+def test_clang_tidy_unpacks_only_the_program_and_clangs_headers(tmp_path: Path) -> None:
+    top = "clang+llvm-19.1.1-x86_64-pc-windows-msvc"
+    archive = make_tar_xz(
+        {
+            f"{top}/bin/clang-tidy.exe": b"tidy",
+            f"{top}/bin/clang.exe": b"compiler",
+            f"{top}/lib/clang/19/include/stddef.h": b"h",
+            f"{top}/lib/libclang.lib": b"big",
+        }
+    )
+    pin = Pin("clang-tidy", "19.1.1", "https://example.invalid/llvm.tar.xz", hashlib.sha256(archive).hexdigest())
+    dest = tmp_path / "tools" / "clang-tidy-19.1.1"
+    fetch_tool("clang-tidy", dest, "windows", tmp_path / "cache", FakeWeb({pin.url: archive}), [pin])
+    found = sorted(path.relative_to(dest).as_posix() for path in dest.rglob("*") if path.is_file())
+    assert found == ["bin/clang-tidy.exe", "lib/clang/19/include/stddef.h"]
+    assert tool_destination("clang-tidy", tmp_path) == tmp_path / "tools" / f"clang-tidy-{CLANG_TIDY_VERSION}"
+
+
+def test_an_llvm_archive_without_the_program_installs_nothing(tmp_path: Path) -> None:
+    archive = make_tar_xz({"top/lib/clang/19/include/stddef.h": b"h"})
+    pin = Pin("clang-tidy", "19.1.1", "https://example.invalid/llvm.tar.xz", hashlib.sha256(archive).hexdigest())
+    dest = tmp_path / "tools" / "clang-tidy-19.1.1"
+    with pytest.raises(ConfigError, match=r"bin/clang-tidy\.exe"):
+        fetch_tool("clang-tidy", dest, "windows", tmp_path / "cache", FakeWeb({pin.url: archive}), [pin])
+    assert not dest.exists()

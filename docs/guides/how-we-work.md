@@ -441,9 +441,9 @@ something:
 - **Keep the machine usable.** Nothing you start may take the keyboard focus or send keystrokes to another
   window; drive programs through their own interfaces (for the emulator, see
   [Driving PCSX2](research-tools.md#driving-pcsx2)). Keep build parallelism moderate, and do not run
-  virtual-machine builds locally when the project's CI covers them. On Windows that means no WSL builds and no
-  clang-tidy runs: GitHub CI is the Linux and macOS gate, and a failure there is a fix task
-  ([CI](building.md#what-ci-runs)).
+  virtual-machine builds locally when the project's CI covers them. On Windows that means no WSL builds: GitHub CI
+  is the Linux and macOS gate, and a failure there is a fix task ([CI](building.md#what-ci-runs)). clang-tidy is the
+  exception: `task check` runs it on the changed lines here ([clang-tidy here](clang-tidy.md#local)).
 - **Keep the drive from filling up.** A build is about 6 GB and every task has its own worktree, so forgotten
   worktrees fill a drive (once down to 3 GB free, which broke builds). An agent creates a `.coney-busy` file in its
   worktree for a stretch where files must not change and deletes it when it finishes, and deletes its own `build/`

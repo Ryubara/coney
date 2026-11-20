@@ -82,6 +82,9 @@ class World:
         self.heavy = ""
         #: This machine's own floor (-1: the repository's).
         self.machine_floor = -1
+        #: The checks whose program is missing before the run starts (Env.preflight), and those it looked for.
+        self.missing: set[str] = set()
+        self.preflighted: list[str] = []
 
     def step(self, name: str) -> Callable[[task_check_steps.StepContext], StepResult]:
         def run(context: task_check_steps.StepContext) -> StepResult:
@@ -155,7 +158,13 @@ class World:
             memory=lambda: self.memory,
             heaviest=lambda: self.heavy,
             memory_floor=lambda root: self.machine_floor,
+            preflight={"clang-tidy": self.preflight},
         )
+
+    def preflight(self, root: Path, conventions: Any) -> None:
+        self.preflighted.append("clang-tidy")
+        if "clang-tidy" in self.missing:
+            raise task_check_steps.CheckUnavailable("clang-tidy 19 is not installed")
 
     def request(self, **more: Any) -> task_check.Request:
         values: dict[str, Any] = {"task": TASK, "worktree": self.root, "base": "main", "agent": "lane-a"}
@@ -287,13 +296,28 @@ def test_an_engine_change_builds_with_the_ci_preset_once_and_covers_the_build_re
     assert world.builds == [("lane-a", "ci", TASK)]
     stamp = world.stamp
     assert stamp.detail["profile"] == "full" and stamp.detail["preset"] == "ci"
-    assert stamp.detail["checks"][-2:] == ["msvc-ci-build", "ctest-full-disc"]
+    assert stamp.detail["checks"][-3:] == ["msvc-ci-build", "ctest-full-disc", "clang-tidy"]
     assert stamp.detail["tests"] == TESTS
     # no test file reaches brain.cpp here, so the whole suite ran, holding nothing back
     assert world.labels == [None] and stamp.detail["ctest_scope"] == "whole"
     [record] = (unit.Unit.of(world.root, TASK).dir / "build-runs").glob("*.json")
     assert stamp.covers["build_record_sha256"] == record.stem == hashlib.sha256(record.read_bytes()).hexdigest()
     assert int(stamp.detail["minutes"]) >= 0
+
+
+def test_a_missing_clang_tidy_refuses_the_run_before_the_build(world: World) -> None:
+    # the check comes after the build and the whole test run: finding its program missing there would waste hours
+    world.missing.add("clang-tidy")
+    world.edit("src/ai/brain.cpp", "int main() { return 0; }\n")
+    assert world.check() != 0
+    assert world.preflighted == ["clang-tidy"] and world.builds == [] and world.calls == []
+    assert any("clang-tidy 19 is not installed" in line for line in world.said)
+
+
+def test_a_change_without_cpp_does_not_look_for_clang_tidy(world: World) -> None:
+    world.edit("docs/guides/widget.md", "# Widget\n\nTwo.\n")
+    assert world.check() == 0
+    assert world.preflighted == []
 
 
 def engine(world: World) -> None:
@@ -935,10 +959,8 @@ def test_the_build_run_is_one_entry_at_the_place_of_its_first_check(world: World
     assert world.check() == 0
     names = load_conventions(world.root).proof.build.checks
     assert seen[0]["check"] == " and ".join(names) and seen[0]["kind"] == "build"
-    assert (seen[0]["index"], seen[0]["total"]) == (
-        7,
-        8,
-    )  # the seventh of eight: the eighth is answered by the same run
+    # the seventh of nine: the eighth is answered by the same run, the ninth is the clang-tidy check after it
+    assert (seen[0]["index"], seen[0]["total"]) == (7, 9)
     assert progress_now(world)["state"] == "passed"
 
 
