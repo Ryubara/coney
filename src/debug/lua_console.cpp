@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "debug/lua_console.h"
 
+#include <cstddef>
 #include <format>
 #include <fstream>
 #include <iterator>
+#include <memory>
 #include <span>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "debug/native_caller.h"
 #include "scripting/lua_compiler.h"
+#include "scripting/lua_libraries.h"
 
 namespace coney::debug {
 
@@ -43,10 +48,54 @@ std::expected<std::shared_ptr<const script::LuaProto>, Error> compileLine(std::s
     return script::loadLuaSource(line, kConsoleChunk);
 }
 
-// Runs `chunk` in `vm` and returns the line its results print.
-std::expected<std::vector<std::string>, Error> runChunk(script::LuaVm& vm,
-                                                        std::shared_ptr<const script::LuaProto> chunk) {
+// Points the global `print` at a console's sink for one run and puts the state's own back with restore() after it,
+// unless the run set `print` itself (a line such as `print = ToInt` keeps what it set). The put-back is a call, not
+// a destructor: it allocates, and a destructor must not throw.
+// @coney-only the debug console's output: the original has no console, and its print goes nowhere a player sees
+class PrintRedirect {
+  public:
+    // Sends `print` in `vm` to `sink`; an empty sink changes nothing.
+    PrintRedirect(script::LuaVm& vm, const LuaConsole::PrintSink& sink) : m_vm(vm) {
+        if (!sink) {
+            return;
+        }
+        m_saved = vm.global("print");
+        auto function = std::make_shared<script::Function>();
+        function->native = [sink](std::span<const Value> args) -> std::expected<std::vector<Value>, Error> {
+            // The line Lua 4.0's print writes: each argument's tostring, joined by tabs.
+            std::string line;
+            for (std::size_t i = 0; i < args.size(); ++i) {
+                line += (i == 0 ? "" : "\t") + script::luaToString(args[i]);
+            }
+            sink(std::move(line));
+            return std::vector<Value>{};
+        };
+        m_redirect = Value(std::shared_ptr<const script::Function>(std::move(function)));
+        vm.setGlobal("print", m_redirect);
+    }
+    // Puts the state's `print` back if the run left the console's in place.
+    void restore() {
+        if (!m_redirect.isNil() && m_vm.global("print") == m_redirect) {
+            m_vm.setGlobal("print", m_saved);
+        }
+    }
+    PrintRedirect(const PrintRedirect&) = delete;
+    PrintRedirect& operator=(const PrintRedirect&) = delete;
+    PrintRedirect(PrintRedirect&&) = delete;
+    PrintRedirect& operator=(PrintRedirect&&) = delete;
+
+  private:
+    script::LuaVm& m_vm;
+    Value m_saved;    // the state's own print
+    Value m_redirect; // the console's; nil when there is no sink
+};
+
+// Runs `chunk` in `vm`, with `print` going to `print` when given, and returns the line its results print.
+std::expected<std::vector<std::string>, Error>
+runChunk(script::LuaVm& vm, std::shared_ptr<const script::LuaProto> chunk, const LuaConsole::PrintSink& print) {
+    PrintRedirect redirect(vm, print);
     auto results = vm.run(std::move(chunk));
+    redirect.restore();
     if (!results) {
         return std::unexpected(std::move(results.error()));
     }
@@ -67,16 +116,18 @@ void LuaConsole::remember(std::string_view line) {
     }
 }
 
-std::expected<std::vector<std::string>, Error> LuaConsole::run(script::LuaVm& vm, std::string_view line) {
+std::expected<std::vector<std::string>, Error> LuaConsole::run(script::LuaVm& vm, std::string_view line,
+                                                               const PrintSink& print) {
     remember(line);
     auto chunk = compileLine(line);
     if (!chunk) {
         return std::unexpected(std::move(chunk.error()));
     }
-    return runChunk(vm, std::move(*chunk));
+    return runChunk(vm, std::move(*chunk), print);
 }
 
-std::expected<std::vector<std::string>, Error> LuaConsole::runFile(script::LuaVm& vm, const std::string& path) {
+std::expected<std::vector<std::string>, Error> LuaConsole::runFile(script::LuaVm& vm, const std::string& path,
+                                                                   const PrintSink& print) {
     std::ifstream file(path, std::ios::binary);
     if (!file) {
         return fail(ErrorCode::NotFound, std::format("{}: cannot be read", path));
@@ -87,7 +138,7 @@ std::expected<std::vector<std::string>, Error> LuaConsole::runFile(script::LuaVm
     if (!chunk) {
         return std::unexpected(std::move(chunk.error()));
     }
-    auto lines = runChunk(vm, std::move(*chunk));
+    auto lines = runChunk(vm, std::move(*chunk), print);
     if (lines && lines->empty()) {
         lines->push_back(std::format("{}: ran", path));
     }

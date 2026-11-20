@@ -13,6 +13,7 @@
 
 #include "core/error.h"
 #include "debug/debug_session.h"
+#include "debug/lua_console.h"
 #include "debug/story_missions.h"
 #include "sandbox/sandbox_layout.h"
 
@@ -207,14 +208,18 @@ void addConsolePage(DebugSession& session) {
     session.model().addPage(
         "Lua console",
         [&session](MenuPage& page) {
+            // Where print goes while a console line or file runs: the page's Log, not the script system's log.
+            // @coney-only the debug console's output (docs/guides/debug-menu.md#lua-console)
+            const LuaConsole::PrintSink toLog = [&session](std::string out) { session.print(std::move(out)); };
             auto draft = std::make_shared<std::string>();
             MenuItem line = textItem(
                 "Run line", [draft] { return *draft; },
-                [&session, draft](const std::string& text) {
+                [&session, draft, toLog](const std::string& text) {
                     *draft = text;
                     session.print("> " + text);
                     std::expected<std::vector<std::string>, Error> printed = fail(ErrorCode::NotFound, "no state");
-                    session.runInState([&](script::LuaVm& vm) { printed = session.console().run(vm, text); });
+                    // print in the line writes to the Log as it runs, ahead of the values and of an error.
+                    session.runInState([&](script::LuaVm& vm) { printed = session.console().run(vm, text, toLog); });
                     if (!printed) {
                         session.print("! " + printed.error().message);
                         return;
@@ -231,10 +236,11 @@ void addConsolePage(DebugSession& session) {
             auto file = std::make_shared<std::string>();
             MenuItem runFile = textItem(
                 "Run file", [file] { return *file; },
-                [&session, file](const std::string& path) {
+                [&session, file, toLog](const std::string& path) {
                     *file = path;
                     std::expected<std::vector<std::string>, Error> printed = fail(ErrorCode::NotFound, "no state");
-                    session.runInState([&](script::LuaVm& vm) { printed = session.console().runFile(vm, path); });
+                    session.runInState(
+                        [&](script::LuaVm& vm) { printed = session.console().runFile(vm, path, toLog); });
                     if (!printed) {
                         session.print("! " + printed.error().message);
                         return;

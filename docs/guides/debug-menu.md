@@ -740,6 +740,14 @@ an enclosing function's local is reached as an upvalue, `%name`. Errors name the
 'x'`); a runtime error leaves the statements before it run. *Run file* runs a Lua 4.0 source file or a compiled chunk
 as one chunk and prints what it returns. The lines run are kept in a history (L1 and R1 recall them while typing).
 
+`print` in a line or file writes to the page's *Log*: `print("testing")` shows `testing`, `for i = 1, 3 do print(i)
+end` shows `1`, `2` and `3` on three lines, and several arguments are one line joined by tabs, as Lua 4.0's `print`
+joins them. Each line reaches the Log as `print` runs, after the echoed `> line` and before the values, so what a line
+printed before a runtime error still shows. Outside the console, a script's `print` goes to the script system's log as
+`script print: ...`, as before: the console points the global `print` at its Log only while its line runs, then puts
+the state's own back, unless the line set `print` itself. The original has no console, so this is Coney's own
+(`PrintRedirect` in `src/debug/lua_console.cpp`).
+
 ## Fonts {#fonts}
 
 With a disc, the pad menu draws its text in the game's own text font (`part_page0`) through a sprite batch and the 2D
