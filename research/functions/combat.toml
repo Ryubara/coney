@@ -756,9 +756,20 @@ name = "Attack_StartPaired"
 page = "combat-grabs.md#grabbing"
 role = "a grab move on the victim: power check and spend, damage"
 level = "confirmed-code"
-note = "confirmed (code), runtime"
-coney = "src/human/fighter.h:Fighter::answerCounter"
-status = "legacy"
+note = "confirmed (code), runtime. `Fighter::takePairedMove` ports its victim side; `Fighter::answerCounter`'s use of it for the AI's counter is not compared yet (#1501)"
+coney = "src/human/fighter.h:Fighter::startPairedMove"
+status = "compared"
+
+[[function.gaps]]
+what = "the throwing branch, the class record's weapon scale on the damage, the push spheres, and the victim's loop after a side that does not defeat it are not built"
+relation = "stand-in"
+issue = 684
+
+[[function.gaps]]
+what = "a side with no knockdown event is taken as the dying clip, not paired with a random dying chain"
+relation = "stand-in"
+question = "stealth.md#q-stealth-side"
+issue = 1500
 
 [[function]]
 address = 0x00263380
@@ -800,6 +811,20 @@ level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/attacks.h:objectAttack"
 status = "legacy"
+
+[[function]]
+address = 0x00264738
+name = "Player_StartStealthKill"
+page = "stealth.md#stealth-kill"
+role = "The stealth kill: 637, 639 or 641 by the weapon held; the victim's flag `0x8` cleared, the pair through `Attack_StartPaired`."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::startStealthKill"
+status = "compared"
+
+[[function.gaps]]
+what = "a held object of another set is not dropped first (only the set-5 cross reaches the kill with one, and it is not built); the move style 0xf is not popped"
+relation = "stand-in"
+issue = 1499
 
 [[function]]
 address = 0x00264878
@@ -2370,6 +2395,20 @@ level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/combat/player_combat.h:PlayerCombat::extendPowerMove"
 status = "legacy"
+
+[[function]]
+address = 0x0027e040
+name = "Player_UpdateActionsHidden"
+page = "stealth.md#stealth-kill"
+role = "The hidden player's buttons: with L1's bit, square, cross or circle run only the stealth kill's test; without it the normal moves."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::tryStealthKill"
+status = "compared"
+
+[[function.gaps]]
+what = "the chain press and a throwable object's armed special come after the buttons (in the dispatcher), not before"
+relation = "stand-in"
+issue = 1499
 
 [[function]]
 address = 0x0027e6d8

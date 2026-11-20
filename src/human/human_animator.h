@@ -211,6 +211,12 @@ class HumanAnimator {
     /// @orig 0x00108a78 PairedTask_Init (unknown)
     void playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker, std::uint32_t loop,
                     AnimState state, float fade = 0.0F, HeldFlags held = {});
+    /// Combat, a death chain that starts with another human's clip: `paired` from `attacker`'s set at its rate (a
+    /// paired move's victim side as its dying clip), then `clips` and `loop` from its own set, after a fade of `fade`,
+    /// each clip holding `held` (docs/research/combat-reactions.md#knockout-timing). Ids a set lacks are skipped.
+    void playPairedThenOwn(std::uint32_t paired, const characters::AnimSet& attacker,
+                           std::span<const std::uint32_t> clips, std::uint32_t loop, AnimState state, float fade,
+                           HeldFlags held);
     /// Combat: plays `clips` in turn, each holding `held`, then the gait blend at the run (a run attack after which
     /// the run resumes).
     void playCombatThenRun(std::span<const std::uint32_t> clips, float fade = kCombatFade, HeldFlags held = {});
@@ -358,6 +364,8 @@ class HumanAnimator {
     [[nodiscard]] std::unique_ptr<anim::AnimTask> clipThen(std::uint32_t id, std::unique_ptr<anim::AnimTask> next,
                                                            const characters::AnimSet* from = nullptr,
                                                            HeldFlags held = {}) const;
+    // `loop` from this human's own set as the end of a combat chain, or the idle when the set lacks it.
+    [[nodiscard]] std::unique_ptr<anim::AnimTask> chainLoop(std::uint32_t loop) const;
     // Combat's chain: `clips` (from `from`, or this human's set when null) handing over in turn, each holding `held`
     // (389 its own), then this human's `loop`, after a fade of `fade`.
     void playChain(std::span<const std::uint32_t> clips, const characters::AnimSet* from, std::uint32_t loop,

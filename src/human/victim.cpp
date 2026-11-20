@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <optional>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -126,7 +127,8 @@ ReactionKind Victim::react(const IncomingHit& hit, const VictimFrame& frame, Hum
     return ReactionKind::Plain;
 }
 
-void Victim::die(const IncomingHit& hit, const VictimFrame& frame, const DyingState& dying, HumanAnimator& animator) {
+void Victim::die(const IncomingHit& hit, const VictimFrame& frame, const DyingState& dying, HumanAnimator& animator,
+                 const NamedDying* named) {
     const auto has = [&dying](std::uint64_t bits) { return (dying.state & bits) != 0; };
     const bool cuffed = has(human_state::kCuffed);
     const bool wounded = has(human_state::kWounded);
@@ -139,10 +141,13 @@ void Victim::die(const IncomingHit& hit, const VictimFrame& frame, const DyingSt
         loop = kDeathLoopWoundable;
         woundedDown = true;
     }
-    // 2. The dying clip: the first of the special states that holds, in the original's order, else the hit's own (the
-    // coin is drawn only then, as Hit_PickDyingReaction draws it). A stand-in for callers that name their own clip:
-    // the lethal path names none.
+    // 2. The dying clip: the one the caller names (a paired move's victim side, from the attacker's set), else the
+    // first of the special states that holds, in the original's order, else the hit's own (the coin is drawn only then,
+    // as Hit_PickDyingReaction draws it).
     const std::uint32_t dyingClip = [&] {
+        if (named != nullptr) {
+            return named->clip;
+        }
         for (const StateClip& special : kHeldDying) {
             if (has(special.bits)) {
                 return special.clip;
@@ -158,11 +163,12 @@ void Victim::die(const IncomingHit& hit, const VictimFrame& frame, const DyingSt
         }
         return static_cast<std::uint32_t>(combat::deathReaction(reactionInput(hit, frame), m_random.coin()));
     }();
-    // 3. The fall, by the dying clip's first knockdown event (type 7): none found, 308 unless it is down (cuffed,
-    // knocked out or down); found with a value of 0 (the u32 at +4), 198; else none. A stand-in for callers that name
-    // another human's set: the lethal path names this human's own.
+    // 3. The fall, by the dying clip's first knockdown event (type 7), read from the set the clip comes from: none
+    // found, 308 unless it is down (cuffed, knocked out or down); found with a value of 0 (the u32 at +4), 198; else
+    // none.
     std::optional<std::uint32_t> fall;
-    const anim::AnimClip* clip = animator.clip(dyingClip);
+    const characters::AnimSet* from = named != nullptr ? named->from : nullptr;
+    const anim::AnimClip* clip = from != nullptr ? from->clip(dyingClip) : animator.clip(dyingClip);
     const anim::ClipEvent* knockdown = nullptr;
     if (clip != nullptr) {
         const auto found = std::ranges::find_if(
@@ -196,7 +202,12 @@ void Victim::die(const IncomingHit& hit, const VictimFrame& frame, const DyingSt
     // stand-in: the original sets 0x2000 as it builds the chain and gives it to the clip before the loop alone; every
     // clip here holds and sets it, which keeps it set over the same updates. The blends between the clips are kept in
     // m_deathChain, not built (Coney's chained clips hand over at once).
-    animator.playCombat(clips, loop, AnimState::Hold, kCombatFade, kDyingHolds);
+    if (from != nullptr) {
+        animator.playPairedThenOwn(clips.front(), *from, std::span(clips).subspan(1), loop, AnimState::Hold,
+                                   kCombatFade, kDyingHolds);
+    } else {
+        animator.playCombat(clips, loop, AnimState::Hold, kCombatFade, kDyingHolds);
+    }
     m_deathChain = DeathChain{.steps = std::move(steps), .loop = loop};
     // 6. The hit waiting is dropped (the pending damage +0x118).
     m_hasPending = false;

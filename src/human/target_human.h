@@ -81,6 +81,11 @@ class TargetHuman final : public Holdable {
     /// fade), as play() does otherwise.
     void playPaired(std::span<const std::uint32_t> clips, const characters::AnimSet& attacker, std::uint32_t loop,
                     AnimState state, TargetState targetState) override;
+    /// A paired move started on it (the stealth kill): the damage at once, then its side from the attacker's set as
+    /// the dying clip of its death chain when it runs out of health, else its side and the ground. False when it is
+    /// already out of health or the move names no set.
+    /// @coney-only the sandbox's test dummy, which the original does not have
+    bool takePairedMove(const PairedMove& move) override;
     /// Attaches it to its grabber (Coney's stand-in for `Human_MoveAttached`, `0x00244e78`): while attached the
     /// grabber places it each update and its own root motion does not move it; detached, a held target moves by its
     /// clip's root motion.

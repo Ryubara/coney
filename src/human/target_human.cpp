@@ -127,6 +127,29 @@ void TargetHuman::playPaired(std::span<const std::uint32_t> clips, const charact
     enter(targetState);
 }
 
+bool TargetHuman::takePairedMove(const PairedMove& move) {
+    if (m_health.depleted() || move.attackerAnims == nullptr) {
+        return false;
+    }
+    const auto side = static_cast<std::uint32_t>(move.attackAnim + 1);
+    if (m_health.apply(move.damage) > 0) {
+        ++m_hits;
+    }
+    // Out of health: the death chain with its side as the dying clip; it lies on the ground for good.
+    if (m_health.depleted()) {
+        const VictimFrame frame{.position = m_position, .heading = m_heading, .hurt = hurt(), .flag400 = false};
+        const IncomingHit hit{
+            .damage = move.damage, .attackAnim = move.attackAnim, .attacker = move.attacker, .react = false};
+        const NamedDying named{.clip = side, .from = move.attackerAnims};
+        m_victim.die(hit, frame, DyingState{}, m_animator, &named);
+        m_attached = false;
+        m_state = TargetState::Grounded;
+        return true;
+    }
+    playPaired(one(side), *move.attackerAnims, kGroundedIdle, AnimState::Hold, TargetState::Grounded);
+    return true;
+}
+
 void TargetHuman::enter(TargetState targetState) {
     // Going down starts the ground time; anything but a hold lets go of the grabber; a stun ends.
     const bool wasGrounded = m_state == TargetState::Grounded;
