@@ -389,10 +389,10 @@ Chapter 5 of `level87` (`level87_chap5_club.lua`) is the stealth tutorial. What 
   the dying clip of its death chain (the loop 349); the kill needs and spends a quarter of the power meter, which
   then holds (no refill) while the clip plays; its end ends the hiding and leaves the killer in the fight stance.
   Not built: the set-5 weapon's cross (`0x002880d8`) starting the kill while hidden, with the drop of a held object
-  of another set and the move style `0xf` the kill pops (#990); the class record's weapon scale on the damage and the
-  knocked-down branch of the grabbable test (#684); the chain press and a throwable object's armed special, which
-  the original takes before the hidden buttons and Coney's dispatcher after them (#1011); the creep's ready clips
-  (635, 636).
+  of another set, the move style `0xf` the kill pops, the class record's weapon scale on the damage, and the chain
+  press and a throwable object's armed special, which the original takes before the hidden buttons and Coney's
+  dispatcher after them (#1499); the knocked-down branch of the grabbable test (#684); the creep's ready clips (635,
+  636, #1498).
 - **Scouts and the call** (`repo:src/ai/tactic_scout.h`, [AI: Coney](ai/index.md#in-coney)): TacticScout's guards keep their
   posts and scan every 500 ms; one who spots, is hit by or is warned of an enemy fights him, and when the level allows
   it runs to the farthest phone flag in range and, 1.5 s later, starts the enemy gang's second wanted timer
@@ -401,14 +401,14 @@ Chapter 5 of `level87` (`level87_chap5_club.lua`) is the stealth tutorial. What 
 Coney does not build the other players' Warriors hiding and their hide order, the camera's raised look-at, the
 half-volume footsteps, the scouts' clips, glances, roaming and radar blips, the help call, the investigation of an
 unseen hit, the caller's lines and clips, the responders the call brings (only logged), the stealth creep's ready
-clips, distractions and level87's checkpoint 5 as a whole.
+clips (#1498), distractions and level87's checkpoint 5 as a whole.
 
 ## Open questions
 
 - **The kill victim's side**{#q-stealth-side}: whether the victim's sides (638, 640, 642) carry a knockdown
   event: with none, `Attack_StartPaired` (`0x00262ac8`) pairs the side with a random dying chain of the victim's own
   (308-311) instead of taking the side as the dying clip. Coney takes the side as the dying clip; a disc read of the
-  clips' events settles it.
+  clips' events settles it (#1500).
 - Who plays the prepared hidden line (`0x57`-`0x59`) and when.
 - A runtime check of the hide rules (blue radar, a guard 1.9 m away on normal ground not seeing a hidden player).
 - Where exactly an Investigate for a noise ends up: `GangBrain_OnCrimeSeen` snaps the noise point to the nav mesh along

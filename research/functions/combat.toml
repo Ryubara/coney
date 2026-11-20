@@ -756,7 +756,7 @@ name = "Attack_StartPaired"
 page = "combat-grabs.md#grabbing"
 role = "a grab move on the victim: power check and spend, damage"
 level = "confirmed-code"
-note = "confirmed (code), runtime. `Fighter::takePairedMove` ports its victim side; `Fighter::answerCounter`'s use of it for the AI's counter is not compared yet"
+note = "confirmed (code), runtime. `Fighter::takePairedMove` ports its victim side; `Fighter::answerCounter`'s use of it for the AI's counter is not compared yet (#1501)"
 coney = "src/human/fighter.h:Fighter::startPairedMove"
 status = "compared"
 
@@ -769,6 +769,7 @@ issue = 684
 what = "a side with no knockdown event is taken as the dying clip, not paired with a random dying chain"
 relation = "stand-in"
 question = "stealth.md#q-stealth-side"
+issue = 1500
 
 [[function]]
 address = 0x00263380
@@ -823,7 +824,7 @@ status = "compared"
 [[function.gaps]]
 what = "a held object of another set is not dropped first (only the set-5 cross reaches the kill with one, and it is not built); the move style 0xf is not popped"
 relation = "stand-in"
-issue = 990
+issue = 1499
 
 [[function]]
 address = 0x00264878
@@ -2407,7 +2408,7 @@ status = "compared"
 [[function.gaps]]
 what = "the chain press and a throwable object's armed special come after the buttons (in the dispatcher), not before"
 relation = "stand-in"
-issue = 1011
+issue = 1499
 
 [[function]]
 address = 0x0027e6d8
