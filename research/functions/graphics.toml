@@ -661,6 +661,13 @@ coney = "src/scripting/story_bindings.cpp:addStoryBindings"
 status = "legacy"
 
 [[function]]
+address = 0x0046d010
+name = "RpMaterialSetTexture"
+page = "graphics.md#texture-lifetime"
+role = "gives a material a texture: raises its reference count (`+0x54`), destroys the one held before"
+level = "confirmed-code"
+
+[[function]]
 address = 0x00488c58
 name = "RwTexDictionaryDestroy"
 page = "graphics.md#texture-lifetime"

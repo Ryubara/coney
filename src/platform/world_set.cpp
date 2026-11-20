@@ -273,8 +273,11 @@ void WorldSet::refreshMesh(std::size_t world, std::uint32_t sector) {
     if (!mesh || atomic == nullptr) {
         return;
     }
-    removeMeshes(*mesh);
+    // The new meshes go in before the old ones go, so a texture the old ones were the last to hold (one borrowed from
+    // a part since unloaded: renderer.md#texture-lifetime) is still held when the new ones name it.
+    const SectorMesh old = *mesh;
     mesh = addMeshes(atomic);
+    removeMeshes(old);
 }
 
 std::size_t WorldSet::residentAtomics() const {

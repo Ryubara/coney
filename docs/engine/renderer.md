@@ -319,9 +319,11 @@ dictionary's hold, by `WorldSet` or the object loaders) and each held mesh's mat
 So when a part unloads while an object whose material took one of its textures stays, the object's mesh still names a
 texture the store holds, and the GPU renderer draws it textured, as GL3 does through librw (the material holds a
 reference on the librw texture, which outlives its dictionary). Resolving the id at draw time alone would not have
-helped, as the texture would be gone from the store by then. Two synthetic tests (`world_set_test.cpp`) cover it: an
-object's material that takes a part's texture, and a part's material that takes another part's, each keep it after
-that part unloads, and the object's is dropped when its mesh goes.
+helped, as the texture would be gone from the store by then. The debug tools' refresh of a sector's mesh
+(`WorldSet::refreshMesh`) adds the new meshes before it removes the old, so a texture the old mesh was the last to hold
+stays. Three synthetic tests (`world_set_test.cpp`) cover it: an object's material that takes a part's texture, and a
+part's material that takes another part's, each keep it after that part unloads, and the object's is dropped when its
+mesh goes; a refreshed part mesh keeps such a texture.
 
 **Between parts the disc has none** (NTSC-U PS2, counts only): the disc check *no part's material takes its texture
 from another part's dictionary* (`disc_world_streaming_test.cpp`) loads every part of each of the 80 levels, then loads
