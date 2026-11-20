@@ -20,6 +20,7 @@
 #include <rw.h>
 
 #include "graphics/render_device.h"
+#include "graphics/screen.h"
 #include "graphics/texture_data.h"
 #include "platform/pixel_texture.h"
 #include "platform/present_mode.h"
@@ -309,6 +310,71 @@ TEST_CASE("the GPU renderer draws a frame's 2D passes and reads the frame back",
     CHECK(near(pixelAt(rgba, width, 72, 192), fill, 0));  // tested at a half, dropped
     // Tested at 0: a quarter of white over the fill.
     CHECK(near(pixelAt(rgba, width, 328, 192), Rgba{79, 94, 109, 255}, 2));
+    std::error_code ignored;
+    std::filesystem::remove(path, ignored);
+}
+
+TEST_CASE("the GPU renderer hands each frame's logical screen to the frame tap, before the overlays",
+          "[render][renderer][window]") {
+    // Expected: ../engine/gpu-renderer.md#capture, Coney's own: a clip takes the frame as the game drew it, the logical
+    // screen alone and before anything drawn over the picture (the developer overlay), as the GL3 renderer's tap reads
+    // it (RenderEngine::tapFrame(), ../guides/running-options.md#record): the rectangle graphics::fitLogicalScreen()
+    // gives a 400 x 224 window (screen_test.cpp). A screenshot of the same frame still holds the overlay.
+    if (!videoWithADisplay(true, SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL | SDL_GPU_SHADERFORMAT_MSL)) {
+        SKIP("no display or no GPU device here");
+    }
+    WindowDesc desc;
+    desc.activate = false;
+    desc.hidden = true;
+    desc.width = 400;
+    desc.height = 224;
+    auto started = RenderEngine::start(RenderBackend::Gpu, desc);
+    REQUIRE(started.has_value());
+    RenderEngine& engine = **started;
+    // An overlay that paints the whole picture white.
+    const coney::platform::GpuOverlayHandle overlay =
+        engine.addGpuOverlay([](SDL_GPUCommandBuffer* commands, SDL_GPUTexture* target, coney::graphics::Extent) {
+            SDL_GPUColorTargetInfo info{};
+            info.texture = target;
+            info.clear_color = SDL_FColor{1.0F, 1.0F, 1.0F, 1.0F};
+            info.load_op = SDL_GPU_LOADOP_CLEAR;
+            info.store_op = SDL_GPU_STOREOP_STORE;
+            if (SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(commands, &info, 1, nullptr); pass != nullptr) {
+                SDL_EndGPURenderPass(pass);
+            }
+        });
+    int taps = 0;
+    coney::graphics::Extent tapped;
+    std::vector<std::uint8_t> frame;
+    engine.setFrameTap([&](std::span<const std::uint8_t> rgba, coney::graphics::Extent size) {
+        ++taps;
+        tapped = size;
+        frame.assign(rgba.begin(), rgba.end());
+    });
+    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-tap-capture.png").string();
+    engine.requestCapture(0, path);
+
+    const coney::graphics::Rgba fill{20, 40, 60, 255};
+    engine.beginFrame(fill);
+    const coney::graphics::LogicalQuad red{
+        0.0F, 0.0F, 64.0F, 64.0F, coney::graphics::UvRect{}, coney::graphics::Rgba{255, 0, 0, 255}};
+    engine.drawQuads(nullptr, std::span<const coney::graphics::LogicalQuad>(&red, 1));
+    engine.present();
+
+    const coney::graphics::ScreenRect screen = coney::graphics::fitLogicalScreen(coney::graphics::Extent{400, 224});
+    CHECK(taps == 1);
+    REQUIRE(tapped.width == screen.width);
+    REQUIRE(tapped.height == screen.height);
+    REQUIRE(frame.size() == static_cast<std::size_t>(screen.width) * static_cast<std::size_t>(screen.height) * 4);
+    CHECK(near(pixelAt(frame, screen.width, 10, 10), coney::graphics::Rgba{255, 0, 0, 255}, 0)); // the red square
+    CHECK(near(pixelAt(frame, screen.width, 200, 150), fill, 0));                                // no overlay
+    // The screenshot holds the overlay: every pixel white, none the frame's colour.
+    const auto captured = coney::test::got(engine.capture());
+    REQUIRE(captured.has_value());
+    CHECK(captured->stats.notBackground == captured->stats.pixels);
+
+    engine.setFrameTap({});
+    engine.removeGpuOverlay(overlay);
     std::error_code ignored;
     std::filesystem::remove(path, ignored);
 }

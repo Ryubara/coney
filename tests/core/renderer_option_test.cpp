@@ -50,13 +50,10 @@ TEST_CASE("the renderer option takes gl3 or gpu and refuses anything else", "[op
     CHECK(coney::usageText().find("--renderer gl3|gpu") != std::string_view::npos);
 }
 
-TEST_CASE("the GPU renderer needs a window and records no clip or reference render", "[options][renderer]") {
+TEST_CASE("the GPU renderer needs a window and draws no reference render", "[options][renderer]") {
     // Expected: ../engine/gpu-renderer.md#choice, Coney's own option
-    // It opens a window of its own, so not headless; it hands no frame to the clip recorder and draws no reference
-    // renders, which are GL3's offscreen.
+    // It opens a window of its own, so not headless; it draws no reference renders, which are GL3's offscreen.
     CHECK_FALSE(parse(std::array<std::string_view, 3>{"--renderer", "gpu", "--headless"}).has_value());
-    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--renderer", "gpu", "--record", "scratch/task/clips/a.mp4"})
-                    .has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 6>{"--renderer", "gpu", "--disc", "x", "--render-references", "out"})
                     .has_value());
     // GL3 goes with all of them, as before.
@@ -64,6 +61,15 @@ TEST_CASE("the GPU renderer needs a window and records no clip or reference rend
     auto refused = parse(std::array<std::string_view, 3>{"--renderer", "gpu", "--headless"});
     REQUIRE_FALSE(refused.has_value());
     CHECK(refused.error().message.find("--renderer gpu") != std::string::npos);
+}
+
+TEST_CASE("the GPU renderer records a clip", "[options][renderer]") {
+    // Expected: ../engine/gpu-renderer.md#capture, Coney's own option: it hands each frame to the clip recorder as
+    // GL3 does (../guides/running-options.md#record), so a pull request on the GPU renderer shows a clip of it.
+    auto clip = parse(std::array<std::string_view, 4>{"--renderer", "gpu", "--record", "scratch/task/clips/a.mp4"});
+    REQUIRE(clip.has_value());
+    CHECK(clip->renderer == std::optional<coney::RendererKind>(coney::RendererKind::Gpu));
+    CHECK(clip->recordPath == std::optional<std::string>("scratch/task/clips/a.mp4"));
 }
 
 TEST_CASE("the GPU renderer takes a screenshot of the last frame", "[options][renderer]") {
