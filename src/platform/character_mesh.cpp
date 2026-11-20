@@ -185,7 +185,8 @@ anim::Mat34 characterPlacement(anim::Vec3 feet, float heading, float lean) {
     return anim::multiply(toRenderWare, anim::multiply(turn, roll));
 }
 
-CharacterMesh::CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture, Skinning skinning)
+CharacterMesh::CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture, Skinning skinning,
+                             SceneAssets* /*assets*/)
     : m_texture(texture) {
     if (m_texture != nullptr) {
         m_texture->addRef();

@@ -19,6 +19,8 @@ struct Texture;
 
 namespace coney::platform {
 
+class SceneAssets;
+
 /// Where a character's mesh is skinned.
 enum class Skinning : std::uint8_t {
     Cpu, ///< On the CPU, every vertex written into librw's geometry each frame (the viewers, reference images).
@@ -76,7 +78,10 @@ class CharacterMesh {
     /// Builds the geometry of `model` in its unskinned (bind) positions. `texture` (may be null: untextured) is used by
     /// every material, as the models' materials name no texture of their own (characters.md); the mesh keeps a
     /// reference to it. Lit by the world's lights with the vertex normals, modulated by the material colour.
-    CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture, Skinning skinning = Skinning::Cpu);
+    /// `assets` is not used yet: the frame description's draws of the humans (item 9 of docs/engine/renderer.md#order)
+    /// will hold the mesh's atomics there.
+    CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture, Skinning skinning = Skinning::Cpu,
+                  SceneAssets* assets = nullptr);
     ~CharacterMesh();
     CharacterMesh(const CharacterMesh&) = delete;
     CharacterMesh& operator=(const CharacterMesh&) = delete;
