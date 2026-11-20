@@ -509,9 +509,11 @@ much less than the Linux and macOS runs that CI does anyway.
 
 ## clang-tidy {#clang-tidy}
 
-CI tidies the lines a pull request or a push changes, and the whole codebase nightly, by hand and for a build-setup
-change; there is no local clang-tidy. How the job works, the list of checks and how to add one:
-[clang-tidy](clang-tidy.md).
+`task check` tidies the lines a change touches on this machine, Windows included, after its build
+([clang-tidy here](clang-tidy.md#local); `workspace init --fetch clang-tidy` downloads the pinned LLVM 19 clang-tidy on
+Windows). CI tidies the lines a pull request changes, and the whole codebase on `main`, nightly, by hand and for a
+build-setup change, building only the headers clang-tidy reads and keeping a result cache. How the job works, the list
+of checks and how to add one: [clang-tidy](clang-tidy.md).
 
 ## Python tools
 
@@ -613,7 +615,7 @@ job no workflow has, or a required check is in none.
 | Formatting | local; CI: every pull request, a push to main, a push to a release branch, nightly, a manual run (applied by a git pre-commit hook, verified by CI) | `build/format` |
 | GCC 13, Clang 19 and AppleClang builds with the unit and smoke tests; MSVC and GCC release builds | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/build` |
 | Linux and macOS sanitizers | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/sanitizers` |
-| clang-tidy: the lines a change touches; the whole codebase nightly, in a manual run and for a build-setup change | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/clang-tidy` |
+| clang-tidy: the lines a change touches (here in task check, then on the pull request); the whole codebase on main, nightly, in a manual run and for a build-setup change | local; CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/clang-tidy` |
 | Software pictures: Coney's synthetic scenes drawn through Mesa's llvmpipe in a pinned container, compared with the reference pictures | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/software-pictures` |
 | Python: ruff, mypy, pytest, the repository, render and progress checks | local; CI: every pull request, a push to main, a push to a release branch | `python/python`, `python/python-ok` |
 | Docs: mkdocs strictly, markdownlint, actionlint, the page standards | local; CI: every pull request, a push to main, a push to a release branch | `docs/mkdocs`, `docs/markdownlint`, `docs/actionlint` |
@@ -639,8 +641,9 @@ One more workflow runs on issues, not pull requests: `issue-check` runs `coney-t
 opened or edited and keeps one comment listing the problems ([Filing an issue](issues.md#filing)); it is not a required
 check.
 
-On Windows, do not run WSL builds or clang-tidy locally to stand in for the Linux and macOS jobs: GitHub CI is that
-gate, and a failure there is fixed forward on the branch.
+On Windows, do not run WSL builds locally to stand in for the Linux and macOS jobs: GitHub CI is that gate, and a
+failure there is fixed forward on the branch. clang-tidy is not one of those: `task check` runs it here on the changed
+lines ([clang-tidy here](clang-tidy.md#local)).
 
 ### What a pull request runs {#what-a-pull-request-runs}
 
@@ -794,8 +797,11 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
   after the build jobs outside pull requests, deletes every older entry of the same job (and older dependency entries
   of the same OS) on that branch, so `main` keeps one per job. Before saving, a job drops what it did not use
   (`ccache --evict-older-than` the job's own duration), so the entry is the size of one build, not of the cap.
-- **Sharing.** The clang-tidy job builds with the same compiler, preset and flags as `build (linux-clang-19)`,
-  so it restores that job's entry and leaves the saving to it. The `asan` jobs differ in flags and keep their own.
+- **Sharing.** The clang-tidy job configures with the same compiler, preset and flags as `build (linux-clang-19)`,
+  so it restores that job's entry and leaves the saving to it; it compiles almost nothing (it builds only the headers
+  clang-tidy reads). Its own result cache, `clang-tidy-results-<hash of .clang-tidy>-<run>`, is saved by `main`'s runs
+  only and pruned like the others ([The result cache](clang-tidy.md#cache)). The `asan` jobs differ in flags and keep
+  their own.
 - **What a cache can store.** MSVC's default `/Zi` writes every object's debug information into one shared PDB,
   which ccache refuses; every preset uses `/Z7` instead ([Debug information on MSVC](#debug-info)), so that is
   settled for the cache too. SDL3's precompiled header made its 265 sources uncacheable everywhere, so every preset

@@ -1,7 +1,7 @@
 # Build and test the engine on every supported OS and compiler and under the sanitizers, check clang-tidy on the lines a
-# pull request changes (and on every file nightly), and check the formatting. A draft pull request, or one that changes
-# no engine file (only documentation or the tools), skips all but the formatting (see the changes job). Actions are
-# pinned to a full commit SHA; the tag is in the comment beside it.
+# pull request changes (and on every file on main and nightly), and check the formatting. A draft pull request, or one
+# that changes no engine file (only documentation or the tools), skips all but the formatting (see the changes job).
+# Actions are pinned to a full commit SHA; the tag is in the comment beside it.
 name: build
 
 on:
@@ -13,7 +13,7 @@ on:
   # Run it by hand on a branch that is already on GitHub, without opening a pull request: the Actions tab, this
   # workflow, "Run workflow", or `gh workflow run build.yml --ref <branch>`. clang-tidy then checks every file.
   workflow_dispatch:
-  # Every night on main: with a manual run, the runs where clang-tidy checks every file (see the clang-tidy job).
+  # Every night on main: with a push and a manual run, the runs where clang-tidy checks every file (the clang-tidy job).
   schedule:
     - cron: "23 7 * * *"
 
@@ -187,17 +187,20 @@ jobs:
       - if: ${{ !cancelled() }}
         uses: ./.github/actions/ccache-save
 
-  # clang-tidy, two ways. A pull request, and a push to main or release/**, is tidied on the lines it changes
-  # (`coney-tools ci tidy-plan` picks the sources: a changed source itself, a changed header through one source that
-  # includes it; `ci tidy-run` runs them in parallel with a line filter, so a finding in a line the change did not touch
-  # never fails it). A pull request's findings are annotations through SARIF (code scanning), or, for a pull request
-  # from a fork whose token cannot upload, workflow commands; a push's are in the log and the summary. This is the only
-  # clang-tidy a pull request gets: there is no local gate (maintainer decision, 2026-10-23, #514), and the job is a
-  # required check (`clang-tidy`), skipped like the build for a change that touches no engine file. The nightly and
-  # manual runs check every file with run-clang-tidy, which takes close to an hour, and so does a change to the build
-  # setup (ci.tidy.whole_when in .github/conventions.yml: CMakeLists.txt, cmake/, CMakePresets.json, .clang-tidy),
-  # because such a change reaches files it does not touch; its findings are in the log, not annotations.
-  # docs/guides/clang-tidy.md has the details.
+  # clang-tidy, two ways. A pull request is tidied on the lines it changes (`coney-tools ci tidy-plan` picks the
+  # sources: a changed source itself, a changed header through one source that includes it; `ci tidy-run` runs them in
+  # parallel and keeps only the findings on the changed lines, so a finding in a line the change did not touch never
+  # fails it). Its findings are annotations through SARIF (code scanning), or, for a pull request from a fork whose
+  # token cannot upload, workflow commands. The same pass runs before the pull request is opened, in `task check`'s
+  # `clang-tidy` check on the engineer's machine (maintainer decision, 2026-11-20, #1496), so this job should find
+  # nothing new; it is still the required check (`clang-tidy`), skipped like the build for a change that touches no
+  # engine file. A push to main or release/**, the nightly and the manual runs check every file, and so does a pull
+  # request that changes the build setup (ci.tidy.whole_when in .github/conventions.yml: CMakeLists.txt, cmake/,
+  # CMakePresets.json, .clang-tidy), because such a change reaches files it does not touch; their findings are in the
+  # log and the summary, not annotations. Two things keep it short: the job builds only what clang-tidy reads (the
+  # generated headers of the checked sources' targets, `ci tidy-deps`), not the whole project, and a result cache keeps
+  # each source's findings with the hashes of every file it read, so a source nothing changed for is not run again
+  # (saved by main's runs, restored by every run). docs/guides/clang-tidy.md has the details.
   clang-tidy:
     needs: changes
     if: needs.changes.outputs.build == 'true'
@@ -210,8 +213,7 @@ jobs:
       CXX: clang++-19
     steps:
       # Depth 2: a pull request's checkout is a merge commit, and its first parent (HEAD^1) is the branch it merges
-      # into, so `git diff HEAD^1 HEAD` is exactly the pull request's change. A push's checkout is the pushed commit,
-      # and on main that is one squashed pull request, so the same diff is that pull request's change.
+      # into, so `git diff HEAD^1 HEAD` is exactly the pull request's change.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
@@ -221,13 +223,11 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
         run: |
-          if [ "$EVENT" = pull_request ] || [ "$EVENT" = push ]; then
+          if [ "$EVENT" = pull_request ]; then
             git diff -U0 --no-renames HEAD^1 HEAD > "$RUNNER_TEMP/change.diff"
             uv run --project python coney-tools ci tidy-plan --diff "$RUNNER_TEMP/change.diff" --out "$RUNNER_TEMP/tidy-plan.json"
           else
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "all=true" >> "$GITHUB_OUTPUT"
-            echo "Every file: the nightly and manual runs check the whole codebase."
+            uv run --project python coney-tools ci tidy-plan --all --out "$RUNNER_TEMP/tidy-plan.json"
           fi
       - name: Install Ninja, clang-19, clang-scan-deps, clang-tidy-19 and SDL3's build packages
         if: steps.plan.outputs.run == 'true'
@@ -249,30 +249,45 @@ jobs:
         run: cmake --preset ci
       - if: steps.plan.outputs.run == 'true'
         uses: ./.github/actions/deps-save
-      # The build job reports compile errors; build what compiles so clang-tidy still checks every file. The build
-      # is also what generates the headers clang-tidy needs.
-      - if: steps.plan.outputs.run == 'true'
-        run: cmake --build --preset ci -- -k 0 || true
+      # clang-tidy reads the compile database (written by the configure above) and the headers the build generates;
+      # it needs no object file. So only the planned sources' targets' order-only targets are built: their generated
+      # headers, nothing compiled. The build job reports compile errors, so a failure here does not stop the job.
+      - name: Generate the headers the planned sources read
+        if: steps.plan.outputs.run == 'true'
+        run: |
+          uv run --project python coney-tools ci tidy-deps --plan "$RUNNER_TEMP/tidy-plan.json" --build-dir build/ci \
+            > "$RUNNER_TEMP/tidy-targets.txt"
+          if [ -s "$RUNNER_TEMP/tidy-targets.txt" ]; then
+            xargs ninja -C build/ci -k 0 < "$RUNNER_TEMP/tidy-targets.txt" || true
+          fi
       # CMake may write the ccache launcher into the compile database, and clang-tidy would take "ccache" for the
       # compiler; strip it (a no-op when it is not there).
       - name: Remove ccache from the compile database
         if: steps.plan.outputs.run == 'true'
         run: |
           sed -i 's|"command": "ccache |"command": "|' build/ci/compile_commands.json
-      # A pull request or a push: the plan's sources on the plan's lines. A pull request from a fork also prints the
-      # findings as workflow commands, because its token cannot upload the SARIF file.
-      - name: Run clang-tidy on the changed lines
-        if: steps.plan.outputs.run == 'true' && steps.plan.outputs.all != 'true'
+      # The result cache: the newest one main saved for this .clang-tidy (a changed configuration starts empty).
+      - if: steps.plan.outputs.run == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/tidy-cache
+          key: clang-tidy-results-${{ hashFiles('.clang-tidy') }}-${{ github.run_id }}
+          restore-keys: clang-tidy-results-${{ hashFiles('.clang-tidy') }}-
+      # The plan's sources (every source of Coney's own for a plan of every file), through the cache. A pull request
+      # from a fork also prints the findings as workflow commands, because its token cannot upload the SARIF file.
+      - name: Run clang-tidy
+        if: steps.plan.outputs.run == 'true'
         env:
           FORK: >-
             ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
           args=(--plan "$RUNNER_TEMP/tidy-plan.json" --build-dir build/ci --clang-tidy clang-tidy-19
-            --sarif "$RUNNER_TEMP/clang-tidy.sarif" --summary "$GITHUB_STEP_SUMMARY")
+            --cache "$RUNNER_TEMP/tidy-cache" --sarif "$RUNNER_TEMP/clang-tidy.sarif" --summary "$GITHUB_STEP_SUMMARY")
           if [ "$FORK" = true ]; then args+=(--annotate); fi
           uv run --project python coney-tools ci tidy-run "${args[@]}"
       # A failed upload (code scanning off, a token without the permission) must not hide the result: the job's own
-      # status is clang-tidy's, and the findings are in the log and the summary either way.
+      # status is clang-tidy's, and the findings are in the log and the summary either way. A pass over every file
+      # uploads nothing: its findings are on lines the pull request did not touch.
       - name: Upload the findings as annotations on the pull request
         continue-on-error: true
         if: >-
@@ -282,11 +297,15 @@ jobs:
         with:
           sarif_file: ${{ runner.temp }}/clang-tidy.sarif
           category: clang-tidy
-      # The nightly and manual runs, and a change to the build setup: every file of Coney's own sources
-      # (src/ and tests/), never the fetched dependencies under _deps/.
-      - name: Run clang-tidy on every file
-        if: steps.plan.outputs.all == 'true'
-        run: run-clang-tidy-19 -p build/ci -quiet '^(?!.*_deps).*/(src|tests)/'
+      # Only main's runs (a push, the nightly and manual runs) save the cache, as with ccache: a pull request's cache is
+      # scoped to its own ref, so no other run could restore it, and it would push main's entries out. A run cancelled
+      # by a newer push still saves: every entry is written whole as its source finishes, so the next run starts from
+      # what this one checked instead of from nothing.
+      - if: ${{ always() && github.event_name != 'pull_request' && steps.plan.outputs.run == 'true' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/tidy-cache
+          key: clang-tidy-results-${{ hashFiles('.clang-tidy') }}-${{ github.run_id }}
       - if: ${{ !cancelled() && steps.plan.outputs.run == 'true' }}
         uses: ./.github/actions/ccache-save
         with:
@@ -395,14 +414,14 @@ jobs:
     permissions:
       actions: write
     steps:
-      - name: Delete all but the newest entry of each ccache and deps family
+      - name: Delete all but the newest entry of each ccache, deps and clang-tidy results family
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           REF: ${{ github.ref }}
         run: |
           gh cache list --ref "$REF" --limit 1000 --json id,key,createdAt > "$RUNNER_TEMP/caches.json"
-          jq -r '[.[] | select(.key | test("^(ccache|deps)-"))
+          jq -r '[.[] | select(.key | test("^(ccache|deps|clang-tidy-results)-"))
                   | .family = (.key | sub("-([0-9a-f]{40,64}|[0-9]+)$"; ""))]
                  | group_by(.family) | map(sort_by(.createdAt) | .[:-1][]) | .[] | "\(.id) \(.key)"' \
             "$RUNNER_TEMP/caches.json" > "$RUNNER_TEMP/stale.txt"

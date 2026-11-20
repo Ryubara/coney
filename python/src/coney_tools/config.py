@@ -22,6 +22,7 @@ PATH_KEYS: tuple[str, ...] = (
     "build_root",
     "ccache_dir",
     "ccache_program",
+    "clang_tidy_program",
     "deps_dir",
     "scratch_dir",
     "jdk_home",

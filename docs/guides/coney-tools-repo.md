@@ -435,8 +435,10 @@ reaches](#task-check-ctest) (`-L`) or the whole suite (`--full`), and read the b
 record](stamps.md#build-record)): one answers whether it built (MSVC with /WX), the other whether those tests ran with
 none failed and no disc test skipped. The local gate is the tests a change needs, not the full suite ([The local
 gate](testing.md#local-gate) says which gate runs the rest). The ruff and mypy
-commands are the ones of `ci run`; there is no clang-tidy here: clang-tidy is CI's alone, on the changed lines of every
-pull request and on the whole codebase nightly ([building](clang-tidy.md)).
+commands are the ones of `ci run`. The `clang-tidy` check runs after the build, only when a changed path is under
+`src/` or `tests/` (`proof.only_when`): CI's pull-request pass on this machine, clang-tidy of CI's major version on the
+lines the change touches, against the compile database the build just wrote; a finding fails it with its file, line
+and check, and no such clang-tidy is "cannot run" ([clang-tidy here](clang-tidy.md#local)).
 
 **It refuses to start on a machine short of memory** {#task-check-memory}. A language server that grew to 19.9 GB
 (lua-language-server, twice) starved a full suite of memory for an hour, and the run ended with no

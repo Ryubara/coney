@@ -289,8 +289,8 @@ def _build_parser() -> argparse.ArgumentParser:
         action="append",
         default=[],
         choices=[*workspace_fetch.TOOLS, "all"],
-        help="also download a research tool, or ccache on Windows, at its pinned version (repeatable; never a BIOS "
-        "or game files)",
+        help="also download a research tool, or ccache or clang-tidy on Windows, at its pinned version (repeatable; "
+        "never a BIOS or game files)",
     )
     init.add_argument("--dry-run", action="store_true", help="print the steps without doing any")
     clean = workspace_commands.add_parser(
@@ -520,7 +520,7 @@ def _add_gate_commands(commands: Any) -> None:
     """Register the local gate in the `ci` group: `coney-tools ci run` and `ci result`."""
     changed = commands.add_parser(
         "run",
-        help="pre-commit, docs, Python and repo checks on what changed (clang-tidy runs in CI)",
+        help="pre-commit, docs, Python and repo checks on what changed (clang-tidy runs in task check and CI)",
     )
     changed.add_argument("--base", default="origin/main", help="the branch the change is measured from")
     changed.add_argument("--only", action="append", choices=check_cli.STEPS, help="run only this step (repeatable)")

@@ -6,7 +6,8 @@ machine (a program is missing) raises `CheckUnavailable` instead of failing, bec
 The two checks of the build, `msvc-ci-build` and `ctest-full-disc` (`proof.build.checks`), are one run of `coney-tools
 build` and are answered by `task_check` from the build record, not here. The commands are the ones CI runs: the ruff
 and mypy words are those of `check_cli` (which a test compares with CI's python job), so a pass here and in CI agree.
-This module never runs clang-tidy: CI does, on every pull request.
+The `clang-tidy` check is CI's pull-request pass run here (local_tidy.py), after the build has written the compile
+database it reads.
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 
-from coney_tools import docs_check, docs_cli, proof_profiles, uv_environment
+from coney_tools import docs_check, docs_cli, local_tidy, proof_profiles, uv_environment
 from coney_tools.check_cli import MYPY_COMMAND, RUFF_COMMANDS
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
@@ -205,6 +206,39 @@ def actionlint_step(context: StepContext) -> StepResult:
     return _commands("actionlint", [["actionlint"]], context, "workflows are clean")
 
 
+def clang_tidy_step(context: StepContext) -> StepResult:
+    """clang-tidy with the repository's `.clang-tidy` on the lines the change touches in its C++ files, against the
+    compile database of the build preset (`proof.build.preset`), as CI's `clang-tidy` job checks the pull request
+    (local_tidy.py). A finding names its file, line and check; no program of CI's major version, or no compile
+    database, is CheckUnavailable."""
+    root = context.root
+    try:
+        program = local_tidy.find_program(root, context.conventions.ci.tidy.llvm_major)
+        build_dir = local_tidy.compile_database(root, context.conventions.proof.build.preset)
+    except local_tidy.TidyUnavailable as error:
+        raise CheckUnavailable(str(error)) from error
+    local = local_tidy.run_local(
+        root,
+        context.base,
+        context.conventions,
+        run_command,
+        program=program,
+        build_dir=build_dir,
+        jobs=local_tidy.default_jobs(root),
+    )
+    count = len(local.plan.units)
+    checked = f"{count} source{'' if count == 1 else 's'} checked"
+    if not count:
+        return StepResult("clang-tidy", True, "no C++ source to check on the changed lines")
+    if local.ok:
+        return StepResult("clang-tidy", True, f"clean on the changed lines ({checked})")
+    found = len(local.result.findings)
+    detail = f"{found} finding{'' if found == 1 else 's'} on the changed lines ({checked})"
+    if local.result.failures and not found:
+        detail = f"clang-tidy could not check every source ({checked})"
+    return StepResult("clang-tidy", False, detail, output=tuple(local.lines() + local.notes))
+
+
 #: Every check that is its own command, by the name `proof.profiles` gives it.
 IMPLEMENTED: dict[str, Step] = {
     "docs-check": docs_check_step,
@@ -214,4 +248,5 @@ IMPLEMENTED: dict[str, Step] = {
     "mypy": mypy_step,
     "pytest": pytest_step,
     "actionlint": actionlint_step,
+    "clang-tidy": clang_tidy_step,
 }
