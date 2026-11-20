@@ -213,6 +213,9 @@ each vertex straight into librw's geometry. The character viewer and the referen
 `--cpu-skinning` skins every human by that CPU path in any run, to compare the two paths' pictures and times in one
 build; it is not the per-vertex skinning that came before GPU skinning.
 `platform::characterSkinOn()` says which path new meshes take, and `CharacterMesh::gpuSkinned()` which one a mesh took.
+In play the pose reaches the GL3 renderer through the frame description: each human's draw carries his skinning
+matrices, and the renderer fills a palette of its own from them for the draw ([The frame
+description](../engine/renderer.md#frame-description)); a CPU-skinned mesh was already blended from the same matrices.
 
 The two paths draw the same picture as the skinning that came before them. On 2026-10-25, `playtest` builds of the
 change and of the `main` it starts from took the same frames at 640 × 448: a close-up of the player in `level99` with

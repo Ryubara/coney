@@ -254,12 +254,13 @@ screen passes made before, so the draw-stream hashes did not move. It owns the s
 including the motion blur's kept frame, which `MotionBlurPass` now only names; that frame is now a bare raster, with no
 librw texture around it (the draw binds the raster and sets the filter as render states, so the picture is the same).
 The named disc frames' hashes cover the line blend (`--line-blend on`) but not the blur pulse or the motion blur, which
-neither frame draws. Because the camera, the level's background and the humans still draw through librw between the 2D
-layers, the world's sectors, the objects and the cars, `Gl3Renderer` draws each part as it is added rather than the
-whole frame at `present()`; once items 9 and 10 move them onto the description too, a frame can be drawn whole, and by
-the SDL3 GPU renderer (item 11). Not in it yet: the texture viewer's `RenderEngine::drawTexture`, which draws a librw
-texture of a texture dictionary and waits for Coney's own texture ids (item 6). Dear ImGui's `sdlgpu3` backend (item 12)
-draws the developer overlay over the GPU renderer's frame ([The developer overlay](gpu-renderer.md#overlay)).
+neither frame draws. Because the camera, the level's background and the effects still draw through librw between the 2D
+layers, the world's sectors, the objects, the cars and the humans, `Gl3Renderer` draws each part as it is added rather
+than the whole frame at `present()`; once item 10 moves the effects onto the description too, a frame can be drawn
+whole, and by the SDL3 GPU renderer (item 11). Not in it yet: the texture viewer's `RenderEngine::drawTexture`, which
+draws a librw texture of a texture dictionary and waits for Coney's own texture ids (item 6). Dear ImGui's `sdlgpu3`
+backend (item 12) draws the developer overlay over the GPU renderer's frame ([The developer
+overlay](gpu-renderer.md#overlay)).
 
 **Built for the streamed world's sectors (item 7).** A *scene pass* (`ScenePass`) lists 3D draws (`Draw3d`): the mesh
 and its [dual layer](../research/rendering.md#dual) by the asset store's `MeshId`, the frame's matrix, the fade and
@@ -275,7 +276,7 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
   sector through `RenderEngine::drawScene` with its fade and lights (`SceneLighting::worldLights`), and `Gl3Renderer`
   draws it at once: its states where they differ from those in force, the fade into the atomic's materials, the lights
   in a librw world of its own (`LightRig`), then `drawLitAtomic` ([lit_atomic.h](repo:src/platform/lit_atomic.h)), which
-  `SceneLighting` still draws the humans through. The draw-stream hashes did not move between item 7's commits.
+  `SceneLighting`'s own draws go through too. The draw-stream hashes did not move between item 7's commits.
 - **Not in it yet** (drawn through the draw layer as before): the camera, the level's background (sky, clouds, skyline,
   glows: the level file's models), the debug tools' own sector draws, and every sector while the mesh views are on. The
   GL3 renderer draws the atomic at its own frame, so only the GPU renderer (item 13) will read the transform.
@@ -300,6 +301,15 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
   `Gl3Renderer` draws it as a sector, so the object scene's hash and the disc frames' did not move between item 8's
   commits. While the mesh views are on, or a mesh did not convert, the atomic goes through the lighting rig as before
   (`SceneLighting::drawObjectAtomic` or `drawCarAtomic`) with the same colours.
+**Built for the humans (item 9).** Each human is one draw (`PlayLighting::drawHumanPasses`, `HumanRender_Draw`,
+`0x00174320`): his body and blood layer by id, his placement and his skinning matrices (`FrameDescription::bonesOf`).
+`MaterialColour::Shade` scales each material's own colour by the shadow dimming for the draw and keeps the distance fade
+in its alpha ([Drawing a human](../research/graphics.md#human-draw)). The blood layer is the dual layer with
+`DualPass::Blood` ([Characters](../research/rendering.md#characters)). The lights are selected once for both passes
+(`SceneLighting::humanLights`). On the skinned pipeline `Gl3Renderer` lends both atomics a palette filled from the
+bones; CPU skinning blended the same matrices. The human scene's hash and the disc frames' did not move between item 9's
+commits. Left for item 14: a converted character mesh lacks the skin weights, and the blood textures are not in the
+scene assets. Held objects and hats draw as objects.
 
 #### Texture lifetime {#texture-lifetime}
 
@@ -594,12 +604,13 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   than the estimate of about 290 because the `rw::gl3::` vertex types are not calls and the renders below wait. Routed
   with item 7 ([#1199](issue:1199)): `WorldRenderer::render`'s render states and camera begin, and the world's atomic
   renders (`draw::renderAtomic`): each streamed sector, its dual layer, and the level's sky, clouds, skyline and light
-  glows, each one record (the states, distance levels, frame, geometry, materials and lights: draw_calls.h). Routed
-  with item 8 ([#1200](issue:1200)): `ParkedCars::draw`'s and `PlacedObjects::draw`'s render states and their atomic
-  renders, each car part and world object one record (`SceneLighting::drawObjectAtomic` and an object drawn with no
-  lights of its own). With item 9: `PlayLighting::drawHumanPasses` ([#1201](issue:1201)), its renders and what runs
-  inside their pipelines (the `VERTEXALPHA` state in `texture_lod.cpp` and `character_skin.cpp`, the skinning
-  buffers). Never: the start-up and the profiler's queries.
+  glows, each one record (the states, distance levels, frame, geometry, materials and lights: draw_calls.h). Routed with
+  item 8 ([#1200](issue:1200)): `ParkedCars::draw`'s and `PlacedObjects::draw`'s render states and their atomic renders,
+  each car part and world object one record (`SceneLighting::drawObjectAtomic` and an object drawn with no lights of its
+  own). Routed with item 9 ([#1201](issue:1201)): each human's body and blood layer, the states
+  `PlayLighting::drawHumanPasses` sets, and the `VERTEXALPHA` the default and skinned pipelines set inside a draw; a
+  record of a GPU-skinned body also holds its weights, bones and palette, the vertex buffer being filled once from them.
+  Never: the start-up and the profiler's queries.
 - **What a record holds.** A draw holds its primitive, every render state set so far with its value as it stands at
   the draw (a raster as its place in the recording's order of first use, its size and format, and a digest of the
   pixels Coney uploaded to it), the vertices and the indices; Im3D also its normals, world matrix and flags. A camera's
@@ -613,16 +624,19 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   today, is recorded as "no camera" by both camera begin and end and reaches librw in neither, forwarding or not.
 - **Synthetic scenes** in [draw_calls_test.cpp](repo:tests/platform/draw_calls_test.cpp), drawn headless: a 2D scene
   through `RenderEngine` (the fill, quads, alpha-tested triangles, a view wash, a window rectangle), a textured Im3D
-  mesh under a placed camera with a Coney-made checkerboard, the throw arc's ribbon drawn by `ThrowArcRenderer`, and
-  the named operations. Their expected hashes are in the test, beside checks that a repeated state keeps the hash and
-  a grid step, a texel or a state moves it; the grid and the encoding are checked against the definition in
+  mesh under a placed camera with a Coney-made checkerboard, the throw arc's ribbon drawn by `ThrowArcRenderer`, and the
+  named operations. Their expected hashes are in the test, beside checks that a repeated state keeps the hash and a grid
+  step, a texel or a state moves it; the grid and the encoding are checked against the definition in
   [draw_stream_test.cpp](repo:tests/platform/draw_stream_test.cpp). The world scene
   ([world_draw_stream_test.cpp](repo:tests/platform/world_draw_stream_test.cpp), item 7): two Coney-made textured
   sectors drawn headless by `WorldRenderer` through a camera of its own, with its hash and a check that a fade moves it.
   The object scene ([object_draw_stream_test.cpp](repo:tests/platform/object_draw_stream_test.cpp), item 8): two
   Coney-made crates (one tinted and translucent) and a painted car of 26 parts, loaded from a synthetic archive by
   `PlacedObjects` and `ParkedCars` and drawn headless by `WorldRenderer` among the objects and after the worlds, with
-  its hash and checks that a tint and a paint move it.
+  its hash and checks that a tint and a paint move it. The human scene
+  ([human_draw_stream_test.cpp](repo:tests/platform/human_draw_stream_test.cpp), item 9): four Coney-made characters
+  drawn headless by `PlayLighting::drawHumanPasses` (skinned on the CPU; the disc frames cover the skinned pipeline),
+  with its hash and checks that a turn, the blood layer and the fade move it.
 - **Disc frames.** `--draw-hash` prints the last frame's counts and hash ([Running Coney](../guides/running.md)). The
   named frames are run with a window, the world frozen and a fixed size, from the level's first frame of play:
 
@@ -645,7 +659,9 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   `0x87ef01e331e744cb`; their screenshots again matched the base's pixel for pixel. `level99` now plays its intro movie
   before its first frame of play, so `level99-street` is run with `--skip-movies`: `0x31226d29c17742e4` (132 records,
   107 atomic draws), the same before and after item 8's two fixes (a car's lights at squared distance 0, an object's
-  tint on its first material), with the screenshot unchanged.
+  tint on its first material), with the screenshot unchanged. Item 9's, the same after both its commits:
+  `level99-street` 144 records (119 atomic draws), `0xbd96883072a978f9`; `level95-hub` 74 (56), `0x3ea8db9c32d56092`;
+  with `--cpu-skinning` `0x292b3d9dc97355d1` and `0x37f02cb07ff2b76f`; both paths' screenshots matched the base's.
 - **The grid across systems** is the open question this item leaves to CI: the expected hashes were recorded on
   Windows, and the first CI run on Linux and macOS shows whether they hold. If one differs, the fallback grid is 1/256
   of a unit for positions and texture coordinates (`kDrawGridSteps`) with colours kept at 8 bits, and the expected
