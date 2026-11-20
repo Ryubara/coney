@@ -408,7 +408,7 @@ clips (#1498), distractions and level87's checkpoint 5 as a whole.
 - **The kill victim's side**{#q-stealth-side}: whether the victim's sides (638, 640, 642) carry a knockdown
   event: with none, `Attack_StartPaired` (`0x00262ac8`) pairs the side with a random dying chain of the victim's own
   (308-311) instead of taking the side as the dying clip. Coney takes the side as the dying clip; a disc read of the
-  clips' events settles it (#1500).
+  clips' events settles it.
 - Who plays the prepared hidden line (`0x57`-`0x59`) and when.
 - A runtime check of the hide rules (blue radar, a guard 1.9 m away on normal ground not seeing a hidden player).
 - Where exactly an Investigate for a noise ends up: `GangBrain_OnCrimeSeen` snaps the noise point to the nav mesh along
