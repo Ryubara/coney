@@ -611,8 +611,14 @@ class Fighter {
     [[nodiscard]] const Victim& victim() const { return m_victim; }
     /// The game time, ms, until which a hit keeps an AI busy (record `+0x108`, set to the time + the power class's
     /// `+0x32` as a hit lands; docs/research/characters.md#power-class-bytes). 0 until an AI is hit; never set for a
-    /// player.
-    [[nodiscard]] std::uint64_t busyUntilMs() const { return m_busyUntilMs; }
+    /// player. While readBusyUntilAs() holds a value, that value instead.
+    [[nodiscard]] std::uint64_t busyUntilMs() const { return m_busyReadAs.value_or(m_busyUntilMs); }
+    /// Makes busyUntilMs() read `untilMs` (nullopt: the record again). The original sends a hit's event 1 at the strike
+    /// (`Human_DealDamage`, `0x0021d680`), before the victim's update writes `+0x108`; Coney sends it after the hit is
+    /// applied (ai::Brains::reportDamage()), so for that event the timer reads as it was before the hit
+    /// (docs/research/characters.md#power-class-bytes).
+    /// @coney-only lets Coney's late event 1 see the hit timer as the original's event at the strike does
+    void readBusyUntilAs(std::optional<std::uint64_t> untilMs) { m_busyReadAs = untilMs; }
     /// Hurt: below the power class's hurt fraction of its health.
     [[nodiscard]] bool hurt() const { return m_health.fraction() < m_victim.powerClass().hurtFraction; }
     /// Reacting to a hit, stunned, down or getting up: the player cannot act.
@@ -1204,6 +1210,7 @@ class Fighter {
     std::uint64_t m_l1WindowEndMs = 0; // record +0xf4: L1's release window's end
     std::optional<std::uint32_t> m_stealthKillClip; // the stealth kill's clip while it plays (startStealthKill())
     std::uint64_t m_busyUntilMs = 0;                // record +0x108: busyUntilMs()
+    std::optional<std::uint64_t> m_busyReadAs;      // readBusyUntilAs(): what busyUntilMs() reads while event 1 is sent
     // The flags, together so the class packs.
     bool m_player = true;              // FighterProfile::player
     bool m_bossClass = false;          // FighterProfile::bossClass

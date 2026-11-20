@@ -302,6 +302,11 @@ class Brain {
     [[nodiscard]] int unreportedDamage() const { return m_unreportedDamage; }
     /// Sets the health lost and not yet reported.
     void setUnreportedDamage(int damage) { m_unreportedDamage = damage; }
+    /// Its human's hit timer (human::Fighter::busyUntilMs(), record `+0x108`) when the brains last looked
+    /// (Brains::reportDamage()): what the original's event 1, sent at the strike, would see.
+    [[nodiscard]] std::uint64_t seenBusyUntilMs() const { return m_seenBusyUntilMs; }
+    /// Sets the hit timer seen at the last look.
+    void setSeenBusyUntilMs(std::uint64_t untilMs) { m_seenBusyUntilMs = untilMs; }
     /// What its human's own script handlers are reached through (deliverEvent()); null for none. The level's scripted
     /// brains set it when they bind the brain to a handle.
     [[nodiscard]] ScriptServices* services() const { return m_services; }
@@ -768,7 +773,8 @@ class Brain {
     int m_characterClass = -1;                // the human's class
     int m_seenHealth = -1;
     int m_unreportedDamage = 0;
-    int m_turnBoost = 0; // +0x0b
+    std::uint64_t m_seenBusyUntilMs = 0; // seenBusyUntilMs()
+    int m_turnBoost = 0;                 // +0x0b
     BrainType m_type;
     bool m_enabled = true;
     MoveFailure m_moveFailure = MoveFailure::None; // +0x284

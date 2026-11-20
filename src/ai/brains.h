@@ -118,9 +118,11 @@ class Brains {
     // above his cap gives the health back at once, and the hit must still reach reportDamage().
     // @coney-only bookkeeping for the reportDamage() stand-in
     void noteDamage();
-    // Event 1 for each human whose health fell since the last step (**Coney stand-in**: the original's sender of
-    // message 1 is not traced), about the nearest other human that can fight, the damage as its value.
-    // @coney-only stand-in for message 1's sender, which is not traced
+    // Event 1 for each human whose health fell since the last step, about the nearest other human that can fight, the
+    // damage as its value; while it is sent his hit timer (record +0x108) reads as this function last saw it.
+    // **Coney stand-in**: the original sends it at the strike (Human_DealDamage 0x0021d680) with the attacker, before
+    // the victim's update applies the hit and writes the timer (docs/research/characters.md#power-class-bytes).
+    // @coney-only stand-in for Human_DealDamage's event 1, sent after the hit is applied since the attacker is not kept
     void reportDamage();
 
     // Declared before the brains, so they outlive them (a gang's tactic and a formation refer to brains).
