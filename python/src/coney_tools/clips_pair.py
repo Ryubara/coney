@@ -155,7 +155,7 @@ def check_run(run: PairRun, rules: Clips) -> None:
 # --- Coney -----------------------------------------------------------------------------------------------------------
 
 
-def coney_arguments(executable: Path, disc: str, run: PairRun, out: Path) -> list[str]:
+def coney_arguments(executable: Path, disc: str, run: PairRun, out: Path, renderer: str | None = None) -> list[str]:
     """Coney's command line that plays `run` from the level's first frame of play and records `run.seconds` of it from
     its start frame to `out` (`--record-from-frame`, none for a clip that starts with play). `--record`
     puts Coney in test mode (one step and one render a frame, no clock), so the same line gives the same frames; it
@@ -569,6 +569,7 @@ def run_pair(
     slow: float = 1.0,
     prefix: str = "",
     base_ref: str = "origin/main",
+    renderers: tuple[str | None, str | None] = (None, None),
 ) -> int:
     """`clips pair`: build the task's checkout and its merge base with `base_ref`, record `run` on both into the task's
     clips folder, check they are the same run, and stack them (with the original first when `original` names a PCSX2
