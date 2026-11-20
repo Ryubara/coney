@@ -28,7 +28,8 @@ struct GravityTuning {
     float gravity = Human::kGravity;
 };
 
-/// The live gravity the game reads (one per program, as the other tunings are).
+/// The live gravity the game reads (one per program, as the other tunings are). Only the debug tools set it (the
+/// `World/Gravity` tunable), so a networked game's peers can differ only when one of them changes it there.
 /// @coney-only the World page's gravity, a debug tunable
 [[nodiscard]] GravityTuning& gravityTuning();
 
