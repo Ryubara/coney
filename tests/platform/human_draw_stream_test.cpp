@@ -7,12 +7,16 @@
 // the draw layer (item 9's first commit), and the move of the humans onto the frame description must leave it as it
 // is. A change to it fails CI until the pull request explains it and updates the hash. The original has no
 // counterpart.
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string_view>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -23,12 +27,15 @@
 #include "animation/skeleton.h"
 #include "characters/character_model.h"
 #include "characters/character_rig.h"
+#include "graphics/frame_description.h"
+#include "graphics/lighting_frame.h"
 #include "platform/character_mesh.h"
 #include "platform/draw_calls.h"
 #include "platform/draw_stream.h"
 #include "platform/perf_probes.h"
 #include "platform/play_lighting.h"
 #include "platform/render_engine.h"
+#include "platform/scene_assets.h"
 #include "platform/scene_lighting.h"
 #include "platform/world_renderer.h"
 #include "platform/world_set.h"
@@ -179,4 +186,93 @@ TEST_CASE("the human scene hashes the same twice and sees a pose, the blood and 
     std::vector<SceneHuman> farther = humans;
     farther[3].feet.y -= 3.0F;
     CHECK(drawHumanScene(farther).hash() != base);
+}
+
+TEST_CASE("the human scene's humans are drawn from the frame description with their poses",
+          "[platform][humans][frame-description]") {
+    // Expected: docs/engine/renderer.md#frame-description: each human is one 3D draw of his body's mesh by id, his
+    // blood layer its dual layer drawn as the blood pass (docs/research/rendering.md#characters: blended by the blood
+    // texture's alpha, no alpha test) where he has one, posed by his skinning matrices (one per skin node, the
+    // character's space) at his placement (characterPlacement()), lit by the objects' lights selected once for his
+    // sphere (HumanRender_Draw's one call of LightManager_SelectLights, docs/research/lighting.md#select), in the
+    // humans' states (Z tested and written, back faces culled: docs/research/graphics.md#human-draw). His colour is
+    // his materials' own times the shadow dimming, 1 for every human here (graphics::ShadowDim starts long since lit),
+    // and his alpha the distance fade: 255 near, (70 - d) / 10 of it from 60 to 70 m (graphics.md#human-draw, step 4).
+    const std::vector<SceneHuman> humans = sceneHumans();
+    drawHumanScene(humans, [&](const RenderEngine& engine, const std::vector<std::unique_ptr<CharacterMesh>>& meshes,
+                               const coney::platform::SceneLighting& lighting) {
+        const coney::graphics::FrameDescription& frame = engine.frame();
+        const coney::graphics::ScenePass* scene = nullptr;
+        for (const auto& pass : frame.passes()) {
+            if (const auto* found = std::get_if<coney::graphics::ScenePass>(&pass); found != nullptr) {
+                scene = found;
+            }
+        }
+        REQUIRE(scene != nullptr);
+        REQUIRE(scene->draws.size() == humans.size());
+        const coney::platform::SceneAssets& assets = engine.sceneAssets();
+        const auto& rows = lighting.lightingFrame().selections;
+        REQUIRE(rows.size() == humans.size());
+        for (std::size_t i = 0; i < humans.size(); ++i) {
+            const coney::graphics::Draw3d& draw = scene->draws[i];
+            const CharacterMesh& mesh = *meshes[i];
+            CHECK(assets.atomic(draw.mesh) == mesh.atomic());
+            if (humans[i].blood) {
+                CHECK(assets.atomic(draw.dualLayer) == mesh.bloodAtomic());
+            } else {
+                CHECK_FALSE(draw.dualLayer.valid());
+            }
+            CHECK(draw.dualPass == coney::graphics::DualPass::Blood);
+            CHECK(draw.material.colour == coney::graphics::MaterialColour::Shade);
+            CHECK(draw.material.shade == 1.0F);
+            CHECK_FALSE(draw.material.distanceLevels);
+            CHECK(draw.states.depthTest);
+            CHECK(draw.states.depthWrite);
+            CHECK(draw.states.cull == coney::graphics::CullFaces::Back);
+            // The pose: each skinning matrix as it was given, and the placement as the draw's transform.
+            const std::span<const coney::graphics::Transform3d> bones = frame.bonesOf(draw);
+            const std::span<const coney::anim::Mat34> skinning = mesh.skinning();
+            REQUIRE(bones.size() == skinning.size());
+            REQUIRE_FALSE(bones.empty());
+            for (std::size_t b = 0; b < bones.size(); ++b) {
+                CHECK(bones[b].right == std::array<float, 3>{skinning[b].x.x, skinning[b].x.y, skinning[b].x.z});
+                CHECK(bones[b].up == std::array<float, 3>{skinning[b].y.x, skinning[b].y.y, skinning[b].y.z});
+                CHECK(bones[b].at == std::array<float, 3>{skinning[b].z.x, skinning[b].z.y, skinning[b].z.z});
+                CHECK(bones[b].position == std::array<float, 3>{skinning[b].t.x, skinning[b].t.y, skinning[b].t.z});
+            }
+            // Game axes (x, y, z) are RenderWare's (x, z, -y): the feet's place.
+            CHECK(draw.transform.position[0] == humans[i].feet.x);
+            CHECK(draw.transform.position[2] == -humans[i].feet.y);
+            // One selection of the objects' lights per human, with point lights (none is hidden).
+            CHECK(rows[i].caller == coney::graphics::SelectionCaller::Human);
+            CHECK(rows[i].objects);
+            CHECK(rows[i].pointLights);
+            CHECK(frame.lightsOf(draw).size() == rows[i].count);
+            // Near: opaque; the fourth stands about 65 m from the camera, so about half faded.
+            if (i < 3) {
+                CHECK(draw.material.fade == 255);
+            } else {
+                CHECK(draw.material.fade > 64);
+                CHECK(draw.material.fade < 192);
+            }
+            // The passes the Entity inspector counts: the body, and the blood layer where there is one.
+            CHECK(mesh.drawnPasses() == (humans[i].blood ? 2U : 1U));
+        }
+    });
+}
+
+TEST_CASE("a human's two meshes are held by id while his mesh is", "[platform][humans][scene-assets]") {
+    // Expected: docs/engine/renderer.md#frame-description: a character mesh given the scene assets holds its body's
+    // atomic and its blood layer's there (two meshes), and drops both when it goes.
+    auto engine = startHeadless();
+    auto model = coney::characters::decodeCharacterModel(
+        coney::test::characterClump(coney::test::testCharacterFields()).span(), coney::test::testBoneOffsets().span());
+    REQUIRE(model.has_value());
+    {
+        const CharacterMesh mesh(*model, nullptr, coney::platform::Skinning::Gpu, &engine->sceneAssets());
+        CHECK(engine->sceneAssets().atomic(mesh.meshId()) == mesh.atomic());
+        CHECK(engine->sceneAssets().atomic(mesh.bloodMeshId()) == mesh.bloodAtomic());
+        CHECK(engine->sceneAssets().store().meshCount() == 2);
+    }
+    CHECK(engine->sceneAssets().store().meshCount() == 0);
 }

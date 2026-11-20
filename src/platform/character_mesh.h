@@ -9,6 +9,7 @@
 
 #include "animation/anim_math.h"
 #include "characters/character_model.h"
+#include "graphics/asset_store.h"
 #include "platform/character_skin.h"
 
 // librw's types, declared rather than included: <rw.h> brings in SDL and the OpenGL loader.
@@ -103,6 +104,15 @@ class CharacterMesh {
 
     /// Whether the vertex shader skins this mesh.
     [[nodiscard]] bool gpuSkinned() const { return m_gpu; }
+    /// The skinning matrices of the last pose(), one per skin node in the character's space: the pose a frame
+    /// description's draw of the mesh carries. Empty before the first pose() and for a mesh posed by update().
+    [[nodiscard]] std::span<const anim::Mat34> skinning() const { return {}; }
+
+    /// The first pass's atomic in the scene assets the mesh was given; invalid without them, or when it did not
+    /// convert.
+    [[nodiscard]] graphics::MeshId meshId() const { return {}; }
+    /// The blood layer's atomic in the scene assets, as meshId().
+    [[nodiscard]] graphics::MeshId bloodMeshId() const { return {}; }
 
     /// The librw atomic of the first pass, for drawing. Valid as long as this object.
     [[nodiscard]] rw::Atomic* atomic() const { return m_atomic; }

@@ -99,7 +99,8 @@ ScenePass& FrameDescription::scene() {
 void FrameDescription::addScreenPass(const ScreenPass& pass) { m_passes.emplace_back(pass); }
 
 void FrameDescription::addSceneDraw(Draw3d draw, std::span<const SceneLight> lights,
-                                    std::span<const TextureId> textures, std::span<const TextureId> dualTextures) {
+                                    std::span<const TextureId> textures, std::span<const TextureId> dualTextures,
+                                    std::span<const Transform3d> /*bones*/) {
     // The ranges point into the frame's arrays, after what earlier draws added.
     draw.firstLight = static_cast<std::uint32_t>(m_lights.size());
     draw.lightCount = static_cast<std::uint32_t>(lights.size());
@@ -137,5 +138,7 @@ std::span<const TextureId> FrameDescription::dualTexturesOf(const Draw3d& draw) 
     CONEY_ASSERT(draw.firstDualTexture + draw.dualTextureCount <= m_sceneTextures.size());
     return std::span<const TextureId>(m_sceneTextures).subspan(draw.firstDualTexture, draw.dualTextureCount);
 }
+
+std::span<const Transform3d> FrameDescription::bonesOf(const Draw3d& /*draw*/) const { return {}; }
 
 } // namespace coney::graphics

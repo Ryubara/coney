@@ -281,6 +281,8 @@ MaterialChange::MaterialChange(rw::Atomic& atomic, const graphics::Material3d& m
         }
         break;
     }
+    case graphics::MaterialColour::Shade:
+        break;
     }
 }
 
