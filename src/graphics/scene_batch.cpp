@@ -164,6 +164,11 @@ DrawColours coloursOf(const MeshData& mesh, const Material3d& material) {
     case MaterialColour::Paint:
         std::fill(out.colours.begin(), out.colours.end(), material.tint);
         break;
+    default:
+        // A colour change this batch does not know yet (unit 1201 adds MaterialColour::Shade for the humans, which
+        // item 14 draws) keeps the mesh's own colours on purpose: the GPU draw is then only uncoloured, and whichever
+        // of the two changes lands second still builds instead of failing -Wswitch.
+        break;
     }
     return out;
 }

@@ -25,9 +25,9 @@ recorder, and the reference renders are GL3's offscreen. It takes `--screenshot`
 The GPU renderer draws the 2D layers, the pad's debug menus among them, and the developer overlay ([below](#overlay)),
 so the Tunables page that sets `Display/Renderer` is reachable on it and a saved 1 starts it at the next start (a
 guard that started GL3 instead, while it could not, is gone). It draws a level's world, objects and cars
-([below](#scene)), but not yet its sky, humans or effects (items 14 and 20 of [Order](renderer.md#order)). The release
-build has no overlay and no
-overrides file, so there `--renderer gpu` is the only way to it.
+([below](#scene)), but not yet its background (the sky, #1527), its humans or its effects (items 14 and 20 of
+[Order](renderer.md#order)). The release build has no overlay and no overrides file, so there `--renderer gpu` is the
+only way to it.
 
 To go back to GL3 for good, set *Display / Renderer* to 0 on the Tunables page and *Save overrides*, or delete the
 `Display/Renderer = 1` line from the overrides file (`coney-tunables.ini` in your config folder, or the file
@@ -151,11 +151,13 @@ test, "at least 10 of 255", which play never sets. Read as 0 ("always"), as it w
 the start of `level99` wrote depth over its clear texels and hid the `d` world drawn after it (the post under the red
 sign, a lit window, the wall behind the fence), and what showed through instead looked brighter than on GL3.
 
-**Not yet** (each its own item of [Order](renderer.md#order)): the level's background, which still draws through librw
-(the sky and cloud boxes, the skyline and the light glows), the humans and the hats they wear (item 14), the effects
-drawn through librw (the water, the see-through panes, the throw arc, particles, blob shadows, rings and coronas: item
-20). A frame on `--renderer gpu` misses them; `--scene-only` leaves them out on both renderers, so that the frames can
-be compared on the part both draw ([How pictures are compared](renderer.md#comparing)).
+**Not yet:** the level's background, which still draws through librw and so never reaches the GPU renderer (the sky and
+cloud boxes, the skyline and the level world's light glows, which the original draws inside `WorldManager_Render`
+itself): no item of [Order](renderer.md#order) held it when the world was drawn, so it is left for #1527, which item 20's
+parity needs. The humans and the hats they wear are item 14, the effects drawn through librw (the water, the
+see-through panes, the throw arc, particles, blob shadows, rings and coronas) item 20. A frame on `--renderer gpu`
+misses them; `--scene-only` leaves them out on both renderers, so that the frames can be compared on the part both draw
+([How pictures are compared](renderer.md#comparing)).
 
 ## Textures {#textures}
 

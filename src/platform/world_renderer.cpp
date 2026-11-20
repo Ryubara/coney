@@ -243,7 +243,7 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
 
     // The level's background, before the world (LevelObject_RenderBackground, from the viewport pass).
-    if (level != nullptr && !m_sceneOnly) {
+    if (level != nullptr && !m_sceneOnly) { // Coney's --scene-only (debug): no background, as on the GPU renderer.
         renderBackground(camera, *level, view, fogColour, pendingDistance, animationMs);
         // 5. The level world, the light glows: nothing culled, Z test and write and fog on.
         if (rw::Atomic* glows = atomicOf(level->levelWorld.get()); glows != nullptr) {
@@ -295,7 +295,7 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
         afterWorlds();
     }
     // The coronas of the visible lights, over the world.
-    if (!m_sceneOnly) {
+    if (!m_sceneOnly) { // Coney's --scene-only (debug): no coronas, which the GPU renderer does not draw yet.
         lit.drawCoronas();
     }
     draw::setRenderState(rw::FOGENABLE, 0);

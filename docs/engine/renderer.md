@@ -776,6 +776,10 @@ pull request. Items 1, 2, 3, 4 and 6 depend on nothing and can run beside each o
 which the game runs with librw's GL3 device closed. Item 21 is the switch the groundwork leads to and waits for a
 maintainer's go-ahead; the enhancements after it need parity (item 20), not the switch, and never draw through GL3.
 
+The level's background on the GPU renderer (the sky and cloud boxes, the skyline and the level world's glows) is in no
+item above: item 13 drew the world, objects and cars and left it out, and it is filed as #1527, after item 13 and before
+item 20, whose parity needs it ([Not yet](gpu-renderer.md#scene)).
+
 Of the realtime lighting design's steps, item 19 is L0, item 22 with the GPU renderer's shaders is L1, items 28 and
 30 are L2, item 29 is L3 and item 31 is L6; L4, L5 and GTAO follow item 22 and are filed from that design. XeSS, ray
 tracing and the [Enhancements plan](../guides/enhancements.md)'s other options follow item 21 and are filed from those
