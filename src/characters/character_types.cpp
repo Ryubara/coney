@@ -41,6 +41,7 @@ constexpr std::size_t kStaminaMax = 3;       // +0x2c
 constexpr std::size_t kStaminaRefill = 4;    // +0x2e
 constexpr std::size_t kGroundMs = 5;         // +0x34
 constexpr std::size_t kStunMs = 6;           // +0x30
+constexpr std::size_t kBusyAfterHit = 7;     // +0x32
 constexpr std::size_t kHurt = 9;             // +0x04
 constexpr std::size_t kBlock = 10;           // +0x08
 constexpr std::size_t kHurtBlock = 11;       // +0x0c
@@ -209,6 +210,7 @@ combat::PowerClass parseCfgPowerClass(std::span<const script::Value> call, const
     whole(kStaminaRefill, power.staminaRefillPerSecond);
     whole(kGroundMs, power.groundMs);
     whole(kStunMs, power.stunMs);
+    whole(kBusyAfterHit, power.busyAfterHitMs);
     whole(kStruggle, power.struggleDivisor);
     // The struggle divides by it: never 0.
     power.struggleDivisor = std::max(1, power.struggleDivisor);

@@ -113,8 +113,8 @@ class TacticAttack final : public Tactic {
     /// gang kind's strategy (drawTeamUp()) picks the order, made with its arguments (Charge: count max(`L` / 2, `L` −
     /// `E`'s living), 10 s; Guard: back-off for draw 2, a 15 s deadline; Throw: the same count, a pile for draw 3, 20
     /// s; Leader: count `L` − 1, 15 s; Grab: no limit), put in the pool (nothing when full) and run (setStrategy()).
-    /// **Coney stand-ins**: "busy" is ai::humanBusy() (Coney keeps neither the state mask `0x1f80974000` nor the hit
-    /// timer record `+0x108`); the orders are StandInOrder until Units 4 to 6. Research:
+    /// **Coney stand-ins**: "busy" is ai::humanBusy() (Coney's states in place of the state mask `0x1f80974000`; the
+    /// hit timer record `+0x108` is kept); the orders are StandInOrder until Units 4 to 6. Research:
     /// docs/research/ai-reimpl.md#start-sub-tactic
     /// @orig 0x00307a10 AttackTactic_StartSubTactic (unknown)
     void startSubTactic(Gang& gang);

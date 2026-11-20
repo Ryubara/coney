@@ -41,6 +41,10 @@ bool humanBusy(const human::Human& human) {
     if ((human.animator().flags() & human::kBusyFlags) != 0 || human.airborne()) {
         return true;
     }
+    // A hit keeps an AI busy until his record's +0x108 (Fighter::busyUntilMs()), on his own clock as it was set.
+    if (human.nowMs() < human.fighter().busyUntilMs()) {
+        return true;
+    }
     constexpr std::array<GoalType, 5> kBusyStates{GoalType::ReactGrabbed, GoalType::ReactTackling,
                                                   GoalType::ReactTackled, GoalType::ReactKnockedDown,
                                                   GoalType::ReactStunned};
