@@ -28,13 +28,14 @@ engineer who wants an early look, runs `task review <task> --run`, which does al
 Review may run while Check runs: both are bound to the same change. A review is of what is committed,
 so the worktree must be clean. Any new commit that changes the change's [hash](#stamp), and any edit to the
 description's title, summary paragraph or pictures, makes the verdict stale, and the review is done again; `--text`
-redoes the description alone.
+redoes the description alone. When an earlier review of the code passed, the review done again is a
+[delta review](#delta) of what changed since, unless the delta needs a full one.
 
 ## The command {#command}
 
 ```sh
-uv run --project python coney-tools task review [TASK] [--worktree DIR] [--base REF] [--pr-file FILE] [--text] \
-    [--record | --run | --dry-run] [--claude CMD] [--model M] [--effort E] [--timeout-minutes N]
+uv run --project python coney-tools task review [TASK] [--worktree DIR] [--base REF] [--pr-file FILE] \
+    [--text | --full | --delta] [--record | --run | --dry-run] [--claude CMD] [--model M] [--effort E] [--timeout-minutes N]
 ```
 
 | Argument or option | Default | What it does |
@@ -44,6 +45,8 @@ uv run --project python coney-tools task review [TASK] [--worktree DIR] [--base 
 | `--base REF` | `origin/<default branch>` | What the change is measured from (the merge base of `REF` and the tip) |
 | `--pr-file FILE` | `<scratch>/<task>/PR.md` | The engineer's description file: the title on line 1, a `## Summary`, the pictures |
 | `--text` | off | Review the description alone. Needs a passing full review of the same change and pairs; the packet's `kinds` is `text`. So it never follows a failed full review, even one that failed only on the description: `--record` of a failed review prints a `next:` line naming the full `task review` to run |
+| `--full` | off | Review the whole change even when a [delta review](#delta) could be given |
+| `--delta` | off | Review only the delta since the last passing review; refused (`delta:`) when the change needs a full review. Without `--text`, `--full` or `--delta` the command chooses: a delta review when one can be given, else a full one, and says which and why on stderr. The packet's step names the mode it chose for `--record` (`task review <task> --delta --record`), since `--record` alone would choose again |
 | `--record` | off | Step 3: record the verdict in the review folder as a `reviewed` stamp |
 | `--run` | off | All three steps with a headless reviewer; not together with `--record` |
 | `--dry-run` | off | Before the reviewer starts: say which [checklists](#kinds) apply and which model the reviewer must run on, and list what the tool part would refuse the review for. Writes nothing (no packet, no stamp); exit 0 when the review could start, 1 when it would be refused; not together with `--record` or `--run` |
@@ -99,7 +102,8 @@ problem is printed with its prefix and what to redo; all problems are listed, no
 | `fails-first:` | Each added C++ `TEST_CASE` has a passing `fails-first` stamp that still covers the test as it is, by the rule `pr verify` uses: it failed first (`pass`) or passes before and after the change (`keeps`, [below](#keeps)); [what a stamp binds](../stamps.md#fails-first-binds); Python tests are not stamped | `orig fails-first` (`--keeps`) |
 | `docs check:` | `docs check` passes on the changed pages, research pages included | The engineer |
 | `title:`, `docs:`, a missing picture | The description's title follows the rules, the [docs rule](../coney-tools-repo.md#repo) holds (`Docs: none` is read from the description), every local picture exists | The engineer edits the description |
-| `text:` | For `--text`: a passing full review still covers the change and the pairs | `task review`, without `--text` |
+| `text:` | For `--text`: a passing review of the code (full, or a delta on a full one) still covers the change and the pairs | `task review`, without `--text` |
+| `delta:` | For `--delta`: an earlier passing review to stack on, and a delta that needs no full review ([below](#delta)) | `task review --full` |
 
 What a program cannot decide is the reviewer's: whether the pairs say the same as the original, whether a research
 claim is graded right, whether a picture shows what the text says. Checks that are planned join this table when they
@@ -111,11 +115,11 @@ exist ([test citations](../testing.md#done), the standards of touched files).
 
 | Key | Holds |
 | --- | --- |
-| `v`, `task`, `mode` | Version 1; the task; `full` or `text` |
+| `v`, `task`, `mode` | Version 1; the task; `full`, `delta` or `text` |
 | `tip`, `base` | The commit reviewed and where the branch left its base |
 | `diff_sha256` | The hash of the change (what the branch itself changes), which a clean rebase keeps |
-| `kinds` | The [checklists](#kinds) to apply |
-| `files` | The paths the change touches |
+| `kinds` | The [checklists](#kinds) to apply (of the delta alone, for a delta review) |
+| `files` | The paths the change touches (the delta's files, for a delta review) |
 | `functions` | Each changed `@orig` function: `key`, `where`, `coney`, `addresses`, `names`, `body_sha256` (`orig review-stamp --branch` lists the same) |
 | `moved` | Each `@orig` function that only moved (same code and tags under another class, name or file): the same fields as `functions` and `was`, the key it had. No compare is asked of it (its study and compare stand), and the `orig` checklist is opened for it: the reviewer diffs its two copies and their declarations and writes a finding if anything but names differs ([the step](orig.md#procedure), [why](../orig-body-hash.md#moved)) |
 | `pairs_set_sha256` | The hash of the pairs files of those functions, which a `compared` stamp covers one by one |
@@ -123,6 +127,7 @@ exist ([test citations](../testing.md#done), the standards of touched files).
 | `tests` | Each added C++ test and the result of its `fails-first` stamp (`pass`, `keeps`, `fail` or `missing`) |
 | `text` | The description: `file` (the engineer's file, `PR.md`), `title`, `paragraph`, the pictures (`path`, `sha256`) and the three hashes of them; and [what `pr text` generates](#generated): `generated_sections` (each `section` and `what` is written into it) and `generated_body` (the `path` of `PR-BODY.md` and whether it `exists`) |
 | `rubric_version` | The [orig rubric](orig.md)'s version |
+| `delta` | Only in a [delta review](#delta): `since_seq` (the passing review it stacks on), `full_seq` (the full review at the bottom), `since_tip`, `since_base` and `since_diff_sha256` (what that review judged), `files`, `rebased` (the files main changed as well), `text_changed` and `diff_file`, the delta for the reviewer to read |
 
 ### Tests that keep behaviour {#keeps}
 
@@ -172,6 +177,46 @@ reverse-engineering work and needs a reviewer on Opus ([Who may record](#who)). 
 list, such as dropping entries from `research/legacy-files.toml`, is `code`: no research checklist and any model. The
 coordinator reads the kinds and the model before starting the reviewer with `task review <task> --dry-run`.
 
+## The delta review {#delta}
+
+A fix unit often changes a few lines of a pull request whose review passed: a clang-tidy or compiler fix, a conflict
+resolved in a rebase. When the earlier review still holds for the rest, only the **delta** is reviewed
+(maintainer decision 2026-11-20). `task review` chooses it by itself, from `review_delta.py`; `--full` refuses it and
+`--delta` insists on it.
+
+* **What it stacks on.** The newest passing `reviewed` stamp of the code (scope `full` or `delta`) made for another
+  change than the current one. A failed full review in between means a full review again, as before; a failed delta
+  review is passed over, since the pass before it still holds and the new delta includes the fix of what failed.
+  The commit that review judged must still be in the repository (a rebase keeps it in the object store).
+* **What the delta is.** A file is in it when the branch's own removed and added lines of it (`git diff -U0`, without
+  hunk headers or blob ids, the change hash's reading, [stamps](../stamps.md#change)) differ between the change
+  reviewed and the change now. A rebase onto a newer main moves line numbers and context, not those lines, so it
+  leaves no file in the delta. `DELTA.diff` in the review folder (`tasks.review.delta.diff_file`) shows each file:
+  the diff from the reviewed tip to the new one, or, for a file main changed as well (`rebased`), the branch's patch
+  of it then and now.
+* **When it is a full review instead.** `tasks.review.delta.full_when` in
+  [.github/conventions.yml](repo:.github/conventions.yml) lists what makes it one: `orig-body`, the delta changes an
+  `@orig` function's body or addresses (a comment or layout change is none, by [the body hash](../orig-body-hash.md)),
+  or the pairs were compared again; `research-claim`, the delta adds, removes or edits a line of research work that
+  holds a claim, one matching a `claim_patterns` expression (an address, an evidence level); `test-body`, the delta
+  changes, adds or removes the code of a test under `test_paths` (a C++ `TEST_CASE`, read as `fails-first` reads it,
+  or a Python `test_` function, read by the parser, so comments and layout are no change). Those are what a reviewer
+  must judge against the original or against what the test proves, with the whole change in view.
+* **Its checklists and model.** The [kinds](#kinds) of the delta alone: the code and docs checklists for its files,
+  `research` for a research file in it (one whose claims did not change), `orig` for an `@orig` function that moved in
+  it, `text` only when the description's title, paragraph or pictures changed since the review it stacks on, and
+  `commits` always. So the reviewer needs Opus only when the delta touches research work or moves an `@orig`
+  function; a clang-tidy fix to an `@orig` change is reviewed on any model. A research page in the delta is listed in
+  the verdict, but no address need be checked in Ghidra: its claims are the full review's.
+* **Its stamp.** `scope` is `delta`; the detail adds `since_seq` and `full_seq` and carries the `functions` (or
+  `function_count`) and `pages` of the review below it, with the pages it judged. `pr verify` accepts it when every
+  review below it, down to a full one, passed: it walks `since_seq` to the full review, holds each reviewer to the
+  [who rule](#who) and the reverse-engineering model to the kinds that review applied (the whole change's for the full
+  one), and reads a function list left out of a stamp from the full review's `recorded-<seq>.json`.
+
+The tool part is the same as a full review's, over the whole change: compares, copy-check, `fails-first` and the
+docs check are a program's and cost no reviewer time.
+
 ## The verdict {#verdict}
 
 `REVIEW.json` has exactly these keys; `task review --record` reports every key that is missing, unknown or of the wrong
@@ -206,11 +251,12 @@ hash](../stamps.md#change)). Its `commit` is the tip reviewed.
 | Part | Holds |
 | --- | --- |
 | `covers` | `diff_sha256`, `pairs_set_sha256`, `title_sha256`, `paragraph_sha256`, `images_sha256` and `review_sha256`, the hash of the recorded verdict |
-| `detail` | `verdict`, `scope` (`full` or `text`), `kinds`, `functions` (each compared address to one letter: `c` clean, `d` diff-deliberate-ok, `u` unclear, `a` diff-uncommented, `w` wrong-address, `t` transcription, `b` diff-bug), `pages`, `blockers`, `notes`, `not_reviewed` and `reviewer` (id, type, model). `reviewer` also holds the caller's `session` when the hooks know it. A stamp's `detail` may hold 2048 bytes; when the rest of it is over 1648 bytes (leaving room for `reviewer` and the pointer) the function list is replaced by `function_count`, and the recorded verdict has the list |
+| `detail` | `verdict`, `scope` (`full`, `delta` or `text`), `kinds`, `functions` (each compared address to one letter: `c` clean, `d` diff-deliberate-ok, `u` unclear, `a` diff-uncommented, `w` wrong-address, `t` transcription, `b` diff-bug), `pages`, `blockers`, `notes`, `not_reviewed` and `reviewer` (id, type, model). `reviewer` also holds the caller's `session` when the hooks know it. A stamp's `detail` may hold 2048 bytes; when the rest of it is over 1648 bytes (leaving room for `reviewer` and the pointer) the function list is replaced by `function_count`, and the recorded verdict has the list |
 | `result` | `pass` or `fail`; a fail stamp is a verdict, so it is written, and a later pass replaces it |
 
-A text review keeps the `functions`, `pages` and `full_seq` of the full review it rests on. Recording the same verdict
-again for the same change writes no second stamp.
+A text review keeps the `functions`, `pages` and `full_seq` of the review of the code it rests on (a full one, or a
+delta on a full one); a delta review keeps them too and adds `since_seq` ([The delta review](#delta)). Recording the
+same verdict again for the same change writes no second stamp.
 
 ## Who may record {#who}
 

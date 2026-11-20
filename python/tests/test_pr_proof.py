@@ -18,6 +18,7 @@ from pr_support import (
     ENGINEER,
     NOW,
     PARAGRAPH,
+    REVIEWER,
     SOURCE_FILE,
     TEST_FILE,
     TEST_NAME,
@@ -1257,3 +1258,82 @@ def test_a_check_whose_python_tests_do_not_cover_the_change_is_refused(tmp_path:
     built.check("full", pytest_scope=7)
     [line] = texts(built.verify(), "checked")
     assert "pytest_scope is 7" in line
+
+
+# --- a delta review stacked on a full one (docs/guides/review/task.md#delta) -----------------------------------------
+
+
+def delta_on_full(tmp_path: Path, **detail: Any) -> tuple[Built, stamps.Stamp]:
+    """A unit whose full review passed, then a fix and a passing delta review of it stacked on the full one."""
+    built = make(tmp_path)
+    full = built.subject().report.latest("reviewed")
+    assert full is not None
+    built.edit("src/ai/placeholder.cpp", "// a clang-tidy fix\n")
+    info: dict[str, Any] = {"scope": "delta", "kinds": ["code", "commits"], "since_seq": full.seq, "full_seq": full.seq}
+    info.update(detail)
+    built.review(reviewer=agent("reviewer", 2, "claude-sonnet-5-5")["agent"], **info)
+    return built, full
+
+
+def test_a_passing_delta_review_on_a_passing_full_one_is_accepted(tmp_path: Path) -> None:
+    built, _ = delta_on_full(tmp_path)
+    assert texts(built.verify(), "reviewed") == []
+    # Under the strict rules too: the delta judged code alone, so a Sonnet reviewer may have done it; the full review
+    # below it was on Opus.
+    strict = with_rules(built, ("stamps.require_hook_source", True))
+    assert texts(built.verify(conventions=strict), "reviewed") == []
+
+
+def test_a_delta_review_of_orig_work_is_held_to_the_reverse_engineering_model(tmp_path: Path) -> None:
+    built, _ = delta_on_full(tmp_path, kinds=["orig", "commits"])
+    strict = with_rules(built, ("stamps.require_hook_source", True))
+    refused = texts(built.verify(conventions=strict), "reviewed")
+    assert any("a review of orig work must run on opus" in t and "claude-sonnet-5-5" in t for t in refused), refused
+
+
+def test_a_delta_review_with_no_passing_review_below_it_is_refused(tmp_path: Path) -> None:
+    built, _ = delta_on_full(tmp_path, since_seq=999)
+    delta = built.subject().report.latest("reviewed")
+    assert delta is not None
+    assert texts(built.verify(), "reviewed") == [
+        f"reviewed: the delta review #{delta.seq} names no earlier review it stacks on"
+    ]
+    assert redo(built.verify(), "reviewed: the delta") == ["task review --full"]
+    built = make(tmp_path / "b", skip=frozenset({"reviewed"}))
+    built.stamp("reviewed", result="fail", covers={"diff_sha256": built.diff}, detail={"blockers": 1, "scope": "full"})
+    failed = built.subject().report.latest("reviewed")
+    assert failed is not None
+    built.review(scope="delta", kinds=["code", "commits"], since_seq=failed.seq, full_seq=failed.seq)
+    assert texts(built.verify(), "reviewed") == [
+        f"reviewed: the delta review #{failed.seq + 1} stacks on #{failed.seq}, which did not pass"
+    ]
+
+
+def test_a_delta_review_whose_full_reviewer_worked_on_the_task_is_refused(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"reviewed"}))
+    built.review(reviewer=ENGINEER["agent"])
+    full = built.subject().report.latest("reviewed")
+    assert full is not None
+    built.review(scope="delta", kinds=["code", "commits"], since_seq=full.seq, full_seq=full.seq)
+    assert texts(built.verify(), "reviewed") == ["reviewed: reviewer engineer-1 also worked on this task"]
+
+
+def test_a_delta_review_that_left_its_functions_out_reads_them_from_the_full_review(tmp_path: Path) -> None:
+    built = make(tmp_path, skip=frozenset({"reviewed"}))
+    built.review()
+    inline = built.subject().report.latest("reviewed")
+    assert inline is not None
+    # The full review's stamp left its list to the verdict kept by seq, which its `review_sha256` covers.
+    verdict = json.dumps({"functions": [{"key": "k", "addresses": [ADDRESS], "class": "clean"}]}).encode()
+    covers = {**inline.covers, "review_sha256": hashlib.sha256(verdict).hexdigest()}
+    detail = {k: v for k, v in inline.detail.items() if k != "functions"} | {"function_count": 1, "scope": "full"}
+    full = built.stamp("reviewed", covers=covers, detail=detail, who=REVIEWER)
+    recorded = built.unit.dir / "review" / f"recorded-{full.seq}.json"
+    recorded.parent.mkdir(parents=True, exist_ok=True)
+    recorded.write_bytes(verdict)
+    delta = {"scope": "delta", "kinds": ["code", "commits"], "since_seq": full.seq, "full_seq": full.seq}
+    built.stamp("reviewed", covers=dict(inline.covers), detail=detail | delta, who=REVIEWER)
+    assert texts(built.verify(), "reviewed") == []
+    # A verdict file the full stamp does not cover is not read.
+    recorded.write_bytes(verdict.replace(b"clean", b"diff-bug"))
+    assert texts(built.verify(), "reviewed") == [f"reviewed: Review did not cover {ADDRESS}"]

@@ -625,6 +625,18 @@ tasks:
     # words is refused for a review of these kinds.
     reverse_engineering_kinds: [research, orig]
     reverse_engineering_models: [opus]
+    # The delta review (docs/guides/review/task.md#delta; maintainer 2026-11-20): a change whose earlier review of the
+    # code passed is reviewed only where its own change differs from the one reviewed (rebase noise left out), with the
+    # checklists and the model of that delta. It is a full review instead when the delta does one of `full_when`:
+    # changes an @orig function's body or addresses, or the pairs it was compared with (orig-body); adds, removes or
+    # edits a claim line of research work, one that matches a `claim_patterns` expression (research-claim); or changes,
+    # adds or removes the code of a test under `test_paths`, a C++ TEST_CASE or a Python test_ function (test-body).
+    # `pr verify` accepts a passing delta stamp stacked on a passing full one.
+    delta:
+      full_when: [orig-body, research-claim, test-body]
+      claim_patterns: ['0x[0-9a-fA-F]{8}', '(?i)\b(confirmed|inferred|speculative)\b']
+      test_paths: [tests/, python/tests/]
+      diff_file: DELTA.diff                       # in the review folder: what the reviewer reads of the delta
 
 labels:
   description_max: 100                           # GitHub's limit

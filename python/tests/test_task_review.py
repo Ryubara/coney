@@ -649,7 +649,7 @@ def test_prepare_writes_the_packet_and_removes_an_old_verdict(rig: Rig, capsys: 
     packet = json.loads((folder / "PACKET.json").read_text(encoding="utf-8"))
     assert packet["tip"] == rig.tip() and not rig.verdict_path().exists() and not (folder / "REVIEW.md").exists()
     out = capsys.readouterr().out
-    assert "task review t1" in out and "task review t1 --record" in out and "PACKET.json" in out
+    assert "task review t1" in out and "task review t1 --full --record" in out and "PACKET.json" in out
 
 
 def test_the_reviewer_is_shown_each_clip_to_play_and_judge(rig: Rig, capsys: pytest.CaptureFixture[str]) -> None:
@@ -954,7 +954,7 @@ def test_run_prepares_launches_the_reviewer_and_reports_its_stamp(rig: Rig, caps
     assert cwd == rig.root and command[:2] == ["claude", "-p"]
     assert command[command.index("--agent") + 1] == "reviewer"
     prompt = command[-1]
-    assert "task review t1 --record" in prompt and "REVIEW.json" in prompt and "PACKET.json" in prompt
+    assert "task review t1 --full --record" in prompt and "REVIEW.json" in prompt and "PACKET.json" in prompt
     assert "reviewed: pass" in capsys.readouterr().out
     assert not (rig.unit.dir / "review" / ".reviewer-agents.json").exists()
 
@@ -1128,7 +1128,14 @@ def start_unit(rig: Rig, record_worktree: Path | None = None) -> Path:
 
 def arguments(**changes: Any) -> argparse.Namespace:
     """What `task review t1` parsed to."""
-    values: dict[str, Any] = {"worktree": None, "task": "t1", "base": None, "pr_file": None}
+    values: dict[str, Any] = {
+        "worktree": None,
+        "task": "t1",
+        "base": None,
+        "pr_file": None,
+        "full": False,
+        "delta": False,
+    }
     values.update(changes)
     return argparse.Namespace(**values)
 

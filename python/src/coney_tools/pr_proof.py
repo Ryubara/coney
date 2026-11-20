@@ -41,6 +41,7 @@ from coney_tools import (
     orig_study,
     pr_diff,
     proof_profiles,
+    review_delta,
     review_verdict,
     stamps,
 )
@@ -938,6 +939,13 @@ def _review_functions(subject: Subject, stamp: stamps.Stamp) -> Mapping[str, Any
     inline = stamp.detail.get("functions")
     if isinstance(inline, dict):
         return _lower_keys(inline)
+    # A delta or text review that left the list out rests on a full review: its verdict, kept by seq, has the list.
+    full_seq = stamp.detail.get("full_seq")
+    if isinstance(full_seq, int) and full_seq != stamp.seq:
+        full = next((s for s in subject.report.stamps if s.seq == full_seq and s.step == "reviewed"), None)
+        found = None if full is None else review_delta.stamp_functions(_review_folder(subject), full)
+        if found is not None:
+            return _lower_keys({address: _class_name(judged) for address, judged in found.items()})
     wanted = stamp.covers.get("review_sha256")
     for name in (review_verdict.RECORDED, review_verdict.RECORDED_BEFORE):
         try:
@@ -949,6 +957,34 @@ def _review_functions(subject: Subject, stamp: stamps.Stamp) -> Mapping[str, Any
             listed = _listed_functions(data)
             return None if listed is None else _lower_keys(listed)
     return None
+
+
+def _review_folder(subject: Subject) -> Path:
+    """The task's review folder, where each recorded verdict is kept by its stamp's seq."""
+    return subject.unit.dir / subject.conventions.tasks.review.folder
+
+
+def _review_stack(subject: Subject, stamp: stamps.Stamp) -> tuple[list[stamps.Stamp], str | None]:
+    """The reviews of the code a passing `reviewed` stamp rests on, newest first, ending at a full review: the stamp
+    itself for a full review, each delta review down to the full one for a delta (docs/guides/review/task.md#delta),
+    or what is wrong with the stack."""
+    by_seq = {s.seq: s for s in subject.report.stamps if s.step == "reviewed"}
+    stack = [stamp]
+    while stack[-1].detail.get("scope") == review_delta.DELTA:
+        below = by_seq.get(stack[-1].detail.get("since_seq"))
+        if below is None or below.seq >= stack[-1].seq or below in stack:
+            return stack, f"the delta review #{stack[-1].seq} names no earlier review it stacks on"
+        if below.result != "pass" or below.detail.get("verdict", "pass") != "pass":
+            return stack, f"the delta review #{stack[-1].seq} stacks on #{below.seq}, which did not pass"
+        if below.detail.get("scope", "full") not in review_delta.CODE_SCOPES:
+            return stack, f"the delta review #{stack[-1].seq} stacks on #{below.seq}, which is no review of the code"
+        stack.append(below)
+    if stamp.detail.get("scope") == review_delta.DELTA and stamp.detail.get("full_seq") != stack[-1].seq:
+        return (
+            stack,
+            f"the delta review #{stamp.seq} names full review #{stamp.detail.get('full_seq')}, not #{stack[-1].seq}",
+        )
+    return stack, None
 
 
 def _lower_keys(functions: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -1057,7 +1093,13 @@ def check_reviewed(subject: Subject, text: TextHashes | None) -> list[Refusal]:
         pages = stamp.detail.get("pages")
         if not (isinstance(pages, list) and pages):
             found.append(refuse("Review did not grade the research pages this change touches"))
-    found += _reviewer(subject, stamp, refuse)
+    # A delta review stands on the reviews below it: each is checked for who reviewed, the full one against the whole
+    # change and each delta against the kinds it judged.
+    stack, broken = _review_stack(subject, stamp)
+    if broken is not None:
+        return [*found, refuse(broken, "task review --full")]
+    for reviewed in stack:
+        found += _reviewer(subject, reviewed, refuse)
     return found
 
 
@@ -1076,10 +1118,15 @@ def _reviewer(subject: Subject, stamp: stamps.Stamp, refuse: Callable[..., Refus
     review = subject.conventions.tasks.review
     if reviewer.get("type") != review.agent:
         found.append(refuse(f"the reviewer's type is {reviewer.get('type')}, not {review.agent}"))
-    # Reverse-engineering review runs on Opus (AGENTS.md): the same rule `task review --record` applies.
-    kinds = {"orig"} if subject.changed else set()
-    if any(review.is_research_work(p) for p in subject.paths):
-        kinds.add("research")
+    # Reverse-engineering review runs on Opus (AGENTS.md): the same rule `task review --record` applies. A delta review
+    # judged only its delta, so the kinds it applied decide; a full one is held to what the whole change needs.
+    if stamp.detail.get("scope") == review_delta.DELTA:
+        applied = stamp.detail.get("kinds")
+        kinds = {str(kind) for kind in applied} if isinstance(applied, list) else set(review.reverse_engineering_kinds)
+    else:
+        kinds = {"orig"} if subject.changed else set()
+        if any(review.is_research_work(p) for p in subject.paths):
+            kinds.add("research")
     kinds &= set(review.reverse_engineering_kinds)
     model = str(reviewer.get("model", ""))
     words = review.reverse_engineering_models
