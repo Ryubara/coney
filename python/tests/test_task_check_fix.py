@@ -82,7 +82,11 @@ def test_a_fix_on_a_passing_full_check_runs_only_the_tests_of_the_files_changed_
     assert check(world) == 0
     assert world.labels[-1] == "^#(brain_test)$"  # not the whole suite the CMake file of the branch asks for
     stamp = world.stamp
-    assert stamp.detail["profile"] == "full" and stamp.detail["checks"][-2:] == ["msvc-ci-build", "ctest-full-disc"]
+    assert stamp.detail["profile"] == "full" and stamp.detail["checks"][-3:] == [
+        "msvc-ci-build",
+        "ctest-full-disc",
+        "clang-tidy",
+    ]
     assert stamp.detail["fix"] == {
         "on": first.seq,
         "on_stamp": first.hash,
