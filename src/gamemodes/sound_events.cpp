@@ -19,26 +19,10 @@ namespace coney {
 
 namespace {
 
-// How many sounds a side keeps before it lets go of those that no longer play: a sound that ends by itself is never
-// stopped, so without this the sounds kept would grow for as long as a session lasts.
-constexpr std::size_t kKeptBeforePrune = 64;
-// A volume as it travels: thousandths, 0 to 1000.
-constexpr float kVolumeScale = 1000.0F;
-
 // @coney-only a volume as a guest's event carries it (network play)
 // `volume` (0-1) in thousandths.
 std::uint32_t thousandths(float volume) {
-    return static_cast<std::uint32_t>(std::lround(std::clamp(volume, 0.0F, 1.0F) * kVolumeScale));
-}
-
-// @coney-only bounds the sounds kept for a guest's later stop and move (network play)
-// Lets go of the kept sounds `sound` says no longer play, once there are kKeptBeforePrune of them.
-template <typename Key, typename Value, typename HandleOf>
-void pruneEnded(std::map<Key, Value>& kept, const script::SoundHost* sound, HandleOf handleOf) {
-    if (kept.size() < kKeptBeforePrune) {
-        return;
-    }
-    std::erase_if(kept, [&](const auto& entry) { return sound == nullptr || !sound->soundPlaying(handleOf(entry)); });
+    return static_cast<std::uint32_t>(std::lround(std::clamp(volume, 0.0F, 1.0F) * kSoundVolumeScale));
 }
 
 } // namespace
@@ -64,7 +48,7 @@ void SoundEvents::keep(double handle, std::uint32_t instance, const std::array<f
     if (handle == 0.0 || instance == 0) {
         return;
     }
-    pruneEnded(m_playing, m_inner, [](const auto& entry) { return entry.first; });
+    pruneEndedSounds(m_playing, m_inner, [](const auto& entry) { return entry.first; });
     m_playing[handle] = Playing{.instance = instance, .position = position, .volume = thousandths(1.0F)};
 }
 
@@ -98,54 +82,6 @@ void SoundEvents::moveSound(double handle, const std::array<float, 3>& position,
     if (m_inner != nullptr) {
         m_inner->moveSound(handle, position, volume);
     }
-}
-
-// ---- A guest's side: the host's sounds on this machine ----
-
-// @coney-only plays the host's sound events on a guest (network play)
-void SoundEventPlayer::apply(const GameEvent& event) {
-    switch (event.kind) {
-    case GameEventKind::Sound2D:
-        if (m_sound != nullptr) {
-            keep(event.value, m_sound->play2D(event.id));
-        }
-        break;
-    case GameEventKind::Sound3D:
-        if (m_sound != nullptr) {
-            keep(event.value, m_sound->play3D(event.id, event.position));
-        }
-        break;
-    case GameEventKind::SoundStop:
-        if (const auto found = m_handles.find(event.value); found != m_handles.end()) {
-            m_sound->stopSound(found->second);
-            m_handles.erase(found);
-        }
-        break;
-    case GameEventKind::SoundMove:
-        if (const auto found = m_handles.find(event.value); found != m_handles.end()) {
-            m_sound->moveSound(found->second, event.position, static_cast<float>(event.extra) / kVolumeScale);
-        }
-        break;
-    default:
-        break;
-    }
-}
-
-// @coney-only plays the host's sound events on a guest (network play)
-void SoundEventPlayer::stopAll() {
-    for (const auto& [instance, handle] : m_handles) {
-        m_sound->stopSound(handle);
-    }
-    m_handles.clear();
-}
-
-// @coney-only plays the host's sound events on a guest (network play)
-void SoundEventPlayer::keep(std::uint32_t instance, double handle) {
-    if (instance == 0 || handle == 0.0) {
-        return;
-    }
-    pruneEnded(m_handles, m_sound, [](const auto& entry) { return entry.second; });
-    m_handles[instance] = handle;
 }
 
 // ---- The calls a player hears: raised, then played ----

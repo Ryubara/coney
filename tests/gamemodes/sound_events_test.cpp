@@ -16,6 +16,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/game_events.h"
+#include "gamemodes/sound_event_player.h"
 #include "hud/hud_audio.h"
 #include "human/human_sounds.h"
 #include "scripting/sound_bindings.h"

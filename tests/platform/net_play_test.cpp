@@ -22,6 +22,7 @@
 #include "core/options.h"
 #include "core/pad.h"
 #include "core/pads.h"
+#include "gamemodes/sound_event_player.h"
 #include "gamemodes/sound_events.h"
 #include "net/event_channel.h"
 #include "net/loopback_transport.h"

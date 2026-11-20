@@ -512,13 +512,13 @@ handle raises a SoundStop and lets it go; a move raises a SoundMove only when th
 thousandth) changes, because a radio follows its own place every frame. A handle it did not start while recording (one
 started offline, a start the sound refused, one stopped already) raises nothing. A sound that ends by itself is never
 stopped, so each side lets go of the sounds that no longer play once it keeps 64. On the guest `coney::SoundEventPlayer`
-plays the host's sound starts on its own sound and keeps the handle each gave under the host's instance; the host's
-SoundStop and SoundMove act on that handle, and an instance it never started (a lost start, one before it joined) is
-nothing to act on. `stopAll()` stops what it keeps when the session ends. A world object's Sound3D
-(`LevelObjectServices`) carries instance 0: nothing stops or moves it. The stop and the move go reliably, so a guest's
-radio never plays on, or stays where it was, after a lost packet; the start stays a one-shot. Nothing in the running
-game makes a `SoundEventPlayer` yet: the client game mode that draws the snapshots will (until then a guest runs its own
-game, whose own sound already plays its radios).
+(`src/gamemodes/sound_event_player.h`) plays the host's sound starts on its own sound and keeps the handle each gave
+under the host's instance; the host's SoundStop and SoundMove act on that handle, and an instance it never started (a
+lost start, one before it joined) is nothing to act on. `stopAll()` stops what it keeps when the session ends. A world
+object's Sound3D (`LevelObjectServices`) carries instance 0: nothing stops or moves it. The stop and the move go
+reliably, so a guest's radio never plays on, or stays where it was, after a lost packet; the start stays a one-shot.
+Nothing in the running game makes a `SoundEventPlayer` yet: the client game mode that draws the snapshots will (until
+then a guest runs its own game, whose own sound already plays its radios).
 
 **Delivery.** One-shots (the sounds, hits, material pairs, cues, particle starts and breaks) go **Unreliable**: a lost
 one is a sound nobody misses, and one resent late would play out of time. The music, the loop, the messages, the

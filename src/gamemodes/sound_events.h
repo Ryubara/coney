@@ -16,6 +16,23 @@
 
 namespace coney {
 
+/// How many sounds a side keeps (SoundEvents, SoundEventPlayer) before it lets go of those that no longer play: a sound
+/// that ends by itself is never stopped, so without this the sounds kept would grow for as long as a session lasts.
+inline constexpr std::size_t kSoundsKeptBeforePrune = 64;
+/// A volume as a SoundMove carries it: thousandths, 0 to 1000.
+inline constexpr float kSoundVolumeScale = 1000.0F;
+
+/// Lets go of the sounds in `kept` that `sound` (null: none) says no longer play, once there are
+/// kSoundsKeptBeforePrune of them; `handleOf` gives an entry's handle on `sound`.
+/// @coney-only bounds the sounds kept for a guest's later stop and move (network play)
+template <typename Key, typename Value, typename HandleOf>
+void pruneEndedSounds(std::map<Key, Value>& kept, const script::SoundHost* sound, HandleOf handleOf) {
+    if (kept.size() < kSoundsKeptBeforePrune) {
+        return;
+    }
+    std::erase_if(kept, [&](const auto& entry) { return sound == nullptr || !sound->soundPlaying(handleOf(entry)); });
+}
+
 /// The game's sound with its events: every call goes on to `inner` (the game's sound, audio::GameSound) unchanged,
 /// and the calls a player hears are raised as game events as well (GameEvents::raise()): a 2D or a positional sound,
 /// a human's animation sound, the held sound's stop and rage's start, a hit's impact sound, the music's starts and
@@ -133,33 +150,6 @@ class SoundEvents final : public script::SoundHost {
     GameEvents* m_events;
     std::map<double, Playing> m_playing; // the sounds started while recording, by inner handle
     std::uint32_t m_lastInstance = 0;    // the instance the last sound started was given
-};
-
-/// A guest's side of a playing sound's events: it plays the host's sound starts (Sound2D, Sound3D) on this machine's
-/// sound and keeps the handle each gave under the host's instance, so that the host's SoundStop and SoundMove for that
-/// instance stop and move this machine's sound. An instance it never started (its start was a lost one-shot, or came
-/// before this guest joined) is nothing to stop or move. The other kinds are left alone: playing them is the client
-/// game mode's (docs/guides/multiplayer.md#events).
-///
-/// @coney-only network play's guest side of SoundEvents; the original has no network play
-class SoundEventPlayer {
-  public:
-    /// Plays on `sound` (null: plays nothing), which must outlive it.
-    explicit SoundEventPlayer(script::SoundHost* sound) : m_sound(sound) {}
-
-    /// Applies one of the host's events: a sound start plays it, a stop or a move acts on the instance's sound.
-    void apply(const GameEvent& event);
-    /// Stops every sound kept and lets them go, as the session ends.
-    void stopAll();
-    /// How many host instances have a sound kept here.
-    [[nodiscard]] std::size_t instances() const { return m_handles.size(); }
-
-  private:
-    // Keeps `handle` for `instance`; nothing for a handle or instance 0.
-    void keep(std::uint32_t instance, double handle);
-
-    script::SoundHost* m_sound;
-    std::map<std::uint32_t, double> m_handles; // this machine's handle by the host's instance
 };
 
 /// Plays interface cue `cue` through the HUD's `sound`, raising it first on `events` (null: none) as a Cue for
