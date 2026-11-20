@@ -8,8 +8,10 @@
 // `Human_PlaceItemInHand` (`0x0024c280`) makes the object by name at the human, records it, and attaches it at the
 // bone and offset of its low pick-up clip's first take event (`0x0024c6d8`). At runtime all eight held one, attached
 // (object `+0x54` bit `0x10`) to its Fury on bone 25, the right hand (confirmed (runtime), run
-// r-20261120-level54-scripted-bats). So each bat must be a spawn record of its type,
-// held (in no pick-up search), and among the objects drawn in a hand, on bone 25, where his hand can hold it. It runs
+// r-20261120-level54-scripted-bats). The take then sends the Fury message 3, which applies the bat's anim set
+// (`Human_HandleMessage` `0x00245920`, the call at `0x002460f4`), so he fights as armed. So each bat must be a spawn
+// record of its type, held (in no pick-up search), its anim set his, and among the objects drawn in a hand, on bone 25,
+// where his hand can hold it. It runs
 // only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
 #include <cmath>
@@ -27,6 +29,7 @@
 #include "fileio/wad.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_pickups.h"
+#include "human/fighter.h"
 #include "human/human.h"
 #include "human/player.h"
 #include "human/script_state.h"
@@ -110,8 +113,11 @@ TEST_CASE("the disc's level54 checkpoint 3: the bats the script puts in the Furi
     const std::vector<const coney::ai::Brain*> furies = armedFuries(*play);
     CHECK(furies.size() == kArmed);
 
-    // Each bat is a world object of its type, held: a spawn record, in a hand for the pick-ups.
+    // Each bat is a world object of its type, held: a spawn record, in a hand for the pick-ups; and its Fury is armed
+    // with its anim set (a bat's is not 0), as his attack pick and grabs read it.
     REQUIRE(run.session().gameplay().pickups() != nullptr);
+    const int batSet = run.session().gameplay().pickups()->animSetOf(kBat);
+    CHECK(batSet != 0);
     std::size_t drawn = 0;
     for (const coney::ai::Brain* fury : furies) {
         const double bat = fury->human().script().heldObject;
@@ -122,6 +128,7 @@ TEST_CASE("the disc's level54 checkpoint 3: the bats the script puts in the Furi
             CHECK_FALSE(record->removed);
         }
         CHECK(run.session().gameplay().pickups()->inHand(bat));
+        CHECK(fury->human().fighter().animSet() == batSet);
     }
 
     // Each hangs from its Fury's right hand and is drawn there, and stays there as they come on (asked again each
