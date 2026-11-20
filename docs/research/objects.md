@@ -757,9 +757,12 @@ frames showed the bats in their right hands.
 the human the new handle and the type's name; the level simulation's next step makes it
 (`PlayLevelSimulation::placeItemInHand`, `repo:src/gamemodes/play_level_held.cpp`): a spawn record of the type at his
 feet with no turn, pinned, held by him (`LevelPickups::placeInHand`), which the held draw then poses from his pick-up
-clip like any held object. Differences: the record stays pinned while held (Coney's take does the same; the
-original unpins it); the object is made on the step after the call, not in it; an unknown type empties the hand; and a
-kind-5 type is a **stand-in**: no carried prop is made and the hand stays empty. The `0x4000` guard is not ported.
+clip like any held object, and his fighter given the object's anim set, as the take's message 3 applies it
+(`Human_HandleMessage` reads the type's `+0x87` at `0x002460d4` and calls `Human_SetCarryMoveStyle` at `0x002460f4`,
+confirmed (code)), so his attack pick, grabs and goals treat him as armed. Differences: the record stays pinned while
+held (Coney's take does the same; the original unpins it); the object is made on the step after the call, not in it;
+an unknown type empties the hand; and a kind-5 type is a **stand-in**: no carried prop is made and the hand stays
+empty (an open question below). The `0x4000` guard is not ported.
 
 **Drop** (`0x00257f38`, triangle with nothing to take, a pick-up of a two-handed or hat object, a scene's release;
 confirmed (code)): pops the anim set the object pushed, records the human as its last holder (object `+0x11c`) unless
@@ -2376,9 +2379,13 @@ the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
   checked.
 - **A kind-5 object a script puts in a hand**{#q-placed-carried-prop}: `Human_PlaceItemInHand` (`0x0024c280`) makes a
   type of pick-up kind 5 the human's carried prop (`Human_CreateCarriedProp` `0x0024cbb0`), not a held object
-  ([Scripted placement](#held)). Coney's carried props come only from clip events, so its stand-in makes nothing and
-  leaves the hand empty. Which `HuPlaceItemInHand` calls on the disc name a kind-5 type is not checked; one that does
-  needs the carried prop made from the placement too.
+  ([Scripted placement](#held)). Coney makes carried props from clip events and, for now, not from a placement, so
+  its stand-in makes nothing and leaves the hand empty. Four calls in the disc's scripts name a kind-5 type (inferred,
+  from the decompiled scripts and the types' `pickup_anim` in `config_preload3`): `dyn_s_spraycan` twice in
+  `level63_moonrunners` (as its chunk runs) and once in a `Constructor` of `level82_chapter1`, and `dyn_s_binocs` in
+  `level82_chapter2`'s `Setup`. Those humans carry nothing in Coney; making the carried prop from the placement
+  (`Human_CreateCarriedProp`) would show them. Names a script picks at run time (`GetRandomWeapon` and the tables
+  of names in a few levels) are not checked.
 - Where a cabin door's wreck pieces and a barrier's boards appear (its leaves are removed at the break,
   [Breaking a door](#door-break)).
 - Cash register ([Script types](script-types.md#dyn-cashreg)): how many throws or swings break a lifted register at

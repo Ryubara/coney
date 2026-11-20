@@ -516,8 +516,8 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // @coney-only Coney's pass over the humans for placeItemInHand()
     void stepPlacedHeld();
     // Makes the object `human` holds by name, when it has no record yet: a record of its type at his feet, held by him
-    // (`holder`, his script handle) as its pick-up clip places it (heldDrawOf()). An unknown type, or a type he would
-    // carry as a prop, leaves his hand empty.
+    // (`holder`, his script handle) as its pick-up clip places it (heldDrawOf()), with its anim set his. An unknown
+    // type, or a type he would carry as a prop, leaves his hand empty.
     // @orig 0x0024c280 Human_PlaceItemInHand (unknown)
     void placeItemInHand(human::Human& human, double holder);
 

@@ -14,6 +14,7 @@
 #include "gamemodes/level_pickups.h"
 #include "gamemodes/play_level_simulation.h"
 #include "human/carried_prop.h"
+#include "human/fighter.h"
 #include "human/human.h"
 #include "world_objects/object_types.h"
 #include "world_objects/pickups.h"
@@ -75,11 +76,10 @@ void PlayLevelSimulation::stepPlacedHeld() {
 void PlayLevelSimulation::placeItemInHand(human::Human& human, double holder) {
     // The binding (Human_PlaceItemInHand's caller 0x00238540, ScriptedHumans::placeItemInHand) gave him the handle and
     // the type's name, and refused a human with something in hand, so there is nothing to drop here. A handle that is
-    // a record already came from a pick-up, a swap or a pile, and is made; one with no type name was put there by no
-    // placement (the binding refuses an empty name), so there is nothing to make it from.
+    // a record already came from a pick-up, a swap or a pile, and is made.
     human::ScriptState& script = human.script();
     const double held = script.heldObject;
-    if (held == world_objects::kNoObject || script.heldObjectName.empty() || m_records->find(held) != nullptr) {
+    if (held == world_objects::kNoObject || m_records->find(held) != nullptr) {
         return;
     }
     // Made by name: a type the object list lacks makes nothing, and he holds nothing.
@@ -91,8 +91,8 @@ void PlayLevelSimulation::placeItemInHand(human::Human& human, double holder) {
         return;
     }
     // A type of pick-up kind 5 is carried as a prop at the human's attach point (Human_CreateCarriedProp), never in the
-    // hand. **Coney's stand-in**: no such prop is made (Coney's carried props are its clips' alone), so he holds
-    // nothing, as the original's hand stays empty.
+    // hand. **Coney's stand-in**: a placement makes no carried prop yet (four disc calls name such a type), so he holds
+    // nothing, as the original's hand stays empty (docs/research/objects.md, its open questions).
     if (type->pickupAnim == human::kCarriedPropKind) {
         m_print(std::format("held: {} is carried as a prop, not made (stand-in)\n", script.heldObjectName));
         script.heldObject = world_objects::kNoObject;
@@ -118,6 +118,9 @@ void PlayLevelSimulation::placeItemInHand(human::Human& human, double holder) {
         return;
     }
     static_cast<void>(m_pickups->placeInHand(held, holder));
+    // The take's message 3 to the holder (Human_HandleMessage, the call at 0x002460f4) applies the object's anim set,
+    // so he fights as armed from now on (his attack pick, grabs and goals read it), as the swap's receiver does.
+    human.fighter().setAnimSet(m_pickups->animSetOf(script.heldObjectName));
     m_print(std::format("held: {} made as object {:.0f} in the hand of the human at ({:.2f}, {:.2f}, {:.2f})\n",
                         script.heldObjectName, held, at.x, at.y, at.z));
 }
