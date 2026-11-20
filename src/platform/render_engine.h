@@ -20,6 +20,7 @@
 #include "graphics/texture_grid.h"
 #include "platform/draw_stream.h"
 #include "platform/gl3_renderer.h"
+#include "platform/gpu_overlay.h"
 #include "platform/present_mode.h"
 #include "platform/scene_assets.h"
 #include "platform/window.h"
@@ -114,8 +115,19 @@ class RenderEngine final : public graphics::RenderDevice {
     /// The window, for the OpenGL and GPU backends; nothing for NULL.
     [[nodiscard]] std::optional<Window> window() const;
     /// The SDL_Window* and its OpenGL context (an SDL_GLContext), opaque here, for the developer overlay's backends;
-    /// nulls with the NULL backend, and the window with no context with the GPU backend (which has no overlay yet).
+    /// nulls with the NULL backend, and the window with no context with the GPU backend, whose overlay draws through
+    /// gpuOverlayTarget() instead.
     [[nodiscard]] std::pair<void*, void*> sdlWindowAndContext() const;
+    /// The GPU backend's device and the format of the target it draws frames into, for the developer overlay's SDL GPU
+    /// backend; nothing for the other backends, and with the GPU backend when its 2D drawing could not be made
+    /// (gpuDrawingProblem()).
+    [[nodiscard]] std::optional<GpuOverlayTarget> gpuOverlayTarget() const;
+    /// Adds a drawing the GPU backend runs over every frame's picture after its 2D passes (GpuOverlayDraw), inside
+    /// present(), after those added before it, and returns the handle to remove it by; 0 (and nothing added) with the
+    /// other backends. Remove it before whatever it calls goes away.
+    GpuOverlayHandle addGpuOverlay(GpuOverlayDraw overlay);
+    /// Removes the drawing `handle` named, leaving the others; does nothing for 0 or a handle already removed.
+    void removeGpuOverlay(GpuOverlayHandle handle);
     /// The size of the area frames are drawn into, in pixels: the window's client area, or the requested size for
     /// the NULL backend.
     [[nodiscard]] graphics::Extent frameSize() const { return m_frameSize; }

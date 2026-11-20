@@ -229,14 +229,16 @@ if(CONEY_SHADERS)
 endif()
 
 # Dear ImGui as a static library, with the debug tools only. Its OpenGL 3 backend loads the GL functions itself (its
-# bundled loader), so it needs no GL import library; on Linux and macOS the loader opens the GL library with dlopen.
+# bundled loader), so it needs no GL import library; on Linux and macOS the loader opens the GL library with dlopen. Its
+# SDL GPU backend (the GPU renderer's overlay, docs/engine/gpu-renderer.md#overlay) carries its own shaders.
 if(CONEY_DEBUG_TOOLS)
     FetchContent_MakeAvailable(imgui)
     add_library(imgui STATIC
         ${imgui_SOURCE_DIR}/imgui.cpp ${imgui_SOURCE_DIR}/imgui_draw.cpp ${imgui_SOURCE_DIR}/imgui_tables.cpp
         ${imgui_SOURCE_DIR}/imgui_widgets.cpp
         ${imgui_SOURCE_DIR}/misc/cpp/imgui_stdlib.cpp
-        ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp)
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlgpu3.cpp)
     target_include_directories(imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
                                                    ${imgui_SOURCE_DIR}/misc/cpp)
     # No ImGui API that a later version removes, so an update fails loudly instead of compiling against stale names.
