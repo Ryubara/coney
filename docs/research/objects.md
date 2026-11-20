@@ -1647,6 +1647,15 @@ breaks. Confirmed (code) unless marked:
    door's position for the left leaf, the door's position plus its rotation × (−2w, 0, 0) for the right, pushed
    along the door's turned +y. Confirmed (code).
 
+**What it shares.** The next model is the one damage mechanism here that other objects use too: `Model_FindByHash`
+has seven callers, `DoorSwing_Hit` and the `dyn_masks` props' hit and message handlers (`0x003b7a88`, `0x003bf1b8`,
+[Breakable props](#breakable-props)), the exploding car prop (`0x003cca88`, `0x003ccf68`), `0x003cdca8` and
+`0x003f08c0`; Coney ports it once, as `ObjectList::nextModelOf`. A driven car's damage (`Car_OnHit`, `0x0038bea0`,
+[Cars](cars.md)) is not among them: it swaps the parts of its 47-atomic clump. Nor are the door's hitpoints the world
+object's hit counters of a strike's contact (`WorldObject_TakeHit`, `0x00393450`, byte `+0x10d`, [Combat
+targets](combat-targets.md#breakables)): a door keeps its own in its data block (`+0x08`). Confirmed (code), from the
+callers of `0x003a4d10`.
+
 `Obj_SetModel` with a hash the Object List does not hold gives the object no instance and answers 0, and with 0 it
 takes the type's own model, so a leaf model without a next model keeps its own; one whose next model has no record
 would be drawn with nothing (inferred from `0x003a44c8`; no disc leaf is known to have one).
