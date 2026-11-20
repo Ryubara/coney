@@ -256,10 +256,10 @@ std::expected<void, Error> PlayLevelMode::playScene(std::string_view name) {
     }
     // Each object slot gets a new object of the type the script binds there, its record pinned as Scene_BindObject
     // (0x00354280) pins a bound object's, so the streaming never stores it (scenes.md#cast).
-    for (std::size_t slot = 0; slot < header.objects.size(); ++slot) {
-        if (const std::optional<std::string> type = scenes::propTypeOf(header.name, slot); type) {
+    for (std::size_t objectSlot = 0; objectSlot < header.objects.size(); ++objectSlot) {
+        if (const std::optional<std::string> type = scenes::propTypeOf(header.name, objectSlot); type) {
             if (const std::optional<double> object = makeSceneProp(*type); object) {
-                system.addObject(id, *object, slot);
+                system.addObject(id, *object, objectSlot);
             }
         }
     }
