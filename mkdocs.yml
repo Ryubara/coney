@@ -347,6 +347,7 @@ nav:
           - Picture commands: guides/coney-tools-picture.md
           - Repository commands: guides/coney-tools-repo.md
           - Resuming task check: guides/task-check-resume.md
+          - Fix checks: guides/task-check-fix.md
           - Pull request commands: guides/coney-tools-pr.md
           - Issue commands: guides/coney-tools-issues.md
           - CI commands: guides/coney-tools-ci.md

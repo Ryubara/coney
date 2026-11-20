@@ -32,7 +32,7 @@ A run uses a ledger only when every field of its **key** is the same as the run 
 | --- | --- |
 | change id (`diff_sha256`) | The change the stamp is bound to |
 | tip and base commit | A clean rebase keeps the change id but moves the ground the checks ran on, and a build record is bound to its tip: a rebase, an amended message or an empty commit runs everything |
-| profile and its checks | A bigger profile (`--profile`) or a rule that adds a check is another list |
+| profile and its checks | A bigger profile (`--profile`) or a rule that adds a check is another list; a fix ([Fix checks](task-check-fix.md#fix)) names the Check it stands on in its profile, so it never resumes a full run or the reverse |
 | the rules the checks read | A hash of `proof` and the scope classes of `paths`, as read from the base |
 | the disc setting | Where the tests' disc came from (`CONEY_DISC`, `game_dir`) and its path |
 

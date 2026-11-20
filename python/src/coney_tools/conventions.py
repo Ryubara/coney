@@ -966,6 +966,24 @@ class ProofResume:
 
 
 @dataclass(frozen=True)
+class ProofFix:
+    """When `task check` runs the fix profile (`proof.fix`, docs/guides/task-check-fix.md#fix): on top of
+    an earlier passing Check of the same task, the scoped tests run for only the files the branch changed since; a
+    change since that is too wide or not traceable runs the full check. Without the key (a base older than it) there
+    is no fix profile."""
+
+    #: Whether the key was there: False (a base older than it) means every Check is a full one.
+    enabled: bool = False
+    #: More files changed since the earlier Check than this: the full check.
+    max_files: int = 0
+    #: A changed header that more C++ files include than this (directly or through other headers): the full check.
+    max_header_includers: int = 0
+    #: Shell patterns (`fnmatch`, where `*` crosses folders) of paths whose change since runs the full check: the
+    #: build, the presets and the test fixtures and helpers.
+    full_when: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class Proof:
     """What a change must pass before it is opened as a pull request (docs/guides/coney-tools-repo.md#task-check)."""
 
@@ -978,6 +996,7 @@ class Proof:
     ctest: ProofCtest = ProofCtest()
     memory: ProofMemory = ProofMemory()
     resume: ProofResume = ProofResume()
+    fix: ProofFix = ProofFix()
 
 
 @dataclass(frozen=True)
@@ -3499,7 +3518,7 @@ CI_CLASSES = ("docs_only", "tools_only", "engine", "unknown")
 
 def _read_proof(data: object, where: str) -> Proof:
     """The `proof` section: the profiles of checks, the conditional checks and the build behind them."""
-    table = _table(data, where, ("profiles", "only_when", "build"), ("pytest", "ctest", "memory", "resume"))
+    table = _table(data, where, ("profiles", "only_when", "build"), ("pytest", "ctest", "memory", "resume", "fix"))
     profiles_where = _at(where, "profiles")
 
     def read_profile(value: object, here: str) -> ProofProfile:
@@ -3540,6 +3559,7 @@ def _read_proof(data: object, where: str) -> Proof:
         ctest=_read_proof_ctest(table.get("ctest"), _at(where, "ctest")),
         memory=_read_proof_memory(table.get("memory"), _at(where, "memory")),
         resume=_read_proof_resume(table.get("resume"), _at(where, "resume")),
+        fix=_read_proof_fix(table.get("fix"), _at(where, "fix")),
     )
 
 
@@ -3557,6 +3577,20 @@ def _read_proof_resume(data: object, where: str) -> ProofResume:
         return ProofResume()
     table = _table(data, where, ("max_age_hours",))
     return ProofResume(max_age_hours=_count(table["max_age_hours"], _at(where, "max_age_hours")))
+
+
+def _read_proof_fix(data: object, where: str) -> ProofFix:
+    """`proof.fix`: how much may change since an earlier passing Check for the fix profile, and which paths always
+    run the full check. Absent: no fix profile."""
+    if data is None:
+        return ProofFix()
+    table = _table(data, where, ("max_files", "max_header_includers", "full_when"))
+    return ProofFix(
+        enabled=True,
+        max_files=_count(table["max_files"], _at(where, "max_files")),
+        max_header_includers=_count(table["max_header_includers"], _at(where, "max_header_includers")),
+        full_when=_texts(table["full_when"], _at(where, "full_when"), empty_ok=True),
+    )
 
 
 def _read_proof_pytest(data: object, where: str) -> ProofPytest:
@@ -3862,7 +3896,7 @@ def load_proof_rules_at(root: Path, ref: str, own: Conventions) -> tuple[Convent
     if "proof" not in data:
         return own, "branch"
     try:
-        kept = _keep(data["proof"], ("profiles", "only_when", "build", "pytest", "ctest", "memory", "resume"))
+        kept = _keep(data["proof"], ("profiles", "only_when", "build", "pytest", "ctest", "memory", "resume", "fix"))
         proof = _read_proof(kept, "proof")
         scopes = _keep(data.get("paths"), ("docs_only", "tools_only", "engine"))
         table = _table(scopes, "paths", ("docs_only", "tools_only", "engine"))

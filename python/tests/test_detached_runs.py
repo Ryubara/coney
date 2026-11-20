@@ -195,6 +195,7 @@ def check_args(**changes: object) -> argparse.Namespace:
         "keep_going": False,
         "dry_run": False,
         "no_resume": False,
+        "no_fix": False,
         "max_wait": 240.0,
         "detach": False,
         "result": False,
@@ -224,3 +225,8 @@ def test_the_task_check_parser_takes_detach_and_result() -> None:
     parsed = build_parser().parse_args(["task", "check", "--detach"])
     assert parsed.detach and not parsed.result and parsed.result_file is None
     assert build_parser().parse_args(["task", "check", "--result"]).result
+
+
+def test_a_detached_task_check_keeps_no_fix(tmp_path: Path) -> None:
+    assert "--no-fix" in task_check.child_command(check_args(no_fix=True), tmp_path, tmp_path / "r.json")
+    assert "--no-fix" not in task_check.child_command(check_args(), tmp_path, tmp_path / "r.json")

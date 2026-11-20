@@ -4,17 +4,17 @@
 
 What a change needs is decided by the paths it touches (`proof_profiles`, the `proof` section of
 `.github/conventions.yml`): a documentation change runs the docs checks, a tooling change adds ruff, mypy, pytest and
-actionlint, and anything else also builds with the MSVC `ci` preset (/WX) and runs the C++ tests the change needs
-with the disc: the test files its C++ files reach, or the whole suite (`proof.ctest`, ctest_scope.py; `coney-tools
-build` leaves a build record the stamp covers, and the stamp's `detail.ctest_scope` says which tests ran). The result
-is one `checked` stamp, `pass` or `fail`, bound to the change (`covers.diff_sha256`, `pr_diff`), so a clean rebase
-keeps it and any edit makes it stale. A fault
-of the machine (a program missing, no disc, no build slot, a worktree that changed under the run) is not a verdict
-about the change and writes no stamp. The profiles and the path classes are read from the base's
-`.github/conventions.yml`, not the branch's, so a branch cannot shrink the profile it is checked against (`pr verify`
-must derive them from the base too). Only the `proof` section and the scope lists of `paths` are read, ignoring keys
-the branch's parser does not know; the stamp's `detail.rules` says `base`, or `branch` when the base has no `proof`
-section yet. A base whose rules cannot be read stops the run (exit 2).
+actionlint, and anything else also builds with the MSVC `ci` preset (/WX) and runs the C++ tests the change needs with
+the disc: the test files its C++ files reach, or the whole suite (`proof.ctest`, ctest_scope.py; `coney-tools build`
+leaves a build record the stamp covers, and the stamp's `detail.ctest_scope` says which tests ran). On top of an earlier
+passing Check of the task, the run is a fix (check_fix.py, `proof.fix`): the same checks, with the test scopes read from
+the files changed since. The result is one `checked` stamp, `pass` or `fail`, bound to the change (`covers.diff_sha256`,
+`pr_diff`), so a clean rebase keeps it and any edit makes it stale. A fault of the machine (a program missing, no disc,
+no build slot, a worktree that changed under the run) is not a verdict about the change and writes no stamp. The
+profiles and the path classes are read from the base's `.github/conventions.yml`, not the branch's, so a branch cannot
+shrink the profile it is checked against (`pr verify` must derive them from the base too). Only the `proof` section and
+the scope lists of `paths` are read, ignoring keys the branch's parser does not know; the stamp's `detail.rules` says
+`base`, or `branch` when the base has no `proof` section yet. A base whose rules cannot be read stops the run (exit 2).
 
 Exit codes: 0 every check passed and the stamp is written; 1 a check failed (a `fail` stamp is written); 2 it cannot
 run or cannot stamp (nothing is written); 75 the build or the pytest run gave up waiting for a slot (nothing is
@@ -48,6 +48,7 @@ from coney_tools import (
     build_cli,
     build_record,
     build_run,
+    check_fix,
     check_progress,
     check_resume,
     check_slots,
@@ -97,6 +98,8 @@ class Request:
     max_wait: float = build_cli.DETACHED_MAX_WAIT
     #: Go on from the checks an earlier run passed for the same change (check_resume.py); False runs every check.
     resume: bool = True
+    #: Check as a fix on an earlier passing Check of the task when one qualifies (check_fix.py); False: the full one.
+    fix: bool = True
 
 
 @dataclass
@@ -261,10 +264,17 @@ def _run(request: Request, env: Env) -> int:
         f"{change.base[:10]} ({len(change.paths)} files: {_first(change.paths)})"
     )
     env.say("  checks: " + ", ".join(checks))
-    scope = proof_profiles.pytest_scope(conventions, change.paths) if "pytest" in checks else None
+    fix = _fix_plan(request, root, conventions, base, task, change, needed, build.checks[-1] in builds)
+    if fix is not None:
+        env.say(f"  fix: {fix.text}")
+    used = fix if fix is not None and fix.used else None
+    tested = used.paths if used else change.paths  # the paths the test scopes are read from
+    scope = proof_profiles.pytest_scope(conventions, tested) if "pytest" in checks else None
     if scope is not None:
         env.say(f"  pytest: {scope.text}")
-    tests = _ctest_scope(root, conventions, change) if build.checks[-1] in builds else None
+    tests = None
+    if build.checks[-1] in builds:
+        tests = used.ctest if used else _ctest_scope(root, conventions, change)
     if tests is not None:
         env.say(f"  ctest: {tests.text}")
     env.overlap(root, named, conventions, env.say, not request.dry_run)
@@ -273,7 +283,7 @@ def _run(request: Request, env: Env) -> int:
         change.sha256,
         change.tip,
         change.base,
-        profile,
+        f"{profile} (fix on #{used.anchor.seq})" if used else profile,
         tuple(checks),
         check_resume.rules_fingerprint(conventions),
         env.disc_key(root),
@@ -307,7 +317,9 @@ def _run(request: Request, env: Env) -> int:
         """A check slot for this run's checkout and id."""
         return env.hold(root, agent, what)
 
-    context = StepContext(root, base, change.paths, conventions, run, hold, env.workers(root) if scope else 1)
+    context = StepContext(
+        root, base, change.paths, conventions, run, hold, env.workers(root) if scope else 1, tested=tested
+    )
     # From here the run writes where it is; whatever ends it without a verdict (a refusal, an interrupt, a wait that
     # gave up) leaves the file abandoned, and the heartbeat keeps it fresh while a check says nothing.
     progress = env.progress
@@ -322,6 +334,8 @@ def _run(request: Request, env: Env) -> int:
             ran, failed, record, counts, counted = outcome
             detail_more: dict[str, Any] = {}
             _unchanged(root, base, change)
+            if used:
+                detail_more["fix"] = check_fix.record(used)  # pr verify finds the Check it stands on from this
             if scope is not None and "pytest" in ran:
                 detail_more["pytest_scope"] = proof_profiles.scope_record(scope)
             if tests is not None and build.checks[-1] in ran:
@@ -386,6 +400,29 @@ def _ctest_scope(root: Path, conventions: Conventions, change: pr_diff.Change) -
     tidy = conventions.ci.tidy
     tree = ctest_scope.tree_at(root, change.tip, tidy.folders, (*tidy.sources, *tidy.headers))
     return ctest_scope.ctest_scope(conventions, change.paths, tree)
+
+
+def _fix_plan(
+    request: Request,
+    root: Path,
+    conventions: Conventions,
+    base: str,
+    task: str,
+    change: pr_diff.Change,
+    needed: str,
+    needs_cpp: bool,
+) -> check_fix.FixPlan | None:
+    """The fix profile's decision (check_fix.py) when the task's log holds an earlier passing Check this change can
+    stand on, else None: not with `proof.fix` missing from the base's rules, a profile asked for or `--no-fix`."""
+    if not conventions.proof.fix.enabled or request.profile or not request.fix:
+        return None
+    report = stamps.verify(unit.Unit.of(root, task).stamps, conventions.stamps, task=task)
+    anchor = check_fix.find_anchor(report, conventions, needed, change.sha256)
+    if anchor is None:
+        return None
+    tidy = conventions.ci.tidy
+    tree = ctest_scope.tree_at(root, change.tip, tidy.folders, (*tidy.sources, *tidy.headers))
+    return check_fix.assess(root, conventions, base, change, anchor, tree, needs_cpp=needs_cpp)
 
 
 def _log_task(root: Path, task: str, conventions: Conventions, say: Callable[[str], None]) -> str:
@@ -688,6 +725,11 @@ def add_parser(commands: Any) -> None:
     check.add_argument("--keep-going", action="store_true", help="run every check even after one fails")
     check.add_argument("--dry-run", action="store_true", help="print the profile and the checks; run nothing")
     check.add_argument(
+        "--no-fix",
+        action="store_true",
+        help="run the full check even when an earlier passing Check of the task lets this one be a fix (the default)",
+    )
+    check.add_argument(
         "--no-resume",
         action="store_true",
         help="run every check even when an earlier run passed some for this change (the default goes on from them)",
@@ -727,6 +769,7 @@ def child_command(args: argparse.Namespace, root: Path, result: Path) -> list[st
         command += [flag, value] if value else []
     command += ["--keep-going"] if args.keep_going else []
     command += ["--no-resume"] if args.no_resume else []
+    command += ["--no-fix"] if args.no_fix else []
     return [*command, "--result-file", str(result)]
 
 
@@ -759,6 +802,7 @@ def _run_here(args: argparse.Namespace) -> int:
         dry_run=args.dry_run,
         max_wait=args.max_wait,
         resume=not args.no_resume,
+        fix=not args.no_fix,
     )
     if args.dry_run:
         return run_check(request, default_env(args.max_wait))

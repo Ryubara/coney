@@ -63,11 +63,14 @@ class StepContext:
     hold: Hold = lambda what: nullcontext()
     #: The pytest workers (pytest-xdist) a run may use: a check slot's share of the cores (`pytest_workers`).
     workers: int = 1
+    #: The paths the test scopes are read from: None is `paths`; a fix's are the files changed since the Check it
+    #: stands on (check_fix.py).
+    tested: tuple[str, ...] | None = None
 
     @property
     def pytest_scope(self) -> proof_profiles.PytestScope:
-        """Which Python tests the change needs (`proof.pytest`)."""
-        return proof_profiles.pytest_scope(self.conventions, self.paths)
+        """Which Python tests the change needs (`proof.pytest`), from `tested`."""
+        return proof_profiles.pytest_scope(self.conventions, self.paths if self.tested is None else self.tested)
 
 
 Step = Callable[[StepContext], StepResult]

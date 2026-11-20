@@ -1175,6 +1175,25 @@ proof:
   # (docs/guides/task-check-resume.md#resume): a check that passed longer ago than this runs again.
   resume:
     max_age_hours: 24
+  # The fix profile (docs/guides/task-check-fix.md#fix): when the task's log holds a passing Check of an
+  # earlier change that was not itself a fix, `task check` runs the checks of the profile the change needs, but the
+  # pytest and ctest scopes (above) come from only the files the branch changed since that Check (each file's own
+  # change, so a rebase alone changes none). It runs the full check instead when more than `max_files` files changed
+  # since, one of them matches `full_when` (fnmatch patterns, `*` crosses folders: the build, presets, test fixtures
+  # and helpers), a changed header is included by more than `max_header_includers` C++ files (directly or through
+  # other headers), or the C++ tests of what changed are the whole suite anyway. `pr verify` recomputes all of it.
+  fix:
+    max_files: 10
+    max_header_includers: 400                    # 60 of the 750 headers (core/error.h: 1534) at the time of writing
+    full_when:
+      - "CMakeLists.txt"
+      - "*/CMakeLists.txt"
+      - "CMakePresets.json"
+      - "cmake/*"
+      - "*.cmake"
+      - "tests/support/*"
+      - "python/tests/*fixtures/*"
+      - "tools/claude-mod/tests/fixtures/*"
   # The CMake preset of the build and the test run behind the two checks of `checks` (MSVC with /WX), the first
   # answering whether it built and the second whether the suite ran whole with the disc, from the build record a
   # run of `coney-tools build` leaves (docs/guides/stamps.md#build-record).
