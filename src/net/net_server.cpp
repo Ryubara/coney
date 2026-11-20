@@ -152,13 +152,13 @@ void NetServer::send() {
 }
 
 void NetServer::sendSnapshots(std::uint32_t step, std::span<const SnapshotHuman> humans,
-                              std::span<const SnapshotHud> /*huds*/) {
+                              std::span<const SnapshotHud> huds) {
     if (!m_running) {
         return;
     }
     for (ServerClient& client : m_clients) {
         if (client.joined) {
-            sendTo(client, client.snapshots.build(step, humans));
+            sendTo(client, client.snapshots.build(step, humans, huds));
         }
     }
 }

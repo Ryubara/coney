@@ -374,6 +374,7 @@ one definition, as Quake 3's `netField_t` tables do. `writeField()` and `readFie
 | Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (16 bits each, -32,768 to 32,767: the original's s16 numbers, which a lethal hit takes below 0, [Characters](../research/characters.md)), four animation layers, as many as `AnimTaskStack` shows at once ([A human's state](snapshots.md#human-state)): each one's clip (12 bits), playhead (10 bits, a share of the clip) and gait value (10 bits, 0 to 4, for a walk or run blend), and each older layer's fade under the one above it (10 bits), then grounded, knocked out | 256 |
 | World object | position, heading, door opening (10 bits), state (a byte), broken, hidden | 84 |
 | Car | position, heading, speed (12 bits, -64 to 64 m/s) | 76 |
+| Player HUD (by slot, not id) | rage and its maximum (16 bits each, the s16 range), raging, the banner's blue-grey, the score (25 bits), the money (16 bits), the four item counts (8 bits each), SELECT shows the panel, knocked out, the camera ignores the stick ([HUD state](snapshots.md#hud-state)) | 110 |
 
 The ranges are Coney's choices. Four are stand-ins, marked in the code, for the game's side of snapshots to settle: the
 positions' fixed bounds around the origin (in place of each level's own), the clip as an anim id under 4,096 (or the
@@ -391,7 +392,8 @@ by a hash of what they hold.
 ### The game's humans in the snapshots {#game-humans}
 
 Each step, after every human's update, the play mode captures the level's humans into a `net::GameHumans`
-(`PlayLevelMode::shareHumansWith()`, beside the `--trace-humans` rows), while something needs them: a session (hosting
+(`PlayLevelMode::shareHumansWith()`, beside the `--trace-humans` rows), and after the HUD's step each player slot's
+HUD state (`GameHumans::captureHuds()`, [HUD state](snapshots.md#hud-state)), while something needs them: a session (hosting
 or joined, from the command line or the Network page, from the step after it opens) or `--digest` or `--net-replay`
 (`NetGame::afterStep()`). Offline play captures nothing and holds no ids. For each brain, in slot order, its human's
 replicated state (`net::replicatedState()`: the feet, heading, health and its maximum, the four animation layers of
@@ -495,8 +497,9 @@ simulation's effects pass:
 
 **What raises none, and why.** The HUD's own cues (a message's, a hint's, the money count's) and the hints the HUD
 gives itself follow from the HUD's state, which a guest's HUD is given (the messages, objectives and hints here, each
-player's HUD state in the snapshot: #1447), so its own HUD plays them. A scene's sounds and a movie's sound play from
-the scene or the movie, which travel as their start and end. The lock pick's click plays nothing yet (it is counted).
+player's panel state in the snapshot: [HUD state](snapshots.md#hud-state)), so its own HUD plays them. A scene's
+sounds and a movie's sound play from the scene or the movie, which travel as their start and end. The lock pick's
+click plays nothing yet (it is counted).
 The sound's settings (`enableAmbientEmitter()`, `setAmbientEmitterVolume()`, `setAmbientTrackVolume()`,
 `setMusicVolume()`, and a script's `SoundPauseSound`) are lasting state, not a sound played: as events a guest who
 joined later would never get them, so they belong with the state a guest is given, which carries none of the sound's
@@ -536,8 +539,8 @@ its sequence (one-shots remember the last 64); a one-shot whose step was already
 reliable event is handed over at the next take however late it comes. `net::toGameEvent()` turns an arrived event back
 into the event raised, without its subject (a client has no handle for the server's ids yet). Only the sound starts,
 stops and moves have a player on a guest (`SoundEventPlayer`, [A playing sound](#sound-instances)), and nothing makes it
-yet: the client game mode that draws the snapshots will play the events, and each player's HUD state in the snapshot
-is #1447.
+yet: the client game mode that draws the snapshots will play the events, with each player's panel from the HUD state
+the snapshots carry ([HUD state](snapshots.md#hud-state), `NetPlay::arrivedHuds()`).
 
 **For the session record.** `coney::describe(const GameEvent&)` gives an event's one-line text (`sound3d id=0x22
 value=1 at=1.500,-2.000,0.250`), the form a session record writes beside its `event STEP TEXT` lines.
@@ -600,7 +603,8 @@ the handshake, letting go of a quiet pad, InputTiming and the client's clock fol
 ids (reused only with a new generation, the order slots come back in, the generations' wrap, the wire form) and the
 tables (a stale generation finds nothing, a client's refused binds, the walk in id order);
 `tests/net/replicated_fields_test.cpp` round-trips every table's fields at their range's ends and middle and checks
-the refusals and an infinite angle; `tests/net/snapshot_test.cpp` covers snapshots ([Snapshots](snapshots.md#testing));
+the refusals and an infinite angle; `tests/net/snapshot_test.cpp` and `tests/net/player_huds_test.cpp` cover
+snapshots and each player's HUD in them ([Snapshots](snapshots.md#testing));
 `tests/net/jitter_buffer_test.cpp` and `tests/net/client_world_test.cpp` cover the client's world, and what a client
 draws against what the server had over a bad link ([The client's world](client-world.md#testing));
 `tests/net/protocol_test.cpp` pins
@@ -636,5 +640,6 @@ Each step is a pull request that builds and is tested on its own.
    humans](#game-humans)), a client game mode that draws them, and its own follow camera. The state digest,
    two-process tests and replays (built: [Proof without a person](#proof)).
 6. **AI humans, events, mission state:** the rest of what a client must see and hear: the game events (built: [Game
-   events](#events)), each player's HUD state in the snapshot (#1447), the AI humans and the mission state.
+   events](#events)), each player's panel state in the snapshot (built: [HUD state](snapshots.md#hud-state)), the
+   AI humans and the mission state.
 7. **Prediction:** the local player predicted and corrected from the server's snapshots.

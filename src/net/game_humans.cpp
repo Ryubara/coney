@@ -12,6 +12,7 @@
 #include "animation/anim_task.h"
 #include "core/assert.h"
 #include "human/human.h"
+#include "net/player_huds.h"
 
 namespace coney::net {
 
@@ -86,7 +87,12 @@ void GameHumans::capture(const ai::Brains& brains) {
     }
 }
 
-void GameHumans::captureHuds(std::span<const hud::PlayerHudState> /*slots*/) {}
+void GameHumans::captureHuds(std::span<const hud::PlayerHudState> slots) {
+    if (!m_capturing) {
+        return;
+    }
+    m_huds = snapshotHuds(slots);
+}
 
 void GameHumans::clear() {
     std::vector<const human::Human*> all;
@@ -97,6 +103,7 @@ void GameHumans::clear() {
         }
     }
     m_humans.clear();
+    m_huds.clear();
 }
 
 void GameHumans::releaseRetired() {
