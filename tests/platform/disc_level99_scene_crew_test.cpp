@@ -147,8 +147,7 @@ void playIntro(coney::io::Wad& wad, const std::function<void(IntroPlay&)>& body)
     REQUIRE(system != nullptr);
     const std::optional<std::uint32_t> intro = system->idOf("l99_c1");
     REQUIRE(intro.has_value());
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, which clang-tidy
-    // does not know.
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
     REQUIRE(system->state(*intro) == coney::scenes::SceneState::Playing);
     IntroPlay play{.gameplay = gameplay, .stack = stack, .timer = timer, .scripts = scripts, .system = *system};
     body(play);
@@ -234,8 +233,7 @@ TEST_CASE("the disc's level99: the intro scene's end gives player 1's crew the f
     REQUIRE(system != nullptr);
     const std::optional<std::uint32_t> intro = system->idOf("l99_c1");
     REQUIRE(intro.has_value());
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, which clang-tidy
-    // does not know.
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
     REQUIRE(system->state(*intro) == coney::scenes::SceneState::Playing);
     coney::CharacterRules& rules = scripts.state().characters;
     coney::StoryState& story = scripts.state().story;
