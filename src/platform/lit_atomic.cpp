@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/lit_atomic.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -281,12 +282,28 @@ MaterialChange::MaterialChange(rw::Atomic& atomic, const graphics::Material3d& m
         }
         break;
     }
-    case graphics::MaterialColour::Shade:
+    case graphics::MaterialColour::Shade: {
+        // A human's colour times the shadow dimming, his alpha the fade (docs/research/graphics.md#human-draw). The
+        // materials keep the human's own colour between draws, so each draw scales the same colour, as the original
+        // scales the instance's HuColor; the fade stays, as the original writes it into the material and leaves it.
+        const float shade = std::clamp(material.shade, 0.0F, 1.0F);
+        const auto scaled = [shade](rw::uint8 channel) {
+            return static_cast<rw::uint8>(static_cast<float>(channel) * shade);
+        };
+        m_flags = geometry->flags;
+        m_restore = true;
+        for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
+            rw::RGBA& colour = geometry->matList.materials[i]->color;
+            m_own.push_back({colour.red, colour.green, colour.blue, material.fade});
+            colour = rw::RGBA{scaled(colour.red), scaled(colour.green), scaled(colour.blue), material.fade};
+        }
         break;
+    }
     }
 }
 
-// Puts back what a tint changed: the geometry's flags and the first material's own colour.
+// Puts back what a tint or a shade changed: the geometry's flags and the materials' own colours (a shade's with its
+// fade kept).
 MaterialChange::~MaterialChange() {
     if (!m_restore) {
         return;

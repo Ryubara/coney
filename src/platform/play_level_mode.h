@@ -504,8 +504,8 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
 
     // Draws the humans: their lights, the render states, each mesh in its two passes.
     void drawCharacter() const;
-    // Draws one human's passes (PlayLighting::drawHumanPasses), with his blood layer marked for the mesh views and the
-    // passes drawn recorded on his mesh for the Mesh group; the game's draw itself is untouched.
+    // Draws one human's passes (PlayLighting::drawHumanPasses, which records the passes drawn on his mesh for the Mesh
+    // group), with his blood layer marked for the mesh views; the game's draw itself is untouched.
     void drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood) const;
     // The blood texture of the second pass of a human with `health`, or null when it shows none.
     [[nodiscard]] rw::Texture* bloodTextureFor(const combat::Health& health) const;

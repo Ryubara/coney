@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/play_lighting.h"
 
-#include <algorithm>
+#include <array>
 #include <cmath>
 #include <format>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include <rw.h>
 
 #include "core/chunk_system.h"
 #include "platform/draw_calls.h"
+#include "platform/lit_atomic.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
 
@@ -55,15 +57,22 @@ std::unique_ptr<graphics::LevelLighting> standIn(anim::Vec3 direction) {
     return lighting;
 }
 
-// A colour channel scaled by `factor`.
-rw::uint8 scaledChannel(rw::uint8 channel, float factor) {
-    return static_cast<rw::uint8>(static_cast<float>(channel) * std::clamp(factor, 0.0F, 1.0F));
+// A skinning matrix as a frame description's bone: its axes and translation, as given.
+graphics::Transform3d boneOf(const anim::Mat34& m) {
+    return graphics::Transform3d{.right = {m.x.x, m.x.y, m.x.z},
+                                 .up = {m.y.x, m.y.y, m.y.z},
+                                 .at = {m.z.x, m.z.y, m.z.z},
+                                 .position = {m.t.x, m.t.y, m.t.z}};
 }
+
+// librw's vector as three floats.
+std::array<float, 3> axisOf(const rw::V3d& v) { return {v.x, v.y, v.z}; }
 
 } // namespace
 
 PlayLighting::PlayLighting(RenderEngine& engine, const io::Wad& wad, graphics::LevelLighting* level,
-                           anim::Vec3 standInDirection, const std::function<void(std::string_view)>& print) {
+                           anim::Vec3 standInDirection, const std::function<void(std::string_view)>& print)
+    : m_engine(engine) {
     if (level == nullptr) {
         m_own = standIn(standInDirection);
         level = m_own.get();
@@ -91,27 +100,8 @@ void PlayLighting::step(const WorldView& view, const raycast::CollisionMesh& mes
     m_scene->stepped();
 }
 
-bool PlayLighting::drawHuman(rw::Atomic* atomic, bool player) {
-    if (player) {
-        // The player's materials keep their own colours, times the dimming (HuColor is white).
-        rw::Geometry* geometry = atomic->geometry;
-        if (atomic != m_playerAtomic ||
-            m_playerColours.size() != static_cast<std::size_t>(geometry->matList.numMaterials)) {
-            m_playerAtomic = atomic;
-            m_playerColours.clear();
-            for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
-                m_playerColours.push_back(geometry->matList.materials[i]->color);
-            }
-        }
-        const float factor = m_playerDim.factor();
-        for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
-            const rw::RGBA base = m_playerColours.at(static_cast<std::size_t>(i));
-            rw::RGBA& colour = geometry->matList.materials[i]->color;
-            colour.red = scaledChannel(base.red, factor);
-            colour.green = scaledChannel(base.green, factor);
-            colour.blue = scaledChannel(base.blue, factor);
-        }
-    }
+std::size_t PlayLighting::drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood) {
+    rw::Atomic* atomic = mesh.atomic();
     // Faded out from 60 to 70 m from the camera, and not drawn beyond. **Coney's reading**: the distance is the posed
     // body's sphere centre's; the first second's fade-in is not drawn.
     const rw::Sphere* sphere = atomic->getWorldBoundingSphere();
@@ -121,44 +111,70 @@ bool PlayLighting::drawHuman(rw::Atomic* atomic, bool player) {
     const float dz = sphere->center.z - eye.z;
     const float fade = graphics::humanDistanceFade(std::sqrt((dx * dx) + (dy * dy) + (dz * dz)));
     if (fade <= 0.0F) {
-        return false;
+        mesh.setDrawnPasses(0);
+        return 0;
     }
-    const auto alpha = static_cast<rw::uint8>(std::lround(255.0F * fade));
-    for (rw::int32 i = 0; i < atomic->geometry->matList.numMaterials; ++i) {
-        atomic->geometry->matList.materials[i]->color.alpha = alpha;
-    }
+    // His materials' own colours (HuColor is white) times the player's shadow dimming, the alpha the fade; the blood
+    // layer takes the same colours, so both passes are lit alike, as the original's vertex colours are equal.
+    const graphics::Material3d material{.colour = graphics::MaterialColour::Shade,
+                                        .fade = static_cast<std::uint8_t>(std::lround(255.0F * fade)),
+                                        .shade = player ? m_playerDim.factor() : 1.0F};
     const bool hidden = player && m_playerDim.hidden();
     m_scene->noteHiddenHuman(hidden);
-    // Through the draw layer, so the draw-stream hashes see the humans (item 9 of docs/engine/renderer.md#order).
-    m_scene->setRouted(true);
-    m_scene->drawHumanAtomic(atomic, hidden);
-    m_scene->setRouted(false);
-    return true;
+    if (blood != nullptr) {
+        mesh.setBloodTexture(blood);
+    }
+    const std::size_t passes = blood != nullptr ? 2 : 1;
+    const bool held = mesh.meshId().valid() && (blood == nullptr || mesh.bloodMeshId().valid());
+    if (!held || m_scene->meshViewsOn()) {
+        drawHumanInRig(mesh, material, hidden, blood);
+        mesh.setDrawnPasses(passes);
+        return passes;
+    }
+    // The frame description's draw: the body by id with the blood layer as its dual layer, the placement, the pose,
+    // the colours, the humans' states as the play mode set them and his lights, selected once for both passes as the
+    // original selects them once (docs/research/lighting.md#select); the GL3 renderer draws it at once.
+    graphics::Draw3d draw;
+    draw.mesh = mesh.meshId();
+    if (blood != nullptr) {
+        draw.dualLayer = mesh.bloodMeshId();
+    }
+    draw.dualPass = graphics::DualPass::Blood;
+    const rw::Matrix* ltm = atomic->getFrame()->getLTM();
+    draw.transform = graphics::Transform3d{
+        .right = axisOf(ltm->right), .up = axisOf(ltm->up), .at = axisOf(ltm->at), .position = axisOf(ltm->pos)};
+    draw.material = material;
+    draw.states = sceneStatesInForce();
+    std::vector<graphics::Transform3d> bones;
+    bones.reserve(mesh.skinning().size());
+    for (const anim::Mat34& matrix : mesh.skinning()) {
+        bones.push_back(boneOf(matrix));
+    }
+    const std::vector<graphics::SceneLight> lights = m_scene->humanLights(atomic, hidden);
+    m_engine.drawScene(draw, lights, bones, blood);
+    mesh.setDrawnPasses(passes);
+    return passes;
 }
 
-void PlayLighting::drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood) {
-    if (!drawHuman(mesh.atomic(), player) || blood == nullptr) {
-        return;
-    }
-    // The dual layer takes the first pass's material colours (the player's dimming included), so both passes are lit
-    // alike, as the original's vertex colours are equal.
-    rw::Geometry* base = mesh.atomic()->geometry;
-    rw::Geometry* layer = mesh.bloodAtomic()->geometry;
-    for (rw::int32 i = 0; i < layer->matList.numMaterials && i < base->matList.numMaterials; ++i) {
-        layer->matList.materials[i]->color = base->matList.materials[i]->color;
-    }
-    mesh.setBloodTexture(blood);
-    // GS context 2 (rendering.md#characters): ALPHA 0x44 (source over by the texture's alpha), alpha test off, the
-    // same Z test with Z write. Equal depths pass librw's LEQUAL test.
-    draw::setRenderState(rw::VERTEXALPHA, 1);
-    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
-    draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+void PlayLighting::drawHumanInRig(CharacterMesh& mesh, const graphics::Material3d& material, bool hidden,
+                                  rw::Texture* blood) {
+    // Through the draw layer, so the draw-stream hashes see the humans (item 9 of docs/engine/renderer.md#order).
+    const MaterialChange colours(*mesh.atomic(), material);
     m_scene->setRouted(true);
-    m_scene->drawHumanAtomic(mesh.bloodAtomic(), player && m_playerDim.hidden());
+    m_scene->drawHumanAtomic(mesh.atomic(), hidden);
+    if (blood != nullptr) {
+        // GS context 2 (rendering.md#characters): ALPHA 0x44 (source over by the texture's alpha), alpha test off,
+        // the same Z test with Z write. Equal depths pass librw's LEQUAL test.
+        const MaterialChange layerColours(*mesh.bloodAtomic(), material);
+        draw::setRenderState(rw::VERTEXALPHA, 1);
+        draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+        draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+        draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+        m_scene->drawHumanAtomic(mesh.bloodAtomic(), hidden);
+        draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAGREATEREQUAL);
+        draw::setRenderState(rw::VERTEXALPHA, 0);
+    }
     m_scene->setRouted(false);
-    draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAGREATEREQUAL);
-    draw::setRenderState(rw::VERTEXALPHA, 0);
 }
 
 void PlayLighting::addShadow(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {

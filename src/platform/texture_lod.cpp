@@ -106,8 +106,7 @@ void renderWithLod(rw::Atomic* atomic, rw::gl3::InstanceDataHeader* header) {
         rw::Material* material = inst->material;
         rw::gl3::setMaterial(flags, material->color, material->surfaceProps);
         rw::gl3::setTexture(0, material->texture);
-        // Through the draw layer, so the states it records after this draw are librw's
-        // (docs/engine/renderer.md#comparing).
+        // Through the draw layer, so that the states it records next are librw's (docs/engine/renderer.md#comparing).
         draw::setRenderState(rw::VERTEXALPHA, inst->vertexAlpha || material->color.alpha != 0xFF ? 1 : 0);
         setTextureLodFor(material);
         const bool lit = (lightBits & rw::gl3::VSLIGHT_MASK) != 0;

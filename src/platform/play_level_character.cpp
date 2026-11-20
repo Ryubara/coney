@@ -108,7 +108,8 @@ void PlayLevelMode::humanMade(const human::Human& human, const std::string& mode
     const CastLook look =
         model.empty() ? CastLook{.character = m_character.get(), .texture = m_texture} : castLook(model);
     FighterMesh mesh;
-    mesh.mesh = std::make_unique<CharacterMesh>(characterOf(human).assets().model, look.texture, Skinning::Gpu);
+    mesh.mesh = std::make_unique<CharacterMesh>(characterOf(human).assets().model, look.texture, Skinning::Gpu,
+                                                &m_engine.sceneAssets());
     m_fighterMeshes.insert_or_assign(&human, std::move(mesh));
 }
 

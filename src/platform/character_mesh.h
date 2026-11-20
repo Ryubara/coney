@@ -78,9 +78,9 @@ class CharacterMesh {
   public:
     /// Builds the geometry of `model` in its unskinned (bind) positions. `texture` (may be null: untextured) is used by
     /// every material, as the models' materials name no texture of their own (characters.md); the mesh keeps a
-    /// reference to it. Lit by the world's lights with the vertex normals, modulated by the material colour.
-    /// `assets` is not used yet: the frame description's draws of the humans (item 9 of docs/engine/renderer.md#order)
-    /// will hold the mesh's atomics there.
+    /// reference to it. Lit by the world's lights with the vertex normals, modulated by the material colour. With
+    /// `assets` (which must outlive the mesh: the RenderEngine's), both atomics are held there by id for the frame
+    /// description's draws (meshId(), bloodMeshId(); docs/engine/renderer.md#frame-description) until the mesh goes.
     CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture, Skinning skinning = Skinning::Cpu,
                   SceneAssets* assets = nullptr);
     ~CharacterMesh();
@@ -106,13 +106,13 @@ class CharacterMesh {
     [[nodiscard]] bool gpuSkinned() const { return m_gpu; }
     /// The skinning matrices of the last pose(), one per skin node in the character's space: the pose a frame
     /// description's draw of the mesh carries. Empty before the first pose() and for a mesh posed by update().
-    [[nodiscard]] std::span<const anim::Mat34> skinning() const { return {}; }
+    [[nodiscard]] std::span<const anim::Mat34> skinning() const { return m_skinning; }
 
     /// The first pass's atomic in the scene assets the mesh was given; invalid without them, or when it did not
     /// convert.
-    [[nodiscard]] graphics::MeshId meshId() const { return {}; }
+    [[nodiscard]] graphics::MeshId meshId() const { return m_meshId; }
     /// The blood layer's atomic in the scene assets, as meshId().
-    [[nodiscard]] graphics::MeshId bloodMeshId() const { return {}; }
+    [[nodiscard]] graphics::MeshId bloodMeshId() const { return m_bloodMeshId; }
 
     /// The librw atomic of the first pass, for drawing. Valid as long as this object.
     [[nodiscard]] rw::Atomic* atomic() const { return m_atomic; }
@@ -122,7 +122,7 @@ class CharacterMesh {
     void setBloodTexture(rw::Texture* texture);
 
     /// How many passes the last frame drew of it: 0 (too far, not drawn), 1 (the texture) or 2 (with the blood layer),
-    /// as PlayLevelMode::drawHumanPasses() records it; the Entity inspector's Mesh group counts its draw calls from it.
+    /// as PlayLighting::drawHumanPasses() records it; the Entity inspector's Mesh group counts its draw calls from it.
     [[nodiscard]] std::size_t drawnPasses() const { return m_drawnPasses; }
     /// Records the passes drawn this frame.
     void setDrawnPasses(std::size_t passes) { m_drawnPasses = passes; }
@@ -145,6 +145,10 @@ class CharacterMesh {
     std::unique_ptr<BonePalette> m_palette; // this frame's bone matrices (GPU)
     std::vector<BoneBox> m_boxes;           // per skin node (GPU)
     std::size_t m_drawnPasses = 0;          // setDrawnPasses()
+    std::vector<anim::Mat34> m_skinning;    // skinning()
+    SceneAssets* m_assets = nullptr;        // where meshId() and bloodMeshId() are held; null: nowhere
+    graphics::MeshId m_meshId;
+    graphics::MeshId m_bloodMeshId;
 };
 
 } // namespace coney::platform

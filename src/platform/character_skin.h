@@ -63,5 +63,9 @@ void useCharacterSkin(rw::Atomic* atomic, const SkinVertexData& vertices, const 
 [[nodiscard]] const BonePalette* characterSkinPalette(const rw::Atomic* atomic);
 /// The weights and bones of `atomic`'s geometry when the atomic is on the skinned pipeline; null when it is not.
 [[nodiscard]] const SkinVertexData* characterSkinVertices(const rw::Atomic* atomic);
+/// Points `atomic`, which must be on the skinned pipeline, at `palette` (which must outlive its use) and returns the
+/// palette it had: the GL3 renderer draws a human with the pose its frame description carries, then puts the mesh's
+/// own palette back.
+const BonePalette* swapCharacterSkinPalette(rw::Atomic* atomic, const BonePalette* palette);
 
 } // namespace coney::platform

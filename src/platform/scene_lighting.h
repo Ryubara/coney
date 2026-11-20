@@ -76,6 +76,12 @@ class SceneLighting {
     /// applied: for the frame description's draw of it (drawObject()). Counts the atomic as drawn and adds the lighting
     /// frame's row of its selection, as drawCarAtomic() does.
     [[nodiscard]] std::vector<graphics::SceneLight> carLights(rw::Atomic* atomic);
+    /// The lights a human's atomic is drawn with (the objects' lights for his squared distance to the camera, and the
+    /// point lights his sphere overlaps unless `hidden`), by value, as drawHumanAtomic() would put them in librw's
+    /// world, with the lighting lab's layers applied: for the frame description's draw of him, whose blood layer takes
+    /// the same lights (PlayLighting::drawHumanPasses()). Counts the atomic as drawn and adds the lighting frame's row
+    /// of its selection, as drawHumanAtomic() does; noteHiddenHuman() says `hidden` for the row first.
+    [[nodiscard]] std::vector<graphics::SceneLight> humanLights(rw::Atomic* atomic, bool hidden);
     /// Whether the debug tools' mesh views are set (setMeshViews()): they decide per atomic what is drawn, so the world
     /// renderer then draws its sectors through drawWorldAtomic().
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
@@ -147,8 +153,7 @@ class SceneLighting {
     /// only with the shaded draw; null: none. The caller marks it, so the original's draw functions stay as they are.
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
     void setMeshLayer(const rw::Atomic* atomic) { m_meshLayer = atomic; }
-    /// How many atomics the rig has drawn since it was made, with or without the mesh views: the play mode counts a
-    /// human's passes from it for the Entity inspector's Mesh group.
+    /// How many atomics the rig has drawn or selected lights for since it was made, with or without the mesh views.
     /// @coney-only the Entity inspector's Mesh group (docs/guides/debug-menu.md#mesh-group)
     [[nodiscard]] std::uint64_t atomicsDrawn() const { return m_atomicsDrawn; }
 

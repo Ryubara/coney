@@ -18,6 +18,7 @@ void FrameDescription::begin(const FrameStart& start) {
     m_vertices.clear();
     m_lights.clear();
     m_sceneTextures.clear();
+    m_bones.clear();
 }
 
 FrameTextureId FrameDescription::texture(const Texture* texture) {
@@ -100,7 +101,7 @@ void FrameDescription::addScreenPass(const ScreenPass& pass) { m_passes.emplace_
 
 void FrameDescription::addSceneDraw(Draw3d draw, std::span<const SceneLight> lights,
                                     std::span<const TextureId> textures, std::span<const TextureId> dualTextures,
-                                    std::span<const Transform3d> /*bones*/) {
+                                    std::span<const Transform3d> bones) {
     // The ranges point into the frame's arrays, after what earlier draws added.
     draw.firstLight = static_cast<std::uint32_t>(m_lights.size());
     draw.lightCount = static_cast<std::uint32_t>(lights.size());
@@ -111,6 +112,9 @@ void FrameDescription::addSceneDraw(Draw3d draw, std::span<const SceneLight> lig
     draw.firstDualTexture = static_cast<std::uint32_t>(m_sceneTextures.size());
     draw.dualTextureCount = static_cast<std::uint32_t>(dualTextures.size());
     m_sceneTextures.insert(m_sceneTextures.end(), dualTextures.begin(), dualTextures.end());
+    draw.firstBone = static_cast<std::uint32_t>(m_bones.size());
+    draw.boneCount = static_cast<std::uint32_t>(bones.size());
+    m_bones.insert(m_bones.end(), bones.begin(), bones.end());
     scene().draws.push_back(draw);
 }
 
@@ -139,6 +143,9 @@ std::span<const TextureId> FrameDescription::dualTexturesOf(const Draw3d& draw) 
     return std::span<const TextureId>(m_sceneTextures).subspan(draw.firstDualTexture, draw.dualTextureCount);
 }
 
-std::span<const Transform3d> FrameDescription::bonesOf(const Draw3d& /*draw*/) const { return {}; }
+std::span<const Transform3d> FrameDescription::bonesOf(const Draw3d& draw) const {
+    CONEY_ASSERT(draw.firstBone + draw.boneCount <= m_bones.size());
+    return std::span<const Transform3d>(m_bones).subspan(draw.firstBone, draw.boneCount);
+}
 
 } // namespace coney::graphics

@@ -5,11 +5,15 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <memory>
 #include <variant>
+#include <vector>
 
 #include <rw.h>
 
 #include "core/assert.h"
+#include "platform/character_mesh.h"
+#include "platform/character_skin.h"
 #include "platform/draw_calls.h"
 #include "platform/movie_screen.h"
 #include "platform/sprite_sheets.h"
@@ -139,8 +143,59 @@ void Gl3Renderer::drawScene(const graphics::FrameDescription& frame, const graph
     }
     m_lights->use(frame.lightsOf(draw));
     setDistanceMipmaps(draw.material.distanceLevels);
-    drawLitAtomic(atomic, target.assets->atomic(draw.dualLayer), m_lights->world(), true);
+    if (draw.dualPass == graphics::DualPass::Blood) {
+        drawHuman(frame, draw, *atomic, target.assets->atomic(draw.dualLayer));
+    } else {
+        drawLitAtomic(atomic, target.assets->atomic(draw.dualLayer), m_lights->world(), true);
+    }
     setDistanceMipmaps(false);
+}
+
+void Gl3Renderer::drawHuman(const graphics::FrameDescription& frame, const graphics::Draw3d& draw, rw::Atomic& atomic,
+                            rw::Atomic* blood) {
+    // The pose: on the skinned pipeline the shader blends by the palette, filled here from the draw's bones and lent
+    // to both atomics for the draw; skinned on the CPU, the mesh blended its vertices from the same matrices when it
+    // was posed (CharacterMesh::pose()), so the geometry already holds them.
+    const BonePalette* own = nullptr;
+    const BonePalette* bloodOwn = nullptr;
+    if (characterSkinPalette(&atomic) != nullptr) {
+        if (!m_palette) {
+            m_palette = std::make_unique<BonePalette>();
+            m_palette->fill(0.0F);
+        }
+        std::vector<anim::Mat34> skinning;
+        for (const graphics::Transform3d& bone : frame.bonesOf(draw)) {
+            skinning.push_back(anim::Mat34{.x = {bone.right[0], bone.right[1], bone.right[2]},
+                                           .y = {bone.up[0], bone.up[1], bone.up[2]},
+                                           .z = {bone.at[0], bone.at[1], bone.at[2]},
+                                           .t = {bone.position[0], bone.position[1], bone.position[2]}});
+        }
+        fillBonePalette(skinning, *m_palette);
+        own = swapCharacterSkinPalette(&atomic, m_palette.get());
+        if (blood != nullptr && characterSkinPalette(blood) != nullptr) {
+            bloodOwn = swapCharacterSkinPalette(blood, m_palette.get());
+        }
+    }
+    drawLitAtomic(&atomic, nullptr, m_lights->world(), true);
+    if (blood != nullptr) {
+        // The blood pass (GS context 2, docs/research/rendering.md#characters): ALPHA 0x44, source over by the blood
+        // texture's alpha, with the alpha test off, the same Z test with Z write (equal depths pass librw's LEQUAL),
+        // in the body's colours; then the first passes' alpha test again and the vertex alpha off.
+        const MaterialChange colours(*blood, draw.material);
+        draw::setRenderState(rw::VERTEXALPHA, 1);
+        draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+        draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+        draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+        drawLitAtomic(blood, nullptr, m_lights->world(), true);
+        draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHAGREATEREQUAL);
+        draw::setRenderState(rw::VERTEXALPHA, 0);
+    }
+    if (own != nullptr) {
+        swapCharacterSkinPalette(&atomic, own);
+    }
+    if (bloodOwn != nullptr) {
+        swapCharacterSkinPalette(blood, bloodOwn);
+    }
 }
 
 Gl3Renderer::KeptCopy* Gl3Renderer::keptCopy(graphics::ScreenCopyId id) {

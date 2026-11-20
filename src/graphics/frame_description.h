@@ -207,8 +207,7 @@ struct Transform3d {
 /// How a 3D draw's dual layer is drawn over its mesh.
 enum class DualPass : std::uint8_t {
     /// A world's or an object's dual layer (docs/research/rendering.md#dual): at the alpha of the mesh's first
-    /// material,
-    /// with no alpha test, in the draw's states.
+    /// material, with no alpha test, in the draw's states.
     Layer,
     /// A human's blood layer (docs/research/rendering.md#characters, GS context 2): in the mesh's colours, blended by
     /// its texture's alpha (source alpha over inverse source alpha, the vertex alpha on) with no alpha test, Z tested

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -58,14 +59,15 @@ class PlayLighting {
     void step(const WorldView& view, const raycast::CollisionMesh& mesh, anim::Vec3 playerFeet,
               std::uint32_t elapsedMs);
 
-    /// Draws a human's atomic lit as the original lights humans, faded out from 60 to 70 m from the camera
-    /// (graphics::humanDistanceFade()); `player` takes the player's shadow dimming. False when it is too far to draw.
-    bool drawHuman(rw::Atomic* atomic, bool player);
-    /// Draws a human as the original does, mesh by mesh in two passes: the first with his texture (drawHuman()), then
-    /// at once the dual layer with `blood` (null: no second pass), blended by the texture's alpha with no alpha test,
-    /// Z tested and written, lit and fogged as the first. `player` as drawHuman()'s.
+    /// Draws a human as the original does, in two passes: the first with his texture, lit as the original lights
+    /// humans, his colour times the player's shadow dimming when `player`, faded out from 60 to 70 m from the camera
+    /// (graphics::humanDistanceFade()) and not drawn beyond; then at once the dual layer with `blood` (null: no second
+    /// pass), blended by the texture's alpha with no alpha test, Z tested and written, lit and fogged as the first.
+    /// Onto the frame description with his pose (RenderEngine::drawScene(), docs/engine/renderer.md#frame-description),
+    /// or, while the debug tools' mesh views are on or his meshes are not held by id, through the rig. Records the
+    /// passes drawn in `mesh` (CharacterMesh::drawnPasses()) and returns them: 0 too far, 1, or 2 with the blood layer.
     /// @orig 0x00174320 HumanRender_Draw (HumanRender.cpp)
-    void drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood);
+    std::size_t drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood);
     /// Keeps a blob shadow for a human standing at `feet` (game axes) on `mesh`, for this frame's drawShadows().
     void addShadow(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
     /// Draws and forgets this frame's blob shadows.
@@ -87,13 +89,16 @@ class PlayLighting {
     [[nodiscard]] std::string summary() const;
 
   private:
+    // Draws a human's passes through the rig with `material`'s colours (the mesh views' way, and a human whose meshes
+    // are not held by id): the first pass, then the blood layer with `blood` when not null.
+    void drawHumanInRig(CharacterMesh& mesh, const graphics::Material3d& material, bool hidden, rw::Texture* blood);
+
+    RenderEngine& m_engine;                         // the frame description the humans are drawn onto
     std::unique_ptr<graphics::LevelLighting> m_own; // the stand-in's, when there is no level's
     graphics::LevelLighting* m_level = nullptr;     // what is drawn with: the level's or m_own
     std::unique_ptr<SceneLighting> m_scene;
     graphics::ShadowDim m_playerDim;
     std::vector<graphics::BlobShadow> m_shadows;
-    rw::Atomic* m_playerAtomic = nullptr;  // the atomic m_playerColours belong to
-    std::vector<rw::RGBA> m_playerColours; // its materials' own colours, before the dimming
 };
 
 } // namespace coney::platform
