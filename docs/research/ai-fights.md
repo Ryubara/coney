@@ -830,8 +830,9 @@ kind 1) and `c` = cos(field of view / 2):
    (`HUD_RadarMarkEnemies`).
 
 **`Brain_IsThreat(brain, other)`** (`0x00290138`; also `Human_IsThreatTo` `0x00222a48`, which the type
-event handlers call): never himself; a Warrior whose `+0x2e5` is set (hitting back at his chief) and the chief are
-threats to each other; otherwise a threat when the gangs are enemies or both are players.
+event handlers call): never himself; a Warrior whose `+0x2e5` is set and any pad player are threats to each other,
+in both directions; otherwise a threat when the gangs are enemies or both are players. Confirmed (code) at
+`0x00290138`; the [step-by-step reading](ai-reimpl.md#brain-is-threat) describes both directions.
 
 #### The Spectate goal {#spectate}
 
