@@ -22,6 +22,7 @@
 #include "human/target_human.h"
 #include "platform/character_mesh.h"
 #include "platform/render_engine.h"
+#include "platform/scene_assets.h"
 #include "support/character_fixtures.h"
 
 using coney::anim::Vec3;
@@ -56,9 +57,10 @@ TargetSnapshot snapshotOf(const coney::anim::Skeleton& skeleton, std::size_t n, 
     return snapshot;
 }
 
-// What a posed mesh holds that a draw reads: its skinning matrices, both atomics' frames and bounding spheres, and its
-// first atomic's vertices and normals.
+// What a posed mesh holds that a draw reads: how it is skinned, its bone palette (GPU), its skinning matrices, both
+// atomics' frames and bounding spheres (the posed box's, GPU), and their vertices and normals (blended, CPU).
 struct PosedMesh {
+    bool gpu = false;
     std::vector<coney::anim::Mat34> skinning;
     std::vector<float> numbers;
 };
@@ -66,6 +68,10 @@ struct PosedMesh {
 // Reads what a draw of `mesh` would see, as plain numbers compared exactly.
 PosedMesh readPosed(const CharacterMesh& mesh) {
     PosedMesh posed;
+    posed.gpu = mesh.gpuSkinned();
+    if (const coney::platform::BonePalette* palette = mesh.bonePalette()) {
+        posed.numbers.assign(palette->begin(), palette->end());
+    }
     posed.skinning.assign(mesh.skinning().begin(), mesh.skinning().end());
     for (rw::Atomic* atomic : {mesh.atomic(), mesh.bloodAtomic()}) {
         const rw::Matrix* frame = atomic->getFrame()->getLTM();
@@ -88,7 +94,7 @@ PosedMesh readPosed(const CharacterMesh& mesh) {
 }
 
 bool samePose(const PosedMesh& a, const PosedMesh& b) {
-    if (a.skinning.size() != b.skinning.size() || a.numbers != b.numbers) {
+    if (a.gpu != b.gpu || a.skinning.size() != b.skinning.size() || a.numbers != b.numbers) {
         return false;
     }
     for (std::size_t i = 0; i < a.skinning.size(); ++i) {
@@ -107,7 +113,7 @@ TEST_CASE("humans posed on one worker or four match each posed alone", "[platfor
     // Expected: docs/engine/renderer-performance.md#posing-on-workers: posing on the workers does the same arithmetic
     // per human as CharacterMesh::pose() on the main thread (his blend, his matrices, his scale, his placement), so 40
     // humans, some blended between two steps, some given a pose (a scene's), some scaled, come out bit for bit as
-    // posed one by one, with a pool of one thread and of four.
+    // posed one by one, with a pool of one thread and of four, skinned by the shader and on the CPU.
     auto engine = startHeadless();
     auto model = coney::characters::decodeCharacterModel(
         coney::test::characterClump(coney::test::testCharacterFields()).span(), coney::test::testBoneOffsets().span());
@@ -125,41 +131,53 @@ TEST_CASE("humans posed on one worker or four match each posed alone", "[platfor
     const auto scaleOf = [](std::size_t n) { return n % 5 == 0 ? 1.25F : 1.0F; };
     const auto givenPose = [](std::size_t n) { return n % 3 == 0; };
 
-    // Each posed alone, whole, on this thread.
-    std::vector<PosedMesh> expected;
-    {
-        for (std::size_t n = 0; n < kHumans; ++n) {
-            CharacterMesh mesh(*model, nullptr, coney::platform::Skinning::Gpu);
-            const TargetSnapshot pose =
-                givenPose(n) ? after[n] : coney::human::interpolate(before[n], after[n], kAlpha);
-            mesh.pose(coney::platform::scaledSkinning(skeleton, *model, pose.pose, scaleOf(n)),
-                      coney::platform::characterPlacement(pose.feet, pose.heading, 0.0F));
-            expected.push_back(readPosed(mesh));
-        }
-    }
-    for (const std::size_t threads : {std::size_t{1}, std::size_t{4}}) {
-        coney::WorkerPool pool(threads);
-        std::vector<std::unique_ptr<CharacterMesh>> meshes;
-        std::vector<HumanPoseJob> jobs;
-        for (std::size_t n = 0; n < kHumans; ++n) {
-            meshes.push_back(std::make_unique<CharacterMesh>(*model, nullptr, coney::platform::Skinning::Gpu));
-            HumanPoseJob job{.mesh = meshes.back().get(), .skeleton = &skeleton, .model = &*model, .scale = scaleOf(n)};
-            if (givenPose(n)) {
-                job.pose = after[n];
-            } else {
-                job.previous = &before[n];
-                job.current = &after[n];
-                job.alpha = kAlpha;
+    // Both halves of CharacterMesh::preparePose(): meshes skinned by the shader (the palette and posed box, given
+    // scene assets with the skinned pipeline on, as the GL3 and GPU renderers make them) and on the CPU (the Null
+    // renderer's own scene assets: every vertex blended).
+    coney::platform::SceneAssets shaders(true, true);
+    REQUIRE(shaders.skinsInShaders());
+    for (coney::platform::SceneAssets* assets : {&shaders, &engine->sceneAssets()}) {
+        const bool gpu = assets == &shaders;
+        INFO((gpu ? "skinned by the shader" : "skinned on the CPU"));
+        // Each posed alone, whole, on this thread.
+        std::vector<PosedMesh> expected;
+        {
+            for (std::size_t n = 0; n < kHumans; ++n) {
+                CharacterMesh mesh(*model, nullptr, coney::platform::Skinning::Gpu, assets);
+                REQUIRE(mesh.gpuSkinned() == gpu);
+                const TargetSnapshot pose =
+                    givenPose(n) ? after[n] : coney::human::interpolate(before[n], after[n], kAlpha);
+                mesh.pose(coney::platform::scaledSkinning(skeleton, *model, pose.pose, scaleOf(n)),
+                          coney::platform::characterPlacement(pose.feet, pose.heading, 0.0F));
+                expected.push_back(readPosed(mesh));
             }
-            jobs.push_back(job);
         }
-        coney::platform::prepareHumanPoses(pool, jobs);
-        for (const HumanPoseJob& job : jobs) {
-            coney::platform::commitHumanPose(job);
-        }
-        for (std::size_t n = 0; n < kHumans; ++n) {
-            INFO("threads " << threads << ", human " << n);
-            CHECK(samePose(readPosed(*meshes[n]), expected[n]));
+        for (const std::size_t threads : {std::size_t{1}, std::size_t{4}}) {
+            coney::WorkerPool pool(threads);
+            std::vector<std::unique_ptr<CharacterMesh>> meshes;
+            std::vector<HumanPoseJob> jobs;
+            for (std::size_t n = 0; n < kHumans; ++n) {
+                meshes.push_back(
+                    std::make_unique<CharacterMesh>(*model, nullptr, coney::platform::Skinning::Gpu, assets));
+                HumanPoseJob job{
+                    .mesh = meshes.back().get(), .skeleton = &skeleton, .model = &*model, .scale = scaleOf(n)};
+                if (givenPose(n)) {
+                    job.pose = after[n];
+                } else {
+                    job.previous = &before[n];
+                    job.current = &after[n];
+                    job.alpha = kAlpha;
+                }
+                jobs.push_back(job);
+            }
+            coney::platform::prepareHumanPoses(pool, jobs);
+            for (const HumanPoseJob& job : jobs) {
+                coney::platform::commitHumanPose(job);
+            }
+            for (std::size_t n = 0; n < kHumans; ++n) {
+                INFO("threads " << threads << ", human " << n);
+                CHECK(samePose(readPosed(*meshes[n]), expected[n]));
+            }
         }
     }
 }

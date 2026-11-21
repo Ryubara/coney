@@ -117,6 +117,8 @@ class CharacterMesh {
 
     /// Whether the vertex shader skins this mesh.
     [[nodiscard]] bool gpuSkinned() const { return m_gpu; }
+    /// The shader's bone palette the last pose filled; null for a mesh skinned on the CPU.
+    [[nodiscard]] const BonePalette* bonePalette() const { return m_gpu ? m_palette.get() : nullptr; }
     /// The skinning matrices of the last pose(), one per skin node in the character's space: the pose a frame
     /// description's draw of the mesh carries. Empty before the first pose() and for a mesh posed by update().
     [[nodiscard]] std::span<const anim::Mat34> skinning() const { return m_skinning; }
