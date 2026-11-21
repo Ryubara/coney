@@ -24,8 +24,9 @@ inline constexpr int kVandalizeFightMs = 4000;
 /// damage (1) from a stranger makes that member fight back (onDamage()) and fires 5; seeing the player (10) fires 4,
 /// an enemy spotted (11) 3 and an attack warning (16) 6; 19 and 22 give the goals again; a fight seen (20) is taken.
 /// **Coney stand-ins**: the cars of `TacticVandalizeCars` (issue #716), the vandal brain byte `+0x28d` (not
-/// identified) and event 23 (an object broken: the waiting members' cheer, `VandalizeTactic_OnObjectBroken`, and code
-/// 16 for an object of the zone) are not built, because Coney sends no event 23 yet.
+/// identified) and event 23 (an object broken: the waiting members' cheer, `VandalizeTactic_OnObjectBroken`, with
+/// `DestroyGoal_IsWaiting` as its caller's question, and code 16 for an object of the zone) are not built, because
+/// Coney sends no event 23 yet (issue #1571).
 class VandalizeTactic final : public StoryTactic {
   public:
     /// The wreck of `call` (its zone, delay, callback and range) through `services` (its items: none, and the members

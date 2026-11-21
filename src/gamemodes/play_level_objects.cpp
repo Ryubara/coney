@@ -28,6 +28,7 @@
 #include "combat/stick_games.h"
 #include "combat/throw_velocity.h"
 #include "core/game_events.h"
+#include "gamemodes/held_throws.h"
 #include "gamemodes/play_level_simulation.h"
 #include "gamemodes/sound_events.h"
 #include "hud/hud.h"
@@ -101,19 +102,6 @@ anim::Quat headingRotation(float heading) {
     return anim::Quat{.x = 0.0F, .y = 0.0F, .z = std::sin(heading / 2.0F), .w = std::cos(heading / 2.0F)};
 }
 
-// Whether `animId` is one of the held-object throws, whose release event lets go of what is held: the set 4-6 objects
-// and the melee weapons' (491, 502; docs/research/combat-throws.md#armed-special).
-// @coney-only Coney's list of the throw clips, standing for the release handler's held-flag test (`0x1000010`)
-bool throwClip(std::uint32_t animId) {
-    constexpr std::array<int, 11> kThrows{
-        combat::anim_id::kOneHandedThrow,        combat::anim_id::kOneHandedThrowFromWalk,
-        combat::anim_id::kOneHandedThrowFromRun, combat::anim_id::kBarrelThrow,
-        combat::anim_id::kBarrelThrowFromWalk,   combat::anim_id::kBarrelThrowFromRun,
-        combat::anim_id::kGhettoThrow,           combat::anim_id::kGhettoThrowFromWalk,
-        combat::anim_id::kGhettoThrowFromRun,    combat::anim_id::kKnifeThrow,
-        combat::anim_id::kSwingableThrow};
-    return std::ranges::find(kThrows, static_cast<int>(animId)) != kThrows.end();
-}
 // A car stereo's context record (kind 3) reaches this far in the ground plane (`CfgActionDistance`'s default).
 constexpr float kStereoReach = 2.0F;
 // The player's Warrior class byte `+0x0b`, which makes a theft's stage 3 turns
@@ -833,8 +821,7 @@ void PlayLevelSimulation::stepPickups() {
         m_print(std::format("spray: 664, spray paint left {}\n", m_pickups->carried(0, item::kSprayPaint)));
     }
     // A throw's release event lets go of the held object, thrown (Human_ReleaseThrow on event 10).
-    if (human.takeThrowRelease() && throwClip(human.animator().animId()) &&
-        script.heldObject != world_objects::kNoObject) {
+    if (releasesHeldObject(human.takeThrowRelease(), human.animator().animId(), script.heldObject)) {
         const double held = std::exchange(script.heldObject, world_objects::kNoObject);
         script.heldObjectName.clear();
         dropHeld(human, held, true);
@@ -884,14 +871,15 @@ void PlayLevelSimulation::stepAiThrows() {
         human::Human& human = *fighter.human;
         human::ScriptState& script = human.script();
         // A throw clip's release event with an object in hand lets go of it, thrown (Human_ReleaseThrow on event 10).
-        if (!human.takeThrowRelease() || !throwClip(human.animator().animId()) ||
-            script.heldObject == world_objects::kNoObject) {
+        if (!releasesHeldObject(human.takeThrowRelease(), human.animator().animId(), script.heldObject)) {
             continue;
         }
         const double held = std::exchange(script.heldObject, world_objects::kNoObject);
         script.heldObjectName.clear();
         dropHeld(human, held, true);
-        // The anim set follows the empty hand.
+        // Coney stand-in (issue #1523): the anim set goes back to 0 here, at the throw, as the player's does; the
+        // original's own reset for an AI (message 7) is not studied. Whether a thrown object hurts the thrower's own
+        // gang is issue #1572; the looters' throws are not checked for it.
         human.fighter().setAnimSet(0);
         human.fighter().setHoldingObject(false);
     }

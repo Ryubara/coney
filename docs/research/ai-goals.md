@@ -1168,10 +1168,12 @@ at `0x0029d928`) is taken instead, and the object, claimed, when there is none.
 **The update** (`DestroyGoal_Process`, confirmed (code) at `0x002cdbc0`): nothing while actions are queued or he
 winds up a swing; after a swing or an empty-handed fetch (`+0x36`) the target is released and a wait of `+0x30` to
 `+0x30` + 100 ms drawn; with no target he waits it out, then picks (`+0x28` tries and `+0x24` wait cleared); a target
-pushed three times (`+0x28` above 2) is released. A broken object still resolves, so after its DestroyItem ends the goal
-pushes DestroyItem twice more (each done at once on a broken object) before it lets the object go.
+pushed three times (`+0x28` above 2) is released. Inferred: a broken object still resolves, so after its DestroyItem
+ends the goal pushes DestroyItem twice more (each done at once on a broken object) before it lets the object go; the
+code shows only the three-push limit, not what a push on a broken object does.
 
-**Coney** (`repo:src/ai/destroy_goal.h`): Start, Resume, End, IsWaiting, the pick and the update above.
+**Coney** (`repo:src/ai/destroy_goal.h`): Start, Resume, End, the pick and the update above. `DestroyGoal_IsWaiting` is
+not built: its one caller is the event-23 cheer, which ports it.
 **Stand-ins**: cars, the fight stance, `DestroyGoal_TryPickUp` (Coney's objects carry no
 breaking flag `0x10000`), dropping what he holds, the turn to the crowd ahead and the taunt before a swing, the brain
 byte `+0x265`, and the live object's `+0x134` (Coney weighs it by its distance too). The turn and the taunt before

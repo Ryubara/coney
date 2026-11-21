@@ -100,7 +100,8 @@ bool VandalizeTactic::event(Gang& gang, Brain& member, const BrainEvent& event) 
     default:
         // 10 → 4, 11 → 3, 16 → 6; the others are not answered. Coney stand-ins: event 11's spotter is not noted
         // (Brain_NoteSpotter), and Coney sends no event 23 (an object broken), so its cheer
-        // (VandalizeTactic_OnObjectBroken) and code 16 for a broken object of the zone are not built.
+        // (VandalizeTactic_OnObjectBroken, with DestroyGoal_IsWaiting) and code 16 for a broken object of the zone
+        // are not built (issue #1571).
         return StoryTactic::event(gang, member, event);
     }
 }

@@ -3624,15 +3624,6 @@ relation = "not-ported"
 issue = 716
 
 [[function]]
-address = 0x002cda28
-name = "DestroyGoal_IsWaiting"
-page = "ai-goals.md#goal-destroy"
-role = "no queued action, a wait armed and actions not blocked"
-level = "confirmed-code"
-coney = "src/ai/destroy_goal.h:DestroyGoal::waiting"
-status = "compared"
-
-[[function]]
 address = 0x002cda68
 name = "DestroyGoal_Start"
 page = "ai-goals.md#goal-destroy"
