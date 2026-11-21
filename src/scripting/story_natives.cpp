@@ -84,7 +84,8 @@ NativeFunction findLastMissionNative(ScriptSystem& scripts, const story::StoryGr
 // @coney-only replaces `runNextMission`'s table (`global.lua:f61`) with the story graph's
 std::optional<story::StoryLoad> loadAfter(const story::StoryGraph& graph, const Value& last) {
     const std::optional<double> number = last.number();
-    // The Lua indexes its table with the value: only a whole number that is a row's key finds one.
+    // The Lua indexes its table with the value: only a whole number that is a row's key finds one. The bound keeps
+    // the cast to int defined; every level number is far below it.
     if (!number || std::trunc(*number) != *number || std::abs(*number) > 1'000'000.0) {
         return std::nullopt;
     }
