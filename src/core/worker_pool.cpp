@@ -51,15 +51,15 @@ class WorkerPool::Workers {
   public:
     // Starts up to `workers` threads, each waiting for a loop. A thread the system refuses (or `mayStart` does) ends
     // the starting: the pool runs on those that started, none at worst, as a machine with fewer threads would.
-    // std::thread reports a refusal only by throwing std::system_error, so this is the one place the engine catches
-    // one, at the standard library's edge as at a C library's (conventions.md#errors); nothing here throws.
+    // std::thread's constructor reports a refusal only by throwing std::system_error, so it is caught here at the
+    // call and turned into that fallback, the standard library's edge that conventions.md#errors allows.
     Workers(std::size_t workers, const std::function<bool(std::size_t)>& mayStart) {
         m_threads.reserve(workers);
         for (std::size_t i = 0; i < workers; ++i) {
-            if (mayStart && !mayStart(i)) {
-                break;
-            }
             try {
+                if (mayStart && !mayStart(i)) {
+                    break;
+                }
                 m_threads.emplace_back([this] { work(); });
             } catch (const std::system_error&) {
                 break;
