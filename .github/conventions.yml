@@ -256,6 +256,29 @@ pull_requests:
     extensions: [gif, mp4]
     uploads: ["https://github.com/user-attachments/"]
     since: "2026-11-20T00:00:00Z"
+    # What the reason of a `none` line may say (maintainer 2026-11-20, #1533): every pull request a player sees shows a
+    # clip unless it absolutely does not qualify, and a missing scenario, setup, preset or tool is never a reason: the
+    # task adds the `clips pair` scenario (tools/clips, with its input script and start) and records the clips with it.
+    # `refused` are regular expressions, searched case-insensitively in the reason, for a reason that blames one of
+    # those or says filming is hard or not worth it; `accepted` are the kinds a reason may be, each with the phrases
+    # (found anywhere in the reason, case-insensitive) that say it, so a free-text excuse passes no more. Both are
+    # asked of a pull request the rule asks clips of, opened since `since` (`pr text`, `pr verify` and CI's `body` job).
+    reasons:
+      since: "2026-11-21T00:00:00Z"
+      refused:
+        - '\bno\s+(?:[\w-]+\s+){0,4}(?:scenarios?|set-?ups?|presets?|tool(?:s|ing)?|recipes?)\b'
+        - '\b(?:missing|lacks?|lacking|without)\s+(?:an?\s+|the\s+)?(?:[\w-]+\s+){0,3}(?:scenarios?|set-?ups?|presets?|tool(?:s|ing)?)\b'
+        - '\b(?:scenarios?|set-?ups?|presets?|tools?)\b[^.;:]{0,40}\b(?:does not|doesn.t|do not|don.t|cannot|can.t|not yet|yet to|exists? yet)\b'
+        - '\b(?:no|without a?)\s+(?:game\s+)?disc\b'
+        - '\b(?:cannot|can.t|unable to|impossible to|no way to|hard to|difficult to|awkward to|tricky to)\s+(?:\w+\s+){0,2}(?:record|film|capture|show|reach|reproduce)\b'
+        - '\b(?:too|very|rather)\s+(?:small|subtle|minor|hard|difficult|short|fast|brief)\b'
+        - '\bnot\s+(?:worth|practical|feasible|possible)\b'
+        - '\b(?:small|minor|subtle|tiny)\s+(?:change|difference|fix)\b'
+      accepted:
+        "nothing a player could see changes": ["nothing visible", "no visible change", "nothing a player", "no change a player", "player cannot see"]
+        "no behaviour reads the value yet": ["no behaviour reads", "nothing reads", "no code reads", "not read by any", "no caller reads", "no behaviour uses", "nothing uses"]
+        "a refactor or rename that keeps the behaviour": ["refactor", "rename", "behaviour unchanged", "same behaviour", "no change in behaviour", "no change of behaviour"]
+        "nothing in the game runs it": ["nothing in the game runs", "no level runs", "nobody reaches", "no level reaches", "not reachable in the game", "unreachable in the game"]
   ai_use:
     section: "AI use"
     written_by:

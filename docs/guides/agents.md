@@ -256,7 +256,9 @@ instead of repeating it:
   its captures saved in `scratch/<branch>/shots/` and referenced in `PR.md` as `![alt](./shots/file.png)`
   ([Capturing and attaching](testing.md#pr-media)); clips, recorded with `coney --record` or `clips record` into
   `scratch/<branch>/clips/`, are uploaded by `pr open`; work a player sees names the pair in "done": `Before:` and
-  `After:` clips of one run, or `Clips: none (<reason>)` ([Clips](testing.md#clips-in-the-description));
+  `After:` clips of one run, or, only when nothing a player could see changes, `Clips: none (<reason>)`
+  ([Clips](testing.md#clips-in-the-description)); a missing `clips pair` scenario is part of "done", never a reason: the
+  engineer builds it (a TOML under `tools/clips/` with its input script and start) and records the clips with it;
 - for gameplay work (anything a player sees: the title areas `gameplay`, `graphics` and `audio`), the brief names the
   [runtime comparison](testing.md#runtime-comparison) with the original as part of "done", and the `Runtime:` line of
   the pull request's Testing section that reports it ([the Runtime line](testing.md#runtime-line)); it points at

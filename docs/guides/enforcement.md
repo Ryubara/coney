@@ -388,7 +388,7 @@ run on every pull request, whatever made it.
 | Reference lists hold names, ids, values and our own words only; files under 512 KB | [The research data](research-data.md#reference-lists) | `refs render --check`; the 512 KB guard | partly |
 | Issue attachments: gameplay pictures and short videos only; logs without user folders or email addresses | [Issues](issues.md#media) | Bug form's required checkbox; `hygiene.yml` scans attached logs (`issue.attachment-data`, `issue.attachment-personal`) | partly (after the fact) |
 | Video clips at most 10 s, only through `pr open` or `clips publish`, never from a screen recorder | [Testing](testing.md#clips) | `clips` code refuses capture devices, long clips and paths in a checkout; `.claude/settings.json` refuses `gh` naming a video | enforced |
-| A pull request a player sees the result of (title area `gameplay`, `graphics`, `audio`, or a Coney Studio path) shows a before and an after clip, or `Clips: none (<reason>)` | [Clips](testing.md#clips) | `pr check-body` (`pull_requests.clips`) in CI's `body` job, `pr text`, `pr verify`; the reviewer judges the clips | enforced |
+| A pull request a player sees the result of (title area `gameplay`, `graphics`, `audio`, or a Coney Studio path) shows a before and an after clip, or `Clips: none (<reason>)`, whose reason is of an accepted kind and never blames a missing scenario, setup, preset or tool (the task adds the scenario) | [Clips](testing.md#clips-in-the-description) | `pr check-body` (`pull_requests.clips`, `reasons`) in CI's `body` job, `pr text`, `pr verify`; the reviewer judges the clips and treats any `Clips: none` on a player-visible pull request as Important | enforced |
 
 ## Agents and the shared machine {#agents}
 

@@ -357,7 +357,9 @@ description that leaves either empty (`coney-tools pr check-body`). All of what 
   `src/studio/` (what a player sees in Coney Studio), a clip on a line `Before:` and one on a line `After:` (the
   original's may follow on `Original:`), or a line `Clips: none (<reason>)`. A clip is a `.gif` or `.mp4` upload; in
   `PR.md` it is a local `./clips/<name>` image that `pr open` uploads. It is checked given the title and, for the paths,
-  the changed files (CI's `body` job has both).
+  the changed files (CI's `body` job has both). The reason is one of: nothing a player could see changes; no behaviour
+  reads the value yet; a refactor or rename that keeps the behaviour; nothing in the game runs it; a missing scenario,
+  setup, preset or tool is never a reason (the task adds the `clips pair` scenario and records the clips with it).
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
   unless it is `a person`, `Model:` names the model (`n/a` is not enough).
 - `Model:` also names every model that a `Co-Authored-By` trailer on the branch's commits names (any case, anywhere on
@@ -529,7 +531,9 @@ attach a clip with `gh` directly and never commit one. The commands: [coney-tool
 Before and after clips are what lets a reader see a change (the maintainer's request, 2026-11-18): motion, timing, the
 AI, the camera, effects and sound do not show in a still. So a pull request whose title area is one a player sees
 (`gameplay`, `graphics`, `audio`), or that changes what a player sees in Coney Studio (a path under `src/studio/`),
-shows a clip of Coney before the change and one after it, from the same run, or says why it cannot. The rule is
+shows a clip of Coney before the change and one after it, from the same run, or says why nothing a player could see
+changes (the maintainer's rule, 2026-11-20: every gameplay pull request has a video unless it absolutely does not
+qualify). The rule is
 `pull_requests.clips` in [.github/conventions.yml](repo:.github/conventions.yml) (the generated list in [What a pull
 request shows](#pr-evidence) has it), and a brief names the pair as part of "done" ([Briefing](agents.md#briefs)).
 The rule has a start, its `since`, set no earlier than its own pull request merged. A pull request opened before then
@@ -552,9 +556,25 @@ records them under:
 ```
 
 `Before:` and `After:` are the pair; `Original:` (the original in PCSX2 from the same place, for faithful work) is
-optional, and screenshots under `./shots/` may stand beside them. When nothing visible changes, or no disc scenario
-reaches the change yet, the section says so instead: `Clips: none (<reason>)`, for example `Clips: none (a refactor:
-the trace diff shows 0 differences)`. A reason of convenience is refused by the reviewer, as for the `Runtime:` line.
+optional, and screenshots under `./shots/` may stand beside them.
+
+**`Clips: none (<reason>)` is the rare exception.** It is for a pull request where nothing a player could ever see
+changes: a value no behaviour reads yet, a refactor that keeps the behaviour, a rename. It is not a judgement that the
+difference is small, nor that it is hard to film. The reason is one of the kinds listed in
+`pull_requests.clips.reasons.accepted` ([.github/conventions.yml](repo:.github/conventions.yml)): "nothing a player
+could see changes", "no behaviour reads the value yet", "a refactor or rename that keeps the behaviour" and "nothing in
+the game runs it". Write the kind's own words in the reason, with the detail after them, for example `Clips: none (a
+refactor: the trace diff shows 0 differences)` or `Clips: none (no behaviour reads the value yet: the HUD takes it
+in a later task)`. A free-text excuse of no kind is refused.
+
+**A missing scenario, setup, preset or tool is never a reason.** When no `clips pair` scenario reaches the change, the
+task builds one and records the clips with it: a TOML file under `tools/clips/` with its input script, its level and its
+start ([Scenarios](coney-tools-clips.md#clips-pair)), which the next task uses too. A reason that blames one (`no
+scenario reaches it yet`, `no setup exists`, `no preset`, `the tool cannot record it`) or says filming is hard or not
+worth it is refused by `pr text`, `pr verify` and CI's `body` job, from the patterns in
+`pull_requests.clips.reasons.refused`, with a message that says to add the scenario. The sneak attack fix (#1504)
+merged with such a reason and without clips; that is the case this rule ends. The rules apply to a pull request opened
+since `pull_requests.clips.reasons.since`, so an open one is not refused at its next push.
 
 **GIF or MP4.** A GIF plays inline the moment the page opens and loops, so it suits a short, silent clip of one thing; an
 MP4 carries sound, length and detail a GIF's palette loses. GitHub plays an MP4 only from its bare upload address
@@ -565,11 +585,11 @@ What checks it, at each step:
 
 | Step | What it checks |
 | --- | --- |
-| `pr text` (and `pr open`'s proof) | Each clip line holds one image under `./clips/`, a `.gif` or `.mp4`, at most one per label; each file passes `clips check` (a clips folder outside every checkout, a plain name, the length cap, no metadata), is under the 10 MB upload limit, and the before and after are not byte-identical; the pair, or the `none` line, is there when the title or a changed path asks for it and the pull request, if already open, was opened since the rule began |
+| `pr text` (and `pr open`'s proof) | Each clip line holds one image under `./clips/`, a `.gif` or `.mp4`, at most one per label; each file passes `clips check` (a clips folder outside every checkout, a plain name, the length cap, no metadata), is under the 10 MB upload limit, and the before and after are not byte-identical; the pair, or the `none` line, is there when the title or a changed path asks for it and the pull request, if already open, was opened since the rule began; the `none` line's reason is of an accepted kind and blames no missing scenario, setup, preset or tool |
 | `pr verify` | The same, as its `clips` stage, so an engineer sees it before Review |
-| `task review` | Lists each clip with its file for the reviewer, who plays it and judges whether it shows what the description claims, the before and the after of the same run ([Description](review/text.md)); a `Clips: none` reason is judged too |
+| `task review` | Lists each clip with its file for the reviewer, who plays it and judges whether it shows what the description claims, the before and the after of the same run ([Description](review/text.md)); a `Clips: none` line is put to them as Important unless nothing a player could see changes |
 | `pr open` | Uploads each clip with one `--attach` (run from `PR.md`'s folder, so `./clips/x.mp4` is the path `gh` matches), reads the description back, puts each clip's line in its form (an MP4's bare address alone on its line, a GIF as an image) and sends it once more without `--attach`, checks each clip stands uploaded on its line, and only then deletes the files. It records each upload in `pr-published.json`, so a later release shows the clip from there and uploads nothing again ([pr open](pr.md#open)) |
-| CI's `body` job | `pr check-body --title ... --changed ... --opened ...`: the pair, as uploaded addresses (under `pull_requests.clips.uploads`, GitHub's attachments; any other address on a clip line is no clip), or the `none` line; it reads the pull request's files from the API for the Coney Studio paths, and passes when the pull request was opened, so one opened before the rule's `since` is not asked |
+| CI's `body` job | `pr check-body --title ... --changed ... --opened ...`: the pair, as uploaded addresses (under `pull_requests.clips.uploads`, GitHub's attachments; any other address on a clip line is no clip), or the `none` line with a reason of an accepted kind (the same check as `pr text`'s); it reads the pull request's files from the API for the Coney Studio paths, and passes when the pull request was opened, so one opened before the rule's `since` is not asked |
 
 `gh --attach` swaps a reference for the upload in place only when the reference names the same file as the `--attach`
 path, read from the folder `gh` runs in; otherwise it appends the upload at the end of the body and the reference

@@ -117,6 +117,19 @@ def test_a_title_a_player_sees_needs_the_runtime_line(checkout: Path) -> None:
     assert not result.ok and any("Runtime:" in line for line in result.output)
 
 
+def test_a_clips_none_reason_that_blames_a_missing_scenario_is_refused(checkout: Path) -> None:
+    """`ci pr` runs CI's `body` check: the #1504 reason is refused, with what to do instead (#1533)."""
+    runtime = "- 3 tests passed\n- Runtime: none (the trace diff shows 0 differences)"
+
+    def described(reason: str) -> str:
+        return body(testing=runtime, screenshots=f"Screenshots: none (no visible change)\n\nClips: none ({reason})")
+
+    title = "gameplay: Add a thing"
+    refused = check_pr.step_body(checkout, described("no scenario or setup exists for it"), title, "main", CONVENTIONS)
+    assert not refused.ok and any("never a reason" in line and "add the clips pair" in line for line in refused.output)
+    assert check_pr.step_body(checkout, described("no behaviour reads the value yet"), title, "main", CONVENTIONS).ok
+
+
 def test_an_update_of_a_pull_request_opened_before_the_clip_rule_is_not_asked_for_clips(checkout: Path) -> None:
     """As CI's `--opened`: #1415 and #1435 pass `ci pr` before an update, as they pass CI."""
     rule = CONVENTIONS.pull_requests.clips

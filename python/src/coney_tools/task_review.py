@@ -315,7 +315,10 @@ def _clip_note(packet: Mapping[str, Any]) -> str:
             "after the same run (docs/guides/review/text.md)"
         )
     if clips["none"] is not None:
-        return f"clips: none ({clips['none']}): judge whether the reason holds (docs/guides/review/text.md)"
+        return (
+            f"clips: none ({clips['none']}): Important unless nothing a player could see changes; a missing "
+            "scenario or setup is never a reason (docs/guides/review/text.md)"
+        )
     return "clips: none shown"
 
 

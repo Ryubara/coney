@@ -183,7 +183,12 @@ The checks CI's `title`, `docs` and `body` jobs run on a pull request, against t
   The same title, or a path under `pull_requests.clips.paths` (`src/studio/`) in the file `--changed` names (one path
   a line; the `body` job writes the pull request's files there from the API), asks for the **before and after clips**:
   a clip on a `Before:` and an `After:` line of the Screenshots section, or `Clips: none (<reason>)`; a clip line that
-  is written must show one clip, once ([Clips in the description](testing.md#clips-in-the-description)). Given
+  is written must show one clip, once ([Clips in the description](testing.md#clips-in-the-description)). The `none`
+  line's reason must be of one of the kinds in `pull_requests.clips.reasons.accepted` (nothing a player could see
+  changes, no behaviour reads the value yet, a refactor or rename that keeps the behaviour, nothing in the game runs it)
+  and must match none of `reasons.refused`: a reason that blames a missing scenario, setup, preset or tool is refused
+  with the message to add the `clips pair` scenario; a pull request opened before `reasons.since` is not held to
+  either, and `pr text` and `pr verify` run the same check. Given
   `--opened` (the `body` job passes the pull request's `created_at`), a pull request opened before the rule began
   (`pull_requests.clips.since`) is not asked for the pair; without it the rule applies, as to a description not yet
   opened. The audit's `pr.body` and `pr health --rerun` judge an open pull request by its `createdAt` and its changed

@@ -619,6 +619,31 @@ def _holds_clip(text: str, rule: ClipRule, placeholders: Sequence[str]) -> bool:
     return any(target.rsplit(".", 1)[-1].lower() in rule.extensions for target in image_targets(text))
 
 
+def _none_reason_problems(rule: ClipRule, reason: str, name: str, opened: datetime | None) -> list[str]:
+    """What is wrong with the reason of a `Clips: none (<reason>)` line of a pull request that is asked for clips
+    (`ClipReasons`, #1533): one that blames a missing scenario, setup, preset or tool, or says filming is hard, is
+    refused, and so is one of none of the accepted kinds. A pull request `opened` before `reasons.since` is not held to
+    it, and a file without `reasons` asks nothing."""
+    reasons = rule.reasons
+    if reasons is None or (opened is not None and opened < reasons.since):
+        return []
+    here = "docs/guides/testing.md#clips-in-the-description"
+    blamed = reasons.refused_by(reason)
+    if blamed is not None:
+        return [
+            f"{name}: '{rule.none} ({reason})' says \"{blamed}\": a missing scenario, setup, preset or tool is never a "
+            "reason, nor is a change hard to film; add the clips pair scenario that reaches it and record the "
+            f"clips with it, so the next task can use it too ({here})"
+        ]
+    if reasons.kind_of(reason) is None:
+        kinds = "; ".join(f"{kind} (say, '{phrases[0]}')" for kind, phrases in reasons.accepted)
+        return [
+            f"{name}: '{rule.none} ({reason})' is none of the reasons a pull request a player sees may give: {kinds}; "
+            f"any other pull request shows the clips ({here})"
+        ]
+    return []
+
+
 def clips_problems(
     section: str,
     rules: PullRequests,
@@ -651,13 +676,15 @@ def clips_problems(
                 f"{name}: the '{label}' line shows no clip: write ![alt](./clips/<name>.gif) or a .mp4 there, which "
                 "pr open uploads (docs/guides/testing.md#clips)"
             )
+    why = rule.required_by(title, changed, opened)
     for reason in reasons:
         if not reason or reason in rules.placeholders:
             problems.append(f"{name}: '{rule.none}' needs its reason in parentheses: '{rule.none} (<reason>)'")
+        elif why is not None:
+            problems.extend(_none_reason_problems(rule, reason, name, opened))
     pair = rule.before in segments and rule.after in segments
     if reasons and segments:
         problems.append(f"{name}: clips and '{rule.none}' together; show the clips or say why not, not both")
-    why = rule.required_by(title, changed, opened)
     if pair or reasons:
         return problems
     if rule.before in segments or rule.after in segments:
@@ -666,8 +693,8 @@ def clips_problems(
     elif why is not None:
         problems.append(
             f"{name} needs a '{rule.before}' and an '{rule.after}' clip (![alt](./clips/<name>.gif) or .mp4, uploaded "
-            f"by pr open) or a line '{rule.none} (<reason>)' (nothing visible, or no disc scenario reaches it), "
-            f"because {why} (docs/guides/testing.md#clips)"
+            f"by pr open) or a line '{rule.none} (<reason>)' (only when nothing a player could see changes; a missing "
+            f"scenario is work: add it), because {why} (docs/guides/testing.md#clips)"
         )
     return problems
 

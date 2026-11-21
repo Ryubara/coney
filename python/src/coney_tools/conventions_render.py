@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 from coney_tools.config import ConfigError
-from coney_tools.conventions import CI_WHERE, Conventions, load_conventions
+from coney_tools.conventions import CI_WHERE, ClipRule, Conventions, load_conventions
 
 #: The docs' line length (.markdownlint.yaml, MD013); generated prose is wrapped to it. Tables are not.
 WIDTH = 120
@@ -62,6 +62,18 @@ def _wrap(text: str, first: str = "", rest: str = "") -> list[str]:
 def _bullet(text: str) -> list[str]:
     """One wrapped bullet of a list."""
     return _wrap(text, "- ", "  ")
+
+
+def _clip_reasons_text(clips: ClipRule) -> str:
+    """The sentence on what a `Clips: none` reason may be, or '' when the file has no `clips.reasons`."""
+    reasons = clips.reasons
+    if reasons is None:
+        return ""
+    kinds = "; ".join(kind for kind, _ in reasons.accepted)
+    return (
+        f" The reason is one of: {kinds}; a missing scenario, setup, preset or tool is never a reason (the task adds "
+        "the `clips pair` scenario and records the clips with it)."
+    )
 
 
 def _codes(values: tuple[str, ...] | list[str]) -> str:
@@ -209,6 +221,7 @@ def _pr_rules(conventions: Conventions) -> list[str]:
             f"one on a line `{clips.after}` (the original's may follow on `{clips.original}`), or a line `{clips.none} "
             f"(<reason>)`. A clip is a {kinds} upload; in `PR.md` it is a local `./clips/<name>` image that `pr open` "
             "uploads. It is checked given the title and, for the paths, the changed files (CI's `body` job has both)."
+            + _clip_reasons_text(clips)
         )
     ai = rules.ai_use
     lines += _bullet(

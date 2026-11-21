@@ -678,7 +678,9 @@ def test_a_clips_none_line_is_put_to_the_reviewer(rig: Rig, capsys: pytest.Captu
     text = rig.text.read_text(encoding="utf-8") + "\nClips: none (a menu nobody reaches yet)\n"
     rig.text.write_text(text, encoding="utf-8")
     assert task_review.prepare(rig.env(), "full") == 0
-    assert "clips: none (a menu nobody reaches yet): judge whether the reason holds" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "clips: none (a menu nobody reaches yet): Important unless nothing a player could see changes" in out
+    assert "a missing scenario or setup is never a reason" in out
 
 
 def test_prepare_with_problems_writes_nothing_and_exits_one(rig: Rig, capsys: pytest.CaptureFixture[str]) -> None:

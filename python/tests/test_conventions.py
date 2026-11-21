@@ -711,6 +711,35 @@ def test_a_wrong_clip_rule_is_refused(change: tuple[str, object], where: str) ->
         conventions_with(change)
 
 
+def test_the_clip_reasons_are_read_and_optional() -> None:
+    """A default branch cut before the key (what `pr text` reads) accepts any reason; the real file sets them."""
+    reasons = conventions_with().pull_requests.clips.reasons  # type: ignore[union-attr]
+    assert reasons is not None and reasons.since.utcoffset() == timedelta(0)
+    assert reasons.refused_by("no setup exists for it") is not None
+    assert reasons.refused_by("no visible change") is None
+    assert reasons.kind_of("no visible change") == "nothing a player could see changes"
+    assert reasons.kind_of("it is quick") is None
+    assert conventions_with(("pull_requests.clips.reasons", REMOVE)).pull_requests.clips.reasons is None  # type: ignore[union-attr]
+
+
+@pytest.mark.parametrize(
+    ("change", "where"),
+    [
+        (("pull_requests.clips.reasons.since", "soon"), r"clips\.reasons\.since"),
+        (("pull_requests.clips.reasons.since", REMOVE), r"clips\.reasons"),
+        (("pull_requests.clips.reasons.refused", []), r"clips\.reasons\.refused"),
+        (("pull_requests.clips.reasons.refused", ["(unclosed"]), r"clips\.reasons\.refused.*regular expression"),
+        (("pull_requests.clips.reasons.accepted", {}), r"clips\.reasons\.accepted"),
+        (("pull_requests.clips.reasons.accepted", {"a kind": []}), r"clips\.reasons\.accepted"),
+        (("pull_requests.clips.reasons.accepted", {" ": ["a phrase"]}), r"clips\.reasons\.accepted"),
+        (("pull_requests.clips.reasons.extra", 1), r"clips\.reasons"),
+    ],
+)
+def test_a_wrong_clip_reasons_table_is_refused(change: tuple[str, object], where: str) -> None:
+    with pytest.raises(ConventionsError, match=where):
+        conventions_with(change)
+
+
 def test_the_summary_rule_is_read_and_optional() -> None:
     """A default branch cut before the key (what `pr text` reads) asks for no limit; the real file sets one."""
     rule = conventions_with().pull_requests.summary
