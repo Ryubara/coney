@@ -362,6 +362,7 @@ TEST_CASE("the GPU skinning formula places a vertex as characters::skinVertices(
     coney::characters::skinVertices(vertices, matrices, positions, normals);
 
     std::vector<Transform3d> bones;
+    bones.reserve(matrices.size());
     for (const coney::anim::Mat34& m : matrices) {
         bones.push_back(Transform3d{.right = {m.x.x, m.x.y, m.x.z},
                                     .up = {m.y.x, m.y.y, m.y.z},
