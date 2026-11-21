@@ -26,6 +26,7 @@
 #include "core/game_random.h"
 #include "core/game_timer.h"
 #include "core/perf.h"
+#include "core/worker_pool.h"
 #include "fileio/executable.h"
 #include "graphics/human_blood.h"
 #include "graphics/human_lighting.h"
@@ -34,6 +35,7 @@
 #include "human/target_human.h"
 #include "net/game_humans.h"
 #include "platform/draw_calls.h"
+#include "platform/human_posing.h"
 #include "platform/object_draw.h"
 #include "platform/perf_probes.h"
 #include "platform/play_level_effects.h"
@@ -440,21 +442,11 @@ void PlayLevelMode::enter() { m_playScenery.preload(toRenderWare(m_player->camer
 
 void PlayLevelMode::skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
                          float heading, float lean, CharacterMesh& mesh, float scale) {
-    // The pose's skinning matrices in the character's space (game axes, the feet at the origin, facing +y), then
-    // leaned, turned, moved to the feet and into RenderWare's axes by the placement.
-    const characters::CharacterModel& model = character.assets().model;
-    const auto bones = anim::boneTransforms(character.skeleton(), pose);
-    std::vector<anim::Mat34> matrices = characters::skinningMatrices(model, bones);
-    // A scaled body (the Entity inspector's) grows about the feet, in the character's space: before the placement, so
-    // the feet stay where they are, and the shader's normalised normal keeps the lighting.
-    if (scale != 1.0F) {
-        for (anim::Mat34& matrix : matrices) {
-            matrix = anim::Mat34{.x = anim::scale(matrix.x, scale),
-                                 .y = anim::scale(matrix.y, scale),
-                                 .z = anim::scale(matrix.z, scale),
-                                 .t = anim::scale(matrix.t, scale)};
-        }
-    }
+    // The pose's skinning matrices in the character's space (game axes, the feet at the origin, facing +y), grown by
+    // the body's scale about the feet, then leaned, turned, moved to the feet and into RenderWare's axes by the
+    // placement.
+    const std::vector<anim::Mat34> matrices =
+        scaledSkinning(character.skeleton(), character.assets().model, pose, scale);
     mesh.pose(matrices, characterPlacement(feet, heading, lean));
 }
 
@@ -601,6 +593,18 @@ void PlayLevelMode::render(const RenderTime& time) {
             ringFeet[ringKey(target.human.get())] = pose.feet;
         }
         const std::vector<ai::AiHuman>& fighters = m_ai->humans();
+        // The fighters are posed in three passes (docs/engine/renderer-performance.md#posing-on-workers): here, in
+        // their order, each is culled or given a job; the jobs' arithmetic runs on the worker threads; then, in their
+        // order again, each posed one's librw mesh is placed with what he wears, holds and carries, and every one's
+        // shadow and ring are queued. Only the middle pass leaves this thread, and it writes nothing but the jobs and
+        // their meshes, so what is posed, attached and queued, and in what order, is as when one thread did it all.
+        struct Drawn {
+            anim::Vec3 feet;                // where his shadow and ring go
+            std::optional<std::size_t> job; // his job, when posed
+        };
+        std::vector<std::optional<Drawn>> drawn(fighters.size());
+        std::vector<HumanPoseJob> jobs;
+        jobs.reserve(fighters.size());
         for (std::size_t i = 0; i < fighters.size(); ++i) {
             const auto found = m_fighterMeshes.find(fighters[i].human.get());
             if (found == m_fighterMeshes.end()) {
@@ -619,6 +623,7 @@ void PlayLevelMode::render(const RenderTime& time) {
             }
             const anim::Vec3 feet =
                 scenePose ? scenePose->feet : human::interpolateFeet(fighters[i].previous, fighters[i].current, alpha);
+            drawn[i] = Drawn{.feet = feet};
             // Culled before posing: one no pose of whom can be in the picture is neither posed nor drawn, which leaves
             // the picture as it was. One who wears or holds something is posed in view whatever his distance, as what
             // he carries is not faded with him (docs/engine/renderer-performance.md#cull-before-posing).
@@ -629,24 +634,42 @@ void PlayLevelMode::render(const RenderTime& time) {
             if (found->second.culled) {
                 // Nothing of him drawn this frame, as the Mesh group reads it.
                 found->second.mesh->setDrawnPasses(0);
+                continue;
+            }
+            const human::PlayerCharacter& character = characterOf(*fighters[i].human);
+            HumanPoseJob job{.mesh = found->second.mesh.get(),
+                             .skeleton = &character.skeleton(),
+                             .model = &character.assets().model,
+                             .scale = fighters[i].human->meshScale()};
+            if (scenePose) {
+                job.pose = human::TargetSnapshot{
+                    .feet = scenePose->feet, .heading = scenePose->heading, .pose = scenePose->pose};
             } else {
-                human::TargetSnapshot pose = human::interpolate(fighters[i].previous, fighters[i].current, alpha);
-                if (scenePose) {
-                    pose.pose = scenePose->pose;
-                    pose.feet = scenePose->feet;
-                    pose.heading = scenePose->heading;
-                }
+                job.previous = &fighters[i].previous;
+                job.current = &fighters[i].current;
+                job.alpha = alpha;
+            }
+            drawn[i]->job = jobs.size();
+            jobs.push_back(job);
+        }
+        prepareHumanPoses(sharedWorkerPool(), jobs);
+        for (std::size_t i = 0; i < fighters.size(); ++i) {
+            if (!drawn[i]) {
+                continue;
+            }
+            if (drawn[i]->job) {
+                const HumanPoseJob& job = jobs[*drawn[i]->job];
+                commitHumanPose(job);
                 const human::PlayerCharacter& character = characterOf(*fighters[i].human);
-                skin(character, pose.pose, pose.feet, pose.heading, 0.0F, *found->second.mesh,
-                     fighters[i].human->meshScale());
+                const human::TargetSnapshot& pose = job.pose;
                 poseHat(*fighters[i].human, character, pose.pose, pose.feet, pose.heading);
                 // What he holds, posed by his own hand as player 1's is (docs/research/objects.md#given-weapon).
                 poseHeldObject(*fighters[i].human, character, pose.pose, pose.feet, pose.heading);
                 poseCarriedProp(*fighters[i].human, character, pose.pose, pose.feet, pose.heading);
             }
             // His blob shadow and ring are drawn whether or not he is: each makes its own draw.
-            m_lights->addShadow(ground, feet);
-            ringFeet[ringKey(fighters[i].human.get())] = feet;
+            m_lights->addShadow(ground, drawn[i]->feet);
+            ringFeet[ringKey(fighters[i].human.get())] = drawn[i]->feet;
         }
     }
     // Over the frame, before its present: the level's screen effects, the HUD's sprites of the newest step, then the

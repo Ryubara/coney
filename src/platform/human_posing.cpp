@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/human_posing.h"
 
+#include <cstddef>
 #include <span>
 #include <vector>
 
@@ -26,17 +27,20 @@ std::vector<anim::Mat34> scaledSkinning(const anim::Skeleton& skeleton, const ch
     return matrices;
 }
 
-// Stub for the tests' commit: every job posed whole, one after another, as the play mode posed them.
-void prepareHumanPoses(WorkerPool& /*pool*/, std::span<HumanPoseJob> jobs) {
-    for (HumanPoseJob& job : jobs) {
+void prepareHumanPoses(WorkerPool& pool, std::span<HumanPoseJob> jobs) {
+    // Each body reads its human's snapshots, skeleton and model, which nothing writes while the loop runs, and writes
+    // only its own job and mesh.
+    pool.parallelFor(jobs.size(), [jobs](std::size_t index) {
+        HumanPoseJob& job = jobs[index];
         if (job.previous != nullptr && job.current != nullptr) {
             job.pose = human::interpolate(*job.previous, *job.current, job.alpha);
         }
-        job.mesh->pose(scaledSkinning(*job.skeleton, *job.model, job.pose.pose, job.scale),
-                       characterPlacement(job.pose.feet, job.pose.heading, 0.0F));
-    }
+        job.mesh->preparePose(scaledSkinning(*job.skeleton, *job.model, job.pose.pose, job.scale));
+    });
 }
 
-void commitHumanPose(const HumanPoseJob& /*job*/) {}
+void commitHumanPose(const HumanPoseJob& job) {
+    job.mesh->commitPose(characterPlacement(job.pose.feet, job.pose.heading, 0.0F));
+}
 
 } // namespace coney::platform

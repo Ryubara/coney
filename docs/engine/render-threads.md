@@ -69,6 +69,31 @@ reads snapshots the same way, so it runs the code the threaded game runs.
   acquires its swapchain on the window's thread.
 - **Dear ImGui**, which builds its frame from the main thread's events and is drawn by the renderer.
 
+## Worker threads {#workers}
+
+Besides the two threads above, the engine keeps one pool of worker threads for drawing's arithmetic that splits into
+independent pieces: `coney::WorkerPool` and `sharedWorkerPool()` in [worker_pool.h](repo:src/core/worker_pool.h),
+built (unlike the rest of this page) since [#1553](issue:1553). Its first user is posing the humans
+([Posing on workers](renderer-performance.md#posing-on-workers)); sampling the drawing snapshots' poses, the
+performance sweep's item 7 ([#1542](issue:1542)), is meant to take the same pool rather than start its own.
+
+- **One loop at a time.** `parallelFor(count, body)` runs `body(index)` once for every index, on the calling thread and
+  the workers in chunks of 8, and returns when all have run; a second caller waits, and a body that starts a loop is a
+  broken invariant (`CONEY_ASSERT`). A loop of 16 or fewer runs on the caller alone, where waking the workers would
+  cost more than it saves.
+- **Its size.** Half the machine's hardware threads, about its physical cores, at least 1 and at most 8, the
+  performance sweep's choice (`defaultWorkerThreads()`); the caller counts as one. The threads start at the pool's
+  first use, so a process that never runs a loop (a headless test, a server) starts none, and stop when the process
+  exits.
+- **No librw, no shared writes.** A body reads only what nothing writes during the loop and writes only what its index
+  owns. librw stays on the main thread ([above](#threads-main)), so the work is split into a prepared half for the
+  workers and a librw half that the main thread applies afterwards, in the order one thread would have used.
+- **The same results with any number of threads.** Each index's result depends on its inputs alone, so one thread and
+  eight give the same bits: test mode, lockstep and networked play do not depend on the pool's size. The simulation
+  never runs on it; drawing only reads the step's state. The tests run loops with one thread and with four and compare
+  ([worker_pool_test.cpp](repo:tests/core/worker_pool_test.cpp),
+  [human_posing_test.cpp](repo:tests/platform/human_posing_test.cpp)).
+
 ## Input {#threads-input}
 
 The main thread reads the window's events into the input source every frame, as today, and the source keeps every

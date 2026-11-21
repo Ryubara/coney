@@ -37,11 +37,12 @@ class WorkerPool {
   private:
     class Workers;
     std::unique_ptr<Workers> m_workers; // null with one thread
+    std::size_t m_threads = 1;
 };
 
 /// How many threads the shared pool runs on, the caller's included, for a machine of `hardwareThreads` hardware
 /// threads (0 when unknown): half of them, roughly the physical cores, so a worker does not share a core with the main
-/// thread's own hyperthread, and at most 8, beyond which posing gains nothing measurable; at least 1.
+/// thread's own hyperthread; at least 1 and at most 8, the performance sweep's choice (#1542).
 [[nodiscard]] std::size_t defaultWorkerThreads(unsigned hardwareThreads);
 
 /// The engine's one pool, sized by defaultWorkerThreads() of this machine and started at its first use, so a process
