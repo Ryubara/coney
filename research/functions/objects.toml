@@ -464,6 +464,15 @@ coney = "src/world_objects/object_services.h:markTriangles"
 status = "compared"
 
 [[function]]
+address = 0x003a4d10
+name = "Model_FindByHash"
+page = "formats/wad-contents.md#object-list"
+role = "a model's next model (Object List +0x04)"
+level = "confirmed-code"
+coney = "src/world_objects/object_list.h:ObjectList::nextModelOf"
+status = "compared"
+
+[[function]]
 address = 0x003a5530
 name = "ScriptObj_SpawnThrownDebris"
 page = "objects.md#original-structure"
@@ -782,28 +791,23 @@ coney = "src/world_objects/doors.h:Doors::hit"
 status = "compared"
 
 [[function.gaps]]
-what = "the hit sound on every store hit, and the leaf step on every hit under 7 and on the breaking hit"
+what = "the hit sound on every store hit"
 relation = "stand-in"
 issue = 707
 
 [[function.gaps]]
-what = "the bursts 1 m up (Coney bursts at the hinge)"
+what = "the cabin bursts' size and push direction (Coney's burst takes a point only)"
 relation = "stand-in"
 issue = 707
 
 [[function.gaps]]
-what = "the two bursts at the break"
+what = "the call 0x003a65a8 on the attacker at the break"
 relation = "not-ported"
 issue = 707
 
 [[function.gaps]]
-what = "the body removal, the call on the attacker and the leaves' next models at the break"
-relation = "not-ported"
-issue = 707
-
-[[function.gaps]]
-what = "the cabins' GLASS x GLASS pair at the break (Coney plays it for dyn_door_store only)"
-relation = "not-ported"
+what = "one model per leaf: the left leaf's model word +0xc4 is not kept apart from the model it is drawn with"
+relation = "stand-in"
 issue = 707
 
 [[function.gaps]]

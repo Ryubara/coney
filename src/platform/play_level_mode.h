@@ -575,8 +575,7 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     world_objects::DrawnPoses<double> m_drawnPoses;
     world_objects::DrawnPoses<const human::Human*> m_iconPoses;
     effects::Triglints m_glints;
-    std::unique_ptr<ThrowArcRenderer> m_throwArc;            // made when the arc is first drawn
-    std::unique_ptr<world_objects::ObjectList> m_objectList; // before the models that read it
+    std::unique_ptr<ThrowArcRenderer> m_throwArc; // made when the arc is first drawn
     std::unique_ptr<PlacedObjects> m_placed;
     // Where this frame draws the worn hats and the carried props.
     std::vector<std::pair<double, world_objects::WorldPose>> m_attachedDraws;

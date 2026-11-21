@@ -24,10 +24,10 @@ inline constexpr std::uint32_t kObjectListChunk = 0x46;
 inline constexpr std::size_t kObjectRecordBytes = 36;
 inline constexpr std::size_t kObjectRecordsOffset = 0x10;
 
-/// One record of the Object List. Only the name, model and textures are used; the rest is kept as read.
+/// One record of the Object List. The name, next model, model and textures are used; the rest is kept as read.
 struct ObjectRecord {
     std::uint32_t nameHash = 0;     ///< +0x00: CRC-32 of the object type's name, lower case (`dyn_bat`).
-    std::uint32_t variantOf = 0;    ///< +0x04: 0, or the name hash of the record this one is a variant of.
+    std::uint32_t nextModel = 0;    ///< +0x04: 0, or the name hash of the model a damaged object swaps to.
     std::uint32_t modelHash = 0;    ///< +0x08: names the model resource.
     std::uint32_t texturesHash = 0; ///< +0x0c: names the texture dictionary resource.
     std::uint32_t fourthHash = 0;   ///< +0x10: names a fourth resource for a few objects; meaning not traced.
@@ -54,6 +54,11 @@ class ObjectList {
     /// as the original's; nullptr when there is none. The pointer stays valid as long as this list.
     /// @orig 0x001811b0 ObjectList_FindByHash (unknown)
     [[nodiscard]] const ObjectRecord* findByHash(std::uint32_t nameHash) const;
+
+    /// The next model of the model `nameHash`, the one a damaged object swaps to: its record's `+0x04`, 0 when that is
+    /// 0 or there is no record (docs/research/formats/wad-contents.md#object-list).
+    /// @orig 0x003a4d10 Model_FindByHash (unknown)
+    [[nodiscard]] std::uint32_t nextModelOf(std::uint32_t nameHash) const;
 
     /// Every record, in the chunk's order.
     [[nodiscard]] std::span<const ObjectRecord> records() const { return m_records; }

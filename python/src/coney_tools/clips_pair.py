@@ -77,18 +77,13 @@ class PairRun:
     input_script: Path
     #: How many seconds the clips show, from `start_frame` on.
     seconds: int
-    #: The frame of play the clips start at (Coney records from the level's first frame of play; the frames before it
-    #: are cut from the compare and the encodes).
+    #: The frame of play the clips start at (Coney's `--record-from-frame`: it plays the run up to it, unrecorded, so
+    #: the run before it may be as long as it needs; the clips show `seconds` from there).
     start_frame: int = 0
     checkpoint: int | None = None
     ai_seed: int | None = None
     skip_movies: bool = True
     description: str = ""
-
-    @property
-    def record_seconds(self) -> int:
-        """The `--record-seconds` that holds the start and the clip."""
-        return math.ceil((self.start_frame + self.seconds * FPS) / FPS)
 
 
 def _scenario_value(data: dict[str, Any], key: str, kind: type, path: Path) -> Any:
@@ -149,24 +144,20 @@ def list_scenarios(root: Path, rules: ClipPair) -> list[PairRun]:
 
 
 def check_run(run: PairRun, rules: Clips) -> None:
-    """ClipError unless the run fits the cap: 1 to `max_seconds` shown, and the start and the clip together within
-    `max_seconds`, since Coney records from the level's first frame of play."""
+    """ClipError unless the run fits the cap: 1 to `max_seconds` shown, from a start of 0 or more. The frames before
+    the start are not recorded, so they do not count against the cap."""
     if not 1 <= run.seconds <= rules.max_seconds:
         raise ClipError(f"{run.name}: seconds must be 1 to {rules.max_seconds} s, not {run.seconds}")
     if run.start_frame < 0:
         raise ClipError(f"{run.name}: start_frame must be 0 or more")
-    if run.record_seconds > rules.max_seconds:
-        raise ClipError(
-            f"{run.name}: the start (frame {run.start_frame}) and {run.seconds} s make {run.record_seconds} s, more "
-            f"than the {rules.max_seconds} s Coney records; show fewer seconds or start earlier"
-        )
 
 
 # --- Coney -----------------------------------------------------------------------------------------------------------
 
 
 def coney_arguments(executable: Path, disc: str, run: PairRun, out: Path) -> list[str]:
-    """Coney's command line that plays `run` from the level's first frame of play and records it to `out`. `--record`
+    """Coney's command line that plays `run` from the level's first frame of play and records `run.seconds` of it from
+    its start frame to `out` (`--record-from-frame`, none for a clip that starts with play). `--record`
     puts Coney in test mode (one step and one render a frame, no clock), so the same line gives the same frames; it
     needs a window, so the run is never `--headless` (test mode does not take the focus)."""
     args = [str(executable), "--disc", disc, "--play-level", run.level]
@@ -183,7 +174,8 @@ def coney_arguments(executable: Path, disc: str, run: PairRun, out: Path) -> lis
         "--record",
         str(out),
         "--record-seconds",
-        str(run.record_seconds),
+        str(run.seconds),
+        *(["--record-from-frame", str(run.start_frame)] if run.start_frame else []),
     ]
 
 
@@ -644,7 +636,8 @@ def run_pair(
     if original is not None:
         env.original(original, math.ceil(seconds), paths["original"], agent)
         panels.append(("Original", paths["original"], 0))
-    panels += [("Before", paths["before"], run.start_frame), ("After", paths["after"], run.start_frame)]
+    # Coney's clips start at the run's start frame already, so no panel is trimmed at its front.
+    panels += [("Before", paths["before"], 0), ("After", paths["after"], 0)]
     _compose(panels, paths["compare"], settings, seconds, slow, gif, env)
     return 0
 

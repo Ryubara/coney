@@ -905,7 +905,9 @@ types](../references/glass-types.md#glass-1)), around loose items from the level
 breakables do not spawn: `level99_objs.txt` ([World objects](objects.md#objs-file)) puts 3 `dyn_pwatch` behind the
 front panes at x 50.25-52.26, y 56.99, 3 `dyn_ringdmnd` in the next cabinet (x 48.16-50.17) and 4 `dyn_ring` in the
 side one (x 48.13), all in object zone 26, which `BNESetup` (`global.lua`) enables. The items are `pickup_item`s of
-`TYPE_SPECIAL` (12). Confirmed (runtime): the spawn records read in the store. Disc check: the level's object list.
+`TYPE_SPECIAL` (12). Confirmed (runtime): the spawn records read in the store. Disc check: the level's object list. The
+two-door glass cabinets on the store's east wall are another thing: swinging cabin doors (`dyn_door_cabin_a`), whose
+leaves bend before the door breaks ([A cabin's damaged leaves](objects.md#leaf-damage)).
 
 - **Any strike on a world object counts as a hit**, an ordinary punch or kick included: `Strike_Contact`
   (`0x0021b290`) treats every body it is called for alike. For a world object it does five things:

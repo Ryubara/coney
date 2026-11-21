@@ -89,7 +89,6 @@ def test_a_scenario_loads_with_its_input_script_from_the_checkout(checkout: Path
     assert run.level == "level99"
     assert run.input_script == (checkout / "tests" / "support" / "walk.txt").resolve()
     assert (run.start_frame, run.seconds, run.skip_movies, run.checkpoint, run.ai_seed) == (150, 5, True, None, None)
-    assert run.record_seconds == 10
 
 
 @pytest.mark.parametrize(
@@ -114,14 +113,16 @@ def test_a_scenario_refuses_a_missing_input_script(checkout: Path) -> None:
         clips_pair.load_scenario(path, checkout)
 
 
-def test_a_run_longer_than_the_cap_is_refused_counting_its_start(checkout: Path) -> None:
+def test_the_clip_is_capped_but_the_run_before_it_is_not(checkout: Path) -> None:
     script = checkout / "tests" / "support" / "walk.txt"
     clips_pair.check_run(clips_pair.PairRun("w", "level99", script, seconds=5, start_frame=150), RULES)
     with pytest.raises(clips.ClipError, match="10 s"):
         clips_pair.check_run(clips_pair.PairRun("w", "level99", script, seconds=11), RULES)
-    # Coney records from the level's first frame of play, so the frames before the start count against the cap.
-    with pytest.raises(clips.ClipError, match="start"):
-        clips_pair.check_run(clips_pair.PairRun("w", "level99", script, seconds=8, start_frame=90), RULES)
+    # `--record-from-frame` starts the clip late, so only the seconds shown count against the cap: a clip of 8 s from
+    # frame 2100 (70 s into the run) is fine.
+    clips_pair.check_run(clips_pair.PairRun("w", "level99", script, seconds=8, start_frame=2100), RULES)
+    with pytest.raises(clips.ClipError, match="start_frame"):
+        clips_pair.check_run(clips_pair.PairRun("w", "level99", script, seconds=5, start_frame=-1), RULES)
 
 
 def test_an_unknown_scenario_name_lists_the_known_ones(checkout: Path) -> None:
@@ -151,11 +152,21 @@ def test_coney_records_in_test_mode_with_a_window(checkout: Path) -> None:
     args = clips_pair.coney_arguments(Path("coney.exe"), "H:/", run, Path("/s/t/clips/before.mp4"))
     assert args[:3] == ["coney.exe", "--disc", "H:/"]
     joined = " ".join(args)
-    for part in ("--play-level level99", "--checkpoint 2", "--ai-seed 3", "--skip-movies", "--record-seconds 10"):
+    for part in (
+        "--play-level level99",
+        "--checkpoint 2",
+        "--ai-seed 3",
+        "--skip-movies",
+        "--record-seconds 5",
+        "--record-from-frame 150",
+    ):
         assert part in joined
     assert args[args.index("--input-script") + 1] == str(script)
     assert args[args.index("--record") + 1] == str(Path("/s/t/clips/before.mp4"))
     assert "--headless" not in args  # --record reads the frame buffer of a window
+    # A run that starts its clip with the first frame of play passes no start.
+    first = clips_pair.PairRun("w", "level99", script, seconds=5)
+    assert "--record-from-frame" not in clips_pair.coney_arguments(Path("coney.exe"), "H:/", first, Path("/s/t/a.mp4"))
 
 
 def test_the_record_line_gives_the_frames_and_their_hash() -> None:
@@ -468,6 +479,8 @@ class FakeMachine:
         self.frames = frames or {"before": 300, "after": 300}
         self.events: list[str] = []
         self.busy_seen: list[bool] = []
+        self.recorded_seconds: list[int] = []  # each --record-seconds Coney was given
+        self.ffmpeg_graphs: list[str] = []  # each FFmpeg argument that trims a panel
 
     def git(self, folder: Path, args: Sequence[str]) -> str:
         if args[0] == "merge-base":
@@ -497,12 +510,14 @@ class FakeMachine:
         side = out.stem.rsplit("-", 1)[-1]
         self.events.append(f"record {side} in {'base' if cwd.name.startswith('clips-base-') else 'task'}")
         assert "CONEY_FFMPEG" in env
+        self.recorded_seconds.append(int(args[args.index("--record-seconds") + 1]))
         out.write_bytes(b"clip")
         line = RECORD_LINE.format(path=out, frames=self.frames[side], seconds=10, digest=self.hashes[side])
         return _done(args, out=line)
 
     def ffmpeg(self, args: Sequence[str]) -> subprocess.CompletedProcess[str]:
         self.events.append(f"ffmpeg {Path(args[-1]).name}")
+        self.ffmpeg_graphs += [arg for arg in args if "trim=" in arg]
         Path(args[-1]).write_bytes(b"\0" * 1000)
         return _done(args)
 
@@ -563,6 +578,8 @@ def test_a_pair_builds_both_sides_records_the_same_run_and_stacks_them(
     assert record["before"]["commit"] == "c" * 40
     assert record["after"]["frames_hash"] == "0x02"
     assert record["run"]["start_frame"] == 150
+    assert machine.recorded_seconds == [5, 5]  # each clip is the 5 s shown, recorded from frame 150 on
+    assert machine.ffmpeg_graphs and all("trim=start_frame=0:" in graph for graph in machine.ffmpeg_graphs)
     printed = capsys.readouterr().out
     assert "0x01" in printed
     assert "0x02" in printed

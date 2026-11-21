@@ -1604,9 +1604,11 @@ or 22. Confirmed (code) at `0x003f9ad0`, `0x003fa438`, `0x003b2180`; the kinds o
   `GLASS` × `GLASS` pair, triangles off, and the door sends itself `0x0b` (the human pushed is inferred to be the
   attacker): it **swings open away from them**. Hitting any `TYPE_BREAKANDENTER_DOOR` also reports a break-in
   (crime type 1) at the attacker (`0x0021b290`). Confirmed (code).
-- **Cabin doors** (12): each hit plays `0xcf6586b2`; below 7 both leaves are flagged broken and one, at random, takes
-  its next model (message `0x19`) with a small burst (`0x003c6038`); at 0 or below: triangles off, two loose pieces
-  (`dyn_cabin_aa`, `_bb` or `_cc`), state 6. Two plain hits break the first leaf, three the door. Confirmed (code).
+- **Cabin doors** (12): each hit plays `0xcf6586b2`; every hit that leaves fewer than 7 hitpoints, the breaking one
+  included, flags both leaves broken and gives them their damaged model ([A cabin's damaged leaves](#leaf-damage));
+  at 0 or below: triangles off, two loose pieces (`dyn_cabin_aa`, `_bb` or `_cc`), state 6. Two plain hits damage a
+  leaf, three break the door. Confirmed (code) at `0x003f9ad0`; confirmed (runtime), run
+  r-20261120-cabinet-door-leaf-models (12, 8, 4, then broken).
 - **`dyn_door_liz`** (100), **`dyn_door_dclub`** (20), **`dyn_door_stall`** (10): every hit makes dust (`0x003c57d8`,
   radii 2.75 and 3.75) and 20 splinters (`0x003c5b00`), and plays the type's material against `CONCRETE`. `liz` swaps
   its model at 80, 60, 40 and 20 % (with material sounds 35, 36, 106 and its own); `dclub` at 50 %. At 0 or below
@@ -1615,6 +1617,55 @@ or 22. Confirmed (code) at `0x003f9ad0`, `0x003fa438`, `0x003b2180`; the kinds o
 - Other swinging doors ignore hits.
 - **The leaves at the break**: a cabin door's break (`DoorSwing_Hit`, `0x003fa17c`-`0x003fa1b8`) flags both leaves and
   then removes each (its vtable `+0x4c`), and `dyn_door_stall`'s break removes its leaf the same way. Confirmed (code).
+
+### A cabin's damaged leaves {#leaf-damage}
+
+The cabin doors (`dyn_door_cabin_a`, `_b`, `_c`) are glass cabinet doors: `level99`'s gift shop has four of them
+along its east wall, at x 57.98 ([Doors](../references/doors.md#level99)), each a cabinet front of two glass leaves
+(`dyn_dr_cabin_a`). They are not the shop's glass counters, which are panes ([Combat
+targets](combat-targets.md#breakables)). `DoorSwing_Hit` (`0x003f9ad0`) damages their leaves in place before the door
+breaks. Confirmed (code) unless marked:
+
+1. **When**: after the hit's damage (4 + 6 × kind), whenever the door has fewer than 7 hitpoints left, on every such
+   hit and before the break test, so the breaking hit runs it too. A plain hit takes a cabin from 12 to 8, 4 and 0:
+   only the second and third hits run it.
+2. **The damaged model** is the leaf model's **next model**: the Object List record of the leaf's own model (the
+   CRC-32 of its type's name) names it at `+0x04`, read by `Model_FindByHash` (`0x003a4d10`;
+   [Object List](formats/wad-contents.md#object-list)). `dyn_dr_cabin_a`'s is `dyn_dr_cabin_aa`, a leaf whose glass
+   and frame are bent: confirmed (runtime), run r-20261120-cabinet-door-leaf-models (the model word `+0xc4` of the
+   chosen leaf reads the CRC-32 of `dyn_dr_cabin_aa` after the second hit, and the leaf is drawn skewed).
+3. **The left leaf always takes it.** The step first sets the left leaf (data `+0x14`) to its type's model and then
+   to that model's next one (`Obj_SetModel` twice, `0x003a44c8`), whichever leaf the draw picks: the instance it draws
+   changes, but its model word `+0xc4` does not. Confirmed (code).
+4. **A draw** (`Random_Int(1)` on the effects stream `0x006eb8b8`, 0 or 1) picks the leaf the step is for: 0 the left,
+   1 the right. That leaf takes the same model again and is sent message `0x19` with it, whose handler
+   (`SubSwingingDoor_OnMessage`, `0x003fb430`) sets the model and stores it in `+0xc4`. So a 0 damages the left leaf
+   only and a 1 both; a leaf once damaged stays so, since nothing gives the right leaf its whole model back.
+   Confirmed (runtime), run r-20261120-cabinet-door-leaf-models, for both draws: the right leaf's word changed in one
+   run, the left's in the other, and the screenshots show one leaf bent in the second run and both in the first.
+5. **A burst** (`Particles_Burst`, `0x003c6038`, size 0.07, one particle) 1 m above the chosen leaf's hinge: the
+   door's position for the left leaf, the door's position plus its rotation × (−2w, 0, 0) for the right, pushed
+   along the door's turned +y. Confirmed (code).
+
+**What it shares.** The next model is the one damage mechanism here that other objects use too: `Model_FindByHash`
+has seven callers, `DoorSwing_Hit` and the `dyn_masks` props' hit and message handlers (`0x003b7a88`, `0x003bf1b8`,
+[Breakable props](#breakable-props)), the exploding car prop (`0x003cca88`, `0x003ccf68`), `0x003cdca8` and
+`0x003f08c0`; Coney ports it once, as `ObjectList::nextModelOf`. A driven car's damage (`Car_OnHit`, `0x0038bea0`,
+[Cars](cars.md)) is not among them: it swaps the parts of its 47-atomic clump. Nor are the door's hitpoints the world
+object's hit counters of a strike's contact (`WorldObject_TakeHit`, `0x00393450`, byte `+0x10d`, [Combat
+targets](combat-targets.md#breakables)): a door keeps its own in its data block (`+0x08`). Confirmed (code), from the
+callers of `0x003a4d10`.
+
+`Obj_SetModel` with a hash the Object List does not hold gives the object no instance and answers 0, and with 0 it
+takes the type's own model, so a leaf model without a next model keeps its own; one whose next model has no record
+would be drawn with nothing (inferred from `0x003a44c8`; no disc leaf is known to have one).
+
+**The break** of a cabin door (0 or below) then removes the door's collision body (`Obj_RemoveBody`, `0x003a5340`),
+turns its triangles off, calls `0x003a65a8` on the attacker, makes two more bursts 1 m above the door's position
+and 2w along its −x, plays the `GLASS` × `GLASS` pair at the door, gives both leaves their next model again (moot:
+they are removed in the same call, [The leaves at the break](#door-break)) and throws its two pieces. In the original
+the pieces land on the floor in front of the cabinet: confirmed (runtime), run r-20261120-cabinet-door-leaf-models
+(screenshot after the third hit).
 
 ### Removing a door {#door-removal}
 
@@ -2386,8 +2437,9 @@ the drawer and lifts the register with clip 504 (disc checks, 2026-10-08).
   `level82_chapter2`'s `Setup`. Those humans carry nothing in Coney; making the carried prop from the placement
   (`Human_CreateCarriedProp`) would show them. Names a script picks at run time (`GetRandomWeapon` and the tables
   of names in a few levels) are not checked.
-- Where a cabin door's wreck pieces and a barrier's boards appear (its leaves are removed at the break,
-  [Breaking a door](#door-break)).
+- How a cabin door's wreck pieces are thrown (`ScriptObj_SpawnThrownDebris` and the velocities `DoorSwing_Hit` builds
+  at `0x003fa204`-`0x003fa3cc`; in the original they land in front of the cabinet, [A cabin's damaged
+  leaves](#leaf-damage)), and where a barrier's boards appear.
 - Cash register ([Script types](script-types.md#dyn-cashreg)): how many throws or swings break a lifted register at
   runtime.
 - Impact sounds ([Sound events](sound-events.md#objects)): which speed `WorldObject_OnImpact` tests against 2 m/s

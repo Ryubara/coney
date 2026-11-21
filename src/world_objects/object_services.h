@@ -28,6 +28,8 @@ class PathMap;
 
 namespace coney::world_objects {
 
+class ObjectList;
+
 /// The `MATERIAL_*` ids the panes and doors name (docs/references/enums.md).
 namespace material {
 inline constexpr std::uint8_t kGlass = 2;       ///< `GLASS`: a pane's triangles, the large shatter's sound.
@@ -138,8 +140,6 @@ class ObjectServices {
     virtual void destroyObject(double /*object*/) {}
     /// Moves an object to `at` (a cash register's drawer jumping open).
     virtual void moveObject(double /*object*/, anim::Vec3 /*at*/) {}
-    /// Gives an object its next model (message `0x19`, a damaged door's or leaf's next stage).
-    virtual void nextModel(double /*object*/) {}
     /// Gives an object the model named by `modelHash`.
     virtual void setModel(double /*object*/, std::uint32_t /*modelHash*/) {}
     /// Sets an object's value (`+0x124`): a `dyn_money`'s dollars.
@@ -149,7 +149,7 @@ class ObjectServices {
     virtual void dust(anim::Vec3 /*at*/, float /*radius*/) {}
     /// `count` splinters at `at` (`0x003c5b00`).
     virtual void splinters(anim::Vec3 /*at*/, int /*count*/) {}
-    /// The small burst of a leaf taking its next model (`0x003c6038`).
+    /// The small burst of a leaf taking its damaged model (`0x003c6038`).
     virtual void burst(anim::Vec3 /*at*/) {}
     /// Stops every human whose object target is `object` (`0x0022e400`).
     virtual void stopHumansTargeting(double /*object*/) {}
@@ -199,6 +199,8 @@ struct ObjectWorld {
     /// Knocks an object loose (message `0x30`): it flies from where its record stands at `velocity` (m/s), spinning at
     /// `spin` (rad/s); empty: nothing moves it.
     std::function<void(double object, anim::Vec3 velocity, anim::Vec3 spin)> knock;
+    /// The Object List, which names a damaged object's next model (ObjectList::nextModelOf); null: no next models.
+    const ObjectList* models = nullptr;
     /// Every triangle write the objects have made, by triangle index (markTriangles, setTrianglesEnabled).
     std::map<std::uint32_t, TriangleWrite> triangleWrites{};
     /// Every box switch the scripts have made (setTrianglesEnabledInBox), in order.
