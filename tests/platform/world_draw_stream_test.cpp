@@ -600,6 +600,34 @@ std::unique_ptr<WorldSet> loadedScene(RenderEngine& engine, const SceneDisc& dis
     return std::move(*set);
 }
 
+// The scene's sectors and the level's background (the sky, the clouds, the skyline, the glows) drawn on `engine` as the
+// play mode draws them: with `hook` offered to the lighting rig and the renderer (`passes`: as sectorDraws()), inside
+// the scenery's draw scope; how many draws the frame description holds then.
+std::size_t levelDraws(RenderEngine& engine, bool headless, coney::platform::MeshViewHook* hook, bool passes) {
+    const SceneDisc disc;
+    coney::world::SectorBudget budget(10'000);
+    std::unique_ptr<WorldSet> set = loadedScene(engine, disc, budget);
+    std::unique_ptr<coney::world::LevelObject> level = backgroundLevel();
+    coney::platform::holdLevelMeshes(*level, engine.sceneAssets());
+    {
+        WorldRenderer renderer;
+        renderer.recordHeadless(headless);
+        renderer.lighting().setMeshViews(hook, passes);
+        engine.hideKindsOf(hook);
+        {
+            const coney::platform::DrawKindScope kind(coney::platform::DrawKind::Scenery);
+            renderer.render(engine, *set, level.get(), sceneView(), 1000.0F, 2000);
+        }
+        engine.hideKindsOf(nullptr);
+        renderer.lighting().setMeshViews(nullptr);
+    }
+    std::size_t draws = 0;
+    for (const ScenePass* pass : scenePassesOf(engine.frame())) {
+        draws += pass->draws.size();
+    }
+    return draws;
+}
+
 } // namespace
 
 TEST_CASE("the level's background is recorded before the world, through its own cameras",
@@ -840,4 +868,40 @@ TEST_CASE("the renderer hides the kinds a hook hides, and no hook hides none", "
     for (const DrawKind kind : {DrawKind::Scenery, DrawKind::Humans, DrawKind::Objects}) {
         CHECK_FALSE(engine->kindHidden(kind));
     }
+}
+
+TEST_CASE("hiding the scenery hides the level's background with the sectors, and no other kind does",
+          "[platform][world][frame-description][world-page]") {
+    // Expected: docs/guides/debug-menu.md#world: the World page's Streamed world switch is the scenery kind, which the
+    // background (the sky box, the clouds, the skyline and the light glows) is drawn in with the sectors, so off it
+    // hides all six draws of the level scene (docs/engine/gpu-renderer.md#scene); the Humans and Objects switches
+    // leave them. Coney's own debug tooling.
+    using coney::platform::DrawKind;
+    using coney::test::HideHook;
+    auto engine = startHeadless();
+    CHECK(levelDraws(*engine, true, nullptr, true) == 6);
+    CHECK(levelDraws(*engine, true, nullptr, false) == 6);
+    HideHook scenery({DrawKind::Scenery});
+    CHECK(levelDraws(*engine, true, &scenery, false) == 0);
+    HideHook others({DrawKind::Humans, DrawKind::Objects});
+    CHECK(levelDraws(*engine, true, &others, false) == 6);
+    HideHook viewing({}, true);
+    CHECK(levelDraws(*engine, true, &viewing, false) == 6);
+}
+
+TEST_CASE("on GL3 a hook that only hides a kind sends the background through the rig too",
+          "[platform][world][frame-description][world-page]") {
+    // Expected: docs/guides/debug-menu.md#world: GL3 keeps the path it had before the part switches reached the GPU
+    // renderer: with any hook set the background's models, like the sectors', go through the lighting rig for the
+    // hook (SceneLighting::meshViewsOn()), so the frame description holds none of the level scene's six draws, a part
+    // hidden or not.
+    using coney::platform::DrawKind;
+    using coney::test::HideHook;
+    auto engine = startHeadless();
+    HideHook scenery({DrawKind::Scenery});
+    CHECK(levelDraws(*engine, true, &scenery, true) == 0);
+    HideHook humans({DrawKind::Humans});
+    CHECK(levelDraws(*engine, true, &humans, true) == 0);
+    HideHook nothing;
+    CHECK(levelDraws(*engine, true, &nothing, true) == 0);
 }
