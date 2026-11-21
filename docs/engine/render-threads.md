@@ -1,8 +1,9 @@
 # Engine: simulation and drawing threads
 
 The part of the [renderer design](renderer.md) that splits a frame's work between two threads, so that drawing keeps an
-even pace at a high display rate. It is a design: nothing here is built yet, and its items (37 to 42) are in the
-renderer's [Order](renderer.md#order).
+even pace at a high display rate. The split itself is a design not built yet, and its items (37 to 42) are in the
+renderer's [Order](renderer.md#order); the [worker threads](#workers) that pose the humans are built
+([#1553](issue:1553)).
 
 ## The plan {#threads}
 
@@ -84,7 +85,8 @@ performance sweep's item 7 ([#1542](issue:1542)), is meant to take the same pool
 - **Its size.** Half the machine's hardware threads, about its physical cores, at least 1 and at most 8, the
   performance sweep's choice (`defaultWorkerThreads()`); the caller counts as one. The threads start at the pool's
   first use, so a process that never runs a loop (a headless test, a server) starts none, and stop when the process
-  exits.
+  exits. A worker the system refuses to start is no failure: the pool runs on those that started, or on the caller
+  alone when none did (`threads()` says how many).
 - **No librw, no shared writes.** A body reads only what nothing writes during the loop and writes only what its index
   owns. librw stays on the main thread ([above](#threads-main)), so the work is split into a prepared half for the
   workers and a librw half that the main thread applies afterwards, in the order one thread would have used.

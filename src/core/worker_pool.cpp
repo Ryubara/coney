@@ -9,6 +9,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <system_error>
 #include <thread>
 #include <vector>
 
@@ -48,11 +49,21 @@ class BodyScope {
 // takes chunks too and returns once every worker has said so, so no worker still reads the body after the loop.
 class WorkerPool::Workers {
   public:
-    // Starts `workers` threads, each waiting for a loop.
-    explicit Workers(std::size_t workers) {
+    // Starts up to `workers` threads, each waiting for a loop. A thread the system refuses (or `mayStart` does) ends
+    // the starting: the pool runs on those that started, none at worst, as a machine with fewer threads would.
+    // std::thread reports a refusal only by throwing std::system_error, so this is the one place the engine catches
+    // one, at the standard library's edge as at a C library's (conventions.md#errors); nothing here throws.
+    Workers(std::size_t workers, const std::function<bool(std::size_t)>& mayStart) {
         m_threads.reserve(workers);
         for (std::size_t i = 0; i < workers; ++i) {
-            m_threads.emplace_back([this] { work(); });
+            if (mayStart && !mayStart(i)) {
+                break;
+            }
+            try {
+                m_threads.emplace_back([this] { work(); });
+            } catch (const std::system_error&) {
+                break;
+            }
         }
     }
     // Wakes every worker to stop, and waits for each.
@@ -71,6 +82,9 @@ class WorkerPool::Workers {
     Workers& operator=(const Workers&) = delete;
     Workers(Workers&&) = delete;
     Workers& operator=(Workers&&) = delete;
+
+    // The workers that started.
+    [[nodiscard]] std::size_t started() const { return m_threads.size(); }
 
     // Runs one loop on every worker and the caller, and waits for all of them; one caller at a time.
     void run(std::size_t count, const std::function<void(std::size_t)>& body) {
@@ -140,13 +154,15 @@ class WorkerPool::Workers {
     bool m_quit = false;
 };
 
-// The workers beside the caller; none with one thread.
-// Stub: `mayStart` is not yet honoured.
-WorkerPool::WorkerPool(std::size_t threads, const std::function<bool(std::size_t worker)>& /*mayStart*/) {
+// The workers beside the caller; none with one thread, or when none could start.
+WorkerPool::WorkerPool(std::size_t threads, const std::function<bool(std::size_t worker)>& mayStart) {
     if (threads > 1) {
-        m_workers = std::make_unique<Workers>(threads - 1);
+        m_workers = std::make_unique<Workers>(threads - 1, mayStart);
+        if (m_workers->started() == 0) {
+            m_workers.reset();
+        }
     }
-    m_threads = std::max<std::size_t>(threads, 1);
+    m_threads = m_workers == nullptr ? 1 : m_workers->started() + 1;
 }
 
 WorkerPool::~WorkerPool() = default;
