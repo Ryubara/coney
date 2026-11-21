@@ -55,7 +55,8 @@ enum class MessageId : std::uint8_t {
     LoadLevel = 13,    ///< server to client: load this level at this checkpoint (protocol 8)
     LevelLoaded = 14,  ///< client to server: the level of a LoadLevel is loaded (protocol 8)
     MissionEnd = 15,   ///< server to client: the host's mission has ended, and how (protocol 8)
-    MovieDone = 16 ///< client to server: this client's copy of the host's movie has ended or was skipped (protocol 8)
+    MovieDone = 16, ///< client to server: this client's copy of the host's movie has ended or was skipped (protocol 8)
+    MovieBegan = 17 ///< client to server: this client's own copy of the host's movie has started (protocol 10)
 };
 
 /// Why a server refused a Hello.
@@ -377,6 +378,11 @@ struct MovieDone {
     bool skipped = false;
 };
 
+/// This client's own copy of the host's movie has started (the stub of #1548's test commit).
+struct MovieBegan {
+    std::uint32_t movieStep = 0;
+};
+
 /// Bits `event` takes in an EventBatch's packet: what an EventSender's budget counts.
 [[nodiscard]] std::size_t eventBits(const NetEvent& event);
 
@@ -403,7 +409,7 @@ struct MovieDone {
 
 /// Any message.
 using Message = std::variant<Hello, Welcome, Reject, Bye, Ping, Pong, InputCommands, InputTiming, Snapshot, SnapshotAck,
-                             EventBatch, LoadLevel, LevelLoaded, MissionEnd, MovieDone>;
+                             EventBatch, LoadLevel, LevelLoaded, MissionEnd, MovieDone, MovieBegan>;
 
 /// The packet for `message`. A Hello or Welcome whose name is over kMaxNameBytes, an InputCommands with no pads, more
 /// than kMaxInputCommands or one for a step below 0, a Snapshot that breaks its rules (sequence 0, a baseline not

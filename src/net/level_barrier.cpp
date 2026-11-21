@@ -116,6 +116,8 @@ void LevelBarrier::movieDone(std::uint8_t slot, std::uint32_t movieStep, bool sk
     m_movie->skipped = m_movie->skipped || skipped;
 }
 
+void LevelBarrier::movieBegan(std::uint8_t /*slot*/, std::uint32_t /*movieStep*/) {}
+
 bool LevelBarrier::movieMayEnd() const {
     if (!m_movie) {
         return true;

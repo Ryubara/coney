@@ -228,6 +228,8 @@ void NetClient::movieDone(std::uint32_t movieStep, bool skipped) {
     }
 }
 
+void NetClient::movieBegan(std::uint32_t /*movieStep*/) {}
+
 std::uint32_t NetClient::clockSpeedPercent() const {
     if (m_state != ClientState::Connected || !m_timing) {
         return 100;

@@ -126,7 +126,8 @@ void writeMessage(BitWriter& out, const Message& message) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::EventBatch));
                 writeEventBatchBody(out, m);
             } else if constexpr (std::is_same_v<T, LoadLevel> || std::is_same_v<T, LevelLoaded> ||
-                                 std::is_same_v<T, MissionEnd> || std::is_same_v<T, MovieDone>) {
+                                 std::is_same_v<T, MissionEnd> || std::is_same_v<T, MovieDone> ||
+                                 std::is_same_v<T, MovieBegan>) {
                 writeLevelMessage(out, m);
             } else if constexpr (std::is_same_v<T, InputTiming>) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::InputTiming));
@@ -322,6 +323,8 @@ std::expected<Message, Error> readFields(BitReader& in, std::uint8_t id) {
         return readMissionEndBody(in);
     case MessageId::MovieDone:
         return readMovieDoneBody(in);
+    case MessageId::MovieBegan:
+        return readMovieBeganBody(in);
     case MessageId::InputTiming: {
         auto lead = in.readVarInt();
         if (!lead) {

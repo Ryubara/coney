@@ -79,6 +79,8 @@ class LevelBarrier {
     /// The player in `slot` says their copy of the movie of `movieStep` ended, or was skipped. A movie that is not the
     /// current one's (late, or before it) changes nothing.
     void movieDone(std::uint8_t slot, std::uint32_t movieStep, bool skipped);
+    /// The player in `slot` says their own copy of the movie of `movieStep` has begun (stub: nothing yet).
+    void movieBegan(std::uint8_t slot, std::uint32_t movieStep);
     /// Whether a player skipped the current movie: the host then ends its own copy, as any pad's skip does.
     [[nodiscard]] bool movieSkipped() const { return m_movie.has_value() && m_movie->skipped; }
     /// Whether the host may go on from its movie: no movie, or its own copy has ended and every player watching has

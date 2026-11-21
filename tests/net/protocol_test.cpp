@@ -137,8 +137,8 @@ TEST_CASE("the encoding is pinned: a change to it must bump kProtocolVersion", "
     // its start, and its stop and move (#1473); version 7 the players' HUDs in a Snapshot (pinned in snapshot_test.cpp
     // and player_huds_test.cpp); version 8 the level messages (their bytes are pinned in level_sync_test.cpp) and a
     // Bye for a load that timed out (#557); version 9 the HUD's standing state in a Snapshot (pinned in
-    // hud_standing_test.cpp).
-    CHECK(kProtocolVersion == 9);
+    // hud_standing_test.cpp); version 10 MovieBegan (pinned in level_sync_test.cpp, #1548).
+    CHECK(kProtocolVersion == 10);
 }
 
 // Expected: unverified, #547 (Coney's own protocol; the original has no network play)

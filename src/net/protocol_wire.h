@@ -49,6 +49,8 @@ void writeLevelMessage(BitWriter& out, const LevelLoaded& message);
 void writeLevelMessage(BitWriter& out, const MissionEnd& message);
 /// @copydoc writeLevelMessage(BitWriter&, const LoadLevel&)
 void writeLevelMessage(BitWriter& out, const MovieDone& message);
+/// @copydoc writeLevelMessage(BitWriter&, const LoadLevel&)
+void writeLevelMessage(BitWriter& out, const MovieBegan& message);
 
 /// Reads a LoadLevel after its message id: Truncated when short, Invalid for a load or checkpoint of 0, an empty or
 /// too long level name or an unknown reason.
@@ -63,5 +65,8 @@ void writeLevelMessage(BitWriter& out, const MovieDone& message);
 /// Reads a MovieDone after its message id: Truncated when short.
 /// @coney-only network play; the original has none
 [[nodiscard]] std::expected<Message, Error> readMovieDoneBody(BitReader& in);
+/// Reads a MovieBegan after its message id.
+/// @coney-only network play; the original has none
+[[nodiscard]] std::expected<Message, Error> readMovieBeganBody(BitReader& in);
 
 } // namespace coney::net

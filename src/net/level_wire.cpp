@@ -59,6 +59,10 @@ void writeLevelMessage(BitWriter& out, const MovieDone& message) {
     out.writeBool(message.skipped);
 }
 
+void writeLevelMessage(BitWriter& out, const MovieBegan& /*message*/) {
+    out.writeU8(static_cast<std::uint8_t>(MessageId::MovieBegan));
+}
+
 std::expected<Message, Error> readLoadLevelBody(BitReader& in) {
     auto load = readLoad(in, "level order");
     if (!load) {
@@ -129,5 +133,7 @@ std::expected<Message, Error> readMovieDoneBody(BitReader& in) {
     }
     return MovieDone{.movieStep = *step, .skipped = *skipped};
 }
+
+std::expected<Message, Error> readMovieBeganBody(BitReader& /*in*/) { return MovieBegan{}; }
 
 } // namespace coney::net
