@@ -237,10 +237,11 @@ TEST_CASE("the disc's level99: --scene Coney_Sub2 moves dyn_s_train_med_full car
         const auto then = early.find(handle);
         moved += then != early.end() && then->second != at ? 1 : 0;
     }
+    // Widen first and double in the wide type, so no cast follows narrower arithmetic.
+    const auto lookAtFrame = static_cast<unsigned long long>(kLookAt);
     std::printf("--scene Coney_Sub2 in level99: %zu new pinned dyn_s_train_med_full records, %zu placed by the scene, "
                 "%zu moved between frames %llu and %llu\n",
-                late.size(), placed, moved, static_cast<unsigned long long>(kLookAt),
-                static_cast<unsigned long long>(2 * kLookAt));
+                late.size(), placed, moved, lookAtFrame, 2 * lookAtFrame);
     CHECK(late.size() == 6);
     CHECK(placed == 6);
     CHECK(moved > 0);
