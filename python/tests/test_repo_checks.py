@@ -1096,11 +1096,16 @@ def test_the_clip_reasons_are_read_from_the_conventions() -> None:
         "missing scenario for the guard",
         "without a scenario",
         "the clip tool cannot record it",
+        "no tool to record it",
+        "no disc run reaches it",
+        "no game disc on this machine",
+        "hard to film",
         "hard to record",
+        "too small to show",
         "too small to film",
         "not worth a clip",
-        "a minor difference",
-        "no game disc on this machine",
+        "no scenario reaches it",
+        "rename only; no scenario reaches it",
         "a refactor; no scenario reaches it",  # an accepted kind never excuses a refused phrase
         "NO SETUP EXISTS",
     ],
@@ -1123,13 +1128,22 @@ def test_a_reason_that_blames_a_missing_scenario_setup_or_tool_is_refused(reason
         "nothing reads the field until the next task",
         "same behaviour as before: the trace diff shows 0 differences",
         "nothing in the game runs it yet",
+        # honest detail after an accepted kind's words is no excuse (the reviewer's findings on #1533)
+        "nothing visible changes: a minor fix of a comment",
+        "a refactor: a small difference in naming only",
+        "rename only; the tool does not read it",
+        "nothing visible changes; no tool reads it",
+        "nothing a player sees; no disc is read by the new test",
+        "rename only; no clip scenario is affected",
     ],
 )
 def test_a_reason_of_an_accepted_kind_passes(reason: str) -> None:
     assert none_reason_problems(reason) == []
 
 
-@pytest.mark.parametrize("reason", ["the maintainer asked for it", "it is quick", "see the Summary", "skipped"])
+@pytest.mark.parametrize(
+    "reason", ["the maintainer asked for it", "it is quick", "see the Summary", "skipped", "a minor difference"]
+)
 def test_a_free_text_reason_of_no_accepted_kind_is_refused_with_the_kinds(reason: str) -> None:
     (problem,) = none_reason_problems(reason)
     rule = BODY_RULES.clips

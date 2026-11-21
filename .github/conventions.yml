@@ -264,16 +264,23 @@ pull_requests:
     # (found anywhere in the reason, case-insensitive) that say it, so a free-text excuse passes no more. Both are
     # asked of a pull request the rule asks clips of, opened since `since` (`pr text`, `pr verify` and CI's `body` job).
     reasons:
-      since: "2026-11-21T00:00:00Z"
+      since: "2026-11-22T00:00:00Z"            # whoever merges the pull request that added this sets it to the merge day or later
       refused:
-        - '\bno\s+(?:[\w-]+\s+){0,4}(?:scenarios?|set-?ups?|presets?|tool(?:s|ing)?|recipes?)\b'
-        - '\b(?:missing|lacks?|lacking|without)\s+(?:an?\s+|the\s+)?(?:[\w-]+\s+){0,3}(?:scenarios?|set-?ups?|presets?|tool(?:s|ing)?)\b'
-        - '\b(?:scenarios?|set-?ups?|presets?|tools?)\b[^.;:]{0,40}\b(?:does not|doesn.t|do not|don.t|cannot|can.t|not yet|yet to|exists? yet)\b'
-        - '\b(?:no|without a?)\s+(?:game\s+)?disc\b'
+        # "no (clips pair) scenario reaches it", "no setup exists", "no preset for it": a missing scenario, setup, preset or tool
+        - '\bno\s+(?:[\w-]+\s+){0,3}(?:scenarios?|set-?ups?|presets?|recipes?|tooling)(?:\s+or\s+[\w-]+)?(?:\s+(?:reach(?:es)?|exists?|existed|covers?|is\s+available|are\s+available|available|yet|for|to)\b|\s*$)'
+        - '\bno\s+(?:[\w-]+\s+){0,2}tools?\s+(?:to|for|that|which|exists?)\b'
+        - '\b(?:missing|lacks?|lacking|without)\s+(?:an?\s+|the\s+|any\s+)?(?:[\w-]+\s+){0,3}(?:scenarios?|set-?ups?|presets?)\b'
+        - '\b(?:missing|lacks?|lacking)\s+(?:an?\s+|the\s+)?(?:[\w-]+\s+){0,2}tools?\b'
+        # "the scenarios do not reach it", "the clip tool cannot record it"
+        - '\b(?:scenarios?|set-?ups?|presets?)\b[^.;:]{0,40}\b(?:does not|doesn.t|do not|don.t|cannot|can.t|not yet|yet to)\s+(?:\w+\s+){0,2}(?:reach|exist|cover|record|film|show|support)\b'
+        - '\btools?\s+(?:cannot|can.t|can not|does not|doesn.t)\s+(?:\w+\s+){0,2}(?:record|film|capture|show|reach|reproduce)\b'
+        # no disc to run it on
+        - '\bno\s+(?:game\s+)?disc\s+(?:run|available|here|access|image|on|to\s+\w+)\b'
+        - '\bwithout\s+(?:a\s+|the\s+)?(?:game\s+)?disc\b'
+        # filming is hard, the difference is too small, it is not worth it
         - '\b(?:cannot|can.t|unable to|impossible to|no way to|hard to|difficult to|awkward to|tricky to)\s+(?:\w+\s+){0,2}(?:record|film|capture|show|reach|reproduce)\b'
-        - '\b(?:too|very|rather)\s+(?:small|subtle|minor|hard|difficult|short|fast|brief)\b'
+        - '\btoo\s+(?:small|subtle|minor|hard|difficult|short|fast|brief|tiny)\b'
         - '\bnot\s+(?:worth|practical|feasible|possible)\b'
-        - '\b(?:small|minor|subtle|tiny)\s+(?:change|difference|fix)\b'
       accepted:
         "nothing a player could see changes": ["nothing visible", "no visible change", "nothing a player", "no change a player", "player cannot see"]
         "no behaviour reads the value yet": ["no behaviour reads", "nothing reads", "no code reads", "not read by any", "no caller reads", "no behaviour uses", "nothing uses"]

@@ -560,21 +560,20 @@ optional, and screenshots under `./shots/` may stand beside them.
 
 **`Clips: none (<reason>)` is the rare exception.** It is for a pull request where nothing a player could ever see
 changes: a value no behaviour reads yet, a refactor that keeps the behaviour, a rename. It is not a judgement that the
-difference is small, nor that it is hard to film. The reason is one of the kinds listed in
-`pull_requests.clips.reasons.accepted` ([.github/conventions.yml](repo:.github/conventions.yml)): "nothing a player
-could see changes", "no behaviour reads the value yet", "a refactor or rename that keeps the behaviour" and "nothing in
-the game runs it". Write the kind's own words in the reason, with the detail after them, for example `Clips: none (a
-refactor: the trace diff shows 0 differences)` or `Clips: none (no behaviour reads the value yet: the HUD takes it
-in a later task)`. A free-text excuse of no kind is refused.
+difference is small, nor that it is hard to film. The reason is one of the kinds in
+`pull_requests.clips.reasons.accepted` ([.github/conventions.yml](repo:.github/conventions.yml); the Screenshots item of
+[What a pull request shows](#pr-evidence) lists them). Write the kind's own words in the reason, with the detail after
+them, for example `Clips: none (a refactor: the trace diff shows 0 differences)`. A free-text excuse of no kind is
+refused.
 
 **A missing scenario, setup, preset or tool is never a reason.** When no `clips pair` scenario reaches the change, the
 task builds one and records the clips with it: a TOML file under `tools/clips/` with its input script, its level and its
 start ([Scenarios](coney-tools-clips.md#clips-pair)), which the next task uses too. A reason that blames one (`no
 scenario reaches it yet`, `no setup exists`, `no preset`, `the tool cannot record it`) or says filming is hard or not
 worth it is refused by `pr text`, `pr verify` and CI's `body` job, from the patterns in
-`pull_requests.clips.reasons.refused`, with a message that says to add the scenario. The sneak attack fix (#1504)
-merged with such a reason and without clips; that is the case this rule ends. The rules apply to a pull request opened
-since `pull_requests.clips.reasons.since`, so an open one is not refused at its next push.
+`pull_requests.clips.reasons.refused`, with a message that says to add the scenario. The rules apply to a pull request
+opened since `pull_requests.clips.reasons.since`, so an open one is not refused at its next push; whoever merges the
+pull request that adds or changes them sets `since` to the merge day or later.
 
 **GIF or MP4.** A GIF plays inline the moment the page opens and loops, so it suits a short, silent clip of one thing; an
 MP4 carries sound, length and detail a GIF's palette loses. GitHub plays an MP4 only from its bare upload address
