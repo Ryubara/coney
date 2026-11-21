@@ -467,8 +467,9 @@ class Brain {
     void setMayApproach(bool may) { m_mayApproach = may; }
     /// Adds `enemy` to this brain's enemy list (`+0x164`, up to 16), one way: `enemy`'s own list is left alone (the
     /// original only raises his hostile count `+0x152`, which Coney reads from the lists, ai::huntersOf()). When its
-    /// gang's tactic does not leave the members their own goals, the tactic hears of it (event `0xb`). Nothing while
-    /// this human is down or dead (humanIsDownOrDead()), when `enemy` is listed already or the list is full.
+    /// gang's tactic does not leave the members their own goals, the tactic hears of it (event `0xb`). A full list
+    /// stores nothing, but the tactic still hears of it. Nothing at all while this human is down or dead
+    /// (humanIsDownOrDead()) or when `enemy` is listed already.
     /// @orig 0x0028d538 Brain_AddEnemy (unknown)
     void addEnemy(Brain& enemy);
     /// The enemy list.

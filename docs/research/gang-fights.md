@@ -57,9 +57,9 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
 
 1. **Each member keeps his own enemy list** (brain `+0x164`, 16). It fills from the periodic scan
    ([The enemy scan](ai-fights.md#enemy-scan)), from being hit or warned (the attacker is added by `Brain_AddEnemy`
-   `0x0028d538`, on the victim's side only: the attacker's brain only counts him, [Tactics](ai-gangs.md#tactics)),
-   from [help calls](ai-brain-types.md#help-calls) and from the tactic's events. Nothing copies one member's list to
-   another, except the **shared target** (rule 4).
+   `0x0028d538`, on the victim's side only: the attacker's brain only counts him,
+   [The tactic base](ai-gangs.md#tactic-base)), from [help calls](ai-brain-types.md#help-calls) and from the tactic's
+   events. Nothing copies one member's list to another, except the **shared target** (rule 4).
 2. **The choice is a score** ([Choosing among enemies](ai-fights.md#enemy-score)): Melee re-picks with `Brain_PickBestEnemy`
    (`0x0029f230`, flags `0xfffffffd`) every time a fight goal ends. The terms that make a gang **spread** are the
    distance (4 points a metre nearer), "he targets me" (+4), "he is armed and targets me" (+3) and above all **−999

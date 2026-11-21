@@ -131,7 +131,9 @@ checkpoint 2 ([the hand-over](characters.md#level99-handover)).
 **`GangBrFlush(id)`** (`0x0016ba18`) only clears the goals and actions of each current member's brain; it removes and
 destroys nothing. Called just before `GangDelete` in the same script step, as in level 99, it has no visible effect.
 
-### Tactics {#tactics}
+## Tactics {#tactics}
+
+### The tactic base {#tactic-base}
 
 Confirmed (code) at the cited addresses unless a line says otherwise.
 
@@ -191,7 +193,9 @@ two readers: Start puts the gang on alert when it is 1, and `Brain_AddEnemy` sen
   `0x00227e60`) or the enemy is listed already. Otherwise it adds the enemy to `+0x164` (16) and raises the enemy's
   hostile count by one (brain `+0x152`, `Brain_CountHostile` `0x0028ef20`, called at `0x0028d5f8`), unless both are
   players; it does **not** list this human in the enemy's own list, so the listing is one way. When the tactic's
-  `+0x3c` answers 0 it sends the tactic event `0xb` with the enemy. Confirmed (code); the one-way listing is also
+  `+0x3c` answers 0 it sends the tactic event `0xb` with the enemy. A full list stores nothing
+  (`HandleArray16_PutInFree` `0x004de1a8` finds no free slot and returns), but the count is still raised and the
+  tactic still told. Confirmed (code); the one-way listing is also
   confirmed (runtime), run r-20261121-level87-cp5-enemy-lists: a minute into level87 checkpoint 5 the player and his
   three Warriors all list the guard S01, whose hostile count is 4 and whose own list is empty, and the player's hostile
   count is 0. The call at `0x0028d5f8` is the count, not the enemy listing this human back, as an earlier reading of

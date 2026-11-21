@@ -926,7 +926,7 @@ TEST_CASE("HuCreate's flag makes a new human a gang member, unless his class mak
 }
 
 TEST_CASE("an enemy added is listed by the adder only; the enemy's own list is left alone", "[ai]") {
-    // Expected: ai-gangs.md#tactics, confirmed (code)
+    // Expected: ai-gangs.md#tactic-base, confirmed (code)
     // Brain_AddEnemy (0x0028d538) lists the enemy on its own brain and only counts itself on the enemy's (its hostile
     // count, Brain_CountHostile 0x0028ef20, from 0x0028d5f8): docs/research/ai-gangs.md#gangs.
     coney::test::AiScene scene;
@@ -967,7 +967,7 @@ class EnemyCountingTactic final : public coney::ai::Tactic {
 } // namespace
 
 TEST_CASE("a human down or dead lists no enemy", "[ai]") {
-    // Expected: ai-gangs.md#tactics, confirmed (code)
+    // Expected: ai-gangs.md#tactic-base, confirmed (code)
     coney::test::AiScene scene;
     coney::ai::Brain& out = scene.add(coney::anim::Vec3{70.0F, 40.0F, 0.0F}, 0.0F);
     coney::ai::Brain& dead = scene.add(coney::anim::Vec3{72.0F, 40.0F, 0.0F}, 0.0F);
@@ -982,7 +982,7 @@ TEST_CASE("a human down or dead lists no enemy", "[ai]") {
 }
 
 TEST_CASE("a full enemy list stores no more, but the tactic still hears of the new enemy", "[ai]") {
-    // Expected: ai-gangs.md#tactics, confirmed (code)
+    // Expected: ai-gangs.md#tactic-base, confirmed (code)
     coney::test::AiScene scene;
     coney::ai::Brain& member = scene.add(coney::anim::Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
     const int gang = scene.brains.gangs().create(19, "Punks");
