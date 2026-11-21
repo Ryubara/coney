@@ -207,6 +207,9 @@ class StartUpFlow final : public script::BindingHost {
     /// The mission-failed mode (0xc) with `reason`.
     /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void launchMissionFailed(std::string_view reason) override;
+    /// How many times the mission-failed mode was launched: a network host tells its guests of each
+    /// (docs/guides/multiplayer.md#levels).
+    [[nodiscard]] std::uint64_t missionFailures() const { return m_missionFailures; }
     /// Opens or closes the Armies of the Night game over (mode 0xd).
     /// @orig 0x001cede8 HUD_LaunchANGameOver (unknown)
     void launchArmiesGameOver() override;
@@ -262,6 +265,7 @@ class StartUpFlow final : public script::BindingHost {
     RumbleIntroLayer m_rumbleIntro;
     RumbleResultMode m_rumbleResult;
     GameStatsMode m_gameStats;
+    std::uint64_t m_missionFailures = 0; // missionFailures()
     MissionSelectMode m_missionSelect;
     MemoryCardMode m_memoryCard;
     LegalScreenMode m_legal;

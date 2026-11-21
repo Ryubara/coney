@@ -209,7 +209,10 @@ void StartUpFlow::startSaveSequence() {
     }
 }
 
-void StartUpFlow::launchMissionFailed(std::string_view reason) { m_missionFailed.launch(reason); }
+void StartUpFlow::launchMissionFailed(std::string_view reason) {
+    ++m_missionFailures;
+    m_missionFailed.launch(reason);
+}
 
 void StartUpFlow::launchArmiesGameOver() { m_armiesGameOver.launch(); }
 void StartUpFlow::showGameStats(std::string_view onClose) { m_gameStats.launch(onClose); }

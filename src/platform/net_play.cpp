@@ -501,4 +501,13 @@ void NetPlay::movieDone(std::uint32_t movieStep, bool skipped) {
     }
 }
 
+std::optional<net::HostMovie> NetPlay::hostMovie() const { return m_client ? m_client->hostMovie() : std::nullopt; }
+
+net::NetRole NetPlay::role() const {
+    if (m_server) {
+        return net::NetRole::Host;
+    }
+    return inSession() ? net::NetRole::Client : net::NetRole::Offline;
+}
+
 } // namespace coney::platform

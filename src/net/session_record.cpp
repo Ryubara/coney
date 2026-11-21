@@ -20,6 +20,7 @@ namespace {
 
 constexpr std::string_view kPadWord = "pad";
 constexpr std::string_view kEventWord = "event";
+constexpr std::string_view kHoldWord = "hold";
 
 // The next space-separated word of `rest`, taken off its front; empty at the end.
 std::string_view takeWord(std::string_view& rest) {
@@ -92,6 +93,8 @@ std::string formatEventLine(std::uint32_t step, std::string_view text) {
     return std::format("{} {} {}", kEventWord, step, text);
 }
 
+std::string formatHoldLine(std::uint32_t step) { return std::format("{} {}", kHoldWord, step); }
+
 std::expected<RecordLine, Error> parseRecordLine(std::string_view text) {
     const auto invalid = [text] {
         return std::unexpected(Error{ErrorCode::Invalid, std::format("not a session record line: '{}'", text)});
@@ -110,6 +113,13 @@ std::expected<RecordLine, Error> parseRecordLine(std::string_view text) {
         }
         line.kind = RecordLine::Kind::Event;
         line.text = std::string(rest);
+        return line;
+    }
+    if (kind == kHoldWord) {
+        if (!rest.empty()) {
+            return invalid();
+        }
+        line.kind = RecordLine::Kind::Hold;
         return line;
     }
     if (kind != kPadWord) {
@@ -152,8 +162,15 @@ std::expected<SessionReplay, Error> SessionReplay::parse(std::string_view text) 
         if (!read) {
             return std::unexpected(Error{ErrorCode::Invalid, std::format("line {}: {}", number, read.error().message)});
         }
+        if (read->kind == RecordLine::Kind::Hold) {
+            if (!replay.m_held.insert(read->step).second) {
+                return std::unexpected(
+                    Error{ErrorCode::Invalid, std::format("line {}: step {} is held twice", number, read->step)});
+            }
+            continue;
+        }
         if (read->kind != RecordLine::Kind::Pad) {
-            continue; // a note of the session; the pads alone change the game
+            continue; // a note of the session; the pads and the held steps alone change the game
         }
         if (!replay.m_pads.emplace(read->step, read->pad).second) {
             return std::unexpected(

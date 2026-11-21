@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <expected>
 #include <limits>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -420,6 +421,20 @@ bool validLevelName(std::string_view name) {
         }
     }
     return true;
+}
+
+std::optional<std::string> levelNameOf(std::string_view level) {
+    // A path's file name, then the part before its first dot (its extension, or a mod's own dotted name).
+    if (const std::size_t slash = level.find_last_of("/\\"); slash != std::string_view::npos) {
+        level.remove_prefix(slash + 1);
+    }
+    if (const std::size_t dot = level.find('.'); dot != std::string_view::npos) {
+        level = level.substr(0, dot);
+    }
+    if (!validLevelName(level)) {
+        return std::nullopt;
+    }
+    return std::string(level);
 }
 
 std::string_view describe(RejectReason reason) {

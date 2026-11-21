@@ -48,6 +48,12 @@ class NetGame final : public InputSource {
     /// session or `--digest` or `--net-replay` needs them, and with no session their retired ids are released, since
     /// no peer can name them.
     void afterStep(NetPlay& net);
+    /// The step gate's network part, asked once for each due step after its pads were read: whether the step is held
+    /// for the loading barrier (docs/guides/multiplayer.md#levels). Live, it is `sessionHolds`
+    /// (NetLevels::holdsStep()), and a held step goes in the session record as a hold line; replaying a record, it is
+    /// whether the host held this step, so the replay reads the same pads on the same steps and its digest lines match
+    /// the host's.
+    [[nodiscard]] bool holdsStep(bool sessionHolds);
     /// Notes a line of network play's log in the session record, at the step being played.
     void note(std::string_view line);
 

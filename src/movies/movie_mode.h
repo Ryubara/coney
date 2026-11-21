@@ -77,6 +77,21 @@ struct SoundHold {
     std::function<void()> release;
 };
 
+/// How a network session's movie waits for every player (docs/guides/multiplayer.md#levels): what MovieMode tells
+/// network play of the game's own movies (never the debug menu's) and asks of it. Every member may be empty: nothing
+/// is told, nobody skips elsewhere, and the mode goes on at once. Coney-only: the original has no network play.
+struct MovieSync {
+    /// A movie has started, in this step (its MovieStart event's).
+    std::function<void(std::string_view name)> started;
+    /// This game's copy of the movie has ended, or a skip ended it.
+    std::function<void(std::string_view name, bool skipped)> ended;
+    /// Whether another player skipped the movie playing: a skippable one then ends as a pad's skip ends it.
+    std::function<bool()> skippedElsewhere;
+    /// Whether this game may go on from a movie that has ended: every other player has ended theirs (or waited for
+    /// long enough). Until then the mode stays, showing black.
+    std::function<bool()> mayGoOn;
+};
+
 /// How movies are played in this run.
 struct MovieSettings {
     /// Convert and draw each frame. Off in a headless run: the frames are still decoded, on the same clock, so the
@@ -140,6 +155,10 @@ class MovieMode final : public GameMode, public MoviePlayer {
     /// (docs/guides/multiplayer.md#events). The debug menu's movies are this game's own and raise none.
     /// @coney-only network play; the original has none
     void setEvents(GameEvents* events) { m_events = events; }
+    /// Tells network play of each of the game's own movies and waits for the other players at each one's end
+    /// (MovieSync); a default MovieSync waits for nobody.
+    /// @coney-only network play; the original has none
+    void setSync(MovieSync sync) { m_sync = std::move(sync); }
 
     /// Queues the movie `name` and puts the player on the stack if it is not there yet.
     /// @orig 0x0042a938 Movie_Play (unknown)
@@ -151,10 +170,15 @@ class MovieMode final : public GameMode, public MoviePlayer {
     [[nodiscard]] std::uint32_t id() const override { return kId; }
     /// The game clock stands still while a movie plays: nothing else runs while `Movie_Play` blocks.
     [[nodiscard]] bool stopsGameClock() const override { return true; }
+    /// Starts the next queued movie and steps the one playing (step()); in a network session ends it on another
+    /// player's skip and, once it has ended, waits for the others (MovieSync). Leaves when the queue is done.
+    /// @coney-only the movie player as a game mode; the original's Movie_Play blocks its caller instead
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
     /// Draws the due frame unscaled, centred on the screen over black, then the caption.
     /// @orig 0x00429b18 Movie_BuildUploadPacket (BinkMovie.cpp)
     void render(const RenderTime& time) override;
+    /// Ends the movie playing and forgets the queue and any wait for the other players.
+    /// @coney-only the mode's leave; the original's Movie_Play returns in place
     void exit() override;
 
     /// What the player has done, for tests and the log.
@@ -216,6 +240,8 @@ class MovieMode final : public GameMode, public MoviePlayer {
     MovieSettings m_settings;
     std::function<void(std::string_view)> m_log;
     GameEvents* m_events = nullptr; // setEvents()
+    MovieSync m_sync;               // setSync()
+    bool m_waiting = false;         // a game movie ended and the others' ends are waited for (MovieSync::mayGoOn)
     CaptionSource m_captionSource;
 
     std::deque<std::pair<std::string, MovieRequest>> m_queue;

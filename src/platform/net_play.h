@@ -144,6 +144,14 @@ class NetPlay final {
     [[nodiscard]] std::vector<net::MissionEnd> takeMissionEnds();
     /// Joined: this game's copy of the host's movie of `movieStep` has ended, or its player skipped it.
     void movieDone(std::uint32_t movieStep, bool skipped);
+    /// Joined: the host's newest movie (net::NetClient::hostMovie()), which this game's own copy names in movieDone();
+    /// nothing otherwise, or before the first.
+    [[nodiscard]] std::optional<net::HostMovie> hostMovie() const;
+    /// Whether this game hosts, is joining or joined a host, or neither (status()'s role, without the figures).
+    [[nodiscard]] net::NetRole role() const;
+    /// Keeps a line of the game's side of network play (NetLevels) in the log, as network play's own lines are: on
+    /// the Network page, printed as a `net:` line and noted in the session record.
+    void report(const std::string& line) { note(line); }
     /// The steps run so far (afterStep() calls): a host's snapshots and events name the step they are from, counted
     /// from 0.
     [[nodiscard]] std::uint32_t steps() const { return m_steps; }

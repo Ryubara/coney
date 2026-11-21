@@ -494,3 +494,15 @@ TEST_CASE("the barrier counts only joined players, and one that leaves is no lon
     }
     CHECK(barrier.step() == std::vector<std::uint8_t>{1});
 }
+
+// Expected: unverified, #1530 (Coney's own name rule, docs/guides/multiplayer.md#levels; a story mod's mission level is
+// a path in its package, docs/guides/studio/mission-mods.md#story-manifest)
+TEST_CASE("a level the host's game names by a path goes on the wire as its file name, or not at all", "[net][level]") {
+    CHECK(coney::net::levelNameOf("level99") == std::optional<std::string>("level99"));
+    CHECK(coney::net::levelNameOf("levels/alley.clevel") == std::optional<std::string>("alley"));
+    CHECK(coney::net::levelNameOf(R"(mods\yard-brawl\levels\payin.clevel)") == std::optional<std::string>("payin"));
+    CHECK_FALSE(coney::net::levelNameOf("levels/two words.clevel").has_value());
+    CHECK_FALSE(coney::net::levelNameOf("levels/").has_value());
+    CHECK_FALSE(coney::net::levelNameOf("").has_value());
+    CHECK_FALSE(coney::net::levelNameOf(std::string(33, 'a')).has_value());
+}

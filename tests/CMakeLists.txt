@@ -741,13 +741,15 @@ if(CONEY_DEBUG_TOOLS)
                                                                                     ${CONEY_TEST_HANG_GUARD})
     # The same with the disc: the host plays level99, whose crew and gang are humans the snapshots carry. The guest
     # starts once the host's intro movie is skipped, the level's first frame of play: the load before it can take longer
-    # than the guest's whole run. Counts and hashes only.
+    # than the guest's whole run. With --barrier the guest plays level99 too, and the host holds its steps from the
+    # guest's join until the guest's game plays the level (docs/guides/multiplayer.md#levels); the replay holds the same
+    # steps. Counts and hashes only.
     if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
         set(_net_level --disc "$ENV{CONEY_DISC}" --play-level level99 --skip-movies)
         add_test(NAME coney.net.two_processes_level99
                  COMMAND net_pair_check pair --coney $<TARGET_FILE:coney> --work
                          ${CMAKE_CURRENT_BINARY_DIR}/net_pair_level99 --host-script ${_net_host_script} --guest-script
-                         ${_net_guest_script} --frames 600 --guest-frames 200 --guest-after "L99_IN skipped" --
+                         ${_net_guest_script} --frames 600 --guest-frames 400 --guest-after "L99_IN skipped" --barrier --
                          ${_net_level})
         add_test(NAME coney.net.offline_unchanged_level99
                  COMMAND net_pair_check offline --coney $<TARGET_FILE:coney> --work

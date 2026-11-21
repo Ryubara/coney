@@ -119,6 +119,17 @@ void NetGame::afterStep(NetPlay& net) {
     m_humans.setCapturing(m_proofNeedsHumans || session);
 }
 
+bool NetGame::holdsStep(bool sessionHolds) {
+    // A replay has no session: the record says which steps the host held.
+    if (m_replay) {
+        return m_replay->held(stepOf(m_frame));
+    }
+    if (sessionHolds && m_record) {
+        *m_record << net::formatHoldLine(stepOf(m_frame)) << '\n';
+    }
+    return sessionHolds;
+}
+
 void NetGame::note(std::string_view line) {
     if (!m_record) {
         return;

@@ -99,3 +99,27 @@ TEST_CASE("a replay gives each recorded step's pad and nothing for the rest") {
     CHECK(twice.error().code == ErrorCode::Invalid);
     CHECK(twice.error().message.find("line 2") != std::string::npos);
 }
+
+TEST_CASE("a held step is recorded as a hold line, which the replay holds too") {
+    // Expected: unverified, #1530 (Coney's own record; docs/guides/multiplayer.md#replays: a step the loading barrier
+    // held read its pads and ran nothing)
+    CHECK(formatHoldLine(7) == "hold 7");
+    const auto line = parseRecordLine("hold 7");
+    REQUIRE(line.has_value());
+    CHECK(line->kind == RecordLine::Kind::Hold);
+    CHECK(line->step == 7);
+    CHECK_FALSE(parseRecordLine("hold 7 1").has_value());
+    CHECK_FALSE(parseRecordLine("hold").has_value());
+
+    // A held step's pad is still recorded: the pads are read on a held step.
+    const auto replay = SessionReplay::parse(formatPadLine(7, busyPad()) + "\n" + formatHoldLine(7) + "\n" +
+                                             formatPadLine(8, busyPad()));
+    REQUIRE(replay.has_value());
+    CHECK(replay->held(7));
+    CHECK_FALSE(replay->held(8));
+    CHECK(replay->steps() == 2);
+
+    const auto twice = SessionReplay::parse(formatHoldLine(3) + "\n" + formatHoldLine(3) + "\n");
+    REQUIRE_FALSE(twice.has_value());
+    CHECK(twice.error().message.find("line 2: step 3 is held twice") != std::string::npos);
+}
