@@ -6,6 +6,7 @@
 #include <optional>
 
 #include "raycast/collision_mesh.h"
+#include "world/view_frustum.h"
 
 namespace coney::graphics {
 
@@ -55,6 +56,30 @@ inline constexpr float kHumanFadeLength = 10.0F;
 /// Research: docs/research/graphics.md#human-draw
 /// @orig 0x00174320 HumanRender_Draw (HumanRender.cpp)
 [[nodiscard]] float humanDistanceFade(float distance);
+
+/// The sphere that holds every pose of a human drawn at scale 1, and what he wears or holds: this far round a point
+/// kHumanPoseLift above his feet, metres. **Coney's choice**: a standing body is under 2 m tall and a lying one under
+/// 2 m long, so 3 m holds any of them, the arms and a held weapon included, with room to spare.
+inline constexpr float kHumanPoseRadius = 3.0F;
+/// How far above the feet the sphere's centre is, metres.
+inline constexpr float kHumanPoseLift = 1.0F;
+
+/// What cullHuman() says of a human before he is posed.
+enum class HumanCull : std::uint8_t {
+    MayShow,          ///< Some pose of his may be in the picture: pose and draw him.
+    OutOfView,        ///< Every pose of his is behind the camera or beyond one of the view window's sides.
+    PastDrawDistance, ///< In view, but every pose of his is past the draw distance (humanDistanceFade() is 0).
+};
+
+/// Whether a human standing at `feet` (RenderWare's axes, y up) and drawn at `scale` may show in a picture taken by
+/// `camera` with a view window `halfWidth` × `halfHeight` at distance 1: his kHumanPoseRadius sphere (times the scale
+/// when it is over 1) tested against the view's four sides, then against the draw distance. Conservative: it never
+/// culls a human any pose of whom could be drawn, so the picture is the same as posing everyone; it saves posing the
+/// ones that cannot (docs/engine/renderer-performance.md#cull-before-posing).
+/// @coney-only the render's cull before posing; the original's visibility callback queues the humans its own camera
+/// test passes (docs/research/graphics.md#human-draw)
+[[nodiscard]] HumanCull cullHuman(const world::CameraPose& camera, float halfWidth, float halfHeight, world::Vec3 feet,
+                                  float scale);
 
 /// A human's blob shadow: one sprite of `part_page1` lying on the ground under him.
 struct BlobShadow {

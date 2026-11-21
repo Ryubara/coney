@@ -39,6 +39,16 @@ float humanDistanceFade(float distance) {
     return std::clamp((kHumanDrawDistance - distance) / kHumanFadeLength, 0.0F, 1.0F);
 }
 
+HumanCull cullHuman(const world::CameraPose& camera, float halfWidth, float halfHeight, world::Vec3 feet, float scale) {
+    // A stub for the test commit (issue 1554): every human is posed, as before.
+    static_cast<void>(camera);
+    static_cast<void>(halfWidth);
+    static_cast<void>(halfHeight);
+    static_cast<void>(feet);
+    static_cast<void>(scale);
+    return HumanCull::MayShow;
+}
+
 bool onShadowGround(const raycast::CollisionMesh& mesh, raycast::Vec3 feet) {
     const std::optional<raycast::RayHit> hit = groundBelow(mesh, feet);
     return hit && (hit->flags & kTriangleShadow) != 0;

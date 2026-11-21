@@ -36,6 +36,14 @@ TargetSnapshot interpolate(const TargetSnapshot& previous, const TargetSnapshot&
                           .pose = anim::blendPoses(previous.pose, current.pose, alpha)};
 }
 
+anim::Vec3 interpolateFeet(const TargetSnapshot& previous, const TargetSnapshot& current, float alpha) {
+    // A stub for the test commit (issue 1554).
+    static_cast<void>(previous);
+    static_cast<void>(current);
+    static_cast<void>(alpha);
+    return {};
+}
+
 TargetHuman::TargetHuman(const characters::AnimSet& anims, const AnimSlots& slots,
                          std::span<const anim::Quat, anim::kPoseBones> defaultRotations, int health,
                          anim::Vec3 position, float headingRadians, std::uint32_t seed)
