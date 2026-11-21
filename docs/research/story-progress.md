@@ -322,7 +322,7 @@ its id to `planHubChapter`), and `fRunMission`'s view keeps the original chapter
 - **More mod missions than free level records.** Coney's level table has the original's 128 records, and the disc's
   `CfgLevels` fills 111, so at most 17 mod missions get a record and a number, not the 45 free numbers the design
   counts. Whether Coney's table grows past the original's for mods, or the design's count is cut to the free records,
-  is open ([#1300](issue:1300)).
+  is open; until it is decided, Coney cuts the pool to the free records (`StoryHooks::numberMissions`).
 
 ## How this was checked
 
