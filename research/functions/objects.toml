@@ -419,6 +419,24 @@ coney = "src/world_objects/object_tasks.h:ObjectTasks::step"
 status = "legacy"
 
 [[function]]
+address = 0x0039a2c0
+name = "ObjZone_FindNearestObject"
+page = "ai-goals.md#goal-destroy"
+role = "the nearest record of an object zone that may be wrecked (mode 0x20) or taken"
+level = "confirmed-code"
+coney = "src/gamemodes/level_items.h:LevelItems::nearestZoneTarget"
+status = "compared"
+
+[[function]]
+address = 0x0039a580
+name = "ObjZone_HasObjects"
+page = "ai-code.md#t2-vandalize"
+role = "whether an object zone still has a whole object out of a hand"
+level = "confirmed-code"
+coney = "src/gamemodes/level_items.h:LevelItems::zoneHasObjects"
+status = "compared"
+
+[[function]]
 address = 0x0039c0e0
 name = "Glass_Spawn"
 page = "objects.md#original-structure"
