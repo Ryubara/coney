@@ -217,8 +217,9 @@ struct FakeLevels final : LevelGame {
             start(where);
             return;
         }
-        if (loadingLeft > 0 && --loadingLeft == 0) {
-            playing = true;
+        if (loadingLeft > 0) {
+            --loadingLeft;
+            playing = loadingLeft == 0;
         }
     }
 };

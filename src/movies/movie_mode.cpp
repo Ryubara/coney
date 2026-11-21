@@ -315,9 +315,10 @@ ModeResult MovieMode::update(GameModeStack& stack, const FrameTime& frame) {
         start(std::move(name), request);
     }
     // In a network session another player's skip ends a skippable movie as a pad's does, before its next frame.
-    if (m_current->skippable && m_sync.skippedElsewhere && m_sync.skippedElsewhere()) {
-        if (m_current->captions) {
-            m_current->captions->captions.command(4); // the skip clears the caption
+    Playing& current = *m_current;
+    if (current.skippable && m_sync.skippedElsewhere && m_sync.skippedElsewhere()) {
+        if (current.captions) {
+            current.captions->captions.command(4); // the skip clears the caption
         }
         finish(true);
     } else if (step(stack, frame)) {
