@@ -2,13 +2,16 @@
 #include "ai/enemy_scan.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/gangs.h"
+#include "core/crowd_limits.h"
 #include "raycast/collision_mesh.h"
 #include "support/ai_fixtures.h"
 #include "support/collision_fixtures.h"
@@ -212,4 +215,72 @@ TEST_CASE("a scanner whose gang is fighting lists an enemy more than 1.9 m above
         scene.player().human().place(Vec3{40.0F, 40.0F, 2.5F}, 0.0F);
         CHECK(scanSees(guard, scene.player()) == c.listed);
     }
+}
+
+namespace {
+
+// The player's gang and `guards` guards in enemy gangs of ten, the guards in rows north of the player; returns the
+// scene's members in table order (the player first).
+std::vector<Brain*> crowdOfGuards(coney::test::AiScene& scene, int guards) {
+    auto& gangs = scene.brains.gangs();
+    const int players = gangs.create(0, "Players");
+    gangs.addMember(players, scene.player());
+    std::vector<Brain*> members{&scene.player()};
+    int gang = -1;
+    for (int k = 0; k < guards; ++k) {
+        if (k % 10 == 0) {
+            gang = gangs.create(2, "Guards " + std::to_string(k / 10));
+            gangs.makeEnemies(players, gang);
+        }
+        const int column = k % 40;
+        const int row = k / 40;
+        members.push_back(
+            &scene.add(Vec3{20.0F + static_cast<float>(column), 50.0F + static_cast<float>(row), 0.0F}, 180.0F));
+        gangs.addMember(gang, *members.back());
+    }
+    return members;
+}
+
+// One gangs' update at `nowMs`, then every member in table order asks the schedule; returns how many scanned.
+int scansOfOneUpdate(coney::test::AiScene& scene, const std::vector<Brain*>& members, std::uint64_t nowMs) {
+    auto& gangs = scene.brains.gangs();
+    gangs.update(nowMs);
+    int scanned = 0;
+    for (Brain* member : members) {
+        scanned += gangs.scans().maybeScan(gangs, *member, nowMs) ? 1 : 0;
+    }
+    return scanned;
+}
+
+} // namespace
+
+TEST_CASE("with the original's 60 brains in gangs an update scans five", "[ai][scan][crowd]") {
+    // Expected: ai-fights.md#enemy-scan, confirmed (code): AI_TakeScanToken 0x00293cd0, 5 an update
+    coney::test::AiScene scene;
+    const std::vector<Brain*> members = crowdOfGuards(scene, 59);
+    REQUIRE(members.size() == 60);
+    CHECK(scansOfOneUpdate(scene, members, 0) == coney::crowd::kOrigScanTokens);
+    CHECK(scansOfOneUpdate(scene, members, 33) == coney::crowd::kOrigScanTokens);
+}
+
+TEST_CASE("past 60 brains in gangs an update scans five per 60, at most twenty, and the refused scan next",
+          "[ai][scan][crowd]") {
+    // Expected: unverified, #1569 (Coney's own rule past the original's 60 humans: docs/engine/crowd-rules.md)
+    coney::test::AiScene scene;
+    const std::vector<Brain*> members = crowdOfGuards(scene, 120);
+    REQUIRE(members.size() == 121);
+    // 121 brains: 11 tokens an update; every brain has scanned after 11 updates, in table order.
+    int total = 0;
+    for (int update = 0; update < 11; ++update) {
+        const int scanned = scansOfOneUpdate(scene, members, static_cast<std::uint64_t>(update) * 33U);
+        CHECK(scanned == 11);
+        total += scanned;
+    }
+    CHECK(total == 121);
+    // None is due again before its 2 s.
+    CHECK(scansOfOneUpdate(scene, members, 400) == 0);
+
+    coney::test::AiScene big;
+    const std::vector<Brain*> crowd = crowdOfGuards(big, 300);
+    CHECK(scansOfOneUpdate(big, crowd, 0) == coney::crowd::kCrowdScanTokenCap);
 }

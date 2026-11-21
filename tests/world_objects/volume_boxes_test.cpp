@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <tuple>
 #include <vector>
@@ -269,4 +270,54 @@ TEST_CASE("a theft reaches every enabled kind-0 box round the object's spot", "[
     heard.clear();
     boxes.sendTheft({-230.0F, 218.6F, 2.5F}, [&heard](double box) { heard.push_back(box); });
     CHECK(heard.empty());
+}
+
+namespace {
+
+// `count` living humans standing inside a 2 m box at the origin, handles from 100.
+std::vector<BoxSubject> crowdInBox(std::size_t count) {
+    std::vector<BoxSubject> humans;
+    humans.reserve(count);
+    for (std::size_t k = 0; k < count; ++k) {
+        humans.push_back({.handle = 100.0 + static_cast<double>(k), .position = {1, 1, 1}, .alive = true});
+    }
+    return humans;
+}
+
+// How many of `sent` are `message`.
+std::size_t countOf(const Sent& sent, int message) {
+    return static_cast<std::size_t>(
+        std::ranges::count_if(sent, [message](const auto& one) { return std::get<1>(one) == message; }));
+}
+
+} // namespace
+
+TEST_CASE("a box with 60 humans inside lists every one: each enters once, stays and leaves", "[volume_boxes][crowd]") {
+    // Expected: trigger-updates.md#stay-timer, confirmed (code): VolumeBox_Update 0x00415378 keeps 60 handles, so
+    // with the original's 60 humans no list fills
+    VolumeBoxes boxes;
+    boxes.add(40, "vCrowd", 0, {0, 0, 0}, {2, 2, 3}, true);
+    std::vector<BoxSubject> humans = crowdInBox(60);
+    CHECK(countOf(step(boxes, humans, 0), VolumeBoxes::kEntered) == 60);
+    CHECK(countOf(step(boxes, humans, 100), VolumeBoxes::kEntered) == 0);
+    CHECK(countOf(step(boxes, humans, 1500), VolumeBoxes::kInside) == 60);
+    for (BoxSubject& human : humans) {
+        human.position = {5, 5, 0};
+    }
+    CHECK(countOf(step(boxes, humans, 1600), VolumeBoxes::kLeft) == 60);
+}
+
+TEST_CASE("past 60 humans a box lists every one inside, so none enters again on each update", "[volume_boxes][crowd]") {
+    // Expected: unverified, #1569 (Coney's own rule past the original's 60 humans: docs/engine/crowd-rules.md)
+    VolumeBoxes boxes;
+    boxes.add(40, "vCrowd", 0, {0, 0, 0}, {2, 2, 3}, true);
+    std::vector<BoxSubject> humans = crowdInBox(75);
+    CHECK(countOf(step(boxes, humans, 0), VolumeBoxes::kEntered) == 75);
+    CHECK(countOf(step(boxes, humans, 100), VolumeBoxes::kEntered) == 0);
+    CHECK(countOf(step(boxes, humans, 1500), VolumeBoxes::kInside) == 75);
+    for (BoxSubject& human : humans) {
+        human.position = {5, 5, 0};
+    }
+    CHECK(countOf(step(boxes, humans, 1600), VolumeBoxes::kLeft) == 75);
+    CHECK(boxes.find(40)->occupants.empty());
 }

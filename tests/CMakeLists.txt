@@ -13,6 +13,7 @@ add_executable(coney_tests
     console/tokenizer_test.cpp
     core/chunk_system_test.cpp
     core/clip_recording_test.cpp
+    core/crowd_limits_test.cpp
     core/cpak_archive_test.cpp
     core/cpak_index_test.cpp
     core/cpak_lookup_test.cpp
