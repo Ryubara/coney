@@ -1,0 +1,36 @@
+version = 1
+id = "r-20261121-level34-looters-zone-records"
+date = "2026-11-21"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "802e0e38ebd26d922a411ed522ac7456488ba9791a16995f7ecbe68eab5e084e"
+
+[who]
+agent = "aec3cf994675bcf45"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level34 checkpoint 1 loaded with load-checkpoint, the opening scene skipped; P1.StartIntroLooters and P1.DoneLooting wrapped through the lua recipe to log each call with GetGameTime, then P1.StartIntroLooters(vStartIntroLooters, player) called with player 1 left in the tunnel; zone 51's nine object records (object manager *(0x00512c7c)+0x840, records +0x14, 0x28 bytes, zone +0x20>>22, removed +0x24 bit 18) read every 0.5-1 s over the debug server. Two runs: A answered 5 after 10.6 s with 2 codes 16 and 4 records removed; B answered 5 after 11.4 s with 1 code 16 and 3 records removed"
+
+[values]
+run_a_codes_16 = 2
+run_a_removed = 4
+run_a_code_5_after_ms = 10577
+run_b_codes_16 = 1
+run_b_removed = 3
+run_b_code_5_after_ms = 11378
+
+[addresses]
+ObjZone_HasObjects = 0x0039a580
+VandalizeTactic_OnEvent = 0x0031eaf0
