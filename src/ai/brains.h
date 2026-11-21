@@ -38,6 +38,7 @@ class Brains {
     /// Takes its slots off the humans it leaves (they outlive their brains), so none points into a table that is gone.
     /// @coney-only bookkeeping of Coney's brain table
     ~Brains();
+    // Not copied or moved: the humans keep slots into this one table, which a copy would share and a move would leave.
     Brains(const Brains&) = delete;
     Brains& operator=(const Brains&) = delete;
     Brains(Brains&&) = delete;
