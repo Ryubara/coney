@@ -1,18 +1,105 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/tactic_vandalize.h"
 
-// The wreck tactic, not built yet: it does nothing (the tests come first).
+#include <memory>
+
+#include "ai/brain.h"
+#include "ai/destroy_goal.h"
+#include "ai/fight_goal.h"
+#include "ai/gangs.h"
+#include "ai/item_services.h"
+#include "ai/melee_goal.h"
+#include "human/human.h"
 
 namespace coney::ai {
 
-void VandalizeTactic::giveGoals(Gang& /*gang*/) {}
+namespace {
 
-void VandalizeTactic::start(Gang& /*gang*/) {}
+// The member events the tactic answers beyond the base's: 19 and 22 give the goals again, 20 (a fight seen) is taken.
+constexpr int kEventRegoal = 19;
+constexpr int kEventGoalsAgain = 22;
 
-int VandalizeTactic::update(Gang& /*gang*/) { return 0; }
+// Whether `brain` is an AI human who is up: not a player's, not down or dead (`Human_IsDownOrDead`).
+bool upAndAi(const Brain& brain) {
+    return brain.type() != BrainType::Player && Brain::fightable(brain) &&
+           brain.human().state() != human::TargetState::Grounded;
+}
 
-void VandalizeTactic::onDamage(Brain& /*member*/, Brain& /*attacker*/) {}
+} // namespace
 
-bool VandalizeTactic::event(Gang& /*gang*/, Brain& /*member*/, const BrainEvent& /*event*/) { return false; }
+void VandalizeTactic::giveGoals(Gang& gang) {
+    ItemServices* items = services().items;
+    if (items == nullptr) {
+        return;
+    }
+    const script::TacticCall& order = call();
+    for (Brain* member : gang.members()) {
+        if (upAndAi(*member)) {
+            static_cast<void>(member->pushTacticGoal(
+                std::make_unique<DestroyGoal>(static_cast<int>(order.zone), order.delayMs, order.range, *items)));
+        }
+    }
+}
+
+void VandalizeTactic::start(Gang& gang) {
+    // The first check comes 3 s after the tactic is made, which is its first update.
+    m_nextCheckMs = gang.owner().nowMs() + kVandalizeCheckMs;
+    giveGoals(gang);
+}
+
+int VandalizeTactic::update(Gang& gang) {
+    const std::uint64_t now = gang.owner().nowMs();
+    if (now <= m_nextCheckMs) {
+        return 0;
+    }
+    m_nextCheckMs = now + kVandalizeCheckMs;
+    // Coney stand-in: the cars of TacticVandalizeCars are not built (issue #716), so the zone decides.
+    const ItemServices* items = services().items;
+    if (items != nullptr && items->zoneHasObjects(static_cast<int>(call().zone))) {
+        return 0;
+    }
+    return kTacTimeUp;
+}
+
+void VandalizeTactic::onDamage(Brain& member, Brain& attacker) {
+    if (Gangs::friends(member.gang(), attacker.gang())) {
+        return;
+    }
+    if (member.hasFightGoal()) {
+        member.addEnemy(attacker);
+        const TargetCauseScope cause(member, TargetCause::HitBack);
+        member.setTarget(&attacker, true);
+        return;
+    }
+    // Down to his DestroyGoal, then the fight on top of it.
+    if (const Goal* destroy = member.findGoal(GoalType::Destroy); destroy != nullptr) {
+        while (member.topGoal() != destroy) {
+            member.popGoal();
+        }
+    }
+    member.addEnemy(attacker);
+    static_cast<void>(member.pushGoal(std::make_unique<MeleeGoal>(kVandalizeMeleeMs)));
+    static_cast<void>(member.pushGoal(std::make_unique<FightGoal>(kVandalizeFightMs)));
+}
+
+bool VandalizeTactic::event(Gang& gang, Brain& member, const BrainEvent& event) {
+    switch (event.id) {
+    case kEventDamaged:
+        // Coney stand-in: the event's flag +0x11 the original also asks for is not modelled.
+        if (event.other != nullptr) {
+            onDamage(member, *event.other);
+        }
+        return StoryTactic::event(gang, member, event);
+    case kEventRegoal:
+    case kEventGoalsAgain:
+        giveGoals(gang);
+        return false;
+    case kEventViolence:
+        return true;
+    default:
+        // 10 → 4, 11 → 3, 16 → 6; the others are not answered.
+        return StoryTactic::event(gang, member, event);
+    }
+}
 
 } // namespace coney::ai

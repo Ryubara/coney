@@ -28,6 +28,11 @@ constexpr int kThrownSet = 5;
 constexpr int kSwungSet = 6;
 // A type's word +0x5e bit that lets a held breaking object strike it where it stands.
 constexpr std::uint16_t kHeldBreaksBit = 4;
+// The word +0x5e bits that make a type the wreck tactic's zone target (ObjZone_FindNearestObject mode 0x20).
+constexpr std::uint16_t kZoneWreckBits = 0x24;
+
+// Farther than any zone target (ObjZone_FindNearestObject starts from 1e9).
+constexpr float kNoZoneTarget = 1e9F;
 
 // The squared 3D distance.
 // @coney-only arithmetic helper
@@ -66,6 +71,65 @@ std::vector<ai::LooseItem> LevelItems::ownedItems(int zone) const {
         }
     }
     return items;
+}
+
+std::optional<double> LevelItems::nearestZoneTarget(int zone, anim::Vec3 from, std::uint64_t nowMs) const {
+    if (zone < 0 || !m_records.zoneEnabled(static_cast<std::uint32_t>(zone))) {
+        return std::nullopt;
+    }
+    std::optional<double> nearest;
+    float nearestDistance = kNoZoneTarget;
+    for (const world_objects::SpawnRecord& record : m_records.all()) {
+        if (record.zone != static_cast<std::uint32_t>(zone) || record.removed) {
+            continue;
+        }
+        // Carried, or of the wreck bits, and worth something (or a mask).
+        const world_objects::ObjectType* type = m_types.find(record.typeName);
+        if (type == nullptr ||
+            (type->animSet != kCarriedSet && type->animSet != kThrownSet && (type->bodyWord & kZoneWreckBits) == 0)) {
+            continue;
+        }
+        if (type->value == 0 && type->className != world_objects::kDynMasksClass) {
+            continue;
+        }
+        // An object in a hand, in flight, broken or claimed is no target. Coney stand-in: the play makes every
+        // record's object at once (SpawnRecord::live is the front end's), so each is tested as a made one.
+        if (m_pickups.inHand(record.handle) || m_pickups.airborne(record.handle) || broken(record.handle) ||
+            claimedByAny(record.handle, nowMs)) {
+            continue;
+        }
+        // Coney stand-in: the object is weighed by its distance to `from`, where the original reads a made object's
+        // own +0x134 (not identified).
+        const anim::Vec3 at{record.position[0], record.position[1], record.position[2]};
+        if (const float distance = distanceSquared(from, at); distance < nearestDistance) {
+            nearestDistance = distance;
+            nearest = record.handle;
+        }
+    }
+    return nearest;
+}
+
+bool LevelItems::zoneHasObjects(int zone) const {
+    if (zone < 0 || !m_records.zoneEnabled(static_cast<std::uint32_t>(zone))) {
+        return false;
+    }
+    return std::ranges::any_of(m_records.all(), [&](const world_objects::SpawnRecord& record) {
+        if (record.zone != static_cast<std::uint32_t>(zone) || record.removed) {
+            return false;
+        }
+        // A made object counts while it is whole and in no hand. Coney stand-in: every record's object is made in
+        // play (SpawnRecord::live is the front end's), so the original's "not made yet counts" has no case here.
+        return !broken(record.handle) && !m_pickups.inHand(record.handle);
+    });
+}
+
+std::optional<ai::SmashTarget> LevelItems::wreckView(double handle) const {
+    const world_objects::SpawnRecord* record = m_records.find(handle);
+    const world_objects::ObjectType* type = record != nullptr ? m_types.find(record->typeName) : nullptr;
+    if (type == nullptr || record->removed) {
+        return std::nullopt;
+    }
+    return smashTargetOf(handle, {record->position[0], record->position[1], record->position[2]}, *type);
 }
 
 std::optional<anim::Vec3> LevelItems::itemPosition(double handle) const {

@@ -320,7 +320,9 @@ Class details, confirmed (code) unless marked:
   A hit, a sighting or an attack (`0x0031a818`) makes that member melee and, when the crime rules allow, call his gang
   (`Goal_CallGang`, radius `range` or twice the member's brain `+0x140`).
 - **Vandalize** / **Steal**: each member's goal takes the zone, the delay and `leaderRange`; the vandal brain's
-  `+0x28d` is set. Vandalize's code 1 comes from `0x0039a580(zone)` reporting nothing left to break.
+  `+0x28d` is set. Vandalize's code 1 comes from `0x0039a580(zone)` reporting nothing left to break, checked every
+  3 s; it has no other code of its own ([TacticVandalize](ai-code.md#t2-vandalize)). Coney builds Vandalize
+  (`repo:src/ai/tactic_vandalize.h`); Steal still stands.
 
 ## Attacking on sight {#aggro-on-sight}
 

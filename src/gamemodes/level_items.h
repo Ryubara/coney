@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <vector>
 
@@ -38,6 +39,20 @@ class LevelItems final : public ai::ItemServices {
     /// The records of zone `zone` that are owned, not removed, not hidden and in no hand, while the zone is enabled;
     /// at most kZoneListMost, in the records' order.
     [[nodiscard]] std::vector<ai::LooseItem> ownedItems(int zone) const override;
+    /// The zone's nearest wreck target (ai::ItemServices::nearestZoneTarget()): its records, by their places.
+    /// **Coney stand-ins**: every record counts as made (the play makes every object at once), an object is weighed
+    /// by its distance to `from`, where the original reads a made object's `+0x134` (not identified), and "attached"
+    /// is read as in a hand.
+    /// @orig 0x0039a2c0 ObjZone_FindNearestObject (unknown)
+    [[nodiscard]] std::optional<double> nearestZoneTarget(int zone, anim::Vec3 from,
+                                                          std::uint64_t nowMs) const override;
+    /// Whether the zone has a record not removed whose object is whole and in no hand (**Coney stand-in**: every
+    /// record counts as made).
+    /// @orig 0x0039a580 ObjZone_HasObjects (unknown)
+    [[nodiscard]] bool zoneHasObjects(int zone) const override;
+    /// The record's smash view (smashTargetOf()); nothing once it is removed or of no known type.
+    /// @coney-only the level's side of ItemServices: reads the record's type
+    [[nodiscard]] std::optional<ai::SmashTarget> wreckView(double handle) const override;
     /// The record's place; nothing once it is removed.
     [[nodiscard]] std::optional<anim::Vec3> itemPosition(double handle) const override;
     /// Who holds it (LevelPickups::holderOf()).
