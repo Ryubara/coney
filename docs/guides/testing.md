@@ -154,9 +154,9 @@ So a test that writes a capture, or any file another run of it could write, make
 (`repo:tests/support/fixtures.h`: a folder unique to its process, removed at the end of the test) and names the file
 inside it. `python/tests/test_test_capture_paths.py` refuses a `temp_directory_path() / "name.png"` in any C++ test; it
 covers pictures (`.png`) only, so another fixed name for a file (a settings or text file) is for the test's author to
-catch. A missing capture still fails the test: no wait or retry hides it, because a GPU read-back is complete when the frame's
-fence is (`docs/engine/gpu-renderer.md#capture`), and a test that skips for lack of a GPU device does so where the
-renderer is started.
+catch. A missing capture still fails the test: no wait or retry hides it, because a GPU read-back is complete when the
+frame's fence is (`docs/engine/gpu-renderer.md#capture`), and a test that skips for lack of a GPU device does so where
+the renderer is started.
 
 ### Python tests do not depend on the shell {#python-environment}
 

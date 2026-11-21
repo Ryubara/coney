@@ -463,7 +463,9 @@ TEST_CASE("the GPU renderer clears the depth for a scene pass that asks and ligh
     const std::size_t unlitGrey =
         add(quadAt(10.0F, 160, 320, 120, 240, QuadSpec{.prelit = true, .prelight = {60, 60, 60, 255}}));
 
-    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-depth-clear.png").string();
+    // A folder of its own: runs at once never write the same file (docs/guides/testing.md#capture-paths).
+    const coney::test::TempDir folder;
+    const std::string path = (folder.path() / "coney-gpu-depth-clear.png").string();
     engine.requestCapture(0, path);
     engine.beginWindowFrame(Rgba{0, 0, 0, 255});
     coney::graphics::SceneCamera camera;
@@ -513,8 +515,6 @@ TEST_CASE("the GPU renderer clears the depth for a scene pass that asks and ligh
     }
     assets.removeTexture(*textureId);
     texture->destroy();
-    std::error_code ignored;
-    std::filesystem::remove(path, ignored);
 }
 
 TEST_CASE("the GPU renderer cuts away what lies past the camera's far clip", "[render][renderer][window][scene]") {
@@ -573,7 +573,9 @@ TEST_CASE("the GPU renderer cuts away what lies past the camera's far clip", "[r
         meshes.push_back(*id);
     }
 
-    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-far-clip.png").string();
+    // A folder of its own: runs at once never write the same file (docs/guides/testing.md#capture-paths).
+    const coney::test::TempDir folder;
+    const std::string path = (folder.path() / "coney-gpu-far-clip.png").string();
     engine.requestCapture(0, path);
     engine.beginWindowFrame(Rgba{0, 0, 0, 255});
     coney::graphics::SceneCamera camera;
@@ -612,6 +614,4 @@ TEST_CASE("the GPU renderer cuts away what lies past the camera's far clip", "[r
     }
     assets.removeTexture(*textureId);
     texture->destroy();
-    std::error_code ignored;
-    std::filesystem::remove(path, ignored);
 }
