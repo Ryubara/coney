@@ -99,7 +99,7 @@ void DestroyGoal::pickTarget(Brain& brain) {
     }
     // Every other pick a pane near the object goes first; else the object, claimed for his gang.
     if (!oddPick) {
-        if (const std::optional<PaneView> pane = claimPane(brain, *m_items, kDestroyPaneRadius, *where)) {
+        if (const std::optional<PaneView> pane = claimPane(brain, *m_items, kDestroyPaneRadius, where)) {
             m_target = pane->handle;
             m_targetPane = true;
             return;

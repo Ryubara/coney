@@ -18,6 +18,7 @@
 #include <cstdio>
 #include <format>
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -91,14 +92,15 @@ std::optional<std::string> firstLine(const std::vector<std::string>& trace, std:
 // Checkpoint 1 played to the moment player 1 stands in the looters' box, with the script trace kept.
 struct Looters {
     coney::test::LivePad pad;
-    std::optional<coney::test::DiscSession> run;
+    // Owned through a pointer, not an optional: the session is built in the constructor, and a pointer reads as set.
+    std::unique_ptr<coney::test::DiscSession> run;
     std::vector<std::string> trace;
     std::uint64_t entered = 0;
 
     // Starts checkpoint 1 over `wad`, skips the opening scene and puts player 1 in the box.
     explicit Looters(const coney::io::Wad& wad) {
         pad.play(std::format("{} tap cross\n", kSkipAt));
-        run.emplace(wad, pad);
+        run = std::make_unique<coney::test::DiscSession>(wad, pad);
         coney::script::ScriptSystem& scripts = run->session().flow().scripts();
         run->session().startAtLevel("level34", 1, [&scripts, this] {
             scripts.traceCalls([this](std::string_view line) { trace.emplace_back(line); });
