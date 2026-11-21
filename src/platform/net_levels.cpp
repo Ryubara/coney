@@ -112,8 +112,7 @@ void NetLevels::followHostQuit(const net::MissionEnd& end) {
         m_net.levelLoaded(m_order->load);
         m_order.reset();
     }
-    // A movie of the level left is not answered, begun or ended.
-    m_movieBegan.reset();
+    // A movie of the level left is not answered.
     m_movieEnd.reset();
     if (m_game != nullptr && m_game->leaveLevel()) {
         m_net.report("leaving the level with the host");

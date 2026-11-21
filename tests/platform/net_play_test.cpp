@@ -1083,6 +1083,37 @@ TEST_CASE("the host's movie waits for a guest whose own copy plays on past the m
     CHECK(host.mayGoOn());
 }
 
+// Expected: unverified, #1548 (Coney's own; docs/guides/multiplayer.md#levels: a quit drops the guest's movie of the
+// level left, begun or ended, so the host's later movie is not answered from it)
+TEST_CASE("a host's quit drops a guest's begun movie, so the host's next movie waits for it only to the time-out",
+          "[net][net_play][level][movie]") {
+    LevelGames g;
+    g.hostPlays("level1", 1);
+    g.games.connect();
+    g.run(12);
+    const coney::movies::MovieSync host = g.hostLevels.movieSync();
+    const coney::movies::MovieSync guest = g.guestLevels.movieSync();
+
+    // The guest's own copy of a movie begins before the host has started any: the begin waits for the host's start.
+    guest.started("L1_OUT");
+    g.run(3);
+    // The host quits the level; the guest's game leaves it, and a movie of the level left is not answered.
+    g.hostGame.missions.quit = 1;
+    g.run(3);
+    REQUIRE(g.guestGame.leaves == 1);
+
+    // The host's own movie of the same name: no copy of the guest's plays, so only the time-out lets the host go on.
+    g.games.host.gameEvents().raise(
+        coney::GameEvent{.kind = coney::GameEventKind::MovieStart, .value = 1, .text = "L1_OUT"});
+    host.started("L1_OUT");
+    g.run(3);
+    host.ended("L1_OUT", false);
+    g.run(50);
+    CHECK_FALSE(host.mayGoOn());
+    g.run(260);
+    CHECK(host.mayGoOn()); // not held for ever by the begin of a copy that was dropped
+}
+
 // Expected: unverified, #1530 (Coney's own; a guest's MovieDone names the host's movie by its MovieStart's step)
 TEST_CASE("a guest knows the host's newest movie by the step its MovieStart came in", "[net][net_play][level][movie]") {
     LevelGames g;
