@@ -39,6 +39,7 @@ float ShadowDim::factor() const {
 float humanDrawDistance() { return kHumanDrawDistance; }
 
 float humanDistanceFade(float distance) {
+    // A stand-in for the first second's fade-in after a human appears, which is not drawn (#1526): only the distance.
     return std::clamp((humanDrawDistance() - distance) / kHumanFadeLength, 0.0F, 1.0F);
 }
 
