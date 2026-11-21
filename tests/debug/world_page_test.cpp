@@ -173,12 +173,14 @@ TEST_CASE("the World page sets the fog, the shadows, the gravity and the parts, 
     CHECK(itemOn(*fog, "Start").getNumber() == Approx(0.4));
     itemOn(*fog, "Start").setNumber(0.2);
     REQUIRE(session.lighting().fog.start.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
     CHECK(*session.lighting().fog.start == Approx(0.2F));
     CHECK(itemOn(*fog, "Start").getNumber() == Approx(0.2));
     CHECK(coney::debug::resetItem(itemOn(*fog, "Start")));
     CHECK_FALSE(session.lighting().fog.start.has_value());
     itemOn(*fog, "Red").setNumber(200.0);
     REQUIRE(session.lighting().fog.colour.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
     CHECK(*session.lighting().fog.colour == Rgba{200, 20, 30, 255});
     CHECK(itemOn(*fog, "Red").getNumber() == Approx(200.0));
     itemOn(*fog, "Start").setNumber(0.9);
@@ -200,6 +202,7 @@ TEST_CASE("the World page sets the fog, the shadows, the gravity and the parts, 
     const MenuItem& gravity = itemOn(*page, "Gravity");
     CHECK(gravity.getNumber() == Approx(15.68));
     REQUIRE(gravity.defaultValue.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
     CHECK(*gravity.defaultValue == Approx(15.68));
     CHECK(gravity.help.find("original's") != std::string::npos);
     gravity.setNumber(5.0);
