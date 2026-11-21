@@ -838,6 +838,7 @@ namespace {
 coney::hud::HudStanding scriptedStanding(std::uint32_t step) {
     coney::hud::HudStanding standing;
     const std::uint32_t phase = step % 30;
+    const std::uint32_t tens = step / 10; // the counter's whole count: it goes up once every 10 steps
     standing.players[0].prompt = phase >= 20 ? "" : ((step / 30) % 2 == 0 ? "Press X" : "Press O");
     standing.players[1].panel.attached = true;
     standing.players[1].panel.shown = true;
@@ -846,7 +847,7 @@ coney::hud::HudStanding scriptedStanding(std::uint32_t step) {
                                                            .kind = coney::hud::CounterKind::GotNeeded,
                                                            .label = "Tags",
                                                            .barWidth = 0.22F,
-                                                           .value = static_cast<float>(step / 10),
+                                                           .value = static_cast<float>(tens),
                                                            .target = 60.0F,
                                                            .visible = true,
                                                            .hideAtMs = {}};

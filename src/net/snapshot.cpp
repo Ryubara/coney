@@ -394,9 +394,12 @@ std::expected<SnapshotApplied, Error> SnapshotReceiver::apply(const Snapshot& sn
     // Copied before this snapshot takes the place of the one kSnapshotHistory back, which may be the baseline.
     SnapshotHumans humans = *baseline;
     SnapshotHuds huds = *hudsBaseline;
-    SnapshotHudElements elements =
-        snapshot.baseline == 0 ? noHudElements() : *holdingHudElements(snapshot.baseline); // kept with the humans
-    SnapshotHudTexts texts = snapshot.baseline == 0 ? noHudTexts() : *holdingHudTexts(snapshot.baseline);
+    const SnapshotHudElements* elementsBaseline =
+        snapshot.baseline == 0 ? &noHudElements() : holdingHudElements(snapshot.baseline);
+    const SnapshotHudTexts* textsBaseline = snapshot.baseline == 0 ? &noHudTexts() : holdingHudTexts(snapshot.baseline);
+    CONEY_ASSERT(elementsBaseline != nullptr && textsBaseline != nullptr); // kept with the humans
+    SnapshotHudElements elements = *elementsBaseline;
+    SnapshotHudTexts texts = *textsBaseline;
     for (const SnapshotEntry& entry : snapshot.humans) {
         if (entry.removed) {
             if (humans.erase(entry.id) == 0) {

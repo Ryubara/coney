@@ -136,6 +136,7 @@ Snapshot exchange(SnapshotSender& sender, SnapshotReceiver& receiver, std::uint3
 // The keys of a snapshot's element or text entries, in order.
 template <typename Entry> std::vector<std::uint8_t> keysOf(const std::vector<Entry>& entries) {
     std::vector<std::uint8_t> keys;
+    keys.reserve(entries.size());
     for (const Entry& entry : entries) {
         keys.push_back(entry.key);
     }
