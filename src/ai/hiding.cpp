@@ -11,6 +11,8 @@ namespace coney::ai {
 namespace {
 
 // Whether `hunter` hunts `hider`: it is another fightable brain with him as its target or one of its enemies.
+// **Coney stand-in** (#649) for the hostile count `+0x152`: a player who lists another player counts here, though
+// Brain_AddEnemy never counts a player's listing of a player (docs/research/ai-gangs.md#tactic-base).
 bool hunts(const Brain& hunter, const Brain& hider) {
     if (&hunter == &hider || !Brain::fightable(hunter)) {
         return false;

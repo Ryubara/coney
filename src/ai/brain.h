@@ -465,9 +465,11 @@ class Brain {
     [[nodiscard]] bool mayApproach() const { return m_mayApproach; }
     /// Sets the approach byte.
     void setMayApproach(bool may) { m_mayApproach = may; }
-    /// Adds `enemy` to the enemy list (`+0x164`, up to 16), and this brain to `enemy`'s unless both are players'; when
-    /// its gang's tactic does not leave the members their own goals, the tactic hears of it (event `0xb`). Nothing when
-    /// `enemy` is listed already or the list is full.
+    /// Adds `enemy` to this brain's enemy list (`+0x164`, up to 16), one way: `enemy`'s own list is left alone (the
+    /// original only raises his hostile count `+0x152`, which Coney reads from the lists, ai::huntersOf()). When its
+    /// gang's tactic does not leave the members their own goals, the tactic hears of it (event `0xb`). A full list
+    /// stores nothing, but the tactic still hears of it. Nothing at all while this human is down or dead
+    /// (humanIsDownOrDead()) or when `enemy` is listed already.
     /// @orig 0x0028d538 Brain_AddEnemy (unknown)
     void addEnemy(Brain& enemy);
     /// The enemy list.
@@ -717,8 +719,6 @@ class Brain {
     // Raises this human's spacing bytes to `attacker`'s gang's `CfgGang` values (a Warrior keeps one swinging at
     // him on his feet).
     void raiseSpacing(const Brain& attacker);
-    // Adds `enemy` to the list only; returns whether it was added.
-    bool listEnemy(Brain& enemy);
 
     human::Human* m_human;
     std::uint64_t m_nowMs = 0;

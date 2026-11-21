@@ -377,7 +377,11 @@ Chapter 5 of `level87` (`level87_chap5_club.lua`) is the stealth tutorial. What 
 - **Shadow ground and the hidden state** (`repo:src/human/human_hiding.cpp`, `repo:src/ai/hiding.h`): the ground snap
   keeps the floor triangle's flags, and flag `0x10` is shadow. Player 1 walking onto it hides (state `0x200000`)
   unless he carries a molotov or a hunter already sees him; he stays hidden while on it, and for 4 s after leaving it
-  while walking with a target; a sprint ends it at once. Hiding shakes off the hunters who lost sight of him.
+  while walking with a target; a sprint ends it at once. Hiding shakes off the hunters who lost sight of him. A
+  hunter is a human who has him as his target or in his own enemy list (`ai::huntersOf`, Coney's reading of the
+  hostile count `+0x152`); his own listing of a guard does not make the guard a hunter, since `Brain::addEnemy` lists
+  one way as `Brain_AddEnemy` does ([The tactic base](ai-gangs.md#tactic-base); #1541: at level87 checkpoint 5 it
+  did, and he could not hide behind the first guard).
 - **Sneaking** (`HumanAnimator::setStealthStyle`): while hidden the move style swaps to the stealth set (630 idle, 631
   start, 633 walk at its own speed), with 634 in and 394 out from the idle.
 - **The HUD cue** ([HUD](hud.md#coneys-implementation)): the radar turns blue while he is hidden and back to grey,

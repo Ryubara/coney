@@ -133,6 +133,10 @@ destroys nothing. Called just before `GangDelete` in the same script step, as in
 
 ## Tactics {#tactics}
 
+### The tactic base {#tactic-base}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 A pool of 30 tactics of 0x90 at `0x006ea1b0` (mask `0x006ea1a0`; alloc `0x00306558`, free `0x003065b0`). Base fields:
 `+0x00` gang, `+0x04` started, `+0x08` time limit (−1 none; Process returns 2 once past it), `+0x0c` Lua callback,
 `+0x1c` vtable (`{s16 delta, fn}` pairs: `+0x0c` Start, `+0x14` End, `+0x24` Process, `+0x34` type id, `+0x3c` a
@@ -164,8 +168,8 @@ two readers: Start puts the gang on alert when it is 1, and `Brain_AddEnemy` sen
   class's Start that gives goals (for example `DefendTactic_GiveGoals`) calls `PopToGoalBase` and then
   `MarkGoalBase` before each push. That pops only what is above the mark, nothing at Start, and pushes the tactic's
   goal **on top**. When it ends, the old goals are back on top. Where [AI code](ai-code.md) says a tactic helper
-  "flushes" a member, it means this pop-to-base and mark, not `Brain_ClearGoals`. Confirmed (code, by their callees)
-  for Defend, Info, ManWeaponPile, Pursue, WarriorScatter, Scout, StandGround, Steal, Taunt and Vandalize. Coney
+  "flushes" a member, it means this pop-to-base and mark, not `Brain_ClearGoals`. Confirmed (code), read from their
+  callees, for Defend, Info, ManWeaponPile, Pursue, WarriorScatter, Scout, StandGround, Steal, Taunt and Vandalize. Coney
   must not clear the stack at a tactic's start.
 
   **`Tactic_End`** (`0x00306850`, from `Gang_StopTactic`, `Gang_Destroy` and the old boss tactic) pops every
@@ -185,9 +189,17 @@ two readers: Start puts the gang on alert when it is 1, and `Brain_AddEnemy` sen
   `GoalFight` picks the target but **pushes no fight goal**; the tactic fights. It also does nothing for a knocked-down
   or dead human, or a type-3 brain already holding goal 9; otherwise it pops goals 8 and `0x41`, pushes FindEnemy
   (`0x41`), Melee (8) and then the fight goal (`0xf`) ([Starting a fight](ai-fights.md#targets)).
-- **`Brain_AddEnemy`** (`0x0028d538`) adds the enemy to `+0x164` (16), makes the enemy's brain add this human back
-  (`0x0028ef20`, unless both are players), and, when the tactic's `+0x3c` answers 0, sends it event `0xb` with the
-  enemy.
+- **`Brain_AddEnemy`** (`0x0028d538`) does nothing while this human is down or dead (`Human_IsDownOrDead`
+  `0x00227e60`) or the enemy is listed already. Otherwise it adds the enemy to `+0x164` (16) and raises the enemy's
+  hostile count by one (brain `+0x152`, `Brain_CountHostile` `0x0028ef20`, called at `0x0028d5f8`), unless both are
+  players; it does **not** list this human in the enemy's own list, so the listing is one way. When the tactic's
+  `+0x3c` answers 0 it sends the tactic event `0xb` with the enemy. A full list stores nothing
+  (`HandleArray16_PutInFree` `0x004de1a8` finds no free slot and returns), but the count is still raised and the
+  tactic still told. Confirmed (code); the one-way listing is also
+  confirmed (runtime), run r-20261121-level87-cp5-enemy-lists: a minute into level87 checkpoint 5 the player and his
+  three Warriors all list the guard S01, whose hostile count is 4 and whose own list is empty, and the player's hostile
+  count is 0. The call at `0x0028d5f8` is the count, not the enemy listing this human back, as an earlier reading of
+  this page had it: a player's or a Warrior's listing of a guard never makes the guard hunt the player.
 
 **TacticCrowd** (type `0x1b`, vtable `0x005437a0`; `0x00316450`): turns a gang into **onlookers**. Init (`0x0030f4d0`):
 no time limit, `+0x28` the option.

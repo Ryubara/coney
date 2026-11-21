@@ -1303,13 +1303,8 @@ coney = "src/ai/brain.h:Brain::addEnemy"
 status = "compared"
 
 [[function.gaps]]
-what = "nothing is listed while this human is down or dead"
-relation = "not-ported"
-issue = 649
-
-[[function.gaps]]
-what = "no hostile count (+0x152, Brain_CountHostile): Coney lists this human in the enemy's list instead"
-relation = "not-ported"
+what = "no hostile count (+0x152, Brain_CountHostile): ai::huntersOf reads the listers' own lists for it"
+relation = "stand-in"
 issue = 649
 
 [[function]]

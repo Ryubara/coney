@@ -1,0 +1,9 @@
+# The player hiding behind the first guard at level87 checkpoint 5, for the `level87-hide` clips pair scenario
+# (tools/clips/level87-hide.toml), played from checkpoint 5 (`--play-level level87 --checkpoint 5 --skip-movies`). Cross
+# skips the intro scene; the walk takes him into the hint volume (volCh5HB01) and toward the guard, and the tutorial
+# warps him to the shadow ground behind S01 (fWarpCh5Spot_01) at about frame 357. Frames are 1/30 s from the level's
+# first frame of play; the route comes from task 1534's runs.
+70 tap cross
+90 steer 50 410,-59
+185 stick left 0 0
+320 steer 100 418.3,-63.6

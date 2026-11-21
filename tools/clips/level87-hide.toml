@@ -1,0 +1,10 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level87 checkpoint 5, the tutorial's lesson in
+# hiding. The input script skips the intro scene at frame 70, walks into the hint volume and on toward the first guard
+# (S01); the tutorial then warps the player to the shadow ground behind the guard (about frame 357), where he should
+# hide (634 into the stealth idle) and stay hidden. For a change to hiding, the enemy lists or the guards' scouting.
+description = "level87 checkpoint 5: the player hides on the shadow ground behind the first guard"
+level = "level87"
+checkpoint = 5
+input = "tools/clips/level87-hide.txt"
+start_frame = 330
+seconds = 8

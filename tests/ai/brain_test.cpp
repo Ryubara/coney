@@ -20,8 +20,10 @@
 #include "ai/block_goal.h"
 #include "ai/brains.h"
 #include "ai/fight_goal.h"
+#include "ai/gangs.h"
 #include "ai/goal.h"
 #include "ai/reaction_goals.h"
+#include "ai/tactic.h"
 #include "combat/ai_counter.h"
 #include "combat/anim_ids.h"
 #include "combat/commands.h"
@@ -921,4 +923,85 @@ TEST_CASE("HuCreate's flag makes a new human a gang member, unless his class mak
     CHECK(createdBrainType(BrainType::Player, true) == BrainType::Gang);
     CHECK(createdBrainType(BrainType::Warrior, true) == BrainType::Warrior);
     CHECK(createdBrainType(BrainType::Civilian, false) == BrainType::Civilian);
+}
+
+TEST_CASE("an enemy added is listed by the adder only; the enemy's own list is left alone", "[ai]") {
+    // Expected: ai-gangs.md#tactic-base, confirmed (code)
+    // Brain_AddEnemy (0x0028d538) lists the enemy on its own brain and only counts itself on the enemy's (its hostile
+    // count, Brain_CountHostile 0x0028ef20, from 0x0028d5f8): docs/research/ai-gangs.md#gangs.
+    coney::test::AiScene scene;
+    coney::ai::Brain& guard = scene.add(coney::anim::Vec3{70.0F, 40.0F, 0.0F}, 0.0F);
+    coney::ai::Brain& player = scene.player();
+
+    player.addEnemy(guard);
+    CHECK(player.enemies() == std::vector<coney::ai::Brain*>{&guard});
+    CHECK(guard.enemies().empty());
+
+    // An AI's own listing is one way too.
+    coney::ai::Brain& other = scene.add(coney::anim::Vec3{75.0F, 40.0F, 0.0F}, 0.0F);
+    guard.addEnemy(other);
+    CHECK(guard.enemies() == std::vector<coney::ai::Brain*>{&other});
+    CHECK(other.enemies().empty());
+    // Listed already: nothing changes.
+    guard.addEnemy(other);
+    CHECK(guard.enemies().size() == 1);
+}
+
+namespace {
+
+// A gang tactic (type 0x20: offered new enemies) that counts the new enemies it hears of.
+class EnemyCountingTactic final : public coney::ai::Tactic {
+  public:
+    explicit EnemyCountingTactic(int& heard) : Tactic(0x20, ""), m_heard(&heard) {}
+    bool event(coney::ai::Gang& /*gang*/, coney::ai::Brain& /*member*/, const coney::ai::BrainEvent& event) override {
+        if (event.id == coney::ai::kEventEnemyAdded) {
+            ++*m_heard;
+        }
+        return false;
+    }
+
+  private:
+    int* m_heard;
+};
+
+} // namespace
+
+TEST_CASE("a human down or dead lists no enemy", "[ai]") {
+    // Expected: ai-gangs.md#tactic-base, confirmed (code)
+    coney::test::AiScene scene;
+    coney::ai::Brain& out = scene.add(coney::anim::Vec3{70.0F, 40.0F, 0.0F}, 0.0F);
+    coney::ai::Brain& dead = scene.add(coney::anim::Vec3{72.0F, 40.0F, 0.0F}, 0.0F);
+    coney::ai::Brain& enemy = scene.add(coney::anim::Vec3{75.0F, 40.0F, 0.0F}, 0.0F);
+    out.human().script().knockedOut = true;
+    dead.human().fighter().health().set(0);
+
+    out.addEnemy(enemy);
+    dead.addEnemy(enemy);
+    CHECK(out.enemies().empty());
+    CHECK(dead.enemies().empty());
+}
+
+TEST_CASE("a full enemy list stores no more, but the tactic still hears of the new enemy", "[ai]") {
+    // Expected: ai-gangs.md#tactic-base, confirmed (code)
+    coney::test::AiScene scene;
+    coney::ai::Brain& member = scene.add(coney::anim::Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
+    const int gang = scene.brains.gangs().create(19, "Punks");
+    scene.brains.gangs().addMember(gang, member);
+    int heard = 0;
+    scene.brains.gangs().setTactic(gang, std::make_unique<EnemyCountingTactic>(heard));
+    std::vector<coney::ai::Brain*> enemies;
+    for (std::size_t k = 0; k <= coney::ai::kMaxEnemies; ++k) {
+        enemies.push_back(&scene.add(coney::anim::Vec3{50.0F + static_cast<float>(k), 60.0F, 0.0F}, 0.0F));
+    }
+    for (std::size_t k = 0; k < coney::ai::kMaxEnemies; ++k) {
+        member.addEnemy(*enemies[k]);
+    }
+    REQUIRE(member.enemies().size() == coney::ai::kMaxEnemies);
+    REQUIRE(heard == static_cast<int>(coney::ai::kMaxEnemies));
+
+    // The seventeenth: nothing stored, the tactic told.
+    member.addEnemy(*enemies.back());
+    CHECK(member.enemies().size() == coney::ai::kMaxEnemies);
+    CHECK(std::ranges::find(member.enemies(), enemies.back()) == member.enemies().end());
+    CHECK(heard == static_cast<int>(coney::ai::kMaxEnemies) + 1);
 }
