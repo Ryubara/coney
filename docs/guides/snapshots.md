@@ -8,8 +8,9 @@ architecture. The original has no network play, so none of this code carries an 
 **Built:** `src/net/snapshot.h` (the server's `SnapshotSender` and the client's `SnapshotReceiver`), the Snapshot and
 SnapshotAck messages of [the protocol](multiplayer.md#protocol) (the Snapshot's body in `src/net/snapshot_wire.cpp`,
 apart from `protocol.cpp`), and the sessions' side: `NetServer::sendSnapshots()` and `NetClient::snapshots()`. A
-client plays what it decodes through [the client's world](client-world.md). Each player slot's HUD state travels in the
-same snapshots ([HUD state](#hud-state)); nothing on a guest draws it yet. **Planned:** the game's side (filling the
+client plays what it decodes through [the client's world](client-world.md). Each player slot's HUD state and the HUD's
+standing state travel in the same snapshots ([HUD state](#hud-state), [The HUD's standing state](#hud-standing)), and a
+guest's HUD can take them; nothing on a guest draws them yet. **Planned:** the game's side (filling the
 humans from the host's game and drawing them on the guest), interest (which humans a client needs, and how fast each
 one's priority grows), and releasing a removed human's id once its removal is acknowledged.
 
@@ -91,10 +92,63 @@ not hold comes in full, a kept one with its changed fields only (a money pickup 
 unchanged one costs nothing, and a slot gone is removed. The HUDs go in the budget before the humans' changes, and the
 sender keeps room for every slot's in full, so a panel is never a step behind for want of room.
 
-**Not carried yet:** the HUD's standing state outside the panels' inputs: the prompts, the radar's blips and map, the
-counter panels and bars, the scoreboard, a panel's script flags (attached, shown, `ForceShowPlayerHud`, the rage bar's
-flash). A guest's HUD has its own of these until they are added, and the messages, objectives and hints come as
-[game events](multiplayer.md#events).
+The messages, objectives and hints come as [game events](multiplayer.md#events); the rest of what the HUD holds is its
+standing state, next.
+
+## The HUD's standing state {#hud-standing}
+
+What the HUD holds between steps, set by the scripts' HUD bindings and the game rather than handed to each step:
+`hud::HudStanding` (`src/hud/hud.h`), read with `Hud::standing()` and taken by a guest's HUD with
+`Hud::applyStanding()` (`src/hud/hud_standing.cpp`).
+
+| Part | Whose | What travels | Where the HUD keeps it |
+| --- | --- | --- | --- |
+| The panel's script flags | each player slot | attached and the banner the attach picked, shown, may show (`HidePlayerHud`), `ForceShowPlayerHud`, the rage bar's flash frames | [The player panel](../research/hud.md#the-player-panel), `PlayerPanel` `+0x40f8` to `+0x4114` |
+| The action prompt | each player slot | its text, whether the icon cycle's start hid it, and the cycle's switch, timing and two icons | [Action prompts](../research/hud-messages.md#action-prompts), prompt `+0x440` to `+0x45c` |
+| The radar's switch and tint | each player slot | on or off, grey or blue | [The radar](../research/hud-radar.md#the-radar-on-screen), radar `+0x04`, `+0x38` |
+| The counter panels | shared | each panel taken: its kind, label, bar width, value, target and whether it shows | [Announcements and other messages](../research/hud-messages.md#announcements-and-other-messages) |
+| The bars | shared | each generic bar that exists (shown, label, fill, gradient, colour, size) and the chase gauge (its icons, value and range) | [Scripted bars](../research/hud-messages.md#scripted-bars) |
+| The scoreboard | shared | each row shown: its label, score and colour | `HUDEnableTextProgress`, widgets at `0x00615320` |
+| The stopwatch | shared | while shown: its label and the mission stopwatch's time | `W_ShowStopWatch` |
+| The HUD's settings | shared | the HUD shown (`HideHud`, `RestoreHud`), the prompt at the clubhouse's place, the radars' script switch, their range and zoom scale | HUD `+0x177a0`, `+0x177ac`, radar `+0x24`, `+0x28`, `+0x2920` |
+
+**Whose.** The panel, the prompt and the radar are each player's, so they go per player slot. The counter panels, the
+bars, the scoreboard, the stopwatch and the settings are one each on the original's screen, which both of its players
+share (the HUD object at `0x00600840`, [The HUD object](../research/hud.md#hud-object)), so they travel once, for
+every player. **Who owns it:** the play mode's HUD, as simulation state (`PlayLevelSimulation::hudStanding()`); after
+the HUD's step the play mode hands it to network play with the slots' HUD state (`GameHumans::captureHuds(slots,
+&standing)`, `NetPlay::setGameHuds()`), and a guest reads the newest decoded with `NetPlay::arrivedHudStanding()`.
+
+**Derived on the guest, not carried.** The level's radar map comes from the level record the guest loads itself. The
+running part of a prompt's icon cycle (its count, which icon shows, the blink) steps on each HUD from the cycle's start,
+and `applyStanding()` starts a guest's cycle again only when its settings change, so it steps as the host's does. A
+counter panel's hide time is the host's: its "shows" flag travels and a guest's panel hides when the host's does. The
+scoreboard's row counts only sort the rows when a script sets a score, on the host.
+
+**Not carried yet:** the radar's blips. They are a map keyed by script handle, each following an object a guest cannot
+look up by that handle, so carrying them needs each blip's place or the network id of what it follows, which the game
+does not give yet ([Game events](multiplayer.md#events)). They wait for #1537. The second radar is not
+driven yet either ([HUD, menus and pause](network-architecture.md#sub-hud)).
+
+**Elements.** Each part travels as an element named by a key (5 bits), with its own field table
+([Field tables](multiplayer.md#field-tables)): 0 to 3 each player slot's (`HudPlayer`, 14 fields), 4 to 8 the counter
+panels (`HudCounter`), 9 to 12 the generic bars (`HudBar`), 13 the chase gauge (`HudGauge`), 14 to 19 the scoreboard's
+rows (`HudScoreRow`), 20 the stopwatch (`HudStopWatch`) and 21 the settings (`HudSettings`). A part that is not there
+(a panel not taken, a bar that does not exist, a row not shown, the stopwatch hidden) has no element; the players' and
+the settings' are always there. A script's number the HUD shows or compares (a counter's value, a bar's fill, a radius)
+travels **Exact**, the float's own 32 bits, so a guest's HUD rounds the very value the host's does; a frame count, an
+icon, a sprite word or a score gets the bits the HUD needs (16 or 24), and one beyond is held at the range's end.
+
+**Texts.** Each prompt and each label travels as a **HUD text** named by its element's key: 1 to 255 bytes, sent only
+when it differs from the baseline's, and removed when it empties or its element goes. A longer text is cut at 255 bytes.
+
+**Deltas and the budget.** Elements are delta-compressed as the HUDs are: in full when the baseline does not hold
+them, then their changed fields only (a counter counting is 5 + 1 + 5 + 32 bits, 6 bytes; a still HUD costs nothing),
+and removed when gone. The elements go in the budget with the HUDs, and the sender keeps room for every element in
+full and one 255-byte text. The texts go next, in key order, each where it fits (the room left always takes the
+longest, so none waits for ever), then the humans' removals and changes. A first snapshot in a mission (two players,
+two counter panels, two bars, the gauge, two rows, the stopwatch and their seven texts) takes about 190 bytes of the
+1,200 before the humans.
 
 ## The packet {#packet}
 
@@ -110,6 +164,10 @@ Message 10, Snapshot, server to client, UnreliableSequenced:
 | Each entry, in rising id order: the `NetId`; a removed bit; when not removed, for each field a changed bit and, when set, the field's word | 22 + 1 + 23 + the words |
 | The number of HUD entries, at most 4 (protocol 7) | varint |
 | Each HUD entry, in rising slot order: the slot; a removed bit; when not removed, for each HUD field a changed bit and, when set, the field's word | 2 + 1 + 13 + the words |
+| The number of HUD elements, at most 22 (protocol 9) | varint |
+| Each HUD element, in rising key order: the key; a removed bit; when not removed, for each of its fields a changed bit and, when set, the field's word | 5 + 1 + its fields + the words |
+| The number of HUD texts, at most 22 (protocol 9) | varint |
+| Each HUD text, in rising key order: the key; a removed bit; when not removed, the text's length (1 to 255) and its bytes | 5 + 1 + varint + 8 a byte |
 
 Message 11, SnapshotAck, client to server, Unreliable: the sequence (a varint).
 
@@ -118,8 +176,11 @@ network: a sequence of 0, a baseline beyond the history, a count the packet cann
 ids not rising or not valid, a kept entry with nothing changed, a word over its field's range and trailing bytes are
 refused, and the client closes the connection (protocol error). Decoding against the baseline refuses a removal of a
 human it does not hold, a new human with a field left out, and a field "changed" to the word it has. The HUD entries
-keep the same rules by slot, and more of them than there are player slots is refused before any is read. The server
-closes a connection that acknowledges a snapshot it never sent.
+keep the same rules by slot, and more of them than there are player slots is refused before any is read. The HUD
+elements keep them by key, and a key past the last or an Exact word that is not a finite number is refused; a HUD text
+for a key with no text (the gauge's, the settings'), an empty one, one over 255 bytes, keys not rising, a removal of a
+text not held and a text "changed" to the one held are refused, and more elements or texts than there are keys is
+refused before any is read. The server closes a connection that acknowledges a snapshot it never sent.
 
 ## The budget and the priority accumulator {#budget}
 
@@ -148,11 +209,11 @@ walking.
 
 | Snapshot | Entries | Bytes |
 | --- | --- | --- |
-| The first (full): 31 humans of 302 bits fit, the other 29 wait | 31 | 1,177 |
-| The second: the 29 in full, and the 7 walkers among the 31 (x, heading and playhead: 84 bits each) | 36 | 1,175 |
-| Every one after: the 12 walkers | 12 | 132 |
+| The first (full): 31 humans of 302 bits fit, the other 29 wait | 31 | 1,179 |
+| The second: the 29 in full, and the 7 walkers among the 31 (x, heading and playhead: 84 bits each) | 36 | 1,177 |
+| Every one after: the 12 walkers | 12 | 134 |
 
-132 bytes at 30 snapshots a second is about 4 KB/s per client, under the [architecture's
+134 bytes at 30 snapshots a second is about 4 KB/s per client, under the [architecture's
 estimate](network-architecture.md#snapshots) of 340 bytes for a similar scene. Carrying four layers rather than two
 cost a human in full 70 bits more and a walker's delta 6 (the older layers' changed bits); the four gait values cost
 it 44 more and the walker 4. A fight where 20 humans each move, turn and change every animation field takes about
@@ -168,13 +229,22 @@ fades with its four layers, a gait value on every layer, the budget and the prio
 snapshot, a high-rate human in every one), the busy scene's bytes, the players' HUDs taking their room in a full budget
 before the humans (both in the first snapshot, 30 humans beside them), and a round trip by hand through loss, held-back
 and repeated snapshots and late acknowledgements, where every snapshot decoded leaves the client holding exactly the
-server's record of it. `tests/net/sessions_test.cpp` runs snapshots between a `NetServer` and a `NetClient` on the
+server's record of it. `tests/net/hud_standing_test.cpp` covers [the HUD's standing state](#hud-standing): its
+elements and texts and back (a number past its range held, a long text cut), the game's capture, the elements and
+texts in full first, then their changes, a part gone removed and a delta against an older baseline, their pinned bytes,
+the decoder's and the client's refusals, and the budget's order (elements with the HUDs, texts after them, the humans
+last); `tests/hud/hud_test.cpp` reads a HUD's standing state from its parts and has a guest's HUD take it (a cycle
+started again only when its settings change, a tint blending, a panel released, `HideHud`), and
+`tests/net/replicated_fields_test.cpp` the Exact encoding. `tests/net/sessions_test.cpp` runs snapshots between a
+`NetServer` and a `NetClient` on the
 loopback through a link conditioner with loss, jitter, duplicates and reordering both ways, and drops a client that
 acknowledges a snapshot never sent. `tests/net/player_huds_test.cpp` covers the [HUD state](#hud-state): a slot's state
 through its words and back (a number past its range held at its end), the HUDs in full first, then their changed fields,
 a slot removed and back, a delta against an older baseline, the HUD entries' pinned bytes and the decoder's and the
 client's refusals, and the game's HUDs as network play captures them. `sessions_test.cpp` sends both players' HUDs every
 step to a client on the loopback, which steps a HUD of its own from what it decodes: on a clean link its panels are the
-server's at every step, and over a bad one what it holds is the server's record of each snapshot.
-`tests/platform/net_play_test.cpp` hands a host's HUDs to its guest (`NetPlay::setGameHuds()`, `arrivedHuds()`), and
+server's at every step, and over a bad one what it holds is the server's record of each snapshot; it sends the HUD's
+standing state the same way, and the client's HUD takes each snapshot's as the server sent it.
+`tests/platform/net_play_test.cpp` hands a host's HUDs and standing state to its guest (`NetPlay::setGameHuds()`,
+`arrivedHuds()`, `arrivedHudStanding()`), and
 `tests/hud/hud_test.cpp` drives each panel from its own slot's state.

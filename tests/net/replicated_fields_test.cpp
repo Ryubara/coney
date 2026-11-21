@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -38,7 +39,8 @@ namespace {
 constexpr float kPi = std::numbers::pi_v<float>;
 
 // The values a field must carry: its range's ends and its middle (both bool values, for a Bool; for an Angle, half a
-// turn back, none and half a turn on, plus a value beyond a turn, which wraps).
+// turn back, none and half a turn on, plus a value beyond a turn, which wraps; for an Exact, a huge, a small and a
+// whole number).
 std::vector<FieldValue> probes(const FieldSpec& field) {
     switch (field.encoding) {
     case FieldEncoding::Bool:
@@ -52,6 +54,8 @@ std::vector<FieldValue> probes(const FieldSpec& field) {
         return {field.min, (field.min + field.max) / 2.0F, field.max};
     case FieldEncoding::Angle:
         return {-kPi, 0.0F, kPi, 2.5F * kPi};
+    case FieldEncoding::Exact:
+        return {-1.0e30F, 0.1F, 3.0F};
     }
     return {};
 }
@@ -69,6 +73,7 @@ bool carried(const FieldSpec& field, const FieldValue& sent, const FieldValue& r
     switch (field.encoding) {
     case FieldEncoding::Bool:
     case FieldEncoding::Integer:
+    case FieldEncoding::Exact:
         return sent == read;
     case FieldEncoding::Float: {
         const float value = std::get<float>(sent);
@@ -273,5 +278,30 @@ TEST_CASE("field tables: a human carries every animation layer the task stack sh
         CHECK(has("clip" + std::to_string(layer)));
         CHECK(has("playhead" + std::to_string(layer)));
         CHECK(has("fade" + std::to_string(layer)));
+    }
+}
+
+// Expected: unverified, #1524 (Coney's own field tables; a script's number travels as its own bits,
+// snapshots.md#hud-standing)
+TEST_CASE("field tables: an Exact field carries a float's own bits, and refuses a word that is not a finite number",
+          "[net][fields]") {
+    const FieldSpec value{.name = "value", .encoding = FieldEncoding::Exact, .bits = 32};
+    CHECK(coney::net::validateFields(std::array{value}).has_value());
+    CHECK_FALSE(
+        coney::net::validateFields(std::array{FieldSpec{.name = "v", .encoding = FieldEncoding::Exact, .bits = 16}})
+            .has_value());
+    CHECK(coney::net::fieldStep(value) == 0.0F);
+    // Its word is the float's bits: 0.1 arrives as 0.1, not a step near it.
+    CHECK(coney::net::fieldWord(value, 0.1F) == std::bit_cast<std::uint32_t>(0.1F));
+    CHECK(std::get<float>(coney::net::fieldValue(value, std::bit_cast<std::uint32_t>(0.1F)).value()) == 0.1F);
+    // What has no finite value goes as 0, and so does -0, so one value has one word.
+    for (const float odd : {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::quiet_NaN(), -0.0F}) {
+        CHECK(coney::net::fieldWord(value, odd) == 0);
+    }
+    // A word the writer never makes is refused: an infinity, NaN, -0.
+    for (const std::uint32_t word : {0x7f800000U, 0x7fc00000U, 0x80000000U}) {
+        const auto read = coney::net::fieldValue(value, word);
+        REQUIRE_FALSE(read.has_value());
+        CHECK(read.error().code == ErrorCode::Invalid);
     }
 }

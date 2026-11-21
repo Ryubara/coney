@@ -2,6 +2,7 @@
 #include "net/replicated_fields.h"
 
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -179,6 +180,12 @@ std::uint32_t fieldWord(const FieldSpec& field, const FieldValue& value) {
         const double rounded = std::round((share - std::floor(share)) * steps);
         return static_cast<std::uint32_t>(rounded >= steps ? 0.0 : rounded);
     }
+    case FieldEncoding::Exact: {
+        CONEY_ASSERT(std::holds_alternative<float>(value));
+        // The float's own bits; what has no finite value goes as 0, and -0 as 0, so one value has one word.
+        const float number = std::get<float>(value);
+        return std::isfinite(number) && number != 0.0F ? std::bit_cast<std::uint32_t>(number) : 0U;
+    }
     }
     CONEY_ASSERT(false);
     return 0;
@@ -202,6 +209,14 @@ std::expected<FieldValue, Error> fieldValue(const FieldSpec& field, std::uint32_
     case FieldEncoding::Angle:
         return FieldValue{
             static_cast<float>((static_cast<double>(word) / angleSteps(field.bits) * kTurn) - std::numbers::pi)};
+    case FieldEncoding::Exact: {
+        // A word the writer never makes (an infinity, NaN, -0) is a corrupt or forged packet.
+        const auto number = std::bit_cast<float>(word);
+        if (!std::isfinite(number) || (number == 0.0F && word != 0U)) {
+            return fail(ErrorCode::Invalid, std::format("field {}: {:#x} is not a finite number", field.name, word));
+        }
+        return FieldValue{number};
+    }
     }
     return fail(ErrorCode::Invalid, std::format("field {}: unknown encoding", field.name));
 }
@@ -222,6 +237,7 @@ float fieldStep(const FieldSpec& field) {
     switch (field.encoding) {
     case FieldEncoding::Bool:
     case FieldEncoding::Integer:
+    case FieldEncoding::Exact:
         return 0.0F;
     case FieldEncoding::Float:
         return static_cast<float>((static_cast<double>(field.max) - field.min) /
@@ -246,7 +262,8 @@ std::expected<void, Error> validateFields(std::span<const FieldSpec> fields) {
                 return refuse("named twice");
             }
         }
-        if (field.bits < 1 || field.bits > 32 || (field.encoding == FieldEncoding::Bool && field.bits != 1)) {
+        if (field.bits < 1 || field.bits > 32 || (field.encoding == FieldEncoding::Bool && field.bits != 1) ||
+            (field.encoding == FieldEncoding::Exact && field.bits != 32)) {
             return refuse("bits out of range");
         }
         if ((field.encoding == FieldEncoding::Float || field.encoding == FieldEncoding::Integer) &&
@@ -298,6 +315,81 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(HudField::Count)> kHudF
     {.name = "cameraIgnoresStick", .encoding = FieldEncoding::Bool, .bits = 1},
 }};
 
+// The HUD's standing state (docs/guides/snapshots.md#hud-standing). Every range is Coney's choice: a number the
+// original holds as 32 bits (a frame count, an icon, a sprite word, a score) gets the bits the HUD's values need, and
+// one beyond is held at the range's end (net/player_huds.h). A script's number the HUD shows or compares (a counter's
+// value, a bar's fill, a radius) travels Exact, so a guest's HUD has the very value and rounds it as the host's does.
+constexpr std::array<FieldSpec, static_cast<std::size_t>(HudPlayerField::Count)> kHudPlayerFields{{
+    {.name = "attached", .encoding = FieldEncoding::Bool, .bits = 1},
+    // The banner records are bytes (player_panel.cpp's kBannerKinds, 0x31 the default).
+    {.name = "banner", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "shown", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "mayShow", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "forceShow", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "flashFrames", .encoding = FieldEncoding::Integer, .bits = 16, .min = 0.0F, .max = 65535.0F},
+    {.name = "promptHidden", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "cycleOn", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "cycleFrames", .encoding = FieldEncoding::Integer, .bits = 16, .min = 0.0F, .max = 65535.0F},
+    {.name = "cycleBlink", .encoding = FieldEncoding::Integer, .bits = 16, .min = 0.0F, .max = 65535.0F},
+    // `part_page0` rectangles, a few hundred.
+    {.name = "cycleIconA", .encoding = FieldEncoding::Integer, .bits = 16, .min = 0.0F, .max = 65535.0F},
+    {.name = "cycleIconB", .encoding = FieldEncoding::Integer, .bits = 16, .min = 0.0F, .max = 65535.0F},
+    {.name = "radarOn", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "radarTint", .encoding = FieldEncoding::Integer, .bits = 1, .min = 0.0F, .max = 1.0F},
+}};
+
+constexpr std::array<FieldSpec, static_cast<std::size_t>(HudCounterField::Count)> kHudCounterFields{{
+    {.name = "kind", .encoding = FieldEncoding::Integer, .bits = 2, .min = 0.0F, .max = 3.0F},
+    {.name = "barWidth", .encoding = FieldEncoding::Exact, .bits = 32},
+    {.name = "value", .encoding = FieldEncoding::Exact, .bits = 32},
+    {.name = "target", .encoding = FieldEncoding::Exact, .bits = 32},
+    {.name = "visible", .encoding = FieldEncoding::Bool, .bits = 1},
+}};
+
+constexpr std::array<FieldSpec, static_cast<std::size_t>(HudBarField::Count)> kHudBarFields{{
+    {.name = "shown", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "fill", .encoding = FieldEncoding::Exact, .bits = 32},
+    {.name = "gradient", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "red", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "green", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "blue", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "alpha", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "width", .encoding = FieldEncoding::Exact, .bits = 32},
+    {.name = "height", .encoding = FieldEncoding::Exact, .bits = 32},
+}};
+
+// A sprite word is a sheet in its high half and a rectangle in its low (0x1a0004, the chase bar's): 24 bits hold
+// every sheet the HUD loads.
+constexpr std::array<FieldSpec, static_cast<std::size_t>(HudGaugeField::Count)> kHudGaugeFields{{
+    {.name = "endIcon", .encoding = FieldEncoding::Integer, .bits = 24, .min = 0.0F, .max = 16777215.0F},
+    {.name = "track", .encoding = FieldEncoding::Integer, .bits = 24, .min = 0.0F, .max = 16777215.0F},
+    {.name = "value", .encoding = FieldEncoding::Exact, .bits = 32},
+    {.name = "min", .encoding = FieldEncoding::Exact, .bits = 32},
+    {.name = "max", .encoding = FieldEncoding::Exact, .bits = 32},
+}};
+
+constexpr std::array<FieldSpec, static_cast<std::size_t>(HudScoreRowField::Count)> kHudScoreRowFields{{
+    {.name = "score", .encoding = FieldEncoding::Integer, .bits = 24, .min = 0.0F, .max = 16777215.0F},
+    {.name = "red", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "green", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "blue", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "alpha", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+}};
+
+// 24 bits of milliseconds are four and a half hours on the stopwatch.
+constexpr std::array<FieldSpec, static_cast<std::size_t>(HudStopWatchField::Count)> kHudStopWatchFields{{
+    {.name = "time", .encoding = FieldEncoding::Integer, .bits = 24, .min = 0.0F, .max = 16777215.0F},
+}};
+
+constexpr std::array<FieldSpec, static_cast<std::size_t>(HudSettingsField::Count)> kHudSettingsFields{{
+    {.name = "visible", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "clubActionText", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "radarScriptOn", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "radarRest", .encoding = FieldEncoding::Exact, .bits = 32},
+    {.name = "radarFast", .encoding = FieldEncoding::Exact, .bits = 32},
+    {.name = "radarZoomScale", .encoding = FieldEncoding::Exact, .bits = 32},
+}};
+
 std::string_view replicatedKindName(ReplicatedKind kind) {
     switch (kind) {
     case ReplicatedKind::Human:
@@ -308,6 +400,20 @@ std::string_view replicatedKindName(ReplicatedKind kind) {
         return "car";
     case ReplicatedKind::PlayerHud:
         return "playerHud";
+    case ReplicatedKind::HudPlayer:
+        return "hudPlayer";
+    case ReplicatedKind::HudCounter:
+        return "hudCounter";
+    case ReplicatedKind::HudBar:
+        return "hudBar";
+    case ReplicatedKind::HudGauge:
+        return "hudGauge";
+    case ReplicatedKind::HudScoreRow:
+        return "hudScoreRow";
+    case ReplicatedKind::HudStopWatch:
+        return "hudStopWatch";
+    case ReplicatedKind::HudSettings:
+        return "hudSettings";
     }
     return "unknown";
 }
@@ -322,6 +428,20 @@ std::span<const FieldSpec> fieldTable(ReplicatedKind kind) {
         return kCarFields;
     case ReplicatedKind::PlayerHud:
         return kHudFields;
+    case ReplicatedKind::HudPlayer:
+        return kHudPlayerFields;
+    case ReplicatedKind::HudCounter:
+        return kHudCounterFields;
+    case ReplicatedKind::HudBar:
+        return kHudBarFields;
+    case ReplicatedKind::HudGauge:
+        return kHudGaugeFields;
+    case ReplicatedKind::HudScoreRow:
+        return kHudScoreRowFields;
+    case ReplicatedKind::HudStopWatch:
+        return kHudStopWatchFields;
+    case ReplicatedKind::HudSettings:
+        return kHudSettingsFields;
     }
     return {};
 }

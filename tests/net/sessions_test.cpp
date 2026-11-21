@@ -829,3 +829,110 @@ TEST_CASE("each player's HUD reaches a joined client in every step's snapshot, a
     CHECK(checked > 100);
     CHECK(deltas > 250);
 }
+
+namespace {
+
+// The HUD's standing state a mission's scripts would leave at `step`: player 1's prompt changes every 30 steps and
+// goes for 10, a counter counts up every 10 steps, a bar drains, a scoreboard row's score climbs, the stopwatch runs,
+// and player 2's panel is forced up for steps 50 to 99.
+coney::hud::HudStanding scriptedStanding(std::uint32_t step) {
+    coney::hud::HudStanding standing;
+    const std::uint32_t phase = step % 30;
+    const std::uint32_t tens = step / 10; // the counter's whole count: it goes up once every 10 steps
+    standing.players[0].prompt = phase >= 20 ? "" : ((step / 30) % 2 == 0 ? "Press X" : "Press O");
+    standing.players[1].panel.attached = true;
+    standing.players[1].panel.shown = true;
+    standing.players[1].panel.forceShow = step >= 50 && step < 100;
+    standing.shared.counters[0] = coney::hud::CounterPanel{.used = true,
+                                                           .kind = coney::hud::CounterKind::GotNeeded,
+                                                           .label = "Tags",
+                                                           .barWidth = 0.22F,
+                                                           .value = static_cast<float>(tens),
+                                                           .target = 60.0F,
+                                                           .visible = true,
+                                                           .hideAtMs = {}};
+    standing.shared.bars[0].exists = true;
+    standing.shared.bars[0].label = "Boss";
+    standing.shared.bars[0].fill = 1.0F - (static_cast<float>(step % 100) / 100.0F);
+    standing.shared.scores[0] =
+        coney::hud::TextProgressRow{.active = true, .label = "Ajax", .score = step / 7, .colour = {}};
+    standing.shared.stopWatch = coney::hud::StopWatchDisplay{.shown = true, .label = "Time "};
+    standing.shared.stopWatchMs = static_cast<std::int32_t>(step * 33);
+    return standing;
+}
+
+} // namespace
+
+// Expected: unverified, #1524 (Coney's own snapshots; the parts are the HUD's own, snapshots.md#hud-standing)
+TEST_CASE("the HUD's standing state reaches a joined client in every step's snapshot, and its HUD takes it",
+          "[net][sessions][snapshot][hud]") {
+    Match match;
+    NetClient& client = match.join("Cochise");
+    match.run(3);
+    REQUIRE(client.state() == ClientState::Connected);
+
+    // The server sends each step's standing state; the client's HUD takes what each snapshot it decodes holds.
+    coney::hud::Hud clientHud;
+    std::map<std::uint32_t, coney::hud::HudStanding> sentAt;
+    std::uint32_t step = 0;
+    std::uint32_t seen = 0;
+    std::size_t taken = 0;
+    std::size_t mismatched = 0;
+    const auto stepGame = [&] {
+        const SnapshotReceiver& received = client.snapshots();
+        for (std::uint32_t sequence = seen + 1; sequence <= received.newest(); ++sequence) {
+            const SnapshotHudElements* elements = received.holdingHudElements(sequence);
+            const SnapshotHudTexts* texts = received.holdingHudTexts(sequence);
+            const auto shows = received.heldStep(sequence);
+            if (elements == nullptr || texts == nullptr || !shows) {
+                continue;
+            }
+            const coney::hud::HudStanding decoded = hudStanding(*elements, *texts);
+            mismatched += decoded == sentAt.at(*shows) ? 0 : 1;
+            clientHud.applyStanding(decoded);
+            coney::hud::HudStanding held = clientHud.standing();
+            held.shared.stopWatchMs = decoded.shared.stopWatchMs; // the guest's services give its own
+            mismatched += held == decoded ? 0 : 1;
+            ++taken;
+        }
+        seen = received.newest();
+        const coney::hud::HudStanding standing = scriptedStanding(step);
+        sentAt.emplace(step, standing);
+        const SnapshotHudStanding parts = snapshotHudStanding(standing);
+        match.server.sendSnapshots(step, {}, {}, parts.elements, parts.texts);
+        ++step;
+    };
+
+    // A clean link: every step's state arrives a step later, as it was sent, and the client's HUD holds it.
+    for (int i = 0; i < 200; ++i) {
+        match.run(1, kStepNs, stepGame);
+    }
+    CHECK(mismatched == 0);
+    CHECK(taken == 199);
+    CHECK(clientHud.actionPrompt(0) == scriptedStanding(198).players[0].prompt);
+
+    // A lossy, reordering link: whatever the client decodes is the server's record of that snapshot.
+    const LinkConditions bad{.latencyMs = 20,
+                             .jitterMs = 30,
+                             .lossFraction = 0.2F,
+                             .duplicateFraction = 0.1F,
+                             .reorderFraction = 0.2F,
+                             .reorderDelayMs = 50};
+    match.serverLink.setConditions(bad);
+    match.guests[0]->link.setConditions(bad);
+    std::size_t checked = 0;
+    std::uint32_t recordSeen = client.snapshots().newest();
+    for (int i = 0; i < 300; ++i) {
+        match.run(1, kStepNs, stepGame);
+        if (client.snapshots().newest() != recordSeen) {
+            recordSeen = client.snapshots().newest();
+            const SnapshotSender& sender = match.server.clients().at(0).snapshots;
+            REQUIRE(sender.holdingHudElements(recordSeen) != nullptr);
+            CHECK(client.snapshots().hudElements() == *sender.holdingHudElements(recordSeen));
+            CHECK(client.snapshots().hudTexts() == *sender.holdingHudTexts(recordSeen));
+            ++checked;
+        }
+    }
+    CHECK(mismatched == 0);
+    CHECK(checked > 100);
+}

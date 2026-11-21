@@ -30,6 +30,8 @@ struct CounterPanel {
     float target = 0.0F; ///< Field 2, a `got / needed` panel's needed.
     bool visible = false;
     std::optional<std::uint64_t> hideAtMs; ///< When it hides; none while it stays up.
+
+    friend bool operator==(const CounterPanel&, const CounterPanel&) = default;
 };
 
 /// The HUD's five counter panels (`HUDGetNewPH`, HUD `+0xacb0`): taken and released by scripts, shown for a time after
@@ -63,6 +65,10 @@ class CounterPanels {
     [[nodiscard]] static std::string textOf(const CounterPanel& panel);
     /// Draws the visible panels in rows from the top.
     void render(const HudCanvas& canvas) const;
+    /// Puts `panel` in place `index` as it is: a guest's HUD taking the host's (Hud::applyStanding()). An index out of
+    /// range does nothing.
+    /// @coney-only network play; the original has none
+    void restore(std::size_t index, const CounterPanel& panel);
 
   private:
     std::array<CounterPanel, kCounterPanels> m_panels;

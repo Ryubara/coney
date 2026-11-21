@@ -128,7 +128,7 @@ the loopback; the Network page will put it in front of ENet.
 
 ## Protocol {#protocol}
 
-Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 8)
+Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 9)
 changes with any change to a layout or a meaning; a test pins the encoding byte for byte so a change cannot slip in
 unnoticed.
 
@@ -143,7 +143,7 @@ unnoticed.
 | 7 | PadInput | retired: one step's pad (version 2 only); the id is never reused | | |
 | 8 | InputCommands | client to server | the newest step (varint, 32 bits at most), the number of pads less one (3 bits), the newest step's pad, then each older step's "same pad" bit or pad (below); since version 3 | unreliable |
 | 9 | InputTiming | server to client | the client's lead (zigzag varint, 32 bits at most), the target lead (8); since version 3 | unreliable |
-| 10 | Snapshot | server to client | the humans as a delta against an acknowledged snapshot ([The packet](snapshots.md#packet)); since version 4 (version 7 added each player slot's HUD entries, [HUD state](snapshots.md#hud-state)) | unreliable, sequenced |
+| 10 | Snapshot | server to client | the humans as a delta against an acknowledged snapshot ([The packet](snapshots.md#packet)); since version 4 (version 7 added each player slot's HUD entries, [HUD state](snapshots.md#hud-state); version 9 the HUD's standing state, [The HUD's standing state](snapshots.md#hud-standing)) | unreliable, sequenced |
 | 11 | SnapshotAck | client to server | the newest snapshot decoded (varint); since version 4 | unreliable |
 | 12 | EventBatch | server to client | a step's game events of one delivery ([The batch](#event-batch)); since version 5 (version 6 added a sound's instance, SoundStop and SoundMove) | reliable, or unreliable for one-shots |
 | 13 | LoadLevel | server to client | the load (varint, from 1), the reason (8: change, restart, join), the checkpoint (16), the level name (string, 32 bytes at most, only letters, digits, `_` and `-`); since version 8 ([Levels](#levels)) | reliable |
@@ -375,6 +375,7 @@ one definition, as Quake 3's `netField_t` tables do. `writeField()` and `readFie
 | Integer | the distance from the range's start, in `bits` bits | exact; a read over the range is refused (Invalid) |
 | Float | quantized onto the range (`quantize()`), clamped | the ends exact, the rest within half a step |
 | Angle | radians wrapped onto one turn, quantized to `bits` bits | within half a step around the circle; -pi and pi are one angle |
+| Exact | a float's own 32 bits (an infinity, NaN or -0 sent as 0) | exact; a word that is not a finite number is refused (Invalid) |
 
 | Kind | Fields | Bits in full |
 | --- | --- | --- |
@@ -382,6 +383,13 @@ one definition, as Quake 3's `netField_t` tables do. `writeField()` and `readFie
 | World object | position, heading, door opening (10 bits), state (a byte), broken, hidden | 84 |
 | Car | position, heading, speed (12 bits, -64 to 64 m/s) | 76 |
 | Player HUD (by slot, not id) | rage and its maximum (16 bits each, the s16 range), raging, the banner's blue-grey, the score (25 bits), the money (16 bits), the four item counts (8 bits each), SELECT shows the panel, knocked out, the camera ignores the stick ([HUD state](snapshots.md#hud-state)) | 110 |
+| HUD player (element 0 to 3) | attached, the banner (8 bits), shown, may show, forced up, the flash frames (16 bits), the prompt hidden, the cycle on, its frames, blink and two icons (16 bits each), the radar on, its tint (1 bit) ([The HUD's standing state](snapshots.md#hud-standing)) | 96 |
+| HUD counter (elements 4 to 8) | kind (2 bits), bar width, value and target (Exact), shown | 99 |
+| HUD bar (elements 9 to 12) | shown, fill (Exact), gradient, the colour (4 x 8 bits), width and height (Exact) | 130 |
+| HUD gauge (element 13) | its end icon and track (24 bits each, sprite words), value, minimum and maximum (Exact) | 144 |
+| HUD score row (elements 14 to 19) | score (24 bits), the colour (4 x 8 bits) | 56 |
+| HUD stopwatch (element 20) | the time, ms (24 bits) | 24 |
+| HUD settings (element 21) | the HUD shown, the prompt at the clubhouse's place, the radars' script switch, their rest and full-speed radius and zoom scale (Exact) | 99 |
 
 The ranges are Coney's choices. Four are stand-ins, marked in the code, for the game's side of snapshots to settle: the
 positions' fixed bounds around the origin (in place of each level's own), the clip as an anim id under 4,096 (or the
@@ -389,7 +397,7 @@ game's own hash), the world object's state byte and the car's speed range. A sna
 only, so a walking human's delta is 84 bits, under 11 bytes ([What a scene costs](snapshots.md#costs)), under the 15 to
 25 bytes [the budget](network-architecture.md#snapshots) allows for it. `fieldWord()` and `fieldValue()` give a field's
 bits as a number and back, which is what a snapshot compares and sends. `validateFields()` checks a table (named fields,
-different names, bits 1 to 32, ranges that fit their bits), and the tests check every table with it.
+different names, bits 1 to 32, an Exact field's 32, ranges that fit their bits), and the tests check every table with it.
 
 ## Proof without a person {#proof}
 
@@ -400,7 +408,8 @@ by a hash of what they hold.
 
 Each step, after every human's update, the play mode captures the level's humans into a `net::GameHumans`
 (`PlayLevelMode::shareHumansWith()`, beside the `--trace-humans` rows), and after the HUD's step each player slot's
-HUD state (`GameHumans::captureHuds()`, [HUD state](snapshots.md#hud-state)), while something needs them: a session (hosting
+HUD state and the HUD's standing state (`GameHumans::captureHuds()`, [HUD state](snapshots.md#hud-state), [The HUD's
+standing state](snapshots.md#hud-standing)), while something needs them: a session (hosting
 or joined, from the command line or the Network page, from the step after it opens) or `--digest` or `--net-replay`
 (`NetGame::afterStep()`). Offline play captures nothing and holds no ids. For each brain, in slot order, its human's
 replicated state (`net::replicatedState()`: the feet, heading, health and its maximum, the four animation layers of
@@ -669,8 +678,9 @@ the handshake, letting go of a quiet pad, InputTiming and the client's clock fol
 ids (reused only with a new generation, the order slots come back in, the generations' wrap, the wire form) and the
 tables (a stale generation finds nothing, a client's refused binds, the walk in id order);
 `tests/net/replicated_fields_test.cpp` round-trips every table's fields at their range's ends and middle and checks
-the refusals and an infinite angle; `tests/net/snapshot_test.cpp` and `tests/net/player_huds_test.cpp` cover
-snapshots and each player's HUD in them ([Snapshots](snapshots.md#testing));
+the refusals, an infinite angle and the Exact encoding; `tests/net/snapshot_test.cpp`,
+`tests/net/player_huds_test.cpp` and `tests/net/hud_standing_test.cpp` cover snapshots and each player's HUD and the
+HUD's standing state in them ([Snapshots](snapshots.md#testing));
 `tests/net/jitter_buffer_test.cpp` and `tests/net/client_world_test.cpp` cover the client's world, and what a client
 draws against what the server had over a bad link ([The client's world](client-world.md#testing));
 `tests/net/protocol_test.cpp` pins
@@ -710,7 +720,8 @@ Each step is a pull request that builds and is tested on its own.
    humans](#game-humans)), a client game mode that draws them, and its own follow camera. The state digest,
    two-process tests and replays (built: [Proof without a person](#proof)).
 6. **AI humans, events, mission state:** the rest of what a client must see and hear: the game events (built: [Game
-   events](#events)), each player's panel state in the snapshot (built: [HUD state](snapshots.md#hud-state)), the
-   AI humans and the mission state; level loads, checkpoints and the loading barrier (the session's side built:
+   events](#events)), each player's panel state and the HUD's standing state in the snapshot (built: [HUD
+   state](snapshots.md#hud-state), [The HUD's standing state](snapshots.md#hud-standing); the radar's blips: #1537),
+   the AI humans and the mission state; level loads, checkpoints and the loading barrier (the session's side built:
    [Levels](#levels); the game's main loop to call it: #1530).
 7. **Prediction:** the local player predicted and corrected from the server's snapshots.

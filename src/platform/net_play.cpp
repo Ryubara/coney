@@ -24,6 +24,7 @@
 #include "net/net_client.h"
 #include "net/net_server.h"
 #include "net/net_status.h"
+#include "net/player_huds.h"
 #include "net/protocol.h"
 #include "net/snapshot.h"
 #include "net/state_digest.h"
@@ -292,7 +293,19 @@ void NetPlay::setGameHumans(std::span<const net::SnapshotHuman> humans) {
     m_gameHumans.assign(humans.begin(), humans.end());
 }
 
-void NetPlay::setGameHuds(std::span<const net::SnapshotHud> huds) { m_gameHuds.assign(huds.begin(), huds.end()); }
+void NetPlay::setGameHuds(std::span<const net::SnapshotHud> huds, std::span<const net::SnapshotHudElement> elements,
+                          std::span<const net::SnapshotHudText> texts) {
+    m_gameHuds.assign(huds.begin(), huds.end());
+    m_gameHudElements.assign(elements.begin(), elements.end());
+    m_gameHudTexts.assign(texts.begin(), texts.end());
+}
+
+hud::HudStanding NetPlay::arrivedHudStanding() const {
+    if (!m_client) {
+        return {};
+    }
+    return net::hudStanding(m_client->snapshots().hudElements(), m_client->snapshots().hudTexts());
+}
 
 net::SnapshotHuds NetPlay::arrivedHuds() const {
     if (!m_client) {
@@ -302,7 +315,7 @@ net::SnapshotHuds NetPlay::arrivedHuds() const {
 }
 
 void NetPlay::sendSnapshots(std::uint32_t step) {
-    m_server->sendSnapshots(step, m_gameHumans, m_gameHuds);
+    m_server->sendSnapshots(step, m_gameHumans, m_gameHuds, m_gameHudElements, m_gameHudTexts);
     if (!m_snapshotDigests) {
         return;
     }

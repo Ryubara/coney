@@ -131,6 +131,8 @@ struct TextProgressRow {
     std::string label;                        ///< `+0x540`.
     std::uint32_t score = 0;                  ///< `+0x558`.
     graphics::Rgba colour = graphics::kWhite; ///< **Coney choice** until set (not on the page): white.
+
+    friend bool operator==(const TextProgressRow&, const TextProgressRow&) = default;
 };
 
 /// The text scoreboard's rows.
@@ -140,6 +142,8 @@ inline constexpr std::size_t kTextProgressRows = 6;
 struct StopWatchDisplay {
     bool shown = false; ///< Stopwatch `+0x18`.
     std::string label;  ///< `+0x1c`.
+
+    friend bool operator==(const StopWatchDisplay&, const StopWatchDisplay&) = default;
 };
 
 /// A player's action-prompt icon cycle (`HUDTurnOnActionCycleAnim`, prompt `+0x440`-`+0x45c`): two button sprites, each
@@ -159,6 +163,60 @@ struct ActionCycle {
     void step();
     /// The `part_page0` rectangle showing now.
     [[nodiscard]] std::uint32_t icon() const { return second ? iconB : iconA; }
+
+    friend bool operator==(const ActionCycle&, const ActionCycle&) = default;
+};
+
+/// One player slot's standing HUD state: what the HUD holds for him between steps, set by the scripts and the game
+/// rather than handed to each step (PlayerHudState): his panel's flags, his action prompt and its icon cycle, and his
+/// radar's switch and tint. Network play carries it (docs/guides/snapshots.md#hud-standing). Plain data: copied and
+/// compared.
+/// @coney-only Coney's split of the HUD's standing state by player slot, for network play
+struct PlayerHudStanding {
+    PanelFlags panel;
+    std::string prompt;        ///< His action prompt's text; empty for none.
+    bool promptHidden = false; ///< The cycle's start hid the text, until it changes.
+    /// The prompt's icon cycle: its switch, timing and icons. The running part (`counter`, `second`, `iconOn`) is
+    /// each HUD's own: Hud::standing() leaves it at its start, and Hud::applyStanding() restarts it only when the rest
+    /// changes, so a guest's cycle steps as the host's does from the same start.
+    ActionCycle cycle;
+    bool radarOn = true;
+    RadarTint radarTint = RadarTint::Grey;
+
+    friend bool operator==(const PlayerHudStanding&, const PlayerHudStanding&) = default;
+};
+
+/// The HUD's standing state that belongs to no one player: one of each on the screen in the original, which both
+/// players see (docs/guides/snapshots.md#hud-standing). Plain data: copied and compared.
+/// @coney-only Coney's view of the HUD's shared standing state, for network play
+struct SharedHudStanding {
+    bool visible = true;         ///< `HideHud` / `RestoreHud` (`+0x177a0`).
+    bool clubActionText = false; ///< `HUDEnableClubActionText`.
+    bool radarScriptOn = true;   ///< RadarState::scriptOn.
+    float radarRest = 50.0F;     ///< RadarState::rest.
+    float radarFast = 75.0F;     ///< RadarState::fast.
+    float radarZoomScale = 1.0F; ///< RadarState::zoomScale.
+    /// The counter panels. A panel's hide time does not travel (Hud::standing() leaves it empty): its `visible` does,
+    /// so a guest hides it when the host does.
+    std::array<CounterPanel, kCounterPanels> counters{};
+    std::array<GenericBar, kGenericBars> bars{};
+    ChaseGauge gauge;
+    std::array<TextProgressRow, kTextProgressRows> scores{};
+    StopWatchDisplay stopWatch;
+    /// The mission stopwatch's time, ms, while it is shown (HudServices::stopWatchTime; 0 without one): a guest's HUD
+    /// services read it from here.
+    std::int32_t stopWatchMs = 0;
+
+    friend bool operator==(const SharedHudStanding&, const SharedHudStanding&) = default;
+};
+
+/// The HUD's whole standing state: each player's and the shared part.
+/// @coney-only Coney's view of the HUD's standing state, for network play
+struct HudStanding {
+    std::array<PlayerHudStanding, kPlayers> players{};
+    SharedHudStanding shared;
+
+    friend bool operator==(const HudStanding&, const HudStanding&) = default;
 };
 
 /// The whole in-game HUD: the original's one static object at `0x00600840`. It holds the two player panels, the hint
@@ -460,6 +518,15 @@ class Hud {
     /// The debug menus' values for player `player`'s panel.
     [[nodiscard]] PanelOverrides& overrides(std::size_t player) { return m_overrides.at(player); }
     [[nodiscard]] const PanelOverrides& overrides(std::size_t player) const { return m_overrides.at(player); }
+
+    /// The HUD's standing state now (HudStanding): what network play carries besides each player's PlayerHudState.
+    /// @coney-only network play's view of the HUD; the original has none
+    [[nodiscard]] HudStanding standing() const;
+    /// Takes `standing` as the HUD's own: a guest's HUD taking the host's. A prompt whose text changes restarts as
+    /// setActionPrompt() does, a cycle whose switch, timing or icons change restarts from its start, and a radar's tint
+    /// that changes blends as setRadarTint() does; the rest is set as it is.
+    /// @coney-only network play; the original has none
+    void applyStanding(const HudStanding& standing);
 
     /// The HUD's step at `frame.nowMs`. First the letterbox's own step: a letterbox move arms a restore, and the
     /// second step with the bars out shows the HUD again (RestoreHud), so a cinematic scene's end shows it.

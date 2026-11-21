@@ -87,11 +87,12 @@ void GameHumans::capture(const ai::Brains& brains) {
     }
 }
 
-void GameHumans::captureHuds(std::span<const hud::PlayerHudState> slots) {
+void GameHumans::captureHuds(std::span<const hud::PlayerHudState> slots, const hud::HudStanding* standing) {
     if (!m_capturing) {
         return;
     }
     m_huds = snapshotHuds(slots);
+    m_hudStanding = standing != nullptr ? snapshotHudStanding(*standing) : SnapshotHudStanding{};
 }
 
 void GameHumans::clear() {
@@ -104,6 +105,7 @@ void GameHumans::clear() {
     }
     m_humans.clear();
     m_huds.clear();
+    m_hudStanding = {};
 }
 
 void GameHumans::releaseRetired() {

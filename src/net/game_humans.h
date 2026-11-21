@@ -8,6 +8,7 @@
 #include "net/client_world.h"
 #include "net/net_id.h"
 #include "net/net_id_table.h"
+#include "net/player_huds.h"
 #include "net/snapshot.h"
 
 // The server's game as snapshots and the state digest see it: each human's replicated state read from the game, and
@@ -47,8 +48,9 @@ class GameHumans {
     void capture(const ai::Brains& brains);
 
     /// This step's HUD state of each player slot (slot i at index i, at most kMaxPlayerSlots), as the play mode's HUD
-    /// step was given it: what the snapshots carry for each player's panel. Nothing while capture is off.
-    void captureHuds(std::span<const hud::PlayerHudState> slots);
+    /// step was given it, and the HUD's standing state after that step (`standing`; null for none): what the snapshots
+    /// carry for each player's HUD. Nothing while capture is off.
+    void captureHuds(std::span<const hud::PlayerHudState> slots, const hud::HudStanding* standing = nullptr);
 
     /// No humans and no HUDs: the level has gone. The humans' ids are retired as the next capture() would.
     void clear();
@@ -67,12 +69,17 @@ class GameHumans {
     [[nodiscard]] SnapshotHumans holding() const;
     /// The players' HUDs captured, in slot order.
     [[nodiscard]] std::span<const SnapshotHud> huds() const { return m_huds; }
+    /// The HUD's standing state captured: its elements, in key order.
+    [[nodiscard]] std::span<const SnapshotHudElement> hudElements() const { return m_hudStanding.elements; }
+    /// The HUD's standing state captured: its texts, in key order.
+    [[nodiscard]] std::span<const SnapshotHudText> hudTexts() const { return m_hudStanding.texts; }
 
   private:
     NetIdAllocator m_ids;
     NetIdTable<const human::Human*> m_table;
     std::vector<SnapshotHuman> m_humans;
     std::vector<SnapshotHud> m_huds;
+    SnapshotHudStanding m_hudStanding;
     std::vector<NetId> m_retired; // retired ids waiting for releaseRetired()
     bool m_capturing = true;
 };
