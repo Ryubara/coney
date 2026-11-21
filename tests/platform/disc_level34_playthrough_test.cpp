@@ -356,7 +356,8 @@ class Riot {
 // Checkpoint 1: out of the subway past vStartIntroLooters, up the stairs into vEnterRiot, over the fence into vIntro
 // (the car flippers' scene, then the loot objective), then along the flag net east and over the street's fence at
 // x -42, south down the far street and over its fence at y -116.7 (both kind-8 climb links of the level's paths), and
-// west along y -143 into vSection2, which calls SetCheckPoint(2) (item 4 of #level34-fixes).
+// west along y -143 into vSection2, which calls SetCheckPoint(2) (scripting.md#level34 for the boxes; the route is
+// inferred from the path data and Coney's run and is not yet on the page: #1575).
 void playStreet(Riot& riot) {
     const auto done = [&riot] { return riot.reached(2); };
     riot.walkTo(riot.box("vStartIntroLooters"), 1.0F, kWalk, kLegLimit, done);
@@ -451,6 +452,7 @@ void playCheckpoint(const Checkpoint& checkpoint) {
         CHECK(before(riot.firstByPlayer("P1.EnterRiot"), riot.firstByPlayer("P1.Intro")));
         CHECK(before(riot.firstByPlayer("P1.Intro"), riot.firstByPlayer("P1.EnterSection2")));
         CHECK(before(riot.firstByPlayer("P1.EnterSection2"), next));
+        // Expected: unverified, #1575 (the vIntro fence and the two street fences of the route above)
         CHECK(riot.climbs() >= 3);
         break;
     case 2:
