@@ -66,15 +66,17 @@ struct DrawLights {
 
 /// The lights `mesh` at `where` is drawn with, of the frame's `lights` for the draw, as librw's GL3 device lights an
 /// atomic from a world that holds them (World::enumerateLights, then setLights): nothing at all for a mesh that is not
-/// lit (MeshData::lit); the ambient lights summed; the directional lights only for a mesh with normals; the point and
+/// lit (MeshData::lit) unless the draw is `alwaysLit` (Material3d::lit, as platform::MaterialChange sets RenderWare's
+/// LIGHT flag for it); the ambient lights summed; the directional lights only for a mesh with normals; the point and
 /// spot lights only for a mesh with normals and only those whose sphere meets the mesh's (its bounds placed at
 /// `where`, the radius unscaled), at most kMaxDrawLights of them; then the directional lights first and the rest after,
 /// kMaxDrawLights in all, each in the order given.
-[[nodiscard]] DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, const Transform3d& where);
+[[nodiscard]] DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, const Transform3d& where,
+                                   bool alwaysLit = false);
 /// lightsFor() with the mesh's sphere taken as `bounds` (its own space) instead of MeshData::bounds: a posed mesh's,
 /// boundsOf().
 [[nodiscard]] DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, const Transform3d& where,
-                                   const MeshBounds& bounds);
+                                   const MeshBounds& bounds, bool alwaysLit = false);
 
 /// The sphere `draw` of `mesh` is lit by: the posed sphere the draw carries (Draw3d::bounds, a human's as his pose
 /// moved it, the sphere librw's GL3 device tests his atomic's lights against), else the mesh's own.

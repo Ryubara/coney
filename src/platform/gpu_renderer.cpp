@@ -505,7 +505,8 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     }
 
     // 3. One render pass: the window cleared as the frame starts and the depth buffer to the far plane, then every
-    // pass in order, the 2D passes' draws and the scene passes' between them.
+    // pass in order, the 2D passes' draws and the scene passes' between them; a scene pass that clears the depth
+    // starts a render pass of its own.
     const graphics::Rgba clear = graphics::windowClearOf(frame.start());
     SDL_GPUColorTargetInfo target{};
     target.texture = m_target.texture;
@@ -528,7 +529,20 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     }
     const std::span<const graphics::FramePass> passes = frame.passes();
     for (std::size_t p = 0; p < passes.size(); ++p) {
-        if (std::holds_alternative<graphics::ScenePass>(passes[p])) {
+        if (const auto* scenePass = std::get_if<graphics::ScenePass>(&passes[p]); scenePass != nullptr) {
+            if (scenePass->clearDepth) {
+                // The depth alone cleared to the far plane before the pass (the Z-only clear after the level's
+                // background): a render pass of its own that keeps the colour drawn so far.
+                SDL_EndGPURenderPass(pass);
+                target.load_op = SDL_GPU_LOADOP_LOAD;
+                target.cycle = false;
+                depth.load_op = SDL_GPU_LOADOP_CLEAR;
+                depth.cycle = false;
+                pass = SDL_BeginGPURenderPass(commands, &target, 1, &depth);
+                if (pass == nullptr) {
+                    return nullptr;
+                }
+            }
             if (scene != nullptr) {
                 scene->draw(commands, pass, p);
             }

@@ -244,6 +244,15 @@ std::vector<graphics::SceneLight> SceneLighting::worldLights(rw::Atomic* atomic)
     return lightsOf(m_lighting.lights.select(0.0F, sphereOf(atomic), false, true, false), atomic);
 }
 
+std::vector<graphics::SceneLight> SceneLighting::backgroundLights(rw::Atomic* atomic) {
+    // The selection drawBackgroundAtomic() makes, its row marked as the background's.
+    m_background = true;
+    std::vector<graphics::SceneLight> lights =
+        lightsOf(m_lighting.lights.select(0.0F, sphereOf(atomic), false, false, false), atomic);
+    m_background = false;
+    return lights;
+}
+
 std::vector<graphics::SceneLight> SceneLighting::objectLights(rw::Atomic* atomic) {
     // The selection drawObjectAtomic() makes.
     const graphics::LightSphere sphere = sphereOf(atomic);

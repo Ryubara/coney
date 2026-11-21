@@ -318,6 +318,10 @@ class RenderEngine final : public graphics::RenderDevice {
     /// the GPU renderer draws them through, placed as librw's camera is for the GL3 renderer. Only between beginFrame()
     /// and present() (checked by CONEY_ASSERT).
     void setSceneCamera(const graphics::SceneCamera& camera);
+    /// Clears the depth buffer before the 3D draws added after it (graphics::FrameDescription::clearSceneDepth()): the
+    /// GL3 renderer clears librw's camera's Z at once, the GPU renderer when it reaches the pass. Only between
+    /// beginFrame() and present() (checked by CONEY_ASSERT).
+    void clearSceneDepth();
 
   private:
     // Only start() makes one, which then fills it in as librw comes up.

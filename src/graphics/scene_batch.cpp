@@ -83,15 +83,16 @@ std::array<float, 4> transformPoint(const Matrix4& matrix, const std::array<floa
     return out;
 }
 
-DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, const Transform3d& where) {
-    return lightsFor(lights, mesh, where, mesh.bounds);
+DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, const Transform3d& where,
+                     bool alwaysLit) {
+    return lightsFor(lights, mesh, where, mesh.bounds, alwaysLit);
 }
 
 DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, const Transform3d& where,
-                     const MeshBounds& bounds) {
+                     const MeshBounds& bounds, bool alwaysLit) {
     DrawLights out;
-    // A geometry without RenderWare's LIGHT flag takes no light at all (lightingCB).
-    if (!mesh.lit) {
+    // A geometry without RenderWare's LIGHT flag takes no light at all (lightingCB), unless the draw sets it.
+    if (!mesh.lit && !alwaysLit) {
         return out;
     }
     // The mesh's sphere in the world, its radius unscaled (Atomic::getWorldBoundingSphere).
@@ -244,6 +245,9 @@ DrawColours coloursOf(const MeshData& mesh, const Material3d& material) {
             out.colours[0] =
                 Rgba{scaled(material.tint.r), scaled(material.tint.g), scaled(material.tint.b), material.fade};
         }
+        break;
+    case MaterialColour::Own:
+        // The mesh's own colours, as platform::MaterialChange leaves them (the level's background).
         break;
     }
     return out;

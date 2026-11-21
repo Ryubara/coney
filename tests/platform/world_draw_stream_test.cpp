@@ -14,6 +14,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -28,14 +29,18 @@
 #include "graphics/mesh_data.h"
 #include "graphics/texture_data.h"
 #include "platform/draw_stream.h"
+#include "platform/level_file.h"
 #include "platform/render_engine.h"
 #include "platform/scene_assets.h"
+#include "platform/texture_dictionary.h"
+#include "platform/world_atomic.h"
 #include "platform/world_renderer.h"
 #include "platform/world_set.h"
 #include "support/fixtures.h"
 #include "support/optional_value.h"
 #include "support/rw_fixtures.h"
 #include "support/world_fixtures.h"
+#include "world/level_object.h"
 #include "world/sector_budget.h"
 #include "world/world_streamer.h"
 
@@ -471,4 +476,234 @@ TEST_CASE("only GL3 does not convert the scene assets", "[platform][scene-assets
     CHECK(RenderEngine::convertsSceneAssets(RenderBackend::Gpu));
     auto engine = startHeadless();
     CHECK(engine->sceneAssets().converting());
+}
+
+namespace {
+
+// A level model or the level world as the level file's readers make one (platform/level_file.cpp): a strip atomic
+// with no light flag and no texture named, read in the game's layout, placed at `at` and unpacked, linked to a
+// dictionary of one 2 x 2 texture (LevelObject_LinkModel) when `dictionary` is given.
+std::unique_ptr<coney::chunk::LoadedObject> levelModel(coney::world::Vec3 at, std::string_view what,
+                                                       coney::chunk::LoadedObject* dictionary) {
+    coney::test::AtomicFields fields;
+    fields.meshChains.push_back(
+        coney::test::ps2MeshChain({{coney::test::ps2Vertex(-2, -2, 0), coney::test::ps2Vertex(2, -2, 0),
+                                    coney::test::ps2Vertex(-2, 2, 0), coney::test::ps2Vertex(2, 2, 0)}},
+                                  true));
+    fields.meshCounts.push_back(4);
+    fields.triangles = 2;
+    const Bytes section = coney::test::nativeAtomic(fields);
+    auto atomic = coney::platform::WorldAtomic::read(section.span(), coney::world::Vec3{});
+    REQUIRE(atomic.has_value());
+    const coney::world::FrameMatrix frame{.position = at};
+    atomic->setTransform(frame);
+    atomic->unpack();
+    auto model = std::make_unique<coney::platform::LevelAtomicObject>(std::move(*atomic), frame, what);
+    if (dictionary != nullptr) {
+        REQUIRE(coney::platform::linkLevelModel(*model, *dictionary).has_value());
+    }
+    return model;
+}
+
+// A dictionary of one 2 x 2 texture named `name`, as the level file's chunk 0x0B holds one.
+std::unique_ptr<coney::chunk::LoadedObject> levelDictionary(const std::string& name) {
+    const Bytes stream = coney::test::texDictionary({coney::test::rgbaTexture2x2(name)});
+    auto dictionary = coney::platform::TextureDictionary::read(stream.span());
+    REQUIRE(dictionary.has_value());
+    return std::make_unique<coney::platform::TextureDictionaryObject>(std::move(*dictionary));
+}
+
+// A Coney-made level object with the four parts the background draws: the sky box and the cloud box round the origin,
+// the skyline out at 100 along z, the level world (the light glows) beside the sectors; no collision, paths or
+// occluders.
+std::unique_ptr<coney::world::LevelObject> backgroundLevel() {
+    auto level = std::make_unique<coney::world::LevelObject>();
+    const auto addModel = [](coney::world::LevelModel& model, const std::string& name, coney::world::Vec3 at) {
+        model.dictionary = levelDictionary(name);
+        model.model = levelModel(at, "level model", model.dictionary.get());
+    };
+    addModel(level->skyBox, "sky", coney::world::Vec3{});
+    addModel(level->cloudBox, "clouds", coney::world::Vec3{});
+    addModel(level->skyline, "skyline", coney::world::Vec3{10.0F, 5.0F, 100.0F});
+    level->levelWorld = levelModel(coney::world::Vec3{10.0F, 5.0F, 5.0F}, "level world", nullptr);
+    return level;
+}
+
+// The meshes of a level object's part, held by holdLevelMeshes().
+coney::platform::ObjectMesh meshesOf(const std::unique_ptr<coney::chunk::LoadedObject>& model) {
+    const auto* object = dynamic_cast<const coney::platform::LevelAtomicObject*>(model.get());
+    REQUIRE(object != nullptr);
+    return object->meshes();
+}
+
+// The scene passes of `frame`, in their order.
+std::vector<const ScenePass*> scenePassesOf(const FrameDescription& frame) {
+    std::vector<const ScenePass*> scenes;
+    for (const auto& pass : frame.passes()) {
+        if (const auto* found = std::get_if<ScenePass>(&pass); found != nullptr) {
+            scenes.push_back(found);
+        }
+    }
+    return scenes;
+}
+
+// The world scene's sectors, both parts loaded at 100 ms, on `engine`'s scene assets.
+std::unique_ptr<WorldSet> loadedScene(RenderEngine& engine, const SceneDisc& disc, coney::world::SectorBudget& budget) {
+    const std::vector<std::string> names{"scene"};
+    auto set = WorldSet::load(*disc.wad, names, budget, false, engine.sceneAssets());
+    REQUIRE(set.has_value());
+    coney::world::StreamedWorld& world = *(*set)->worlds()[0];
+    for (const std::uint32_t part : {1U, 2U}) {
+        auto requested = coney::world::requestPart(world, 0, part, budget, **set, 100);
+        REQUIRE(requested.has_value());
+        REQUIRE(*requested);
+    }
+    return std::move(*set);
+}
+
+} // namespace
+
+TEST_CASE("the level's background is recorded before the world, through its own cameras",
+          "[platform][world][frame-description]") {
+    // Expected: docs/research/level-loading.md#render-order (LevelObject_RenderBackground 0x0040d0a8, confirmed
+    // (code)): the sky box, then the cloud box, round the camera with its translation zeroed (near 0.05, far 5), Z
+    // write and fog off and nothing culled; then the skyline in place from 39 (the nearest missing scenery is farther)
+    // to 560, Z write on and fog off; then Z alone cleared; then the world pass (WorldManager_Render 0x0040e8d8,
+    // docs/research/world.md#a-frame): the level world's glows first, nothing culled, Z test and write and fog on,
+    // then the sectors. Each background part is lit (the world's ambient, docs/research/lighting.md
+    // #coneys-implementation) and keeps its material colours. Coney's frame description carries them as scene passes
+    // (docs/engine/gpu-renderer.md#scene).
+    auto engine = startHeadless();
+    const SceneDisc disc;
+    coney::world::SectorBudget budget(10'000);
+    std::unique_ptr<WorldSet> set = loadedScene(*engine, disc, budget);
+    std::unique_ptr<coney::world::LevelObject> level = backgroundLevel();
+    coney::platform::holdLevelMeshes(*level, engine->sceneAssets());
+    {
+        WorldRenderer renderer;
+        renderer.recordHeadless(true);
+        renderer.render(*engine, *set, level.get(), sceneView(), 1000.0F, 2000);
+    }
+    const FrameDescription& frame = engine->frame();
+    const std::vector<const ScenePass*> scenes = scenePassesOf(frame);
+    REQUIRE(scenes.size() == 3);
+
+    // The sky and the clouds round the camera.
+    const ScenePass& sky = *scenes[0];
+    REQUIRE(sky.camera.has_value());
+    const coney::graphics::SceneCamera& skyCamera = coney::test::got(sky.camera);
+    CHECK(skyCamera.frame.position == std::array<float, 3>{0.0F, 0.0F, 0.0F});
+    CHECK(skyCamera.frame.at == std::array<float, 3>{0.0F, 0.0F, 1.0F});
+    CHECK(skyCamera.nearClip == coney::platform::kSkyNearClip);
+    CHECK(skyCamera.farClip == coney::platform::kSkyFarClip);
+    CHECK_FALSE(sky.clearDepth);
+    REQUIRE(sky.draws.size() == 2);
+    CHECK(sky.draws[0].mesh == meshesOf(level->skyBox.model).mesh);
+    CHECK(sky.draws[1].mesh == meshesOf(level->cloudBox.model).mesh);
+    for (const Draw3d& draw : sky.draws) {
+        CHECK(draw.mesh.valid());
+        CHECK_FALSE(draw.states.depthWrite);
+        CHECK_FALSE(draw.states.fog);
+        CHECK(draw.states.cull == CullFaces::None);
+        CHECK(draw.material == Material3d{.colour = coney::graphics::MaterialColour::Own, .lit = true});
+        CHECK_FALSE(frame.lightsOf(draw).empty());
+    }
+    REQUIRE(frame.texturesOf(sky.draws[0]).size() == 1);
+    const TextureData* skyTexture = engine->sceneAssets().store().texture(frame.texturesOf(sky.draws[0])[0]);
+    REQUIRE(skyTexture != nullptr);
+    CHECK(skyTexture->name == "sky");
+
+    // The skyline in place, out to 560.
+    const ScenePass& skyline = *scenes[1];
+    REQUIRE(skyline.camera.has_value());
+    const coney::graphics::SceneCamera& skylineCamera = coney::test::got(skyline.camera);
+    CHECK(skylineCamera.frame.position == std::array<float, 3>{10.0F, 5.0F, -20.0F});
+    CHECK(skylineCamera.nearClip == coney::platform::kSkylineNearClip);
+    CHECK(skylineCamera.farClip == coney::platform::kSkylineFarClip);
+    CHECK_FALSE(skyline.clearDepth);
+    REQUIRE(skyline.draws.size() == 1);
+    CHECK(skyline.draws[0].mesh == meshesOf(level->skyline.model).mesh);
+    CHECK(skyline.draws[0].states.depthWrite);
+    CHECK_FALSE(skyline.draws[0].states.fog);
+    CHECK(skyline.draws[0].material.lit);
+
+    // Z cleared, then the world pass through its own camera: the glows, then both sectors.
+    const ScenePass& world = *scenes[2];
+    CHECK(world.clearDepth);
+    REQUIRE(world.camera.has_value());
+    CHECK(coney::test::got(world.camera).farClip == 100.0F);
+    REQUIRE(world.draws.size() == 3);
+    const Draw3d& glows = world.draws[0];
+    CHECK(glows.mesh == meshesOf(level->levelWorld).mesh);
+    CHECK(glows.states.cull == CullFaces::None);
+    CHECK(glows.states.depthWrite);
+    CHECK(glows.states.fog);
+    CHECK(glows.material.lit);
+    const auto sector = [&set](const Draw3d& draw) {
+        return draw.mesh == set->sectorMesh(0, 0)->mesh || draw.mesh == set->sectorMesh(0, 1)->mesh;
+    };
+    CHECK(sector(world.draws[1]));
+    CHECK(sector(world.draws[2]));
+
+    // The level goes, and its meshes and textures with it: the sectors' stay.
+    level.reset();
+    CHECK(engine->sceneAssets().store().meshCount() == 2);
+    CHECK(engine->sceneAssets().store().textureCount() == 2);
+}
+
+TEST_CASE("the world scene with a level's background keeps its draw stream", "[platform][draw-stream][world]") {
+    // Expected: ../engine/renderer.md#comparing, Coney's own recording: taken from this scene before the background
+    // moved onto the frame description, when the world renderer drew its models straight through the lighting rig;
+    // the GL3 renderer drawing them from the description makes the same calls, so the hash stays.
+    auto engine = startHeadless();
+    const SceneDisc disc;
+    coney::world::SectorBudget budget(10'000);
+    std::unique_ptr<WorldSet> set = loadedScene(*engine, disc, budget);
+    std::unique_ptr<coney::world::LevelObject> level = backgroundLevel();
+    coney::platform::holdLevelMeshes(*level, engine->sceneAssets());
+    std::optional<DrawStream> stream;
+    {
+        WorldRenderer renderer;
+        renderer.recordHeadless(true);
+        engine->requestDrawStream(0);
+        renderer.render(*engine, *set, level.get(), sceneView(), 1000.0F, 2000);
+        stream = engine->drawStream();
+    }
+    REQUIRE(stream.has_value());
+    const DrawStream& got = coney::test::got(stream);
+    // The sky, the clouds, the skyline, the glows and both sectors.
+    CHECK(got.counts().atomicDraws == 6);
+    CHECK(got.hash() == 0x1f8347c5f40c2e0dULL);
+}
+
+TEST_CASE("on the GPU backend the level's background is recorded before the world's sectors",
+          "[platform][world][frame-description][window]") {
+    // Expected: ../engine/gpu-renderer.md#scene and docs/research/level-loading.md#render-order: with the GPU backend
+    // the background's models go into the frame description too, before the world pass, whose pass clears Z first.
+    // Needs SDL's video and a GPU device, and skips where there is none.
+    coney::platform::WindowDesc desc;
+    desc.activate = false;
+    desc.hidden = true;
+    desc.width = 320;
+    desc.height = 224;
+    auto started = RenderEngine::start(RenderBackend::Gpu, desc);
+    if (!started || (*started)->backend() != RenderBackend::Gpu) {
+        SKIP("no display or no GPU device here");
+    }
+    RenderEngine& engine = **started;
+    const SceneDisc disc;
+    coney::world::SectorBudget budget(10'000);
+    std::unique_ptr<WorldSet> set = loadedScene(engine, disc, budget);
+    std::unique_ptr<coney::world::LevelObject> level = backgroundLevel();
+    coney::platform::holdLevelMeshes(*level, engine.sceneAssets());
+    {
+        WorldRenderer renderer;
+        renderer.render(engine, *set, level.get(), sceneView(), 1000.0F, 2000);
+    }
+    const std::vector<const ScenePass*> scenes = scenePassesOf(engine.frame());
+    REQUIRE(scenes.size() == 3);
+    CHECK(scenes[0]->draws.size() == 2);
+    CHECK(scenes[1]->draws.size() == 1);
+    CHECK(scenes[2]->clearDepth);
+    CHECK(scenes[2]->draws.size() == 3);
 }

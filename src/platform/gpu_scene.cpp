@@ -216,6 +216,9 @@ SDL_GPUGraphicsPipeline* GpuScene::pipelineFor(const PipelineKey& key) {
     info.rasterizer_state.cull_mode = sdlCull(key.cull);
     // OpenGL's default: counter-clockwise on a screen whose y is up is the front, which SDL's clip space shares.
     info.rasterizer_state.front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE;
+    // What lies past the far clip (or nearer than the near clip) is cut away, as OpenGL and librw do; SDL's default,
+    // a clamped depth, would draw it on the far plane instead.
+    info.rasterizer_state.enable_depth_clip = true;
     info.multisample_state.sample_count = SDL_GPU_SAMPLECOUNT_1;
     // librw's depth: tested less or equal, or always while the test is off but depth is still written.
     info.depth_stencil_state.enable_depth_test = key.depthTest || key.depthWrite;
@@ -421,7 +424,8 @@ void GpuScene::prepareMesh(const GpuMesh& uploaded, const graphics::MeshData& me
     shared.world = graphics::worldMatrixOf(draw.transform);
     shared.viewProjection = graphics::multiply(graphics::projectionOf(camera), graphics::viewMatrixOf(camera));
     shared.skin = {draw.firstBone, look.skinned ? 1U : 0U, 0U, 0U};
-    const graphics::DrawLights lit = graphics::lightsFor(lights, mesh, draw.transform, graphics::boundsOf(draw, mesh));
+    const graphics::DrawLights lit =
+        graphics::lightsFor(lights, mesh, draw.transform, graphics::boundsOf(draw, mesh), draw.material.lit);
     shared.ambient = four(lit.ambient, 1.0F);
     for (std::size_t i = 0; i < lit.count; ++i) {
         const graphics::DrawLight& light = lit.lights[i];

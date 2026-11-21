@@ -88,6 +88,12 @@ class SceneLighting {
     [[nodiscard]] bool meshViewsOn() const { return m_meshViews != nullptr; }
     /// Draws the background's atomics with the world's ambient and directional lights only.
     void drawBackgroundAtomic(rw::Atomic* atomic);
+    /// The lights a background atomic is drawn with (the world's ambient and directional lights, no point lights), by
+    /// value, as drawBackgroundAtomic() would put them in librw's world, with the lighting lab's layers applied: for
+    /// the frame description's draw of it (docs/engine/gpu-renderer.md#scene), which the draw lights though its
+    /// geometry has no LIGHT flag (graphics::Material3d::lit). Counts the atomic as drawn and adds the lighting frame's
+    /// row of its selection, as drawBackgroundAtomic() does.
+    [[nodiscard]] std::vector<graphics::SceneLight> backgroundLights(rw::Atomic* atomic);
     /// Draws a human's atomic: the objects' lights for his squared distance to the camera, and the point lights his
     /// sphere overlaps unless `hidden` (in a shadow). Colour dimming is the caller's (the mesh's colour).
     /// @orig 0x00174320 HumanRender_Draw (HumanRender.cpp)

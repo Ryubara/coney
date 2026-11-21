@@ -13,6 +13,8 @@
 #include "core/error.h"
 #include "fileio/stream.h"
 #include "fileio/wad.h"
+#include "platform/object_draw.h"
+#include "platform/scene_assets.h"
 #include "platform/world_atomic.h"
 #include "world/level_object.h"
 
@@ -33,6 +35,12 @@ class LevelAtomicObject final : public chunk::LoadedObject {
     /// Wraps `atomic`, placed at `frame`; `what` names it for diagnostics ("level model", "level world").
     LevelAtomicObject(WorldAtomic atomic, const world::FrameMatrix& frame, std::string_view what)
         : m_atomic(std::move(atomic)), m_frame(frame), m_what(what) {}
+    /// Lets go of what holdIn() held, before the atomic goes.
+    ~LevelAtomicObject() override;
+    LevelAtomicObject(const LevelAtomicObject&) = delete;
+    LevelAtomicObject& operator=(const LevelAtomicObject&) = delete;
+    LevelAtomicObject(LevelAtomicObject&&) = delete;
+    LevelAtomicObject& operator=(LevelAtomicObject&&) = delete;
     [[nodiscard]] std::string_view describe() const override { return m_what; }
     /// The librw atomic. Valid as long as this object.
     [[nodiscard]] rw::Atomic* atomic() const { return m_atomic.atomic(); }
@@ -40,8 +48,17 @@ class LevelAtomicObject final : public chunk::LoadedObject {
     [[nodiscard]] const world::FrameMatrix& frame() const { return m_frame; }
     /// Places the atomic at `frame` for drawing, leaving frame() as it was loaded.
     void place(const world::FrameMatrix& frame) { m_atomic.setTransform(frame); }
+    /// Holds the atomic and its dual layer in `assets` (addObjectMesh()), with the textures their materials name first
+    /// so the meshes find their ids, until this goes; nothing more when it already holds them. A mesh that does not
+    /// convert keeps no id.
+    void holdIn(SceneAssets& assets);
+    /// The atomic's meshes in the scene assets (holdIn()); invalid ids while it holds none.
+    [[nodiscard]] const ObjectMesh& meshes() const { return m_meshes; }
 
   private:
+    SceneAssets* m_assets = nullptr;             // holdIn()'s, null while nothing is held
+    std::vector<graphics::TextureId> m_textures; // the textures holdIn() holds
+    ObjectMesh m_meshes;
     WorldAtomic m_atomic;
     world::FrameMatrix m_frame;
     std::string_view m_what;
@@ -97,10 +114,17 @@ class LevelClumpObject final : public chunk::LoadedObject {
 /// the level world (0x15) and the platform-neutral ones (world::addLevelFileHandlers()).
 void addLevelFileReaders(chunk::ChunkHandlerTable& table);
 
+/// Holds the level's background models and its level world (the light glows) in `assets`, each atomic's mesh and dual
+/// layer and the textures its materials name, while the level object holds them, for the frame description's draws of
+/// the background (WorldRenderer::render(), docs/engine/gpu-renderer.md#scene). Before the dictionaries are converted
+/// for drawing: a PS2 raster is read as loaded. A model that cannot be converted holds nothing and keeps no id.
+void holdLevelMeshes(world::LevelObject& level, SceneAssets& assets);
+
 /// Loads `<level>.lev` from `wad` into a level object. With `forDrawing`, its four texture dictionaries are converted
-/// for the OpenGL renderer afterwards. Needs a running RenderEngine started with the world plugins. Fails with
-/// ErrorCode::NotFound when the WAD has no such file, and as world::loadLevelFile() does.
+/// for the OpenGL renderer afterwards. With `assets` (the RenderEngine's, RenderEngine::sceneAssets()), its background
+/// and level world are held there first (holdLevelMeshes()). Needs a running RenderEngine started with the world
+/// plugins. Fails with ErrorCode::NotFound when the WAD has no such file, and as world::loadLevelFile() does.
 [[nodiscard]] std::expected<std::unique_ptr<world::LevelObject>, Error>
-loadLevel(const io::Wad& wad, std::string_view level, bool forDrawing);
+loadLevel(const io::Wad& wad, std::string_view level, bool forDrawing, SceneAssets* assets = nullptr);
 
 } // namespace coney::platform

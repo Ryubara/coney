@@ -101,3 +101,28 @@ TEST_CASE("a human's colour times his shade replaces his material's colour and s
     }
     atomic->destroy();
 }
+
+TEST_CASE("a lit draw lights its geometry for the draw and leaves its colours", "[platform][frame-description]") {
+    // Expected: docs/research/lighting.md#coneys-implementation: the background's models carry no light flag, and the
+    // original adds the world's ambient to them all the same, so their draw (Material3d::lit) sets RenderWare's LIGHT
+    // flag for the draw alone, as SceneLighting::drawBackgroundAtomic did; under MaterialColour::Own no colour is
+    // written.
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const rw::RGBA first = rw::makeRGBA(200, 100, 50, 128);
+    const rw::RGBA second = rw::makeRGBA(10, 20, 30, 240);
+    rw::Atomic* atomic = twoMaterialAtomic(first, second);
+    const rw::uint32 flags = atomic->geometry->flags;
+    REQUIRE((flags & rw::Geometry::LIGHT) == 0);
+    const rw::Material* const* materials = atomic->geometry->matList.materials;
+    {
+        const coney::platform::MaterialChange change(
+            *atomic, coney::graphics::Material3d{.colour = coney::graphics::MaterialColour::Own, .lit = true});
+        CHECK((atomic->geometry->flags & rw::Geometry::LIGHT) != 0);
+        CHECK(sameColour(materials[0]->color, first));
+        CHECK(sameColour(materials[1]->color, second));
+    }
+    CHECK(atomic->geometry->flags == flags);
+    CHECK(sameColour(materials[0]->color, first));
+    atomic->destroy();
+}

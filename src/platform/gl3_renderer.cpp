@@ -64,6 +64,7 @@ Gl3Renderer::~Gl3Renderer() { releaseAll(); }
 void Gl3Renderer::beginFrame() {
     m_pass = 0;
     m_draw = 0;
+    m_passStarted = false;
 }
 
 void Gl3Renderer::drawNew(const graphics::FrameDescription& frame, const Target& target) {
@@ -79,6 +80,11 @@ void Gl3Renderer::drawNew(const graphics::FrameDescription& frame, const Target&
                 return;
             }
         } else if (const auto* scene = std::get_if<graphics::ScenePass>(&pass); scene != nullptr) {
+            // A pass that clears the depth first does it once, as it starts, before any of its draws.
+            if (scene->clearDepth && !m_passStarted) {
+                clearDepth(frame, target);
+            }
+            m_passStarted = true;
             for (; m_draw < scene->draws.size(); ++m_draw) {
                 drawScene(frame, scene->draws[m_draw], target);
             }
@@ -90,7 +96,18 @@ void Gl3Renderer::drawNew(const graphics::FrameDescription& frame, const Target&
         }
         ++m_pass;
         m_draw = 0;
+        m_passStarted = false;
     }
+}
+
+void Gl3Renderer::clearDepth(const graphics::FrameDescription& frame, const Target& target) {
+    if (target.camera == nullptr && !draw::recording()) {
+        return;
+    }
+    // Z alone: librw takes a colour all the same, the frame's clear (the fog's, for a level).
+    const graphics::Rgba clear = frame.start().clear;
+    rw::RGBA colour = rw::makeRGBA(clear.r, clear.g, clear.b, clear.a);
+    draw::clearCamera(target.camera, &colour, rw::Camera::CLEARZ);
 }
 
 graphics::ScreenCopyId Gl3Renderer::newScreenCopy() {
