@@ -107,7 +107,8 @@ or a prop, never a box, so in the game every box's period is 1000 ms. Inferred f
 radius of a point, at most a given count, leaving out one human and any slot whose flag word (`0x00715390`) lacks a
 mask bit. Confirmed (code) at `0x002274a8`. A sphere asks for 60 within its radius of its object, leaving out the
 object's own human; a box asks for 60 within its bounding sphere (centre `+0x30`, radius `+0x40`), leaving out
-nobody. Both pass mask 1. Confirmed (code) at `0x004146e0`, `0x00415378`.
+nobody. Both pass mask 1. Confirmed (code) at `0x004146e0`, `0x00415378`. Coney lifts the 60 found and the 60
+occupant handles past 60 humans (rule: as many as there are humans, [Crowd rules](../engine/crowd-rules.md#lists)).
 
 ### A sphere's check {#sphere}
 
@@ -209,7 +210,9 @@ decompiled scripts.
   radius alone.
 - Coney's choices in the found list ([q-found-mask](#q-found-mask)): the subjects are Coney's humans in its own order
   (by handle), a dead human is never found, a box finds the humans inside it rather than within its bounding sphere,
-  and nobody beyond the first 60 found is tested by a sphere. A players' box takes the first two players among the
+  and, up to 60 humans, nobody beyond the first 60 found is tested by a sphere; past 60 humans a sphere tests every
+  one and a box or sphere lists every one inside (`crowd::humanListCap`, Coney's own rule:
+  [Crowd rules](../engine/crowd-rules.md#lists)). A players' box takes the first two players among the
   subjects.
 - Coney's choice: a trigger's occupants are a packed list that appends, where the original fills the first of its
   fixed slots that does not resolve (`0x004f5cc8`), so the order of the occupants, and of several 4s in one pass, may

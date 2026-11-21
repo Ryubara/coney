@@ -5,6 +5,8 @@
 #include <cmath>
 #include <utility>
 
+#include "core/crowd_limits.h"
+
 namespace coney::world_objects {
 
 const VolumeBox* VolumeBoxes::add(double handle, std::string_view name, int kind, const std::array<float, 3>& corner,
@@ -135,8 +137,9 @@ void VolumeBoxes::updateBox(std::size_t index, std::span<const BoxSubject> subje
         int message = 0;
         if (inside(box, subject.position)) {
             if (listed == box.occupants.end()) {
-                // Message 3 goes even when every place is taken.
-                addOccupant(box, subject.handle, kMaxOccupants);
+                // Message 3 goes even when every place is taken. Stand-in (limit): the original's 60 places, and one
+                // for every human past 60 (crowd::humanListCap(), docs/engine/crowd-rules.md#lists).
+                addOccupant(box, subject.handle, crowd::humanListCap(subjects.size()));
                 message = kEntered;
             } else if (due) {
                 message = kInside;

@@ -25,4 +25,5 @@ Add each page to this one; the rules for writing a page, and how they are checke
 | [Renderer performance](renderer-performance.md) | The renderer design's benchmark, the baseline measured with it and the frame-time budgets (`src/platform/`, `python/src/coney_tools/perf_*.py`) |
 | [Anti-aliasing, scaling and HDR](renderer-scaling.md) | The renderer design's anti-aliasing, render scale, upscaler tiers and HDR output |
 | [Simulation and drawing threads](render-threads.md) | The renderer design's plan to run the simulation on a thread of its own and draw from a snapshot each step publishes (`src/core/`, `src/platform/`) |
+| [Crowd rules](crowd-rules.md) | What Coney does past the original's 60 humans: the scan tokens, the lists of humans, and the limits kept or planned (`src/core/crowd_limits.*`) |
 | [GPU renderer](gpu-renderer.md) | The renderer on SDL3's GPU API: `--renderer gpu`, its device, window and present modes, and librw opened for data only (`src/platform/gpu_presenter.*`, `src/core/renderer_choice.*`) |

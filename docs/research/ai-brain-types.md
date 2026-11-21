@@ -118,7 +118,8 @@ limited to the gang: it is event `0x14` (20, violence) sent to everyone nearby. 
     - newEnemy is 1 only from the shared handler's event `0xb` (below).
 2. **Who hears it** (`AI_AlertNearby` `0x00293768`):
     - `Humans_FindAhead` lists up to 60 humans within *range* of the caller's position, in table order, skipping the
-      caller and slots without bit 0 in `0x00715390`. Players are included.
+      caller and slots without bit 0 in `0x00715390`. Players are included. Coney lifts the 60 past 60 humans (rule:
+      every human in reach, [Crowd rules](../engine/crowd-rules.md#lists)).
     - The filter `Brain_IsInHearRange` then keeps a human only when his squared distance is within his own brain's
       `+0x138` (event 20's radius, 20 m by default). So the reach is min(range, the receiver's `+0x138`).
 3. **The ranges at the call sites**:

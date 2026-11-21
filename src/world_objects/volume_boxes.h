@@ -11,6 +11,8 @@
 #include <utility>
 #include <vector>
 
+#include "core/crowd_limits.h"
+
 namespace coney::world_objects {
 
 /// One volume box (`AddVolumeBox`): an axis-aligned box, turned about the vertical axis by a 2 × 2 matrix
@@ -45,8 +47,9 @@ struct BoxSubject {
 /// docs/references/bindings/world.md#rotatevolumebox
 class VolumeBoxes {
   public:
-    /// The most humans a box keeps inside it (`+0x70`, 60 handles).
-    static constexpr std::size_t kMaxOccupants = 60;
+    /// The most humans a box keeps inside it in the original (`+0x70`, 60 handles); past 60 humans Coney keeps
+    /// every one (crowd::humanListCap()).
+    static constexpr std::size_t kMaxOccupants = crowd::kOrigMaxHumans;
     /// The repeat period of message 5, ms, when setStayPeriod() gave none: the handler component's default (`+0x74`,
     /// 1000, `0x00384a10`).
     static constexpr std::uint64_t kStayPeriodMs = 1000;

@@ -480,6 +480,9 @@ class Gangs {
     [[nodiscard]] Gang* findWithinRadius(float radius, const Gang& from, GangFilter filter);
     /// The scene's enemy-scan schedule, whose tokens each update() refills; every brain's update asks it.
     [[nodiscard]] ScanSchedule& scans() { return m_scans; }
+    /// How many brains may ask for an enemy scan: the members of every gang in use (a brain with no gang never asks).
+    /// Each update's scan tokens are crowd::scanTokens() of it (docs/engine/crowd-rules.md#scans).
+    [[nodiscard]] std::size_t scanningBrains() const;
 
   private:
     std::array<Gang, kGangSlots> m_gangs{};

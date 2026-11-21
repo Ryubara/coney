@@ -4,10 +4,13 @@
 #include <cstdint>
 #include <map>
 
+#include "core/crowd_limits.h"
+
 // When each AI brain runs its enemy scan (ai/enemy_scan.h): every brain on its own interval, and at most five scans in
-// one update across all brains. The gangs own the one schedule of a scene (Gangs::scans()), refill its tokens at the
-// start of each update and every brain's update asks it (Brain::update()).
-// Research: docs/research/ai-fights.md#enemy-scan, docs/research/ai-reimpl.md#unit-1
+// one update across all brains (past 60 brains Coney's own number: crowd::scanTokens(),
+// docs/engine/crowd-rules.md#scans). The gangs own the one schedule of a scene (Gangs::scans()), refill its tokens at
+// the start of each update and every brain's update asks it (Brain::update()). Research:
+// docs/research/ai-fights.md#enemy-scan, docs/research/ai-reimpl.md#unit-1
 
 namespace coney::ai {
 
@@ -18,8 +21,9 @@ class Gangs;
 inline constexpr std::uint64_t kScanIntervalMs = 2000;
 inline constexpr std::uint64_t kScanIntervalCopMs = 1000;
 inline constexpr std::uint64_t kScanSlowFactor = 4;
-/// At most this many scans run in one update across all brains (`AI_TakeScanToken`).
-inline constexpr int kScanTokens = 5;
+/// At most this many scans run in one update across all brains (`AI_TakeScanToken`), the original's number; past 60
+/// scanning brains Coney's own (crowd::scanTokens()).
+inline constexpr int kScanTokens = crowd::kOrigScanTokens;
 
 /// When each brain scans (`Brain_MaybeScanEnemies`): every interval (kScanIntervalMs, a cop's kScanIntervalCopMs,
 /// or one set with setInterval(); × 4 in the fight stance), at most kScanTokens scans an update.
@@ -31,8 +35,9 @@ class ScanSchedule {
     void setInterval(const Brain& brain, std::uint64_t ms);
     /// `brain`'s interval now.
     [[nodiscard]] std::uint64_t interval(const Brain& brain) const;
-    /// Starts an update: the tokens are full again.
-    void beginUpdate() { m_tokens = kScanTokens; }
+    /// Starts an update in which `tokens` scans may run: the original's kScanTokens, or what Gangs::update() gives
+    /// (crowd::scanTokens() of its scanning brains).
+    void beginUpdate(int tokens = kScanTokens) { m_tokens = tokens; }
     /// Scans `brain` (ai::scanEnemies()) when its interval has passed since its last scan at `nowMs` and a token is
     /// left; returns whether it scanned. A brain refused a token tries again on the next update.
     /// @orig 0x0028fa18 Brain_MaybeScanEnemies (unknown)

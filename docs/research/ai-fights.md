@@ -781,7 +781,8 @@ the last scan (gang `+0x34` ≥ brain `+0x160`), or when `+0x160` + interval has
 (2000 ms, cops 1000 ms) × 4 in the fight stance or when the human's detail level `+0x333` is above 0 (× 1 otherwise),
 so a calm AI near the camera scans every 2 s and a fighting one every 8 s. A scan also needs a token
 (`AI_TakeScanToken` `0x00293cd0`): at most 5 scans run in one update across all brains; a refused brain tries again
-on the next update.
+on the next update. Coney lifts the 5 past 60 scanning brains (rule: 5 per 60, at most 20,
+[Crowd rules](../engine/crowd-rules.md#scans)).
 
 **The detail level** human `+0x333` (`Human_UpdateLod` `0x0023d660`, each move): from the distance `d` to the nearest
 camera, plus 0.01 m per ms since the time at the human's draw record `+0xd8` `+0x2c` (inferred from the field's writer:
@@ -1059,11 +1060,13 @@ chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#pow
   each new one as event `0xb` (its script's handler, else its type's; a tactic through `Brain::addEnemy`). A gang always
   seen (`GangSetAlwaysSeen`) skips the spectate test and the sight step, and the spectate test is `Human_MaySpectate`'s
   (`maySpectate`). `ScanSchedule` runs it every interval (2 s, cops 1 s, × 4 locked on in the stance, or a goal's own)
-  with five scans an update at most. **Coney stand-ins** (#1011): the spectate test does not pass a scanner whose class
-  role Coney cannot look up (the original always has one), Coney builds no Chase goal (`0x0c`) for `mayStartFight` to
-  find, the investigation count is taken as 0 and the vertical sight modifier is not applied; nothing sets the gang's
-  chosen target; the civilians' ped type, the hostile counts, the radar's enemy marks, the detail level's slowdown and
-  the rescan on a gang change are not built. The Scout tactic (below) scans its members at their posts.
+  with five scans an update at most, and past 60 brains in gangs five per 60 of them, at most 20 (`crowd::scanTokens`,
+  Coney's own rule: [Crowd rules](../engine/crowd-rules.md#scans)). **Coney stand-ins** (#1011): the spectate test does
+  not pass a scanner whose class role Coney cannot look up (the original always has one), Coney builds no Chase goal
+  (`0x0c`) for `mayStartFight` to find, the investigation count is taken as 0 and the vertical sight modifier is not
+  applied; nothing sets the gang's chosen target; the civilians' ped type, the hostile counts, the radar's enemy marks,
+  the detail level's slowdown and the rescan on a gang change are not built. The Scout tactic (below) scans its members
+  at their posts.
 - **Blocking**: `BlockGoal` never produces a block: Coney's block starts only on R1 held in the record's buttons,
   which only a pad writes, so its command 4 does nothing. It turns the human's hit reactions off
   (`Fighter::setHitReactionsOff`, bit `0x800`) from its start until its sixth update with the human free; rolls the

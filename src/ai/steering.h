@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "animation/anim_math.h"
+#include "core/crowd_limits.h"
 
 // The steering round humans: each update a move action lets the walker bend its aim round the one human most in the
 // way of its next step. A human is a disc of kBlockerRadius; each other human's step is predicted (a player's from
@@ -38,8 +39,9 @@ namespace coney::ai {
 inline constexpr float kBlockerRadius = 0.63F;
 /// A predicted step is this many seconds of the human's speed.
 inline constexpr float kStepSeconds = 0.75F;
-/// The most humans a decision lists round the walker.
-inline constexpr std::size_t kSteerListMax = 60;
+/// The most humans a decision lists round the walker in the original (its 60 slots); past 60 humans Coney lists
+/// every one in reach (crowd::humanListCap()).
+inline constexpr std::size_t kSteerListMax = crowd::kOrigMaxHumans;
 /// The farthest the list reaches (m), whatever the look-ahead.
 inline constexpr float kSteerListReach = 10.0F;
 /// A move that steers arrives within this of its (detour) aim (m; brain `+0x118`).

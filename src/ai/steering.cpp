@@ -9,6 +9,7 @@
 #include "ai/formations.h"
 #include "ai/move_action.h"
 #include "ai/sectors.h"
+#include "core/crowd_limits.h"
 #include "human/human.h"
 #include "human/locomotion.h"
 #include "raycast/collision_mesh.h"
@@ -119,8 +120,11 @@ std::vector<Brain*> humansAround(const Brain& owner, std::span<Brain* const> oth
     std::vector<Brain*> list;
     const anim::Vec3 at = owner.human().position();
     const float reach = radius * radius;
+    // Stand-in (limit): the original's 60 is its table's size; past 60 humans the list holds every one in reach
+    // (crowd::humanListCap(), docs/engine/crowd-rules.md#lists).
+    const std::size_t cap = crowd::humanListCap(others.size());
     for (Brain* other : others) {
-        if (list.size() >= kSteerListMax) {
+        if (list.size() >= cap) {
             break;
         }
         if (other == nullptr || other == &owner || other->human().outOfWorld()) {

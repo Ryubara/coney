@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <utility>
 
+#include "core/crowd_limits.h"
+
 namespace coney::world_objects {
 
 namespace {
@@ -139,9 +141,12 @@ void TriggerSpheres::check(std::size_t index, std::span<const BoxSubject> subjec
     }
     // The found humans: those within the radius, not the object's own human, at most 60, in Coney's subjects order.
     // Stand-in: a dead human is never found (what the original's search mask 1 leaves out is not traced).
+    // Stand-in (limit): the original's lists hold 60; past 60 humans every one is found and listed
+    // (crowd::humanListCap(), docs/engine/crowd-rules.md#lists).
+    const std::size_t room = crowd::humanListCap(subjects.size());
     std::size_t found = 0;
     for (const BoxSubject& subject : subjects) {
-        if (found >= VolumeBoxes::kMaxOccupants) {
+        if (found >= room) {
             break;
         }
         if (!subject.alive || subject.handle == object || !withinRadius(m_spheres[index], *centre, subject.position)) {
@@ -154,7 +159,7 @@ void TriggerSpheres::check(std::size_t index, std::span<const BoxSubject> subjec
         if (accepts(sphere, *centre, subject.position)) {
             if (listed == sphere.occupants.end()) {
                 // Message 3 goes even when every place is taken.
-                addOccupant(sphere, subject.handle);
+                addOccupant(sphere, subject.handle, room);
                 message = VolumeBoxes::kEntered;
             } else if (stayDue) {
                 message = VolumeBoxes::kInside;
@@ -199,11 +204,11 @@ void TriggerSpheres::check(std::size_t index, std::span<const BoxSubject> subjec
     }
 }
 
-void TriggerSpheres::addOccupant(TriggerSphere& sphere, double human) const {
+void TriggerSpheres::addOccupant(TriggerSphere& sphere, double human, std::size_t room) const {
     // Coney's choice: the original fills the first of its 60 fixed slots that does not resolve, a hole or a stale
     // handle (0x004f5cc8); Coney's list stays packed and appends, so the order of the list, and of several 4s in
     // one occupants' pass, may differ.
-    if (sphere.occupants.size() < VolumeBoxes::kMaxOccupants) {
+    if (sphere.occupants.size() < room) {
         sphere.occupants.push_back(human);
         return;
     }
