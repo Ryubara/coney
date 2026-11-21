@@ -437,6 +437,54 @@ def test_the_base_checkout_is_a_detached_worktree_named_by_its_commit(tmp_path: 
     clips_pair.ensure_base_checkout(main, path, commit, clips_pair.run_git)  # kept: made once per commit
 
 
+def _history(tmp_path: Path) -> tuple[Path, dict[str, str]]:
+    """A main checkout with three commits: `first`, `change` (the fix a pair takes out, in fix.txt) and `later` (an
+    unrelated one after it, in later.txt); their commits by name."""
+    main = tmp_path / "repos" / "coney"
+    main.mkdir(parents=True)
+    _git(main, "init", "-q", "-b", "main")
+    commits = {}
+    steps = (("first", "a.txt", "a\n"), ("change", "fix.txt", "fixed\n"), ("later", "later.txt", "l\n"))
+    for name, file, text in steps:
+        (main / file).write_text(text, encoding="utf-8")
+        _git(main, "add", "-A")
+        _git(main, "commit", "-q", "-m", name)
+        commits[name] = _git(main, "rev-parse", "HEAD")
+    return main, commits
+
+
+def test_a_base_without_a_change_is_the_base_with_that_commit_taken_out(tmp_path: Path) -> None:
+    # `clips pair --without` records the before on the merge base with one merged change taken out, so a fix that was
+    # merged without clips gets its before from the same code minus the fix (and any tool the run needs, such as a
+    # newer Coney option, is still there).
+    main, commits = _history(tmp_path)
+    worktrees = "../../worktrees/coney/<branch>/"
+    path, commit = clips_pair.base_without(main, worktrees, PAIR, commits["later"], "HEAD~1", clips_pair.run_git)
+    label = f"{commits['later'][:12]}-without-{commits['change'][:12]}"
+    assert path == (tmp_path / "worktrees" / "coney" / f"clips-base-{label}").resolve()
+    assert _git(path, "rev-parse", "HEAD") == commit
+    assert _git(path, "rev-parse", "HEAD~1") == commits["later"]
+    assert not (path / "fix.txt").exists()
+    assert (path / "later.txt").is_file()
+    assert _git(path, "rev-parse", "--abbrev-ref", "HEAD") == "HEAD"
+    # The next pair from the same base and change finds it made and uses it as it is.
+    again = clips_pair.base_without(main, worktrees, PAIR, commits["later"], commits["change"], clips_pair.run_git)
+    assert again == (path, commit)
+
+
+def test_a_base_without_a_change_refuses_one_not_in_the_base_or_one_that_does_not_come_out(tmp_path: Path) -> None:
+    main, commits = _history(tmp_path)
+    worktrees = "../../worktrees/coney/<branch>/"
+    with pytest.raises(clips.ClipError, match="not in the base"):
+        clips_pair.base_without(main, worktrees, PAIR, commits["first"], commits["change"], clips_pair.run_git)
+    # A later commit that edits the change's own lines: taking the change out conflicts.
+    (main / "fix.txt").write_text("fixed again\n", encoding="utf-8")
+    _git(main, "commit", "-q", "-am", "again")
+    tip = _git(main, "rev-parse", "HEAD")
+    with pytest.raises(clips.ClipError, match="cannot be taken out"):
+        clips_pair.base_without(main, worktrees, PAIR, tip, commits["change"], clips_pair.run_git)
+
+
 def test_the_busy_marker_is_removed_only_when_it_is_ours(tmp_path: Path) -> None:
     with clips_pair.busy(tmp_path, "me", ".coney-busy"):
         assert "me" in (tmp_path / ".coney-busy").read_text(encoding="utf-8")
@@ -607,6 +655,39 @@ def test_a_pair_records_each_side_on_the_renderer_it_names(space: dict[str, Path
     record = json.loads((space["scratch"] / "my-task" / "clips" / "pair.json").read_text(encoding="utf-8"))
     assert record["before"]["renderer"] == "gl3"
     assert record["after"]["renderer"] == "gpu"
+
+
+class FakeMachineWithout(FakeMachine):
+    """The fakes, with the git commands that take a change out of the base (`--without`): every one answers as if
+    the change `d...` is in the base and comes out cleanly as tree `e...`, committed as `f...`."""
+
+    def git(self, folder: Path, args: Sequence[str]) -> str:
+        answers = {
+            "rev-parse --verify": "d" * 40,
+            "merge-base --is-ancestor": "",
+            "merge-tree --write-tree": "e" * 40,
+            "log -1": "someone\nsomeone@example.invalid",
+        }
+        for start, answer in answers.items():
+            if " ".join(args).startswith(start):
+                return answer + "\n"
+        if "commit-tree" in args:
+            self.events.append("commit-tree")
+            return "f" * 40 + "\n"
+        return super().git(folder, args)
+
+
+def test_a_pair_without_a_merged_change_records_the_before_on_the_base_with_it_taken_out(
+    space: dict[str, Path],
+) -> None:
+    machine = FakeMachineWithout("c" * 40, {"before": "0x01", "after": "0x02"})
+    assert _pair(space, machine, without="1504") == 0
+    assert machine.events[:4] == ["build task dev", "commit-tree", "worktree add", "build base dev"]
+    assert "record before in base" in machine.events
+    assert (space["task"].parent / f"clips-base-{'c' * 12}-without-{'d' * 12}").is_dir()
+    record = json.loads((space["scratch"] / "my-task" / "clips" / "pair.json").read_text(encoding="utf-8"))
+    assert record["before"]["commit"] == "f" * 40
+    assert record["before"]["without"] == "1504"
 
 
 def test_a_pair_with_the_original_and_a_gif_has_three_panels(space: dict[str, Path]) -> None:

@@ -353,6 +353,33 @@ def test_a_clips_pair_base_of_a_branch_never_merged_goes_once_idle(space: Space)
     assert entries["clips-base-aaaaaaaaaaaa"].remove
 
 
+def test_a_clips_pair_base_without_a_change_goes_once_idle(space: Space) -> None:
+    # `clips pair --without C` keeps the merge base with C taken out at a commit of its own, on no branch; that commit
+    # is made again from git at any time (`clips_pair.base_without`), so the checkout goes once idle like any base.
+    # A second commit there is not the one it makes, and keeps it.
+    name = "clips-base-aaaaaaaaaaaa-without-bbbbbbbbbbbb"
+    without = space.worktree(name, build=5000)
+    git(without, "checkout", "-q", "--detach")
+    git(space.checkout, "branch", "-q", "-D", name)
+    (without / "fix.txt").write_text("undone\n", encoding="utf-8")
+    git(without, "add", "-A")
+    git(without, "commit", "-q", "-m", "clips pair: aaaaaaaaaaaa without bbbbbbbbbbbb")
+    settings = dataclasses.replace(space.settings(build_hours=24.0), base_prefix="clips-base-")
+    space.touch(without, 5.0)
+    entries = {entry.name: entry for entry in plan(settings)[0]}
+    assert not entries[name].remove
+    assert "clips pair base" in entries[name].why
+    space.touch(without, 30.0)
+    entries = {entry.name: entry for entry in plan(settings)[0]}
+    assert entries[name].remove
+    (without / "more.txt").write_text("x\n", encoding="utf-8")
+    git(without, "add", "-A")
+    git(without, "commit", "-q", "-m", "only here")
+    space.touch(without, 30.0)
+    entries = {entry.name: entry for entry in plan(settings)[0]}
+    assert not entries[name].remove
+
+
 def test_a_busy_marker_naming_a_dead_process_no_longer_protects(space: Space) -> None:
     # A marker with an agent id protects for ever; one that names its process (`pid=N`, as `clips pair` writes)
     # protects only while that process lives, so a hard kill does not keep the worktree and its build for good.

@@ -349,7 +349,9 @@ free space before and after.
   `workspace.clips.pair.base_prefix`: a detached worktree at a commit of `main`, holding that commit's build for the
   next pair from the same base) is merged by definition and goes once untouched for `--build-hours`, as a build folder
   would. So does one at a commit of a branch given to `clips pair --base` that `main` never gets, as long as a branch
-  holds that commit; a commit made in the checkout itself is on no branch and keeps it.
+  holds that commit; a commit made in the checkout itself is on no branch and keeps it. One with a change taken out
+  (`clips-base-<base>-without-<commit>`, made by `clips pair --without`) holds a single commit of its own, which git
+  makes again from its base at any time, so it goes the same way while its parent is in `main` or on a branch.
 * **Deletes `build/`** (generated, ignored by git), and the worktree's folder in the [build root](#build-root) when
   `build_root` is set, from every worktree that is not busy (no live busy file, no build slot held or waited for, no
   check, fails-first or detached run going on) and has not been touched for

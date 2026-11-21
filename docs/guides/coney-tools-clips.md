@@ -65,7 +65,7 @@ capture device or any input that is not a file.
 ### Before and after: clips pair {#clips-pair}
 
 ```sh
-uv run --project python coney-tools clips pair SCENARIO --agent ID [--original STATE] [--gif] [--slow N] [--prefix P]
+uv run --project python coney-tools clips pair SCENARIO --agent ID [--original STATE] [--gif] [--slow N] [--prefix P] [--without COMMIT]
 uv run --project python coney-tools clips pair SCENARIO --agent ID --renderer gpu --before-renderer gl3
 uv run --project python coney-tools clips pair --level L --input-script FILE [--seconds N] [--start-frame N] --agent ID
 uv run --project python coney-tools clips encode CLIP --out NAME.gif|NAME.mp4 [--start-frame N] [--seconds N] [--slow N]
@@ -88,7 +88,13 @@ then, in order, it:
    too (a branch holds its commit). It counts toward the [cap on build folders](agents.md#build-cap) like any build,
    with no exemption: a pair from a base without a build folder needs one free build place, or the base build is
    refused and the pair ends with its exit code. The worktree made before the refusal stays, small and without a
-   build: the next pair builds in it, and `workspace clean` removes it once idle;
+   build: the next pair builds in it, and `workspace clean` removes it once idle. With `--without COMMIT` the before
+   is that merge base with `COMMIT` taken out instead, for the clips of a change already merged that its pull request
+   lacked (`--without` the fix's squash commit): the same code as the after but for that change, so a Coney option the
+   run needs that came later (`--record-from-frame`) is on both sides, where a base from before the change would lack
+   it. The tools make the tree with `git merge-tree` (refused when `COMMIT` is not in the base or a later commit edits
+   its lines), commit it on top of the base under the base's own author, with no branch, and keep it in
+   `worktrees/coney/clips-base-<base>-without-<commit>`; `workspace clean` removes it once idle like any base;
 3. records the run on the base (`before.mp4`) and on the task (`after.mp4`) with `coney --record`
    ([Recording a clip](running-options.md#record)), from the scenario's start frame on: test mode, the task's own
    input script on both sides, each run from its build's checkout, FFmpeg from `CONEY_FFMPEG` or the one the tools
@@ -241,7 +247,7 @@ Record one run before (the merge base's build) and after (the task's), and stack
 ```text
 coney-tools clips pair [SCENARIO] --agent AGENT [--level LEVEL] [--input-script INPUT_SCRIPT] [--seconds SECONDS]
     [--start-frame START_FRAME] [--checkpoint CHECKPOINT] [--ai-seed AI_SEED] [--original STATE] [--gif] [--slow SLOW]
-    [--prefix PREFIX] [--disc DISC] [--base BASE] [--task TASK] [--renderer RENDERER]
+    [--prefix PREFIX] [--disc DISC] [--base BASE] [--without COMMIT] [--task TASK] [--renderer RENDERER]
     [--before-renderer BEFORE_RENDERER]
 ```
 
@@ -261,6 +267,7 @@ coney-tools clips pair [SCENARIO] --agent AGENT [--level LEVEL] [--input-script 
 | `--prefix PREFIX` | text | none | name the files PREFIX-before.mp4 and so on (several pairs) |
 | `--disc DISC` | text | none | the disc for Coney; default: game_dir of coney.local.toml |
 | `--base BASE` | text | none | the branch whose merge base is the before (default origin/main) |
+| `--without COMMIT` | text | none | take this commit (a change already merged) out of the before, for the clips its pull request lacked |
 | `--task TASK` | text | none | the task whose clips folder takes the clips (default: the checkout's) |
 | `--renderer RENDERER` | choice | none | the renderer both sides draw with (default: Coney's own, GL3). One of `gl3`, `gpu`. |
 | `--before-renderer BEFORE_RENDERER` | choice | none | the renderer the before draws with, in place of --renderer (a GPU after against GL3's before). One of `gl3`, `gpu`. |

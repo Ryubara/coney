@@ -55,6 +55,9 @@ GIF_RATES = (20, 10, 5, 4, 2, 1)
 GIF_MAX_RATE = 20
 #: How long a Coney run may take before it is taken for hung (the tests' hang guard, testing.md#no-wall-clock-limits).
 CONEY_TIMEOUT = 600
+#: What names a base checkout with a change taken out (`<base_prefix><base>-without-<change>`, `clips pair
+#: --without`); `workspace clean` reads it too.
+WITHOUT = "-without-"
 #: The keys a scenario file may hold, and the ones it must.
 SCENARIO_KEYS = frozenset(
     {"description", "level", "input", "seconds", "start_frame", "checkpoint", "ai_seed", "skip_movies"}
@@ -432,10 +435,12 @@ def run_git(folder: Path, args: Sequence[str]) -> str:
 
 def base_checkout_path(main: Path, worktrees: str, rules: ClipPair, commit: str) -> Path:
     """Where the build of `commit` is kept: `workspace.worktrees` with `<base_prefix><commit, 12 digits>` as its
-    branch, from the main checkout `main`."""
+    branch, from the main checkout `main`. A `commit` that is a label (`<base>-without-<change>`, already short) is
+    used as it is."""
     if "<branch>" not in worktrees:
         raise ConfigError(f"workspace.worktrees ({worktrees}) must contain <branch>")
-    return (main / worktrees.replace("<branch>", f"{rules.base_prefix}{commit[:12]}")).resolve()
+    label = commit if WITHOUT in commit else commit[:12]
+    return (main / worktrees.replace("<branch>", f"{rules.base_prefix}{label}")).resolve()
 
 
 def ensure_base_checkout(main: Path, path: Path, commit: str, git: Callable[[Path, Sequence[str]], str]) -> None:
@@ -451,6 +456,54 @@ def ensure_base_checkout(main: Path, path: Path, commit: str, git: Callable[[Pat
     except ClipError:
         if not path.is_dir():  # another pair from the same base made it at the same moment: use theirs
             raise
+
+
+def base_without(
+    main: Path, worktrees: str, rules: ClipPair, base: str, change: str, git: Callable[[Path, Sequence[str]], str]
+) -> tuple[Path, str]:
+    """The checkout of `base` with the commit `change` taken out, and its commit: for the before of a change already
+    merged (`clips pair --without`), which is then the same code as the after but for that change, so a later Coney
+    option the run needs (`--record-from-frame`) is on both sides. It is a detached worktree named
+    `<base_prefix><base>-without-<change>` (12 digits each) at a commit of its own whose parent is `base`, made once
+    and kept as a base build is. ClipError when `change` is not in `base` or does not come out cleanly (a later commit
+    edits its lines)."""
+    commit = git(main, ["rev-parse", "--verify", f"{change}^{{commit}}"]).strip()
+    try:
+        git(main, ["merge-base", "--is-ancestor", commit, base])
+    except ClipError as error:
+        raise ClipError(f"{change} ({commit[:12]}) is not in the base {base[:12]}: nothing to take out") from error
+    path = base_checkout_path(main, worktrees, rules, f"{base[:12]}{WITHOUT}{commit[:12]}")
+    # Taking `commit` out of `base` is a three-way merge of `base` and `commit`'s parent over `commit`: the tree it
+    # writes is `base` with the change undone, with no checkout and no index touched.
+    try:
+        tree = git(main, ["merge-tree", "--write-tree", "--merge-base", commit, base, f"{commit}^"]).split()[0]
+    except ClipError as error:
+        raise ClipError(f"{commit[:12]} cannot be taken out of {base[:12]} cleanly: {error}") from error
+    if path.is_dir():
+        head = git(path, ["rev-parse", "HEAD"]).strip()
+        if git(path, ["rev-parse", "HEAD^{tree}"]).strip() != tree or git(path, ["rev-parse", "HEAD^"]).strip() != base:
+            raise ClipError(f"{path} is not {base[:12]} without {commit[:12]}; remove it and run again")
+        return path, head
+    # The commit's author and committer are the base's, so it names nobody new; it stays local (no branch holds it,
+    # and the worktree's HEAD keeps it from git's garbage collection).
+    who = git(main, ["log", "-1", "--format=%cn%n%ce", base]).splitlines()
+    made = git(
+        main,
+        [
+            "-c",
+            f"user.name={who[0]}",
+            "-c",
+            f"user.email={who[1]}",
+            "commit-tree",
+            tree,
+            "-p",
+            base,
+            "-m",
+            f"clips pair: {base[:12]} without {commit[:12]}",
+        ],
+    ).strip()
+    ensure_base_checkout(main, path, made, git)
+    return path, made
 
 
 @contextlib.contextmanager
@@ -581,8 +634,10 @@ def run_pair(
     prefix: str = "",
     base_ref: str = "origin/main",
     renderers: tuple[str | None, str | None] = (None, None),
+    without: str | None = None,
 ) -> int:
-    """`clips pair`: build the task's checkout and its merge base with `base_ref`, record `run` on both into the task's
+    """`clips pair`: build the task's checkout and its merge base with `base_ref` (with the commit `without` taken out
+    when given, for the before of a change already merged), record `run` on both into the task's
     clips folder, check they are the same run, and stack them (with the original first when `original` names a PCSX2
     state) into `compare.mp4` and, with `gif`, `compare.gif`. `renderers` names the renderer each side (before, after)
     draws with (none: Coney's own choice), so a change to the GPU renderer can show its picture after against GL3's
@@ -613,9 +668,14 @@ def run_pair(
         env.say(f"the task's build failed (exit {code})")
         return code
     commit = env.git(checkout, ["merge-base", "HEAD", base_ref]).strip()
-    base = base_checkout_path(settings.main, settings.worktrees, rules.pair, commit)
-    env.say(f"before: the merge base with {base_ref}, {commit[:12]}, in {base}")
-    ensure_base_checkout(settings.main, base, commit, env.git)
+    if without is None:
+        base = base_checkout_path(settings.main, settings.worktrees, rules.pair, commit)
+        env.say(f"before: the merge base with {base_ref}, {commit[:12]}, in {base}")
+        ensure_base_checkout(settings.main, base, commit, env.git)
+    else:
+        merge_base = commit
+        base, commit = base_without(settings.main, settings.worktrees, rules.pair, merge_base, without, env.git)
+        env.say(f"before: the merge base with {base_ref}, {merge_base[:12]}, without {without}, in {base}")
     with busy(base, agent, settings.busy_file):
         code = env.build(base, agent, preset)
         if code != 0:
@@ -652,6 +712,7 @@ def run_pair(
             "frames": before.frames,
             "frames_hash": before.frames_hash,
             "renderer": renderers[0],
+            "without": without,
         },
         "after": {
             "commit": tip,
@@ -763,6 +824,7 @@ def run_pair_command(
     task: str | None,
     cwd: Path | None = None,
     renderers: tuple[str | None, str | None] = (None, None),
+    without: str | None = None,
 ) -> int:
     """`clips pair` from the command line: the checkout around `cwd`, its task's clips folder, the conventions."""
     from coney_tools import unit
@@ -791,6 +853,7 @@ def run_pair_command(
         prefix=prefix,
         base_ref=base,
         renderers=renderers,
+        without=without,
     )
 
 

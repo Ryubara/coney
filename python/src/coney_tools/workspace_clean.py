@@ -29,7 +29,9 @@ build folder itself.
 
 A base checkout `clips pair` keeps (a detached worktree named `<workspace.clips.pair.base_prefix><commit>`, a cached
 build of a commit of `main`) is merged by definition; it is removed once idle for `build_hours`, as a build folder
-would be, so the next pair from the same base finds it built.
+would be, so the next pair from the same base finds it built. One with a change taken out (`clips pair --without`,
+named `...-without-<change>`) holds one commit of its own on top of its base, which git makes again at any time, and
+goes the same way.
 
 **Disk pressure.** When the drive is still under the floor (`workspace.disk_min_free_gb`) after that, `clean` deletes
 the `build/` folders of the other worktrees, oldest last use first, until the free space reaches the floor plus
@@ -79,6 +81,7 @@ from coney_tools import (
     watched_drives,
     workspace_clean_fixes,
 )
+from coney_tools.clips_pair import WITHOUT
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Workspace, load_conventions
 from coney_tools.pr_head import HEAD_FIELDS, head_label
@@ -500,7 +503,10 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
         # A clips pair base checkout is a cached build of a commit: of main, or of a branch given to `--base` that main
         # may never get. When a branch holds the commit, nothing is lost by removing the checkout once idle.
         cached = bool(settings.base_prefix) and tree.branch is None and path.name.startswith(settings.base_prefix)
-        if cached and ahead and _on_a_branch(path):
+        # A base with a change taken out (`clips pair --without`) is one commit of its own on top of a base: git
+        # makes it again at any time (`clips_pair.base_without`), so it is a cache too once its parent is safe.
+        remade = ahead == 1 and WITHOUT in path.name and _parent_is_safe(path, settings.base)
+        if cached and ahead and (remade or _on_a_branch(path)):
             ahead = 0
         if ahead is None:
             entry.why = f"cannot compare with {settings.base}"
@@ -528,6 +534,15 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
                 entry.delete_build = False
                 entry.reclaim = build_size + (dir_size(path, frozenset({"build", ".git"})) if settings.measure else 0)
     return entry
+
+
+def _parent_is_safe(worktree: Path, base: str) -> bool:
+    """Whether the parent of the worktree's HEAD is in `base` or on a branch, so only HEAD's own commit, which
+    `clips pair --without` makes again from git, would go with the worktree."""
+    held = _git(worktree, "for-each-ref", "--contains", "HEAD~1", "--count", "1", "refs/heads", "refs/remotes")
+    if held.returncode == 0 and held.stdout.strip():
+        return True
+    return _git(worktree, "merge-base", "--is-ancestor", "HEAD~1", base).returncode == 0
 
 
 def _on_a_branch(worktree: Path) -> bool:
