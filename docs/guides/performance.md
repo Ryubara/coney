@@ -64,8 +64,10 @@ uv run --project python coney-tools perf bench --out ../../scratch/perf --headle
 
 **Measure the right build.** The `dev` preset is a Debug build, several times slower than an optimised one and not
 what a player runs; measure the `playtest` preset (`RelWithDebInfo`: optimised, with debug information and the debug
-tools) and say so. The `release` preset is the player's build: it has no debug tools, so it refuses `--bench`
-([The debug tools and the game](building.md#debug-tools)). The report's `build` field names the build type.
+tools, compiled with `/Ob2` and linked as the release build is: [What `playtest` compiles
+with](building.md#playtest-flags)) and say so. The `release` preset is the player's build: it has no debug tools, so
+it refuses `--bench` ([The debug tools and the game](building.md#debug-tools)). The report's `build` field names the
+build type.
 
 **Measure on a quiet machine.** The times are real time on a shared computer. Numbers taken while other builds run
 are noisy (on the agents' machine a dozen builds may be running): check `coney-tools build status` first, run each
@@ -372,9 +374,10 @@ table keyed by the human's address (`std::unordered_map`), and MSVC's hash of a 
 the #1542 sweep measured the hashing at 30 % of the brawl's step. The table is gone: each human keeps the slot of his
 brain (`human::Human::brainSlot()`, written only by `ai::Brains`, renumbered when a removal closes the slots up), and
 `find` reads the slot and checks it against a small array of each slot's human kept beside the brains. Checking it
-against the brain itself cost a cache miss per lookup: 100 ms a brawl step against 86 ms for a bare pointer, where the
-array is as fast as the pointer. The brain found is the same as before (the first one a human was given); a human with
-brains in two tables at once, which only tests make, is found by a walk over the second table's slots.
+against the brain itself cost a cache miss per lookup: 100 ms a brawl step against 86 ms for a bare pointer. That the
+array is as fast as the pointer is inferred, not measured side by side: both gave about 23 % over the main each was
+built on. The brain found is the same as before (the first one a human was given); a human with brains in two tables
+at once, which only tests make, is found by a walk over the second table's slots.
 
 Taken on 2026-11-21 from `playtest` builds in one build folder, each `main` with and without the change, the sweep's
 bench (headless, 500 enemies and 500 allies, 25 a row, the main thread's CPU time, best and median of interleaved runs
