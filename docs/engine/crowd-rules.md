@@ -27,11 +27,11 @@ pin it at the original's number.
 ## The enemy scans {#scans}
 
 Every brain in a gang scans for enemies on its own interval (2 s, a cop's 1 s, four times as long in the fight stance),
-and an update hands out at most 5 scans across all brains; one refused asks again on the next update
-([The enemy scan](../research/ai-fights.md#enemy-scan)). The original's 60 brains ask for about one scan an update, so
-its five never run out. A crowd of 1000 asks for about 17, and five tokens starve it: 512 of 1000 brains were
-refused every step in the performance sweep (#1542), the brains early in the table were served first and the rest of
-the crowd stood unaware.
+and an update hands out at most 5 scans across all brains; one refused asks again on the next update ([The enemy
+scan](../research/ai-fights.md#enemy-scan)). The original's 60 brains ask for about one scan an update, so its five
+never run out. A crowd of 1000 asks for about 17, and five tokens starve it: 512 of 1000 brains were refused every step
+in the performance sweep ([#1542](issue:1542)), the brains early in the table were served first and the rest of the
+crowd stood unaware.
 
 Coney's rule: **5 tokens an update up to 60 scanning brains; past them 5 per 60 brains, rounded up, and never more
 than 20.** A scanning brain is a member of a gang, the only brains that ask (`Gangs::scanningBrains()`, counted at the
@@ -77,11 +77,11 @@ Two limits act inside the original's range, so they stay at the original's numbe
   range too.
 - **A gang's 10 members** (16 for the police kinds). A full gang drops its first member when another joins, which
   the level scripts see. A crowd is carried by more gangs of at most 16, not by larger gangs (the maintainer's decision
-  of 2026-11-21 in the limits sweep).
+  in the limits sweep).
 
 ## Planned lifts {#planned}
 
-The maintainer's limits-sweep decisions of 2026-11-21 set these, each for a pull request of its own:
+The maintainer's limits-sweep decisions set these, each for a pull request of its own:
 
 - **32 gangs and the scripts' 60 humans** (`ai::kGangSlots`, `CreatedHumans::kCapacity`): identical inside the range
   and lifted above it by count, for the story and mods alike. The level scripts call `GangCreate` and `HuCreate` far
@@ -94,10 +94,10 @@ The original's 30 push spheres need nothing: Coney gives each human its own, so 
 
 ## Measured {#measured}
 
-The scan rule was measured on the performance sweep's bench (#1542): `level95`, 500 enemies and 500 allies in gangs of
-100 (the sweep's measurement switch, since 32 gangs of 10 hold only 320: #1566), rows of 25, headless, lockstep, the
-main thread's CPU time over 300 steps after 450 of warm-up, a `playtest` build, best of two runs (2026-11-21, the
-machine 66 to 100 % busy):
+The scan rule was measured on the performance sweep's bench ([#1542](issue:1542)): `level95`, 500 enemies and 500 allies
+in gangs of 100 (the sweep's measurement switch, since 32 gangs of 10 hold only 320: [#1566](issue:1566)), rows of 25,
+headless, lockstep, the main thread's CPU time over 300 steps after 450 of warm-up, a `playtest` build, best of two runs
+(the machine 66 to 100 % busy):
 
 | Engaged 1000 | 5 tokens (the original's) | 5 per 60 brains, no cap (the sweep's scenario) | at most 12 | **at most 20 (Coney's rule)** | at most 30 |
 | --- | --- | --- | --- | --- | --- |
@@ -113,11 +113,11 @@ machine 66 to 100 % busy):
   Capped at 20 it is 1.16 times the median (182 against 157 ms) and the 99th percentile falls from 345 to 201 ms, with
   more of the crowd engaged (857 with a target against 680).
 - The cap of 20 has the lowest mean of the three caps and the worst twentieth of the cap of 12.
-- The median rises, against the sweep's figure (19 to 14 ms with the cap), because these builds lack the sweep's
-  other experiments: on `main` a scan still casts a sight ray at every member of every enemy gang (up to 500), about
-  1.7 ms a scan, until the scan casts them nearest first (#1555); twenty scans in every step are then the brains'
-  steady 33 ms, where the scaled rule spends the same mean in bursts. With cheap scans the sweep measured the cap
-  at 20 against the scaled rule: the worst twentieth from 48 to 23 ms, the mean from 22.4 to 14.6 ms.
+- The median rises, against the sweep's figure (19 to 14 ms with the cap), because these builds lack the sweep's other
+  experiments: on `main` a scan still casts a sight ray at every member of every enemy gang (up to 500), about 1.7 ms a
+  scan, until the scan casts them nearest first ([#1555](issue:1555)); twenty scans in every step are then the brains'
+  steady 33 ms, where the scaled rule spends the same mean in bursts. With cheap scans the sweep measured the cap at 20
+  against the scaled rule: the worst twentieth from 48 to 23 ms, the mean from 22.4 to 14.6 ms.
 
 Up to 60 humans nothing changes. The all-humans trace, the event log and the lockstep digest hash the same on `main`
 and with these rules for a brawl of 22 + 22 fighters (58 humans with the level's own, 500 steps, headless and in a
