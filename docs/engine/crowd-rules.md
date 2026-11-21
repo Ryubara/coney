@@ -94,4 +94,34 @@ The original's 30 push spheres need nothing: Coney gives each human its own, so 
 
 ## Measured {#measured}
 
-To be filled with the branch's bench numbers.
+The scan rule was measured on the performance sweep's bench (#1542): `level95`, 500 enemies and 500 allies in gangs of
+100 (the sweep's measurement switch, since 32 gangs of 10 hold only 320: #1566), rows of 25, headless, lockstep, the
+main thread's CPU time over 300 steps after 450 of warm-up, a `playtest` build, best of two runs (2026-11-21, the
+machine 66 to 100 % busy):
+
+| Engaged 1000 | 5 tokens (the original's) | 5 per 60 brains, no cap (the sweep's scenario) | at most 12 | **at most 20 (Coney's rule)** | at most 30 |
+| --- | --- | --- | --- | --- | --- |
+| aware / with a target / with a Fight goal | 396 / 300 / 128 | 920 / 680 / 332 | 984 / 865 / 353 | 998 / 857 / 355 | 983 / 867 / 348 |
+| step, median (ms) | 112.5 | 130.2 | 163.0 | 157.0 | 157.5 |
+| step, mean | 112.3 | 148.3 | 163.9 | 151.8 | 161.1 |
+| step, worst twentieth (95th percentile) | 118.8 | 262.6 | 181.2 | 181.6 | 197.7 |
+| step, 99th percentile | 120.6 | 345.0 | 191.6 | 200.6 | 205.1 |
+| the brains' share, median / mean | 11.5 / 11.8 | 12.8 / 31.9 | 32.7 / 33.4 | 34.1 / 32.8 | 28.3 / 33.7 |
+
+- The original's five tokens are cheap because most of the crowd never notices the fight: 396 of 1000 aware.
+- Scaled with no cap, the scans come in bursts: the worst twentieth of steps is twice the median (263 against 130 ms).
+  Capped at 20 it is 1.16 times the median (182 against 157 ms) and the 99th percentile falls from 345 to 201 ms, with
+  more of the crowd engaged (857 with a target against 680).
+- The cap of 20 has the lowest mean of the three caps and the worst twentieth of the cap of 12.
+- The median rises, against the sweep's figure (19 to 14 ms with the cap), because these builds lack the sweep's
+  other experiments: on `main` a scan still casts a sight ray at every member of every enemy gang (up to 500), about
+  1.7 ms a scan, until the scan casts them nearest first (#1555); twenty scans in every step are then the brains'
+  steady 33 ms, where the scaled rule spends the same mean in bursts. With cheap scans the sweep measured the cap
+  at 20 against the scaled rule: the worst twentieth from 48 to 23 ms, the mean from 22.4 to 14.6 ms.
+
+Up to 60 humans nothing changes. The all-humans trace, the event log and the lockstep digest hash the same on `main`
+and with these rules for a brawl of 22 + 22 fighters (58 humans with the level's own, 500 steps, headless and in a
+window), the same in gangs of 100 (700 steps) and 46 neutrals (60 humans). The sweep's identity scenarios are past
+60 (the level's 14 humans are added to the bench's 300), so they change by design: brawl 300 (500 steps) and engaged
+300 (700 steps) give other hashes, with more events logged as more of the crowd fights (6,590 to 8,852 and 8,030 to
+12,181).
