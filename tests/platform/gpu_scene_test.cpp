@@ -291,9 +291,10 @@ TEST_CASE("the GPU renderer skins a posed mesh by its bones", "[render][renderer
     // headless against characters::skinVertices() in scene_batch_test.cpp): its positions moved and its normals turned
     // by each bone times the weight, then by the draw's transform. Two quads at a distance of 10 in the test's 320 x
     // 240 view (an 80-pixel column is 2.5 units): a red prelit one in the first column, all on bone 0, which moves it 5
-    // units right into the third; and a lit white one in the fourth column whose normals face away from the light,
-    // split between bones 1 and 2, each turning it half a turn about its own centre, so it faces the light and is lit
-    // at 0.25 + 0.5 (an ambient and a directional light, as the scene test's).
+    // units right into the third; and a lit one in the fourth column, textured with the scene test's 2 x 2 check,
+    // whose normals face away from the light, split between bones 1 and 2, each turning it half a turn about its own
+    // centre, so it faces the light and is lit at 0.25 + 0.5 (an ambient and a directional light, as the scene test's),
+    // its texture mirrored left to right: the bottom row white, then blue.
     if (!gpuHere()) {
         SKIP("no display or no GPU device here");
     }
@@ -306,6 +307,15 @@ TEST_CASE("the GPU renderer skins a posed mesh by its bones", "[render][renderer
     REQUIRE(started.has_value());
     RenderEngine& engine = **started;
     coney::platform::SceneAssets& assets = engine.sceneAssets();
+    rw::Texture* texture = rw::Texture::create(nullptr);
+    std::memcpy(texture->name, "check", 6); // the name and its terminator
+    coney::graphics::TextureData texels;
+    texels.name = "check";
+    texels.levels.push_back({2, 2, {255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255}});
+    texels.sampler = {coney::graphics::TextureFilter::Nearest, coney::graphics::TextureAddress::Clamp,
+                      coney::graphics::TextureAddress::Clamp};
+    auto textureId = assets.addTexture(*texture, texels);
+    REQUIRE(textureId.has_value());
 
     const auto column = [](int left, int right, QuadSpec spec) {
         const auto x = [](int pixel) { return (static_cast<float>(pixel) / 160.0F - 1.0F) * 5.0F; };
@@ -326,7 +336,7 @@ TEST_CASE("the GPU renderer skins a posed mesh by its bones", "[render][renderer
     const coney::platform::SkinVertexData moved = skinOf({0, 0, 0, 0}, {1.0F, 0.0F, 0.0F, 0.0F});
     const coney::platform::SkinVertexData turned = skinOf({1, 2, 0, 0}, {0.5F, 0.5F, 0.0F, 0.0F});
     rw::Atomic* red = makeQuad(column(0, 80, QuadSpec{.prelit = true, .prelight = {255, 0, 0, 255}}));
-    rw::Atomic* white = makeQuad(column(240, 320, QuadSpec{.lit = true, .normalZ = 1.0F}));
+    rw::Atomic* white = makeQuad(column(240, 320, QuadSpec{.lit = true, .texture = texture, .normalZ = 1.0F}));
     auto redId = assets.addAtomic(*red, &moved);
     auto whiteId = assets.addAtomic(*white, &turned);
     REQUIRE(redId.has_value());
@@ -377,12 +387,15 @@ TEST_CASE("the GPU renderer skins a posed mesh by its bones", "[render][renderer
     REQUIRE(height == 240);
     CHECK(near(pixelAt(rgba, width, 40, 120), Rgba{100, 100, 100, 255}, 2));  // moved away
     CHECK(near(pixelAt(rgba, width, 200, 120), Rgba{255, 0, 0, 255}, 2));     // to here
-    CHECK(near(pixelAt(rgba, width, 280, 120), Rgba{191, 191, 191, 255}, 2)); // turned to the light
+    CHECK(near(pixelAt(rgba, width, 260, 180), Rgba{191, 191, 191, 255}, 2)); // turned to the light: white
+    CHECK(near(pixelAt(rgba, width, 300, 180), Rgba{0, 0, 191, 255}, 2));     // and blue
 
     destroyQuad(red);
     destroyQuad(white);
     assets.removeMesh(*redId);
     assets.removeMesh(*whiteId);
+    assets.removeTexture(*textureId);
+    texture->destroy();
     std::error_code ignored;
     std::filesystem::remove(path, ignored);
 }
