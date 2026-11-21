@@ -490,6 +490,15 @@ code ports:
 
 There is no front matter and no fixed list of sections.
 
+**One engine page is also held to the code** (`beyond`): [Beyond the original](../engine/beyond-the-original.md), the list
+of every deliberate way Coney differs from the PS2 build. Its lifted limits table has an entry for each
+`@coney-only limit:` marker in `src/` and no entry for a marker that is gone, and every table on it has its columns and
+a status of `on main` or `planned` ([the check](coney-tools-build.md#beyond)). **A change that adds a lift of the
+original's limit or any other improvement past the original (a picture or sound option, an Xbox-native option, a
+multiplayer or mod feature, a debug or player tool) updates that page in the same commit**, as it updates the roadmap's
+status; the rule and the lift's marker are in [The original's fixed
+limits](conventions.md#original-limits).
+
 A plan is an issue, with one exception: when the maintainers ask for the design of a part's next steps on the part's
 own page (as for [Renderer](../engine/renderer.md)), it is a section of that page, which says at its top that it is a
 design. Every other design is a page of the Designs kind in `docs/guides/` ([page kinds](#page-kinds)).
@@ -531,6 +540,7 @@ is read as any other page. What each rule looks at, by the kind of page ([Page k
 | `history` | research, engine | Research: a date or an issue number outside In Coney and How this was checked. Engine: a date anywhere but a fenced block or a link's inline target, and an issue number that is not in a code span or the whole text of a link to `issue:` and the same number ([the forms](#engine-pages)) |
 | `length` | research, guides, engine | Research: more lines than the kind's limit, an error unless the page is legacy. Guides and engine pages: a **warning** above 800 lines, because a guide past that is several guides and where to cut is the author's call |
 | `index` | engine | `docs/engine/index.md` is missing, or a change removes it while other engine pages remain |
+| `beyond` | the beyond page, and the source of a marker | A `@coney-only limit:` marker in `src/` with no entry in the Marker column of the lifted limits table (reported at the marker); an entry that names a marker that is gone or renamed, one planned whose marker exists, one on main that names none, a marker named twice; a section, table, column or status the page lacks ([the check](coney-tools-build.md#beyond)) |
 | `legacy` | research | A new page in the legacy file; a rule listed for a page that now passes it; a change to the file that adds a page or a rule |
 | `machine-path` | all | A user folder (under `Users` or `/home`, with a real name) or a drive-letter path two folders deep. Not refused: a placeholder (`<name>`), a bare drive (`H:\`), `C:\Program Files`, `C:\Windows`, and the original's own build paths (`c:/Warriors/...`, `/home/ack/...`) |
 | `stale-wording` | all | "still small", "not yet", "once it exists", "does not exist yet", "yet to be written": wording that says when something is true instead of what is true. "Not yet" is refused only where it dates the project: on a research page where it speaks of Coney (In Coney, Open questions, or a line that names Coney), since "a store that is not yet broken" describes the original; on any other page where a word of work follows it ("not yet implemented", "written", "listed", "supported", ...), since "not yet looked at" is an issue's state. A phrase in code spans or in double quotes is mentioned, not used |

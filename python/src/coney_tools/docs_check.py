@@ -26,10 +26,10 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from coney_tools import docs_legacy, local_gate, source_files, standards_check
+from coney_tools import docs_beyond, docs_legacy, local_gate, source_files, standards_check
 from coney_tools.audit_files import repository_address_terms
 from coney_tools.config import ConfigError
-from coney_tools.conventions import Research, TouchScope, load_conventions_leniently
+from coney_tools.conventions import BeyondPage, CodeStandard, Research, TouchScope, load_conventions_leniently
 from coney_tools.docs_engine import FOLDER as ENGINE_FOLDER
 from coney_tools.docs_engine import INDEX as ENGINE_INDEX
 from coney_tools.docs_engine import check_engine, index_finding
@@ -61,12 +61,17 @@ class Context:
     """What the rules take from the repository: the words that must not name a person (`repo.wording.avoid`), the
     lower-case strings that spell the repository's and the docs site's address and, for research pages, everything the
     research standard checks against (`ResearchEnv`; without it a research page is held to the Style rules only) and how
-    far the touch-it rule reaches (`standards.touch`; without it a touched page is held whole)."""
+    far the touch-it rule reaches (`standards.touch`; without it a touched page is held whole). The beyond page is held
+    to the `@coney-only limit:` markers of the sources by `docs_beyond`."""
 
     avoid: tuple[str, ...] = ()
     address_terms: tuple[str, ...] = ()
     research: ResearchEnv | None = None
     touch: TouchScope | None = None
+    #: The page of how Coney goes beyond the original and the sources whose markers it must list
+    #: (`standards.beyond`, `standards.code`; without them the page is not held to the sources).
+    beyond: BeyondPage | None = None
+    code: CodeStandard | None = None
 
 
 @dataclass
@@ -227,7 +232,12 @@ def context_for(root: Path) -> Context:
         source_files=ranges,
     )
     return Context(
-        conventions.repo.wording.avoid, tuple(repository_address_terms(root)), env, conventions.standards.touch
+        conventions.repo.wording.avoid,
+        tuple(repository_address_terms(root)),
+        env,
+        conventions.standards.touch,
+        conventions.standards.beyond,
+        conventions.standards.code,
     )
 
 
@@ -333,7 +343,22 @@ def check_changed(root: Path, base: str, context: Context) -> Result:
             result.findings[legacy_file] = found
     if context.research is not None:
         _add_standards(result, root, base, names)
+    _add_beyond(result, root, context)
     return result
+
+
+def _add_beyond(result: Result, root: Path, context: Context) -> None:
+    """Hold the beyond page and the sources' `@coney-only limit:` markers to each other (`docs_beyond`). Each file with
+    a finding becomes a "page" of the result: the source for a marker with no entry, the page for the rest. It runs on
+    every change, since a change to the sources alone can add or remove a marker."""
+    if context.beyond is None or context.code is None:
+        return
+    for path, found in docs_beyond.check_root(
+        root, context.beyond, context.code.folders, context.code.suffixes
+    ).items():
+        if path not in result.findings:
+            result.pages.append(path)
+        result.findings.setdefault(path, []).extend(found)
 
 
 def _check_engine_index(result: Result, root: Path, base: str) -> None:
@@ -398,4 +423,7 @@ def check_paths(root: Path, paths: Iterable[str], context: Context) -> Result:
             raise ConfigError(f"{path}: not a page the check covers (a hand-written page under docs/)")
         else:
             names.append(name)
-    return check_files(root, names, context)
+    result = check_files(root, names, context)
+    if context.beyond is not None and context.beyond.page in names:
+        _add_beyond(result, root, context)
+    return result

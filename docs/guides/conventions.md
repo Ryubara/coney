@@ -467,10 +467,20 @@ does: `Coney keeps it, because ...` or `Coney lifts it past N (rule: ...)`, with
 implementation" section. A page is brought up to this where it is touched anyway
 ([Touch a page, fix the page](writing-docs.md#touch-it)), not in a sweep of its own.
 
+**The page of every difference.** [Beyond the original](../engine/beyond-the-original.md) lists each lift beside the
+original's number, with the option that switches it and whether test mode keeps the original. **A change that adds a
+lift, or any other improvement past the original (a picture or sound option, a multiplayer or mod feature, a tool),
+updates that page in the same commit**: a row in the lifted limits table whose Marker cell holds the marker's
+`path:Symbol` (the file and the name the comment documents), or a row in the table of its kind. `coney-tools docs check`
+fails a `@coney-only limit:` marker with no row and a row that names a marker that is gone
+([the check](coney-tools-build.md#beyond)), and a change that lands a planned entry changes its status to `on main` in
+the same commit. The page's tables are the one list of lifts; this section and its research pages say why, the table
+says where.
+
 **The engine limits preset.** Test mode gets a preset, *engine limits*, that pins every lifted limit at the original's
 number, so a run can show Coney under the PS2's ceilings (a comparison with the original, a hash that must not move).
-It is the rule now and is not built yet: a follow-up issue builds the preset, and which runs use it is decided then.
-Until it exists a lift follows the list above, so the preset has one place per limit to pin.
+It is the rule now and is not built yet: a follow-up issue ([#1591](issue:1591)) builds the preset, and which runs use it
+is decided then. Until it exists a lift follows the list above, so the preset has one place per limit to pin.
 
 A reviewer asks of every change whether it ports a fixed limit of the original without need, and whether a lift is
 marked, documented and tested on both sides of the original's number ([Code review](review/code.md#correctness),

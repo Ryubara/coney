@@ -1422,6 +1422,20 @@ standards:
     # The rules of a page owed wherever they point once the change touches it: the legacy file's consistency, and the
     # length (a legacy page's entry still excuses its length).
     page_rules: [legacy, length]
+  # The page of every deliberate difference from the PS2 build (docs/guides/coney-tools-build.md#beyond), kept by
+  # `docs check`: each `@coney-only limit:` marker in `code.folders` has an entry in the table of `limits_section`, in
+  # the `marker_column`, as `path:Symbol` (the file and the name of the declaration the marker documents), and each such
+  # entry names a marker that exists. Every table of `sections` has the `columns` and gives each entry a status that
+  # starts with one of `statuses`; `on main` is the status of what the code has, `planned` of what an issue will add.
+  beyond:
+    page: docs/engine/beyond-the-original.md
+    marker: "@coney-only limit:"
+    limits_section: lifted-limits
+    sections: [lifted-limits, picture-and-sound, xbox-native, multiplayer, mods-and-studio, debug-and-player-tools]
+    columns: [Difference, The original, Coney, Switch and test mode, Status, Details]
+    status_column: Status
+    statuses: [on main, planned]
+    marker_column: Marker
 
 ci:
   # What runs where, and the three CI jobs that read this section's settings (docs/guides/building.md#what-ci-runs).

@@ -74,6 +74,10 @@ build.
 
     Every change to Coney, newest first, written from the project's history
 
+- :material-rocket-launch-outline: **[Beyond the original](engine/beyond-the-original.md)**
+
+    Every deliberate way Coney differs from the PS2 build, and the option that switches each
+
 - :material-chart-line: **[Progress](progress/index.md)**
 
     How much of the game is reimplemented and researched, overall and per subsystem

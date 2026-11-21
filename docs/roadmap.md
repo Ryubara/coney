@@ -5,7 +5,10 @@ something you can run or check, and each builds on the ones before it. Research 
 before the previous one is finished, because implementation builds on the research page.
 
 This page is kept current: a milestone's status changes in the same commit as the work that changes it. The
-[Progress](progress/index.md) page and the README read their milestone table from here.
+[Progress](progress/index.md) page and the README read their milestone table from here. Where Coney goes past the
+original on purpose (the limits it lifts, the picture and sound, multiplayer, mods and tools), each difference, its
+switch and its status are on [Beyond the original](engine/beyond-the-original.md), which a change that adds one
+updates in the same commit.
 
 | Milestone | Status |
 | --- | --- |

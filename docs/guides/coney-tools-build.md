@@ -16,9 +16,10 @@ uv run --project python coney-tools docs legacy [--init | --prune | --check] [--
 Checks Markdown pages against the standard of [Writing these docs](writing-docs.md#checking): the front matter, the
 sections of its kind, the "Verified against" line, the evidence levels, the addresses, the copied paragraphs, the dates
 and the length of a research page, the dates, issue numbers, addresses and landing page of an engine page
-([`docs/engine/`](writing-docs.md#engine-pages)), and the Style rules every page keeps. Writing-docs owns the rules and
-the heuristics, and `research` in [.github/conventions.yml](repo:.github/conventions.yml) the kinds, sections and limits;
-this entry is the command. Without `PATHS` it checks the pages changed since
+([`docs/engine/`](writing-docs.md#engine-pages)), and the Style rules every page keeps, and on every change the page
+of the original's differences against the `@coney-only limit:` markers of the sources ([below](#beyond)). Writing-docs
+owns the rules and the heuristics, and `research` in [.github/conventions.yml](repo:.github/conventions.yml) the
+kinds, sections and limits; this entry is the command. Without `PATHS` it checks the pages changed since
 `--base` (committed or not, untracked included), as [`ci run`](coney-tools-ci.md#ci-run) does in its `docs` step and the
 `docs` workflow does on a pull request. With `PATHS` it checks those files, or every page under a folder, whether or not
 they changed. It prints `path:line: rule: message` for each finding (`--quiet` prints only the counts), a warning (a
@@ -55,6 +56,32 @@ page](writing-docs.md#touch-it)); an entry may list any research rule or `stale-
 its entry's grading exemption and nothing else, and a line that only rewrites link targets to follow the change is no
 touch: to a page it moved, to a section it moved between two pages, or to an id new on the same page while the old one
 stays (a split section; all under [Legacy pages](writing-docs.md#legacy-pages)).
+
+### The page of the original's differences {#beyond}
+
+`docs check` also holds one page to the code: [Beyond the original](../engine/beyond-the-original.md), the list of every
+deliberate way Coney differs from the PS2 build (`standards.beyond` in
+[.github/conventions.yml](repo:.github/conventions.yml) names the page, the marker, the sections, the columns and the
+statuses; `python/src/coney_tools/docs_beyond.py` is the check). It runs on every change, since a change to `src/` alone
+can add or remove a marker, and when the page is named with `PATHS`. It reads the markers from the code and the entries
+from the page, so there is no second list:
+
+- **A marker is keyed by `path:Symbol`.** Every `@coney-only limit:` in a comment of the files under `standards.code`'s
+  folders is keyed by its file and the name the comment documents: the declaration under the comment block (a
+  function, a constant, a type; a `template` header and an attribute are skipped), the one on the marker's own line when
+  code precedes the comment, or `(file)` when the comment sits above no declaration. Two markers of one name in one file
+  are one key.
+- **The lifted limits table names them.** Its **Marker** column holds the key of each marker an entry stands for, in code
+  spans (`` `src/core/crowd_limits.h:scanTokens` ``), several for one entry when they share its row, or `-` for an entry
+  that is `planned`. A marker no row names fails at the marker's line in the source; a key no marker has, one named twice,
+  a `planned` entry whose marker exists and an entry `on main` that names none fail at the page's row.
+- **Every section is a table.** The sections of `standards.beyond.sections` each need a heading with that id and a table
+  with the columns of `standards.beyond.columns` (the lifted limits table also the Marker column); each row has a cell
+  for every column and a status that starts with `on main` or `planned`.
+- **A missing page** fails only when the sources have a marker, so a checkout without the page or any lift passes.
+
+The finding's rule is `beyond`. A change that lands the work of a `planned` entry changes the row to `on main` and gives
+it its Marker cell in the same commit; one that removes a lift takes its row out.
 
 <!-- command-reference:begin docs -->
 ## Parameters of `docs` {#docs-parameters}
@@ -192,16 +219,16 @@ that takes the focus), and never outlive the command (below).
 by one only lets it start the next, so nothing the command starts may outlive it
 ([`process_lifetime.py`](repo:python/src/coney_tools/process_lifetime.py)):
 
-* *The command is killed.* On Windows it puts itself in a job object with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` before
+- *The command is killed.* On Windows it puts itself in a job object with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` before
   it starts anything; `cmake`, `ninja`, the compilers, `ctest` and every `coney_tests` inherit the job, and when the
   command ends, however it ends (Task Manager included), Windows ends them all. On Linux and macOS each child runs in
   a session of its own, so its whole tree is one process group that the command stops on an interrupt, `SIGTERM` or
   `SIGHUP`; on Linux the child also gets `SIGKILL` when the command dies by `SIGKILL` (`PR_SET_PDEATHSIG`).
-* *Its caller is gone.* A watch thread looks every two seconds at the command's ancestors, up to the shell that ran it
+- *Its caller is gone.* A watch thread looks every two seconds at the command's ancestors, up to the shell that ran it
   (through `uv` and Python's launchers; under Git Bash, as far as the native chain goes). When one has ended (the
   agent tool restarted, the background shell was killed), the command stops its child, starts nothing more and
   leaves as on an interrupt, releasing its claims (by force 15 seconds later if a wait does not notice); exit `130`.
-* *An older run died without these guards.* When a claim or a folder lock whose process is gone is taken over or
+- *An older run died without these guards.* When a claim or a folder lock whose process is gone is taken over or
   released with `build unclaim`, the build programs that run started (`cmake`, `ctest`, `ninja`, `coney_tests`: its
   direct children by parent pid, started after the claim was made, as Windows reuses pids) are stopped with everything
   under them, and the run that took over says `stopped N process trees <agent>'s run left running`. A claim that is
