@@ -178,6 +178,7 @@ void applyPauseOutcome(gui::PauseOutcome outcome, GameModeStack& stack, GameStat
 class QuitCount {
   public:
     /// Notes whether the screen's choice is a quit now; returns the quits counted so far, this one included.
+    /// @coney-only the quits network play counts; the original keeps no count
     std::uint64_t see(bool quitting) {
         if (quitting && !m_seen) {
             ++m_count;
