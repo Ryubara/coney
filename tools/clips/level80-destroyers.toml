@@ -1,0 +1,11 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level80 checkpoint 4, the crew's fight with the
+# twelve Destroyers. The input script walks Cleon up to Cochise and Swan, skips their scene, gives the attack order and
+# fights the nearest Destroyer standing with square; from frame 1248 one of them takes two hits within his class's
+# busy time after a hit (+0x32, 750 ms) while no reaction holds him. The clip starts just before. For a change to how
+# a soldier answers hits in a row: his busy time, his re-target and his gang's help call.
+description = "level80 checkpoint 4: a Destroyer takes two hits inside his busy time in the crew's fight"
+level = "level80"
+input = "tools/clips/level80-destroyers.txt"
+checkpoint = 4
+start_frame = 1230
+seconds = 10
