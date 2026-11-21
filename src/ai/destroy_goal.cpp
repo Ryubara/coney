@@ -51,7 +51,8 @@ void DestroyGoal::resume(Brain& brain) {
 }
 
 void DestroyGoal::end(Brain& brain) {
-    // Coney stand-in: the Suspend the original runs first and the drop of what he holds are not built.
+    // Coney stand-in: the Suspend the original runs first, the drop of what he holds and the restore of the brain
+    // byte +0x265 are not built.
     releaseTarget();
     dropTarget(brain);
 }
@@ -178,6 +179,7 @@ GoalStatus DestroyGoal::process(Brain& brain) {
         const std::optional<SmashTarget> view = m_items->wreckView(*m_target);
         const bool strikeHeld = use == HeldUse::Breaks && view && view->heldBreaks;
         if (!strikeHeld && view && (view->animSet == kCarriedSet || view->animSet == kThrownSet)) {
+            // Coney stand-in: the original first drops what he holds (Human_DropHeld); ItemServices has no drop.
             static_cast<void>(brain.pushGoal(std::make_unique<GetItemGoal>(*m_target, kFetchGait, *m_items)));
             m_fetching = true;
             ++m_tries;
