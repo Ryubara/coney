@@ -136,10 +136,11 @@ std::optional<SmashTarget> findSmashTarget(Brain& searcher, const Brain& leader,
     return std::nullopt;
 }
 
-std::optional<PaneView> claimPane(Brain& human, ItemServices& items, float radius) {
+std::optional<PaneView> claimPane(Brain& human, ItemServices& items, float radius, std::optional<anim::Vec3> centre) {
     const anim::Vec3 at = human.human().position();
     const int gang = gangOf(human);
-    for (const PaneView& pane : items.panes(at, radius)) {
+    // The panes round `centre`, his own feet when none is given.
+    for (const PaneView& pane : items.panes(centre.value_or(at), radius)) {
         if (items.claimedBy(pane.handle, gang, human.nowMs()) || pane.alarmed) {
             continue;
         }

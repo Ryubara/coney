@@ -1256,11 +1256,12 @@ who is hit by someone he sees, warned of an attack or spots an enemy (events 1, 
 a responder spawner (state 9 or 10), the enemy's gang's second wanted timer not running and no other caller, gets a
 CallGang goal: he runs (gait 5) to the farthest phone flag (activity 6) within `range` (twice his far melee range
 when negative), or calls where he stands, and after 1.5 s the call is made and the enemy's gang gets its second
-wanted timer. **Stand-ins**: ManWeaponPile, Vandalize, Steal and AvoidEnemies hold their places, their goals not
-traced; the scouts' radar blip, clips, glances, roaming, help call within 15 m, investigation of an unseen hit and
-the gang's alert state, the caller's lines, clips and call spot, and the responders themselves (the level only logs
-the call); banter, answering violence, the anim substitutions, HoldTheLine's 12 and 14 and Pursue's search time are
-not built.
+wanted timer. Vandalize gives each member a Destroy goal that wrecks the tactic's object zone and returns 1 once the
+zone is empty ([TacticVandalize](../ai-code.md#t2-vandalize)). **Stand-ins**: ManWeaponPile, Steal and AvoidEnemies
+hold their places, their goals not traced; the scouts' radar blip, clips, glances, roaming, help call within 15 m,
+investigation of an unseen hit and the gang's alert state, the caller's lines, clips and call spot, and the responders
+themselves (the level only logs the call); banter, answering violence, the anim substitutions, HoldTheLine's 12 and 14
+and Pursue's search time are not built.
 
 **Open in Coney.** The pattern read at Start and in the pick; the reposition's band-keeping move and taunt; the move's
 sight checks; choke points and the waypoint queues; the dynamic obstacles; the legs of edges 8, `0x10`,

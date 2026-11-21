@@ -1,0 +1,35 @@
+version = 1
+id = "r-20261121-level34-intro-looters"
+date = "2026-11-21"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "b5830821867bfff4522a8e4ca38186c78a3ea4a93224275c043294a222af8468"
+
+[who]
+agent = "a44dbf19b1650941b"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level34 checkpoint 1 loaded with the load-checkpoint recipe; P1.DoneLooting wrapped through the lua recipe to log each code with GetGameTime; player 1 teleported into vStartIntroLooters after the intro scene and left standing; the log read back with lua-globals"
+
+[values]
+codes_16 = 7
+first_16_after_ms = 3503
+last_16_after_ms = 14514
+code_1_after_ms = 15048
+other_codes = 0
+
+[addresses]
+VandalizeTactic_Process = 0x0031ea00
+VandalizeTactic_OnEvent = 0x0031eaf0
