@@ -598,11 +598,13 @@ void PlayLevelMode::render(const RenderTime& time) {
         // order again, each posed one's librw mesh is placed with what he wears, holds and carries, and every one's
         // shadow and ring are queued. Only the middle pass leaves this thread, and it writes nothing but the jobs and
         // their meshes, so what is posed, attached and queued, and in what order, is as when one thread did it all.
+        constexpr std::size_t kNoJob = static_cast<std::size_t>(-1);
         struct Drawn {
-            anim::Vec3 feet;                // where his shadow and ring go
-            std::optional<std::size_t> job; // his job, when posed
+            bool listed = false;      // he has a mesh and is not deleted: his shadow and ring are queued
+            anim::Vec3 feet;          // where his shadow and ring go
+            std::size_t job = kNoJob; // his job, when posed
         };
-        std::vector<std::optional<Drawn>> drawn(fighters.size());
+        std::vector<Drawn> drawn(fighters.size());
         std::vector<HumanPoseJob> jobs;
         jobs.reserve(fighters.size());
         for (std::size_t i = 0; i < fighters.size(); ++i) {
@@ -623,7 +625,7 @@ void PlayLevelMode::render(const RenderTime& time) {
             }
             const anim::Vec3 feet =
                 scenePose ? scenePose->feet : human::interpolateFeet(fighters[i].previous, fighters[i].current, alpha);
-            drawn[i] = Drawn{.feet = feet};
+            drawn[i] = Drawn{.listed = true, .feet = feet};
             // Culled before posing: one no pose of whom can be in the picture is neither posed nor drawn, which leaves
             // the picture as it was. One who wears or holds something is posed in view whatever his distance, as what
             // he carries is not faded with him (docs/engine/renderer-performance.md#cull-before-posing).
@@ -649,16 +651,16 @@ void PlayLevelMode::render(const RenderTime& time) {
                 job.current = &fighters[i].current;
                 job.alpha = alpha;
             }
-            drawn[i]->job = jobs.size();
+            drawn[i].job = jobs.size();
             jobs.push_back(job);
         }
         prepareHumanPoses(sharedWorkerPool(), jobs);
         for (std::size_t i = 0; i < fighters.size(); ++i) {
-            if (!drawn[i]) {
+            if (!drawn[i].listed) {
                 continue;
             }
-            if (drawn[i]->job) {
-                const HumanPoseJob& job = jobs[*drawn[i]->job];
+            if (drawn[i].job != kNoJob) {
+                const HumanPoseJob& job = jobs[drawn[i].job];
                 commitHumanPose(job);
                 const human::PlayerCharacter& character = characterOf(*fighters[i].human);
                 const human::TargetSnapshot& pose = job.pose;
@@ -668,8 +670,8 @@ void PlayLevelMode::render(const RenderTime& time) {
                 poseCarriedProp(*fighters[i].human, character, pose.pose, pose.feet, pose.heading);
             }
             // His blob shadow and ring are drawn whether or not he is: each makes its own draw.
-            m_lights->addShadow(ground, drawn[i]->feet);
-            ringFeet[ringKey(fighters[i].human.get())] = drawn[i]->feet;
+            m_lights->addShadow(ground, drawn[i].feet);
+            ringFeet[ringKey(fighters[i].human.get())] = drawn[i].feet;
         }
     }
     // Over the frame, before its present: the level's screen effects, the HUD's sprites of the newest step, then the

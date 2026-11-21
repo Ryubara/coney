@@ -50,6 +50,7 @@ TargetSnapshot snapshotOf(const coney::anim::Skeleton& skeleton, std::size_t n, 
     snapshot.pose.rotations = skeleton.bindRotations;
     const float angle = (0.07F * static_cast<float>(n)) + (late ? 0.3F : 0.0F);
     snapshot.pose.rotations[3] = coney::anim::Quat{0.0F, 0.0F, std::sin(angle / 2.0F), std::cos(angle / 2.0F)};
+    // Rows of seven: the row is the whole quotient. NOLINTNEXTLINE(bugprone-integer-division)
     snapshot.feet = Vec3{static_cast<float>(n % 7) - 3.0F + (late ? 0.1F : 0.0F), static_cast<float>(n / 7), 0.0F};
     snapshot.heading = (0.4F * static_cast<float>(n)) + (late ? 0.05F : 0.0F);
     return snapshot;
