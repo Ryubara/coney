@@ -359,7 +359,7 @@ void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::
             // A human (a posed draw) waits for the GPU renderer's skinning (#1206): left out, not drawn in his bind
             // pose, his blood layer with him.
             const graphics::MeshData* mesh = store.mesh(draw.mesh);
-            if (mesh == nullptr || graphics::needsSkinning(frame, draw)) {
+            if (mesh == nullptr || graphics::posingOf(frame, draw, *mesh, 0) != graphics::Posing::None) {
                 continue;
             }
             // The base mesh, then its dual layer right after it at the base's first alpha.

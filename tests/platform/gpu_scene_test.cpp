@@ -19,6 +19,7 @@
 
 #include "graphics/frame_description.h"
 #include "graphics/texture_data.h"
+#include "platform/character_skin.h"
 #include "platform/render_engine.h"
 #include "platform/scene_assets.h"
 #include "support/optional_value.h"
@@ -59,6 +60,7 @@ struct QuadSpec {
     Rgba colour{255, 255, 255, 255}; // the material's colour
     rw::Texture* texture = nullptr;
     bool facingAway = false; // wound clockwise as the camera sees it, so back-face culling drops it
+    float normalZ = -1.0F;   // the normals' z: -1 faces the camera, 1 away from it
 };
 
 // A librw atomic of one quad as `spec` says, at the world's origin: texture coordinates (0, 0) at its top left to
@@ -82,7 +84,7 @@ rw::Atomic* makeQuad(const QuadSpec& spec) {
     for (rw::int32 i = 0; i < 4; ++i) {
         const auto& corner = corners[static_cast<std::size_t>(i)];
         target.vertices[i] = rw::makeV3d(corner[0], corner[1], corner[2]);
-        target.normals[i] = rw::makeV3d(0.0F, 0.0F, -1.0F);
+        target.normals[i] = rw::makeV3d(0.0F, 0.0F, spec.normalZ);
         geometry->texCoords[0][i] = uvs[static_cast<std::size_t>(i)];
         if (spec.prelit) {
             geometry->colors[i] = rw::makeRGBA(spec.prelight.r, spec.prelight.g, spec.prelight.b, spec.prelight.a);
@@ -279,6 +281,108 @@ TEST_CASE("the GPU renderer draws a scene pass's meshes lit, textured, blended, 
     }
     assets.removeTexture(*textureId);
     texture->destroy();
+    std::error_code ignored;
+    std::filesystem::remove(path, ignored);
+}
+
+TEST_CASE("the GPU renderer skins a posed mesh by its bones", "[render][renderer][window][scene][skinning]") {
+    // Expected: ../engine/gpu-renderer.md#skinning: a posed draw's mesh, its vertices weighted to bones, is placed by
+    // its pose as the GL3 renderer's skinning shader places it (platform/character_skin.cpp; the formula is checked
+    // headless against characters::skinVertices() in scene_batch_test.cpp): its positions moved and its normals turned
+    // by each bone times the weight, then by the draw's transform. Two quads at a distance of 10 in the test's 320 x
+    // 240 view (an 80-pixel column is 2.5 units): a red prelit one in the first column, all on bone 0, which moves it 5
+    // units right into the third; and a lit white one in the fourth column whose normals face away from the light,
+    // split between bones 1 and 2, each turning it half a turn about its own centre, so it faces the light and is lit
+    // at 0.25 + 0.5 (an ambient and a directional light, as the scene test's).
+    if (!gpuHere()) {
+        SKIP("no display or no GPU device here");
+    }
+    WindowDesc desc;
+    desc.activate = false;
+    desc.hidden = true;
+    desc.width = 320;
+    desc.height = 240;
+    auto started = RenderEngine::start(RenderBackend::Gpu, desc);
+    REQUIRE(started.has_value());
+    RenderEngine& engine = **started;
+    coney::platform::SceneAssets& assets = engine.sceneAssets();
+
+    const auto column = [](int left, int right, QuadSpec spec) {
+        const auto x = [](int pixel) { return (static_cast<float>(pixel) / 160.0F - 1.0F) * 5.0F; };
+        spec.topLeft = {x(left), 3.75F, 10.0F};
+        spec.topRight = {x(right), 3.75F, 10.0F};
+        spec.bottomLeft = {x(left), -3.75F, 10.0F};
+        spec.bottomRight = {x(right), -3.75F, 10.0F};
+        return spec;
+    };
+    // Every vertex of a quad on the same bones and weights.
+    const auto skinOf = [](std::array<std::uint8_t, 4> bones, std::array<float, 4> weights) {
+        coney::platform::SkinVertexData skin;
+        skin.weights.assign(4, weights);
+        skin.indices.assign(4, bones);
+        skin.bones = 3;
+        return skin;
+    };
+    const coney::platform::SkinVertexData moved = skinOf({0, 0, 0, 0}, {1.0F, 0.0F, 0.0F, 0.0F});
+    const coney::platform::SkinVertexData turned = skinOf({1, 2, 0, 0}, {0.5F, 0.5F, 0.0F, 0.0F});
+    rw::Atomic* red = makeQuad(column(0, 80, QuadSpec{.prelit = true, .prelight = {255, 0, 0, 255}}));
+    rw::Atomic* white = makeQuad(column(240, 320, QuadSpec{.lit = true, .normalZ = 1.0F}));
+    auto redId = assets.addAtomic(*red, &moved);
+    auto whiteId = assets.addAtomic(*white, &turned);
+    REQUIRE(redId.has_value());
+    REQUIRE(whiteId.has_value());
+
+    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-skin-capture.png").string();
+    engine.requestCapture(0, path);
+    engine.beginWindowFrame(Rgba{100, 100, 100, 255});
+    coney::graphics::SceneCamera camera;
+    camera.halfWidth = 0.5F;
+    camera.halfHeight = 0.375F;
+    camera.nearClip = 1.0F;
+    camera.farClip = 100.0F;
+    camera.fogStart = 100.0F;
+    engine.setSceneCamera(camera);
+    const std::array<coney::graphics::SceneLight, 2> lights{{
+        {.type = coney::graphics::LightType::Ambient, .colour = {0.25F, 0.25F, 0.25F}},
+        {.type = coney::graphics::LightType::Directional,
+         .colour = {0.5F, 0.5F, 0.5F},
+         .direction = {0.0F, 0.0F, 1.0F}},
+    }};
+    // Bone 0 moves 5 units right; bones 1 and 2 turn half a turn about y round the white quad's centre (3.75, 0, 10).
+    const std::array<coney::graphics::Transform3d, 3> bones{{
+        {.position = {5.0F, 0.0F, 0.0F}},
+        {.right = {-1.0F, 0.0F, 0.0F},
+         .up = {0.0F, 1.0F, 0.0F},
+         .at = {0.0F, 0.0F, -1.0F},
+         .position = {7.5F, 0.0F, 20.0F}},
+        {.right = {-1.0F, 0.0F, 0.0F},
+         .up = {0.0F, 1.0F, 0.0F},
+         .at = {0.0F, 0.0F, -1.0F},
+         .position = {7.5F, 0.0F, 20.0F}},
+    }};
+    coney::graphics::Draw3d draw;
+    draw.states.cull = coney::graphics::CullFaces::None; // the half turn winds the white quad the other way
+    draw.mesh = *redId;
+    engine.drawScene(draw, lights, bones);
+    draw.mesh = *whiteId;
+    engine.drawScene(draw, lights, bones);
+    engine.present();
+
+    const auto captured = coney::test::got(engine.capture());
+    REQUIRE(captured.has_value());
+    int width = 0;
+    int height = 0;
+    const std::vector<std::uint8_t> rgba = readCapture(path, width, height);
+    REQUIRE(width == 320);
+    REQUIRE(height == 240);
+    CHECK(near(pixelAt(rgba, width, 40, 120), Rgba{100, 100, 100, 255}, 2));  // moved away
+    CHECK(near(pixelAt(rgba, width, 200, 120), Rgba{255, 0, 0, 255}, 2));     // to here
+    CHECK(near(pixelAt(rgba, width, 280, 120), Rgba{191, 191, 191, 255}, 2)); // turned to the light
+
+    destroyQuad(red);
+    destroyQuad(white);
+    assets.removeMesh(*redId);
+    assets.removeMesh(*whiteId);
     std::error_code ignored;
     std::filesystem::remove(path, ignored);
 }

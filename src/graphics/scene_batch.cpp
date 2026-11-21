@@ -142,10 +142,37 @@ DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, c
     return out;
 }
 
-bool needsSkinning(const FrameDescription& frame, const Draw3d& draw) {
-    // A human comes posed by his skinning matrices; the scene shaders have no skinning yet and the converted character
-    // meshes no weights, so he would stand in his bind pose (#1206).
-    return !frame.bonesOf(draw).empty();
+DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, const Transform3d& where,
+                     const MeshBounds& bounds) {
+    (void)bounds; // stub
+    return lightsFor(lights, mesh, where);
+}
+
+MeshBounds boundsOf(const Draw3d& draw, const MeshData& mesh) {
+    (void)draw; // stub
+    return mesh.bounds;
+}
+
+Posing posingOf(const FrameDescription& frame, const Draw3d& draw, const MeshData& mesh, std::size_t bonesNeeded) {
+    (void)mesh; // stub
+    (void)bonesNeeded;
+    return frame.bonesOf(draw).empty() ? Posing::None : Posing::LeftOut;
+}
+
+std::size_t bonesNeededBy(const MeshData& mesh) {
+    (void)mesh; // stub
+    return 0;
+}
+
+std::vector<Matrix4> bonePaletteOf(std::span<const Transform3d> bones) {
+    (void)bones; // stub
+    return {};
+}
+
+SkinnedVertex skinVertex(const MeshVertex& vertex, std::span<const Matrix4> palette) {
+    (void)vertex; // stub
+    (void)palette;
+    return {};
 }
 
 DrawColours coloursOf(const MeshData& mesh, const Material3d& material) {
@@ -196,6 +223,15 @@ DrawColours layerColoursOf(const MeshData& layer, const DrawColours& base) {
         out.colours.push_back(colour);
     }
     return out;
+}
+
+DrawColours dualColoursOf(const Draw3d& draw, const MeshData& layer, const DrawColours& base) {
+    (void)draw; // stub
+    return layerColoursOf(layer, base);
+}
+
+SceneStates dualStatesOf(const Draw3d& draw) {
+    return draw.states; // stub
 }
 
 bool vertexAlphaOf(const MeshData& mesh, const SubMesh& sub) {

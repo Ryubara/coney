@@ -21,6 +21,8 @@ struct Texture;
 
 namespace coney::platform {
 
+struct SkinVertexData; // platform/character_skin.h
+
 /// The meshes and textures the frame description's 3D draws name (graphics::Draw3d), converted into Coney's own
 /// formats (platform/asset_convert.h) and held by id in an AssetStore, with the librw atomic each mesh came from: the
 /// GL3 renderer draws that atomic through librw as before, and the GPU renderer will draw the converted mesh. A
@@ -38,10 +40,17 @@ class SceneAssets {
     /// Whether the assets convert what they are given. With `convert` false (the GL3 renderer, which draws the librw
     /// atomics and reads none of the converted data) a mesh still gets an id that names its atomic, but no mesh or
     /// texture is converted or held: addTexture() returns no id, and the store stays empty.
-    explicit SceneAssets(bool convert = true) : m_convert(convert) {}
+    /// `skinsInShaders` says whether the renderer they are for skins posed meshes in its shaders from the converted
+    /// data (the GPU renderer: RenderEngine::skinsInShaders()), so a character's mesh need not be skinned on the CPU.
+    explicit SceneAssets(bool convert = true, bool skinsInShaders = false)
+        : m_convert(convert), m_skinsInShaders(skinsInShaders) {}
 
     /// Whether the assets convert (the constructor's `convert`).
     [[nodiscard]] bool converting() const { return m_convert; }
+    /// Whether the renderer skins posed meshes in its shaders from the converted data (the constructor's
+    /// `skinsInShaders`): a CharacterMesh is then posed by its bone palette alone
+    /// (docs/engine/gpu-renderer.md#skinning).
+    [[nodiscard]] bool skinsInShaders() const { return m_skinsInShaders; }
 
     /// What the conversion has cost so far (#1422, docs/engine/renderer.md#frame-description): everything converted
     /// since the assets were made, and the bytes of converted data the store holds now and at most. The `--bench`
@@ -80,8 +89,10 @@ class SceneAssets {
     /// textures until the mesh is removed, and keeps `atomic` for the GL3 renderer (atomic()); when the assets do not
     /// convert it only keeps the atomic, under a new id. Fails as platform::meshFromRw() or AssetStore::addMesh() does,
     /// holding nothing. The ids are noted once, and stay valid while the mesh is held, whoever added the textures
-    /// (docs/engine/renderer.md#texture-lifetime).
-    [[nodiscard]] std::expected<graphics::MeshId, Error> addAtomic(rw::Atomic& atomic);
+    /// (docs/engine/renderer.md#texture-lifetime). With `skin` (one entry per vertex), each converted vertex also takes
+    /// its four bones and weights, for a renderer that skins the mesh (platform::meshFromRw()).
+    [[nodiscard]] std::expected<graphics::MeshId, Error> addAtomic(rw::Atomic& atomic,
+                                                                   const SkinVertexData* skin = nullptr);
     /// Drops the mesh `id` names, lets go of its materials' textures (removeTexture()) and forgets its atomic; nothing
     /// when it names none.
     void removeMesh(graphics::MeshId id);
@@ -116,6 +127,7 @@ class SceneAssets {
     };
 
     bool m_convert = true;
+    bool m_skinsInShaders = false;
     Totals m_totals;
     std::uint32_t m_lastBareMesh = 0; // the last mesh id handed out for an atomic alone (no conversion)
     graphics::AssetStore m_store;

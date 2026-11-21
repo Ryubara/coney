@@ -15,6 +15,8 @@
 #include "animation/skeleton.h"
 #include "characters/character_model.h"
 #include "characters/character_rig.h"
+#include "graphics/frame_description.h"
+#include "graphics/scene_batch.h"
 #include "platform/render_engine.h"
 #include "support/character_fixtures.h"
 #include "support/character_mesh_fixtures.h"
@@ -132,4 +134,29 @@ TEST_CASE("a mesh is skinned on the GPU only with the pipeline running and at mo
     CHECK_FALSE(coney::platform::skinsOnGpu(Skinning::Gpu, true, 65));
     CHECK_FALSE(coney::platform::skinsOnGpu(Skinning::Gpu, false, 32));
     CHECK_FALSE(coney::platform::skinsOnGpu(Skinning::Cpu, true, 32));
+}
+
+TEST_CASE("the GPU renderer's bone palette is the GL3 renderer's", "[character_mesh][gpu-renderer][skinning]") {
+    // Expected: ../engine/gpu-renderer.md#skinning: the GPU renderer's skinning shader reads the same palette layout as
+    // the GL3 renderer's (fillBonePalette()): each skinning matrix column-major, 16 floats a bone.
+    std::vector<coney::anim::Mat34> matrices(3);
+    std::vector<coney::graphics::Transform3d> bones;
+    for (std::size_t i = 0; i < matrices.size(); ++i) {
+        const auto f = static_cast<float>(i) + 1.0F;
+        matrices[i] = coney::anim::Mat34{{f, 0.1F, 0.2F}, {0.3F, f, 0.4F}, {0.5F, 0.6F, f}, {-f, 2.0F * f, 0.25F}};
+        const coney::anim::Mat34& m = matrices[i];
+        bones.push_back(coney::graphics::Transform3d{.right = {m.x.x, m.x.y, m.x.z},
+                                                     .up = {m.y.x, m.y.y, m.y.z},
+                                                     .at = {m.z.x, m.z.y, m.z.z},
+                                                     .position = {m.t.x, m.t.y, m.t.z}});
+    }
+    coney::platform::BonePalette gl3{};
+    coney::platform::fillBonePalette(matrices, gl3);
+    const std::vector<coney::graphics::Matrix4> gpu = coney::graphics::bonePaletteOf(bones);
+    REQUIRE(gpu.size() == matrices.size());
+    for (std::size_t i = 0; i < gpu.size(); ++i) {
+        for (std::size_t k = 0; k < coney::platform::kBoneFloats; ++k) {
+            CHECK(gpu[i][k] == gl3[(i * coney::platform::kBoneFloats) + k]);
+        }
+    }
 }

@@ -233,6 +233,9 @@ struct Draw3d {
     SceneStates states;
     std::uint32_t firstBone = 0;
     std::uint32_t boneCount = 0; ///< 0: not skinned
+    /// A posed mesh's sphere in its own space as the pose moved it (a human's, CharacterMesh::pose()), which the lights
+    /// are chosen by in place of the mesh's own (graphics::boundsOf()); none for a mesh drawn as it is.
+    std::optional<MeshBounds> bounds;
     std::uint32_t firstLight = 0;
     std::uint32_t lightCount = 0;
     std::uint32_t firstTexture = 0;
@@ -350,6 +353,9 @@ class FrameDescription {
     /// The pose of `draw`, a 3D draw of this frame: its skinning matrices in skin node order; empty when it is not
     /// skinned.
     [[nodiscard]] std::span<const Transform3d> bonesOf(const Draw3d& draw) const;
+    /// Every skinned 3D draw's pose, in the order the draws were added: Draw3d::firstBone indexes it, so a renderer
+    /// can upload the frame's poses at once (docs/engine/gpu-renderer.md#skinning).
+    [[nodiscard]] std::span<const Transform3d> bones() const { return m_bones; }
 
   private:
     // The overlay pass the next draw joins: the last pass when it is one, else a new one.

@@ -12,13 +12,18 @@
 
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <span>
 #include <variant>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "animation/anim_math.h"
+#include "characters/character_model.h"
+#include "characters/character_rig.h"
 #include "graphics/frame_description.h"
 #include "graphics/mesh_data.h"
 #include "graphics/overlay_batch.h"
@@ -270,21 +275,177 @@ TEST_CASE("a human's draw shades his first material as the GL3 renderer does", "
     CHECK(coloured.modulate);
 }
 
-TEST_CASE("a skinned draw waits for the GPU renderer's skinning", "[graphics][gpu-renderer][scene]") {
-    // Expected: ../engine/gpu-renderer.md#scene: a draw with a pose (a human, FrameDescription::bonesOf()) is left
-    // out of the GPU renderer's scene passes until it skins (#1206), never drawn in its bind pose; every other draw is
-    // drawn.
+TEST_CASE("a posed draw is skinned when its mesh has the bones and weights, and left out otherwise",
+          "[graphics][gpu-renderer][scene][skinning]") {
+    // Expected: ../engine/gpu-renderer.md#skinning: a draw with no pose is drawn as it is; a posed draw (a human,
+    // FrameDescription::bonesOf()) is skinned when its mesh carries bones and weights and the pose holds every bone
+    // its vertices name, and is left out otherwise rather than drawn in its bind pose. The bones a mesh needs are the
+    // highest index a vertex weighs plus one; a slot with no weight names none.
+    MeshData mesh = litMesh();
+    mesh.vertices[0].bones = {0, 7, 0, 0};
+    mesh.vertices[0].weights = {0.5F, 0.5F, 0.0F, 0.0F};
+    mesh.vertices[1].bones = {2, 0, 9, 0};
+    mesh.vertices[1].weights = {1.0F, 0.0F, 0.0F, 0.0F}; // bone 9 has no weight
+    CHECK(coney::graphics::bonesNeededBy(mesh) == 0);    // not skinned
+    mesh.attributes.skinned = true;
+    CHECK(coney::graphics::bonesNeededBy(mesh) == 8);
+
     coney::graphics::FrameDescription frame;
     frame.begin(coney::graphics::FrameStart{});
-    const std::array<Transform3d, 1> bones{Transform3d{.position = {1.0F, 2.0F, 3.0F}}};
+    const std::vector<Transform3d> eight(8, Transform3d{.position = {1.0F, 2.0F, 3.0F}});
     coney::graphics::Draw3d draw;
     draw.mesh = coney::graphics::MeshId{3};
-    frame.addSceneDraw(draw, {}, {}, {}, bones);
+    frame.addSceneDraw(draw, {}, {}, {}, eight);
     frame.addSceneDraw(draw, {}, {}, {});
+    frame.addSceneDraw(draw, {}, {}, {}, std::span<const Transform3d>(eight).first(7));
     const auto& scene = std::get<coney::graphics::ScenePass>(frame.passes()[0]);
-    REQUIRE(scene.draws.size() == 2);
-    CHECK(coney::graphics::needsSkinning(frame, scene.draws[0]));
-    CHECK_FALSE(coney::graphics::needsSkinning(frame, scene.draws[1]));
+    REQUIRE(scene.draws.size() == 3);
+    using coney::graphics::Posing;
+    CHECK(coney::graphics::posingOf(frame, scene.draws[0], mesh, 8) == Posing::Skinned);
+    CHECK(coney::graphics::posingOf(frame, scene.draws[1], mesh, 8) == Posing::None);
+    CHECK(coney::graphics::posingOf(frame, scene.draws[2], mesh, 8) == Posing::LeftOut); // bone 7 missing
+    MeshData unskinned = mesh;
+    unskinned.attributes.skinned = false;
+    CHECK(coney::graphics::posingOf(frame, scene.draws[0], unskinned, 0) == Posing::LeftOut);
+    CHECK(coney::graphics::posingOf(frame, scene.draws[1], unskinned, 0) == Posing::None);
+    // The frame's poses at once, each draw's from its first bone.
+    CHECK(frame.bones().size() == 15);
+    CHECK(scene.draws[2].firstBone == 8);
+}
+
+TEST_CASE("a bone palette holds each skinning matrix column by column, as the GL3 renderer's",
+          "[graphics][gpu-renderer][scene][skinning]") {
+    // Expected: ../guides/performance.md#gpu-skinning: the GL3 renderer's palette, each skinning matrix a column-major
+    // 4 x 4 (platform::fillBonePalette(), checked against it in character_mesh_skin_test.cpp): its x, y and z axes and
+    // its translation as the columns, (0, 0, 0, 1) the last row.
+    const std::array<Transform3d, 2> bones{Transform3d{.right = {1.0F, 2.0F, 3.0F},
+                                                       .up = {4.0F, 5.0F, 6.0F},
+                                                       .at = {7.0F, 8.0F, 9.0F},
+                                                       .position = {10.0F, 11.0F, 12.0F}},
+                                           Transform3d{.position = {-1.0F, 0.5F, 2.0F}}};
+    const std::vector<coney::graphics::Matrix4> palette = coney::graphics::bonePaletteOf(bones);
+    REQUIRE(palette.size() == 2);
+    CHECK(palette[0] == coney::graphics::Matrix4{1.0F, 2.0F, 3.0F, 0.0F, 4.0F, 5.0F, 6.0F, 0.0F, 7.0F, 8.0F, 9.0F, 0.0F,
+                                                 10.0F, 11.0F, 12.0F, 1.0F});
+    CHECK(palette[1] == coney::graphics::Matrix4{1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F,
+                                                 -1.0F, 0.5F, 2.0F, 1.0F});
+}
+
+TEST_CASE("the GPU skinning formula places a vertex as characters::skinVertices() does",
+          "[graphics][gpu-renderer][scene][skinning]") {
+    // Expected: ../engine/gpu-renderer.md#skinning: the shader blends a vertex as the GL3 renderer's skinning shader
+    // (platform/character_skin.cpp) and the CPU skinning before it (characters::skinVertices(),
+    // docs/research/characters.md#character-geometry): each weighted bone's placement of the position and turn of the
+    // normal times the weight, summed with the weights as stored (a hair below 1 here), the normal made unit. A
+    // synthetic mesh of three vertices under three bones: a turn, a move and a scaled turn.
+    const float c = std::cos(0.6F);
+    const float s = std::sin(0.6F);
+    const std::array<coney::anim::Mat34, 3> matrices{
+        coney::anim::Mat34{{c, s, 0.0F}, {-s, c, 0.0F}, {0.0F, 0.0F, 1.0F}, {0.1F, 0.2F, 0.3F}},
+        coney::anim::Mat34{{1.0F, 0.0F, 0.0F}, {0.0F, 1.0F, 0.0F}, {0.0F, 0.0F, 1.0F}, {-2.0F, 1.0F, 4.0F}},
+        coney::anim::Mat34{{0.0F, 0.0F, -1.2F}, {0.0F, 1.2F, 0.0F}, {1.2F, 0.0F, 0.0F}, {0.5F, -0.5F, 0.25F}}};
+    std::vector<coney::characters::SkinVertex> vertices(3);
+    vertices[0] = {.position = {1.0F, 0.0F, 0.0F},
+                   .normal = {0.0F, 1.0F, 0.0F},
+                   .bones = {0, 0, 0, 0},
+                   .weights = {1.0F, 0.0F, 0.0F, 0.0F}};
+    vertices[1] = {.position = {0.3F, 1.7F, -0.4F},
+                   .normal = {0.6F, 0.0F, 0.8F},
+                   .bones = {0, 1, 2, 0},
+                   .weights = {0.25F, 0.5F, 0.2499F, 0.0F}};
+    vertices[2] = {.position = {-1.0F, 0.5F, 2.0F},
+                   .normal = {0.0F, 0.0F, -1.0F},
+                   .bones = {2, 1, 0, 1},
+                   .weights = {0.4F, 0.3F, 0.2F, 0.0999F}};
+    std::vector<coney::anim::Vec3> positions(vertices.size());
+    std::vector<coney::anim::Vec3> normals(vertices.size());
+    coney::characters::skinVertices(vertices, matrices, positions, normals);
+
+    std::vector<Transform3d> bones;
+    for (const coney::anim::Mat34& m : matrices) {
+        bones.push_back(Transform3d{.right = {m.x.x, m.x.y, m.x.z},
+                                    .up = {m.y.x, m.y.y, m.y.z},
+                                    .at = {m.z.x, m.z.y, m.z.z},
+                                    .position = {m.t.x, m.t.y, m.t.z}});
+    }
+    const std::vector<coney::graphics::Matrix4> palette = coney::graphics::bonePaletteOf(bones);
+    for (std::size_t i = 0; i < vertices.size(); ++i) {
+        MeshVertex vertex;
+        vertex.position = {vertices[i].position.x, vertices[i].position.y, vertices[i].position.z};
+        vertex.normal = {vertices[i].normal.x, vertices[i].normal.y, vertices[i].normal.z};
+        vertex.bones = vertices[i].bones;
+        vertex.weights = vertices[i].weights;
+        const coney::graphics::SkinnedVertex got = coney::graphics::skinVertex(vertex, palette);
+        CHECK(got.position[0] == Approx(positions[i].x).margin(1e-5));
+        CHECK(got.position[1] == Approx(positions[i].y).margin(1e-5));
+        CHECK(got.position[2] == Approx(positions[i].z).margin(1e-5));
+        CHECK(got.normal[0] == Approx(normals[i].x).margin(1e-5));
+        CHECK(got.normal[1] == Approx(normals[i].y).margin(1e-5));
+        CHECK(got.normal[2] == Approx(normals[i].z).margin(1e-5));
+    }
+    // A slot with no weight names a bone the palette need not hold.
+    MeshVertex outside;
+    outside.position = {1.0F, 0.0F, 0.0F};
+    outside.normal = {0.0F, 1.0F, 0.0F};
+    outside.bones = {1, 200, 0, 0};
+    outside.weights = {1.0F, 0.0F, 0.0F, 0.0F};
+    const coney::graphics::SkinnedVertex moved = coney::graphics::skinVertex(outside, palette);
+    CHECK(moved.position == std::array<float, 3>{-1.0F, 1.0F, 4.0F});
+}
+
+TEST_CASE("a human's blood layer takes his colours, blended with no alpha test",
+          "[graphics][gpu-renderer][scene][skinning]") {
+    // Expected: ../engine/gpu-renderer.md#skinning: the GL3 renderer's blood pass (Gl3Renderer::drawHuman(), GS context
+    // 2 of docs/research/rendering.md#characters): the blood atomic's materials changed as the body's are (his colour
+    // times the shade with the fade as alpha), blended by source alpha over what is below with the alpha test off,
+    // its depth test, depth write and culling the draw's. Any other dual layer keeps the base's alpha and the draw's
+    // states (layerColoursOf()).
+    const MeshData layer =
+        litMesh({MeshMaterial{Rgba{0x96, 0x96, 0x96, 255}, ""}, MeshMaterial{Rgba{10, 20, 30, 255}, ""}});
+    coney::graphics::Draw3d draw;
+    draw.material = Material3d{.colour = MaterialColour::Shade, .fade = 0x80, .shade = 0.5F};
+    draw.states.alphaBlend = false;
+    draw.states.alphaTest = AlphaTest::GreaterEqual;
+    draw.states.depthWrite = true;
+    draw.states.cull = coney::graphics::CullFaces::Front;
+    const DrawColours base = coney::graphics::coloursOf(layer, draw.material);
+
+    draw.dualPass = coney::graphics::DualPass::Blood;
+    const DrawColours blood = coney::graphics::dualColoursOf(draw, layer, base);
+    REQUIRE(blood.colours.size() == 2);
+    CHECK(blood.colours[0] == Rgba{127, 127, 127, 0x80});
+    CHECK(blood.colours[1] == Rgba{10, 20, 30, 255});
+    const SceneStates bloodStates = coney::graphics::dualStatesOf(draw);
+    CHECK(bloodStates.alphaBlend);
+    CHECK(bloodStates.alphaTest == AlphaTest::Always);
+    CHECK(bloodStates.depthTest);
+    CHECK(bloodStates.depthWrite);
+    CHECK(bloodStates.cull == coney::graphics::CullFaces::Front);
+
+    draw.dualPass = coney::graphics::DualPass::Layer;
+    const DrawColours over = coney::graphics::dualColoursOf(draw, layer, base);
+    CHECK(over.colours[0] == Rgba{0x96, 0x96, 0x96, 0x80});
+    CHECK(over.colours[1] == Rgba{10, 20, 30, 0x80});
+    CHECK(coney::graphics::dualStatesOf(draw) == draw.states);
+}
+
+TEST_CASE("a posed mesh takes the lights that meet its posed sphere", "[graphics][gpu-renderer][scene][skinning]") {
+    // Expected: ../engine/gpu-renderer.md#skinning: librw's GL3 device tests a point light against the atomic's world
+    // sphere (world.cpp's enumerateLights), which for a posed human is the sphere his pose gave his atomic
+    // (CharacterMesh::pose()), carried by his draw (Draw3d::bounds); a draw without one takes the mesh's own sphere.
+    const MeshData mesh = litMesh(); // radius 1 round its origin
+    coney::graphics::Draw3d draw;
+    CHECK(coney::graphics::boundsOf(draw, mesh) == mesh.bounds);
+    draw.bounds = coney::graphics::MeshBounds{{0.0F, 3.0F, 0.0F}, 1.5F};
+    CHECK(coney::graphics::boundsOf(draw, mesh) == coney::graphics::MeshBounds{{0.0F, 3.0F, 0.0F}, 1.5F});
+    // A point light of radius 1 at (10, 5, 0) by a mesh placed at (10, 0, 0): 5 from the mesh's own sphere's centre,
+    // beyond its reach (1 + 1); 2 from the posed sphere's, within 1.5 + 1.
+    const std::array<SceneLight, 1> lights{pointLight({10.0F, 5.0F, 0.0F}, 1.0F, 0.5F)};
+    const Transform3d where{.position = {10.0F, 0.0F, 0.0F}};
+    CHECK(coney::graphics::lightsFor(lights, mesh, where).count == 0);
+    const DrawLights posed = coney::graphics::lightsFor(lights, mesh, where, coney::graphics::boundsOf(draw, mesh));
+    REQUIRE(posed.count == 1);
+    CHECK(posed.lights[0].type == LightType::Point);
 }
 
 TEST_CASE("a sub-mesh has vertex alpha only where its prelighting is not opaque", "[graphics][gpu-renderer][scene]") {

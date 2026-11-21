@@ -133,7 +133,8 @@ graphics::TextureId SceneAssets::textureOf(const rw::Texture* texture) const {
     return found != m_textures.end() ? found->second : graphics::TextureId{};
 }
 
-std::expected<graphics::MeshId, Error> SceneAssets::addAtomic(rw::Atomic& atomic) {
+std::expected<graphics::MeshId, Error> SceneAssets::addAtomic(rw::Atomic& atomic, const SkinVertexData* skin) {
+    (void)skin; // stub
     if (atomic.geometry == nullptr) {
         return std::unexpected(Error{ErrorCode::Invalid, "the atomic has no geometry"});
     }
