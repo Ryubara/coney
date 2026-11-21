@@ -24,13 +24,13 @@ constexpr int kFetchGait = 4;
 constexpr int kCarriedSet = 4;
 constexpr int kThrownSet = 5;
 
-// The squared 3D distance.
+// The squared 3D distance. @coney-only vector helper
 float distanceSquared(anim::Vec3 a, anim::Vec3 b) {
     const anim::Vec3 d = anim::subtract(a, b);
     return anim::dot(d, d);
 }
 
-// Drops `brain`'s target (`Human_DropTarget`).
+// Drops `brain`'s target. @coney-only helper: Human_DropTarget through Brain::setTarget
 void dropTarget(Brain& brain) {
     const TargetCauseScope cause(brain, TargetCause::Order);
     brain.setTarget(nullptr);

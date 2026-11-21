@@ -19,7 +19,7 @@ namespace {
 constexpr int kEventRegoal = 19;
 constexpr int kEventGoalsAgain = 22;
 
-// Whether `brain` is an AI human who is up: not a player's, not down or dead (`Human_IsDownOrDead`).
+// @coney-only helper: GiveGoals' member test, an AI human who is up (not down or dead: Human_IsDownOrDead)
 bool upAndAi(const Brain& brain) {
     return brain.type() != BrainType::Player && Brain::fightable(brain) &&
            brain.human().state() != human::TargetState::Grounded;

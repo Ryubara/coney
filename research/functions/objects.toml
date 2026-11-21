@@ -123,7 +123,7 @@ page = "objects.md#original-structure"
 role = "a held object let go: dropped / thrown"
 level = "confirmed-code"
 coney = "src/gamemodes/level_pickups.h:LevelPickups::drop"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x002586d8
@@ -132,7 +132,7 @@ page = "objects.md#original-structure"
 role = "a held object let go: dropped / thrown"
 level = "confirmed-code"
 coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::dropHeld"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0033f110
@@ -933,7 +933,7 @@ page = "objects.md#original-structure"
 role = "messages `0x1b` / `0x1c` of `melee_weapon`"
 level = "confirmed-code"
 coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::dropHeld"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0041d4f8
