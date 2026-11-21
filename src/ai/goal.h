@@ -65,6 +65,7 @@ enum class GoalType : std::uint8_t {
     Riot = 0x54,               ///< RiotGoal: roams, smashes, loots and picks fights, then leaves.
     AddressPerson = 0x57,      ///< AddressPersonGoal.
     Tag = 0x5a,                ///< TagGoal: runs to a tag flag and sprays the tag.
+    Destroy = 0x5b,            ///< DestroyGoal: wrecks the objects of a zone for the wreck tactic.
     ThrowObject = 0x5d,        ///< ThrowObjectGoal.
     Pedestrian = 0x69,         ///< PedestrianGoal: wanders the flag network (`FlagNetTraverse`).
     PedestrianReaction = 0x6b, ///< PedestrianReactionGoal: a pedestrian reacting to trouble (mode 9: flight).

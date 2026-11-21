@@ -103,6 +103,24 @@ class ItemServices {
     [[nodiscard]] virtual bool broken(double /*handle*/) const { return false; }
     /// Where object or pane `handle` is (a pane's centre); nothing once it is gone. itemPosition() by default.
     [[nodiscard]] virtual std::optional<anim::Vec3> objectPosition(double handle) const { return itemPosition(handle); }
+    /// The record of zone `zone` the wreck tactic's Destroy goal goes for next (`ObjZone_FindNearestObject` in mode
+    /// `0x20`): of the zone's records not removed whose type is carried (anim set 4 or 5) or has bit `0x24` of its word
+    /// `+0x5e`, and is worth something (`+0x5a`) or of class `dyn_masks`, the nearest to `from`; one whose object
+    /// lives is skipped while in a hand, in flight, broken or claimed by any gang at `nowMs`. Nothing when the zone is
+    /// disabled or none is left. None by default.
+    /// @orig 0x0039a2c0 ObjZone_FindNearestObject (unknown)
+    [[nodiscard]] virtual std::optional<double> nearestZoneTarget(int /*zone*/, anim::Vec3 /*from*/,
+                                                                  std::uint64_t /*nowMs*/) const {
+        return std::nullopt;
+    }
+    /// Whether zone `zone` still has something to wreck (`ObjZone_HasObjects(zone, 1)`): an enabled zone with a record
+    /// not removed whose object is not yet made, or lives, is not broken and is in no hand. False by default.
+    /// @orig 0x0039a580 ObjZone_HasObjects (unknown)
+    [[nodiscard]] virtual bool zoneHasObjects(int /*zone*/) const { return false; }
+    /// World object `handle` as the wreck weighs it (SmashTarget: its anim set and whether a held breaking object
+    /// strikes it); nothing for a pane or an object that is gone. Nothing by default.
+    /// @coney-only the AI's view of a level object's type, which the original reads from the object
+    [[nodiscard]] virtual std::optional<SmashTarget> wreckView(double /*handle*/) const { return std::nullopt; }
 
     /// Claims object or pane `handle` for `gang` until `untilMs` (object `+0xec` the gang, `+0xf0` the time).
     /// @coney-only the claims kept beside the objects, where the original writes them into the object
@@ -112,6 +130,12 @@ class ItemServices {
     [[nodiscard]] bool claimedBy(double handle, int gang, std::uint64_t nowMs) const {
         const auto found = m_claims.find(handle);
         return found != m_claims.end() && found->second.gang == gang && nowMs < found->second.untilMs;
+    }
+    /// Whether `handle` is claimed by any gang at `nowMs` (`+0xec` set and `+0xf0` still ahead).
+    /// @coney-only the claims kept beside the objects, where the original reads them from the object
+    [[nodiscard]] bool claimedByAny(double handle, std::uint64_t nowMs) const {
+        const auto found = m_claims.find(handle);
+        return found != m_claims.end() && nowMs < found->second.untilMs;
     }
     /// Drops the claim on `handle` (`+0xec` cleared).
     void unclaim(double handle) { m_claims.erase(handle); }

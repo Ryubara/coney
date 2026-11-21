@@ -1,0 +1,9 @@
+# level34's intro looters, for the `level34-looters` clips pair scenario (tools/clips/level34-looters.toml), played from
+# checkpoint 1 (`--play-level level34 --checkpoint 1 --skip-movies`): cross skips the opening scene, then player 1 runs
+# south along the subway tracks, west through the gap at y -71 into the box `vStartIntroLooters` at the foot of the
+# stairs (which gives the looters `TacticVandalize` on zone 51, about frame 550), up the stairs and out of the door
+# (the box `vEnterRiot`) onto the street, where he stops facing west, toward the looters, by frame 730. Frames are 1/30 s from the level's first frame of play.
+# It lives here, not under tests/support, because it steers with `steer` waypoints.
+100 tap cross
+200 steer 100 -1,-50 1.0,-62 1.0,-71 -7.4,-71 -19,-71 -23,-71
+900 stick left 0 0

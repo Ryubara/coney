@@ -2215,7 +2215,7 @@ acts find targets. The play-test shows these are also missing:
 | --- | --- | --- |
 | State 7 places every crowd, gang and police human out of sight on a pedestrian flag | placed as state 8 with value 0: at the player's side, on the subway tracks at the start | [reinforcements](ai-world.md#spawner-reinforcements) |
 | A rioter's smash finds a vandalisable object with a stand point; a loot finds a store flag (activity 14) whose group still has objects | nothing found (the question in `missions.yaml`) | [GoalRiot](ai-scripting.md#riot) |
-| The looters wreck zones 51 and 29 (`TacticVandalize`), and the Panzers rob the pharmacy (`TacticSteal`) | both kinds are `StationTactic`: the members stand (`repo:src/ai/story_tactics.cpp`) | [AI: tactics](ai-gangs.md#tactics) |
+| The looters wreck zones 51 and 29 (`TacticVandalize`), and the Panzers rob the pharmacy (`TacticSteal`) | Vandalize is built (`repo:src/ai/tactic_vandalize.h`); Steal is a `StationTactic`: the members stand (`repo:src/ai/story_tactics.cpp`) | [AI: tactics](ai-gangs.md#tactics) |
 | The roof throwers and bar staff throw bottles, speakers, TVs, boxes and drum kits (`GoalStationaryThrower`) | the clip plays, nothing leaves the hand (`repo:src/ai/riot_goals.h`) | [GoalStationaryThrower](../references/bindings/ai.md#goalstationarythrower) |
 | Police: the `Cops` and `RiotCops` spawners (state 7), and at checkpoint 4 a forced crime level with a crime at the cop search flag | the spawners place their cops as above; the dispatch states 4 and 9 never spawn (no crimes are routed: checklist item 13) | [Spawners](ai-gangs.md#spawners), [Crimes](crimes.md) |
 | The Warriors' R2 commands | not every command works (checklist item 11) | [AI: Warrior commands](ai-gangs.md#warrior-commands) |
@@ -2237,243 +2237,6 @@ acts find targets. The play-test shows these are also missing:
    routed crimes (dispatch states 4 and 9) are item 13's work.
 7. A disc playthrough test from checkpoint 1: after `P1.EndIntroScene`, no `RiotCivs1` human appears in the subway
    while the player is in it, and at least one appears on the street flags once he comes out.
-
-#### Fix list, checkpoint by checkpoint {#level34-fixes}
-
-What stops `level34` from playing start to end in Coney. Found by playing each checkpoint headless on the disc
-(`--play-level level34 --checkpoint N`, a waypoint driver over `--pad-pipe` with the left stick at 60-100 %,
-2026-10-12, a release build of `main` at `f325e018`) and by reading the scripts above. The fixes are in the order an
-implementer can take them, and each says what "done" means. Items 1-3 are shared with every mission that uses
-spawners and link to their subject pages; the rest are this mission's.
-
-**Shared, first.**
-
-1. **The global spawn cap.** Confirmed (code) at `0x00166708` (`Gang_CachePlayerInfo`, called with 1 from
-   `Gangs_Update` `0x0016d170`): a gang's spawners (`GangSpawner_Update`, `0x001681a0`) run only while the game's
-   spawned count is under its cap. For a police gang (gang `+0x2c` = 1) that is the dispatch count `+0x324` under
-   `+0x326` (`SetCopSpawnMax`); for every other gang it is `+0x432` under `+0x434` (`SetSpawnMax`, which `level34`
-   sets to 45). Each spawn adds 1 to `+0x432` (and to `+0x324` in state 6), and `GangSpawner_OnHumanGone`
-   (`0x001672a8`) takes it off again ([Spawners](ai-gangs.md#spawners)). Before issue #325 Coney did not read
-   `SetSpawnMax`, so at checkpoint 3 the riot, wanted-gang and police spawners filled the human pool: in 1,500 updates
-   of standing still, `HuCreate` was asked for 240 `RiotCivs1` humans and about 40 of each cop gang, and once the pool
-   was full most of these calls failed (handle 0) on every update. **Done**: Coney keeps both caps and counts
-   ([Coney's implementation](ai/index.md#in-coney)); with `SetSpawnMax(n)` two gangs' spawners never have more than *n*
-   spawned humans alive, a removed human frees its place, and the police gangs keep to `SetCopSpawnMax` the same way
-   (`tests/ai/spawners_test.cpp`). One gang's own spawners may pass the cap by the spawns of one update, as the
-   original's do.
-2. **State 7's placement** ([its fix list](ai-world.md#spawner-reinforcements); item 1 of
-   [the riot's crowd](#level34-start)). It is still a stand-in. At checkpoint 1, eight `RiotCivs1` humans appeared on
-   one subway spot (2.2, −66.7, −6.2), all at the same point. At checkpoint 2, 26 appeared on the street beside the
-   player's start (−56, −143). At checkpoint 4, the wanted gangs and cops appeared 3-6 m from the player
-   (−49, −256) and cut his health from 900 to 445 within 1,500 updates. Every crowd and police squad of the mission
-   is state 7, so this placement decides how hard checkpoints 3 and 4 are.
-3. **A suspended gang still spawns.** Confirmed (code): neither `Gangs_Update` nor `GangSpawner_Update` reads gang
-   `+0xd4` (`GangSuspend`), so the original's `RiotCivs1` spawner keeps making humans during the intro scene. Those
-   humans only stand, because their brains skip their update ([One update](ai/index.md#update-goals)). Coney spawns them
-   too, which matches the original; keep it.
-
-<!-- markdownlint-disable MD029 -->
-
-**Checkpoint 1** (from the subway to the street, the car flippers, then `vSection2`).
-
-4. Plays: the intro, the stairs, `vEnterRiot`, the fence (climbed with triangle) to `vIntro`, the scene
-   `l34_car_flip`, `P1.StoreObjectives` with the loot objective, and the walk towards `vSection2`. Nothing blocks
-   here once item 2 keeps the crowd out of the subway. The trigger boxes send their message for every human that
-   enters, and the scripts filter by `HuIsAPlayer` or by gang, so that is harmless.
-5. **The looters' tactics** (item 4 of [the riot's crowd](#level34-start)). In Coney, `TacticVandalize` on zone 51
-   answered with code 6 (attacked) within 30 updates, and the intro looters left. In the original, they wreck the
-   zone first and answer 1 once it is empty ([tactic kinds](ai-gangs.md#tactic-kinds)). Done: the looters break zone 51's
-   objects before they leave, unless they are attacked.
-
-**Checkpoint 2** (the stores, the stereo scene, then `vSection3Gate`).
-
-6. Plays: `vCarPoizo` warps the Warrior to `fStereoWarp`, Vermin says his line, and `P1.DoneStereoPoizo` gives the
-   radio objective and its marker. The hardware owner, the Hun store, the molotov thrower and `F.BlowupCar` all run.
-7. **What ends checkpoint 2** (settled; it was the driver). The script waits for message 3 from a player on one of
-   two boxes, both handled by `P1.EnterSection3`: `vSection3`, set by `P1.EnableSections` when section 2 is set up,
-   lies south of the shut gate `DblGt01` (corner (−111.5, −279.4), size 96.5 × 55.2, so `y` up to −224.2) and
-   cannot be reached yet; `vSection3Gate`, set only by `P1.DoneStereoPoizo`, is the strip **in front of** the gate:
-   corner (−109.3, −224, −0.3), size 3.6 × 1.8 × 5, so `x` −109.3 to −105.7 and `y` −224 to −222.2, beside the
-   gate's hinge at (−109.39, −223.97). `P1.EnterSection3` goes on only for a player, while `bObjCompleted` and
-   `bSection3` are false and `sLocation` is not 3; it clears the box's handler, starts the cop scene
-   (`P1.SetupSection3`), sets `sLocation` = 3 and calls `SetCheckPoint(3)`. Confirmed (runtime), PCSX2 2.9.94, a
-   state of `level34` checkpoint 2 loaded through mode 8 (`0x005e5d90 + 0x20` = 4, `W_GameState + 0x33a` = 2),
-   the scripted pad at stick magnitude 0.3-0.7 and the script's globals read over PINE: after the stereo scene
-   (`RadioStolen` set), walking south along `x` −107.5, `bSection3` and `bCopScene` turned true between `y` −222.19
-   and −222.43, the box's edge, and the scene moved the player to (−96.7, −247.2). The earlier Coney run had
-   stopped steering 1.5 m from its waypoint, at `y` −221.5, outside the box. With the waypoint inside the box and a
-   0.3 m arrival radius, Coney called `SetCheckPoint(3)` at (−107.6, −222.2), the same edge (2026-10-12, release
-   build of `68f4e6d3`). Nothing to fix; the playthrough driver must walk into the 1.8 m strip.
-8. **`CarSpawnRadio` runs twice on the same three cars at checkpoint 2**: once from `P1.SetupTier2Encounters` and
-   once from `P1.EnterSection2`. The original does the same, because the second call does not test `radioSpawn`.
-   Coney must make the second call harmless (no second stereo). Open question: what the binding does to a car that
-   already has a radio.
-
-**Checkpoint 3** (the three objectives, then `P1.HeadToGate`).
-
-9. This checkpoint depends on item 1: while the pool is full, nothing else can spawn.
-10. **The three objectives play together** (settled). `repo:tests/platform/disc_level34_objectives_test.cpp` starts
-    at checkpoint 3 and plays them with the pad: it steals the three stereos, takes store items until $350 is
-    picked up ([Taking owned items](crimes.md#owned-items)), and hits cars and street props until the riot meter
-    reaches 200 points (a newsstand gives 3, another world object 1, a pane 2, and car message 25 gives 3). Each
-    objective saves its target in its Lua float, and `F.CheckObjectives` then runs `P1.HeadToGate`, which calls
-    `SetCheckPoint(4)`. Confirmed (runtime, Coney). `P1.HeadToGate` is a Lua-to-Lua call, so a script trace shows
-    it only through the `SetCheckPoint(4)` it makes.
-
-**Checkpoint 4** (to `fFinalGate`, then `vNearFuries`).
-
-11. **The way to `fFinalGate` is a fence climb, and the objective waits for the crew** (settled). No gate opens on
-    the way: `DblGt00` (opened by `P2.SetupGate`) is at `x` −111.9, and `DblGt02` (−144.94, −270.82), the gate
-    beside `fFinalGate`, opens only in `P2.AtGate`, after the objective. Past `DblGt00` the street is a dead-end alley,
-    `y` −251.5 to −260.75 at `x` −133, closed by a wall at `x` −135; its south side at `y` −260.75 is a chain-link
-    fence, and the yard behind it holds `fFinalGate`. Confirmed (runtime), PCSX2 2.9.94, a state of checkpoint 4
-    loaded through mode 8, the player put at (−100, −255) over PINE to skip the street fight: walking west at stick
-    0.7 he stopped at (−134.96, −260.75), and south at 0.6 at (−131.5, −260.75); triangle there played the fence
-    climb (anim ids 437, 438, 439, `ANIM_FENCE_CLIMB_STANDING_01` and its two parts, about 2.4 s) and left him at
-    (−131.5, −262.0), from where the flag is a walk; `P2.AtGate` ran (`ParkScene` set) with the other two Warriors
-    beside him. Coney climbs the same fence the same way (the driver taps triangle facing south at (−131.5,
-    −259.3)). What then held Coney is the objective's crew test ([`ObjectiveGoodToGo`](#objective-helper): every
-    Warrior within 15 m of the player at the flag): its two AI Warriors stayed near the start (−55, −252) until about
-    update 1,200, came on slowly and climbed after him, so the hint "You can't leave anyone in your Warparty
-    behind!" showed and `DoorOpen(DblGt02)` came at update 4,307, then `SetCheckPoint(5)` at `vNearFuries` at
-    5,481. How quickly the original's Warriors follow from the start was not measured (the player was moved past the
-    street fight). Done for the driver: climb at (−131.5, −260.75) and wait at the flag until `DoorOpen` of the
-    second gate.
-12. The player died twice in 6,000 updates, killed by the wanted gangs and cops that spawned beside him (item 2), and
-    the level restarted at checkpoint 4. Once item 2 is in, check that he can reach the gate. (In the run of item 11
-    he was not killed.)
-
-**Checkpoint 5** (the park, the Furies, then `vSubwayExit`).
-
-13. Plays: the scene `l34_c4`, `P3.EndParkScene` and the fence Furies. `P3.FuryTimeout` runs 5 s later
-    (`MoveFromFence`, which kills the two Rogues), and Vermin says a line every 15 s, as the script says.
-14. **Coney's Furies hit too early** (settled, issue #372). The original, confirmed (runtime), PCSX2 2.9.94, checkpoint
-    5 loaded through mode 8, the scene's end taken as the moment `SubwayScene` is set (`P3.EndParkScene`, which also
-    schedules `P3.FuryTimeout` 5 s on through `P3.ReachFence`), the player left standing at (−207.97, −269.5) with no
-    input, two runs: he turned to a fight stance (anim 359) at update 161, and the **first hit came at update 276 and
-    294**, both a knock-down (anim 292 `ANIM_REACT_KNOCKDOWN_HIGH_FRONT`, 294 `..._HIGH_BACK`); then a knock-down about
-    every 200 updates, ground hits between, 90 health a hit, from 1,170 to 26 by update 1,074 (run 1). Coney (release
-    build of `68f4e6d3`, `--play-level level34 --checkpoint 5 --headless --trace`, no input; `P3.EndParkScene` at step
-    816): the **first hit at update 91** after the scene, before `P3.FuryTimeout` (update 149) and before any
-    `P3.MoveFromFence` or `P3.EnterDiamond` from a Warrior, so some human attacks before the script makes the Furies
-    enemies of the Warriors (`GangMakeEnemies` and `TacticAttack` are only in those three functions); the hits were
-    small reactions (anims 272, 275, 280), the first time on the ground at update 368, health 900 to 216 by update 785.
-    Done: no Fury hits a Warrior before `P3.FuryTimeout`, `P3.MoveFromFence` or `P3.EnterDiamond` runs, and the standing
-    player is first hit after the Furies turn. The cause: Coney announced each attack start to every human the attacker
-    could fight, where the original warns the attack's one target ([Attack warnings](combat/index.md#attack-warnings)).
-    Warned of a hurt `SceneRogue2`'s swing at a Fury about 20 m off, the player's shared handler made the Warriors
-    enemies of the Rogues and called his crew over; AI Warrior Snow walked onto the fence box (`P3.MoveFromFence`),
-    which turned the Furies early. Since the fix (`Fighter::warnTarget`, the target alone), measured with a dev build,
-    `--play-level level34 --checkpoint 5 --headless`, no input, the scene's end at step 722: `P3.FuryTimeout` at +149,
-    the first hit on a Warrior at +275 (before the fix +239), on the player at +281 (anim 275, 27 health), the first
-    knock-down of the player at +474 (anim 289); test `disc_level34_furies_test.cpp`. On main of 2026-10-21 (with the
-    waiting attackers' taunts, #599) the same run has `P3.FuryTimeout` at +149, the first hit on a Warrior at +157 and
-    on the player at +295; with `--ai-seed` 1 to 5 the player's first hit comes at +185 to +284, and in the disc test's
-    own run at +391, so when it comes depends on the AI's draws, and the test holds it to after the turn and at most
-    +500 (the widest seen, +391, with a margin, so a Fury that turns but does not come for him still fails). Still
-    different: Coney's first hits are small reactions (18-54 health) where the original's are knock-downs of 90. **Why
-    the original's hits are 90-health knock-downs** (issue #492): every park and fence Fury holds a `dyn_bat` from
-    `l34_c4`'s start, swings the bat's clips (501 at a run, 36, and 37 or the unarmed 193 / 194, which deal 25, at a man
-    down), and each bat-clip hit is the bat's own contact, `dyn_bat`'s 90 × the holder's class float, with the heavy
-    high reaction 292-295 of the clips' code `0x2a`; Coney's Furies have no bats ([Combat: a bat's
-    hit](combat-throws.md#bat-knockdown)). Open: whether the original's AI Warriors run out to meet the Furies
-    (Coney's do, under `FollowPlayer`). Note: the original's player had 1,170 health here and Coney's 900; the original
-    state came from a save with progress, so that may be upgrades, not a difference (not checked).
-15. **The route to `vSubwayExit`** (settled). `P3.GetToSubway` takes message 3 from any Warrior on `vSubwayExit`
-    (corner (−256.6, −203.2, −12.7), size 2 × 3.8 × 3.5, turned about its centre (−255.6, −201.3) by
-    `RotateVolumeBox(0.696, −0.718, 0.718, 0.696)`). Confirmed (runtime), the same state, full stick with **L2 held
-    (sprint)**, waypoints (−230, −270), (−245.1, −249), (−252.4, −222), (−248.5, −213.5), (−254.5, −202.2), (−255.6,
-    −201.3): the scene `l34_c2` started (the player moved into the subway car at (−113, −55, −207)), at update 494
-    with no hit in one run and at update 1,022 after hits (health 1,170 to 515) in another. The leg from
-    (−252.4, −222) must go by (−248.5, −213.5): straight on, the player slides along an obstacle near (−250, −214).
-    Without sprint (full stick) the Furies knocked him down near (−237, −258) or (−251, −223) about update 245, and
-    in one run he died before the box. Coney with the same route and L2 held: `P3.GetToSubway` at update 4,085 and
-    `HUDLaunchMissionComplete` at 4,501 (the first life, standing still, had died at checkpoint 5). Whether
-    `L34_OUT` plays after it was not checked.
-16. **How the AI Warriors meet the Furies** (issue #493): in the original they **hold their ground beside the
-    player and let the Furies come**; they never walk out to meet them. Confirmed (runtime), PCSX2 2.9.94,
-    2026-10-13: a state of checkpoint 5 made by loading it through mode 8 from a `level99` state (the writes of item
-    14) and saved as the park's humans appeared, before `l34_c4` started; then
-    [`l34_warriors_meet_furies`](repo:research/traces/scenarios/l34_warriors_meet_furies.toml) recorded every human
-    every update with no input (hooks `event-call` and `event-callback`; two runs, identical step for step counted
-    from the scene's end, which came at update 717 in one and 716 in the other). The scene's end is the update that
-    runs `P3.EndParkScene` (its `tfence_shake_01` emitter); times are updates after it. Vermin is the player, at
-    (−207.97, −269.50); Ash and Snow are the AI Warriors.
-
-    | After the scene's end | Ash and Snow |
-    | --- | --- |
-    | 0 | Out of the scene under the follow command (tactic `0x005438c0`), `FollowPlayer` (`0x32`) their only goal, standing 1.64 m (Ash) and 1.34 m (Snow) from the player |
-    | 0-150 | No enemies; they stand. Snow turns once (mode 3, toward the player's heading) at +81 |
-    | +150 | `P3.FuryTimeout` (`P3.MoveFromFence`): the Furies' `GoalFight` on the player and `TacticAttack`, the Warriors made enemies of the park Furies |
-    | +152 / +178 | **Targets taken** (fight mode was on for both from about +151, when the hostile count reached 2 and the Furies took attack slots): Ash takes `FenceFury3` (7.3 m from him) as his target, Snow `ParkFury02` (20.5 m); each enters the fight stance (358 / 359) and only **turns** to his target, again and again as it moves |
-    | +280 | Still standing where the scene left them, gait 0, 1.47 m and 1.14 m from the player |
-    | +286 | The first park Fury within 5 m of the player |
-    | +299 | **The first hit, on the player** (292, a knock-down). The same update Snow, his target 3.6 m off, starts `MoveMelee` and **backs away** from him at gait 2 (1.92 m/s); Ash does the same at +316 (4.1 m) |
-    | +392 | The first hit on a Warrior (Ash, 1,800 to 1,710); each Warrior answers his first hit with an attack action (`0x00542ce0`) while `FollowPlayer` is still his only goal |
-    | +474 | The automatic **attack** command: tactic `0x00544160`, `FollowAndAttack` (`0x34`) with `Fight` (`0x0f`) on top: only now do they fight |
-
-    Until the first hit on a Warrior neither moved more than 2.96 m (Ash) or 4.68 m (Snow) from his spot, and never
-    above gait 2 (walk), all of it backing away. Why, confirmed (code), [Fight mode](ai-gangs.md#warrior-follow):
-    under `FollowPlayer` a Warrior in fight mode only turns to a target beyond his melee range and backs off from one
-    inside it (`0x002de7c0`); fight mode came on here because gang members had attackers (from +151 the Furies held
-    attack slots on the player and on both Warriors) and the Furies had listed the Warrior as an enemy (`0x002de650`,
-    test 4; the player had no target until +298); Snow's target came 26 updates after Ash's because the one enemy in
-    his list was over 20 m from the player until then (inferred); the Warriors attack only from the attack command,
-    which `WarChief_AutoCommand` (`0x00303988`) gives once the player's own target is within his far melee range and
-    he has attackers for 1.5 s without a break ([Automatic commands](ai-gangs.md#warrior-auto-commands)); with the
-    player knocked down and his target lost, that took until +474 (inferred).
-
-    **Coney** (as issue #493 states, from `fix-furies-passive`'s run): its AI Warriors follow the player under
-    `FollowPlayer` and run out to the Furies (one at up to gait 4, the other gait 3), so a Warrior is hit first and the
-    player 6 updates later (that run's trace, steps 997 and 1003); in the
-    original the player is hit first (+299) and a Warrior 93 updates later. The fixes, each against the original's
-    behaviour on [Fight mode](ai-gangs.md#warrior-follow) (code in `repo:src/ai/crew.cpp`, `FollowPlayerGoal`):
-
-    1. **Turn, do not close in.** In fight mode, beyond the range (the far melee range, or the near one when the
-       target's actions are blocked or he is busy) queue only a turn to the target; within it queue the move-to-human
-       action with the band range + 0.5 m to range + 1.0 m and a 3 s limit. Coney does the reverse (a move to the
-       target beyond the range).
-    2. **The band move.** Coney's `MoveToHumanAction` only closes in to a stop distance; it needs the original's
-       near / far band. The spec is `MoveMelee` on [Move-to-human](ai-moving.md#move-melee), side circling, its ±10
-       counters and its done rule (in the band, side counter 0, |radial counter| < 6) included; in short: below
-       near², back away at gait 2; above far², close in at gait 4; done inside the band. Without it item 1 cannot
-       back off.
-    3. **The target.** Keep the current target while it is still a valid enemy; else the nearest human of the
-       follower's own enemy list (to the follower) that is up and within 20 m of the **leader**; else the leader's
-       target when it is up, used for the turn or the back-off even when friendly but made the follower's own target
-       only when not friendly; with no leader's target or a down one, none. Coney takes the nearest attacker of any
-       crew member within 20 m of the follower.
-    4. **The fight-mode tests**, in the original's order: the leader's target not a Warrior turns it on; a player
-       holding an attack slot on the follower turns it off; any player's brain `+0x2e4` turns it on; a member with
-       attackers and a non-zero count of brains holding the follower as an enemy turns it on. Coney has only the last
-       two, and counts only attackers who hold the follower as an enemy. Give the brain the count (raised when another
-       brain adds it as an enemy, lowered when removed) rather than scanning attack slots.
-    5. **Field of view**: 2π in fight mode, 110° (and the target cleared) out of it.
-    6. **Test** (`[disc]`, `tests/platform/disc_level34_furies_test.cpp` or beside it, checkpoint 5, no input): from
-       the scene's end to the first hit on the player, neither AI Warrior is ever above gait 2 nor more than 5 m from
-       where the scene left him, and his top goal is `FollowPlayer`; the first hit lands on the player, not a Warrior;
-       neither attacks before he is first hit himself (each answers his first hit with an attack action), and neither
-       has the `FollowAndAttack` (`0x34`) or `Fight` (`0x0f`) goal before the attack tactic (`0x00544160`) is queued
-       for him, which comes after the player's first hit.
-
-    The fight-mode stand distance, 10 m instead of the goal's 9 m, is already Coney's (`kCrewFightFollowDistance`,
-    `repo:src/ai/crew.h`); keep it.
-
-    Open: who queues the attack action a Warrior plays on his first hit while `FollowPlayer` is his only goal (the
-    hit event's handler, [The Warriors](ai-brain-types.md#think-warrior), is the likely source; not traced), and the Warriors'
-    far melee range (`+0x140`). A new action is queued only when the queue is empty, so the runs bound it only
-    roughly: Snow's last turn was chosen about 5.5-5.7 m from his target and his back-off at 3.6-3.8 m, Ash's back-off
-    at about 4.1-4.3 m, so between about 3.8 m and 5.5 m (inferred). Reading brain `+0x140` of a Warrior at runtime
-    settles it.
-
-<!-- markdownlint-enable MD029 -->
-
-**A playthrough test** ([Testing](../guides/testing.md#playthrough-tests)) for the mission comes last: one driver per
-checkpoint that climbs the fences (checkpoint 1's, and checkpoint 4's at (−131.5, −260.75), item 11), walks the
-flag net (`PedNet_*`) between the boxes above, steps into `vSection3Gate`'s 1.8 m strip (item 7), waits at
-`fFinalGate` for the crew, sprints to `vSubwayExit` (item 15), and asserts the `SetCheckPoint` calls 2-5 and
-`HUDLaunchMissionComplete`. Waypoint routes that already play checkpoints 2, 4 and 5 in Coney are those of items 7,
-11 and 15.
 
 ### `level2.lua` (mission 5) {#level2}
 
@@ -2889,6 +2652,260 @@ of the original).
 **A sphere's radius** (2026-10-06): `TriggerSphereSetRadius` sets an object's sphere radius, first making one with the
 defaults of `0x00414480`, not armed, when it has none (`TriggerSpheres::setRadius`; Coney counts any object as having a
 handler component, as for `TriggerSphereEnable`).
+
+### The level34 fix list, checkpoint by checkpoint {#level34-fixes}
+
+What stops `level34` from playing start to end in Coney. Found by playing each checkpoint headless on the disc
+(`--play-level level34 --checkpoint N`, a waypoint driver over `--pad-pipe` with the left stick at 60-100 %, 2026-10-12,
+a release build of `main` at `f325e018`) and by reading [the scripts](#level34). The fixes are in the order an
+implementer can take them, and each says what "done" means. Items 1-3 are shared with every mission that uses spawners
+and link to their subject pages; the rest are this mission's.
+
+**Shared, first.**
+
+1. **The global spawn cap.** Confirmed (code) at `0x00166708` (`Gang_CachePlayerInfo`, called with 1 from
+   `Gangs_Update` `0x0016d170`): a gang's spawners (`GangSpawner_Update`, `0x001681a0`) run only while the game's
+   spawned count is under its cap. For a police gang (gang `+0x2c` = 1) that is the dispatch count `+0x324` under
+   `+0x326` (`SetCopSpawnMax`); for every other gang it is `+0x432` under `+0x434` (`SetSpawnMax`, which `level34`
+   sets to 45). Each spawn adds 1 to `+0x432` (and to `+0x324` in state 6), and `GangSpawner_OnHumanGone`
+   (`0x001672a8`) takes it off again ([Spawners](ai-gangs.md#spawners)). Before issue #325 Coney did not read
+   `SetSpawnMax`, so at checkpoint 3 the riot, wanted-gang and police spawners filled the human pool: in 1,500 updates
+   of standing still, `HuCreate` was asked for 240 `RiotCivs1` humans and about 40 of each cop gang, and once the pool
+   was full most of these calls failed (handle 0) on every update. **Done**: Coney keeps both caps and counts
+   ([Coney's implementation](ai/index.md#in-coney)); with `SetSpawnMax(n)` two gangs' spawners never have more than *n*
+   spawned humans alive, a removed human frees its place, and the police gangs keep to `SetCopSpawnMax` the same way
+   (`tests/ai/spawners_test.cpp`). One gang's own spawners may pass the cap by the spawns of one update, as the
+   original's do.
+2. **State 7's placement** ([its fix list](ai-world.md#spawner-reinforcements); item 1 of
+   [the riot's crowd](#level34-start)). It is still a stand-in. At checkpoint 1, eight `RiotCivs1` humans appeared on
+   one subway spot (2.2, −66.7, −6.2), all at the same point. At checkpoint 2, 26 appeared on the street beside the
+   player's start (−56, −143). At checkpoint 4, the wanted gangs and cops appeared 3-6 m from the player
+   (−49, −256) and cut his health from 900 to 445 within 1,500 updates. Every crowd and police squad of the mission
+   is state 7, so this placement decides how hard checkpoints 3 and 4 are.
+3. **A suspended gang still spawns.** Confirmed (code): neither `Gangs_Update` nor `GangSpawner_Update` reads gang
+   `+0xd4` (`GangSuspend`), so the original's `RiotCivs1` spawner keeps making humans during the intro scene. Those
+   humans only stand, because their brains skip their update ([One update](ai/index.md#update-goals)). Coney spawns them
+   too, which matches the original; keep it.
+
+<!-- markdownlint-disable MD029 -->
+
+**Checkpoint 1** (from the subway to the street, the car flippers, then `vSection2`).
+
+4. Plays: the intro, the stairs, `vEnterRiot`, the fence (climbed with triangle) to `vIntro`, the scene
+   `l34_car_flip`, `P1.StoreObjectives` with the loot objective, and the walk towards `vSection2`. Nothing blocks
+   here once item 2 keeps the crowd out of the subway. The trigger boxes send their message for every human that
+   enters, and the scripts filter by `HuIsAPlayer` or by gang, so that is harmless.
+5. **The looters' tactics** (item 4 of [the riot's crowd](#level34-start)). Before issue #326 Coney's `TacticVandalize`
+   on zone 51 made the looters stand, and they left early. In the original they wreck the zone first and answer 1 once
+   it is empty ([TacticVandalize](ai-code.md#t2-vandalize)): with player 1 put in `vStartIntroLooters` after the intro
+   scene and left there, the three looters gave seven codes 16 (objects broken, which `P1.DoneLooting` ignores) from
+   3.5 s to 14.5 s after `P1.StartIntroLooters`, and code 1 came at the next 3 s check, 15.0 s after it; no code 4, 5
+   or 6 came. Confirmed (runtime), run r-20261121-level34-intro-looters. The codes undercount the breaks (a code 16
+   needs an event 23 from a human for an object that still resolves, [TacticVandalize](ai-code.md#t2-vandalize); two
+   more runs saw 4 records removed against 2 codes and 3 against 1, run r-20261121-level34-looters-zone-records), and
+   code 1 means the zone held nothing whole and out of a hand, so the original's looters empty all nine. In those two
+   runs a looter was hurt and the gang answered 5 and left after 10.6 s and 11.4 s (inferred: another looter's throw).
+   **Done** (issue #326): Coney builds the tactic and its Destroy goal (`repo:src/ai/tactic_vandalize.h`), and
+   `tests/platform/disc_level34_looters_test.cpp` shows zone 51's objects broken before `P1.DoneLooting` is called: all
+   nine, and code 1 12.3 s after the tactic was set, at the fourth check (the original's 15.0 s, its fifth). Coney's
+   looters are quicker for the Destroy goal's stand-ins ([Destroy](ai-goals.md#goal-destroy)): the original turns a
+   looter to the crowd ahead before each swing of what he holds, taunts every 8 s and enters the fight stance (issue
+   #959), and weighs a made object by its own `+0x134` (not identified) where Coney takes the distance to the looter.
+   In the disc test no looter is hurt, so no 5 comes. Seven of the nine are carried objects
+   (garbage bags, trash cans, a paper stack), which the Destroy goal fetches and throws, so this needed the AI's throw
+   to let go of what it holds ([Throw](objects.md#held)). Zone 29 (the Huns' `TacticVandalize` in `P1.HunsSteal`'s
+   set-up) is enabled by no `level34` script, so that tactic answers 1 at its first check (inferred: the scripts and
+   `0x0039a580`).
+
+**Checkpoint 2** (the stores, the stereo scene, then `vSection3Gate`).
+
+6. Plays: `vCarPoizo` warps the Warrior to `fStereoWarp`, Vermin says his line, and `P1.DoneStereoPoizo` gives the
+   radio objective and its marker. The hardware owner, the Hun store, the molotov thrower and `F.BlowupCar` all run.
+7. **What ends checkpoint 2** (settled; it was the driver). The script waits for message 3 from a player on one of
+   two boxes, both handled by `P1.EnterSection3`: `vSection3`, set by `P1.EnableSections` when section 2 is set up,
+   lies south of the shut gate `DblGt01` (corner (−111.5, −279.4), size 96.5 × 55.2, so `y` up to −224.2) and
+   cannot be reached yet; `vSection3Gate`, set only by `P1.DoneStereoPoizo`, is the strip **in front of** the gate:
+   corner (−109.3, −224, −0.3), size 3.6 × 1.8 × 5, so `x` −109.3 to −105.7 and `y` −224 to −222.2, beside the
+   gate's hinge at (−109.39, −223.97). `P1.EnterSection3` goes on only for a player, while `bObjCompleted` and
+   `bSection3` are false and `sLocation` is not 3; it clears the box's handler, starts the cop scene
+   (`P1.SetupSection3`), sets `sLocation` = 3 and calls `SetCheckPoint(3)`. Confirmed (runtime), PCSX2 2.9.94, a
+   state of `level34` checkpoint 2 loaded through mode 8 (`0x005e5d90 + 0x20` = 4, `W_GameState + 0x33a` = 2),
+   the scripted pad at stick magnitude 0.3-0.7 and the script's globals read over PINE: after the stereo scene
+   (`RadioStolen` set), walking south along `x` −107.5, `bSection3` and `bCopScene` turned true between `y` −222.19
+   and −222.43, the box's edge, and the scene moved the player to (−96.7, −247.2). The earlier Coney run had
+   stopped steering 1.5 m from its waypoint, at `y` −221.5, outside the box. With the waypoint inside the box and a
+   0.3 m arrival radius, Coney called `SetCheckPoint(3)` at (−107.6, −222.2), the same edge (2026-10-12, release
+   build of `68f4e6d3`). Nothing to fix; the playthrough driver must walk into the 1.8 m strip.
+8. **`CarSpawnRadio` runs twice on the same three cars at checkpoint 2**: once from `P1.SetupTier2Encounters` and
+   once from `P1.EnterSection2`. The original does the same, because the second call does not test `radioSpawn`.
+   Coney must make the second call harmless (no second stereo). Open question: what the binding does to a car that
+   already has a radio.
+
+**Checkpoint 3** (the three objectives, then `P1.HeadToGate`).
+
+9. This checkpoint depends on item 1: while the pool is full, nothing else can spawn.
+10. **The three objectives play together** (settled). `repo:tests/platform/disc_level34_objectives_test.cpp` starts
+    at checkpoint 3 and plays them with the pad: it steals the three stereos, takes store items until $350 is
+    picked up ([Taking owned items](crimes.md#owned-items)), and hits cars and street props until the riot meter
+    reaches 200 points (a newsstand gives 3, another world object 1, a pane 2, and car message 25 gives 3). Each
+    objective saves its target in its Lua float, and `F.CheckObjectives` then runs `P1.HeadToGate`, which calls
+    `SetCheckPoint(4)`. Seen in Coney. `P1.HeadToGate` is a Lua-to-Lua call, so a script trace shows
+    it only through the `SetCheckPoint(4)` it makes.
+
+**Checkpoint 4** (to `fFinalGate`, then `vNearFuries`).
+
+11. **The way to `fFinalGate` is a fence climb, and the objective waits for the crew** (settled). No gate opens on
+    the way: `DblGt00` (opened by `P2.SetupGate`) is at `x` −111.9, and `DblGt02` (−144.94, −270.82), the gate
+    beside `fFinalGate`, opens only in `P2.AtGate`, after the objective. Past `DblGt00` the street is a dead-end alley,
+    `y` −251.5 to −260.75 at `x` −133, closed by a wall at `x` −135; its south side at `y` −260.75 is a chain-link
+    fence, and the yard behind it holds `fFinalGate`. Confirmed (runtime), PCSX2 2.9.94, a state of checkpoint 4
+    loaded through mode 8, the player put at (−100, −255) over PINE to skip the street fight: walking west at stick
+    0.7 he stopped at (−134.96, −260.75), and south at 0.6 at (−131.5, −260.75); triangle there played the fence
+    climb (anim ids 437, 438, 439, `ANIM_FENCE_CLIMB_STANDING_01` and its two parts, about 2.4 s) and left him at
+    (−131.5, −262.0), from where the flag is a walk; `P2.AtGate` ran (`ParkScene` set) with the other two Warriors
+    beside him. Coney climbs the same fence the same way (the driver taps triangle facing south at (−131.5,
+    −259.3)). What then held Coney is the objective's crew test ([`ObjectiveGoodToGo`](#objective-helper): every
+    Warrior within 15 m of the player at the flag): its two AI Warriors stayed near the start (−55, −252) until about
+    update 1,200, came on slowly and climbed after him, so the hint "You can't leave anyone in your Warparty
+    behind!" showed and `DoorOpen(DblGt02)` came at update 4,307, then `SetCheckPoint(5)` at `vNearFuries` at
+    5,481. How quickly the original's Warriors follow from the start was not measured (the player was moved past the
+    street fight). Done for the driver: climb at (−131.5, −260.75) and wait at the flag until `DoorOpen` of the
+    second gate.
+12. The player died twice in 6,000 updates, killed by the wanted gangs and cops that spawned beside him (item 2), and
+    the level restarted at checkpoint 4. Once item 2 is in, check that he can reach the gate. (In the run of item 11
+    he was not killed.)
+
+**Checkpoint 5** (the park, the Furies, then `vSubwayExit`).
+
+13. Plays: the scene `l34_c4`, `P3.EndParkScene` and the fence Furies. `P3.FuryTimeout` runs 5 s later
+    (`MoveFromFence`, which kills the two Rogues), and Vermin says a line every 15 s, as the script says.
+14. **Coney's Furies hit too early** (settled, issue #372). The original, confirmed (runtime), PCSX2 2.9.94, checkpoint
+    5 loaded through mode 8, the scene's end taken as the moment `SubwayScene` is set (`P3.EndParkScene`, which also
+    schedules `P3.FuryTimeout` 5 s on through `P3.ReachFence`), the player left standing at (−207.97, −269.5) with no
+    input, two runs: he turned to a fight stance (anim 359) at update 161, and the **first hit came at update 276 and
+    294**, both a knock-down (anim 292 `ANIM_REACT_KNOCKDOWN_HIGH_FRONT`, 294 `..._HIGH_BACK`); then a knock-down about
+    every 200 updates, ground hits between, 90 health a hit, from 1,170 to 26 by update 1,074 (run 1). Coney (release
+    build of `68f4e6d3`, `--play-level level34 --checkpoint 5 --headless --trace`, no input; `P3.EndParkScene` at step
+    816): the **first hit at update 91** after the scene, before `P3.FuryTimeout` (update 149) and before any
+    `P3.MoveFromFence` or `P3.EnterDiamond` from a Warrior, so some human attacks before the script makes the Furies
+    enemies of the Warriors (`GangMakeEnemies` and `TacticAttack` are only in those three functions); the hits were
+    small reactions (anims 272, 275, 280), the first time on the ground at update 368, health 900 to 216 by update 785.
+    Done: no Fury hits a Warrior before `P3.FuryTimeout`, `P3.MoveFromFence` or `P3.EnterDiamond` runs, and the standing
+    player is first hit after the Furies turn. The cause: Coney announced each attack start to every human the attacker
+    could fight, where the original warns the attack's one target ([Attack warnings](combat/index.md#attack-warnings)).
+    Warned of a hurt `SceneRogue2`'s swing at a Fury about 20 m off, the player's shared handler made the Warriors
+    enemies of the Rogues and called his crew over; AI Warrior Snow walked onto the fence box (`P3.MoveFromFence`),
+    which turned the Furies early. Since the fix (`Fighter::warnTarget`, the target alone), measured with a dev build,
+    `--play-level level34 --checkpoint 5 --headless`, no input, the scene's end at step 722: `P3.FuryTimeout` at +149,
+    the first hit on a Warrior at +275 (before the fix +239), on the player at +281 (anim 275, 27 health), the first
+    knock-down of the player at +474 (anim 289); test `disc_level34_furies_test.cpp`. On main of 2026-10-21 (with the
+    waiting attackers' taunts, #599) the same run has `P3.FuryTimeout` at +149, the first hit on a Warrior at +157 and
+    on the player at +295; with `--ai-seed` 1 to 5 the player's first hit comes at +185 to +284, and in the disc test's
+    own run at +391, so when it comes depends on the AI's draws, and the test holds it to after the turn and at most
+    +500 (the widest seen, +391, with a margin, so a Fury that turns but does not come for him still fails). Still
+    different: Coney's first hits are small reactions (18-54 health) where the original's are knock-downs of 90. **Why
+    the original's hits are 90-health knock-downs** (issue #492): every park and fence Fury holds a `dyn_bat` from
+    `l34_c4`'s start, swings the bat's clips (501 at a run, 36, and 37 or the unarmed 193 / 194, which deal 25, at a man
+    down), and each bat-clip hit is the bat's own contact, `dyn_bat`'s 90 × the holder's class float, with the heavy
+    high reaction 292-295 of the clips' code `0x2a`; Coney's Furies have no bats ([Combat: a bat's
+    hit](combat-throws.md#bat-knockdown)). Open: whether the original's AI Warriors run out to meet the Furies
+    (Coney's do, under `FollowPlayer`). Note: the original's player had 1,170 health here and Coney's 900; the original
+    state came from a save with progress, so that may be upgrades, not a difference (not checked).
+15. **The route to `vSubwayExit`** (settled). `P3.GetToSubway` takes message 3 from any Warrior on `vSubwayExit`
+    (corner (−256.6, −203.2, −12.7), size 2 × 3.8 × 3.5, turned about its centre (−255.6, −201.3) by
+    `RotateVolumeBox(0.696, −0.718, 0.718, 0.696)`). Confirmed (runtime), the same state, full stick with **L2 held
+    (sprint)**, waypoints (−230, −270), (−245.1, −249), (−252.4, −222), (−248.5, −213.5), (−254.5, −202.2), (−255.6,
+    −201.3): the scene `l34_c2` started (the player moved into the subway car at (−113, −55, −207)), at update 494
+    with no hit in one run and at update 1,022 after hits (health 1,170 to 515) in another. The leg from
+    (−252.4, −222) must go by (−248.5, −213.5): straight on, the player slides along an obstacle near (−250, −214).
+    Without sprint (full stick) the Furies knocked him down near (−237, −258) or (−251, −223) about update 245, and
+    in one run he died before the box. Coney with the same route and L2 held: `P3.GetToSubway` at update 4,085 and
+    `HUDLaunchMissionComplete` at 4,501 (the first life, standing still, had died at checkpoint 5). Whether
+    `L34_OUT` plays after it was not checked.
+16. **How the AI Warriors meet the Furies** (issue #493): in the original they **hold their ground beside the
+    player and let the Furies come**; they never walk out to meet them. Confirmed (runtime), PCSX2 2.9.94,
+    2026-10-13: a state of checkpoint 5 made by loading it through mode 8 from a `level99` state (the writes of item
+    14) and saved as the park's humans appeared, before `l34_c4` started; then
+    [`l34_warriors_meet_furies`](repo:research/traces/scenarios/l34_warriors_meet_furies.toml) recorded every human
+    every update with no input (hooks `event-call` and `event-callback`; two runs, identical step for step counted
+    from the scene's end, which came at update 717 in one and 716 in the other). The scene's end is the update that
+    runs `P3.EndParkScene` (its `tfence_shake_01` emitter); times are updates after it. Vermin is the player, at
+    (−207.97, −269.50); Ash and Snow are the AI Warriors.
+
+    | After the scene's end | Ash and Snow |
+    | --- | --- |
+    | 0 | Out of the scene under the follow command (tactic `0x005438c0`), `FollowPlayer` (`0x32`) their only goal, standing 1.64 m (Ash) and 1.34 m (Snow) from the player |
+    | 0-150 | No enemies; they stand. Snow turns once (mode 3, toward the player's heading) at +81 |
+    | +150 | `P3.FuryTimeout` (`P3.MoveFromFence`): the Furies' `GoalFight` on the player and `TacticAttack`, the Warriors made enemies of the park Furies |
+    | +152 / +178 | **Targets taken** (fight mode was on for both from about +151, when the hostile count reached 2 and the Furies took attack slots): Ash takes `FenceFury3` (7.3 m from him) as his target, Snow `ParkFury02` (20.5 m); each enters the fight stance (358 / 359) and only **turns** to his target, again and again as it moves |
+    | +280 | Still standing where the scene left them, gait 0, 1.47 m and 1.14 m from the player |
+    | +286 | The first park Fury within 5 m of the player |
+    | +299 | **The first hit, on the player** (292, a knock-down). The same update Snow, his target 3.6 m off, starts `MoveMelee` and **backs away** from him at gait 2 (1.92 m/s); Ash does the same at +316 (4.1 m) |
+    | +392 | The first hit on a Warrior (Ash, 1,800 to 1,710); each Warrior answers his first hit with an attack action (`0x00542ce0`) while `FollowPlayer` is still his only goal |
+    | +474 | The automatic **attack** command: tactic `0x00544160`, `FollowAndAttack` (`0x34`) with `Fight` (`0x0f`) on top: only now do they fight |
+
+    Until the first hit on a Warrior neither moved more than 2.96 m (Ash) or 4.68 m (Snow) from his spot, and never
+    above gait 2 (walk), all of it backing away. Why, confirmed (code), [Fight mode](ai-gangs.md#warrior-follow):
+    under `FollowPlayer` a Warrior in fight mode only turns to a target beyond his melee range and backs off from one
+    inside it (`0x002de7c0`); fight mode came on here because gang members had attackers (from +151 the Furies held
+    attack slots on the player and on both Warriors) and the Furies had listed the Warrior as an enemy (`0x002de650`,
+    test 4; the player had no target until +298); Snow's target came 26 updates after Ash's because the one enemy in
+    his list was over 20 m from the player until then (inferred); the Warriors attack only from the attack command,
+    which `WarChief_AutoCommand` (`0x00303988`) gives once the player's own target is within his far melee range and
+    he has attackers for 1.5 s without a break ([Automatic commands](ai-gangs.md#warrior-auto-commands)); with the
+    player knocked down and his target lost, that took until +474 (inferred).
+
+    **Coney** (as issue #493 states, from `fix-furies-passive`'s run): its AI Warriors follow the player under
+    `FollowPlayer` and run out to the Furies (one at up to gait 4, the other gait 3), so a Warrior is hit first and the
+    player 6 updates later (that run's trace, steps 997 and 1003); in the
+    original the player is hit first (+299) and a Warrior 93 updates later. The fixes, each against the original's
+    behaviour on [Fight mode](ai-gangs.md#warrior-follow) (code in `repo:src/ai/crew.cpp`, `FollowPlayerGoal`):
+
+    1. **Turn, do not close in.** In fight mode, beyond the range (the far melee range, or the near one when the
+       target's actions are blocked or he is busy) queue only a turn to the target; within it queue the move-to-human
+       action with the band range + 0.5 m to range + 1.0 m and a 3 s limit. Coney does the reverse (a move to the
+       target beyond the range).
+    2. **The band move.** Coney's `MoveToHumanAction` only closes in to a stop distance; it needs the original's
+       near / far band. The spec is `MoveMelee` on [Move-to-human](ai-moving.md#move-melee), side circling, its ±10
+       counters and its done rule (in the band, side counter 0, |radial counter| < 6) included; in short: below
+       near², back away at gait 2; above far², close in at gait 4; done inside the band. Without it item 1 cannot
+       back off.
+    3. **The target.** Keep the current target while it is still a valid enemy; else the nearest human of the
+       follower's own enemy list (to the follower) that is up and within 20 m of the **leader**; else the leader's
+       target when it is up, used for the turn or the back-off even when friendly but made the follower's own target
+       only when not friendly; with no leader's target or a down one, none. Coney takes the nearest attacker of any
+       crew member within 20 m of the follower.
+    4. **The fight-mode tests**, in the original's order: the leader's target not a Warrior turns it on; a player
+       holding an attack slot on the follower turns it off; any player's brain `+0x2e4` turns it on; a member with
+       attackers and a non-zero count of brains holding the follower as an enemy turns it on. Coney has only the last
+       two, and counts only attackers who hold the follower as an enemy. Give the brain the count (raised when another
+       brain adds it as an enemy, lowered when removed) rather than scanning attack slots.
+    5. **Field of view**: 2π in fight mode, 110° (and the target cleared) out of it.
+    6. **Test** (`[disc]`, `tests/platform/disc_level34_furies_test.cpp` or beside it, checkpoint 5, no input): from
+       the scene's end to the first hit on the player, neither AI Warrior is ever above gait 2 nor more than 5 m from
+       where the scene left him, and his top goal is `FollowPlayer`; the first hit lands on the player, not a Warrior;
+       neither attacks before he is first hit himself (each answers his first hit with an attack action), and neither
+       has the `FollowAndAttack` (`0x34`) or `Fight` (`0x0f`) goal before the attack tactic (`0x00544160`) is queued
+       for him, which comes after the player's first hit.
+
+    The fight-mode stand distance, 10 m instead of the goal's 9 m, is already Coney's (`kCrewFightFollowDistance`,
+    `repo:src/ai/crew.h`); keep it.
+
+    Open: who queues the attack action a Warrior plays on his first hit while `FollowPlayer` is his only goal (the
+    hit event's handler, [The Warriors](ai-brain-types.md#think-warrior), is the likely source; not traced), and the Warriors'
+    far melee range (`+0x140`). A new action is queued only when the queue is empty, so the runs bound it only
+    roughly: Snow's last turn was chosen about 5.5-5.7 m from his target and his back-off at 3.6-3.8 m, Ash's back-off
+    at about 4.1-4.3 m, so between about 3.8 m and 5.5 m (inferred). Reading brain `+0x140` of a Warrior at runtime
+    settles it.
+
+<!-- markdownlint-enable MD029 -->
+
+**A playthrough test** ([Testing](../guides/testing.md#playthrough-tests)) for the mission comes last: one driver per
+checkpoint that climbs the fences (checkpoint 1's, and checkpoint 4's at (−131.5, −260.75), item 11), walks the
+flag net (`PedNet_*`) between the boxes above, steps into `vSection3Gate`'s 1.8 m strip (item 7), waits at
+`fFinalGate` for the crew, sprints to `vSubwayExit` (item 15), and asserts the `SetCheckPoint` calls 2-5 and
+`HUDLaunchMissionComplete`. Waypoint routes that already play checkpoints 2, 4 and 5 in Coney are those of items 7,
+11 and 15.
 
 ## Open questions
 

@@ -501,6 +501,8 @@ std::string_view goalTypeName(ai::GoalType type) {
         return "AddressPerson";
     case Tag:
         return "Tag";
+    case Destroy:
+        return "Destroy";
     case ThrowObject:
         return "ThrowObject";
     case Pedestrian:

@@ -105,6 +105,7 @@ ModeResult PlayLevelSimulation::update(GameModeStack& stack, const FrameTime& fr
     }
     stepPlacedHeld();
     stepPickups();
+    stepAiThrows();
     stepThrowAim(actionPad);
     stepMugMeter(m_player->human(), actionPad);
     stepLockPickDial();

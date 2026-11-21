@@ -416,6 +416,7 @@ target_sources(coney_core PRIVATE
     ai/crew.cpp
     ai/smash_goals.cpp
     ai/steal_goals.cpp
+    ai/destroy_goal.cpp
     ai/dealer_goal.cpp
     ai/engage_goals.cpp
     ai/melee_goal.cpp
@@ -428,6 +429,7 @@ target_sources(coney_core PRIVATE
     ai/enemy_scan.cpp
     ai/swap_prompt.cpp
     ai/tactic_scout.cpp
+    ai/tactic_vandalize.cpp
     ai/fidget_action.cpp
     ai/fight_goal.cpp
     ai/fight_trace.cpp

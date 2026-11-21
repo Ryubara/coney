@@ -22,17 +22,19 @@ class Brain;
 class FlagServices;
 class Formations;
 class Gang;
+class ItemServices;
 class ScriptServices;
 struct ScoutServices;
 
 /// What the story tactics ask of the level: the flags, the scripts (and through them the humans by handle and player
-/// 1), the formations the followers join and what the scouts' call needs (ai/tactic_scout.h). All must outlive the
-/// tactic.
+/// 1), the formations the followers join, what the scouts' call needs (ai/tactic_scout.h) and the level's objects the
+/// wreck tactic smashes (ai/tactic_vandalize.h). All must outlive the tactic.
 struct TacticServices {
     FlagServices* flags = nullptr;
     ScriptServices* scripts = nullptr;
     Formations* formations = nullptr;
     ScoutServices* scout = nullptr;
+    ItemServices* items = nullptr;
 };
 
 /// The tactic codes the story tactics return or fire (`TacticGetString`, docs/references/bindings/ai.md).
@@ -95,9 +97,9 @@ class GroupMoveTactic final : public StoryTactic {
 /// awareness, narrows their view by 20° and their sight to 75 %; UseFlag (`0x21`) walks them to the flag (gait 3,
 /// within `range`) and, once player 1 comes within `range` of it, sends them off and returns 7; Idle (`0x24`) holds
 /// them where they stand and, with `dynIdle`, ends their dynamic idles on events 1, 11 and 16 and returns 15 once none
-/// is left; ManWeaponPile (`0x06`), Vandalize (`0x1c`), Steal (`0x1d`) and AvoidEnemies (`0x20`) stand (Scout is
-/// ai/tactic_scout.h). **Coney stand-ins**:
-/// the hang-out, use-flag, man-the-pile, destroy, steal and avoid goals are not traced, so the members stand
+/// is left; ManWeaponPile (`0x06`), Steal (`0x1d`) and AvoidEnemies (`0x20`) stand (Scout is ai/tactic_scout.h,
+/// Vandalize ai/tactic_vandalize.h). **Coney stand-ins**:
+/// the hang-out, use-flag, man-the-pile, steal and avoid goals are not traced, so the members stand
 /// where those walks leave them; banter, answering violence and the anim substitutions are not built.
 /// @orig 0x00315fc8 Tactic_HanginOut (unknown)
 /// @orig 0x00316ee8 Tactic_Idle (unknown)
@@ -162,6 +164,7 @@ class PursueTactic final : public StoryTactic {
 };
 
 /// The tactic of `call`'s kind (TravelPath walking `path`); null for Attack and Confront, which are made elsewhere.
+/// @coney-only factory: the original's script bindings construct each tactic kind themselves
 [[nodiscard]] std::unique_ptr<Tactic> makeStoryTactic(const script::TacticCall& call, std::vector<double> path,
                                                       const TacticServices& services);
 

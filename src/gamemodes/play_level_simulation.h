@@ -453,12 +453,18 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // @orig 0x00391d48 Obj_CreatePhysicsBody (unknown)
     void stepObjectBodies();
     // Player 1's pick-up that reached its clip's event this step: the object is taken.
+    // @coney-only the play step's hand-off of player 1's pick-ups, throws and drops to the level's objects
     void stepPickups();
+    // Each AI human's throw whose release event passed this step lets go of his held object, thrown, as player 1's
+    // does (Human_ReleaseThrow runs for any human on event 10); his anim set follows his empty hand.
+    // @orig 0x002586d8 Human_ReleaseThrow (unknown)
+    void stepAiThrows();
     // A take from `object` when it is a weapon pile (world_objects::Props::takeFromPile()): the object made for the
     // hand, kNoObject when none was made; nothing when `object` is no pile, or a pile taken itself.
     [[nodiscard]] std::optional<double> takeFromPile(double object);
-    // Player 1 lets go of `held`: it leaves the hand from where the hand holds it and falls (dropHeld()), or, `thrown`,
-    // flies off with the throw's velocity and spin (docs/research/objects.md#held).
+    // `human` (player 1 or an AI human) lets go of `held`: it leaves the hand from where the hand holds it and falls
+    // (dropHeld()), or, `thrown`, flies off with the throw's velocity and spin (docs/research/objects.md#held); only
+    // player 1's throw starts from his aim when he aims.
     // @orig 0x00257f38 Human_DropHeld (unknown)
     // @orig 0x002586d8 Human_ReleaseThrow (unknown)
     // @orig 0x003fe6b8 MeleeWeapon_Detach (unknown)
@@ -517,6 +523,10 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // @coney-only Coney's lookup of the held object's hand pose for player 1
     [[nodiscard]] std::optional<world_objects::WorldPose> heldPose(double held,
                                                                    const human::PlayerSnapshot& snapshot) const;
+    // Where object `held` hangs in `human`'s hand at his newest pose: player 1's through heldPose(), an AI human's at
+    // his last step's pose; nothing when it is no such human or no record in the hand with a take event.
+    // @coney-only Coney's lookup of the held object's hand pose for any human
+    [[nodiscard]] std::optional<world_objects::WorldPose> handPose(const human::Human& human, double held) const;
     // Where object `held` hangs in `human`'s hand, `character` posed by `pose` at `feet` facing `heading`: the bone
     // and offset of its type's pick-up clip's take event in his own animations, at his scale. Nothing when it is not a
     // record of a type with such an event (docs/research/objects.md#given-weapon).

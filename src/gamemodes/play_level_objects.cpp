@@ -28,6 +28,7 @@
 #include "combat/stick_games.h"
 #include "combat/throw_velocity.h"
 #include "core/game_events.h"
+#include "gamemodes/held_throws.h"
 #include "gamemodes/play_level_simulation.h"
 #include "gamemodes/sound_events.h"
 #include "hud/hud.h"
@@ -101,19 +102,6 @@ anim::Quat headingRotation(float heading) {
     return anim::Quat{.x = 0.0F, .y = 0.0F, .z = std::sin(heading / 2.0F), .w = std::cos(heading / 2.0F)};
 }
 
-// Whether `animId` is one of the held-object throws, whose release event lets go of what is held: the set 4-6 objects
-// and the melee weapons' (491, 502; docs/research/combat-throws.md#armed-special).
-// @coney-only Coney's list of the throw clips, standing for the release handler's held-flag test (`0x1000010`)
-bool throwClip(std::uint32_t animId) {
-    constexpr std::array<int, 11> kThrows{
-        combat::anim_id::kOneHandedThrow,        combat::anim_id::kOneHandedThrowFromWalk,
-        combat::anim_id::kOneHandedThrowFromRun, combat::anim_id::kBarrelThrow,
-        combat::anim_id::kBarrelThrowFromWalk,   combat::anim_id::kBarrelThrowFromRun,
-        combat::anim_id::kGhettoThrow,           combat::anim_id::kGhettoThrowFromWalk,
-        combat::anim_id::kGhettoThrowFromRun,    combat::anim_id::kKnifeThrow,
-        combat::anim_id::kSwingableThrow};
-    return std::ranges::find(kThrows, static_cast<int>(animId)) != kThrows.end();
-}
 // A car stereo's context record (kind 3) reaches this far in the ground plane (`CfgActionDistance`'s default).
 constexpr float kStereoReach = 2.0F;
 // The player's Warrior class byte `+0x0b`, which makes a theft's stage 3 turns
@@ -833,8 +821,7 @@ void PlayLevelSimulation::stepPickups() {
         m_print(std::format("spray: 664, spray paint left {}\n", m_pickups->carried(0, item::kSprayPaint)));
     }
     // A throw's release event lets go of the held object, thrown (Human_ReleaseThrow on event 10).
-    if (human.takeThrowRelease() && throwClip(human.animator().animId()) &&
-        script.heldObject != world_objects::kNoObject) {
+    if (releasesHeldObject(human.takeThrowRelease(), human.animator().animId(), script.heldObject)) {
         const double held = std::exchange(script.heldObject, world_objects::kNoObject);
         script.heldObjectName.clear();
         dropHeld(human, held, true);
@@ -871,6 +858,31 @@ void PlayLevelSimulation::stepPickups() {
     // What the specials read next update: any object in the hand refuses them, and the spray asks for paint.
     human.fighter().setHoldingObject(script.heldObject != world_objects::kNoObject);
     human.fighter().setSprayPaint(m_pickups->carried(0, item::kSprayPaint) > 0);
+}
+
+void PlayLevelSimulation::stepAiThrows() {
+    if (m_pickups == nullptr) {
+        return;
+    }
+    for (const ai::AiHuman& fighter : m_ai->humans()) {
+        if (fighter.removed) {
+            continue;
+        }
+        human::Human& human = *fighter.human;
+        human::ScriptState& script = human.script();
+        // A throw clip's release event with an object in hand lets go of it, thrown (Human_ReleaseThrow on event 10).
+        if (!releasesHeldObject(human.takeThrowRelease(), human.animator().animId(), script.heldObject)) {
+            continue;
+        }
+        const double held = std::exchange(script.heldObject, world_objects::kNoObject);
+        script.heldObjectName.clear();
+        dropHeld(human, held, true);
+        // The anim set goes back to 0 here, at the throw: Human_ReleaseThrow pops the holding move style (or removes
+        // the held object's set) at its start for any human, as the player's throw does. Whether a thrown object hurts
+        // the thrower's own gang is issue #1572; the looters' throws are not checked for it.
+        human.fighter().setAnimSet(0);
+        human.fighter().setHoldingObject(false);
+    }
 }
 
 void PlayLevelSimulation::stepStereoPanel(const human::Human& human) {
@@ -955,6 +967,9 @@ std::string PlayLevelSimulation::heldObjectLogText(double handle) const {
 }
 
 void PlayLevelSimulation::dropHeld(human::Human& human, double held, bool thrown) {
+    // Coney stand-in (Human_DropHeld): a drop does not cancel the throw aim, name its holder (+0x11c), set kind 10's
+    // hit counter for a brain of type 1, set the state flag 0x20000000 or update the hidden loop sound; no drop sets a
+    // respawn timer.
     if (!thrown) {
         m_print(std::format("pickup: dropped object {:.0f}{}\n", held, heldObjectLogText(held)));
     }
@@ -967,7 +982,7 @@ void PlayLevelSimulation::dropHeld(human::Human& human, double held, bool thrown
     // from the aiming state starts at the aim's release point instead (below).
     const anim::Vec3 feet = human.position();
     world_objects::WorldPose start =
-        heldPose(held, m_player->current())
+        handPose(human, held)
             .value_or(world_objects::WorldPose{
                 .position = {feet.x, feet.y, feet.z + kDropHeight},
                 .rotation = {record->rotation[0], record->rotation[1], record->rotation[2], record->rotation[3]}});
@@ -1013,7 +1028,7 @@ void PlayLevelSimulation::dropHeld(human::Human& human, double held, bool thrown
         velocity = anim::transformDirection(turn, combat::throwVelocity(aim));
         // Released from the aiming state: the aim's release point and velocity (+0x5f0, +0x600), with no target (the
         // trace clears the brain's), and the aim is left with its pitch back at the start.
-        if (m_throwAim.active()) {
+        if (&human == &m_player->human() && m_throwAim.active()) {
             start.position = m_throwAim.releasePoint();
             velocity = m_throwAim.velocity();
             m_throwAim.leave();
@@ -1043,6 +1058,8 @@ void PlayLevelSimulation::dropHeld(human::Human& human, double held, bool thrown
             kind.secondCounter = kept->second;
         }
     }
+    // Coney stand-in: the warning to the thrower's target (Human_WarnOfAttack), the respawn timer some models set
+    // and the hidden loop sound (Player_UpdateHiddenLoopSound) are not built.
     m_looseObjects.start(held, start.position, start.rotation, kind, velocity, spin, thrown ? handleOf(human) : 0.0);
 }
 

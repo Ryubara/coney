@@ -51,10 +51,8 @@ constexpr std::uint32_t kThrowHeldFlags = 0x1000010;
 // ghetto set (551-553).
 constexpr std::array<std::uint32_t, 11> kThrowClips{467, 471, 472, 491, 502, 505, 506, 507, 551, 552, 553};
 
-// Whether `human` is winding up a throw of what he holds: the swing flag, or a throw clip holding its flags with an
-// object in his hand (docs/research/characters.md, Human_IsSwingingHeld). **Coney's reading**: "an object in his
-// hand" is any held object, where the original asks that the held object's anim set be other than 0.
-// @orig 0x002286a0 Human_IsSwingingHeld (unknown)
+} // namespace
+
 bool swingingHeld(const human::Human& human) {
     const std::uint32_t flags = human.heldFlags();
     if ((flags & kSwingHeldFlag) != 0) {
@@ -64,8 +62,6 @@ bool swingingHeld(const human::Human& human) {
     return (flags & kThrowHeldFlags) != 0 && human.script().heldObject != 0.0 &&
            std::ranges::contains(kThrowClips, human.animator().animId());
 }
-
-} // namespace
 
 // ---- StealClusters ----
 
