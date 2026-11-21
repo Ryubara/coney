@@ -1577,12 +1577,20 @@ the car count.
 code is 1, returned by Process when its zone has nothing left (confirmed (code) at `0x0031ea00`), checked once every
 3 s from the moment it is made (`+0x38` = now + 3000 at `0x0031e3b8`; the test is `+0x38` < now). Codes 3-6 come from
 the members' events alone, so a looter answers 6 only when he is sent event 16 (an attack warning) and 5 only when he
-is hurt (confirmed (code) at `0x0031eaf0`). At runtime `level34`'s intro looters, left alone, broke seven objects of
-zone 51 (seven codes 16) and answered 1 15.0 s after the tactic was set, at its fifth check, with no other code
-(confirmed (runtime), run r-20261121-level34-intro-looters). The zone test (`ObjZone_HasObjects(zone, 1)`, `0x0039a580`)
-answers false at once for a zone that is not enabled (the zone's bit in the manager's mask, `+0x20`), and otherwise true
-for the first record of the zone not removed (record `+0x24` bit 18) whose object is not made yet, or is made, not
-broken (both hit counters `+0x10d` / `+0x10e` above 0) and not attached (`Task_IsAttached`; inferred: in a hand).
+is hurt (confirmed (code) at `0x0031eaf0`). At runtime `level34`'s intro looters, left alone, gave seven codes 16 and
+answered 1 15.0 s after the tactic was set, at its fifth check, with no other code (confirmed (runtime), run
+r-20261121-level34-intro-looters). A code 16 is not one broken object: it comes only for an event 23 whose sender is a
+human and whose object still resolves to a world object of the zone that is not intact and is not the object reported
+last (confirmed (code) at `0x0031eaf0`). In two more runs zone 51's records were removed (record `+0x24` bit 18;
+inferred: broken and gone) faster than the codes came, 4 records against 2 codes and 3 against 1 (confirmed (runtime),
+run r-20261121-level34-looters-zone-records). So the first run shows that the zone held nothing whole and out of a hand
+at 15.0 s (the zone test below), not that two of its nine objects were left. In both later runs (player 1 left in the
+tunnel, `P1.StartIntroLooters` called through the script) a looter was hurt and the tactic answered 5, after 10.6 s
+and 11.4 s, with the zone half wrecked (inferred: hit by another looter's throw; the hit was not traced). The zone
+test (`ObjZone_HasObjects(zone, 1)`, `0x0039a580`) answers false at once for a zone that is not enabled (the zone's
+bit in the manager's mask, `+0x20`), and otherwise true for the first record of the zone not removed (record `+0x24`
+bit 18) whose object is not made yet, or is made, not broken (both hit counters `+0x10d` / `+0x10e` above 0) and not
+attached (`Task_IsAttached`; inferred: in a hand).
 Confirmed (code) at `0x0039a580`. In `level34` zone 51 is enabled by `level34_riot.lua` (the riot's set-up) and zone 29
 by no script, so the Huns' `TacticVandalize` on zone 29 (`P1.HunsSteal`) answers 1 at its first check, 3 s on (inferred:
 from the scripts' `ObjEnableZone` calls and the code at `0x0039a580`).

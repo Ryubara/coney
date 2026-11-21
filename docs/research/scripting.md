@@ -2283,12 +2283,20 @@ spawners and link to their subject pages; the rest are this mission's.
 5. **The looters' tactics** (item 4 of [the riot's crowd](#level34-start)). Before issue #326 Coney's `TacticVandalize`
    on zone 51 made the looters stand, and they left early. In the original they wreck the zone first and answer 1 once
    it is empty ([TacticVandalize](ai-code.md#t2-vandalize)): with player 1 put in `vStartIntroLooters` after the intro
-   scene and left there, the three looters broke seven objects of zone 51 from 3.5 s to 14.5 s after
-   `P1.StartIntroLooters` (each one code 16, which `P1.DoneLooting` ignores), and code 1 came at the next 3 s check,
-   15.0 s after it; no code 4, 5 or 6 came. Confirmed (runtime), run r-20261121-level34-intro-looters. **Done** (issue
-   #326): Coney builds the tactic and its Destroy goal (`repo:src/ai/tactic_vandalize.h`), and
+   scene and left there, the three looters gave seven codes 16 (objects broken, which `P1.DoneLooting` ignores) from
+   3.5 s to 14.5 s after `P1.StartIntroLooters`, and code 1 came at the next 3 s check, 15.0 s after it; no code 4, 5
+   or 6 came. Confirmed (runtime), run r-20261121-level34-intro-looters. The codes undercount the breaks (a code 16
+   needs an event 23 from a human for an object that still resolves, [TacticVandalize](ai-code.md#t2-vandalize); two
+   more runs saw 4 records removed against 2 codes and 3 against 1, run r-20261121-level34-looters-zone-records), and
+   code 1 means the zone held nothing whole and out of a hand, so the original's looters empty all nine. In those two
+   runs a looter was hurt and the gang answered 5 and left after 10.6 s and 11.4 s (inferred: another looter's throw).
+   **Done** (issue #326): Coney builds the tactic and its Destroy goal (`repo:src/ai/tactic_vandalize.h`), and
    `tests/platform/disc_level34_looters_test.cpp` shows zone 51's objects broken before `P1.DoneLooting` is called: all
-   nine, and code 1 12.3 s after the tactic was set (the original's 15.0 s). Seven of the nine are carried objects
+   nine, and code 1 12.3 s after the tactic was set, at the fourth check (the original's 15.0 s, its fifth). Coney's
+   looters are quicker for the Destroy goal's stand-ins ([Destroy](ai-goals.md#goal-destroy)): the original turns a
+   looter to the crowd ahead before each swing of what he holds, taunts every 8 s and enters the fight stance (issue
+   #959), and weighs a made object by its own `+0x134` (not identified) where Coney takes the distance to the looter.
+   In the disc test no looter is hurt, so no 5 comes. Seven of the nine are carried objects
    (garbage bags, trash cans, a paper stack), which the Destroy goal fetches and throws, so this needed the AI's throw
    to let go of what it holds ([Throw](objects.md#held)). Zone 29 (the Huns' `TacticVandalize` in `P1.HunsSteal`'s
    set-up) is enabled by no `level34` script, so that tactic answers 1 at its first check (inferred: the scripts and

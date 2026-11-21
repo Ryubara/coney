@@ -1175,7 +1175,9 @@ pushes DestroyItem twice more (each done at once on a broken object) before it l
 **Coney** (`repo:src/ai/destroy_goal.h`, issue #326): Start, Resume, End, IsWaiting, the pick and the update above.
 **Stand-ins**: cars (issue #716), the fight stance (issue #959), `DestroyGoal_TryPickUp` (Coney's objects carry no
 breaking flag `0x10000`), dropping what he holds, the turn to the crowd ahead and the taunt before a swing, the brain
-byte `+0x265`, and the live object's `+0x134` (Coney weighs it by its distance too).
+byte `+0x265`, and the live object's `+0x134` (Coney weighs it by its distance too). The turn and the taunt before
+each swing are why Coney's `level34` intro looters empty their zone a check sooner than the original's (inferred;
+[the level34 fixes](scripting.md#level34-fixes), item 5).
 
 ### Steal (type 0x5c) {#goal-steal}
 
