@@ -2090,7 +2090,37 @@ page = "characters.md#original-structure"
 role = "the characters' update, every second task-manager tick"
 level = "confirmed-code"
 coney = "src/human/humans.h:Humans::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "player 1's gang's attack-spacing bytes cleared near a pending world load, the burning human's heat distortion, hint 6, and the knocked-out and dead humans' steps (made dead unseen, the down path, taken away and faded out) are not ported"
+relation = "not-ported"
+issue = 1584
+
+[[function.gaps]]
+what = "the rain splashes and the embers stepped at the start are not ported"
+relation = "not-ported"
+issue = 1585
+
+[[function.gaps]]
+what = "player 1's gang members handed to the crew status list are not ported"
+relation = "not-ported"
+issue = 515
+
+[[function.gaps]]
+what = "the radar icon per gang member's state and a dead human's handle removed from the radar are not ported"
+relation = "not-ported"
+issue = 1402
+
+[[function.gaps]]
+what = "the off-screen cull of the state update and its bone-cache mark are not ported"
+relation = "not-ported"
+issue = 635
+
+[[function.gaps]]
+what = "a hurt human made dying when his timer passes is not ported"
+relation = "not-ported"
+issue = 301
 
 [[function]]
 address = 0x0024bfc0

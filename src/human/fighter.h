@@ -216,10 +216,12 @@ struct FighterInput {
 
 /// The targets a search within `radius` of the fighter reads: the source's when the input has one, else the list.
 /// Every search asks for at least its own reach across the ground, so the source leaves out only what the search would.
+/// @coney-only Coney's per-slot target query, the dispatcher's input
 [[nodiscard]] inline std::span<Combatant* const> targetsWithin(const FighterInput& input, float radius) {
     return input.source != nullptr ? input.source->within(input.position, radius) : input.targets;
 }
 /// Whether `target` is among the input's targets.
+/// @coney-only Coney's per-slot target query, the dispatcher's input
 [[nodiscard]] inline bool targetListed(const FighterInput& input, const Combatant* target) {
     if (input.source != nullptr) {
         return input.source->listed(target);
@@ -227,6 +229,7 @@ struct FighterInput {
     return std::ranges::find(input.targets, target) != input.targets.end();
 }
 /// Whether `target` is among the input's calm targets, those the fight stance never takes.
+/// @coney-only Coney's per-slot target query, the dispatcher's input
 [[nodiscard]] inline bool targetCalm(const FighterInput& input, const Combatant* target) {
     if (input.source != nullptr) {
         return input.source->calm(target);
@@ -894,6 +897,7 @@ class Fighter {
     // (a script's normal mode, a hit that knocked it down, a placement that broke the pair): the hold ends without
     // touching a victim that is gone; after a broken pair this side plays its reaction (138 or 106, or 244 from the
     // mount; docs/research/combat-grabs.md#pair-break).
+    // @coney-only Coney's end of a hold whose victim left the targets, which the original's handles make for it
     void dropLostHold(const FighterInput& input, HumanAnimator& animator);
     // A grab or tackle started on `victim`: the intro plays (the player turning to face it), the victim waits. A grab
     // connects with front clip `connect` (72, or a strong grapple's strike), the rear one 2 on.
@@ -994,6 +998,7 @@ class Fighter {
     // allows one (combat::tandemCanStart()) within `range`, else the nearest such target within `range`; null for none.
     // **Coney's reading**: the original's target rules for the tandem (Player_PickTarget, the grab's search) are not
     // traced for a held target, which Coney's searches skip; this search stands in for them.
+    // @coney-only Coney's stand-in search for the tandem's target (Coney's reading above)
     [[nodiscard]] Holdable* tandemTarget(const FighterInput& input, float range) const;
     // The attacker's side of a tandem with the set from `base` at `victim`: the victim starts its side (the grabber
     // joins from it), the attacker turns and slides to its intro's place (alignTandem()) and plays its intro and end,

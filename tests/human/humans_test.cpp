@@ -200,6 +200,7 @@ TEST_CASE("a held human neither animates, moves nor acts while the others do", "
 
 TEST_CASE("a held human stays held when an earlier slot is removed, and a removed one is no longer held",
           "[human][humans][debug]") {
+    // Expected: ../guides/debug-menu.md#entity-inspector, Coney's own debug tooling (no original value)
     Pair pair;
     pair.humans.setHeld(pair.other, true);
     pair.humans.remove(pair.player);
@@ -264,6 +265,7 @@ TEST_CASE("the actions pass asks whether two humans are opposed only about the h
     // Forty humans 20 m apart, every one opposed to every other: none is within any search's reach of another, so the
     // searches need not ask about any pair. A list of every opposed human for every human every step asked about
     // each of the 40 x 39 pairs (issue 1550).
+    // Expected: combat-targets.md#searches-coney, confirmed (code)
     std::vector<coney::anim::Vec3> at;
     for (int row = 0; row < 5; ++row) {
         for (int column = 0; column < 8; ++column) {
@@ -292,6 +294,7 @@ TEST_CASE("of two enemies the same distance and angle away, square takes the one
     // whichever way the actions pass runs. The third enemy, 30 m off at x 37.5, puts the left and the right one in
     // different cells of the targets' grid (2.5 m cells from the lowest x and y), the later slot's first or last; at
     // (70, 39) both are in one cell.
+    // Expected: combat-targets.md#searches-coney, confirmed (code)
     for (const bool odd : {false, true}) {
         CHECK(tiedPick(1, 37.5F, 70.0F, odd) == Picked::Right);
         CHECK(tiedPick(2, 37.5F, 70.0F, odd) == Picked::Left);
