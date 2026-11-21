@@ -873,6 +873,30 @@ void PlayLevelSimulation::stepPickups() {
     human.fighter().setSprayPaint(m_pickups->carried(0, item::kSprayPaint) > 0);
 }
 
+void PlayLevelSimulation::stepAiThrows() {
+    if (m_pickups == nullptr) {
+        return;
+    }
+    for (const ai::AiHuman& fighter : m_ai->humans()) {
+        if (fighter.removed) {
+            continue;
+        }
+        human::Human& human = *fighter.human;
+        human::ScriptState& script = human.script();
+        // A throw clip's release event with an object in hand lets go of it, thrown (Human_ReleaseThrow on event 10).
+        if (!human.takeThrowRelease() || !throwClip(human.animator().animId()) ||
+            script.heldObject == world_objects::kNoObject) {
+            continue;
+        }
+        const double held = std::exchange(script.heldObject, world_objects::kNoObject);
+        script.heldObjectName.clear();
+        dropHeld(human, held, true);
+        // The anim set follows the empty hand.
+        human.fighter().setAnimSet(0);
+        human.fighter().setHoldingObject(false);
+    }
+}
+
 void PlayLevelSimulation::stepStereoPanel(const human::Human& human) {
     hud::Hud& hud = m_hud->hud();
     hud::StereoHud& panel = hud.stereo(0);
@@ -967,7 +991,7 @@ void PlayLevelSimulation::dropHeld(human::Human& human, double held, bool thrown
     // from the aiming state starts at the aim's release point instead (below).
     const anim::Vec3 feet = human.position();
     world_objects::WorldPose start =
-        heldPose(held, m_player->current())
+        handPose(human, held)
             .value_or(world_objects::WorldPose{
                 .position = {feet.x, feet.y, feet.z + kDropHeight},
                 .rotation = {record->rotation[0], record->rotation[1], record->rotation[2], record->rotation[3]}});
@@ -1013,7 +1037,7 @@ void PlayLevelSimulation::dropHeld(human::Human& human, double held, bool thrown
         velocity = anim::transformDirection(turn, combat::throwVelocity(aim));
         // Released from the aiming state: the aim's release point and velocity (+0x5f0, +0x600), with no target (the
         // trace clears the brain's), and the aim is left with its pitch back at the start.
-        if (m_throwAim.active()) {
+        if (&human == &m_player->human() && m_throwAim.active()) {
             start.position = m_throwAim.releasePoint();
             velocity = m_throwAim.velocity();
             m_throwAim.leave();

@@ -7,6 +7,7 @@
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "animation/anim_math.h"
+#include "human/fighter.h"
 #include "human/human.h"
 #include "world_objects/glass.h"
 #include "world_objects/pickups.h"
@@ -272,6 +273,9 @@ void LevelItems::collectTakes(ai::Brains& brains) {
         if (m_pickups.takeByAi(*taken, brain.handle()) == TakeResult::InHand) {
             brain.human().script().heldObject = *taken;
             brain.human().script().heldObjectName = m_pickups.typeOf(*taken);
+            // The take's message 3 to the holder applies the object's anim set, so he fights armed from now on (as
+            // the player's take and HuPlaceItemInHand do).
+            brain.human().fighter().setAnimSet(m_pickups.animSetOf(brain.human().script().heldObjectName));
         }
     }
 }

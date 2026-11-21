@@ -2215,7 +2215,7 @@ acts find targets. The play-test shows these are also missing:
 | --- | --- | --- |
 | State 7 places every crowd, gang and police human out of sight on a pedestrian flag | placed as state 8 with value 0: at the player's side, on the subway tracks at the start | [reinforcements](ai-world.md#spawner-reinforcements) |
 | A rioter's smash finds a vandalisable object with a stand point; a loot finds a store flag (activity 14) whose group still has objects | nothing found (the question in `missions.yaml`) | [GoalRiot](ai-scripting.md#riot) |
-| The looters wreck zones 51 and 29 (`TacticVandalize`), and the Panzers rob the pharmacy (`TacticSteal`) | both kinds are `StationTactic`: the members stand (`repo:src/ai/story_tactics.cpp`) | [AI: tactics](ai-gangs.md#tactics) |
+| The looters wreck zones 51 and 29 (`TacticVandalize`), and the Panzers rob the pharmacy (`TacticSteal`) | Vandalize is built (`repo:src/ai/tactic_vandalize.h`, issue #326); Steal is a `StationTactic`: the members stand (`repo:src/ai/story_tactics.cpp`) | [AI: tactics](ai-gangs.md#tactics) |
 | The roof throwers and bar staff throw bottles, speakers, TVs, boxes and drum kits (`GoalStationaryThrower`) | the clip plays, nothing leaves the hand (`repo:src/ai/riot_goals.h`) | [GoalStationaryThrower](../references/bindings/ai.md#goalstationarythrower) |
 | Police: the `Cops` and `RiotCops` spawners (state 7), and at checkpoint 4 a forced crime level with a crime at the cop search flag | the spawners place their cops as above; the dispatch states 4 and 9 never spawn (no crimes are routed: checklist item 13) | [Spawners](ai-gangs.md#spawners), [Crimes](crimes.md) |
 | The Warriors' R2 commands | not every command works (checklist item 11) | [AI: Warrior commands](ai-gangs.md#warrior-commands) |
@@ -2280,10 +2280,19 @@ spawners and link to their subject pages; the rest are this mission's.
    `l34_car_flip`, `P1.StoreObjectives` with the loot objective, and the walk towards `vSection2`. Nothing blocks
    here once item 2 keeps the crowd out of the subway. The trigger boxes send their message for every human that
    enters, and the scripts filter by `HuIsAPlayer` or by gang, so that is harmless.
-5. **The looters' tactics** (item 4 of [the riot's crowd](#level34-start)). In Coney, `TacticVandalize` on zone 51
-   answered with code 6 (attacked) within 30 updates, and the intro looters left. In the original, they wreck the
-   zone first and answer 1 once it is empty ([tactic kinds](ai-gangs.md#tactic-kinds)). Done: the looters break zone 51's
-   objects before they leave, unless they are attacked.
+5. **The looters' tactics** (item 4 of [the riot's crowd](#level34-start)). Before issue #326 Coney's `TacticVandalize`
+   on zone 51 made the looters stand, and they left early. In the original they wreck the zone first and answer 1 once
+   it is empty ([TacticVandalize](ai-code.md#t2-vandalize)): with player 1 put in `vStartIntroLooters` after the intro
+   scene and left there, the three looters broke seven objects of zone 51 from 3.5 s to 14.5 s after
+   `P1.StartIntroLooters` (each one code 16, which `P1.DoneLooting` ignores), and code 1 came at the next 3 s check,
+   15.0 s after it; no code 4, 5 or 6 came. Confirmed (runtime), run r-20261121-level34-intro-looters. **Done** (issue
+   #326): Coney builds the tactic and its Destroy goal (`repo:src/ai/tactic_vandalize.h`), and
+   `tests/platform/disc_level34_looters_test.cpp` shows zone 51's objects broken before `P1.DoneLooting` is called: all
+   nine, and code 1 12.3 s after the tactic was set (the original's 15.0 s). Seven of the nine are carried objects
+   (garbage bags, trash cans, a paper stack), which the Destroy goal fetches and throws, so this needed the AI's throw
+   to let go of what it holds ([Throw](objects.md#held)). Zone 29 (the Huns' `TacticVandalize` in `P1.HunsSteal`'s
+   set-up) is enabled by no `level34` script, so that tactic answers 1 at its first check (inferred: the scripts and
+   `0x0039a580`).
 
 **Checkpoint 2** (the stores, the stereo scene, then `vSection3Gate`).
 

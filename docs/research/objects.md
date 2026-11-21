@@ -782,6 +782,13 @@ holder (`+0x11c`) and `+0x116` is set, and the human's target is warned (`0x0021
 setting `0x0051489c` `+0x26c` for every model but four (`0x03c5256c` gets none; three others keep theirs). The
 details are in [Throws](#throws).
 
+The release runs in the human's own event handler, so an AI human's throw lets go of his object as player 1's does,
+and his take sends him message 3 the same way (inferred: neither path tests for a player; the handler is
+`0x00245920` for every human). Coney (issue #326): the play's AI step releases an AI human's held object at his throw
+clip's release event (`PlayLevelSimulation::stepAiThrows`), from his hand at his last pose, and an AI pick-up sets his
+anim set (`LevelItems::collectTakes`). **Stand-in**: an AI throw aims at his fighter's target, as player 1's does
+without the aim; the brain's own throw target is not read.
+
 **Detach** (`melee_weapon`, `MeleeWeapon_Detach` `0x003fe6b8`): the velocity, given in the holder's frame, is turned
 by the holder's world rotation and set (vtable `+0x74`). Five model hashes (object `+0xc4`), the knives
 `dyn_bowie`, `dyn_hunter`, `dyn_tknife`, `dyn_swhbld` and `dyn_swhbld_super`, are tested first (`0x003fe7ac`-`0x003fe7f0`):

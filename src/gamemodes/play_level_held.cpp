@@ -29,6 +29,26 @@ std::optional<world_objects::WorldPose> PlayLevelSimulation::heldPose(double hel
     return draw ? std::optional<world_objects::WorldPose>(draw->pose) : std::nullopt;
 }
 
+std::optional<world_objects::WorldPose> PlayLevelSimulation::handPose(const human::Human& human, double held) const {
+    if (&human == &m_player->human()) {
+        return heldPose(held, m_player->current());
+    }
+    // An AI human at his last step's pose, with his own character's clips.
+    for (const ai::AiHuman& fighter : m_ai->humans()) {
+        if (fighter.human.get() != &human) {
+            continue;
+        }
+        const auto played = m_played.find(&human);
+        if (played == m_played.end() || played->second.character == nullptr) {
+            return std::nullopt;
+        }
+        const std::optional<HeldDraw> draw = heldDrawOf(held, human, *played->second.character, fighter.current.pose,
+                                                        fighter.current.feet, fighter.current.heading);
+        return draw ? std::optional<world_objects::WorldPose>(draw->pose) : std::nullopt;
+    }
+    return std::nullopt;
+}
+
 // @orig 0x0024c6d8 Human_PlaceObjectInHandByPickupClip (unknown)
 // @orig 0x003a19b0 Obj_GetWorldPose (unknown)
 std::optional<PlayLevelSimulation::HeldDraw> PlayLevelSimulation::heldDrawOf(double held, const human::Human& human,
