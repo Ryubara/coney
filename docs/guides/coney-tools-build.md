@@ -66,11 +66,13 @@ statuses; `python/src/coney_tools/docs_beyond.py` is the check). It runs on ever
 can add or remove a marker, and when the page is named with `PATHS`. It reads the markers from the code and the entries
 from the page, so there is no second list:
 
-- **A marker is keyed by `path:Symbol`.** Every `@coney-only limit:` in a comment of the files under `standards.code`'s
-  folders is keyed by its file and the name the comment documents: the declaration under the comment block (a
-  function, a constant, a type; a `template` header and an attribute are skipped), the one on the marker's own line when
-  code precedes the comment, or `(file)` when the comment sits above no declaration. Two markers of one name in one file
-  are one key.
+- **A marker is keyed by `path:Symbol`.** Every `@coney-only limit:` that begins a comment (after `//`, `///`, `/*`,
+  `/**` or a block comment's leading `*`; a comment that only mentions the words, or a string, is not read) in the files
+  under `standards.code`'s folders is keyed by its file and the name the comment documents: the declaration under the
+  comment block (a function, a constant, a type; a `template` header and an attribute are skipped), the one on the
+  marker's own line when code precedes the comment (a trailing `//` or `/* */` comment), or `(file)` when the comment
+  sits above no declaration. An operator's name carries its sign (`operator==`), and the second marker of one name in a
+  file is `name#2`, the third `name#3`, in the order they appear, so overloads each have a key.
 - **The lifted limits table names them.** Its **Marker** column holds the key of each marker an entry stands for, in code
   spans (`` `src/core/crowd_limits.h:scanTokens` ``), several for one entry when they share its row, or `-` for an entry
   that is `planned`. A marker no row names fails at the marker's line in the source; a key no marker has, one named twice,
@@ -79,6 +81,9 @@ from the page, so there is no second list:
   with the columns of `standards.beyond.columns` (the lifted limits table also the Marker column); each row has a cell
   for every column and a status that starts with `on main` or `planned`.
 - **A missing page** fails only when the sources have a marker, so a checkout without the page or any lift passes.
+- **Improvements are checked by review only.** A picture or sound option, a multiplayer or mod feature or a tool has no
+  marker for the check to read, so nothing fails when its row is missing; the docs and code review checklists ask the
+  reviewer to look ([Review: docs](review/docs.md)).
 
 The finding's rule is `beyond`. A change that lands the work of a `planned` entry changes the row to `on main` and gives
 it its Marker cell in the same commit; one that removes a lift takes its row out.

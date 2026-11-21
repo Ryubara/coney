@@ -116,7 +116,7 @@ subject, updated in place, so a reader never has to work out which of two pages 
 | Progress | `docs/progress/` | The tables at the `progress:generated` marker are produced by the docs build, never committed; edit the data files beside the page instead |
 | Game references: lists | `docs/references/` | Generated from `research/references/` by `coney-tools refs render`; edit the YAML instead. `entities.md` is written by hand |
 | Game references: script bindings | `docs/references/bindings/` | Generated from `research/bindings/` by `coney-tools bindings render`; edit the YAML instead |
-| Engine | `docs/engine/` | Living; how Coney works: its own internals and port notes, never what the original does ([Engine pages](#engine-pages)) |
+| Engine | `docs/engine/` | Living; how Coney works: its own internals and port notes, never what the original does, but for the one page that lists where Coney differs, whose "The original" column gives the original's number and links the research page that owns it ([Engine pages](#engine-pages)) |
 | Guides | `docs/guides/` | Living; how to build, contribute, research and review |
 | Designs | `docs/guides/` | A plan for work that is not allowed or not started yet, with the questions only a maintainer can answer ([enhancements](enhancements.md), [realtime lighting](realtime-lighting.md), [asset and script architecture](asset-and-script-architecture.md)). Not a how-to: say at the top that it is a design, and move what is built into a guide or research page. The design of an engine part's next steps may instead sit on that part's engine page ([Engine pages](#engine-pages)) |
 | Missions | `docs/missions/` | Generated from `research/missions.yaml` by `coney-tools missions render`; edit the YAML instead |
@@ -460,11 +460,13 @@ one Style rule that older research pages break ("not yet" and the like); no othe
 ## Engine pages {#engine-pages}
 
 The section "Engine: how Coney works" is `docs/engine/`: how Coney's own code is built and why, and the port notes that
-say where it stands against the original. A page here never says what the original does, which is a
-[research page](#research-pages) and is linked; and it makes no claim to grade. The folder is flat or grouped by system,
-and `docs/engine/index.md` is its landing page, which every page is reachable from. An engine page reads and is checked
-as a [guide](#page-kinds) (the Style rules, the 800-line warning), and three more rules hold, because it names what the
-code ports:
+say where it stands against the original. A page here never says what the original does, which is a [research
+page](#research-pages) and is linked; and it makes no claim to grade. The one exception is [Beyond the
+original](../engine/beyond-the-original.md), whose point is the difference: its "The original" column gives the
+original's number or rule in a few words and links the research page that owns the claim, and says no more. The folder
+is flat or grouped by system, and `docs/engine/index.md` is its landing page, which every page is reachable from. An
+engine page reads and is checked as a [guide](#page-kinds) (the Style rules, the 800-line warning), and three more rules
+hold, because it names what the code ports:
 
 - **No date, and no issue number but as a link to that issue** (`history`). History lives in git and the pull requests.
   A stand-in that is to be replaced may name the issue that tracks it, and the check accepts exactly one form: the whole
@@ -497,7 +499,8 @@ a status of `on main` or `planned` ([the check](coney-tools-build.md#beyond)). *
 original's limit or any other improvement past the original (a picture or sound option, an Xbox-native option, a
 multiplayer or mod feature, a debug or player tool) updates that page in the same commit**, as it updates the roadmap's
 status; the rule and the lift's marker are in [The original's fixed
-limits](conventions.md#original-limits).
+limits](conventions.md#original-limits). Only a lift has a marker for the check to read: whether an improvement has its
+row is the reviewer's to ask ([the review checklist](review/docs.md)).
 
 A plan is an issue, with one exception: when the maintainers ask for the design of a part's next steps on the part's
 own page (as for [Renderer](../engine/renderer.md)), it is a section of that page, which says at its top that it is a

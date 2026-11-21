@@ -94,6 +94,42 @@ def test_every_marker_of_a_file_is_listed_with_its_line() -> None:
     assert [(marker.symbol, marker.line) for marker in found] == [("scanTokens", 2), ("humanListCap", 6)]
 
 
+def test_a_marker_counts_only_at_the_start_of_a_comment() -> None:
+    assert marker_keys(f"/// The rule is {MARKER} the original holds 60\nint cap();\n") == []
+    assert marker_keys(f"// See {MARKER} in conventions.md\nint cap();\n") == []
+    assert marker_keys(f'const char* kText = "{MARKER} x";\n') == []
+    assert marker_keys(f"/** {MARKER} the original holds 60 */\nint cap();\n") == ["src/core/crowd.h:cap"]
+    assert marker_keys(f"//! {MARKER} the original holds 60\nint cap();\n") == ["src/core/crowd.h:cap"]
+
+
+def test_a_trailing_block_comment_marker_documents_the_declaration_on_its_line() -> None:
+    text = f"inline constexpr int kRoutes = 32; /* {MARKER} the original keeps a pool of 32 */\n"
+    assert marker_keys(text) == ["src/core/crowd.h:kRoutes"]
+
+
+def test_an_operator_is_named_with_its_sign() -> None:
+    text = f"/// {MARKER} the original holds 60\nbool operator==(const Pool& other) const;\n"
+    assert marker_keys(text) == ["src/core/crowd.h:operator=="]
+    text = f"/// {MARKER} the original holds 60\nint operator()(int slot) const;\n"
+    assert marker_keys(text) == ["src/core/crowd.h:operator()"]
+
+
+def test_overloads_of_one_name_have_keys_of_their_own() -> None:
+    one = f"/// {MARKER} the original holds 60\nint cap(int humans);\n"
+    two = f"/// {MARKER} the original holds 60\nint cap(double scale);\n"
+    assert marker_keys(one + two + two) == [
+        "src/core/crowd.h:cap",
+        "src/core/crowd.h:cap#2",
+        "src/core/crowd.h:cap#3",
+    ]
+
+
+def test_an_entry_names_an_operator_and_an_overload_in_its_cell() -> None:
+    cell = "`src/core/crowd.h:operator==`, `src/core/crowd.h:cap#2`"
+    text = page((row("Pool", marker=cell),))
+    assert check(text, "src/core/crowd.h:operator==", "src/core/crowd.h:cap#2") == {}
+
+
 def test_other_coney_only_markers_are_not_limits() -> None:
     text = "/// @coney-only trace bookkeeping; the original keeps no such count\nint targetChanges();\n"
     assert marker_keys(text) == []

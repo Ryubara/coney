@@ -35,8 +35,15 @@ WHOLE_FILE = "(file)"
 _DECLARATION_LINES = 8
 #: A line, or the rest of one, that is a comment: the start of `//`, `/*` or the middle of a block comment.
 _COMMENT_START = ("//", "/*", "*")
-#: A `path:Symbol` in a code span: how a table cell names a marker.
-_KEY = re.compile(r"`(?P<path>[\w./+-]+):(?P<symbol>\(file\)|[A-Za-z_]\w*)`")
+#: What precedes a marker that opens a comment: any code, then `//`, `///`, `/*` or `/**` and blanks.
+_OPENER = re.compile(r"^(?P<code>.*?)(?://+|/\*+)[!<]?\s*$")
+#: What precedes a marker on a continuation line of a block comment: blanks, `*`, blanks.
+_CONTINUATION = re.compile(r"^\s*\*+\s*$")
+#: An operator's name in a declaration: `operator==(`, `operator()(`, `operator bool(`.
+_OPERATOR = re.compile(r"\boperator\s*(\(\)|[^\s(\w]+|\w+)\s*\(")
+#: A `path:Symbol` in a code span: how a table cell names a marker. The symbol is a name, `operator` and its sign,
+#: or `(file)`, and may end `#2`, `#3` for the second and third marker of one name in a file (overloads).
+_KEY = re.compile(r"`(?P<path>[\w./+-]+):(?P<symbol>(?:\(file\)|operator[^`\s]+|[A-Za-z_]\w*)(?:#\d+)?)`")
 #: The separator row of a table.
 _SEPARATOR = re.compile(r"^\|?[ \t]*:?-{2,}:?[ \t]*(?:\|[ \t]*:?-{2,}:?[ \t]*)*\|?[ \t]*$")
 #: The last word of a declaration's head, the name it declares.
@@ -94,32 +101,48 @@ def _declared_name(head: str) -> str:
         if char in "({=;" or (char == ":" and text[index - 1 : index] != ":" and text[index + 1 : index + 2] != ":"):
             end = index
             break
+    operator = _OPERATOR.search(text)
+    if operator:
+        return f"operator{operator.group(1)}"
     word = _LAST_WORD.search(text[:end])
     return word.group(1) if word else WHOLE_FILE
 
 
+def _opening(before: str) -> str | None:
+    """The code that precedes a marker whose text `before` ends in a comment opener (`//`, `///`, `/*`, `/**`, or the
+    `*` that continues a block comment), or None when the marker is not the first words of a comment: a comment that
+    only mentions it in prose, a string or code never counts."""
+    if _CONTINUATION.match(before):
+        return ""
+    opener = _OPENER.match(before)
+    return opener.group("code") if opener else None
+
+
 def markers_in(path: str, text: str, marker: str) -> list[Marker]:
-    """Every `marker` in a comment of the source `text` at `path`, with the name its comment documents: the declaration
-    on the marker's own line when code precedes the comment, else the one that follows the comment block."""
+    """Every `marker` that begins a comment of the source `text` at `path`, with the name its comment documents: the
+    declaration on the marker's own line when code precedes the comment (`// ...` or `/* ... */` after it), else the one
+    that follows the comment block. A second marker of one name in the file is `name#2`, a third `name#3`, so overloads
+    have keys of their own."""
     lines = text.splitlines()
     found: list[Marker] = []
+    seen: dict[str, int] = {}
     for index, line in enumerate(lines):
         at = line.find(marker)
         if at < 0:
             continue
-        before = line[:at]
-        slashes = before.find("//")
-        if slashes < 0 and not before.lstrip().startswith(_COMMENT_START):
-            continue  # the words in a string or in code, not in a comment
-        code = before[:slashes] if slashes >= 0 else ""
-        if code.strip():
-            found.append(Marker(path, index + 1, _declared_name(code)))
+        code = _opening(line[:at])
+        if code is None:
             continue
-        end = index
-        while end + 1 < len(lines) and lines[end + 1].lstrip().startswith(_COMMENT_START):
-            end += 1
-        head = " ".join(item.strip() for item in lines[end + 1 : end + 1 + _DECLARATION_LINES])
-        found.append(Marker(path, index + 1, _declared_name(head)))
+        if code.strip():
+            symbol = _declared_name(code)
+        else:
+            end = index
+            while end + 1 < len(lines) and lines[end + 1].lstrip().startswith(_COMMENT_START):
+                end += 1
+            head = " ".join(item.strip() for item in lines[end + 1 : end + 1 + _DECLARATION_LINES])
+            symbol = _declared_name(head)
+        seen[symbol] = seen.get(symbol, 0) + 1
+        found.append(Marker(path, index + 1, symbol if seen[symbol] == 1 else f"{symbol}#{seen[symbol]}"))
     return found
 
 

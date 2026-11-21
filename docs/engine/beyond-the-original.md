@@ -45,7 +45,8 @@ and an entry `on main` names every one it has.
 `src/` has no entry in the **Marker** column of the lifted limits table, and when an entry names a marker that no longer
 exists. It also checks that every section below has its table with the six columns and that each status starts with
 `on main` or `planned`. A change that lifts a limit or adds an improvement updates this page in the same commit
-([the rule](../guides/conventions.md#original-limits)); a change that removes one takes its row out.
+([the rule](../guides/conventions.md#original-limits)); a change that removes one takes its row out. A new option or
+feature has no marker for the check to read, so it is the reviewer's to ask for its row.
 
 ## Lifted limits {#lifted-limits}
 
@@ -131,9 +132,9 @@ With no session open no network code runs, and a test proves it.
 | --- | --- | --- | --- | --- | --- |
 | Hosting and joining a session | One console | A listen server in the host's game, ENet, `coney_net`; the guest's pad is the host's pad port 2 | `--host`, `--join`, the debug menus' Network page. Test mode opens none unless a test asks | on main | [Network multiplayer](../guides/multiplayer.md#in-the-game) |
 | Snapshots, events and the loading barrier | None | The server's humans in delta-compressed snapshots, the game's events and a level change's barrier sent to the guest | A session only | on main | [Snapshots](../guides/snapshots.md) |
-| A guest that draws the host's game | None | A client game mode that loads the host's level and draws the snapshots through the renderer | A session only | planned, [#557](issue:557) | [The client's world](../guides/client-world.md) |
+| A guest that draws the host's game | None | A client game mode that loads the host's level and draws the snapshots through the renderer | A session only | planned, no issue yet | [The client's world](../guides/client-world.md) |
 | Joining by address and LAN discovery | None | A host on the network is found, one across the internet by its address | A session only | planned, [#562](issue:562) | [Network architecture](../guides/network-architecture.md#phases) |
-| Prediction and an encrypted session | None | The joining player's own Warrior answers at once; the session is encrypted | A session only | planned, [#547](issue:547) | [Prediction](../guides/network-architecture.md#prediction) |
+| Prediction and an encrypted session | None | The joining player's own Warrior answers at once; the session is encrypted | A session only | planned, [#559](issue:559) for the prediction, no issue yet for the encryption | [Prediction](../guides/network-architecture.md#prediction) |
 | A dedicated server | None | `coney-server`, a headless program that hosts a session | A session only | planned, [#564](issue:564) | [Network architecture](../guides/network-architecture.md#phases) |
 | Scripted servers and clients | None | Server and client resources, with events and state between them, as a sandboxed script | A session only | planned, [#566](issue:566) | [Network architecture](../guides/network-architecture.md#scripting) |
 | Three and four players | Two players | Coney's own rule set for more than two, written as a design first (sweep decision 8) | A session marked with Coney's rule set; test mode and one player never turn it on | planned, [#565](issue:565) | [Network architecture](../guides/network-architecture.md#phases) |
