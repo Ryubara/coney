@@ -416,11 +416,10 @@ so the lines sit on the fill. A human's blood layer, and an object's second laye
 The normals and bone axes are Debug draw lines, from the selection's pose skinned on the CPU for it alone. *Everything*
 means every model drawn through the scene's lighting rig: a level's sectors and skyline, the humans, world objects,
 doors and cars. A sandbox's own blocks are drawn by its renderer and get no wireframe; there is no wire under OpenGL ES,
-which has no line mode. **On `--renderer gpu`** none of the passes is drawn yet: the wireframe and the mesh views are
-draws through librw, which draws nothing there, so the models draw shaded as without them and the items' help says so
-([the GPU renderer](../engine/gpu-renderer.md#scene)). The *selection* choices (the wireframe's, the mesh view's) and
-the normals and bone axes are for a selected human: an object selected has no model to draw them for, though
-*everything* draws it like any other.
+which has no line mode. **On `--renderer gpu`** the passes are not drawn yet (librw draws them, and draws nothing
+there): the models draw shaded and the items' help says so ([the GPU renderer](../engine/gpu-renderer.md#scene)). The
+*selection* choices (the wireframe's, the mesh view's) and the normals and bone axes are for a selected human: an object
+selected has no model to draw them for, though *everything* draws it like any other.
 
 The level of detail: the original draws every sector, human, car part and object as one model, whole or not at all
 ([Distance: fades and level of detail](../research/graphics.md#lod)), and so does Coney, so *by LOD* tells only the
@@ -683,18 +682,17 @@ simulation never reads it and a run plays the same with any of it changed; test 
 | Parts | *Streamed world* (off also hides the background), *Background* (the sky and cloud boxes, the skyline, the light glows), *Humans* (with what they wear and hold), *Objects* (world objects, doors, cars), *Glass*, *Water*, *Effects* (particles, glints, the throw-aim arc), *Health rings* (and the L1 markers), *Coronas*, *Blob shadows*; *All on* | Every part on is the original's picture; each off is Coney's |
 | Reset world | the lighting's layers and view, the fog, the shadows, the gravity and the parts back as the game has them (the look stays: choose *PS2*) | |
 
-**How the parts are left out.** The play mode reads the parts as it draws a frame, around the original's draw order and
-never inside a ported function: the humans, the objects, the glass, the water, the effects and the rings are simply not
-drawn; the background is left out of the world renderer's frame as the world edits leave it out
+**How the parts are left out.** The play mode reads the parts as it draws a frame, around the original's draw order
+and never inside a ported function: the humans, the objects, the glass, the water, the effects and the rings are
+simply not drawn; the background is left out of the world renderer's frame as the world edits leave it out
 (`LevelPlayScenery::draw`); and the streamed world's sectors, which the ported `WorldManager_Render` draws itself, are
-handed to the [mesh views](#mesh-views)' hook, which draws no pass of a model whose kind is hidden (on GL3, whenever a
-part is hidden or a view is on, the sectors and the background go through the lighting rig to the hook, as they did
-before the part switches reached the GPU renderer; on the [GPU renderer](../engine/gpu-renderer.md#scene) they are
-recorded into the frame description, the background too, and `RenderEngine::drawScene()` leaves out the draws of a
-hidden kind, so each part hides alone there too). The hook sees the sectors and the background as one kind (scenery), so
-*Streamed world* off hides both, on either renderer (a test pins it); *Background* off hides the background alone. The
-coronas and the blob shadows are the lighting layers' own switches, shown here too. **The fog** in place of the level's
-is `graphics::shownFog()`: the world pass clears to its colour and fogs from its start, as it does with the level's.
+handed to the [mesh views](#mesh-views)' hook, which draws no pass of a model whose kind is hidden. On GL3, with a
+part hidden or a view on, the sectors and the background go through the lighting rig to the hook, as before; on the
+[GPU renderer](../engine/gpu-renderer.md#scene) they are recorded and `RenderEngine::drawScene()` leaves out a hidden
+kind's draws, so each part hides alone. The hook sees the sectors and the background as one kind (scenery), so
+*Streamed world* off hides both, on either renderer; *Background* off hides the background alone. The coronas and the
+blob shadows are the lighting layers' own switches, shown here too. **The fog** in place of the level's is
+`graphics::shownFog()`: the world pass clears to its colour and fogs from its start, as it does with the level's.
 
 **The gravity** is simulation, not drawing: the tunable lands between two steps like any other (so a run with the same
 overrides file is the same run), and only the humans feel it; a flying object, a hat and the particles keep their own.
