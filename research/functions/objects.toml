@@ -122,7 +122,7 @@ name = "Human_DropHeld"
 page = "objects.md#original-structure"
 role = "a held object let go: dropped / thrown"
 level = "confirmed-code"
-coney = "src/gamemodes/level_pickups.h:LevelPickups::drop"
+coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::dropHeld"
 status = "compared"
 
 [[function]]
