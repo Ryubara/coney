@@ -79,6 +79,23 @@ TEST_CASE("a near hunter keeps the player from hiding; a far one out of sight is
     CHECK(shaken.shakenOff.size() == 1);
 }
 
+TEST_CASE("a guard the player lists does not hunt him, so he still hides behind him", "[ai][hiding]") {
+    // level87 checkpoint 5 (#1541): the player's (or a Warrior's) listing of the guard puts nothing in the guard's own
+    // list (Brain_AddEnemy 0x0028d538 only counts it, Brain_CountHostile 0x0028ef20), so the guard 30 m off with his
+    // back turned is no hunter: docs/research/stealth.md#shadow-ground.
+    coney::test::AiScene scene;
+    useHalfShadow(scene);
+    coney::ai::Brain& player = scene.player();
+    coney::ai::Brain& guard = scene.add(Vec3{20.0F, 70.0F, 0.0F}, 0.0F);
+    player.human().place(Vec3{20.0F, 40.0F, 0.0F}, 0.0F);
+    player.addEnemy(guard);
+    scene.run(1);
+    HideMemory memory;
+    CHECK(coney::ai::huntersOf(scene.brains, player, memory) == 0);
+    CHECK(updateHiding(scene.brains, player, memory, false).mayHide);
+    CHECK(player.human().hidden());
+}
+
 TEST_CASE("a hidden human is seen only within 2 m and only by a viewer on shadow ground", "[ai][hiding][sight]") {
     coney::test::AiScene scene;
     useHalfShadow(scene);

@@ -30,6 +30,7 @@
 #include "ai/ai_config.h"
 #include "ai/ai_humans.h"
 #include "ai/brain.h"
+#include "ai/brains.h"
 #include "ai/gangs.h"
 #include "ai/scripted_brains.h"
 #include "ai/scripted_humans.h"
@@ -60,6 +61,7 @@
 #include "scripting/config_strings.h"
 #include "scripting/lua_value.h"
 #include "scripting/script_system.h"
+#include "support/disc_session.h"
 #include "support/each_case.h"
 #include "support/live_pad.h"
 #include "warriors/created_humans.h"
@@ -802,5 +804,45 @@ TEST_CASE("the disc's level5 plays each checkpoint without a script error", "[di
                     "walked\n",
                     checkpoint, run.humans, static_cast<unsigned long long>(run.scriptErrors), run.missingBindings,
                     run.travelled);
+    }
+}
+
+TEST_CASE("the disc's level87 checkpoint 5: the player hides on the shadow ground behind the first guard",
+          "[disc][story][stealth]") {
+    // The tutorial's lesson in hiding (#1541; docs/research/stealth.md#level87): the route of the `level87-hide` clips
+    // scenario skips the intro scene, walks into the hint volume, and the tutorial warps him to the shadow ground
+    // behind the guard S01 at about frame 357. His Warriors' and his own listing of the guard does not make the guard
+    // hunt him (Brain_AddEnemy 0x0028d538 lists one way; run r-20261121-level87-cp5-enemy-lists), so he hides there and
+    // stays hidden while he stands still.
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    constexpr std::string_view kRoute = "70 tap cross\n"
+                                        "90 steer 50 410,-59\n"
+                                        "185 stick left 0 0\n"
+                                        "320 steer 100 418.3,-63.6\n";
+    coney::test::DiscSession run(*wad, kRoute);
+    run.session().startAtLevel("level87", 5);
+    REQUIRE(run.runUntilPlay());
+    REQUIRE(run.runToPlayFrame(330));
+    const coney::ai::ScriptedBrains* scripted = run.session().gameplay().scripted();
+    REQUIRE(scripted != nullptr);
+    const coney::ai::Brain* player = scripted->player();
+    REQUIRE(player != nullptr);
+    const coney::human::Human& human = player->human();
+
+    // Hidden within 5 s of the frame before the warp.
+    const bool hid = run.runUntil([&human] { return human.hidden(); }, 150);
+    std::printf("  level87 checkpoint 5: hidden %s at (%.1f, %.1f)\n", hid ? "yes" : "no",
+                static_cast<double>(human.position().x), static_cast<double>(human.position().y));
+    REQUIRE(hid);
+    // And still hidden 2 s later: nobody lists him.
+    run.run(60);
+    CHECK(human.hidden());
+    const coney::ai::Brains* brains = run.session().gameplay().brains();
+    REQUIRE(brains != nullptr);
+    for (std::size_t i = 0; i < brains->size(); ++i) {
+        CHECK_FALSE(std::ranges::contains(brains->at(i).enemies(), player));
     }
 }
