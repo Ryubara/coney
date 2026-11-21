@@ -75,6 +75,7 @@ std::vector<ai::LooseItem> LevelItems::ownedItems(int zone) const {
 }
 
 std::optional<double> LevelItems::nearestZoneTarget(int zone, anim::Vec3 from, std::uint64_t nowMs) const {
+    // Coney stand-in: only mode 0x20, the Destroy goal's, is built; mode 2 and the others have no caller yet.
     if (zone < 0 || !m_records.zoneEnabled(static_cast<std::uint32_t>(zone))) {
         return std::nullopt;
     }
@@ -111,6 +112,7 @@ std::optional<double> LevelItems::nearestZoneTarget(int zone, anim::Vec3 from, s
 }
 
 bool LevelItems::zoneHasObjects(int zone) const {
+    // Coney stand-in: only mode 1 (an object in a hand does not count), the wreck tactic's, is built.
     if (zone < 0 || !m_records.zoneEnabled(static_cast<std::uint32_t>(zone))) {
         return false;
     }
