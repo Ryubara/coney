@@ -98,6 +98,7 @@ add_executable(coney_tests
     gamemodes/idle_mode_test.cpp
     gamemodes/legal_screen_mode_test.cpp
     gamemodes/hud_feed_test.cpp
+    gamemodes/held_throws_test.cpp
     gamemodes/level_items_test.cpp
     gamemodes/level_pickups_test.cpp
     gamemodes/loading_screen_test.cpp
