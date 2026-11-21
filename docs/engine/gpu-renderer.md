@@ -191,12 +191,14 @@ it hides (`MeshViewHook::hides()`) apart from whether it draws passes of its own
 mode hands the hidden kinds to the renderer for the frame (`RenderEngine::hideKindsOf()`), and
 `RenderEngine::drawScene()` leaves out every recorded draw made in the scope of a hidden kind (`DrawKindScope`), so on
 this renderer the sectors, the objects and the humans are still recorded and hiding one kind never takes another with
-it. GL3 is as it was: with a hook set (a part hidden or a view on) the sectors, the objects and the humans go through
-the lighting rig for it, which hides the kind there (`SceneLighting::meshViewsOn()` is true whenever a hook is set and
-the play mode left its passes on), and nothing of them is recorded; the GPU renderer says its passes off, so no hook
-sends a model through the rig there. The tests record the frame description for each kind
-(`tests/platform/world_draw_stream_test.cpp`, `object_draw_stream_test.cpp`, `human_draw_stream_test.cpp`; the sectors
-also on a real GPU device).
+it. The level's background (the sky, the clouds, the skyline and the light glows, recorded as above) is drawn in the
+same scenery scope as the sectors, so *Streamed world* off hides it too, as the guide says and as on GL3, while the
+*Background* part hides it alone; *Humans* and *Objects* off leave it. GL3 is as it was: with a hook set (a part hidden
+or a view on) the sectors, the background, the objects and the humans go through the lighting rig for it, which hides
+the kind there (`SceneLighting::meshViewsOn()` is true whenever a hook is set and the play mode left its passes on), and
+nothing of them is recorded; the GPU renderer says its passes off, so no hook sends a model through the rig there. The
+tests record the frame description for each kind (`tests/platform/world_draw_stream_test.cpp`,
+`object_draw_stream_test.cpp`, `human_draw_stream_test.cpp`; the sectors also on a real GPU device).
 
 **The mesh views** (the wireframe and the flat views of the Debug draw page) are GL3's: each is a draw of the model's
 own librw atomic through the lighting rig, which draws nothing on the GPU backend. The play mode therefore leaves their
