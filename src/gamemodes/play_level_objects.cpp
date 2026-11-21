@@ -1054,8 +1054,6 @@ void PlayLevelSimulation::dropHeld(human::Human& human, double held, bool thrown
             spin = anim::Vec3{0.0F, 0.0F, -k * std::numbers::pi_v<float>};
         }
     }
-    // Coney stand-in: a knife let go with no speed (a drop) still tumbles; MeleeWeapon_Detach skips the spin when the
-    // speed is 0 (inferred from the decompile).
     if (knife) {
         start.rotation = headingRotation(human.heading());
         spin = anim::Vec3{kKnifeTumble, 0.0F, 0.0F};
