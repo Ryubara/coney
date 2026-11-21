@@ -671,7 +671,9 @@ ends with `LastLevel = findLastMission()` (inferred from the disassembly of `glo
 finishing a flashback, or a story mission replayed from the hub's mission menu, returns to the hub at the story's
 current checkpoint. Once `level64` is complete it is the first `findLastMission` finds, so from then on every
 completion leads to hub checkpoint 12 (inferred, not observed). Which bindings each of these levels needs:
-[Story coverage](../references/bindings/story.md).
+[Story coverage](../references/bindings/story.md). In Coney, `runNextMission` and `findLastMission` are natives over
+Coney's story graph, set over these two functions at every level entry and proved equal to them on the disc
+([Story progress: in Coney](story-progress.md#coney)).
 
 #### Missions coverage {#missions-coverage}
 
