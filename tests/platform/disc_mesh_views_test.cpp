@@ -23,6 +23,7 @@
 #include "debug/play_controls.h"
 #include "debug/tunables.h"
 #include "fileio/wad.h"
+#include "graphics/human_lighting.h"
 #include "human/player.h"
 #include "platform/character_skin.h"
 #include "platform/game_session.h"
@@ -172,6 +173,21 @@ TEST_CASE("the Mesh group counts a drawn human's model, and what is not a drawn 
     const std::vector<EntityId> humans = humanIds(*controls.inspect());
     REQUIRE(humans.size() >= 3);
 
+    // The follow camera as the renderer turns it into RenderWare's axes (y up, the game's y as -z), with a view window
+    // of 10 × 10 at distance 1 (about 170 degrees each way), wider than any lens the game uses.
+    const auto renderWare = [](coney::anim::Vec3 game) { return coney::world::Vec3{game.x, game.z, -game.y}; };
+    const coney::anim::Vec3 look = coney::anim::normalise(coney::anim::subtract(mode.cameraTarget(), mode.cameraEye()));
+    const coney::anim::Vec3 forward{look.x, look.z, -look.y};
+    const coney::anim::Vec3 right =
+        coney::anim::normalise(coney::anim::cross(forward, coney::anim::Vec3{0.0F, 1.0F, 0.0F}));
+    const coney::anim::Vec3 up = coney::anim::cross(right, forward);
+    const coney::world::CameraPose wideCamera{.position = renderWare(mode.cameraEye()),
+                                              .forward = coney::world::Vec3{forward.x, forward.y, forward.z},
+                                              .up = coney::world::Vec3{up.x, up.y, up.z},
+                                              .right = coney::world::Vec3{right.x, right.y, right.z}};
+    constexpr float kWide = 10.0F;
+    int aiDrawn = 0;
+
     // Every human the mode draws has a Mesh group, two atomics (the body and the blood layer), and the triangles and
     // materials of its geometry: the player's, a fighter's.
     for (const EntityId id : humans) {
@@ -188,13 +204,32 @@ TEST_CASE("the Mesh group counts a drawn human's model, and what is not a drawn 
         CHECK(facts.drawCalls == facts.materials * facts.passes);
         // Where it is skinned: the vertex shader once the engine runs the skin pipeline (a window), else the CPU.
         CHECK(facts.skinnedOn == (drawn && coney::platform::characterSkinOn() ? "GPU" : "CPU"));
-        // A human near the player is drawn in one pass, or two with blood on him; the Null renderer draws none.
+        // A human in view is drawn in one pass, or two with blood on him; one the camera cannot see (the yard's
+        // fighter behind it) is culled before posing and draws none, so a human with no pass must be outside even a
+        // view far wider than the camera's, by the renderer's own test
+        // (docs/engine/renderer-performance.md#cull-before-posing); the Null renderer draws none.
         if (drawn) {
-            CHECK(facts.passes >= 1);
             CHECK(facts.passes <= 2);
+            if (id == PlayLevelControls::kInspectPlayerId) {
+                CHECK(facts.passes >= 1);
+            } else if (facts.passes >= 1) {
+                ++aiDrawn;
+            }
+            if (facts.passes == 0) {
+                const std::vector<coney::debug::EntityRef> entities = controls.inspect()->entities();
+                const auto entity = std::ranges::find(entities, id, &coney::debug::EntityRef::id);
+                REQUIRE(entity != entities.end());
+                const coney::anim::Vec3 feet = entity->position;
+                CHECK(coney::graphics::cullHuman(wideCamera, kWide, kWide, renderWare(feet), 1.0F) !=
+                      coney::graphics::HumanCull::MayShow);
+            }
         } else {
             CHECK(facts.passes == 0);
         }
+    }
+    // At least one AI human is drawn, so the passes are counted for the fighters too.
+    if (drawn) {
+        CHECK(aiDrawn >= 1);
     }
     // Different humans have different atomics.
     CHECK(PlayLevelControls::atomicsOf(mode, humans[0])[0] != PlayLevelControls::atomicsOf(mode, humans[1])[0]);
