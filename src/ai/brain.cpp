@@ -667,22 +667,16 @@ void Brain::pushFightGoals(int durationMs) {
 }
 
 // @orig 0x0028d538 Brain_AddEnemy (unknown)
-bool Brain::listEnemy(Brain& enemy) {
-    if (&enemy == this || m_enemies.size() >= kMaxEnemies || std::ranges::find(m_enemies, &enemy) != m_enemies.end()) {
-        return false;
-    }
-    m_enemies.push_back(&enemy);
-    return true;
-}
-
 void Brain::addEnemy(Brain& enemy) {
-    if (!listEnemy(enemy)) {
+    // Nothing while this human is down or dead, for himself, when listed already or when the list is full.
+    if (humanIsDownOrDead(*this) || &enemy == this || m_enemies.size() >= kMaxEnemies ||
+        std::ranges::find(m_enemies, &enemy) != m_enemies.end()) {
         return;
     }
-    // The enemy takes this human as its enemy too, unless both are players.
-    if (m_type != BrainType::Player || enemy.m_type != BrainType::Player) {
-        enemy.listEnemy(*this);
-    }
+    // Listed on this side only: the original raises the enemy's hostile count (Brain_CountHostile, unless both are
+    // players) and leaves his own list alone. Coney keeps no count; ai::huntersOf() reads the listers' lists for it
+    // (docs/research/ai-gangs.md#tactics).
+    m_enemies.push_back(&enemy);
     // A tactic that runs its members hears of the new enemy.
     if (m_gang != nullptr && m_gang->tactic() != nullptr && !m_gang->tactic()->alertsGang()) {
         // A target the tactic sets here is its own answer, not the caller's cause (a hit back or a help call that

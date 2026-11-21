@@ -185,9 +185,16 @@ two readers: Start puts the gang on alert when it is 1, and `Brain_AddEnemy` sen
   `GoalFight` picks the target but **pushes no fight goal**; the tactic fights. It also does nothing for a knocked-down
   or dead human, or a type-3 brain already holding goal 9; otherwise it pops goals 8 and `0x41`, pushes FindEnemy
   (`0x41`), Melee (8) and then the fight goal (`0xf`) ([Starting a fight](ai-fights.md#targets)).
-- **`Brain_AddEnemy`** (`0x0028d538`) adds the enemy to `+0x164` (16), makes the enemy's brain add this human back
-  (`0x0028ef20`, unless both are players), and, when the tactic's `+0x3c` answers 0, sends it event `0xb` with the
-  enemy.
+- **`Brain_AddEnemy`** (`0x0028d538`) does nothing while this human is down or dead (`Human_IsDownOrDead`
+  `0x00227e60`) or the enemy is listed already. Otherwise it adds the enemy to `+0x164` (16) and raises the enemy's
+  hostile count by one (brain `+0x152`, `Brain_CountHostile` `0x0028ef20`, called at `0x0028d5f8`), unless both are
+  players; it does **not** list this human in the enemy's own list, so the listing is one way. When the tactic's
+  `+0x3c` answers 0 it sends the tactic event `0xb` with the enemy. Confirmed (code); the one-way listing is also
+  confirmed (runtime), run r-20261121-level87-cp5-enemy-lists: a minute into level87 checkpoint 5 the player and his
+  three Warriors all list the guard S01, whose hostile count is 4 and whose own list is empty, and the player's hostile
+  count is 0. An earlier reading of this page
+  took the call at `0x0028d5f8` for the enemy listing this human back, and Coney listed both ways until #1541: a
+  player's or a Warrior's listing of a guard made the guard hunt the player, who could not hide.
 
 **TacticCrowd** (type `0x1b`, vtable `0x005437a0`; `0x00316450`): turns a gang into **onlookers**. Init (`0x0030f4d0`):
 no time limit, `+0x28` the option.

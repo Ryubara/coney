@@ -1,0 +1,37 @@
+version = 1
+id = "r-20261121-level87-cp5-enemy-lists"
+date = "2026-11-21"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "88b3d7d80348ab1734718d6c57ba077a3efe110ba27bbcc68f26f707d02626dc"
+
+[who]
+agent = "a3187baa02cfd19b9"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "load-checkpoint level87 5, then reads of the five brains (0x006d53f0 + index * 0x2f0) about a minute into the checkpoint with no input: every Warrior and the player list S01 (handle 0x000401c5 at brain +0x164), S01's hostile count (+0x152) is 4, S01's own list is empty and the player's hostile count is 0"
+
+[values]
+s01_hostile_count = 4
+s01_enemies = 0
+player_hostile_count = 0
+player_enemies = 1
+warriors_listing_s01 = 3
+
+[addresses]
+s01_brain = 0x006d5fb0
+player_brain = 0x006d59d0
+brain_add_enemy = 0x0028d538
+brain_count_hostile = 0x0028ef20
