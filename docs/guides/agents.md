@@ -313,6 +313,9 @@ the claim Action every pass), an issue with `workflow` and another label is a wo
 claims of all four are outside the open-claims limit ([Claiming an issue](issues.md#claiming)). There is no `Slot:
 none`: an `engineer` or `tooling` agent has a unit, or it is not started. Other repositories' work is not counted.
 
+**In the code.** The track rules (which track a unit counts in, whether a track has room, the Studio model rule) are
+`python/src/coney_tools/task_tracks.py`; the table of units, `task slots` and the admission flow are `task_slots.py`.
+
 **The machine limit.** All tracks together, a machine holds at most `build_slots` (its build slots in
 `coney.local.toml`, the ones [`coney-tools build`](#builds) keeps) times `per_build_slot` (2) units in work: 10 on a
 machine with 5 build slots, 4 on one with the default 2. Of those, the places a track keeps (`min`) while it runs fewer

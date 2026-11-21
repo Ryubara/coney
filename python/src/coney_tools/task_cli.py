@@ -32,6 +32,7 @@ from coney_tools import (
     task_check,
     task_overlap,
     task_slots,
+    task_tracks,
     unit,
     watched_drives,
 )
@@ -264,7 +265,7 @@ def _run_waive(args: argparse.Namespace, root: Path, conventions: Conventions, n
     waiver = slot_waivers.add_waiver(
         scratch_folder(root),
         conventions.tasks.start.fill,
-        task_slots.machine_limit(conventions, _build_slots(root)),
+        task_tracks.machine_limit(conventions, _build_slots(root)),
         now,
         args.waive,
         args.reason,
@@ -346,9 +347,9 @@ def _run_slots(
     if not args.admit:
         cards = task_slots.Cards(read_card)
 
-        def labels(record: UnitRecord) -> task_slots.Labels | None:
+        def labels(record: UnitRecord) -> task_tracks.Labels | None:
             """A live unit's labels, from its claim cards."""
-            return task_slots.unit_labels(record.issues, cards, conventions)
+            return task_tracks.unit_labels(record.issues, cards, conventions)
 
         # A fix task whose pull request merged or closed is not queued; GitHub is read for the fixes with no unit.
         current = task_slots.scan(

@@ -189,7 +189,7 @@ def test_a_tooling_issue_does_not_fill_the_place_kept_for_game_work(scene: Scene
     scene.unit("b-tool", kind="tooling")
     scene.unit("c-fix", kind="fix")
     sources.ready_issues = [issue(7, "A-tools", "P-high")]
-    result = check(scene, sources)  # `task_slots.room` refuses a tooling unit in the place kept for a feature unit
+    result = check(scene, sources)  # `task_tracks.room` refuses a tooling unit in the place kept for a feature unit
     assert (
         not result.blocked and "cannot take Coney Studio, networking, renderer, tooling or docs work" in result.message
     )

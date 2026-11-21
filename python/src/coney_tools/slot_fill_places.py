@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Collection
 from dataclasses import dataclass
 
-from coney_tools import task_slots
+from coney_tools import task_slots, task_tracks
 from coney_tools.conventions import Conventions
 
 
@@ -35,7 +35,7 @@ def kept_places(current: task_slots.Scan, conventions: Conventions) -> dict[str,
     """The places each track keeps now, before any lapses: its `min` less its units that fill it, never below 0."""
     tracks = conventions.tasks.start.slots.tracks
     return {
-        name: max(tracks.of(name).min - task_slots.filling_count(current.holders, name, conventions), 0)
+        name: max(tracks.of(name).min - task_tracks.filling_count(current.holders, name, conventions), 0)
         for name in KEEPING
     }
 
@@ -43,10 +43,10 @@ def kept_places(current: task_slots.Scan, conventions: Conventions) -> dict[str,
 def free_places(
     current: task_slots.Scan, conventions: Conventions, build_slots: int, lapsed: Collection[str] = ()
 ) -> Free:
-    """Which places of the machine are free now, by the rule of `task_slots.room`: a track that runs fewer than its
+    """Which places of the machine are free now, by the rule of `task_tracks.room`: a track that runs fewer than its
     `min` units that fill it keeps the difference, unless its kept place lapsed (`lapsed`: it has nothing to start),
     and the rest are open."""
-    total = max(task_slots.machine_limit(conventions, build_slots) - len(current.holders), 0)
+    total = max(task_tracks.machine_limit(conventions, build_slots) - len(current.holders), 0)
     kept = {name: 0 if name in lapsed else places for name, places in kept_places(current, conventions).items()}
     game = min(kept["reimplementation"], total)
     fix = min(kept["fix"], total - game)
@@ -57,10 +57,10 @@ def free_places(
 
 def summary(current: task_slots.Scan, conventions: Conventions, build_slots: int) -> str:
     """The places in one line: units in work of the machine's limit, by track."""
-    limit = task_slots.machine_limit(conventions, build_slots)
+    limit = task_tracks.machine_limit(conventions, build_slots)
     parts = [
         f"{track}: {', '.join(h.task for h in current.held(track))}"
-        for track in task_slots.TRACKS
+        for track in task_tracks.TRACKS
         if current.held(track)
     ]
     return f"{len(current.holders)} of {limit} places in use" + (f", {'; '.join(parts)}" if parts else "")
@@ -68,7 +68,7 @@ def summary(current: task_slots.Scan, conventions: Conventions, build_slots: int
 
 @dataclass(frozen=True)
 class Work:
-    """One thing the coordinator could start now: the track it would work in (`task_slots.TRACKS`; Coney Studio work
+    """One thing the coordinator could start now: the track it would work in (`task_tracks.TRACKS`; Coney Studio work
     may not take a place another track keeps, and networking or renderer work only the one its own track keeps) and
     its task kind (only a kind in the reimplementation track's `min_kinds` fills the place kept for game work; a
     tooling or docs unit may take an open place only)."""
@@ -80,7 +80,7 @@ class Work:
 
 def fills_game_place(kind: str, track: str, conventions: Conventions) -> bool:
     """Whether work of this task kind in this track may take the place kept for game work: the reimplementation
-    track's own, of a kind that fills its minimum (`task_slots.room` refuses the others there)."""
+    track's own, of a kind that fills its minimum (`task_tracks.room` refuses the others there)."""
     return track == "reimplementation" and conventions.tasks.start.slots.tracks.of("reimplementation").fills_min(kind)
 
 

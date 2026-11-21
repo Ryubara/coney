@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Protocol
 
 from coney_tools import slot_fill_places as places
-from coney_tools import slot_waivers, task_slots
+from coney_tools import slot_waivers, task_slots, task_tracks
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_model import Card
@@ -345,13 +345,13 @@ def _unit_labels(cards: list[Card] | None, conventions: Conventions) -> task_slo
     reimplementation or fix."""
     by_issue = {card.issue: card for card in cards or []}
 
-    def labels(record: UnitRecord) -> task_slots.Labels | None:
+    def labels(record: UnitRecord) -> task_tracks.Labels | None:
         """A live unit's labels: workflow (no place, while `exempt_workflow` is on), Studio, networking and renderer."""
         if cards is None:
             return None
         found = [by_issue[number] for number in record.issues if number in by_issue]
         workflow = conventions.tasks.start.slots.exempt_workflow and any(card.in_workflow for card in found)
-        return task_slots.Labels(
+        return task_tracks.Labels(
             workflow=workflow,
             studio=any(card.studio for card in found),
             networking=any(card.networking for card in found),
@@ -368,10 +368,10 @@ def waiver_hint(conventions: Conventions) -> str:
 
 
 def issue_track(issue: IssueInfo, kind: str, conventions: Conventions) -> str:
-    """The track a unit on this ready issue would work in, by the rule of `task_slots.track_of` (the networking label
+    """The track a unit on this ready issue would work in, by the rule of `task_tracks.track_of` (the networking label
     first, then the renderer one, when an issue has several)."""
     rules = conventions.claims
-    return task_slots.track_of(
+    return task_tracks.track_of(
         kind, rules.is_studio(issue.labels), rules.is_networking(issue.labels), rules.is_renderer(issue.labels)
     )
 
@@ -382,7 +382,7 @@ def _game_work(
     """A claimed task with no agent as work to start."""
     return places.Work(
         f"claimed, not started: {task.task} ({task.kind}); start its agent with a line `Task id: {task.task}`",
-        track=task_slots.track_of(
+        track=task_tracks.track_of(
             task.kind,
             any(number in studio_issues for number in task.issues),
             any(number in networking_issues for number in task.issues),
