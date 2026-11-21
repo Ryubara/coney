@@ -236,7 +236,8 @@ int scanEnemies(const Gangs& gangs, Brain& scanner) {
             found.push_back(members[k]);
         }
     }
-    // 2. The gang's shared target, when valid.
+    // 2. The gang's shared target, when valid. **Coney stand-in** (#1597): the original files him at distance 0, so
+    // he sorts first in step 4 and is always kept; here his own distance places him.
     if (const Gang* own = scanner.gang(); own != nullptr && own->chosenTarget() != nullptr) {
         Brain* shared = own->chosenTarget();
         if (shared != &scanner && validEnemy(scanner, *shared) && std::ranges::find(found, shared) == found.end()) {
@@ -257,7 +258,8 @@ int scanEnemies(const Gangs& gangs, Brain& scanner) {
             scanner.forget(*enemy);
         }
     }
-    // 4. The nearest 16; the ones beyond leave the list.
+    // 4. The nearest 16; the ones beyond leave the list. **Coney stand-in** (#1597): the original sorts only when
+    // more than 16 were found, so 16 or fewer keep the gangs' order (the list's and the events').
     std::ranges::stable_sort(
         found, [&scanner](const Brain* a, const Brain* b) { return scanner.distanceTo(*a) < scanner.distanceTo(*b); });
     for (std::size_t k = kScanMaxEnemies; k < found.size(); ++k) {
