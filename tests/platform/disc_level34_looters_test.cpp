@@ -48,7 +48,7 @@ namespace {
 constexpr std::uint64_t kSkipAt = 100;
 constexpr std::uint64_t kEnterAt = 400;
 // How long the looters are given after that: 60 s of 1/30 s frames, four times the original's 15 s.
-constexpr std::uint64_t kLootFrames = 30 * 60;
+constexpr std::uint64_t kLootFrames = 30ULL * 60;
 // The intro looters' object zone (level34_riot.lua, P1.StartIntroLooters).
 constexpr std::uint32_t kZone = 51;
 // The middle of `vStartIntroLooters` (level34.lua: corner (-8.9, -72.8, -6.2), size 3 x 4 x 4).
@@ -117,6 +117,9 @@ struct Looters {
     // The AI brains that run a Destroy goal (the looters at work).
     [[nodiscard]] std::vector<coney::ai::Brain*> wreckers() {
         std::vector<coney::ai::Brain*> found;
+        if (!run) {
+            return found;
+        }
         const coney::ai::Brains* brains = run->session().gameplay().brains();
         if (brains == nullptr) {
             return found;
