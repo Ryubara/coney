@@ -401,6 +401,81 @@ tunable), it is a future native of Coney's own ([Script mods](../roadmap.md#scri
   same with every Coney capability off. Its natives live in the `Coney` table and never appear in
   `research/bindings/`, which describes only the original's 956.
 
+## The original's fixed limits {#original-limits}
+
+The original's sizes were fixed for the PS2's memory and processor: 60 human slots, 32 gangs of 10, five enemy-scan
+tokens a step, 32 routes, 30 push spheres, 16 enemies a list, fixed pools and tables. They are not part of the
+behaviour Coney reimplements. The maintainer's rule (2026-11-21): **Coney is not limited by anything the original had
+in place that would hold it back, unless that limit is truly needed.** It sits beside [Faithful
+first](repo:AGENTS.md) like this: inside the original's range gameplay matches the PS2 exactly (the same hashes in
+every level and playthrough); past the range Coney goes on by its own rule. The limits themselves are not part of the
+faithfulness.
+
+**What counts as a limit.** A number chosen for the hardware that bounds how much the engine holds or does at once: the
+capacity of a pool, table, list or buffer (slots, a gang's members, routes, spheres, name lengths, bones, animation
+ids) and a budget per step (scan tokens, how many are looked at or handled in one step). A value of the game's rules is
+not one (a damage, a delay, the distance a fight starts at, the five steps a block pauses): it ports as it is. When a
+number could be either, ask whether it says how many fit or how the game plays, and take it to the coordinator at a
+[decision point](how-we-work.md#decision-points) if that does not settle it.
+
+**When a limit stays.** Only when it is truly needed, which is one of these three:
+
+- **Gameplay inside the range depends on it:** the cap produces an order or timing that a normal level shows (the
+  scan tokens a step and the order the slots give are the cases issue #1569 works out). Lifting such a limit moves a
+  hash inside the range, so the lift must keep what the cap did there, and a limit whose effect cannot be kept stays.
+- **The original's own data fixes the format:** a field width or an id count that the disc's data is laid out by (a
+  model's 34 bones, the 722 animation ids) stays where reading that data needs it. Past it Coney's own formats and
+  ids go on by their own rule, marked like any lift.
+- **Removing it breaks determinism, network play or the test mode:** a size every peer must agree on, a loop whose
+  length would depend on the machine, anything that would make a run differ from one frame rate or process to another
+  ([Update and render](#update-and-render), [network checklist](network-architecture.md#checklist)).
+
+Speed or memory is a reason to lift a limit, never a reason to keep one. The reason a limit stays goes in the comment
+beside it and on its research page.
+
+**How a limit is lifted.** The rule past the range is Coney's own and is written down, not left to what the new size
+happens to do. Issue #1569 is the first case: the original's order inside the range, the crowd rules for more than 60
+humans above it.
+
+- The original's number stays in the code as a named constant (`kOrigMaxHumans = 60`) beside the lifted value, and a
+  comment says what the original does at it.
+- The lifted value is read through one named function or constant, so that the engine-limits preset below can pin it
+  to the original's number.
+- Its tests come first, in two groups: inside the range, a scenario at or under the original's number reaches the same
+  state with the limit lifted as with it pinned, and past the range Coney's rule holds and the run is deterministic.
+- An `@orig` function keeps its original lines: the lifted value comes from a helper or constant of its own (marked
+  as below), the `@orig` function reads it, and the line's pair in `orig compare` is a `stand-in` whose note names the
+  limit, with a comment saying `stand-in` on or just above the line ([Pairs](stamps.md#pairs)). Never put the marker on
+  the `@orig` function itself. The helper is not a [Coney-only capability](#coney-only-capabilities): it adds
+  nothing a script could call and the original's behaviour reads the same with it, so an `@orig` function may read it.
+
+**The marker.** Code that lifts a limit says so with a form of [`@coney-only`](#coney-only), in the doc comment of the
+function, constant or type that carries the lift:
+
+```cpp
+/// The most gangs the world keeps (an illustration, not a function in the tree).
+/// @coney-only limit: the original keeps 32 gangs of 10; past 32 Coney's rule is on its research page
+std::size_t maxGangs();
+```
+
+After `limit:` comes the original's number and what Coney does past it, in a few words. It is a `@coney-only` marker
+like any other, so `orig check-tags` ([orig](coney-tools-fidelity.md#orig)) and `orig index` read it with no tool of
+their own, and `grep -rn "@coney-only limit" src` lists every lifted limit.
+
+**Where it is documented.** On the research page that names the original's number, one line beside it says what Coney
+does: `Coney keeps it, because ...` or `Coney lifts it past N (rule: ...)`, with the rule in the page's "Coney's
+implementation" section. A page is brought up to this where it is touched anyway
+([Touch a page, fix the page](writing-docs.md#touch-it)), not in a sweep of its own.
+
+**The engine limits preset.** Test mode gets a preset, *engine limits*, that pins every lifted limit at the original's
+number, so a run can show Coney under the PS2's ceilings (a comparison with the original, a hash that must not move).
+It is the rule now and is not built yet: a follow-up issue builds the preset, and which runs use it is decided then.
+Until it exists a lift follows the list above, so the preset has one place per limit to pin.
+
+A reviewer asks of every change whether it ports a fixed limit of the original without need, and whether a lift is
+marked, documented and tested on both sides of the original's number ([Code review](review/code.md#correctness),
+[Orig review](review/orig.md#fidelity)).
+
 ## Errors
 
 **The engine does not throw exceptions.** Exceptions make every call a possible exit that the code doesn't show,

@@ -32,6 +32,12 @@ the [format on the index page](index.md#finding-format).
 - [ ] **Fixtures are synthetic.** Tests that need the disc skip when it is not configured and print aggregates
   only.
 - [ ] **The build is clean.** Warning-free on every supported compiler, and the tests pass. Run them.
+- [ ] **No fixed limit of the original ported without need.** A capacity, pool, table or per-step budget that the
+  original fixed for the PS2 (60 human slots, 32 gangs of 10, 5 scan tokens a step) is not copied as a ceiling unless
+  the change says why it must stay: gameplay inside the range depends on it, or lifting it breaks determinism, network
+  play or the test mode. A lift keeps the original's number as a named constant, carries `@coney-only limit: ...`, is
+  documented beside the number and is tested inside and past the range
+  ([The original's fixed limits](../conventions.md#original-limits)). A ceiling ported with no reason is Important.
 - [ ] **Networking.** The change keeps [the networking checklist](../network-architecture.md#checklist): no new
   mutable global in simulation code, no new "the player" or pad 0 assumption, no new pointer kept across steps where
   an id would do, no `GameRandom` draw from presentation code.
@@ -77,6 +83,7 @@ The test: could someone write their own version of this subsystem from the code 
 
 - **Critical:** engine code full of raw Ghidra artifacts; a game file or extracted asset staged for commit; a
   format parser that silently accepts truncated data.
-- **Important:** a reimplemented function without `@orig` or a research link; a research claim with no evidence
+- **Important:** a reimplemented function without `@orig` or a research link; an original's fixed limit ported as
+  a ceiling with no reason, or lifted with no `@coney-only limit:` marker; a research claim with no evidence
   level; a commit title outside the areas in `.github/conventions.yml` (`commits.title`).
 - **Minor:** unclear wording in a research page; a test name that does not say what it checks.

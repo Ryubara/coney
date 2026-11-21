@@ -86,6 +86,22 @@ def test_tagged_marked_and_exempt_new_functions_pass(repo: Path) -> None:
     assert orig_check.check(repo, "HEAD") == []
 
 
+def test_a_lifted_limit_marker_is_a_coney_only_marker(repo: Path) -> None:
+    """`@coney-only limit: ...` (docs/guides/conventions.md#original-limits) needs no tooling of its own."""
+    add_to_brain(
+        repo,
+        "/// @coney-only limit: the original holds 60 humans; past 60 Coney grows the table\n"
+        "int maxHumans() {\n    return 128;\n}",
+    )
+    assert orig_check.check(repo, "HEAD") == []
+
+
+def test_a_lifted_limit_without_the_marker_is_refused(repo: Path) -> None:
+    add_to_brain(repo, "/// The original holds 60 humans; Coney holds more.\nint maxHumans() {\n    return 128;\n}")
+    problems = orig_check.check(repo, "HEAD")
+    assert len(problems) == 1 and "maxHumans has no @orig and no @coney-only" in problems[0]
+
+
 def test_a_function_that_loses_its_tag_is_refused(repo: Path) -> None:
     (repo / "src/ai/brain.h").write_text(BRAIN_H.replace("    /// @orig 0x00100010 Brain_Think (Brain.cpp)\n", ""))
     problems = orig_check.check(repo, "HEAD")
