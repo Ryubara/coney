@@ -122,6 +122,11 @@ class GameSession {
     /// The debug menus' jump to `level` at `checkpoint`, carried out at the next beginFrame(); false, changing nothing,
     /// when the level table has no such level or it cannot load (levelLoads(); a log line says so).
     bool jumpToLevel(std::string_view level, int checkpoint);
+    /// A network guest's game leaves its level for the front end, carried out at the next beginFrame() (a jump asked
+    /// for since is dropped, as a jumpToLevel() asked for after it replaces this). False, changing nothing, when no
+    /// level is in play or loading. Coney's own.
+    /// @coney-only a network guest following the host's quit
+    bool leaveLevel();
     /// The debug menu's movie (docs/guides/debug-menu.md#movies): plays `name` over whatever runs at the next
     /// beginFrame(), as a MovieRequest::debug (the game held beneath it, its sound held and given back, played even
     /// under `--skip-movies`), with ordinary captions whatever the subtitle option when `captions`. False, changing
@@ -178,6 +183,7 @@ class GameSession {
     std::shared_ptr<HumansTrace> m_humansTrace;
     net::GameHumans* m_netHumans = nullptr; // setNetHumans()
     std::optional<std::string> m_pendingLevel;
+    bool m_pendingLeave = false;                                 // leaveLevel(): carried out at the next beginFrame()
     std::uint64_t m_levelStarts = 0;                             // levelStarts()
     std::optional<std::pair<std::string, int>> m_lastLevelStart; // lastLevelStart()
     int m_pendingCheckpoint = 1;

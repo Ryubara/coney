@@ -210,6 +210,49 @@ TEST_CASE("pause: Quit to the main menu leaves gameplay with checkpoint 1 and th
     CHECK(run.flow->levelFlow().chosenLevel() == coney::LevelFlowMode::kNoLevel);
 }
 
+TEST_CASE("pause: a quit the menu chooses is counted once for network play, and a restart or a resume is not",
+          "[pause][net]") {
+    // Expected: unverified, #1549 (Coney's own count; docs/guides/multiplayer.md#levels: a host tells its guests of a
+    // quit) Quit is the last of seven items: right six times from Objectives, then cross, left to Yes, cross.
+    Run quit("5 tap start\n15 tap right\n20 tap right\n25 tap right\n30 tap right\n35 tap right\n40 tap right\n"
+             "45 tap cross\n55 tap left\n60 tap cross\n");
+    quit.frames(20);
+    CHECK(quit.flow->missionQuits() == 0);
+    quit.frames(42);
+    REQUIRE(quit.flow->pause().menu().outcome() == coney::gui::PauseOutcome::QuitToMainMenu);
+    CHECK(quit.flow->missionQuits() == 1);
+    // Asked again, and after the menu has closed and applied it, it is the same quit.
+    CHECK(quit.flow->missionQuits() == 1);
+    quit.frames(64);
+    CHECK(quit.flow->missionQuits() == 1);
+
+    // Restart Last Check Point is no quit.
+    Run restart("5 tap start\n15 tap right\n20 tap right\n25 tap right\n30 tap right\n35 tap cross\n45 tap cross\n"
+                "55 tap left\n60 tap cross\n");
+    restart.frames(62);
+    REQUIRE(restart.flow->pause().menu().outcome() == coney::gui::PauseOutcome::RestartCheckpoint);
+    CHECK(restart.flow->missionQuits() == 0);
+    restart.frames(64);
+    CHECK(restart.flow->missionQuits() == 0);
+}
+
+TEST_CASE("pause: a resume counts no quit, and a quit after it counts once", "[pause][net]") {
+    // Expected: unverified, #1549 (Coney's own count; docs/guides/multiplayer.md#levels)
+    // Resume, then pause again and quit: the second pause's quit counts, the first pause's resume does not (a quit
+    // ends the level, so no second quit can follow in one run).
+    Run run("5 tap start\n70 tap triangle\n"
+            "200 tap start\n215 tap right\n220 tap right\n225 tap right\n230 tap right\n235 tap right\n"
+            "240 tap right\n245 tap cross\n255 tap left\n260 tap cross\n");
+    for (int frame = 0; frame < 200; ++frame) {
+        run.frames(1);
+        CHECK(run.flow->missionQuits() == 0);
+    }
+    for (int frame = 0; frame < 120 && run.flow->missionQuits() == 0; ++frame) {
+        run.frames(1);
+    }
+    CHECK(run.flow->missionQuits() == 1);
+}
+
 TEST_CASE("pause: Restart Last Check Point reloads the level at the same checkpoint", "[pause]") {
     // Expected: pause.md#leaving, confirmed (code)
     // Restart is item 4: right four times, cross (the checkpoint choice is selected), cross, left to Yes, cross.

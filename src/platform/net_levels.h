@@ -32,6 +32,8 @@ struct LevelAt {
 struct MissionCounts {
     std::uint64_t passed = 0; ///< mission-complete screens launched
     std::uint64_t failed = 0; ///< mission-failed screens launched
+    std::uint64_t quit =
+        0; ///< levels left through the pause menu's four quits (the failed and Rumble result screens' are #1583)
 };
 
 /// What NetLevels needs of the running game: the game session in the run (SessionLevelGame), a fake in tests. Read
@@ -56,6 +58,9 @@ class LevelGame {
     /// Asks the game to load `level` at `checkpoint`, between two frames; false, changing nothing, when it cannot now
     /// (the level table not read yet, or no such level).
     virtual bool jumpToLevel(std::string_view level, int checkpoint) = 0;
+    /// Asks the game to leave its level for the front end, between two frames; false, changing nothing, when no level
+    /// is in play or loading.
+    virtual bool leaveLevel() = 0;
 };
 
 /// The game session as NetLevels sees it: whichever session `session` returns (null: none yet), so a session the debug
@@ -69,6 +74,7 @@ class SessionLevelGame final : public LevelGame {
     [[nodiscard]] std::optional<LevelAt> currentLevel() const override;
     [[nodiscard]] MissionCounts missionEnds() const override;
     bool jumpToLevel(std::string_view level, int checkpoint) override;
+    bool leaveLevel() override;
 
   private:
     std::function<GameSession*()> m_session;
@@ -107,6 +113,11 @@ class NetLevels {
   private:
     // Hosting or offline: tells network play of the game's new level loads and mission ends.
     void reportHostGame();
+    // Joined: the host quit its level: the game leaves for the front end, and an order of that level (taken or still in
+    // the client) or a load of it still going is answered as over.
+    void followHostQuit(const net::MissionEnd& end);
+    // Joined: takes the client's newest level order, if any, as the one to carry out.
+    void adoptPendingOrder();
     // Joined: takes the host's level order, sends the game there and answers it once loaded.
     void followHost();
     // Joined: sends the MovieDone of this game's ended movie once the host's start of it is known.

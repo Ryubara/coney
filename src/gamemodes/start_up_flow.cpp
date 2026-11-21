@@ -184,6 +184,21 @@ bool StartUpFlow::jumpToLevel(std::string_view level, int checkpoint) {
     return true;
 }
 
+bool StartUpFlow::leaveToMenu() {
+    // Only a level in play or loading is left: at the front end, popping its modes would restart the menus.
+    if (!m_stack.contains(m_levelFlow) || !inLevel()) {
+        return false;
+    }
+    // As the pause menu's quit to the menu: no level chosen, so the level flow's resume brings the front end back.
+    m_state.checkPoint = 1;
+    // Up to and with gameplay, not up to the level flow: its resume starts the front end, whose menus are then on top.
+    while (inLevel()) {
+        m_stack.pop();
+    }
+    m_log("level flow: left the level for the front end\n");
+    return true;
+}
+
 void StartUpFlow::playMovie(std::string_view name) {
     m_services.playMovie(name);
     // Movie_Play leaves both screen-effects managers fully black on return: the screen stays black until a fade in.
