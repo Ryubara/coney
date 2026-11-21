@@ -1013,6 +1013,7 @@ Holdable* Fighter::strongGrappleTarget(const FighterInput& input) {
     }
     const float along =
         input.stick.magnitude() > kPickStick ? input.heading - (input.stick.angleDegrees() * kDegrees) : input.heading;
+    // stand-in (#1590): nearestInCone() gives a tie to the later slot, the original's sort to the earlier.
     const std::size_t found = combat::nearestInCone(input.position, facing(along), candidates, range,
                                                     combat::kStrongGrappleCone, combat::kStrongGrappleHeight);
     if (found == combat::kNoTarget) {
@@ -1062,6 +1063,7 @@ Combatant* Fighter::snapTarget(const FighterInput& input, float along) {
                                                                              target->state() == TargetState::Standing &&
                                                                              !target->health().depleted()});
     }
+    // stand-in (#1590): nearestInCone() gives a tie to the later slot, the original's sort to the earlier.
     const std::size_t found = combat::nearestInCone(input.position, facing(along), candidates, combat::kSnapSearchRange,
                                                     combat::kSnapSearchCone, combat::kSnapSearchHeight);
     return found != combat::kNoTarget ? near[found] : nullptr;

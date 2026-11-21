@@ -34,7 +34,7 @@ std::size_t nearestTarget(const anim::Vec3& from, std::span<const TargetCandidat
         }
         const float distance = distanceBetween(from, candidates[i].position);
         if (distance <= bestDistance) {
-            best = i; // stand-in (#1590): a tie goes to the later slot, the original's to the earlier
+            best = i;
             bestDistance = distance;
         }
     }
@@ -67,7 +67,7 @@ std::size_t nearestInCone(const anim::Vec3& from, const anim::Vec3& aim, std::sp
         if (distance > 1e-4F && aimLength > 1e-4F && (dx * aim.x + dy * aim.y) / (distance * aimLength) < cosLimit) {
             continue;
         }
-        best = i; // stand-in (#1590): a tie goes to the later slot, the original's to the earlier
+        best = i;
         bestDistance = distance;
     }
     return best;
