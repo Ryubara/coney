@@ -1,10 +1,10 @@
 # A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level34's intro looters at checkpoint 1. The
 # input script walks player 1 up the subway stairs, which gives the looters their wreck tactic on zone 51
-# (`P1.StartIntroLooters`), and stops at the street; the clip shows the looters at work. For a change to the wreck
+# (`P1.StartIntroLooters`), and out onto the street; the clip shows the looters at work. For a change to the wreck
 # tactic (TacticVandalize), its Destroy goal or the smashing of street objects.
 description = "level34 checkpoint 1: the intro looters wreck zone 51 before they leave"
 level = "level34"
 input = "tools/clips/level34-looters.txt"
 checkpoint = 1
-start_frame = 640
+start_frame = 660
 seconds = 10
