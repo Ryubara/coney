@@ -1126,6 +1126,7 @@ void Human::fight(std::span<Combatant* const> targets, const raycast::CollisionM
                                   .nowMs = nowMs,
                                   .targets = targets,
                                   .calm = calm,
+                                  .source = m_targetSource,
                                   .stepSeconds = m_stepSeconds,
                                   .objects = m_objectTargets,
                                   .strikeShapes = m_skeleton != nullptr,

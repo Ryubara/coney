@@ -97,7 +97,7 @@ the clip recorder that the `no-real-clock` check allows to), and with measuring 
 | `humans.brains` | the AI's brains writing their humans' commands (think, goals, actions, steering) |
 | `humans.animate` | every human's animation tasks |
 | `humans.state` | every human's state update: the move, the sweep against the level and the other humans, strikes |
-| `humans.actions` | every human's actions, with the targets gathered for each |
+| `humans.actions` | every human's actions, the targets grid built for the pass included (#1550) |
 | `play.ai_capture` | the AI fighters' pose snapshots for drawing |
 | `play.anim_overrides`, `play.scenes`, `play.world` | the scripts' clip overrides, the scenes, the scenery and world objects round the camera |
 | `render` | the frame's render, the present included |

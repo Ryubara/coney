@@ -254,12 +254,16 @@ class Human final : public Holdable {
     /// @orig 0x0023fea8 Human_StateUpdate (unknown)
     void updateState(const raycast::CollisionMesh* mesh);
     /// The third pass, the actions: stamina and the sprint, combat's dispatcher from the record's command (against
-    /// `targets`, of which the fight stance never takes those setCalm() gave), triangle's climb or jump, the lean and
-    /// the animation state.
+    /// `targets`, of which the fight stance never takes those setCalm() gave, or against setTargetSource()'s source),
+    /// triangle's climb or jump, the lean and the animation state.
     void updateActions(std::span<Combatant* const> targets, const raycast::CollisionMesh* mesh);
     /// Of the next updateActions()' targets, those the fight stance never takes (no threat, or a pad player); it must
     /// outlive that call, which uses it once.
     void setCalm(std::span<Combatant* const> calm) { m_calm = calm; }
+    /// Where the next updateActions() calls' searches find their targets in place of their list and setCalm()'s, until
+    /// set back to null (human::Humans sets it around each human's actions); it must outlive those calls.
+    /// @coney-only Coney's per-slot target query, the dispatcher's input
+    void setTargetSource(const TargetSource* source) { m_targetSource = source; }
 
     /// The pose to draw now: its clips over the default pose, which is the face clips' (human/face.h) while the face is
     /// shown (faceShown()), else the bind rotations it was made with. Ports only the face's part of the original
@@ -1328,11 +1332,12 @@ class Human final : public Holdable {
     std::optional<double> m_pickedUp; // the object a pick-up reached, until takePickedUp()
     bool m_throwRelease = false;      // a release event passed, until takeThrowRelease()
     ContextAction m_contextAction;
-    ContextAction m_firstContextAction;         // tried before m_contextAction (a cuffed human to free)
-    const BodyContact* m_bodyContact = nullptr; // setBodyContact(), the step's
-    std::span<Combatant* const> m_calm;         // setCalm(), for the next updateActions() only
-    const ObjectPush* m_objectPush = nullptr;   // setObjectPush(), the step's
-    const anim::Skeleton* m_skeleton = nullptr; // setSkeleton()
+    ContextAction m_firstContextAction;           // tried before m_contextAction (a cuffed human to free)
+    const BodyContact* m_bodyContact = nullptr;   // setBodyContact(), the step's
+    std::span<Combatant* const> m_calm;           // setCalm(), for the next updateActions() only
+    const TargetSource* m_targetSource = nullptr; // setTargetSource()
+    const ObjectPush* m_objectPush = nullptr;     // setObjectPush(), the step's
+    const anim::Skeleton* m_skeleton = nullptr;   // setSkeleton()
     StrikeShapes m_strikes;
     // The shapes on as they were posed the update before, in the world: each one's strike is tested along its move
     // since (sweptShapesMeet()). A shape just switched on has none, so its first update is tested where it stands.

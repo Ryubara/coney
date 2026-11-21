@@ -148,7 +148,7 @@ Combatant* Fighter::inFront(const FighterInput& input, float range, bool grounde
     Combatant* best = nullptr;
     float bestDistance = range;
     const anim::Vec3 ahead = facing(input.heading + offset);
-    for (Combatant* target : input.targets) {
+    for (Combatant* target : targetsWithin(input, range)) {
         const bool fightable =
             target->state() == TargetState::Standing || (grounded && target->state() == TargetState::Grounded);
         if (!fightable) {
@@ -187,7 +187,7 @@ bool fightable(const Combatant& target, const anim::Vec3& from, bool down = fals
 Combatant* nearestFightable(const FighterInput& input, float along, float reach, float cone, bool down = false) {
     Combatant* best = nullptr;
     float bestDistance = reach;
-    for (Combatant* target : input.targets) {
+    for (Combatant* target : targetsWithin(input, reach)) {
         if (!fightable(*target, input.position, down)) {
             continue;
         }
@@ -237,8 +237,8 @@ Combatant* keptTarget(const FighterInput& input, const Combatant* current, float
     if (current == nullptr || flatDistance(input.position, current->position()) > range) {
         return nullptr;
     }
-    const auto found = std::ranges::find(input.targets, current);
-    return found != input.targets.end() ? *found : nullptr;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast): the targets hold this very pointer
+    return targetListed(input, current) ? const_cast<Combatant*>(current) : nullptr;
 }
 
 // An object target kept when nothing is found: no car, a body, `range` across the ground (**Coney stand-in**, #1396).
@@ -403,7 +403,7 @@ TargetPick Fighter::reachSearch(const FighterInput& input, float nearest, float 
     // The standing enemies between the reach and the far range inside 54°, nearest first.
     Combatant* found = nullptr;
     float bestDistance = far;
-    for (Combatant* target : input.targets) {
+    for (Combatant* target : targetsWithin(input, far)) {
         if (!fightable(*target, input.position)) {
             continue;
         }
@@ -450,7 +450,7 @@ TargetPick Fighter::pickThrowTarget(const FighterInput& input, float nearest, fl
     const auto nearestEnemy = [&input, along, nearest](float reach, float cone, float height) {
         Combatant* found = nullptr;
         float bestDistance = reach;
-        for (Combatant* target : input.targets) {
+        for (Combatant* target : targetsWithin(input, reach)) {
             if (target->state() != TargetState::Standing || target->health().depleted() || !target->targetable() ||
                 std::fabs(target->position().z - input.position.z) > height) {
                 continue;
@@ -951,9 +951,10 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
             const Holdable* holdable = target.holdable();
             return holdable != nullptr && holdable->mountableOnGround();
         };
+        const std::span<Combatant* const> near = targetsWithin(input, range);
         std::vector<combat::TargetCandidate> candidates;
-        candidates.reserve(input.targets.size());
-        for (Combatant* target : input.targets) {
+        candidates.reserve(near.size());
+        for (Combatant* target : near) {
             candidates.push_back(combat::TargetCandidate{
                 target->position(), target->holdable() != nullptr && target->state() == TargetState::Standing &&
                                         !target->health().depleted() && !lyingToMount(*target)});
@@ -961,12 +962,12 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
         std::size_t found = combat::nearestTarget(input.position, candidates, range);
         if (found == combat::kNoTarget) {
             for (std::size_t i = 0; i < candidates.size(); ++i) {
-                candidates[i].available = lyingToMount(*input.targets[i]);
+                candidates[i].available = lyingToMount(*near[i]);
             }
             found = combat::nearestTarget(input.position, candidates, range);
             m_groundMount = found != combat::kNoTarget;
         }
-        m_candidate = found != combat::kNoTarget ? input.targets[found]->holdable() : nullptr;
+        m_candidate = found != combat::kNoTarget ? near[found]->holdable() : nullptr;
     } else if (input.command == combat::command::kCircleCross) {
         m_candidate = strongGrappleTarget(input);
     }
@@ -1001,22 +1002,23 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
 Holdable* Fighter::strongGrappleTarget(const FighterInput& input) {
     // Humans that can be held, standing with health left, in the cone along the stick: a stand-in for the search
     // Player_FindAttackTarget makes (no any-angle, wide or kept-target pass). The one found becomes the target.
+    const float range = m_ranges != nullptr ? combat::strongGrappleRange(*m_ranges) : kStrongGrappleFallbackRange;
+    const std::span<Combatant* const> near = targetsWithin(input, range);
     std::vector<combat::TargetCandidate> candidates;
-    candidates.reserve(input.targets.size());
-    for (Combatant* target : input.targets) {
+    candidates.reserve(near.size());
+    for (Combatant* target : near) {
         candidates.push_back(combat::TargetCandidate{
             target->position(), target->holdable() != nullptr && target->targetable() &&
                                     target->state() == TargetState::Standing && !target->health().depleted()});
     }
     const float along =
         input.stick.magnitude() > kPickStick ? input.heading - (input.stick.angleDegrees() * kDegrees) : input.heading;
-    const float range = m_ranges != nullptr ? combat::strongGrappleRange(*m_ranges) : kStrongGrappleFallbackRange;
     const std::size_t found = combat::nearestInCone(input.position, facing(along), candidates, range,
                                                     combat::kStrongGrappleCone, combat::kStrongGrappleHeight);
     if (found == combat::kNoTarget) {
         return nullptr;
     }
-    Combatant* target = input.targets[found];
+    Combatant* target = near[found];
     m_target = target;
     // The paired clip needs one that may be grabbed: within a quarter metre in height. **Coney's choice**: the clear
     // line to it (`0x0021c0a8`) is not tested.
@@ -1052,16 +1054,17 @@ Combatant* Fighter::snapTarget(const FighterInput& input) {
 
 Combatant* Fighter::snapTarget(const FighterInput& input, float along) {
     // Humans that can be fought: standing (not down, grabbed or tackled), with health left, targetable.
+    const std::span<Combatant* const> near = targetsWithin(input, combat::kSnapSearchRange);
     std::vector<combat::TargetCandidate> candidates;
-    candidates.reserve(input.targets.size());
-    for (Combatant* target : input.targets) {
+    candidates.reserve(near.size());
+    for (Combatant* target : near) {
         candidates.push_back(combat::TargetCandidate{target->position(), target->targetable() &&
                                                                              target->state() == TargetState::Standing &&
                                                                              !target->health().depleted()});
     }
     const std::size_t found = combat::nearestInCone(input.position, facing(along), candidates, combat::kSnapSearchRange,
                                                     combat::kSnapSearchCone, combat::kSnapSearchHeight);
-    return found != combat::kNoTarget ? input.targets[found] : nullptr;
+    return found != combat::kNoTarget ? near[found] : nullptr;
 }
 
 combat::ChainTargets Fighter::chainTargets(const FighterInput& input) {
@@ -1559,8 +1562,7 @@ void Fighter::landHit(int animId, int damage, const FighterInput& input, const H
         const bool ownInReach =
             m_target != nullptr &&
             (m_target->state() == TargetState::Standing || m_target->state() == TargetState::Grounded) &&
-            std::ranges::find(input.targets, m_target) != input.targets.end() &&
-            flatDistance(input.position, m_target->position()) <= reach;
+            targetListed(input, m_target) && flatDistance(input.position, m_target->position()) <= reach;
         victim = ownInReach ? m_target : inFront(input, reach, true, attackDirection(animId));
     }
     if (victim == nullptr || (!heldMove && flatDistance(input.position, victim->position()) > reachOf(animId))) {
@@ -1686,7 +1688,7 @@ void Fighter::trackTarget(const FighterInput& input) {
     const combat::CombatTuning& tuning = combat::combatTuning();
     // A target that left the fight is dropped: gone from the list, out of health, or down.
     if (m_target != nullptr) {
-        const bool listed = std::ranges::find(input.targets, m_target) != input.targets.end();
+        const bool listed = targetListed(input, m_target);
         const bool fightable = listed && !m_target->health().depleted() &&
                                (m_target->state() == TargetState::Standing || m_target == m_held);
         const bool held = m_l1Held || m_target == m_held;
@@ -1706,12 +1708,12 @@ Combatant* Fighter::nearestStanceEnemy(const FighterInput& input, float range) c
     // aim heading in record +0xd4 / +0xd8 for the searches after it; Coney's searches each work the aim out themselves.
     Combatant* best = nullptr;
     float bestDistance = range;
-    for (Combatant* target : input.targets) {
+    for (Combatant* target : targetsWithin(input, range)) {
         // The attacks pick from every target; the stance only from the threats (TargetFilter_StanceEnemy refuses a
         // friend, a pad player and a human that is no threat, Human_IsThreatTo). Its down, dead and state 0xe0000
         // refusals are Coney's Standing test in fightable(); its +0x08 0x40 refusal is the held bit's.
         if (!fightable(*target, input.position) || (target->heldFlags() & kStanceRefuseHeld) != 0 ||
-            std::ranges::find(input.calm, target) != input.calm.end()) {
+            targetCalm(input, target)) {
             continue;
         }
         const float distance = flatDistance(input.position, target->position());
@@ -1801,7 +1803,7 @@ void Fighter::updateStance(const FighterInput& input, std::uint32_t phase) {
         return;
     }
     // A target gone from the list is gone: the original's handle resolves to no one.
-    if (m_target != nullptr && std::ranges::find(input.targets, m_target) == input.targets.end()) {
+    if (m_target != nullptr && !targetListed(input, m_target)) {
         m_target = nullptr;
     }
     // 0. The nearest threat within the far distance, else the target held unless he is out. Then a target that is

@@ -1072,6 +1072,18 @@ whose type makes them a strike target with their body flags, the whole panes and
 with its kind; the lists are the player's alone, as only a player's searches have these passes.
 Tests: `repo:tests/human/target_passes_test.cpp`.
 
+**How the humans are found** (issue #1550). The original's human search (`Humans_FindInRange` `0x00227598`) walks
+the 60 human slots in order, skips the searcher and the slot `0x005101f8` names, tests the squared distance against the
+range (and the minimum, record `+0xd8`) first, and only then calls the search's filter, stopping when the caller's list
+is full: confirmed (code) at that address. Coney's searches ask a `TargetSource` (`repo:src/human/fighter.h`) for the
+targets within their own reach; in the characters' step `human::Humans` answers from a uniform grid of where the humans
+stood when the actions pass began (2.5 m cells, a 2.5 m margin, built again when the acting human or the one he holds
+has moved further), visits the candidates in slot order and tests the distance before asking whether the two fight.
+The candidates any search sees are the old per-human list's in the same order, less those beyond its reach, so every
+nearest-wins tie falls as before: Coney's choice for crowds above the original's 60, with the same results within
+them. The all-humans trace, the event log and the lockstep digest of a brawl of 300 and an engaged crowd of 300 hash
+the same before and after.
+
 Where Coney still differs (stand-ins, each marked at the code):
 
 - An object is the target only from square's pick until its object attack lands (`Fighter`'s object target), not as
