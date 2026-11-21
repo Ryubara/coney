@@ -30,8 +30,9 @@ namespace coney {
 
 /// Whether a human lets go of `held` this step: a release event passed (`releaseEvent`, Human::takeThrowRelease()) in
 /// the clip `animId` that throws, and something is in his hand (Human_ReleaseThrow on event 10).
-/// @orig 0x00245920 Human_HandleMessage (Human.cpp), the event-10 test that calls Human_ReleaseThrow; the clip list is
-/// a stand-in (the original tests the human's own state), and the test is kept apart so a test can ask it
+/// @orig 0x00245920 Human_HandleMessage (Human.cpp)
+/// Ports the event-10 test that calls Human_ReleaseThrow. The clip list is a stand-in (the original tests the human's
+/// own state), and the test is kept apart so a test can ask it.
 [[nodiscard]] inline bool releasesHeldObject(bool releaseEvent, std::uint32_t animId, double held) {
     return releaseEvent && isHeldThrowClip(animId) && held != world_objects::kNoObject;
 }
