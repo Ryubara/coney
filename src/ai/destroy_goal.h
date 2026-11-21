@@ -46,11 +46,11 @@ inline constexpr std::int16_t kDestroySwingDelayMs = 0x7d;
 /// breaking flag `0x10000`, as LevelItems::heldUse() says), dropping what he holds (ItemServices has no drop), the
 /// turn to the crowd ahead before a swing (`Gang_CountAhead`), the 30/70 % taunt `0x8e` / `0x8f` every 8 s, and
 /// the brain byte `+0x265` saved at the start and put back at the end (not identified) are not built.
-/// @orig 0x002cd4f8 DestroyGoal_Init (unknown)
 class DestroyGoal final : public Goal {
   public:
     /// Wrecks zone `zone` through `items` (which must outlive it), waiting `waitMs` between targets; with
     /// `leaderRange` 0 or more it leaves objects farther than that from the gang's leader.
+    /// @orig 0x002cd4f8 DestroyGoal_Init (unknown)
     DestroyGoal(int zone, std::uint32_t waitMs, float leaderRange, ItemServices& items)
         : Goal(GoalType::Destroy), m_leaderRange(leaderRange), m_waitMs(waitMs), m_zone(zone), m_items(&items) {}
 
