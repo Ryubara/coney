@@ -806,6 +806,8 @@ void PlayLevelSimulation::stepPickups() {
     if (m_pickups == nullptr) {
         return;
     }
+    // The humans downed this step drop what they carry first, so a walk-over this step can take it.
+    stepDownDrops();
     // `--give`: the counts asked for, once, so this step's end already tells the fighter what it holds.
     for (const ItemGift& gift : std::exchange(m_gifts, {})) {
         m_pickups->setCarried(0, gift.item, gift.count);

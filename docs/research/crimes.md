@@ -523,41 +523,65 @@ is no sign of which branch ran.
 So the $0 sellers and the $0 soldier seen in Coney's `level87` run (issue #354) match the original, and Coney needs no
 fix for them ([Coney's implementation](#coneys-implementation), the starting money).
 
-#### Dropped when down {#down-drop}
+### Dropped when down {#down-drop}
 
 A human whose health runs out drops what he carries: `Human_OnHealthOut` (`0x002674c0`, [Defeat](combat-reactions.md#defeat))
-calls `Human_DropCarried(human, 1, 1)` (`0x00232c60`) when he is wounded or knocked out, unless he has human flag
-`0x4` (the players and the crew, [Human flags](combat/index.md#human-flags)). Every human goes through it, so a spawner's
-human drops his money as a scripted one does ([Starting money](#starting-money)). Confirmed (code) at `0x00232c60`; the
-order of the steps:
+calls `Human_DropCarried(human, 1, 1)` (`0x00232c60`) when he is wounded, or when he is knocked out and was not wounded
+already (he dropped at the wound), unless he has human flag `0x4` (the players and the crew, [Human
+flags](combat/index.md#human-flags)). Every human goes through it, so a spawner's human drops his money as a scripted
+one does ([Starting money](#starting-money)). Confirmed (code) at `0x00232c60` and `0x002674c0`; the order of the
+steps, every draw from the gameplay generator (`0x006eb880`), `rand(a, b)` `a` to `b` inclusive:
 
 1. No brain: nothing.
-2. **The pocket** (`+0x250`, an item): `+0x254` pickups of that item's object, at his feet 0.5 m up. Unless the
-   brain's kind (`+0x04`) or its `+0x26c` is 5, nothing more is dropped. (For brain kind 5 the pickups go round him
-   instead, 1 m out in his free sectors, [AI: neighbour sectors](ai-moving.md#neighbour-sectors).)
-3. **Power cuffs**: a human with cuffs (`Human_GetCuffCount`) drops `dyn_powercuffs` when `Random_Int(100)` is below
-   51 and game state `+0x158` is set or unlock (6, 14) is; then nothing else.
-4. **The carried object** (`+0x257`, not `none`): an AI human drops it unless `+0x278` is -1, and carries `none`
-   from then on. A player keeps it when `rand(0, 100)` is below 51; otherwise he drops it and loses money: the
-   object type's `+0x5a` × game state `+0x380`.
-5. **Money** (the carried object is `none`; a human of brain kind 1 whose class has `+0xb4` = 0 drops `dyn_key`
-   instead once unlock (6, 13) is set):
-    - brain kind 4: his money × his category's `+0x0c` factor (0.1-0.25 in the table above), at least 1 when he has
-      any;
+2. **The pocket** (`+0x250`, an item): pickups of that item's object (its inventory entry's name,
+   `InventoryBlock_GetEntry` `0x0041e3c0`, confirmed (code)), `+0x254` of them (a signed byte), with no removal time.
+   The drop keeps one point, his feet at first, and raises it 0.5 m before every object it makes (`0x00232dc0`), so
+   the pocket's objects stack at his feet 0.5 m, 1 m, 1.5 m ... up. A **dealer** (brain type 5) drops one instead
+   (the call's second argument), 1 m out into the first neighbour sector that is not blocked (`Sectors_IsBlocked`,
+   `Sectors_GetPoint` at 1 m; all eight blocked: sector 0; [AI: neighbour sectors](ai-moving.md#neighbour-sectors)),
+   0.5 m up there, and his next object starts again from his feet (`0x00232e64`). Unless he is a dealer or his ped
+   type (`+0x26c`) is 5, nothing more is dropped; a ped-type-5 human who is no dealer drops his next object 0.5 m above
+   the last of the pocket's.
+3. **Power cuffs**: a human with cuffs (`Human_GetCuffCount`: a cop always one, another AI `+0x378`, a player item 5)
+   draws `rand(0, 100)`; below 51, with game state `+0x158` set or unlock (6, 14), he drops `dyn_powercuffs` (item 5's
+   removal time) and nothing else.
+4. **The carried object** (`+0x257`, not `none`), and then nothing else: an AI human drops it unless `+0x278` is -1
+   (then nothing at all), and carries `none` from then on. A player keeps it when `rand(0, 100)` is below 51;
+   otherwise he drops it and loses money, the object type's `+0x5a` (a signed byte) × game state `+0x380`, from his
+   inventory. Its removal time is item 1's for `dyn_revival`, 6's for `dyn_keys`, 5's for `dyn_cuffs`, else 10's.
+5. A **cop** (brain type 1) whose class's `CfgChar` `+0xb4` is 0 drops `dyn_key` (item 6's removal time) once unlock
+   (6, 13) is set, and keeps his money.
+6. **Money**, otherwise:
+    - a civilian (brain type 4) with money: his money × his category's `+0x0c` share (0.1-0.25 in the table above;
+      `CharClass_Get(+0xcc)`'s `+0x11b`, not remapped as the starting money's category 4 is), at least 1;
     - any other AI human: **all** his money (`+0x370`);
-    - a player: `rand(min, max)` of his category, at most what his inventory holds, taken from it.
+    - a player: `rand(min, max)` of his category, at most what his inventory holds, taken from it (notifying).
 
-   One dollar or more makes a `dyn_money` pickup holding the amount (`+0x124`) at his feet, 0.5 m up, with the
-   respawn timer of item 2, and his money becomes 0.
+   One dollar or more makes a `dyn_money` pickup holding the amount (`+0x124`), 0.5 m above the drop's point (his
+   feet when nothing came before it), with item 2's removal time, and his money becomes 0; less leaves his money as it was.
 
-So `level87` chapter 3's early Destroyers, given $5 each by their constructor, leave $5 each when beaten: the price
-of one can of paint ([GoalDealer](ai-scripting.md#dealer)). **Coney** drops nothing yet ([`level87`'s
-fixes](scripting.md#level87-fixes), fix 4). Fix: on health out (wounded or knocked out), run steps 1-5 with the game's
-random numbers. Tests: an AI human of a brain kind other than 4 with $5 and no object, knocked out, leaves one
-`dyn_money` of $5 and has $0; a civilian of brain kind 4 with $15 and factor 0.1 leaves $1; a human whose object is
-`none` and money 0 leaves nothing.
+Watched in the original (confirmed (runtime), run r-20261119-down-drop-money): in the `level99` yard an AI of brain
+type 2 given $5, made to run `Human_OnHealthOut`, stored 5 in the new object's `+0x124` (`0x00233474`), was left with
+$0, and the object stood at his feet's height + 0.5 m with its removal time set.
 
-#### Interrogation {#interrogation}
+The removal time (`WorldObject_SetRespawnTimer`, [Objects](objects.md)) is now + the item's inventory duration
+(`InventoryBlock_GetDuration` `0x0041e348`), confirmed (code); once it passes the object can no longer be taken
+and vanishes.
+
+So `level87` chapter 3's early Destroyers, given $5 each by their constructor (`EDConstructor`, `HuSetMoney`), leave
+$5 each when beaten: the price of one can of paint ([GoalDealer](ai-scripting.md#dealer)).
+
+**Coney**: the update a human's dying reaction hands over to its loop (`Fighter::takeHealthOut()`, the
+moment `Human_OnHealthOut` runs), the play mode runs the drop for player 1 and every AI human
+(`PlayLevelSimulation::dropOnHealthOut()`, `repo:src/gamemodes/play_level_drops.cpp`): the decision is
+`human::dropCarried()` (`repo:src/human/carried_drop.h`), the objects become spawn records through
+`LevelPickups::dropCarried()`, and the walk-over takes the money ([Walk-over](player-state.md#walk-over)). The class's
+record comes from the recorded `CfgChar` and `CfgCharClassAttribs` calls (`script::recordedDropClass()`). **Coney's
+stand-ins**: the removal times are not applied, so a dropped object stays until taken; Coney's health out never
+wounds a human, so only a script's `HuSetWounded` stops the drop at the knock-out; an empty carried name counts as
+`none`; a pocket count of 0 or less drops nothing.
+
+### Interrogation {#interrogation}
 
 `+0x5a0` holds a reference to a Lua function, confirmed (code). Its only writers: `HuSetInterrogation` (`0x00239f20`:
 clears the four lines and `+0x5a0`, then stores the lines and the callback; a nil callback leaves 0), `Human_Init`
@@ -1270,6 +1294,11 @@ the witnesses' message 7 and alert, the crime score 4-8 and the lines 128 / 143.
 
 ## Open questions
 
+- **When a dropped object vanishes in Coney**{#q-drop-removal}: the original gives each object a downed human drops a
+  removal time, now + its item's inventory duration (`WorldObject_SetRespawnTimer` `0x00395d20`, [Dropped when
+  down](#down-drop)), after which it can no longer be taken; Coney applies no removal time to any object yet, so dropped
+  money stays until a player walks over it. Porting it needs the objects' removal walk ([Objects](objects.md)) and the
+  durations `CfgInventoryItem` sets, read at runtime for items 2, 5, 6 and 10.
 - **The freer's turn during the uncuff's steer** ([the freer's place](#uncuff-pose)): in the original the freer's
   heading moves only by the steer's even turn over its three updates (the start at heading -90 gave -60.79, -31.57,
   -2.36) and 325's root turn shows only after it; in Coney 325's root turn runs from the clip's first update, about

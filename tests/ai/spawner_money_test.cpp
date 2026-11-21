@@ -205,7 +205,8 @@ TEST_CASE("a spawner's human rolls its money by the class's draws, in their orde
     // from the same stream, the roll HuCreate makes for a scripted human.
     const coney::characters::CarryConfig config{
         .category = kCategory, .altRecord = false, .dropChance = -1, .object = "none"};
-    const coney::characters::ClassMoney cls{.min = 5, .max = 20, .noObject = 100, .bonusChance = 1, .bonus = 5.0F};
+    const coney::characters::ClassMoney cls{
+        .min = 5, .max = 20, .share = 0.1F, .noObject = 100, .bonusChance = 1, .bonus = 5.0F};
     for (const std::uint32_t seed : {0U, 17U, 300U, 1000U}) {
         SpawnLevel spawner;
         spawner.configure("CfgChar", cfgChar(kType, kCategory, "none", -1));

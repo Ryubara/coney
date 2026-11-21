@@ -592,7 +592,7 @@ CfgCharClassAttribs(classId, a, b, chance, c, d, e)
 | 1 | `classId` | number, truncated to an integer | Character class index (1-12 in config_preload2.lua); selects a 16-byte record at game state + classId x 16. |
 | 2 | `a` | number, truncated to an integer | Byte +0x08: the least money a human of the class starts with, dollars (1-10 in the scripts). |
 | 3 | `b` | number, truncated to an integer | Byte +0x09: the most money, dollars (4-20). |
-| 4 | `chance` | number (single precision) | Fraction 0-1 stored as a float at record +0x0c (0.1-0.25); not read by the creation code. |
+| 4 | `chance` | number (single precision) | Fraction 0-1 stored as a float at record +0x0c (0.1-0.25): the share of his money a downed civilian (brain type 4) drops (Human_DropCarried 0x00232c60, [Crimes: dropped when down](../../research/crimes.md#down-drop)); not read by the creation code. |
 | 5 | `c` | number, truncated to an integer | Byte +0x10: the percent chance of carrying no object (0, 20 or 100); a roll of 0-100 at or below it gives none. |
 | 6 | `d` | number, truncated to an integer | Byte +0x11: the percent chance of the money bonus (0 or 1); a second roll of 0-100 at or below it multiplies the money. |
 | 7 | `e` | number (single precision) | Float +0x14: the money bonus multiplier (1 or 5). |
@@ -605,7 +605,7 @@ The class is the CfgChar category byte (+0x11b); Human_Init (0x00218008) reads t
 ([Crimes: starting money](../../research/crimes.md#starting-money)).
 
 **Notes.** Layout confirmed (code) at 0x0041d428; the reader at 0x002187e4-0x00218a90. The values of classes 1-12 were
-read at runtime (confirmed (runtime)); the float at +0x0c has no reader found.
+read at runtime (confirmed (runtime)); the float at +0x0c is read by Human_DropCarried (0x00232c60), confirmed (code).
 
 - **Evidence:** confirmed (code) at `0x0041d428`; detail: traced
 - **Wrapper** `0x0035a330` (registered by `RegisterBindings`); **calls** `0x0041d428` `Cfg_SetCharClassAttribs`

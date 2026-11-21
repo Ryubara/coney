@@ -488,6 +488,7 @@ TEST_CASE("an AI's take of loot removes it with nothing given, and a weapon goes
 }
 
 TEST_CASE("the wreck's smash search skips an object in flight", "[level_pickups][wreck]") {
+    // Expected: objects.md#pickable, confirmed (code) (the search refuses an object with flag 0x4000000).
     // Ai_FindObject 0x0029d5f0 skips an object whose flags (vtable +0x54) have bit 26, the airborne flag 0x4000000.
     Harness h;
     wo::ObjectType bottle;
@@ -507,4 +508,117 @@ TEST_CASE("the wreck's smash search skips an object in flight", "[level_pickups]
     const std::vector<coney::ai::SmashTarget> targets = items.smashTargets(kFeet, 15.0F);
     REQUIRE(targets.size() == 1);
     CHECK(targets[0].handle == 6.0);
+}
+
+TEST_CASE("a knocked-out soldier's $5 becomes a money pickup half a metre above his feet that a player takes",
+          "[level_pickups]") {
+    // Expected: crimes.md#down-drop, confirmed (code) at 0x00232c60; confirmed (runtime), run
+    // r-20261119-down-drop-money (the yard AI's $5 made a dyn_money of 5 at his feet + 0.5 m and left him $0); the
+    // walk-over of player-state.md#walk-over gives item 2 x its value.
+    Harness h;
+    wo::ObjectType cash;
+    cash.name = "dyn_money";
+    cash.className = "powerup_item";
+    cash.objectKind = wo::kObjectKindMoney;
+    h.types.add(cash);
+    double next = 100.0;
+    h.scripts.setObjectHandles([&next] { return next++; });
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    coney::human::DropInput soldier;
+    soldier.brainType = 2;
+    soldier.money = 5;
+    soldier.carried = "none";
+    const auto noneBlocked = [](int /*k*/) { return false; };
+    const auto nowhere = [](int /*k*/) { return Vec3{}; };
+    const coney::human::CarriedDrop drop = pickups.dropCarried(soldier, Vec3{10.0F, 11.0F, 1.0F}, noneBlocked, nowhere);
+    CHECK(drop.money == 0);
+    const wo::SpawnRecord* money = h.records.find(100.0);
+    REQUIRE(money != nullptr);
+    CHECK(money->typeName == "dyn_money");
+    CHECK(money->money == 5);
+    CHECK(money->position[0] == Catch::Approx(10.0F));
+    CHECK(money->position[1] == Catch::Approx(11.0F));
+    CHECK(money->position[2] == Catch::Approx(1.5F));
+    const std::vector<coney::LevelPickups::WalkedOver> taken = pickups.walkOver(0, Vec3{10.0F, 11.0F, 1.0F}, false);
+    REQUIRE(taken.size() == 1);
+    CHECK(taken[0].amount == 5);
+    CHECK(h.state.player.inventory.count(0, item::kMoney) == 5);
+}
+
+TEST_CASE("a pocket's item drops as its inventory object", "[level_pickups]") {
+    // Expected: crimes.md#down-drop, confirmed (code) at 0x00232c60 (the pocket item's inventory entry names the
+    // object, InventoryBlock_GetEntry 0x0041e3c0).
+    Harness h;
+    double next = 200.0;
+    h.scripts.setObjectHandles([&next] { return next++; });
+    h.state.player.inventory.configure(item::kSprayPaint, "dyn_spraycan", 0, "none", 0);
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    coney::human::DropInput seller;
+    seller.brainType = 2;
+    seller.pocketItem = item::kSprayPaint;
+    seller.pocketCount = 1;
+    seller.carried = "none";
+    const auto noneBlocked = [](int /*k*/) { return false; };
+    const auto nowhere = [](int /*k*/) { return Vec3{}; };
+    static_cast<void>(pickups.dropCarried(seller, Vec3{0.0F, 0.0F, 0.0F}, noneBlocked, nowhere));
+    const wo::SpawnRecord* can = h.records.find(200.0);
+    REQUIRE(can != nullptr);
+    CHECK(can->typeName == "dyn_spraycan");
+    CHECK(can->position[2] == Catch::Approx(0.5F));
+}
+
+TEST_CASE("a downed human's dropped objects stack half a metre above each other", "[level_pickups]") {
+    // Expected: crimes.md#down-drop, confirmed (code) at 0x00232c60 (each pocket object 0.5 m above the last,
+    // 0x00232dc0-0x00232dc8; a ped-type-5 non-dealer's next object above the last of them; only a dealer's drop goes
+    // back to his feet, 0x00232e64).
+    Harness h;
+    double next = 300.0;
+    h.scripts.setObjectHandles([&next] { return next++; });
+    h.state.player.inventory.configure(item::kSprayPaint, "dyn_spraycan", 0, "none", 0);
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    coney::human::DropInput seller;
+    seller.brainType = 2;
+    seller.pedType = 5;
+    seller.pocketItem = item::kSprayPaint;
+    seller.pocketCount = 2;
+    seller.money = 5;
+    seller.carried = "none";
+    const auto noneBlocked = [](int /*k*/) { return false; };
+    const auto nowhere = [](int /*k*/) { return Vec3{}; };
+    static_cast<void>(pickups.dropCarried(seller, Vec3{0.0F, 0.0F, 1.0F}, noneBlocked, nowhere));
+    const std::vector<double> handles{300.0, 301.0, 302.0};
+    const std::vector<float> heights{1.5F, 2.0F, 2.5F};
+    for (std::size_t i = 0; i < handles.size(); ++i) {
+        const wo::SpawnRecord* record = h.records.find(handles[i]);
+        REQUIRE(record != nullptr);
+        CHECK(record->position[2] == Catch::Approx(heights[i]));
+    }
+    CHECK(h.records.find(302.0)->typeName == "dyn_money");
+}
+
+TEST_CASE("a dealer's drop after his pocket starts again at his feet", "[level_pickups]") {
+    // Expected: crimes.md#down-drop, confirmed (code) at 0x00232c60 (a dealer's pocket object goes 1 m out into a
+    // free sector, 0.5 m up; his next object starts again from his feet, 0x00232e64).
+    Harness h;
+    double next = 400.0;
+    h.scripts.setObjectHandles([&next] { return next++; });
+    h.state.player.inventory.configure(item::kSprayPaint, "dyn_spraycan", 0, "none", 0);
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    coney::human::DropInput dealer;
+    dealer.brainType = 5;
+    dealer.pocketItem = item::kSprayPaint;
+    dealer.pocketCount = 1;
+    dealer.money = 7;
+    dealer.carried = "none";
+    const auto noneBlocked = [](int /*k*/) { return false; };
+    const auto sector = [](int /*k*/) { return Vec3{1.0F, 0.0F, 3.0F}; };
+    static_cast<void>(pickups.dropCarried(dealer, Vec3{0.0F, 0.0F, 1.0F}, noneBlocked, sector));
+    const wo::SpawnRecord* can = h.records.find(400.0);
+    const wo::SpawnRecord* money = h.records.find(401.0);
+    REQUIRE(can != nullptr);
+    REQUIRE(money != nullptr);
+    CHECK(can->position[0] == Catch::Approx(1.0F));
+    CHECK(can->position[2] == Catch::Approx(3.5F));
+    CHECK(money->position[0] == Catch::Approx(0.0F));
+    CHECK(money->position[2] == Catch::Approx(1.5F));
 }
