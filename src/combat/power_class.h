@@ -18,8 +18,11 @@ struct PowerClass {
     float hurtFraction = 0.3F;       ///< `+0x04`: below this share of its health the human is hurt.
     float hurtPowerFactor = 0.75F;   ///< `+0x18`: the power maximum's scale while hurt.
     int stunMs = 200;                ///< `+0x30`: a stun's length.
-    int groundMs = 2750;             ///< `+0x34`: how long a knockdown keeps it down.
-    int struggleDivisor = 3;         ///< Byte `+0x36`: the grab struggle's divisor.
+    /// s16 `+0x32` (`CfgPowerClass` argument 8): how long, ms, a hit keeps an AI busy (`Human_ApplyPendingDamage`,
+    /// docs/research/characters.md#power-class-bytes). 300 for Rembrandt's class 64 on normal.
+    int busyAfterHitMs = 300;
+    int groundMs = 2750;     ///< `+0x34`: how long a knockdown keeps it down.
+    int struggleDivisor = 3; ///< Byte `+0x36`: the grab struggle's divisor.
     // What only an AI reads (docs/research/ai-fights.md#block, docs/research/ai-fights.md#attack-action). The attack
     // delay's factors are Rembrandt's as read at runtime; the three chances are **Coney choices** until the disc's are
     // read (the configuration's `CfgPowerClass`, ai::AiConfig).
@@ -56,6 +59,7 @@ inline constexpr PowerClass kCivilianPowerClass{.powerMax = 200,
                                                 .hurtFraction = 0.35F,
                                                 .hurtPowerFactor = 0.55F,
                                                 .stunMs = 750,
+                                                .busyAfterHitMs = 750,
                                                 .groundMs = 2000,
                                                 .struggleDivisor = 4,
                                                 .blockChance = 0.5F,

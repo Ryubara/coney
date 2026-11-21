@@ -329,7 +329,7 @@ Evidence levels used: confirmed-code.
 | `stamina_refill` | float | | `+0x2e`: stamina refill per second. |
 | `down_ms` | float | | `+0x34`: ms a knocked-down human stays down. |
 | `stun_ms` | float | | `+0x30`: ms a stun lasts. |
-| `v32` | float | | `+0x32` (16-bit); not traced. |
+| `v32` | float | | `+0x32` (16-bit): ms a hit keeps an AI busy. |
 | `weapon_stun` | float | | `+0x00`: as the attacker, scales the victim's stun for weapon hits of 20-49 damage. |
 | `hurt` | float | | `+0x04`: the hurt threshold, a fraction of maximum health. |
 | `block` | float | | `+0x08`: the AI's block chance. |

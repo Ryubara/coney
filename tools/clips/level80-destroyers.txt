@@ -1,0 +1,360 @@
+# Level80 checkpoint 4 (the crew's fight with the Destroyers), for the `level80-destroyers` clips pair scenario
+# (tools/clips/level80-destroyers.toml). Recorded from an adaptive pad on the disc: the left stick at 95 % along the
+# planned route to Cochise and Swan's volume (met at frame 1026), cross until their scene is skipped, the attack order
+# (R2 held, the right stick up-left, frames 1146-1155), then the left stick at 50 % toward the nearest Destroyer
+# standing and square every 10 frames while one is within 2.5 m. Frames are 1/30 s from the level's first frame of
+# play.
+31 stick left 37 88
+33 stick left 37 87
+38 stick left 37 88
+39 stick left 36 88
+41 stick left 34 89
+42 stick left 32 89
+43 stick left 31 90
+44 stick left 29 91
+45 stick left 27 91
+47 stick left 26 91
+48 stick left 26 92
+49 stick left 25 92
+51 stick left 24 92
+53 stick left 23 92
+55 stick left 22 92
+57 stick left 22 93
+58 stick left 21 93
+60 stick left 20 93
+63 stick left 19 93
+67 stick left 18 93
+70 stick left 17 93
+72 stick left 17 94
+74 stick left 16 94
+75 stick left 15 94
+79 stick left 14 94
+83 stick left 13 94
+87 stick left 12 94
+92 stick left 11 94
+97 stick left 10 94
+101 stick left 10 95
+102 stick left 67 67
+105 stick left 67 68
+106 stick left 66 69
+107 stick left 64 71
+108 stick left 61 73
+109 stick left 59 74
+110 stick left 57 76
+111 stick left 56 77
+112 stick left 54 78
+113 stick left 52 79
+114 stick left 50 80
+115 stick left 49 81
+116 stick left 47 82
+117 stick left 46 83
+118 stick left 45 84
+119 stick left 44 84
+120 stick left 42 85
+121 stick left 40 86
+122 stick left 38 87
+123 stick left 36 88
+124 stick left 34 89
+125 stick left 31 90
+126 stick left 29 90
+127 stick left 27 91
+128 stick left 26 91
+130 stick left 25 92
+131 stick left 24 92
+133 stick left 23 92
+135 stick left 22 92
+137 stick left 21 93
+140 stick left 20 93
+143 stick left 19 93
+146 stick left 18 93
+149 stick left 17 93
+151 stick left 17 94
+152 stick left 16 94
+155 stick left 15 94
+157 stick left 14 94
+160 stick left 13 94
+164 stick left 12 94
+168 stick left 11 94
+173 stick left 10 94
+177 stick left 10 95
+178 stick left 9 95
+181 stick left 8 95
+183 stick left 7 95
+184 stick left 6 95
+191 stick left 5 95
+199 stick left 4 95
+210 stick left 3 95
+222 stick left 2 95
+237 stick left 1 95
+255 stick left 0 95
+276 stick left -1 95
+295 stick left -2 95
+300 stick left -63 71
+301 stick left -64 70
+304 stick left -64 71
+305 stick left -63 71
+306 stick left -73 61
+307 stick left -72 62
+308 stick left -71 64
+309 stick left -69 65
+310 stick left -67 67
+311 stick left -65 69
+312 stick left -63 71
+313 stick left -62 72
+314 stick left -60 73
+315 stick left -59 74
+316 stick left -58 75
+317 stick left -57 76
+318 stick left -56 77
+319 stick left -55 78
+320 stick left -53 79
+321 stick left -52 79
+322 stick left -51 80
+324 stick left -50 81
+325 stick left -49 81
+326 stick left -48 82
+328 stick left -47 83
+329 stick left -46 83
+330 stick left -45 84
+331 stick left -42 85
+332 stick left -39 87
+333 stick left -35 88
+334 stick left -34 89
+335 stick left -32 89
+336 stick left -30 90
+337 stick left -28 91
+338 stick left -26 91
+339 stick left -24 92
+340 stick left -22 92
+341 stick left -20 93
+342 stick left -18 93
+343 stick left -16 94
+344 stick left -14 94
+345 stick left -13 94
+346 stick left -11 94
+347 stick left -10 95
+348 stick left -8 95
+349 stick left -7 95
+350 stick left -6 95
+351 stick left -5 95
+353 stick left -4 95
+357 stick left -3 95
+361 stick left -2 95
+363 stick left -1 95
+365 stick left 0 95
+370 stick left 1 95
+524 stick left 2 95
+528 stick left -47 83
+529 stick left -47 82
+530 stick left -48 82
+533 stick left -47 82
+534 stick left -47 83
+535 stick left -46 83
+536 stick left -45 83
+537 stick left -45 84
+538 stick left -44 84
+539 stick left -43 85
+540 stick left -41 86
+541 stick left -40 86
+542 stick left -38 87
+543 stick left -36 88
+544 stick left -34 89
+545 stick left -31 90
+546 stick left -29 91
+547 stick left -26 91
+549 stick left -25 92
+550 stick left -24 92
+552 stick left -23 92
+553 stick left -22 92
+555 stick left -21 93
+557 stick left -20 93
+558 stick left -83 47
+562 stick left -82 48
+563 stick left -81 50
+564 stick left -82 49
+565 stick left -78 54
+566 stick left -76 56
+567 stick left -74 59
+568 stick left -72 62
+569 stick left -70 64
+570 stick left -68 67
+571 stick left -65 69
+572 stick left -63 71
+573 stick left -61 73
+574 stick left -59 74
+575 stick left -57 76
+576 stick left -55 77
+577 stick left -54 78
+578 stick left -52 79
+579 stick left -51 80
+580 stick left -50 81
+581 stick left -48 82
+582 stick left -47 82
+583 stick left -46 83
+584 stick left -45 84
+585 stick left -44 84
+586 stick left -42 85
+587 stick left -40 86
+588 stick left -36 88
+589 stick left -33 89
+590 stick left -29 90
+591 stick left -26 91
+592 stick left -24 92
+593 stick left -21 93
+594 stick left -19 93
+595 stick left -17 93
+596 stick left -15 94
+597 stick left -13 94
+598 stick left -11 94
+599 stick left -9 95
+600 stick left -8 95
+601 stick left -6 95
+602 stick left -5 95
+603 stick left -4 95
+604 stick left -3 95
+606 stick left -2 95
+608 stick left -1 95
+617 stick left 0 95
+849 stick left -1 95
+1004 stick left -2 95
+1009 stick left 94 -11
+1010 stick left 94 -12
+1012 stick left 94 -10
+1013 stick left 95 -7
+1014 stick left 95 -2
+1015 stick left 95 5
+1016 stick left 94 13
+1017 stick left 93 20
+1018 stick left 91 28
+1019 stick left 88 36
+1020 stick left 85 42
+1021 stick left 81 49
+1022 stick left 78 55
+1023 stick left 74 60
+1024 stick left 70 64
+1025 stick left 67 68
+1026 stick left 0 0
+1026 press cross
+1027 release cross
+1056 press cross
+1057 release cross
+1086 press cross
+1087 release cross
+1116 press cross
+1117 release cross
+1146 press r2
+1148 stick right -67 67
+1154 release r2
+1155 stick left 43 25
+1155 stick right 0 0
+1156 stick left 42 27
+1157 stick left 41 28
+1158 stick left 40 30
+1159 stick left 39 31
+1160 stick left 38 33
+1161 stick left 37 34
+1162 stick left 35 35
+1163 stick left 34 37
+1164 stick left 33 38
+1165 stick left 31 39
+1166 stick left 30 40
+1167 stick left 28 41
+1168 stick left 27 42
+1169 stick left 25 43
+1170 stick left 24 44
+1171 stick left 28 42
+1172 stick left 26 43
+1173 stick left 25 44
+1174 stick left 23 44
+1175 stick left 21 45
+1176 stick left 13 48
+1177 stick left 18 47
+1178 stick left 16 47
+1179 stick left 14 48
+1180 stick left 12 48
+1181 stick left 11 49
+1182 stick left 9 49
+1183 stick left 7 50
+1184 stick left 5 50
+1185 stick left 4 50
+1203 stick left -13 48
+1206 stick left -12 48
+1207 stick left -12 49
+1209 stick left -11 49
+1211 stick left -10 49
+1213 stick left -9 49
+1216 stick left -8 49
+1224 stick left -7 49
+1228 stick left -7 50
+1229 stick left -6 50
+1231 stick left -5 50
+1232 stick left 8 49
+1233 stick left 0 50
+1236 stick left 1 50
+1288 stick left 0 50
+1321 stick left -1 50
+1322 stick left -2 50
+1323 stick left -3 50
+1327 stick left -2 50
+1328 stick left 23 44
+1330 stick left 23 45
+1331 stick left 22 45
+1333 stick left 23 44
+1336 stick left 23 45
+1338 stick left 22 45
+1340 stick left 21 45
+1341 stick left 20 46
+1344 stick left 19 46
+1347 stick left 18 47
+1351 stick left 17 47
+1354 stick left -22 45
+1355 stick left -23 45
+1356 stick left -23 44
+1362 stick left -23 45
+1363 stick left -22 45
+1366 stick left -21 45
+1367 stick left -21 46
+1368 stick left -20 46
+1370 stick left -19 46
+1372 stick left -18 46
+1373 stick left -18 47
+1374 stick left -17 47
+1376 stick left -16 47
+1378 stick left -15 48
+1379 stick left 0 0
+1384 press square
+1385 release square
+1394 press square
+1395 release square
+1404 press square
+1405 release square
+1414 press square
+1415 release square
+1424 press square
+1425 release square
+1434 press square
+1435 release square
+1444 press square
+1445 release square
+1454 press square
+1455 release square
+1464 press square
+1465 release square
+1474 press square
+1475 release square
+1484 press square
+1485 release square
+1494 press square
+1495 release square
+1504 press square
+1505 release square
+1514 press square
+1515 release square
+1524 press square
+1525 release square
+1534 press square
+1535 release square
+1544 press square
+1545 release square
+1554 press square
+1555 release square

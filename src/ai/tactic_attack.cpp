@@ -344,7 +344,7 @@ int drawTeamUp(const GangStrategy& weights, GameRandom& random) {
 
 void TacticAttack::startSubTactic(Gang& gang) {
     // 1. Team-ups on, a leader who is not busy, and at least two living members. Coney stand-in: humanBusy() reads
-    // Human_IsBusy (0x00228258), whose state mask 0x1f80974000 and hit timer (record +0x108) Coney does not keep.
+    // Human_IsBusy (0x00228258) with Coney's states in place of its state mask 0x1f80974000.
     if (!gang.orders().attackStrategies) {
         return;
     }

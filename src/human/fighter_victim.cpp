@@ -176,6 +176,14 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
     if (mode == combat::CombatMode::Grabbing || mode == combat::CombatMode::Tackling) {
         m_combat.power().spend(kThirdHitPower);
     }
+    // An AI the hit does not kill is busy for his class's +0x32 ms (record +0x108, which Human_IsBusy reads). The
+    // original writes it after its block test, so a blocked or ducked hit, which has returned above, sets nothing.
+    // Coney stand-in: not being a player stands for the brain kind not 0, and a lethal hit sets nothing even while
+    // falling (states 0x1c00000000). The original's branch for that is left out because it can hardly run: the
+    // function returns at entry for a falling human (0x00266020), so only a state set during the update reaches it.
+    if (!m_player && hit.damage != 0 && !m_health.depleted()) {
+        m_busyUntilMs = input.nowMs + static_cast<std::uint64_t>(std::max(0, m_victim.powerClass().busyAfterHitMs));
+    }
     if (m_health.depleted()) {
         // A lethal hit waits while the clip playing holds any of 0xc12200 (a dive, a paired move's or a tandem's
         // victim): the health is gone, no reaction plays, and the death plays once the flags drop (update(), step 1).

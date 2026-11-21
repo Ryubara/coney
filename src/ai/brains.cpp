@@ -2,7 +2,9 @@
 #include "ai/brains.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
+#include <optional>
 #include <span>
 
 namespace coney::ai {
@@ -112,6 +114,12 @@ void Brains::reportDamage() {
         // What noteDamage() kept from before the tactics ran, and whatever fell since.
         const int damage = brain->unreportedDamage() + (seen >= 0 && health < seen ? seen - health : 0);
         brain->setUnreportedDamage(0);
+        // The hit timer as the last look saw it, before any hit since: the original sends event 1 at the strike, before
+        // the victim's update writes record +0x108 (Human_DealDamage 0x0021d680), so its busy tests see only an earlier
+        // hit's timer.
+        human::Fighter& fighter = brain->human().fighter();
+        const std::uint64_t timerAtStrike = brain->seenBusyUntilMs();
+        brain->setSeenBusyUntilMs(fighter.busyUntilMs());
         if (damage <= 0) {
             continue;
         }
@@ -128,7 +136,9 @@ void Brains::reportDamage() {
                 nearest = other.get();
             }
         }
+        fighter.readBusyUntilAs(timerAtStrike);
         deliverEvent(*brain, BrainEvent{.id = kEventDamaged, .other = nearest, .value = damage});
+        fighter.readBusyUntilAs(std::nullopt);
     }
 }
 

@@ -1,0 +1,13 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level80 checkpoint 4, the crew's fight with the
+# twelve Destroyers. The input script walks Cleon up to Cochise and Swan, skips their scene, gives the attack order and
+# then walks him into the fight with square. The first hit lands at frame 1164, on a Destroyer, by one of the crew
+# (Cleon is 17 m off), a second at 1166, and from frame 1167 that Destroyer is busy by his hit timer alone (+0x32,
+# 750 ms), the first moment a change to the busy time can act. The clip starts just before, at 1150, so its first
+# frames are the same either side of such a change. For a change to how a soldier or a Warrior answers a hit: his
+# busy time, his re-target, his gang's help call.
+description = "level80 checkpoint 4: the crew's fight with the Destroyers from its first hit"
+level = "level80"
+input = "tools/clips/level80-destroyers.txt"
+checkpoint = 4
+start_frame = 1150
+seconds = 10

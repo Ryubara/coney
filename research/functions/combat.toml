@@ -908,8 +908,18 @@ page = "combat-reactions.md#damage"
 role = "each update: block, damage, armour, then the reaction by state"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
-coney = "src/human/target_human.h:TargetHuman::step"
-status = "legacy"
+coney = "src/human/fighter_victim.cpp:Fighter::takePending"
+status = "compared"
+
+[[function.gaps]]
+what = "Fighter::takePending leaves out the lethal hit's timer write while falling (0x1c00000000): the original returns at entry for a falling human (0x00266020), so only a state set during the update reaches it"
+relation = "stand-in"
+issue = 1413
+
+[[function.gaps]]
+what = "the rest of Fighter::takePending is a legacy port, compared piece by piece in its own issue"
+relation = "not-ported"
+issue = 1413
 
 [[function]]
 address = 0x00266b50

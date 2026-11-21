@@ -201,6 +201,20 @@ TEST_CASE("a CfgPowerClass call gives the stamina maximum and refill and the byt
     CHECK(partial.ringByte == coney::combat::kPlayerPowerClass.ringByte);
 }
 
+TEST_CASE("a CfgPowerClass call gives the ms a hit keeps an AI busy, +0x32", "[characters]") {
+    // Expected: bindings/config.md#cfgpowerclass, confirmed (code) at 0x002288c0: argument 8 is the 16-bit +0x32,
+    // read by Human_ApplyPendingDamage (0x00265f70, characters.md#power-class-bytes). Class 2 has 750 on normal,
+    // Rembrandt's class 64 300 (references/power-classes.md).
+    std::vector<Value> call = cfgPowerClass(2, 200, 0.35);
+    call[7] = Value(750.0);
+    CHECK(coney::characters::parseCfgPowerClass(call, coney::combat::kPlayerPowerClass).busyAfterHitMs == 750);
+    // A call too short to give it keeps the base's: Rembrandt's 300.
+    const coney::combat::PowerClass partial = coney::characters::parseCfgPowerClass(
+        std::vector<Value>{Value(2.0), Value(150.0)}, coney::combat::kPlayerPowerClass);
+    CHECK(partial.busyAfterHitMs == 300);
+    CHECK(coney::combat::kCivilianPowerClass.busyAfterHitMs == 750);
+}
+
 namespace {
 
 // Cleon's `CfgWarriorClass` call on normal (class 1): health 85 %, damage 145 %, rage 120, gain 162 %, decay 110 %,

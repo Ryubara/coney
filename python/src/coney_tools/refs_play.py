@@ -830,7 +830,7 @@ _POWER_DOCS = (
     ("stamina_refill", "`+0x2e`: stamina refill per second.", "Stamina refill/s"),
     ("down_ms", "`+0x34`: ms a knocked-down human stays down.", "Down ms"),
     ("stun_ms", "`+0x30`: ms a stun lasts.", "Stun ms"),
-    ("v32", "`+0x32` (16-bit); not traced.", "+0x32"),
+    ("v32", "`+0x32` (16-bit): ms a hit keeps an AI busy.", "+0x32"),
     (
         "weapon_stun",
         "`+0x00`: as the attacker, scales the victim's stun for weapon hits of 20-49 damage.",

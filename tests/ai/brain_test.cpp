@@ -120,14 +120,15 @@ struct Scene {
         step.setBrains(brains.hook());
     }
 
-    // A human with its feet at `feet` facing `headingDegrees`, with a brain of `type` and the Warriors' power class.
-    Brain& add(coney::anim::Vec3 feet, float headingDegrees, BrainType type) {
+    // A human with its feet at `feet` facing `headingDegrees`, with a brain of `type` and power class `power` (the
+    // Warriors' by default).
+    Brain& add(coney::anim::Vec3 feet, float headingDegrees, BrainType type,
+               const coney::combat::PowerClass& power = coney::ai::kWarriorPowerClass) {
         humans.push_back(std::make_unique<Human>(character.anims, coney::human::AnimSlots::player(),
                                                  coney::test::identityBind(), 1.0F, &character.ranges));
         Human& made = *humans.back();
         const bool player = type == BrainType::Player;
-        made.setFighterProfile(coney::human::FighterProfile{
-            .player = player, .powerClass = coney::ai::kWarriorPowerClass, .health = 1400});
+        made.setFighterProfile(coney::human::FighterProfile{.player = player, .powerClass = power, .health = 1400});
         made.spawn(mesh.get(), feet, headingDegrees);
         step.add(made, player);
         return brains.add(made, type, coney::ai::FightSettings{}, static_cast<std::uint32_t>(humans.size()));
@@ -537,6 +538,68 @@ TEST_CASE("a hit with reactions off takes health and plays no reaction", "[ai]")
     scene.run(1);
     CHECK(ai.fighter().health().value() == 1370);
     CHECK(ai.animator().animId() == idle);
+}
+
+TEST_CASE("a hit keeps an AI busy for his class's +0x32 ms; a player is never kept busy so", "[ai]") {
+    // Expected: characters.md#power-class-bytes, confirmed (code): Human_ApplyPendingDamage (0x00265f70) sets the
+    // record's +0x108 to the game time + the class's +0x32 for a human whose brain kind is not 0, and Human_IsBusy
+    // (0x00228258) is true while the game time is below it. 750 ms is class 2's on normal
+    // (references/power-classes.md).
+    coney::combat::PowerClass power = coney::ai::kWarriorPowerClass;
+    power.busyAfterHitMs = 750;
+    Scene scene;
+    Brain& gang = scene.add({40.0F, 41.0F, 0.0F}, 180.0F, BrainType::Gang, power);
+    Human& ai = gang.human();
+    scene.run(2);
+    // With reactions off the hit only takes health, so neither a reaction's flags nor its state make him busy.
+    ai.fighter().setHitReactionsOff(true);
+    Human& player = scene.player();
+    player.fighter().setHitReactionsOff(true);
+    REQUIRE_FALSE(coney::ai::humanBusy(ai));
+
+    // The player (brain kind 0) takes the hit first and is not busy.
+    player.hit(strikeFromFront(0));
+    scene.run(1);
+    REQUIRE(player.fighter().health().value() == 1370);
+    CHECK_FALSE(coney::ai::humanBusy(player));
+    CHECK(player.fighter().busyUntilMs() == 0);
+
+    ai.hit(strikeFromFront(0));
+    scene.run(1);
+    REQUIRE(ai.fighter().health().value() == 1370);
+    CHECK(coney::ai::humanBusy(ai));
+    // The timer itself, since the hit also starts his fight with the player, whose swings keep him busy too: 21
+    // updates later (700 ms) it is still ahead of the game time; 24 updates (800 ms) after the hit it is not.
+    scene.run(21);
+    CHECK(ai.nowMs() < ai.fighter().busyUntilMs());
+    scene.run(3);
+    CHECK(ai.nowMs() >= ai.fighter().busyUntilMs());
+}
+
+TEST_CASE("a hit's own event 1 reads the hit timer from before the hit, so a gang soldier hit once fights back",
+          "[ai]") {
+    // Expected: characters.md#power-class-bytes, confirmed (code): Strike_Contact (0x0021b290) calls Human_DealDamage
+    // (0x0021d680), which sends event 1 through Human_OnEvent (0x0021d480) at the strike, before the victim's update
+    // writes record +0x108 (Human_ApplyPendingDamage 0x00265f70). So GangBrain_OnEvent (0x00304fa8) finds the hit
+    // soldier not busy and fights the hitter, though the hit then keeps him busy for +0x32 ms.
+    coney::combat::PowerClass power = coney::ai::kWarriorPowerClass;
+    power.busyAfterHitMs = 750;
+    Scene scene;
+    Brain& gang = scene.add({40.0F, 41.0F, 0.0F}, 180.0F, BrainType::Gang, power);
+    Human& ai = gang.human();
+    scene.run(2);
+    ai.fighter().setHitReactionsOff(true);
+    REQUIRE(gang.findGoal(coney::ai::GoalType::Fight) == nullptr);
+    ai.hit(strikeFromFront(0));
+    // The hit is applied in the human's update; event 1 goes at the brains' next step.
+    scene.run(2);
+    REQUIRE(ai.fighter().health().value() == 1370);
+    REQUIRE(coney::ai::humanBusy(ai));
+    // Event 1 read the timer as it was before the hit: not busy, so he fights the player.
+    CHECK(gang.findGoal(coney::ai::GoalType::Fight) != nullptr);
+    CHECK(gang.target() == &scene.playerBrain());
+    // The timer reads as the record again once the event is sent.
+    CHECK(ai.fighter().busyUntilMs() > ai.nowMs());
 }
 
 namespace {

@@ -983,10 +983,15 @@ words (PlayDyn's `0x7bf9e9f7ff0`, the crowd's free test, the standing count's th
 health left. AddressPerson's turn leads the target by one second of its velocity. `BrSuspend` clears the actions,
 then suspends. A full gang drops its first member; a human with no gang is no one's friend. A handler's call counts as
 returning true when it runs (Coney's script system does not hand back the result). Event 18 is sent at the brains'
-next step after the health runs out, with no attacker. **Stand-in:** event 1 (damage taken, whose sender is not
-traced) is sent at the brains' step after a human's health falls, with the nearest other human that can fight as the
-attacker and the damage as its value. The fall is measured before the gangs' tactics run, since a tactic can give the
-health back at once (Coney's choice, inferred from the fight: the original's sender is untraced): `TacticBossScenarioA`
+next step after the health runs out, with no attacker. **Stand-in:** event 1 (damage taken, which the original sends at
+the strike: `Human_DealDamage`, `0x0021d680`, confirmed (code)) is sent at the brains' step after a human's health
+falls, with the nearest other human that can fight as the attacker and the damage as its value; while it is sent the hit
+timer (record `+0x108`) reads as the brains last saw it, since the original's event comes before the hit's own timer is
+written ([Power class fields](../characters.md#power-class-bytes)). Only the timer is set back: the stun or
+knockdown that the victim's update starts for the same hit is still seen by the late event's busy test (`gangEvent`,
+`repo:src/ai/brain_events.cpp`), where the original's strike-time event sees neither. The fall is measured before the
+gangs' tactics run,
+since a tactic can give the health back at once (Coney's choice, inferred from the fight): `TacticBossScenarioA`
 holds a boss above his cap, and every hit he takes there must still reach his BigBrawler, or he never tires and the
 stage never ends ([the boss fight](../ai-gangs.md#boss-diego-vargas)). A
 formation slot is usable when the leader's planner finds the line to it walkable (always without a planner) and keeps
