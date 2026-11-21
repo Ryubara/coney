@@ -152,6 +152,8 @@ class StartUpFlow final : public script::BindingHost {
     [[nodiscard]] const CreatedHumans& humans() const { return m_humans; }
     /// The level's world flags.
     [[nodiscard]] const world_objects::WorldFlags& flags() const { return m_flags; }
+    /// The level's volume boxes (`AddVolumeBox`): where a playthrough driver finds a trigger box to walk into.
+    [[nodiscard]] const world_objects::VolumeBoxes& boxes() const { return m_boxes; }
     /// The object types the scripts configured (`CfgObj`).
     [[nodiscard]] const world_objects::ObjectTypes& objectTypes() const { return m_objectTypes; }
     /// The dynamic objects' spawn records (`ObjSpawn`).

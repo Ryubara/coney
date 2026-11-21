@@ -230,6 +230,7 @@ add_executable(coney_tests
     platform/disc_level99_vermin_fence_test.cpp
     platform/disc_level99_world_test.cpp
     platform/disc_level34_objectives_test.cpp
+    platform/disc_level34_playthrough_test.cpp
     platform/disc_level99_fence_dealer_test.cpp
     platform/disc_level99_fence_lesson_test.cpp
     platform/disc_story_chain_test.cpp
