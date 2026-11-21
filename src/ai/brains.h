@@ -141,6 +141,9 @@ class Brains {
     Gangs m_gangs;
     Formations m_formations;
     std::vector<std::unique_ptr<Brain>> m_brains;
+    // Each slot's human, beside m_brains: find() checks a human's slot here, in one small array, rather than in the
+    // brain, whose object is a cache miss of its own for every lookup.
+    std::vector<const human::Human*> m_humanOf;
     // The humans with a brain here whose slot (human::Human::brainSlot()) another table holds; empty unless a human has
     // brains in two tables at once. Every other human with a brain here holds the slot of his first one.
     std::vector<const human::Human*> m_unlinked;

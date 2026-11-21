@@ -32,6 +32,7 @@ Brain& Brains::add(human::Human& human, BrainType type, const FightSettings& set
     m_brains.back()->setPlanner(m_planner);
     m_brains.back()->setCollision(m_collision);
     m_brains.back()->setPeers(&m_brains);
+    m_humanOf.push_back(&human);
     if (first && !human.brainSlot().has_value()) {
         human.setBrainSlot(static_cast<std::uint32_t>(m_brains.size() - 1));
     } else if (first) {
@@ -54,6 +55,7 @@ void Brains::remove(const human::Human& human) {
     for (const std::unique_ptr<Brain>& other : m_brains) {
         other->forget(**found);
     }
+    m_humanOf.erase(m_humanOf.begin() + (found - m_brains.begin()));
     m_brains.erase(found);
     // The slots after it close up; a human whose slot was a brain's old one follows it to the new.
     for (std::size_t slot = 0; slot < m_brains.size(); ++slot) {
@@ -81,7 +83,7 @@ Brain* Brains::find(const human::Human& human) {
         return slot.has_value() ? m_brains[*slot].get() : nullptr;
     }
     const std::optional<std::uint32_t> slot = human.brainSlot();
-    if (slot.has_value() && *slot < m_brains.size() && &m_brains[*slot]->human() == &human) {
+    if (slot.has_value() && *slot < m_humanOf.size() && m_humanOf[*slot] == &human) {
         return m_brains[*slot].get();
     }
     return nullptr;
@@ -92,10 +94,9 @@ bool Brains::linked(const human::Human& human) const {
 }
 
 std::optional<std::size_t> Brains::firstSlotOf(const human::Human& human) const {
-    const auto found =
-        std::ranges::find_if(m_brains, [&human](const std::unique_ptr<Brain>& b) { return &b->human() == &human; });
-    return found == m_brains.end() ? std::nullopt
-                                   : std::optional<std::size_t>(static_cast<std::size_t>(found - m_brains.begin()));
+    const auto found = std::ranges::find(m_humanOf, &human);
+    return found == m_humanOf.end() ? std::nullopt
+                                    : std::optional<std::size_t>(static_cast<std::size_t>(found - m_humanOf.begin()));
 }
 
 void Brains::setPlanner(RoutePlanner* planner) {
