@@ -405,7 +405,7 @@ engaged 300 for 700 steps (189,815 rows, 8,081 events) hash the same before and 
 collision mesh to every member of every enemy gang that passed the cheap tests (range, shadow, height, filter, cone):
 up to 500 rays a scan in a crowd of 1000, against the original's at most 59 candidates. The cheap tests still run for
 every member; then the lines are cast nearest first and no further once 16 are found, except to a member the scanner
-still refers to, whose finding decides how the scan forgets him ([The enemy scan](../research/ai-fights.md#coney));
+still refers to, whose finding decides how the scan forgets him ([In Coney](../research/ai-fights.md#in-coney));
 the performance sweep's experiment 12 (#1542) made into Coney's only path.
 
 **The gain.** Main-thread CPU time (`CONEY_PERF_CPU_CLOCK`), best / median of three interleaved runs, a `playtest`

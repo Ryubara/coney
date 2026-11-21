@@ -336,7 +336,8 @@ TEST_CASE("the scan casts its lines of sight nearest first and stops once 16 are
 }
 
 TEST_CASE("a brain refers to another through its target, enemy list, attack slots, sectors and detour", "[ai][scan]") {
-    // Expected: Brain::forget()'s fields (src/ai/brain.cpp), each of which the scan must keep testing (issue 1555).
+    // Expected: ai-fights.md#in-coney, confirmed (code): the fields Brain::forget() clears, which the scan keeps
+    // testing
     coney::test::AiScene scene;
     Brain& owner = scene.add(Vec3{40.0F, 60.0F, 0.0F}, 180.0F);
     Brain& other = scene.add(Vec3{40.0F, 61.0F, 0.0F}, 0.0F); // 1 m off: in a sector of owner's
