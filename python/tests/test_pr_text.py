@@ -920,6 +920,28 @@ def test_verify_refuses_a_visible_change_without_clips(tmp_path: Path) -> None:
     assert pr_text.clip_refusals(built.subject(), path) == []
 
 
+BLAMED = "no clips pair scenario reaches a hidden player behind a guard yet"
+
+
+def test_a_missing_scenario_is_not_a_reason_for_no_clips_in_pr_text_and_verify(tmp_path: Path) -> None:
+    """#1533: `Clips: none` that blames a missing scenario is refused, with the message that says to add it."""
+    built = make(tmp_path)
+    path = built.unit.dir / "PR.md"
+    with_clips(built, f"Clips: none ({BLAMED})")
+    (refused,) = [p for p in problems(generate(built)) if "Clips: none" in p]
+    assert "a missing scenario, setup, preset or tool is never a reason" in refused and "add the clips pair" in refused
+    refusals = pr_text.clip_refusals(built.subject(), path)
+    assert [r.stage for r in refusals] == ["clips"] and refusals[0].redo == "engineer"
+    assert "never a reason" in refusals[0].text
+    path.write_text(path.read_text(encoding="utf-8").replace(BLAMED, "it is quick"), encoding="utf-8")
+    (free,) = [p for p in problems(generate(built)) if "Clips: none" in p]
+    assert "is none of the reasons a pull request a player sees may give" in free
+    path.write_text(
+        path.read_text(encoding="utf-8").replace("it is quick", "a refactor: the trace diff shows 0"), "utf-8"
+    )
+    assert problems(generate(built)) == []
+
+
 def test_an_update_of_a_pull_request_opened_before_the_rule_is_not_asked_for_clips(tmp_path: Path) -> None:
     """A fix round of a pull request opened before `clips.since` (#1415, #1435) passes `pr text` and `pr verify` as
     it passes CI's `--opened` check; one not yet opened, or opened since, is asked."""

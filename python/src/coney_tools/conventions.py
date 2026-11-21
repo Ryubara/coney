@@ -293,6 +293,44 @@ class RuntimeEvidence:
 
 
 @dataclass(frozen=True)
+class ClipReasons:
+    """What a `Clips: none (<reason>)` line may say (maintainer's rule, 2026-11-20): a missing scenario, setup, preset
+    or tool is work for the task, never a reason, and the reason is one of a few kinds, not a free-text excuse."""
+
+    #: When this began (UTC), set no earlier than its pull request merged: a pull request opened earlier is not held to
+    #: it, so an open one is not refused at its next push.
+    since: datetime
+    #: Regular expressions (case-insensitive, searched in the reason) for the ways a reason blames a missing scenario,
+    #: setup, preset or tool, or says filming is hard or not worth it. A match refuses the reason.
+    refused: tuple[str, ...]
+    #: The accepted kinds in order, each its name (what an error lists) and the phrases (case-insensitive, found
+    #: anywhere in the reason) that say it. A reason that holds none of them is refused.
+    accepted: tuple[tuple[str, tuple[str, ...]], ...]
+
+    @staticmethod
+    def _plain(reason: str) -> str:
+        """`reason` without inline Markdown (backticks, bold), which a description may put around any words."""
+        return reason.replace("`", "").replace("*", "")
+
+    def refused_by(self, reason: str) -> str | None:
+        """The words of `reason` (inline Markdown dropped) that a refused pattern matches, or None when none does."""
+        plain = self._plain(reason)
+        for pattern in self.refused:
+            found = re.search(pattern, plain, re.IGNORECASE)
+            if found is not None:
+                return found.group(0)
+        return None
+
+    def kind_of(self, reason: str) -> str | None:
+        """The accepted kind whose phrase `reason` (inline Markdown dropped) holds, or None."""
+        lowered = self._plain(reason).casefold()
+        for kind, phrases in self.accepted:
+            if any(phrase.casefold() in lowered for phrase in phrases):
+                return kind
+        return None
+
+
+@dataclass(frozen=True)
 class ClipRule:
     """Before and after clips (maintainer's request, 2026-11-18): a pull request whose result a player sees shows a clip
     of Coney before the change and one after it, on labelled lines of its Screenshots section, or says why not."""
@@ -318,6 +356,8 @@ class ClipRule:
     uploads: tuple[str, ...]
     #: When the rule began (the second its pull request merged, UTC): a pull request opened earlier needs no pair.
     since: datetime
+    #: What a `none` line's reason may say; None when the file has no `reasons` key (any reason with text passes).
+    reasons: ClipReasons | None = None
 
     @property
     def labels(self) -> tuple[str, str, str]:
@@ -2330,7 +2370,8 @@ def _read_clip_rule(data: object, where: str, sections: tuple[str, ...]) -> Clip
         "uploads",
         "since",
     )
-    table = _table(data, where, fields)
+    # `reasons` is optional like the rule itself: a default branch older than it accepts any reason with text.
+    table = _table(data, where, fields, ("reasons",))
     section = _text(table["section"], _at(where, "section"))
     _names_in((section,), sections, _at(where, "section"), "one of the sections")
     labels = [_text(table[name], _at(where, name)) for name in ("before", "after", "original")]
@@ -2354,7 +2395,28 @@ def _read_clip_rule(data: object, where: str, sections: tuple[str, ...]) -> Clip
         extensions=extensions,
         uploads=uploads,
         since=_moment(table["since"], _at(where, "since")),
+        reasons=_read_clip_reasons(table["reasons"], _at(where, "reasons")) if "reasons" in table else None,
     )
+
+
+def _read_clip_reasons(data: object, where: str) -> ClipReasons:
+    """The `pull_requests.clips.reasons` table: its refused patterns must compile, each accepted kind needs phrases."""
+    table = _table(data, where, ("since", "refused", "accepted"))
+    refused = _texts(table["refused"], _at(where, "refused"))
+    for pattern in refused:
+        try:
+            re.compile(pattern)
+        except re.error as error:
+            raise _fail(_at(where, "refused"), f"'{pattern}' is not a regular expression: {error}") from None
+    kinds = _mapping(table["accepted"], _at(where, "accepted"))
+    if not kinds:
+        raise _fail(_at(where, "accepted"), "expected at least one accepted kind")
+    accepted = tuple(
+        (kind, _texts(phrases, _at(_at(where, "accepted"), kind))) for kind, phrases in kinds.items() if kind.strip()
+    )
+    if len(accepted) != len(kinds):
+        raise _fail(_at(where, "accepted"), "a kind needs a name")
+    return ClipReasons(since=_moment(table["since"], _at(where, "since")), refused=refused, accepted=accepted)
 
 
 def _read_merge(data: object, where: str) -> Merge:

@@ -5,6 +5,7 @@ import dataclasses
 import re
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 from conventions_support import REPO, conventions_with
@@ -986,7 +987,7 @@ def test_the_clip_rule_is_read_from_the_conventions() -> None:
         f"- Before: ![before]({UPLOAD})\n- After: ![after]({UPLOAD_2})",
         f"Before:\n\n[before.mp4]({UPLOAD})\n\nAfter:\n\n![after]({UPLOAD_2})\n\nOriginal:\n\n{UPLOAD}",
         NO_SHOTS + "\n\n" + NO_CLIPS,
-        f"![shot]({UPLOAD})\n\n- **Clips:** none (no disc scenario reaches the error path)",
+        f"![shot]({UPLOAD})\n\n- **Clips:** none (no behaviour reads the value yet)",
     ],
 )
 def test_a_player_facing_title_with_a_pair_or_a_reason_passes(screenshots: str) -> None:
@@ -1061,6 +1062,131 @@ def test_without_a_title_or_changed_paths_no_clips_are_asked_for() -> None:
 def test_a_broken_clip_line_is_refused(screenshots: str, expected: str) -> None:
     problems = clip_problems_of(screenshots)
     assert any(expected in problem for problem in problems), problems
+
+
+# A missing scenario is work, never a reason (maintainer 2026-11-20, #1533): `pull_requests.clips.reasons`.
+
+SNEAK_ATTACK_REASON = (
+    "no clips pair scenario reaches a hidden player behind a guard yet: the two scenarios are level99's intro and walk"
+)
+#: #1504's reason exactly as its description wrote it, with the Markdown around the scenario's name.
+SNEAK_ATTACK_AS_WRITTEN = (
+    "no `clips pair` scenario reaches a hidden player behind a guard yet: "
+    "the two scenarios are level99's intro and walk"
+)
+
+
+def none_reason_problems(reason: str, title: str = PLAYER, **keywords: Any) -> list[str]:
+    """The clip problems of a description whose Screenshots section is `Clips: none (<reason>)`."""
+    text = body(testing="- " + EVIDENCE, screenshots=f"{NO_SHOTS}\n\nClips: none ({reason})")
+    return [p for p in check_body(text, BODY_RULES, title=title, **keywords) if "Runtime" not in p]
+
+
+def test_the_clip_reasons_are_read_from_the_conventions() -> None:
+    rule = BODY_RULES.clips
+    assert rule is not None and rule.reasons is not None
+    assert rule.reasons.refused and rule.reasons.accepted and rule.reasons.since >= rule.since
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [
+        SNEAK_ATTACK_REASON,
+        "no disc scenario reaches the error path",
+        "no scenario or setup exists for it",
+        "no setup exists",
+        "there is no preset for a hidden player",
+        "no suitable clips pair scenario",
+        "the scenarios do not reach it yet",
+        "missing scenario for the guard",
+        "without a scenario",
+        "the clip tool cannot record it",
+        SNEAK_ATTACK_AS_WRITTEN,
+        "no **setup** exists for it",
+        "no behaviour reads it yet; the scenario is missing",
+        "nothing visible changes; no `clips pair` scenario exists for it",
+        "a refactor; the tool is not available",
+        "no tool to record it",
+        "no disc run reaches it",
+        "no game disc on this machine",
+        "hard to film",
+        "hard to record",
+        "too small to show",
+        "too small to film",
+        "not worth a clip",
+        "no scenario reaches it",
+        "rename only; no scenario reaches it",
+        "a refactor; no scenario reaches it",  # an accepted kind never excuses a refused phrase
+        "NO SETUP EXISTS",
+    ],
+)
+def test_a_reason_that_blames_a_missing_scenario_setup_or_tool_is_refused(reason: str) -> None:
+    (problem,) = none_reason_problems(reason)
+    assert "a missing scenario, setup, preset or tool is never a reason" in problem
+    assert "add the clips pair scenario" in problem
+    assert "docs/guides/testing.md#clips-in-the-description" in problem
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [
+        "no visible change",
+        "nothing visible changes",
+        "a refactor: no run shows a difference",
+        "a rename, nothing visible",
+        "no behaviour reads the value yet",
+        "nothing reads the field until the next task",
+        "same behaviour as before: the trace diff shows 0 differences",
+        "nothing in the game runs it yet",
+        # honest detail after an accepted kind's words is no excuse (the reviewer's findings on #1533)
+        "nothing visible changes: a minor fix of a comment",
+        "a refactor: a small difference in naming only",
+        "rename only; the tool does not read it",
+        "nothing visible changes; no tool reads it",
+        "nothing a player sees; no disc is read by the new test",
+        "rename only; no clip scenario is affected",
+    ],
+)
+def test_a_reason_of_an_accepted_kind_passes(reason: str) -> None:
+    assert none_reason_problems(reason) == []
+
+
+@pytest.mark.parametrize(
+    "reason", ["the maintainer asked for it", "it is quick", "see the Summary", "skipped", "a minor difference"]
+)
+def test_a_free_text_reason_of_no_accepted_kind_is_refused_with_the_kinds(reason: str) -> None:
+    (problem,) = none_reason_problems(reason)
+    rule = BODY_RULES.clips
+    assert rule is not None and rule.reasons is not None
+    assert "is none of the reasons a pull request a player sees may give" in problem
+    assert all(kind in problem for kind, _ in rule.reasons.accepted)
+    assert "docs/guides/testing.md#clips-in-the-description" in problem
+
+
+def test_the_reasons_are_asked_only_where_the_rule_asks_for_clips() -> None:
+    assert none_reason_problems(SNEAK_ATTACK_REASON, title="tools: Fix a check") == []
+    assert none_reason_problems("it is quick", title="docs: Fix a page") == []
+    (studio,) = none_reason_problems(SNEAK_ATTACK_REASON, title="core: Fix it", changed=["src/studio/theme.cpp"])
+    assert "never a reason" in studio
+
+
+def test_a_pull_request_opened_before_the_reasons_began_keeps_its_reason() -> None:
+    """Open pull requests are not refused at their next push: only those opened since `reasons.since` are held."""
+    rule = BODY_RULES.clips
+    assert rule is not None and rule.reasons is not None
+    earlier = rule.reasons.since - timedelta(seconds=1)
+    assert none_reason_problems(SNEAK_ATTACK_REASON, opened=earlier) == []
+    assert none_reason_problems("it is quick", opened=earlier) == []
+    assert len(none_reason_problems(SNEAK_ATTACK_REASON, opened=rule.reasons.since)) == 1
+    assert len(none_reason_problems(SNEAK_ATTACK_REASON, opened=None)) == 1  # not yet opened: pr text, pr verify
+
+
+def test_a_file_without_the_reasons_accepts_any_reason_with_text() -> None:
+    rule = BODY_RULES.clips
+    assert rule is not None
+    bare = dataclasses.replace(BODY_RULES, clips=dataclasses.replace(rule, reasons=None))
+    text = body(testing="- " + EVIDENCE, screenshots=f"{NO_SHOTS}\n\nClips: none ({SNEAK_ATTACK_REASON})")
+    assert [p for p in check_body(text, bare, title=PLAYER) if "Runtime" not in p] == []
 
 
 def test_a_draft_may_show_local_clips_which_pr_open_uploads() -> None:

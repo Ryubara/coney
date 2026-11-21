@@ -46,10 +46,13 @@ grep); it changes no worktree, commits nothing and does not touch GitHub.
   a picture). Play each (or open its frames) and check that the before and the after are the same run (the same
   level, place and moment) and differ where the change says they should; that the after shows the change the Summary
   claims; that each is gameplay, not a menu or a loading screen; and that an `Original:` clip shows the original from
-  the same place. A `Clips: none (<reason>)` line for a title area a player sees, or a Coney Studio change, gives a
-  real reason (nothing visible changes, no disc scenario reaches it yet); convenience is Important, as for the
-  `Runtime:` line ([Clips in the description](../testing.md#clips-in-the-description)). A clip already uploaded by an
-  earlier `pr open` is deleted locally: judge it on the pull request.
+  the same place. A `Clips: none (<reason>)` line for a title area a player sees, or a Coney Studio change, is the rare
+  exception: **Important unless nothing a player could ever see changes** (a value no behaviour reads yet, a refactor
+  that keeps the behaviour). A reason that blames a missing scenario, setup, preset or tool, or says the difference is
+  small or hard to film, is Important however the program passed it: the task builds the `clips pair` scenario and
+  records the clips with it, and a missing one is work, not a reason. Check that the claim holds (the diff changes
+  nothing a player sees), as for the `Runtime:` line ([Clips in the description](../testing.md#clips-in-the-description)).
+  A clip already uploaded by an earlier `pr open` is deleted locally: judge it on the pull request.
 - [ ] **The Summary is easy to read.** It is a few short paragraphs, not a wall of text (a program counts them,
   `pull_requests.summary`; you judge whether it is clear): the first says what changed and why in a sentence or two, the
   next say what a reader would otherwise miss, and none repeats the diff or the Testing section. A paragraph that lists

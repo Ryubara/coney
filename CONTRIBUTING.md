@@ -174,7 +174,9 @@ created with `gh pr create --body-file`, and reruns when you edit it. These rule
   `src/studio/` (what a player sees in Coney Studio), a clip on a line `Before:` and one on a line `After:` (the
   original's may follow on `Original:`), or a line `Clips: none (<reason>)`. A clip is a `.gif` or `.mp4` upload; in
   `PR.md` it is a local `./clips/<name>` image that `pr open` uploads. It is checked given the title and, for the paths,
-  the changed files (CI's `body` job has both).
+  the changed files (CI's `body` job has both). The reason is one of: nothing a player could see changes; no behaviour
+  reads the value yet; a refactor or rename that keeps the behaviour; nothing in the game runs it; a missing scenario,
+  setup, preset or tool is never a reason (the task adds the `clips pair` scenario and records the clips with it).
 - AI use: after `Commits written by:` one of `a person`, `an AI`, `an AI, edited by a person`, `a person, with AI help`;
   unless it is `a person`, `Model:` names the model (`n/a` is not enough).
 - `Model:` also names every model that a `Co-Authored-By` trailer on the branch's commits names (any case, anywhere on

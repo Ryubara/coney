@@ -54,8 +54,9 @@ Done:
      the same place. A title area a player sees (`gameplay`, `graphics`, `audio`) and a change a player sees in
      Coney Studio need a short clip (10 seconds at most) on the Before and After lines below, and CI refuses the pull
      request without them: drag a GIF or an MP4 into this box on GitHub under each line (an MP4's address stays alone
-     on its line, so GitHub draws a player), or write `Clips: none (<reason>)` when nothing visible changes or no
-     scenario reaches it. The Original line is for the original's clip, and is optional. Screenshots are Markdown
+     on its line, so GitHub draws a player), or write `Clips: none (<reason>)` only when nothing a player could see
+     changes (a missing scenario is never a reason: add the clips pair scenario and record with it).
+     The Original line is for the original's clip, and is optional. Screenshots are Markdown
      images, `![alt](./shots/file.png)`, uploaded with `gh pr create --body-file ... --attach ./shots/file.png`
      (gh 2.99+) or dragged in. Never commit a clip or a picture (LEGAL.md). An agent writes its clips as
      `![after](./clips/after.mp4)` on these lines and its pictures under ./shots/, relative to its scratch folder;
