@@ -24,12 +24,14 @@
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_flow_mode.h"
 #include "gamemodes/mission_failed_mode.h"
+#include "gamemodes/rumble_result_mode.h"
 #include "gamemodes/start_up_flow.h"
 #include "gui/global_strings.h"
+#include "gui/pause_menu/armies_game_over_menu.h"
 #include "gui/pause_menu/pause_menu.h"
+#include "gui/rumble_mode_gui/rumble_result_menu.h"
 #include "hud/hud.h"
-#include "support/font_fixtures.h"
-#include "support/recording_device.h"
+#include "support/flow_run.h"
 #include "warriors/level_table.h"
 
 using coney::GameModeStack;
@@ -65,59 +67,7 @@ class RecordingLevel final : public coney::GameMode, public coney::OverlaidLevel
 
 // The start-up flow's modes with gameplay pushed alone in `level99` (checkpoint 3), an input script on port 1, and
 // the pause hooks recorded.
-struct Run {
-    coney::test::RecordingDevice device;
-    GameModeStack stack;
-    coney::gui::GlobalStrings strings;
-    std::vector<std::string> log;
-    std::vector<bool> soundPauses;
-    int radarsOff = 0;
-    int radarsBack = 0;
-    std::unique_ptr<StartUpFlow> flow;
-    std::unique_ptr<coney::ScriptedInput> input;
-    GameTimer timer;
-
-    explicit Run(std::string_view script, GameplayMode::LevelLoader loader = {}) {
-        input = std::make_unique<coney::ScriptedInput>(coney::parseInputScript(script).value());
-        stack.setInput(input.get());
-        timer.setFixedStep(true);
-        const auto sheets = [](std::string_view /*name*/) -> std::expected<coney::graphics::SpriteSheet, coney::Error> {
-            return coney::test::testFontSheet();
-        };
-        flow = std::make_unique<StartUpFlow>(
-            device, stack, sheets, strings, coney::LegalScreenSettings{},
-            [this](std::string_view line) { log.emplace_back(line); }, coney::script::ScriptSource{}, std::move(loader),
-            std::nullopt, 0);
-        flow->setSheetRecordLoader(
-            [](std::uint32_t /*record*/) -> std::expected<coney::graphics::SpriteSheet, coney::Error> {
-                return coney::test::testFontSheet();
-            });
-        flow->setPauseHooks(coney::PauseHooks{
-            .pauseSound = [this](bool paused) { soundPauses.push_back(paused); },
-            .objectives = {},
-            .radarsOff = [this] { ++radarsOff; },
-            .radarsBack = [this] { ++radarsBack; },
-        });
-        coney::GameState& state = flow->state();
-        coney::LevelRecord front;
-        front.id = 0;
-        front.name = "level100";
-        front.number = 100;
-        state.levels.set(front);
-        coney::LevelRecord level;
-        level.id = 1;
-        level.name = "level99";
-        level.number = 99;
-        state.levels.set(level);
-        state.currentLevel = 1;
-        state.checkPoint = 3;
-        flow->gameplay().setLevel("level99");
-        stack.push(flow->gameplay());
-    }
-
-    // Runs `count` frames in test mode.
-    void frames(std::uint64_t count) { stack.runUntilEmpty(timer, {}, count); }
-};
+using Run = coney::test::FlowRun;
 
 } // namespace
 
@@ -281,6 +231,105 @@ TEST_CASE("mission failed: the launch pushes mode 0xc, and Restart level reloads
     CHECK(run.flow->state().checkPoint == 1);
     CHECK(run.flow->levelFlow().chosenLevel() == 1);
     CHECK(run.soundPauses == std::vector<bool>{true, false});
+}
+
+// The quits a network host tells its guests of (docs/guides/multiplayer.md#levels) from the three other screens that
+// end a level: each counts once in StartUpFlow::missionQuits(), as the pause menu's quits do.
+
+TEST_CASE("mission failed: Yes to Quit counts one quit for network play, and its other choices count none",
+          "[pause][net]") {
+    // Expected: pause.md#the-mission-failed-screen, confirmed (code): MissionFailed_Toggle (0x00155408) loads `menu`
+    // on quit (+0x7a0), as the pause menu's quit to the main menu does; Restart level (+0x7a4) and Last checkpoint
+    // (+0x7a8) stay in the level. Quit is the second row's second item: down, right, cross, left to Yes, cross.
+    Run quit("15 tap down\n20 tap right\n25 tap cross\n35 tap left\n40 tap cross\n");
+    quit.frames(2);
+    quit.flow->launchMissionFailed("Busted");
+    quit.frames(30);
+    CHECK(quit.flow->missionQuits() == 0);
+    quit.frames(12);
+    REQUIRE(quit.flow->missionFailed().menu().outcome() == coney::gui::PauseOutcome::QuitToMainMenu);
+    CHECK(quit.flow->missionQuits() == 1);
+    // Asked again, and after the level has gone, it is the same quit.
+    CHECK(quit.flow->missionQuits() == 1);
+    quit.frames(30);
+    CHECK(quit.flow->missionQuits() == 1);
+
+    // Restart level, then Last checkpoint: no quit.
+    for (const std::string_view script : {"15 tap down\n25 tap cross\n", "15 tap cross\n"}) {
+        Run stay(script);
+        stay.frames(2);
+        stay.flow->launchMissionFailed("Busted");
+        stay.frames(40);
+        REQUIRE(stay.flow->missionFailed().menu().outcome());
+        CHECK(stay.flow->missionQuits() == 0);
+    }
+}
+
+TEST_CASE("mission failed: To Hangout in level95 counts one quit for network play", "[pause][net]") {
+    // Expected: pause.md#the-mission-failed-screen, confirmed (code): in `level95` the first item sets +0x7ac, and
+    // MissionFailed_Toggle (0x00155408) then calls `runNextMission(0)`, as the pause menu's quit to the hangout does.
+    Run run("15 tap cross\n");
+    run.setLevelNumber(95);
+    run.frames(2);
+    run.flow->launchMissionFailed("Busted");
+    run.frames(20);
+    REQUIRE(run.flow->missionFailed().menu().outcome() == coney::gui::PauseOutcome::QuitToHangout);
+    CHECK(run.flow->missionQuits() == 1);
+    run.frames(10);
+    CHECK(run.flow->missionQuits() == 1);
+}
+
+TEST_CASE("Rumble result: Quit and Rumble menu each count one quit for network play, and Replay none",
+          "[pause][net][rumble]") {
+    // Expected: rumble.md#result-screen, confirmed (code): RumbleResult_Toggle (0x00155648) leaves the arena on Quit
+    // (+0x7ac: `runNextMission(0)` in game, `menu` from the front end) and on Rumble menu (+0x7a8: PauseGoToRMI...),
+    // and reloads it on Replay (+0x7a4). The choices take input 8.5 s (255 steps) after the screen opens; Quit and
+    // Rumble menu are on the second grid, behind more.
+    struct Case {
+        std::string_view script;
+        coney::gui::RumbleResultChoice choice;
+        std::uint64_t quits;
+    };
+    for (const Case& c :
+         {Case{"275 tap right\n285 tap cross\n295 tap right\n305 tap cross\n", coney::gui::RumbleResultChoice::Quit, 1},
+          Case{"275 tap right\n285 tap cross\n295 tap cross\n", coney::gui::RumbleResultChoice::RumbleMenu, 1},
+          Case{"275 tap cross\n", coney::gui::RumbleResultChoice::Replay, 0}}) {
+        Run run(c.script);
+        run.frames(2);
+        run.flow->launchRumbleWin("Player 1", "");
+        run.frames(260);
+        CHECK(run.flow->missionQuits() == 0);
+        run.frames(60);
+        REQUIRE(run.flow->rumbleResult().menu().choice() == c.choice);
+        CHECK(run.flow->missionQuits() == c.quits);
+        run.frames(10);
+        CHECK(run.flow->missionQuits() == c.quits);
+    }
+}
+
+TEST_CASE("Armies game over: Quit counts one quit for network play, and Replay none", "[pause][net][armies]") {
+    // Expected: pause.md#an-game-over, confirmed (code): ANGameOver_Toggle (0x001557f8) calls `runNextMission(0)` on
+    // Quit (+0x7a8), as the pause menu's quit to the hangout does, and loads `level60` on Replay (+0x7a4). With no
+    // credit, Start begins the end phase, whose choices take input after their 2 s (60 steps) fade.
+    struct Case {
+        std::string_view script;
+        coney::gui::ArmiesGameOverChoice choice;
+        std::uint64_t quits;
+    };
+    for (const Case& c :
+         {Case{"12 tap start\n90 tap right\n100 tap cross\n", coney::gui::ArmiesGameOverChoice::Quit, 1},
+          Case{"12 tap start\n90 tap cross\n", coney::gui::ArmiesGameOverChoice::Replay, 0}}) {
+        Run run(c.script);
+        run.frames(2);
+        run.flow->launchArmiesGameOver();
+        run.frames(80);
+        CHECK(run.flow->missionQuits() == 0);
+        run.frames(30);
+        REQUIRE(run.flow->armiesGameOver().menu().choice() == c.choice);
+        CHECK(run.flow->missionQuits() == c.quits);
+        run.frames(10);
+        CHECK(run.flow->missionQuits() == c.quits);
+    }
 }
 
 TEST_CASE("Armies game over: player 2's Start counts only when he is in the game", "[pause][armies]") {
