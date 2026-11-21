@@ -786,8 +786,10 @@ def _add_refs_commands(groups: Any) -> None:
     """Register `coney-tools refs ...`."""
     group = groups.add_parser("refs", help="the game reference lists (research/references/, docs/references/)")
     commands = group.add_subparsers(dest="command", required=True)
-    render = commands.add_parser("render", help="check the lists and write the pages of docs/references/")
-    render.add_argument("--check", action="store_true", help="change nothing; exit 1 when a page is stale")
+    render = commands.add_parser(
+        "render", help="check the lists and write the pages of docs/references/ and the C++ tables made from them"
+    )
+    render.add_argument("--check", action="store_true", help="change nothing; exit 1 when a page or a table is stale")
     extract = commands.add_parser("refresh", help="refresh the lists from your own disc, keeping hand-written fields")
     extract.add_argument(
         "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"

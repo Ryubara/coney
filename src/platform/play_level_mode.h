@@ -336,8 +336,9 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     /// attachment.
     void attachScenes(scenes::SceneSystem* scenes, double playerHandle);
     /// `--scene NAME`, Coney's test aid: plays the scene at once as a cinematic, as global.lua's gPlayCutScene would,
-    /// with stand-ins of its roles' characters bound to its roles and player 1 to his (a role named for Rembrandt).
-    /// Fails when the scene list cannot be read or the scene does not load.
+    /// with the cast and props its script binds (scenes::castModelOf(), scenes::propTypeOf()): stand-ins drawn as the
+    /// bound character types, player 1 in the player's role (else the one named for Rembrandt), new objects of the
+    /// bound types in its slots. Fails when the scene list cannot be read or the scene does not load.
     std::expected<void, Error> playScene(std::string_view name);
     /// Plays the scenes' sounds through `sounds` (null: none); it must outlive the mode's use of it.
     void setSounds(audio::SoundPlayer* sounds) { m_stage->setSounds(sounds); }
@@ -380,6 +381,9 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     [[nodiscard]] std::size_t objectsDrawn() const { return m_placed ? m_placed->drawn() : 0; }
 
   private:
+    // A new object of `type` for a preview scene's slot, pinned; nothing when the level has no such type or no room.
+    std::optional<double> makeSceneProp(std::string_view type);
+
     // A character's resources and its texture dictionaries, ready to draw.
     struct LoadedCharacter {
         std::unique_ptr<human::PlayerCharacter> character;

@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The `coney-tools refs ...` commands: render the game reference pages, and refresh their lists from the disc.
 
-`refs render` reads `research/references/*.yaml`, checks each against its schema and writes `docs/references/`;
-with `--check` it changes nothing and fails when a page is out of date (CI runs it). `refs refresh` reads the
-player's disc, merges what it finds into the YAML (keeping every hand-written field) and renders.
+`refs render` reads `research/references/*.yaml`, checks each against its schema and writes `docs/references/` and
+the C++ tables made from the lists (`refs_cpp`); with `--check` it changes nothing and fails when a page or a table is
+out of date (CI runs it). `refs refresh` reads the player's disc, merges what it finds into the YAML (keeping every
+hand-written field) and renders.
 `refs compress-images` turns the rendered thumbnails into small palette PNGs before they are committed.
 
 Research: docs/guides/research-data.md#reference-lists
@@ -18,7 +19,7 @@ from typing import Any
 
 import yaml
 
-from coney_tools import refs, refs_engine, refs_env, refs_play, refs_render, refs_stats
+from coney_tools import refs, refs_cpp, refs_engine, refs_env, refs_play, refs_render, refs_stats
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.refs import Topic
 from coney_tools.refs_topics import TOPICS, topic
@@ -97,7 +98,9 @@ def run_render(check: bool) -> int:
     """Write the pages, or with `check` report the stale ones and return 1."""
     root = find_repo_root(Path.cwd())
     stale = []
-    wanted = pages(root, load_all(root))
+    lists = load_all(root)
+    # The pages, and the C++ tables made from the same lists (the scene preview's casts).
+    wanted = pages(root, lists) | refs_cpp.files(root, lists)
     for path in leftover_pages(root, wanted):
         stale.append(path.relative_to(root).as_posix())
         if not check:

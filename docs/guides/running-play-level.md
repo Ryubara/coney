@@ -210,11 +210,15 @@ It is a test aid for a capture that needs an item, such as circle + triangle's s
 `--give 3,2`.
 
 `--scene NAME` (with `--play-level`) plays the in-engine scene NAME at once, after any `--start`, as a level99
-cinematic: player 1 takes the role named `warrrecv` and the other roles are played by stand-ins drawn from the role's
-model (a role whose model Coney does not know is drawn as player 1's), letterboxed and skippable with cross or START
-([Scenes](../research/scenes.md)). Any level's scenes play, not only level99's (`--play-level level2 --scene l2_c1`);
-the stand-ins are lit like the other humans. It plays on the level's own
-scene system, beside the scenes the level's scripts play themselves (level99's intro, `l99_c1`, at checkpoint 1). It
+cinematic, letterboxed and skippable with cross or START ([Scenes](../research/scenes.md)). Its cast is the one the
+scene's script binds, as the [scenes list](../references/scenes.md) records it: each role is a stand-in drawn as the
+character type the script gives it, a role the script leaves unbound plays nothing, and each object slot gets an object
+of the type the script binds (the subway scenes' train cars). Player 1 takes the role the script gives the player, or
+else the one named `warrrecv`. A scene no script plays, or a role the list does not resolve, is drawn from the role's
+name (a name Coney does not know as player 1's model) ([Scenes: Coney's
+implementation](../research/scenes.md#coneys-implementation)). Any level's scenes play, not only level99's
+(`--play-level level2 --scene l2_c1`); the stand-ins are lit like the other humans. It plays on the level's own scene
+system, beside the scenes the level's scripts play themselves (level99's intro, `l99_c1`, at checkpoint 1). It
 is a test aid:
 
 ```sh

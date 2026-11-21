@@ -2,7 +2,7 @@
 // The play mode's scenes: the stage a playing scene draws through, the scenes stepped with the mode, player 1 handed
 // over to a scene and back, and `--scene`, Coney's test aid that plays one at once (docs/research/scenes.md,
 // docs/guides/running-play-level.md#playing-a-level).
-#include <array>
+#include <algorithm>
 #include <cstdint>
 #include <format>
 #include <numbers>
@@ -19,8 +19,11 @@
 #include "human/humans.h"
 #include "platform/play_level_mode.h"
 #include "raycast/collision_mesh.h"
+#include "scenes/scene_casts.h"
 #include "scenes/scene_disc.h"
 #include "scenes/scene_player.h"
+#include "world_objects/object_types.h"
+#include "world_objects/spawn_records.h"
 
 namespace coney::platform {
 
@@ -37,29 +40,9 @@ constexpr std::string_view kPlayerRole = "warrrecv";
 constexpr float kSceneGroundAbove = 1.0F;
 constexpr float kSceneGroundLength = 1.5F;
 
-// **Coney stand-in** for `--scene`: the model a role's name stands for in level99's scenes (a role names its
-// cutscene model, not a Character List entry; in the game the bound humans bring their own). Unknown names are drawn
-// as the player.
-std::string standInModelOf(std::string_view role) {
-    constexpr std::array<std::pair<std::string_view, std::string_view>, 12> kModels{{{"warrcl", "warr_cl"},
-                                                                                     {"warrve", "warr_ve"},
-                                                                                     {"warrrecv", "warr_re_cv"},
-                                                                                     {"warrash", "warr_ty"},
-                                                                                     {"warrashcv", "warr_ty_cv"},
-                                                                                     {"warrlynx", "warr_ly"},
-                                                                                     {"warrjones", "warr_jn"},
-                                                                                     {"warrmal", "warr_ma"},
-                                                                                     {"warrso01", "warr_so_va1"},
-                                                                                     {"warrso02", "warr_so_va2"},
-                                                                                     {"warrso03", "warr_so_va3"},
-                                                                                     {"warrso04", "warr_so_vb1"}}};
-    for (const auto& [name, model] : kModels) {
-        if (name == role) {
-            return std::string(model);
-        }
-    }
-    return {};
-}
+// **Coney stand-in**: a bound handle that is no human of the level, and not one of the preview's stand-ins (which
+// SceneStage::drawAs() casts), is drawn as the model its role's name stands for.
+using scenes::standInModelOf;
 
 } // namespace
 
@@ -201,6 +184,26 @@ void PlayLevelMode::placeReleased(const SceneStage::Release& release) {
     }
 }
 
+std::optional<double> PlayLevelMode::makeSceneProp(std::string_view type) {
+    // An object only of a type the level's scripts configured (CfgObj), with a handle from the world objects' counter.
+    if (m_records == nullptr || m_objectTypes == nullptr || !m_cast.objectHandles ||
+        m_objectTypes->find(type) == nullptr) {
+        m_print(std::format("scene: no object of type {} for the preview\n", type));
+        return std::nullopt;
+    }
+    world_objects::SpawnRecord record;
+    record.handle = m_cast.objectHandles();
+    record.typeName = std::string(type);
+    record.live = true;
+    record.pinned = true;
+    const double handle = record.handle;
+    if (m_records->add(std::move(record)) == nullptr) {
+        m_print(std::format("scene: no room for an object of type {}\n", type));
+        return std::nullopt;
+    }
+    return handle;
+}
+
 std::expected<void, Error> PlayLevelMode::playScene(std::string_view name) {
     // The level's scenes when its scripts have them, else the test aid's own system over the disc's scene list.
     if (m_scenes == nullptr) {
@@ -227,10 +230,38 @@ std::expected<void, Error> PlayLevelMode::playScene(std::string_view name) {
         roleNames.push_back(role.name);
     }
     m_stage->setRoleNames(roleNames);
+    // The cast the scene's script binds, as the scenes list records it (scene_casts.h,
+    // scenes.md#coneys-implementation): player 1 in the role the script gives the player, else the one named
+    // kPlayerRole; a stand-in drawn as the character type the script binds in each other bound role; nobody in a role
+    // the script leaves unbound.
+    std::vector<scenes::CastModel> cast;
+    cast.reserve(roleNames.size());
     for (std::size_t role = 0; role < roleNames.size(); ++role) {
-        const double human =
-            roleNames[role] == kPlayerRole ? m_playerHandle : kStandInHandle + static_cast<double>(role);
+        cast.push_back(scenes::castModelOf(header.name, role, roleNames[role]));
+    }
+    auto playerRole = std::ranges::find(cast, scenes::CastSource::Player, &scenes::CastModel::source) - cast.begin();
+    if (static_cast<std::size_t>(playerRole) == cast.size()) {
+        playerRole = std::ranges::find(roleNames, kPlayerRole) - roleNames.begin();
+    }
+    for (std::size_t role = 0; role < roleNames.size(); ++role) {
+        if (cast[role].source == scenes::CastSource::Unbound) {
+            continue;
+        }
+        double human = m_playerHandle;
+        if (role != static_cast<std::size_t>(playerRole)) {
+            human = kStandInHandle + static_cast<double>(role);
+            m_stage->drawAs(human, cast[role].model.empty() ? m_model : cast[role].model);
+        }
         system.joinHuman(human, id, role, 0);
+    }
+    // Each object slot gets a new object of the type the script binds there, its record pinned as Scene_BindObject
+    // (0x00354280) pins a bound object's, so the streaming never stores it (scenes.md#cast).
+    for (std::size_t objectSlot = 0; objectSlot < header.objects.size(); ++objectSlot) {
+        if (const std::optional<std::string> type = scenes::propTypeOf(header.name, objectSlot); type) {
+            if (const std::optional<double> object = makeSceneProp(*type); object) {
+                system.addObject(id, *object, objectSlot);
+            }
+        }
     }
     if (!system.play(
             id, scenes::PlayRequest{

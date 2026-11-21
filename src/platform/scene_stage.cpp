@@ -91,6 +91,11 @@ std::optional<WorldView> SceneStage::cameraView(float alpha, float aspect) const
 
 bool SceneStage::holds(double human) const { return m_bound.contains(human); }
 
+std::string SceneStage::modelOf(double human) const {
+    const auto found = m_bound.find(human);
+    return found != m_bound.end() ? found->second.model : std::string();
+}
+
 std::optional<scenes::RoleFrame> SceneStage::frameOf(double human, float alpha) const {
     const auto found = m_bound.find(human);
     if (found == m_bound.end()) {
@@ -170,9 +175,11 @@ std::string SceneStage::summary() const {
 
 void SceneStage::humanJoin(double human, std::uint32_t /*scene*/, std::size_t role, const scenes::ScenePose& /*start*/,
                            int /*gait*/) {
-    // The model it is drawn as: its own, or none when the play mode draws it.
+    // The model it is drawn as: the one drawAs() gave it, its own, or none when the play mode draws it.
     const std::string_view roleName = role < m_roleNames.size() ? std::string_view(m_roleNames[role]) : "";
-    m_bound[human] = Bound{.role = role, .model = m_modelOf(human, role, roleName), .frame = {}, .fresh = false};
+    const auto given = m_drawAs.find(human);
+    std::string model = given != m_drawAs.end() ? given->second : m_modelOf(human, role, roleName);
+    m_bound[human] = Bound{.role = role, .model = std::move(model), .frame = {}, .fresh = false};
     if (m_onJoin) {
         m_onJoin(human, true);
     }

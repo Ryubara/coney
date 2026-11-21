@@ -91,6 +91,9 @@ class SceneStage final : public scenes::SceneHost {
     [[nodiscard]] bool widescreen() const override { return m_widescreen; }
     /// Sets the role names of the scene about to play (the human's model may follow its role), by role index.
     void setRoleNames(std::vector<std::string> names) { m_roleNames = std::move(names); }
+    /// Draws `human` as `model` when it joins a role, in place of what the ModelOf says (the scene preview's stand-ins,
+    /// cast as the scene's script binds them); kept until the stage is gone.
+    void drawAs(double human, std::string model) { m_drawAs[human] = std::move(model); }
 
     // ---- What the play mode reads ----
 
@@ -151,6 +154,8 @@ class SceneStage final : public scenes::SceneHost {
     [[nodiscard]] float barHeight(std::uint64_t nowMs) const { return m_letterbox.barHeight(nowMs); }
     /// How many puppets the stage holds (humans the play mode does not draw, loaded as characters).
     [[nodiscard]] std::size_t puppetCount() const { return m_puppets.size(); }
+    /// The model the bound human `human` is drawn as: empty when the play mode draws it, or when it is not bound.
+    [[nodiscard]] std::string modelOf(double human) const;
     /// One line of counts for the summary.
     [[nodiscard]] std::string summary() const;
 
@@ -209,6 +214,7 @@ class SceneStage final : public scenes::SceneHost {
     std::function<void(std::string_view)> m_print;
     SceneAssets* m_assets = nullptr; // setSceneAssets()
     std::vector<std::string> m_roleNames;
+    std::map<double, std::string> m_drawAs; // drawAs()
     std::map<double, Bound> m_bound;
     std::map<double, Puppet> m_puppets;
     std::function<void(const Release&)> m_onRelease;

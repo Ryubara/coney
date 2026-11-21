@@ -492,6 +492,8 @@ target_sources(coney_core PRIVATE
 target_sources(coney_core PRIVATE
     scenes/letterbox.cpp
     scenes/scene_cache.cpp
+    scenes/scene_casts.cpp
+    scenes/scene_casts_table.cpp
     scenes/scene_disc.cpp
     scenes/scene_list.cpp
     scenes/scene_player.cpp
