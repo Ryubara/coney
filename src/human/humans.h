@@ -167,7 +167,7 @@ class Humans {
     // Calls `visit(slot)` for every marked slot in ascending order, then for the slots added since the grid was
     // built, and clears the marks.
     // @coney-only Coney's broad phase for the target searches
-    template <class Visit> void visitMarked(Visit&& visit);
+    template <class Visit> void visitMarked(const Visit& visit);
     // Whether slot `slot` fights slot `other`.
     // @coney-only Coney's per-slot target list, the dispatcher's input
     [[nodiscard]] bool opposed(std::size_t slot, std::size_t other) const;

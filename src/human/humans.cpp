@@ -219,7 +219,7 @@ bool Humans::markNear(const anim::Vec3& at, float reach) {
 }
 
 // @coney-only Coney's broad phase for the target searches (issue 1550)
-template <class Visit> void Humans::visitMarked(Visit&& visit) {
+template <class Visit> void Humans::visitMarked(const Visit& visit) {
     for (std::size_t word = 0; word < m_marks.size(); ++word) {
         std::uint64_t bits = std::exchange(m_marks[word], 0);
         while (bits != 0) {
