@@ -104,6 +104,11 @@ class ArmiesGameOverMode final : public GameMode {
 
     /// The screen.
     [[nodiscard]] const gui::ArmiesGameOverMenu& menu() const { return m_menu; }
+    /// How many times the screen has ended with Quit (ANGameOver_Toggle's `+0x7a8`, `runNextMission(0)`), each counted
+    /// once: a network host tells its guests of each (docs/guides/multiplayer.md#levels). It watches the screen's
+    /// choice, so call it every step, outside the mode's update; Continue and Replay are no quit.
+    /// @coney-only the count network play reads; the original keeps none
+    [[nodiscard]] std::uint64_t quits();
 
   private:
     // Start pressed by `player`: the players continuing, a credit spent and F1.Time, or the end phase.
@@ -137,6 +142,7 @@ class ArmiesGameOverMode final : public GameMode {
     Interpolated<float> m_fadeLevel{0.0F}; // the fade at the last two steps
     RenderTime m_frozen;
     std::array<bool, 2> m_continuing{}; // +0x7ac, +0x7b0
+    QuitCount m_quits;                  // quits()
     bool m_openPending = false;
     bool m_fading = false;
 };

@@ -75,6 +75,12 @@ class MissionFailedMode final : public GameMode {
     [[nodiscard]] const gui::MissionFailedMenu& menu() const { return m_menu; }
     /// The reason of the last launch.
     [[nodiscard]] const std::string& reason() const { return m_reason; }
+    /// How many times the menu has chosen a quit (Yes to Quit, or To Hangout in `level95`: MissionFailed_Toggle's
+    /// `+0x7a0` and `+0x7ac`), each counted once: a network host tells its guests of each
+    /// (docs/guides/multiplayer.md#levels). It watches the menu's outcome, so call it every step, outside the mode's
+    /// update; a restart is no quit.
+    /// @coney-only the count network play reads; the original keeps none
+    [[nodiscard]] std::uint64_t quits();
 
   private:
     graphics::RenderDevice& m_device;
@@ -94,6 +100,7 @@ class MissionFailedMode final : public GameMode {
     Interpolated<float> m_fadeLevel{0.0F}; // the fade at the last two steps
     RenderTime m_frozen;
     std::string m_reason;
+    QuitCount m_quits; // quits()
     bool m_openPending = false;
 };
 

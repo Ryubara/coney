@@ -899,6 +899,27 @@ until the mode is gone (the menu writes `+0x214` of both managers, not traced).
 
 What a reload restores from `SetCheckPoint` is on [Scripts](scripting.md#run-next-mission).
 
+**The other ways out.** Three more toggles pop their screen and leave the level by the player's choice; with
+`PauseMenu_Toggle` they are the only callers that load the level `"menu"` (`0x0054e790`, by its references) and, by
+[Story progress](story-progress.md#callers), the only ones that call `runNextMission(0)` (`0x0054e798`). Confirmed
+(code):
+
+- **`MissionFailed_Toggle`** (`0x00155408`, mode 0xc): to the hangout (`+0x7ac`): `W_GameState + 0x14c` = 3 and
+  `runNextMission(0)`; quit (`+0x7a0`): section 1 and load `"menu"`; last checkpoint (`+0x7a8`): with a
+  `HUDSetMissionFailedCallbacks` name (`+0x7b0`), `+0x14c` = 0, the stats and inventory restored from the checkpoint
+  and the named Lua function called (the level is not reloaded), else the level reloaded by its record's name;
+  restart (`+0x7a4`): section 1 and the level reloaded.
+- **`RumbleResult_Toggle`** (`0x00155648`, mode 0x14): Replay (`+0x7a4`): section 1 and the level reloaded; Quit
+  (`+0x7ac`): from the front end section 1 and load `"menu"`, else `+0x14c` = 3 and `runNextMission(0)`; Rumble menu
+  (`+0x7a8`): `+0x14c` = 3 and `PauseGoToRMIQuick` from the front end, else `PauseGoToRMIHangout`
+  ([Rumble](rumble.md#result-screen)).
+- **`ANGameOver_Toggle`** (`0x001557f8`, mode 0xd, [above](#an-game-over)): Replay (`+0x7a4`): section 1 and load
+  `level60` (`0x0054e7d8`); Quit (`+0x7a8`): `+0x14c` = 3 and `runNextMission(0)`; a continue heals the continuing
+  players and stays.
+
+Coney counts the quits among these, and the pause menu's, for network play: a host's quit takes its guests out of the
+level too ([Multiplayer](../guides/multiplayer.md#levels)).
+
 ### The mission-failed screen
 
 Confirmed (code) at the addresses cited unless a line says otherwise.
