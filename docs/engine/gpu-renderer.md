@@ -189,10 +189,14 @@ renderer; the effects it hides are not drawn there yet anyway (above). The strea
 ported `WorldManager_Render`, so the Scenery part reaches them through the mesh views' hook: the hook says which kinds
 it hides (`MeshViewHook::hides()`) apart from whether it draws passes of its own (`MeshViewHook::hasPasses()`). The play
 mode hands the hidden kinds to the renderer for the frame (`RenderEngine::hideKindsOf()`), and
-`RenderEngine::drawScene()` leaves out every recorded draw made in the scope of a hidden kind (`DrawKindScope`), so the
-sectors, the objects and the humans are still recorded and hiding one kind never takes another with it. The tests record
-the frame description for each kind (`tests/platform/world_draw_stream_test.cpp`, `object_draw_stream_test.cpp`,
-`human_draw_stream_test.cpp`; the sectors also on a real GPU device).
+`RenderEngine::drawScene()` leaves out every recorded draw made in the scope of a hidden kind (`DrawKindScope`), so on
+this renderer the sectors, the objects and the humans are still recorded and hiding one kind never takes another with
+it. GL3 is as it was: with a hook set (a part hidden or a view on) the sectors, the objects and the humans go through
+the lighting rig for it, which hides the kind there (`SceneLighting::meshViewsOn()` is true whenever a hook is set and
+the play mode left its passes on), and nothing of them is recorded; the GPU renderer says its passes off, so no hook
+sends a model through the rig there. The tests record the frame description for each kind
+(`tests/platform/world_draw_stream_test.cpp`, `object_draw_stream_test.cpp`, `human_draw_stream_test.cpp`; the sectors
+also on a real GPU device).
 
 **The mesh views** (the wireframe and the flat views of the Debug draw page) are GL3's: each is a draw of the model's
 own librw atomic through the lighting rig, which draws nothing on the GPU backend. The play mode therefore leaves their

@@ -687,10 +687,11 @@ simulation never reads it and a run plays the same with any of it changed; test 
 never inside a ported function: the humans, the objects, the glass, the water, the effects and the rings are simply not
 drawn; the background is left out of the world renderer's frame as the world edits leave it out
 (`LevelPlayScenery::draw`); and the streamed world's sectors, which the ported `WorldManager_Render` draws itself, are
-handed to the [mesh views](#mesh-views)' hook, which draws no pass of a model whose kind is hidden (on GL3 the sectors
-go through the lighting rig to the hook; on the [GPU renderer](../engine/gpu-renderer.md#scene) they are recorded into
-the frame description, and `RenderEngine::drawScene()` leaves out the draws of a hidden kind, so each part hides alone
-there too). The hook sees the sectors and the background as one kind (scenery), so *Streamed world* off hides both. The
+handed to the [mesh views](#mesh-views)' hook, which draws no pass of a model whose kind is hidden (on GL3, whenever a
+part is hidden or a view is on, the sectors go through the lighting rig to the hook, as they did before the part
+switches reached the GPU renderer; on the [GPU renderer](../engine/gpu-renderer.md#scene) they are recorded into the
+frame description, and `RenderEngine::drawScene()` leaves out the draws of a hidden kind, so each part hides alone there
+too). The hook sees the sectors and the background as one kind (scenery), so *Streamed world* off hides both. The
 coronas and the blob shadows are the lighting layers' own switches, shown here too. **The fog** in place of the level's
 is `graphics::shownFog()`: the world pass clears to its colour and fogs from its start, as it does with the level's.
 

@@ -82,15 +82,14 @@ class SceneLighting {
     /// the same lights (PlayLighting::drawHumanPasses()). Counts the atomic as drawn and adds the lighting frame's row
     /// of its selection, as drawHumanAtomic() does; noteHiddenHuman() says `hidden` for the row first.
     [[nodiscard]] std::vector<graphics::SceneLight> humanLights(rw::Atomic* atomic, bool hidden);
-    /// Whether the debug tools' mesh views draw passes of their own through this rig (setMeshViews()): a hook is set,
-    /// the play mode left its passes on (a renderer that draws them) and the hook has some (MeshViewHook::hasPasses()).
-    /// They then decide per atomic what is drawn, so the world renderer, the objects and the humans draw through the
-    /// rig instead of recording into the frame description (a hook that only hides kinds leaves that to
-    /// RenderEngine::hideKindsOf()).
+    /// Whether the debug tools' mesh views decide per atomic what is drawn through this rig (setMeshViews()): a hook is
+    /// set and the play mode left its passes on (a renderer that draws them: GL3). The world renderer, the objects
+    /// and the humans then draw through the rig instead of recording into the frame description, whatever the hook
+    /// does (hide a kind, draw a pass), as they always have with a hook set. A renderer that records its draws (the
+    /// GPU renderer) says its passes off, and a kind the hook hides is left out of the recording instead
+    /// (RenderEngine::hideKindsOf()).
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
-    [[nodiscard]] bool meshViewsOn() const {
-        return m_meshViews != nullptr && m_meshPasses && m_meshViews->hasPasses();
-    }
+    [[nodiscard]] bool meshViewsOn() const { return m_meshViews != nullptr && m_meshPasses; }
     /// Draws the background's atomics with the world's ambient and directional lights only.
     void drawBackgroundAtomic(rw::Atomic* atomic);
     /// The lights a background atomic is drawn with (the world's ambient and directional lights, no point lights), by
