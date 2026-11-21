@@ -49,8 +49,12 @@ enum class RenderBackend : std::uint8_t {
     Gpu,
 };
 
-/// Whether `backend` draws the debug tools' mesh view passes.
-[[nodiscard]] constexpr bool drawsMeshViewPassesOn(RenderBackend /*backend*/) { return true; }
+/// Whether `backend` draws the debug tools' mesh view passes (the wireframe and the flat views), which are draws of the
+/// model's own librw atomic through the lighting rig: GL3 does, and the NULL backend keeps asking the hook so the tests
+/// see it wired; the GPU renderer has no librw camera to draw them with, so its models draw shaded and only the World
+/// page's hidden kinds apply (docs/engine/gpu-renderer.md#scene).
+/// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
+[[nodiscard]] constexpr bool drawsMeshViewPassesOn(RenderBackend backend) { return backend != RenderBackend::Gpu; }
 
 /// Whether `backend` draws the 3D scene, so that play loads the world's objects and cars for it: GL3 through librw,
 /// the GPU renderer from the frame description (docs/engine/gpu-renderer.md#scene); not the NULL backend.
@@ -335,9 +339,13 @@ class RenderEngine final : public graphics::RenderDevice {
     /// end, so a renderer that records its draws (the GPU renderer) hides one kind without drawing the others through
     /// librw.
     /// @coney-only the World page's parts (docs/guides/debug-menu.md#world); the original has none
-    void hideKindsOf(const MeshViewHook* /*hook*/) {}
+    void hideKindsOf(const MeshViewHook* hook) {
+        for (const DrawKind kind : {DrawKind::Scenery, DrawKind::Humans, DrawKind::Objects}) {
+            m_hiddenKinds[static_cast<std::size_t>(kind)] = hook != nullptr && hook->hides(kind);
+        }
+    }
     /// Whether drawScene() leaves out the draws of `kind` (hideKindsOf()).
-    [[nodiscard]] bool kindHidden(DrawKind /*kind*/) const { return false; }
+    [[nodiscard]] bool kindHidden(DrawKind kind) const { return m_hiddenKinds[static_cast<std::size_t>(kind)]; }
 
   private:
     // Only start() makes one, which then fills it in as librw comes up.
@@ -384,13 +392,14 @@ class RenderEngine final : public graphics::RenderDevice {
     graphics::ScreenRect m_viewport; // where the logical screen is in the window (graphics::fitLogicalScreen())
     std::uint32_t m_fpsCap = 0;      // the frame pacer's cap, for the GPU backend's present mode
     bool m_inFrame = false;          // between beginFrame() and present()
-    bool m_librwStarted = false;     // librw has reached Engine::start and must be stopped
-    bool m_sdlStarted = false;       // this object holds a reference to SDL's video subsystem
-    bool m_glStubbed = false;        // the NULL backend's stand-in for glDeleteTextures is installed
-    bool m_vsync = true;             // present() waits for the vertical blank
-    bool m_logicalFrame = false;     // the logical screen fills the frame (WindowDesc::logicalFrame)
-    bool m_textureLod = false;       // Coney's distance mip levels are in librw's pipeline (texture_lod.h)
-    bool m_lineBlend = false;        // present() blends neighbouring lines (setLineBlend())
+    std::array<bool, kDrawKinds> m_hiddenKinds{}; // hideKindsOf(): by DrawKind
+    bool m_librwStarted = false;                  // librw has reached Engine::start and must be stopped
+    bool m_sdlStarted = false;                    // this object holds a reference to SDL's video subsystem
+    bool m_glStubbed = false;                     // the NULL backend's stand-in for glDeleteTextures is installed
+    bool m_vsync = true;                          // present() waits for the vertical blank
+    bool m_logicalFrame = false;                  // the logical screen fills the frame (WindowDesc::logicalFrame)
+    bool m_textureLod = false;                    // Coney's distance mip levels are in librw's pipeline (texture_lod.h)
+    bool m_lineBlend = false;                     // present() blends neighbouring lines (setLineBlend())
 
     std::unique_ptr<GpuPresenter> m_gpu; // the GPU backend's device, window and swapchain
     std::uint64_t m_presented = 0;       // frames presented so far

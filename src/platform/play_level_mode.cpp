@@ -748,8 +748,12 @@ void PlayLevelMode::render(const RenderTime& time) {
     // rig draws each model as it always does. The hook is set for this frame only: a frame it is off leaves none, so
     // what an earlier frame set cannot reach this one. The NULL renderer asks too (its views draw nothing there:
     // they leave the GL calls out themselves), so the tests see the hook wired.
+    // A renderer that draws no passes (the GPU renderer: librw draws nothing there) records the shaded draws instead,
+    // and leaves out those of the kinds the World page hides (RenderEngine::hideKindsOf(),
+    // docs/engine/gpu-renderer.md#scene).
     MeshViewHook* views = m_meshViews && m_meshViews->beginFrame(*this) ? m_meshViews.get() : nullptr;
-    m_lights->scene().setMeshViews(views);
+    m_lights->scene().setMeshViews(views, drawsMeshViewPassesOn(m_engine.backend()));
+    m_engine.hideKindsOf(views);
     // The lighting lab's switches, and the game camera's view for its Light from while the free camera flies (the
     // original culls the lights from the player's camera).
     m_lights->scene().setSwitches(m_lightingSwitches);
@@ -767,6 +771,7 @@ void PlayLevelMode::render(const RenderTime& time) {
         m_playScenery.draw(m_engine, blended, millisecondsOf(time.gameTicks), drawObjects, afterWorlds);
     }
     m_lights->scene().setMeshViews(nullptr);
+    m_engine.hideKindsOf(nullptr);
 }
 
 void PlayLevelMode::renderWithOverlay(const RenderTime& time,

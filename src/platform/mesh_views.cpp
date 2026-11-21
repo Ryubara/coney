@@ -84,7 +84,7 @@ MeshViews::~MeshViews() {
 
 bool MeshViews::beginFrame(const PlayLevelMode& mode) {
     m_drawIndex = 0;
-    if (!debug::meshPassesOn(m_options.mesh) && !debug::hidesMeshes(parts())) {
+    if (!hasPasses() && !debug::hidesMeshes(parts())) {
         m_selected.clear();
         return false;
     }
@@ -92,13 +92,13 @@ bool MeshViews::beginFrame(const PlayLevelMode& mode) {
     return true;
 }
 
-bool MeshViews::hasPasses() const { return true; }
+bool MeshViews::hasPasses() const { return debug::meshPassesOn(m_options.mesh); }
 
-bool MeshViews::hides(DrawKind /*kind*/) const { return false; }
+bool MeshViews::hides(DrawKind kind) const { return debug::meshHidden(parts(), meshKindOf(kind)); }
 
 void MeshViews::draw(rw::Atomic* atomic, DrawKind kind, bool layer, const std::function<void()>& shaded) {
     // A kind the World page hides is drawn in no pass at all.
-    if (debug::meshHidden(parts(), meshKindOf(kind))) {
+    if (hides(kind)) {
         return;
     }
     const bool selected = std::ranges::find(m_selected, atomic) != m_selected.end();
