@@ -27,7 +27,9 @@
 #include "combat/player_combat.h"
 #include "combat/stick_games.h"
 #include "combat/throw_velocity.h"
+#include "core/game_events.h"
 #include "gamemodes/play_level_simulation.h"
+#include "gamemodes/sound_events.h"
 #include "hud/hud.h"
 #include "human/fighter.h"
 #include "human/fighter_clips.h"
@@ -173,12 +175,23 @@ constexpr int kLastStageCue = 0x23;
 
 void PlayLevelSimulation::bindObjects(world_objects::LevelObjects* objects, const script::RecordedCalls* recorded) {
     m_objects = objects;
+    // The Object List: the models the objects are drawn with, and the next model a damaged one swaps to (a cabin
+    // door's leaves, docs/research/objects.md#leaf-damage); without it the objects keep their own models.
+    if (m_objectList == nullptr) {
+        if (auto list = world_objects::loadObjectList(m_wad); list) {
+            m_objectList = std::make_unique<world_objects::ObjectList>(std::move(*list));
+        } else if (m_print) {
+            // Say why: without the list the objects are not drawn and a cabin door's leaves keep their models.
+            m_print(std::format("objects: no Object List, no world objects drawn: {}\n", list.error().message));
+        }
+    }
     if (m_objects == nullptr) {
         return;
     }
     // The doors and panes the level script spawned before the mesh was loaded write their triangle flags now.
     m_objects->world.bindCollision(m_scenery->objectCollision());
     m_objects->world.paths = m_scenery->objectPaths();
+    m_objects->world.models = m_objectList.get();
     // An object knocked loose (a broken trash can's bottle) flies from its record's pose as a loose object.
     m_objects->world.knock = [this](double object, anim::Vec3 velocity, anim::Vec3 spin) {
         const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(object) : nullptr;
@@ -633,7 +646,7 @@ void PlayLevelSimulation::useFlash(human::Human& human) {
         return;
     }
     m_pickups->spendItem(0, item::kRevive);
-    m_hud->hud().services().sound.playCue(kFlashSoundCue);
+    playHudCue(m_hud->hud().services().sound, gameEvents(), kFlashSoundCue, playerHandle());
     combat::Health& health = human.fighter().health();
     human.setWounded(false);
     // The heal by the difficulty in force (normal without the game state's); useFlash serves player 1 alone
@@ -643,6 +656,7 @@ void PlayLevelSimulation::useFlash(human::Human& human) {
     // `Flash_Use` heals (`Human_Heal`): a new body, so he blocks other humans' walks again.
     human.heal();
     m_flashRingRequest = true;
+    // Not ported (#91): here Flash_Use also resets the player's screen look (look 0).
     m_print(std::format("flash: used, health {}\n", health.value()));
 }
 
@@ -882,14 +896,14 @@ void PlayLevelSimulation::stepStereoPanel(const human::Human& human) {
     }
     const combat::GameResult result = human.fighter().last().game;
     if (theft->stage() > m_theftStage || result == combat::GameResult::Succeeded) {
-        hud.services().sound.playCue(kStageCue);
+        playHudCue(hud.services().sound, gameEvents(), kStageCue, playerHandle());
     }
     m_theftStage = theft->stage();
     panel.setProgress(theft->turned(), theft->stage());
     // The success (with cue 0x23 for the fourth stage) or failure clip starts: the panel goes at once.
     if (result != combat::GameResult::Running) {
         if (result == combat::GameResult::Succeeded) {
-            hud.services().sound.playCue(kLastStageCue);
+            playHudCue(hud.services().sound, gameEvents(), kLastStageCue, playerHandle());
         }
         panel.end();
     }
@@ -1258,6 +1272,7 @@ bool PlayLevelSimulation::stepLockPick(const Pad& pad) {
     return true;
 }
 
+// @coney-only the level's glue: its world objects' step in the original's order, and their events
 void PlayLevelSimulation::stepObjects() {
     if (m_objects == nullptr) {
         return;
@@ -1330,6 +1345,13 @@ void PlayLevelSimulation::stepObjects() {
     // A broken prop goes for good at its update: its handlers hear message 2 and its record is never spawned again.
     for (const double removed : m_objects->props.takeRemoved()) {
         m_print(std::format("objects: prop {:.0f} removed\n", removed));
+        // Network play: the break, at the prop's place. Its dust travels as particle starts and its sounds as
+        // material pairs (LevelObjectServices); its pieces are world objects of their own.
+        const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(removed) : nullptr;
+        const anim::Vec3 at = record != nullptr ? recordPose(*record).position : anim::Vec3{};
+        raiseGameEvent(
+            gameEvents(),
+            GameEvent{.kind = GameEventKind::ObjectBreak, .subject = removed, .id = 0, .position = {at.x, at.y, at.z}});
         if (m_pickups != nullptr) {
             m_pickups->objectRemoved(removed);
         } else if (m_records != nullptr) {
@@ -1343,8 +1365,24 @@ void PlayLevelSimulation::stepObjects() {
         for (const world_objects::CarHitEffect& effect : m_carHitEffects) {
             m_print(std::format("objects: car {:.0f} part {} effect {}\n", effect.car, effect.part,
                                 static_cast<int>(effect.kind)));
+            raiseCarBreak(effect);
         }
     }
+}
+
+// Network play: a car's glass that breaks is an object break (its kind plus 1 as its id); its sparks, steam and smoke
+// are particles only, which travel as their own events.
+// @coney-only network play's event for a car's breaking glass
+void PlayLevelSimulation::raiseCarBreak(const world_objects::CarHitEffect& effect) {
+    using Kind = world_objects::CarHitEffectKind;
+    if (effect.kind == Kind::Sparks || effect.kind == Kind::Steam || effect.kind == Kind::HoodSmoke) {
+        return;
+    }
+    const anim::Vec3 at = effect.fromAtomic ? effect.carPosition : effect.position;
+    raiseGameEvent(gameEvents(), GameEvent{.kind = GameEventKind::ObjectBreak,
+                                           .subject = effect.car,
+                                           .id = static_cast<std::uint32_t>(effect.kind) + 1U,
+                                           .position = {at.x, at.y, at.z}});
 }
 
 std::size_t PlayLevelSimulation::standingObjectsOf(std::string_view typeName) const {

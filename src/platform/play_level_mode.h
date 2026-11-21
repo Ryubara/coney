@@ -504,8 +504,8 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
 
     // Draws the humans: their lights, the render states, each mesh in its two passes.
     void drawCharacter() const;
-    // Draws one human's passes (PlayLighting::drawHumanPasses), with his blood layer marked for the mesh views and the
-    // passes drawn recorded on his mesh for the Mesh group; the game's draw itself is untouched.
+    // Draws one human's passes (PlayLighting::drawHumanPasses, which records the passes drawn on his mesh for the Mesh
+    // group), with his blood layer marked for the mesh views; the game's draw itself is untouched.
     void drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood) const;
     // The blood texture of the second pass of a human with `health`, or null when it shows none.
     [[nodiscard]] rw::Texture* bloodTextureFor(const combat::Health& health) const;
@@ -558,6 +558,7 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     // handle in them.
     std::unique_ptr<SceneStage> m_stage;
     scenes::SceneSystem* m_scenes = nullptr;
+    std::vector<std::uint32_t> m_scenesPlaying; // the scenes playing at the last stepScenes(), for their events
     std::unique_ptr<scenes::SceneList> m_ownSceneList;
     std::unique_ptr<scenes::SceneSystem> m_ownScenes;
     // The --trace file (closed when unset) and the steps traced.
@@ -574,8 +575,7 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     world_objects::DrawnPoses<double> m_drawnPoses;
     world_objects::DrawnPoses<const human::Human*> m_iconPoses;
     effects::Triglints m_glints;
-    std::unique_ptr<ThrowArcRenderer> m_throwArc;            // made when the arc is first drawn
-    std::unique_ptr<world_objects::ObjectList> m_objectList; // before the models that read it
+    std::unique_ptr<ThrowArcRenderer> m_throwArc; // made when the arc is first drawn
     std::unique_ptr<PlacedObjects> m_placed;
     // Where this frame draws the worn hats and the carried props.
     std::vector<std::pair<double, world_objects::WorldPose>> m_attachedDraws;

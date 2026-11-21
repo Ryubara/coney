@@ -23,6 +23,7 @@
 
 #include "audio/object_sounds.h"
 #include "console/command_spec.h"
+#include "console/console_pad.h"
 #include "core/chunk_system.h"
 #include "core/display_preset.h"
 #include "core/error.h"
@@ -36,6 +37,7 @@
 #include "gui/global_strings.h"
 #include "install/known_discs.h"
 #include "platform/audio_output.h"
+#include "platform/console_ui.h"
 #include "platform/enet_transport.h"
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
@@ -188,6 +190,8 @@ int main(int argc, char** argv) {
     // Pad input (docs/research/frontend.md#input): a script in test mode, otherwise SDL's gamepads and keyboard when
     // there is a window. Declared after the renderer, so it is destroyed before SDL stops.
     std::unique_ptr<coney::InputSource> input;
+    coney::platform::SdlInput* devices =
+        nullptr;                            // the SDL input, when it is the source: the console mutes its keyboard
     coney::ScriptedInput* script = nullptr; // the input script, whose `console` lines the console takes
     if (const std::optional<std::string> scriptPath = options->inputScript; scriptPath) {
         auto events = coney::loadInputScript(*scriptPath);
@@ -201,7 +205,8 @@ int main(int argc, char** argv) {
     } else if (renderer.window()) {
         auto started = coney::platform::SdlInput::start();
         if (started) {
-            started->get()->setLog(logText);
+            devices = started->get();
+            devices->setLog(logText);
             input = std::move(*started);
         } else {
             logWarning(std::format("{}; running without pads", started.error().message));
@@ -216,22 +221,25 @@ int main(int argc, char** argv) {
     if (!coney::platform::startNetPlay(netPlay, *options)) {
         return 1;
     }
-    // The game reads its pads through network play: a guest sends what their game reads, and a host's pad port 2 is
-    // the guest's pad (docs/guides/multiplayer.md#player-two).
-    coney::platform::NetInput netInput(input.get(), netPlay);
-    netGame.setInner(&netInput);
-    modes.setInput(&netGame);
     // The console (docs/guides/console.md): the player commands only, as the release build holds no developer set.
-    // No front end yet, so its lines come from the input script.
+    // Its lines come from the F8 bar below and from the input script.
     coney::platform::GameConsole gameConsole(*options, netPlay, coney::console::Access::Player);
     if (script != nullptr) {
         gameConsole.listenTo(*script);
     }
+    // The console's own pad gate (docs/guides/console.md#front-end): SELECT and R3 open the console, which holds port 1
+    // while it is open. Not in test mode, which reads no device: a scripted SELECT and R3 reach the game.
+    const bool testMode = coney::isTestMode(*options);
+    coney::console::ConsolePad consolePad(input.get(), gameConsole.console());
+    // The game reads its pads through network play: a guest sends what their game reads, and a host's pad port 2 is
+    // the guest's pad (docs/guides/multiplayer.md#player-two).
+    coney::platform::NetInput netInput(testMode ? input.get() : &consolePad, netPlay);
+    netGame.setInner(&netInput);
+    modes.setInput(&netGame);
 
     // The pacing (docs/guides/conventions.md#update-and-render): test mode runs in lockstep with no clock; otherwise
     // the frame pacer measures real time and the frame clock turns it into fixed steps, a cap of 30 being the
     // original's rhythm of one step a frame.
-    const bool testMode = coney::isTestMode(*options);
     constexpr std::uint32_t kStepsPerSecond = 30;
     // `--fps-cap N` and `--vsync`, or `--fps-cap vrr`'s cap under the display's refresh rate with vsync off; the
     // release build keeps no overrides file, so no saved Display/VRR.
@@ -250,6 +258,7 @@ int main(int argc, char** argv) {
         coney::platform::startGameSound(*options, wad ? &*wad : nullptr);
     if (session) {
         session->attachAudio(audio.get());
+        session->setGameEvents(&netPlay.gameEvents());
         session->startStory();
     }
     // What the console's commands reach in the running game: the session, the pacing, the sound, the log's bug report.
@@ -264,14 +273,40 @@ int main(int argc, char** argv) {
         .writeBugReport = [&runLog] { return runLog->writeBugReport(); },
     }));
 
-    // The main loop, paced as set up above.
+    // The console's F8 bar (docs/guides/console.md#front-end), only with a window, drawn over every frame.
+    std::unique_ptr<coney::platform::ConsoleUi> consoleUi;
+    if (renderer.window()) {
+        auto started = coney::platform::ConsoleUi::start(renderer, gameConsole.console(), consolePad,
+                                                         coney::platform::consoleUiSettings(testMode));
+        if (started) {
+            consoleUi = std::move(*started);
+            if (const std::optional<int> openFor = options->consoleOpenFrames; openFor) {
+                consoleUi->showForFrames(static_cast<std::uint64_t>(*openFor));
+            }
+            renderer.setPresentOverlay([&consoleUi](coney::graphics::RenderDevice& /*device*/) { consoleUi->draw(); });
+        } else {
+            logWarning(std::format("{}; running without the console bar", started.error().message));
+        }
+    }
+
+    // The main loop, paced as set up above. The window's events go past the console's bar first; while it is open,
+    // the keyboard pad is off.
     std::optional<coney::platform::Window> window = renderer.window();
     coney::FrameHooks hooks;
-    hooks.beginFrame = [&window, &session] {
+    hooks.beginFrame = [&window, &session, &consoleUi, devices] {
         if (session) {
             session->beginFrame();
         }
-        return !window || window->pumpEvents();
+        if (!window) {
+            return true;
+        }
+        const bool running =
+            consoleUi ? window->pumpEvents([&consoleUi](const void* event) { return consoleUi->handleEvent(event); })
+                      : window->pumpEvents();
+        if (devices != nullptr) {
+            devices->setKeyboardEnabled(!(consoleUi && consoleUi->wantsKeyboard()));
+        }
+        return running;
     };
     if (pacer) {
         coney::platform::FramePacer& paced = *pacer;

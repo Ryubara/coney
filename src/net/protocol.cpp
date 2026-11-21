@@ -121,6 +121,12 @@ void writeMessage(BitWriter& out, const Message& message) {
                 CONEY_ASSERT(m.sequence != 0);
                 out.writeU8(static_cast<std::uint8_t>(MessageId::SnapshotAck));
                 out.writeVarUint(m.sequence);
+            } else if constexpr (std::is_same_v<T, EventBatch>) {
+                out.writeU8(static_cast<std::uint8_t>(MessageId::EventBatch));
+                writeEventBatchBody(out, m);
+            } else if constexpr (std::is_same_v<T, LoadLevel> || std::is_same_v<T, LevelLoaded> ||
+                                 std::is_same_v<T, MissionEnd> || std::is_same_v<T, MovieDone>) {
+                writeLevelMessage(out, m);
             } else if constexpr (std::is_same_v<T, InputTiming>) {
                 out.writeU8(static_cast<std::uint8_t>(MessageId::InputTiming));
                 out.writeVarInt(m.lead);
@@ -225,7 +231,7 @@ std::expected<Message, Error> readFields(BitReader& in, std::uint8_t id) {
             return std::unexpected(reason.error());
         }
         if (*reason < static_cast<std::uint8_t>(ByeReason::Quit) ||
-            *reason > static_cast<std::uint8_t>(ByeReason::ProtocolError)) {
+            *reason > static_cast<std::uint8_t>(ByeReason::LoadTimedOut)) {
             return fail(ErrorCode::Invalid, "network bye has an unknown reason");
         }
         return Bye{.reason = static_cast<ByeReason>(*reason)};
@@ -300,6 +306,21 @@ std::expected<Message, Error> readFields(BitReader& in, std::uint8_t id) {
         }
         return SnapshotAck{.sequence = *sequence};
     }
+    case MessageId::EventBatch: {
+        auto batch = readEventBatchBody(in);
+        if (!batch) {
+            return std::unexpected(batch.error());
+        }
+        return *batch;
+    }
+    case MessageId::LoadLevel:
+        return readLoadLevelBody(in);
+    case MessageId::LevelLoaded:
+        return readLevelLoadedBody(in);
+    case MessageId::MissionEnd:
+        return readMissionEndBody(in);
+    case MessageId::MovieDone:
+        return readMovieDoneBody(in);
     case MessageId::InputTiming: {
         auto lead = in.readVarInt();
         if (!lead) {
@@ -354,6 +375,10 @@ Delivery deliveryOf(const Message& message) {
         std::holds_alternative<SnapshotAck>(message)) {
         return Delivery::Unreliable;
     }
+    // One-shot events go once or never: a sound resent late would play out of time. The rest must arrive, in order.
+    if (const auto* batch = std::get_if<EventBatch>(&message); batch != nullptr) {
+        return batch->reliable ? Delivery::ReliableOrdered : Delivery::Unreliable;
+    }
     // A snapshot older than one already delivered is of no use: the newer one holds everything it does.
     if (std::holds_alternative<Snapshot>(message)) {
         return Delivery::UnreliableSequenced;
@@ -382,6 +407,21 @@ bool validPlayerName(std::string_view name) {
     return visible;
 }
 
+bool validLevelName(std::string_view name) {
+    if (name.empty() || name.size() > kMaxLevelNameBytes) {
+        return false;
+    }
+    // Letters, digits, '_' and '-' only: a level name off the network is used to find the level's files.
+    for (const char c : name) {
+        const bool letter = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        const bool digit = c >= '0' && c <= '9';
+        if (!letter && !digit && c != '_' && c != '-') {
+            return false;
+        }
+    }
+    return true;
+}
+
 std::string_view describe(RejectReason reason) {
     switch (reason) {
     case RejectReason::VersionMismatch:
@@ -402,6 +442,8 @@ std::string_view describe(ByeReason reason) {
         return "timed out";
     case ByeReason::ProtocolError:
         return "protocol error";
+    case ByeReason::LoadTimedOut:
+        return "did not load the level in time";
     }
     return "closed";
 }

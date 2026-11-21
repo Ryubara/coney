@@ -27,7 +27,10 @@ namespace coney::platform {
 /// texture is known by the librw texture it was converted from, so a mesh's materials find theirs.
 ///
 /// It borrows the atomics and textures: whoever adds one removes it before destroying it (WorldSet does both for the
-/// streamed world's sectors and dictionaries). One per RenderEngine (RenderEngine::sceneAssets()). Not thread-safe.
+/// streamed world's sectors and dictionaries). A converted texture is held while anything uses it: each addTexture()
+/// and each mesh material that names it, as RenderWare keeps a texture while a material references it, so a mesh
+/// whose material found its texture in another dictionary (a streamed part's) keeps it after that dictionary goes
+/// (docs/engine/renderer.md#texture-lifetime). One per RenderEngine (RenderEngine::sceneAssets()). Not thread-safe.
 ///
 /// Design: docs/engine/renderer.md#frame-description
 class SceneAssets {
@@ -54,24 +57,27 @@ class SceneAssets {
     /// The totals.
     [[nodiscard]] const Totals& totals() const { return m_totals; }
 
-    /// Converts `texture` (graphics::TextureData, every level its raster has) into the store and returns its id; the
-    /// same id when the texture is already held, and an invalid id, converting nothing, when the assets do not convert.
+    /// Converts `texture` (graphics::TextureData, every level its raster has) into the store, holds it once and returns
+    /// its id; the same id, held once more, when the texture is already held, and an invalid id, converting nothing,
+    /// when the assets do not convert.
     /// Before the texture's raster is converted for drawing: a PS2 raster is read as loaded. Fails as
     /// platform::textureFromRw() or AssetStore::addTexture() does, holding nothing.
     [[nodiscard]] std::expected<graphics::TextureId, Error> addTexture(rw::Texture& texture);
-    /// Drops the texture `id` names; nothing when it names none.
+    /// Lets go of one hold of the texture `id` names (an addTexture()'s), and drops it from the store when no hold and
+    /// no held mesh's material is left; nothing when it names none.
     void removeTexture(graphics::TextureId id);
     /// The id of the texture converted from `texture`; invalid when it is not held (or null).
     [[nodiscard]] graphics::TextureId textureOf(const rw::Texture* texture) const;
 
     /// Converts `atomic`'s plain geometry (graphics::MeshData) into the store, notes the id of each of its materials'
-    /// textures (materialTextures(), invalid for a material with no texture or one not held) and keeps `atomic` for
-    /// the GL3 renderer (atomic()); when the assets do not convert it only keeps the atomic, under a new id. Fails as
-    /// platform::meshFromRw() or AssetStore::addMesh() does, holding nothing. The ids are noted once: one whose texture
-    /// is dropped first goes stale. A streamed part's materials take theirs from its own dictionary or a world's on the
-    /// disc, never another part's (WorldSet::borrowedTextures() guards it: docs/engine/renderer.md#texture-lifetime).
+    /// textures (materialTextures(), invalid for a material with no texture or one not held), holding each of those
+    /// textures until the mesh is removed, and keeps `atomic` for the GL3 renderer (atomic()); when the assets do not
+    /// convert it only keeps the atomic, under a new id. Fails as platform::meshFromRw() or AssetStore::addMesh() does,
+    /// holding nothing. The ids are noted once, and stay valid while the mesh is held, whoever added the textures
+    /// (docs/engine/renderer.md#texture-lifetime).
     [[nodiscard]] std::expected<graphics::MeshId, Error> addAtomic(rw::Atomic& atomic);
-    /// Drops the mesh `id` names and forgets its atomic; nothing when it names none.
+    /// Drops the mesh `id` names, lets go of its materials' textures (removeTexture()) and forgets its atomic; nothing
+    /// when it names none.
     void removeMesh(graphics::MeshId id);
     /// The atomic the mesh `id` was converted from; null when it names none.
     [[nodiscard]] rw::Atomic* atomic(graphics::MeshId id) const;
@@ -93,13 +99,23 @@ class SceneAssets {
     [[nodiscard]] static std::uint64_t bytesOf(const graphics::TextureData& texture);
     // Counts `bytes` more held in `kind` (the texture or mesh bytes) and lifts the peak.
     void hold(std::uint64_t& kind, std::uint64_t bytes);
+    // Lets go of one use of the texture `id` names, dropping it from the store at the last.
+    void release(graphics::TextureId id);
+
+    // A converted texture in the store: the librw texture it came from and how many uses hold it (addTexture() calls
+    // and held meshes' materials).
+    struct TextureEntry {
+        const rw::Texture* source = nullptr;
+        std::uint32_t uses = 0;
+    };
 
     bool m_convert = true;
     Totals m_totals;
     std::uint32_t m_lastBareMesh = 0; // the last mesh id handed out for an atomic alone (no conversion)
     graphics::AssetStore m_store;
     std::unordered_map<std::uint32_t, MeshEntry> m_meshes;                  // by MeshId
-    std::unordered_map<const rw::Texture*, graphics::TextureId> m_textures; // the texture each id came from
+    std::unordered_map<const rw::Texture*, graphics::TextureId> m_textures; // the id of each texture held
+    std::unordered_map<std::uint32_t, TextureEntry> m_uses;                 // by TextureId
 };
 
 } // namespace coney::platform

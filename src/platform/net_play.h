@@ -6,16 +6,21 @@
 #include <deque>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
+#include "core/game_events.h"
 #include "core/pads.h"
+#include "net/event_channel.h"
 #include "net/link_conditioner.h"
 #include "net/net_client.h"
 #include "net/net_server.h"
 #include "net/net_status.h"
+#include "net/protocol.h"
 #include "net/snapshot.h"
 #include "net/state_digest.h"
 #include "net/transport.h"
@@ -81,11 +86,59 @@ class NetPlay final {
     /// joined player as a snapshot. The game hands them over once a step, before afterStep(); the last ones given are
     /// sent while no new ones come (the game paused, or between levels with none).
     void setGameHumans(std::span<const net::SnapshotHuman> humans);
+    /// Hosting: each player slot's HUD in the host's game this step (net::GameHumans::huds()), which afterStep() sends
+    /// with the humans in each joined player's snapshot. Handed over and kept as setGameHumans()'s humans are.
+    void setGameHuds(std::span<const net::SnapshotHud> huds);
+    /// Joined: each player slot's HUD the newest decoded snapshot holds, by slot: what this game draws each player's
+    /// panel from (net::playerHudState() of the words). Empty when not joined, and when hosting (a host draws its own).
+    [[nodiscard]] net::SnapshotHuds arrivedHuds() const;
     /// Where each snapshot's digest goes (`--digest-net`, docs/guides/multiplayer.md#digest): hosting, a line for each
     /// snapshot afterStep() sends player 2, with what it leaves them holding (net::SnapshotSender::holding()); joined,
     /// a line for each snapshot the session decoded, by the host's step it shows. Empty for none.
     void setSnapshotDigests(std::function<void(const net::DigestLine&)> sink) { m_snapshotDigests = std::move(sink); }
-    /// The steps run so far (afterStep() calls): a host's snapshots name the step they are from, counted from 0.
+    /// The one call through which the game reports what its players see or hear (coney::GameEvents): it records while
+    /// this game hosts, and afterStep() sends the step's events to each joined player; offline or joined it keeps
+    /// nothing. The run hands it to the game's subsystems (GameSession::setGameEvents()); it outlives every mode.
+    [[nodiscard]] GameEvents& gameEvents() { return m_gameEvents; }
+    /// Hosting: maps an event's subject (a script handle) to the network id the guest knows it by; empty (the default)
+    /// sends every subject as no id, until the game's humans and objects carry ids in the session.
+    void setEventSubjectIds(net::EventSubjectIds ids) { m_eventIds = std::move(ids); }
+    /// Joined: the host's game events whose step is at most `step` (a host's step the guest shows), each once, in
+    /// order (net::NetClient::takeEvents()); none when not joined.
+    [[nodiscard]] std::vector<net::ArrivedEvent> takeArrivedEvents(std::uint32_t step);
+    /// The host's game starts loading `level` at `checkpoint` (a level change or a checkpoint restart,
+    /// docs/guides/multiplayer.md#levels): hosting, every joined guest is told to load it and holdsStep() holds the
+    /// host's steps until they have; a guest who joins later is told on joining. Kept while offline too, so hosting
+    /// later in the level tells the guests that join. A checkpoint of 0, or a name net::validLevelName() refuses
+    /// (empty, over 32 bytes, a character other than a letter, digit, '_' or '-'), is a programmer error
+    /// (CONEY_ASSERT).
+    void loadLevel(const std::string& level, std::uint16_t checkpoint);
+    /// Hosting: the host's mission has ended, and every joined guest is told how. Nothing otherwise.
+    void endMission(net::MissionOutcome outcome);
+    /// Whether the host's game must hold its next step: hosting, with a joined guest still loading the host's level
+    /// (the loading barrier; one who never loads is dropped after its time-out). False offline and joined.
+    [[nodiscard]] bool holdsStep() const;
+    /// The host's game has started a movie, in this step (its MovieStart event's): hosting, every guest in the level
+    /// is waited for. Returns the step that names the movie (steps()).
+    std::uint32_t startMovie();
+    /// The host's own copy of the movie has ended, or the host skipped it.
+    void endHostMovie();
+    /// Hosting: whether a guest skipped the movie, so the host ends its own copy as any pad's skip does.
+    [[nodiscard]] bool movieSkipped() const;
+    /// Whether the host may go on from its movie: offline or joined always; hosting, once its own copy ended and every
+    /// guest watching has ended or skipped theirs, or after the movie time-out.
+    [[nodiscard]] bool movieMayEnd() const;
+    /// Joined: the newest level the host ordered and nothing has taken yet (net::NetClient::takeLevelOrder()), which
+    /// this game should load; nothing otherwise.
+    [[nodiscard]] std::optional<net::LoadLevel> takeLevelOrder();
+    /// Joined: this game has loaded the level of order `load`, and the host is told.
+    void levelLoaded(std::uint32_t load);
+    /// Joined: the ends of the host's missions since the last call, oldest first.
+    [[nodiscard]] std::vector<net::MissionEnd> takeMissionEnds();
+    /// Joined: this game's copy of the host's movie of `movieStep` has ended, or its player skipped it.
+    void movieDone(std::uint32_t movieStep, bool skipped);
+    /// The steps run so far (afterStep() calls): a host's snapshots and events name the step they are from, counted
+    /// from 0.
     [[nodiscard]] std::uint32_t steps() const { return m_steps; }
     /// One line for the end of a run: the role, port and players, or the client's state.
     [[nodiscard]] std::string summary() const;
@@ -135,6 +188,8 @@ class NetPlay final {
     // Hosting: sends each joined player a snapshot of the game's humans at `step`, and writes the digest of what it
     // leaves them holding.
     void sendSnapshots(std::uint32_t step);
+    // Hosting: notes each joined player who has loaded the host's level since the last call.
+    void noteLoaded();
     // Joined: writes the digest of each snapshot the session decoded since the last call.
     void noteDecoded();
 
@@ -168,9 +223,14 @@ class NetPlay final {
     std::string m_lastClientState; // the client's describe() last logged
 
     std::vector<net::SnapshotHuman> m_gameHumans;                  // setGameHumans()
+    std::vector<net::SnapshotHud> m_gameHuds;                      // setGameHuds()
     std::function<void(const net::DigestLine&)> m_snapshotDigests; // setSnapshotDigests()
     std::uint32_t m_steps = 0;                                     // afterStep() calls
     std::uint32_t m_lastDecoded = 0;                               // the newest snapshot a digest was written for
+    GameEvents m_gameEvents;                                       // gameEvents(): records while hosting
+    net::EventSubjectIds m_eventIds;                               // setEventSubjectIds()
+    std::optional<std::pair<std::string, std::uint16_t>> m_level;  // loadLevel(): the host's level and checkpoint
+    std::vector<std::uint8_t> m_loadingSlots;                      // the joined slots loading at the last noteLoaded()
 };
 
 /// The game's pad input through network play: what `inner` (null: no pads) gives, passed through NetPlay::pads().

@@ -225,6 +225,11 @@ inline std::vector<LocomotionClip> combatClips() {
     for (const std::uint32_t id : {200U, 323U, 349U}) {
         still(id, 1.0F, true);
     }
+    // The stealth kills and their victims' sides (637-642, docs/research/combat-moves.md#stealth): 52 updates each,
+    // as the disc's 637 runs at runtime.
+    for (std::uint32_t id = 637; id <= 642; ++id) {
+        still(id, 52.0F / 30.0F);
+    }
     for (const std::uint32_t id :
          {78U,  79U,  80U,  81U,  94U,  95U,  2U,   4U,   5U,   6U,   195U, 199U, 212U, 357U, 389U, 118U, 119U,
           219U, 220U, 221U, 222U, 223U, 224U, 225U, 226U, 244U, 245U, 248U, 249U, 106U, 107U, 138U, 145U, 193U}) {

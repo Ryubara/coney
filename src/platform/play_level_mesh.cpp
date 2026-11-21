@@ -35,7 +35,7 @@ debug::TextureInfo textureOf(const CharacterMesh& mesh) {
     return info;
 }
 
-// The distance fade a human's mesh was last drawn at: PlayLighting::drawHuman() puts it in the materials' alpha.
+// The distance fade a human's mesh was last drawn at: PlayLighting::drawHumanPasses() keeps it in the materials' alpha.
 float fadeOf(const CharacterMesh& mesh) {
     const rw::Geometry* geometry = mesh.atomic()->geometry;
     return geometry->matList.numMaterials == 0

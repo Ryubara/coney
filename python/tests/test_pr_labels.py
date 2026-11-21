@@ -48,6 +48,7 @@ def pull(number: int, mergeable: str = "MERGEABLE", failing: tuple[str, ...] = (
         "number": number,
         "title": "tools: Add a thing",
         "headRefName": f"branch-{number}",
+        "isCrossRepository": False,
         "baseRefName": "main",
         "isDraft": False,
         "mergeable": mergeable,

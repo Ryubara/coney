@@ -12,9 +12,13 @@ from conventions_support import REPO, write_checkout
 from coney_tools import ci_cli
 from coney_tools.ci_tidy import (
     Finding,
+    RunOptions,
     TidyPlan,
+    Unit,
     build_setup_files,
+    build_targets,
     changed_lines,
+    every_source,
     make_plan,
     parse_findings,
     run_plan,
@@ -25,6 +29,7 @@ from coney_tools.ci_tidy import (
 )
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
+from coney_tools.tidy_cache import TidyCache
 
 SETTINGS = load_conventions(REPO).ci.tidy
 
@@ -470,13 +475,30 @@ def test_tidy_plan_of_an_ordinary_change_does_not_ask_for_the_whole_pass(
     assert output.read_text(encoding="utf-8").splitlines() == ["run=false", "all=false"]
 
 
-def test_tidy_run_refuses_a_plan_for_every_file(tree: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    plan = make_plan({"CMakeLists.txt": [(1, 1)]}, tree, SETTINGS)
-    (tree / "plan.json").write_text(json.dumps(plan.as_json()), encoding="utf-8")
-    fake = FakeTidy()
-    with pytest.raises(ConfigError, match="every file"):
-        command(tree, monkeypatch, "tidy-run", "--plan", "plan.json", "--build-dir", "build", tidy=fake)
-    assert fake.commands == []
+def test_tidy_run_of_a_plan_for_every_file_runs_every_source_of_the_database(
+    tree: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (tree / "plan.json").write_text(json.dumps(TidyPlan(everything=True).as_json()), encoding="utf-8")
+    database(tree, "src/other.cpp", "_deps/lib/src/x.cpp")
+    fake = FakeTidy({"src/other.cpp": (1, f"{tree}/src/other.cpp:70:1: error: anywhere [bugprone-x]\n")})
+    assert command(tree, monkeypatch, "tidy-run", "--plan", "plan.json", "--build-dir", "build/ci", tidy=fake) == 1
+    assert [command[-1] for command in fake.commands if "--version" not in command] == ["src/other.cpp"]
+    assert "1 finding in every file" in capsys.readouterr().out
+
+
+def test_tidy_plan_all_writes_a_plan_for_every_file(tree: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    assert command(tree, monkeypatch, "tidy-plan", "--all", "--out", "plan.json") == 0
+    assert TidyPlan.from_json(json.loads((tree / "plan.json").read_text(encoding="utf-8"))).everything
+
+
+def test_tidy_deps_prints_the_targets_of_the_plans_sources(
+    tree: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    build = database(tree, "src/other.cpp")
+    (build / "build.ninja").write_text("build cmake_object_order_depends_target_coney_core: phony\n", encoding="utf-8")
+    (tree / "plan.json").write_text(json.dumps(a_plan(tree).as_json()), encoding="utf-8")
+    assert command(tree, monkeypatch, "tidy-deps", "--plan", "plan.json", "--build-dir", "build/ci") == 0
+    assert capsys.readouterr().out.splitlines() == ["cmake_object_order_depends_target_coney_core"]
 
 
 def test_tidy_run_writes_sarif_and_the_summary_and_fails_on_a_finding(
@@ -552,38 +574,44 @@ def test_the_workflow_uploads_sarif_under_the_category_of_the_conventions() -> N
     assert re.fullmatch(r"[0-9a-f]{40}", upload["uses"].split("@", 1)[1].split()[0])
 
 
-def test_the_pull_request_job_is_the_required_check_and_the_nightly_run_checks_everything() -> None:
+def test_the_pull_request_job_is_the_required_check_and_every_run_goes_through_tidy_run_and_the_cache() -> None:
     job = build_workflow()["jobs"]["clang-tidy"]  # type: ignore[index]
     assert job["permissions"]["security-events"] == "write"
-    commands = "\n".join(str(step.get("run", "")) for step in job["steps"])
-    assert "ci tidy-plan" in commands and "ci tidy-run" in commands and "run-clang-tidy-19" in commands
-    # the whole-codebase pass runs when the plan says all (always for the nightly and manual runs, which set it), and
-    # the changed-lines run and the SARIF upload then stand aside: there is no SARIF file for a whole pass
     steps = job["steps"]
-    whole = next(step for step in steps if "run-clang-tidy-19" in str(step.get("run", "")))
-    assert whole["if"] == "steps.plan.outputs.all == 'true'"
-    plan = next(step for step in steps if step.get("id") == "plan")
-    assert 'echo "all=true"' in plan["run"] and "--diff-filter" not in plan["run"]
-    lines = next(step for step in steps if "ci tidy-run" in str(step.get("run", "")))
+    commands = "\n".join(str(step.get("run", "")) for step in steps)
+    assert "ci tidy-plan" in commands and "ci tidy-run" in commands and "run-clang-tidy" not in commands
+    tidy = next(step for step in steps if "ci tidy-run" in str(step.get("run", "")))
+    assert "--cache" in tidy["run"] and "all" not in tidy["if"]
+    # the SARIF upload stands aside for a pass over every file: its findings are not on the pull request's lines
     upload = next(step for step in steps if str(step.get("uses", "")).startswith("github/codeql-action/upload-sarif@"))
-    assert "steps.plan.outputs.all != 'true'" in lines["if"] and "steps.plan.outputs.all != 'true'" in upload["if"]
+    assert "steps.plan.outputs.all != 'true'" in upload["if"]
+    # the cache is restored by every run and saved only by main's, under a key of the .clang-tidy it was made with
+    restore = next(step for step in steps if str(step.get("uses", "")).startswith("actions/cache/restore@"))
+    save = next(step for step in steps if str(step.get("uses", "")).startswith("actions/cache/save@"))
+    assert "hashFiles('.clang-tidy')" in restore["with"]["key"] and restore["with"]["key"] == save["with"]["key"]
+    assert "github.event_name != 'pull_request'" in save["if"]
 
 
-def test_a_push_is_tidied_on_its_changed_lines_and_only_nightly_and_manual_runs_take_the_whole_pass() -> None:
+def test_the_job_builds_only_what_clang_tidy_reads() -> None:
+    steps = build_workflow()["jobs"]["clang-tidy"]["steps"]  # type: ignore[index]
+    commands = "\n".join(str(step.get("run", "")) for step in steps)
+    assert "cmake --build" not in commands
+    generate = next(step for step in steps if "ci tidy-deps" in str(step.get("run", "")))
+    assert "ninja -C build/ci" in generate["run"]
+
+
+def test_a_pull_request_is_tidied_on_its_changed_lines_and_every_other_run_takes_the_whole_pass() -> None:
     workflow = build_workflow()
     # PyYAML reads the `on:` key as True
     triggers = set(workflow.get("on", workflow.get(True)))  # type: ignore[call-overload]
     assert "push" in triggers and "schedule" in triggers and "workflow_dispatch" in triggers
     steps = workflow["jobs"]["clang-tidy"]["steps"]  # type: ignore[index]
     plan = next(step for step in steps if step.get("id") == "plan")["run"]
-    # the diff branch takes pull requests and pushes; only the else branch (schedule, workflow_dispatch) sets all=true
     diff_branch, whole_branch = plan.split("else", 1)
-    assert '"$EVENT" = pull_request' in diff_branch and '"$EVENT" = push' in diff_branch
-    assert "ci tidy-plan" in diff_branch and "all=true" not in diff_branch and "all=true" in whole_branch
-    # the changed-lines run is not limited to pull requests, and the fork flag is false outside a pull request
-    lines = next(step for step in steps if "ci tidy-run" in str(step.get("run", "")))
-    assert "pull_request" not in lines["if"]
-    assert "github.event_name == 'pull_request' &&" in lines["env"]["FORK"]
+    assert '"$EVENT" = pull_request' in diff_branch and "push" not in diff_branch and "--diff" in diff_branch
+    assert "tidy-plan --all" in whole_branch
+    tidy = next(step for step in steps if "ci tidy-run" in str(step.get("run", "")))
+    assert "github.event_name == 'pull_request' &&" in tidy["env"]["FORK"]
 
 
 # --- a filter too big for one argument -----------------------------------------------------------------------------
@@ -623,3 +651,109 @@ def test_a_small_filter_goes_to_clang_tidy(tree: Path) -> None:
     fake = FakeTidy()
     run_plan(a_plan(tree), tree, tree / "build", "clang-tidy", 1, fake)
     assert all(any(arg.startswith("--line-filter=") for arg in command) for command in fake.commands)
+
+
+# --- options, the cache, the whole pass and the build targets ---------------------------------------------------------
+
+
+def test_extra_arguments_go_before_the_source_and_the_line_filter_can_be_left_to_the_tool(tree: Path) -> None:
+    fake = FakeTidy({"src/other.cpp": (1, f"{tree}/src/other.cpp:9:1: error: off the change [bugprone-x]\n")})
+    options = RunOptions(extra_args=("--header-filter=x",), line_filter=False)
+    result = run_plan(a_plan(tree), tree, tree / "build", "clang-tidy", 1, fake, options)
+    assert all(command[-2] == "--header-filter=x" for command in fake.commands)
+    assert not any(arg.startswith("--line-filter=") for command in fake.commands for arg in command)
+    # the plan's lines still decide what counts
+    assert result.ok
+
+
+def test_a_plan_of_everything_keeps_every_finding(tree: Path) -> None:
+    plan = TidyPlan([Unit("src/other.cpp")], everything=True)
+    fake = FakeTidy({"src/other.cpp": (1, f"{tree}/src/other.cpp:90:1: error: anywhere [bugprone-x]\n")})
+    result = run_plan(plan, tree, tree / "build", "clang-tidy", 1, fake)
+    assert [(item.path, item.line) for item in result.findings] == [("src/other.cpp", 90)]
+    assert not any(arg.startswith("--line-filter=") for command in fake.commands for arg in command)
+
+
+class DepTidy(FakeTidy):
+    """A clang-tidy stand-in that also writes the dependency file the cache asks for: the source alone."""
+
+    def __call__(self, command: list[str], cwd: Path) -> tuple[int, str]:
+        words = [arg.removeprefix("--extra-arg=").removeprefix("-Xclang=") for arg in command]
+        if "-dependency-file" in words:
+            target = Path(words[words.index("-dependency-file") + 1])
+            target.write_text(f"tidy: {cwd / command[-1]}\n", encoding="utf-8")
+        return super().__call__(command, cwd)
+
+
+def database(tree: Path, *sources: str) -> Path:
+    """A compile database in tree/build/ci for `sources`, with Ninja's object paths; returns the folder."""
+    folder = tree / "build" / "ci"
+    folder.mkdir(parents=True, exist_ok=True)
+    entries = [
+        {
+            "directory": str(folder),
+            "command": f"clang++ -c {source}",
+            "file": str(tree / source),
+            "output": f"src/CMakeFiles/coney_core.dir/{source}.o",
+        }
+        for source in sources
+    ]
+    (folder / "compile_commands.json").write_text(json.dumps(entries), encoding="utf-8")
+    return folder
+
+
+def test_a_cached_source_is_not_run_again_and_its_findings_still_count(tree: Path, tmp_path: Path) -> None:
+    build = database(tree, "src/other.cpp", "src/ai/brain.cpp")
+    text = f"{tree}/src/other.cpp:2:1: error: bad [bugprone-x]\n"
+
+    def cache() -> TidyCache:
+        return TidyCache.open(tmp_path / "cache", tree, build, "19.1.1", "Checks: x")
+
+    first = DepTidy({"src/other.cpp": (1, text)})
+    result = run_plan(a_plan(tree), tree, build, "clang-tidy", 1, first, RunOptions(cache=cache()))
+    assert len(first.commands) == 2 and result.cached == 0
+    assert not any(arg.startswith("--line-filter=") for command in first.commands for arg in command)
+    second = DepTidy()
+    again = run_plan(a_plan(tree), tree, build, "clang-tidy", 1, second, RunOptions(cache=cache()))
+    assert second.commands == [] and again.cached == 2
+    assert [(item.path, item.line) for item in again.findings] == [("src/other.cpp", 2)]
+
+
+def test_a_failure_of_the_tool_is_never_cached(tree: Path, tmp_path: Path) -> None:
+    build = database(tree, "src/other.cpp", "src/ai/brain.cpp")
+    options = RunOptions(cache=TidyCache.open(tmp_path / "cache", tree, build, "19.1.1", "Checks: x"))
+    run_plan(a_plan(tree), tree, build, "clang-tidy", 1, DepTidy({"src/other.cpp": (1, "crash\n")}), options)
+    again = DepTidy()
+    options = RunOptions(cache=TidyCache.open(tmp_path / "cache", tree, build, "19.1.1", "Checks: x"))
+    run_plan(a_plan(tree), tree, build, "clang-tidy", 1, again, options)
+    assert [command[-1] for command in again.commands] == ["src/other.cpp"]
+
+
+def test_a_source_that_does_not_compile_is_never_cached(tree: Path, tmp_path: Path) -> None:
+    # a missing include is not in the dependency file, so a kept "does not compile" would outlive the header's arrival
+    build = database(tree, "src/other.cpp", "src/ai/brain.cpp")
+    text = f"{tree}/src/other.cpp:1:10: error: 'gen.inc' file not found [clang-diagnostic-error]\n"
+    options = RunOptions(cache=TidyCache.open(tmp_path / "cache", tree, build, "19.1.1", "Checks: x"))
+    run_plan(a_plan(tree), tree, build, "clang-tidy", 1, DepTidy({"src/other.cpp": (1, text)}), options)
+    again = DepTidy()
+    options = RunOptions(cache=TidyCache.open(tmp_path / "cache", tree, build, "19.1.1", "Checks: x"))
+    run_plan(a_plan(tree), tree, build, "clang-tidy", 1, again, options)
+    assert [command[-1] for command in again.commands] == ["src/other.cpp"]
+
+
+def test_every_source_is_coneys_own_sources_in_the_compile_database(tree: Path) -> None:
+    build = database(tree, "src/other.cpp", "tests/ai/walk_test.cpp", "_deps/lib/src/x.cpp", "src/ai/brain.h")
+    assert every_source(build, tree, SETTINGS) == [Unit("src/other.cpp"), Unit("tests/ai/walk_test.cpp")]
+
+
+def test_the_build_targets_are_the_order_only_targets_of_the_sources_targets(tree: Path) -> None:
+    build = database(tree, "src/other.cpp", "src/ai/brain.cpp", "src/ai/walk.cpp")
+    (build / "build.ninja").write_text("build cmake_object_order_depends_target_coney_core: phony\n", encoding="utf-8")
+    units = [Unit("src/other.cpp"), Unit("src/ai/brain.cpp")]
+    assert build_targets(build, tree, units) == ["cmake_object_order_depends_target_coney_core"]
+
+
+def test_a_source_whose_target_has_no_order_only_target_builds_its_object(tree: Path) -> None:
+    build = database(tree, "src/other.cpp")
+    (build / "build.ninja").write_text("", encoding="utf-8")
+    assert build_targets(build, tree, [Unit("src/other.cpp")]) == ["src/CMakeFiles/coney_core.dir/src/other.cpp.o"]

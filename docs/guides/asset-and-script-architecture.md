@@ -32,7 +32,7 @@ four rows current.
 | Process-wide mutable state | 8 tuning singletons (`followTuning`, `followDefaults`, `combatTuning`, `bodyTuning`, `climbTuning`, `jumpTuning`, `locomotionTuning`, `staminaTuning`) and the tunable registry | |
 | Threads | audio only (`mixer`, `pcm_stream`, `spsc_queue`, `sdl_audio_device`) and `sdl_input` | |
 | Simulation inside `src/platform/` | `PlayLevelMode::update` steps the player, the humans, pick-ups, objects, scenes, streaming and lights (`play_level_*.cpp`, 2,105 lines) | |
-| Per-user writes (SDL pref path) | `profiles/` (`profile_folder.cpp`), and also `coney-tunables.ini` and `coney-imgui.ini` (`debug_menus.cpp`) | |
+| Per-user writes (SDL pref path) | `profiles/` (`profile_folder.cpp`), and also `coney-tunables.ini` and `coney-imgui.ini` (`debug_menus.cpp`), and the console's `console-history.txt` (`game_console.cpp`) and `coney-console.ini` (`console_ui.cpp`) | |
 
 What this means: the parsers are already clean. Bytes go in and Coney structs come out, with no WAD in sight. What is
 tied to the PS2 is *how a loader finds its bytes*. 48 signatures pass the WAD itself around, and 44 calls look things
@@ -47,7 +47,7 @@ up in it by WAD name. That is the layer to cut.
                      asks for engine-native data by id; never sees a file, a WAD or a disc
 3  AssetStore        resolves an id against the sources in priority order; one per session
 2  Typed loaders     bytes -> engine-native struct: the 37 parsers of today, unchanged
-1  Sources           Overrides | Xbox | PS2 install | Disc (--disc) | Memory (tests)
+1  Sources           Mods and packs | Xbox | PS2 archives | Disc (--disc) | Memory (tests)
 0  fileio            Stream, Reader, Disc, Wad, WadIndex, Executable: only layer 1 includes
                      disc/wad/wad_index/executable; Reader and Stream stay shared byte tools
 ```
@@ -67,7 +67,7 @@ Rules that keep the layers apart:
   executable tables. This extends the Xbox policy (assets only, never behaviour) to every source. The store
   reports a **simulation digest** over the simulation kinds it served, which test mode and multiplayer compare.
 - **Test mode uses the PS2 data only.** `--headless`, `--input-script` and the disc tests build a store with the PS2
-  source alone, so reference comparisons never see an override or an Xbox texture. Until the store exists, the one
+  source alone, so reference comparisons never see a mod, a pack or an Xbox texture. Until the store exists, the one
   override built ([`overrides/files/`](#file-overrides)) is read by every `--data` run, test mode included.
 - **librw stays a renderer detail.** Presentation loaders return CPU data (an image with its palette and mip
   levels, a mesh). `src/platform/` uploads that data. Today librw both parses and uploads RenderWare streams; the
@@ -130,13 +130,14 @@ whole-file sources stay simple.
 | Source | Reads | Built from | When |
 | --- | --- | --- | --- |
 | `DiscSource` | a mounted disc, a copy of its files, or an ISO image | today's `io::Disc` + `io::Wad`, unchanged | `--disc` (development, CI disc tests) |
-| `Ps2InstallSource` | `<install>/game/ps2/`: the disc's files copied as they are | the same `Disc` + `Wad` over a folder; `Disc` already reads "a copy of its files" | the installed game |
-| `XboxSource` | `<install>/game/xbox/`: `XBoxWad.idx`, the volumes and the movies, copied | a C++ port of `coney-tools xbox` (XDVDFS reader not needed after install) | after 1:1, presentation kinds only |
-| `OverrideSource` | `<install>/overrides/`, loose files by the extract tool's names | open-format loaders (PNG, WAV, BIK) | after 1:1 |
+| `CpakSource` | `<install>/game/`: the `.cpak` archives of the PS2 disc's entries, found through the catalogue | `cpak::Archive` and `cpak::Lookup` ([The .cpak archive format](cpak-format.md)) | the installed game (#798 step 4) |
+| `XboxSource` | `<install>/game/xbox/`: the `.cpak` archives of the Xbox disc's entries, converted by the Xbox importer | `cpak::Archive`, with the Xbox importer ([Xbox entries](cpak-format.md#xbox)) | after 1:1, presentation kinds only |
+| `OverrideSource` | enabled mods and `<install>/packs/`, ahead of `game/` in the lookup order | `cpak::Archive` over a mod's entries, a pack's images through the open-format loaders (PNG, WAV, BIK) | after 1:1 |
 | `MemorySource` | byte buffers | tests | now, with the store |
 
-Because the PS2 install keeps the original files, it is the same code as `--disc`. The engine can play from an
-installed folder as soon as the store exists, with no new parser.
+Every `.cpak` entry holds the original bytes of a disc entry, so `CpakSource` hands the existing parsers the same
+bytes `DiscSource` does, and no loader needs a new parser. The engine can play from an install as soon as the store
+and the loader's catalogue lookup exist.
 
 ### The install folder {#install-folder}
 
@@ -145,31 +146,30 @@ Only save data goes to the per-user location (SDL's pref path). No disc or ISO i
 required: it is the behaviour reference and the only source of simulation data. An installed Xbox disc is preferred for
 presentation assets such as textures and movies ([Xbox entries](cpak-format.md#xbox)).
 
-**The `.cpak` layout** ([#798](issue:798)) replaces the tree below: the installer sorts the game's data by kind and
-area into Coney's own archives, `.cpak`, under `game/`, with a catalogue of every entry in `game/index/`; the Xbox
-disc's entries go in archives of their own under `game/xbox/`; there are no `game/ps2/`, `overrides/` or `open/`
-folders, and assets are looked up in enabled mods, then texture packs, then the game. The format, the folder layout,
-the catalogue and the lookup order are [The .cpak archive format](cpak-format.md); the format and its tools are
-built, and the installer, the loader and mods follow it (#798 steps 3 to 5). The tree below is the earlier design that
-the `.cpak` layout replaces; it stays here until the installer moves to the new one (#798 step 3).
+**The layout** ([#798](issue:798)) is one: the installer sorts the game's data by kind and area into Coney's own
+archives, `.cpak`, under `game/`, with a catalogue of every entry in `game/index/`. The Xbox disc's entries go in
+archives of their own under `game/xbox/`. There is no copy of the disc's files, and no `overrides/` or `open/`
+folder: assets are looked up in enabled mods, then texture packs, then the game. The format, the folder layout, the
+catalogue and the lookup order are [The .cpak archive format](cpak-format.md#layout), which holds the tree; this page
+adds the parts it does not draw.
+
+**Status.** The format, the reader, the writer and the lookup order's rules are built. The installer's first step
+(copy the disc's files and check them against the known SHA-1s) is built and writes a staging copy under
+`game/ps2/`; the step that sorts it into archives, the loader that reads them and mods follow (#798 steps 3 to 5).
+Until then `--data` opens that staging copy through the same `Disc` + `Wad`, and the sections below that say so
+describe today's code, not a second layout.
 
 ```text
 <install>/                      picked by the player; movable as a whole
   coney(.exe), licences
-  game/ps2/                     the PS2 disc's files as they are (WARRIORS.DIR, WARRIORS.WAD, IOP/, PSS/, SLUS_212.15)
-  game/xbox/                    optional: the Xbox disc's archive and movies as they are
-  mods/                         script and content mods: one .cmod package each, read in place, and enabled.toml
-  overrides/                    texture packs and asset replacements: data, never scripts
-    packs/<pack>/               a texture pack as `coney-tools` exports it: manifest + images, keyed by texture hash
-    textures/<dictionary>/<texture>.png   loose files: the same names as `coney-tools extract` writes
-    audio/sounds/<name>.wav     audio/music/<track>.wav
+  game/                         the base game, built by the installer and never edited
+    common/ world/ characters/ scenes/ textures/ audio/    the .cpak archives, by kind and area
     movies/<name>.bik
-    files/<wad name>            power users: a whole WAD entry replaced (simulation kinds mark the session modded;
-                                never a script chunk)
-  open/                         optional modding kit: `coney-tools extract` output (PNG, WAV, Lua chunks, index)
-  index/
-    install.json                sources, disc SHA-1s, Coney version, per-type counts and digests
-    xbox-resources.bin          cache of the Xbox resource index (resource hash, chunk type -> location)
+    xbox/                       optional: the Xbox disc's entries, in archives grouped the same way
+    index/install.json          sources, disc SHA-1s, Coney version, per-type counts and digests
+    index/catalogue.json        every entry of every archive
+  mods/                         script and content mods: .cmod packages, enabled.toml
+  packs/                        texture packs as `coney-tools` exports them: manifest + images, keyed by texture hash
   config/                       proposed: tunables, overlay layout (see Maintainer decisions)
   cache/                        mods' check results, and files servers and co-op hosts sent (per server)
 <SDL pref path>/                save data only
@@ -177,33 +177,36 @@ the `.cpak` layout replaces; it stays here until the installer moves to the new 
   modded/, mod-data/<project>/  saves of modded sessions, and each mod's own store
 ```
 
-The `mods/`, `cache/`, `modded/` and `mod-data/` entries, and why scripts never load from `overrides/`, are
-[Coney Studio: mods, packages and loading](studio/mods.md#install-layout)'s.
+The `mods/`, `cache/`, `modded/` and `mod-data/` entries, and why scripts load only from a mod's package and never
+from a texture pack or a replaced file, are [Coney Studio: mods, packages and loading](studio/mods.md#install-layout)'s.
 
-- **The installer** is a front end over one library call per step: copy the disc's files and check them against
-  the known SHA-1s, write `index/install.json`, and optionally build the Xbox index and the modding kit. The PS2 step
-  is built, in C++ so that the launcher runs it without Python: `src/install/` (`install::install()`, with a progress
-  callback that can cancel) and `coney --install DISC --data DIR` ([Running Coney](running.md#install)); the known
-  SHA-1s are on [The discs Coney installs from](../research/discs.md). The Xbox disc, the Xbox index and the modding
-  kit come after it. The installer track owns the launcher ([coney-tools: extract](coney-tools-disc.md#extract) owns
-  the names).
+- **The installer** is a front end over one library call per step: read the disc and check its files against the
+  known SHA-1s, sort their entries into the `.cpak` archives, write the catalogue and `game/index/install.json`, and
+  with the Xbox disc add its archives under `game/xbox/`. The first step is built, in C++ so that the launcher runs it
+  without Python: `src/install/` (`install::install()`, with a progress callback that can cancel) and
+  `coney --install DISC --data DIR` ([Running Coney](running.md#install)); it copies and verifies the disc's files
+  for now, and the sorting into archives is #798 step 3. The known SHA-1s are on
+  [The discs Coney installs from](../research/discs.md). The installer track owns the launcher
+  ([coney-tools: extract](coney-tools-disc.md#extract) owns the names).
 - **Name and lookup per kind**:
 
 | Kind | Order | Note |
 | --- | --- | --- |
-| Textures | overrides (packs by the original texture's hash; an entry matching no texture on the disc is ignored), Xbox (by resource hash, equal counts only), PS2 | F4; [Texture packs](enhancements.md#packs) |
-| Movies | overrides, Xbox `_hd`, PS2 | |
-| Sounds, music | overrides, PS2 | the recordings and music; Xbox mapping is open ([Xbox assets](../research/xbox-assets.md#coneys-implementation)) |
-| Fonts, HUD and particle sheets | overrides, PS2 | presentation |
-| Scripts, levels, object lists, worlds, collision, animations, scenes, characters, sound tables, executable tables, game text | PS2 (overrides only in a modded session) | simulation kinds; a script is never replaced from `overrides/`, only patched by a mod ([Mods](studio/mods.md#install-layout)) |
+| Textures | mods, packs (by the original texture's hash; an entry matching no texture on the disc is ignored), Xbox (by resource hash, equal counts only), PS2 | F4; [Texture packs](enhancements.md#packs) |
+| Movies | mods, Xbox `_hd`, PS2 | |
+| Sounds, music | mods, PS2 | the recordings and music; Xbox mapping is open ([Xbox assets](../research/xbox-assets.md#coneys-implementation)) |
+| Fonts, HUD and particle sheets | mods, PS2 | presentation |
+| Scripts, levels, object lists, worlds, collision, animations, scenes, characters, sound tables, executable tables, game text | PS2 (a mod's entry only in a modded session) | simulation kinds; a script is never replaced by a loose file or a pack, only patched by a mod ([Mods](studio/mods.md#install-layout)) |
 
 - **Command line.** `--data <install>` opens the install folder, and `--disc` stays for development and CI. With
-  neither, Coney looks for `game/ps2/` next to its executable. All three build the same store. Built (N7): until
-  the store exists, `--data` and the lookup point `--disc` at `<install>/game/ps2/` ([Running Coney](running.md#install)).
+  neither, Coney looks for an install next to its executable. All three build the same store. Built (N7): until
+  the store exists and the installer writes archives, `--data` and the lookup point `--disc` at the installer's copy of
+  the disc's files, `<install>/game/ps2/` ([Running Coney](running.md#install)).
 
 #### Replacing a WAD entry: `overrides/files/` {#file-overrides}
 
-Built, and Coney's own: the original reads every entry from its disc. With `--data`, `io::Wad::useOverrides()` maps
+Built for the installer's interim copy of the disc, and Coney's own: the original reads every entry from its disc.
+The `.cpak` layout replaces it with a mod's entries. With `--data`, `io::Wad::useOverrides()` maps
 each file in `<install>/overrides/files/` to the WAD entry its name names, and `Wad::openEntry()` reads that file in
 place of the entry's range of `WARRIORS.WAD`:
 
@@ -234,7 +237,7 @@ moves. *Signature* means the loader takes the WAD and its first parameter change
 
 | Format | Loader (file) | Parser kept | Today | Change |
 | --- | --- | --- | --- | --- |
-| WAD index, archive, disc | `fileio/wad`, `wad_index`, `disc` | `WadIndex::parse`, `readIsoRoot` | used everywhere | used by `DiscSource` and `Ps2InstallSource` only |
+| WAD index, archive, disc | `fileio/wad`, `wad_index`, `disc` | `WadIndex::parse`, `readIsoRoot` | used everywhere | used by `DiscSource` and the installer's interim copy only |
 | Executable tables | `fileio/executable` (`readExecutableWords`) | yes | `main.cpp` reads the random table from the disc | `DiscFileId{"SLUS_212.15"}` through the store |
 | Lua chunks, `_objs.txt`, global strings | `scripting/config_strings` (`wadScriptSource`, `loadGlobalStrings`) | `parseLuaChunk` | seam | `storeScriptSource(store)` |
 | Scene list and records (`.scn`) | `scenes/scene_disc` (`loadSceneList`, `wadSceneSource`) | `SceneList::parse`, `parseSceneHeader`, `parseSceneSegment` | seam + signature | store |
@@ -278,8 +281,8 @@ Scheduler       when scripts run: level entry, update function, schedule, messag
   [Scripting](../research/scripting.md#level99). Recommended form: **Lua 4.0 source text** that Coney compiles with
   its own compiler into the same `LuaProto` the VM runs. Then there is one runtime, one binding table and one
   scheduler, and a rewrite can be compared call for call with the original chunk;
-- *mod*: the player's own disc script with a mod's `game-scripts` patch applied, compiled by Coney; never a file in
-  `overrides/` ([Mods, packages and loading](studio/mods.md#install-layout); this marks the session modded).
+- *mod*: the player's own disc script with a mod's `game-scripts` patch applied, compiled by Coney; never a loose
+  file or a pack ([Mods, packages and loading](studio/mods.md#install-layout); this marks the session modded).
 
 The level flow asks the catalog, never the store, so a level can switch from the original chunk to Coney's rewrite
 with a one-line change in the catalog. That switch is allowed only when the parity test passes: same input script,
@@ -394,6 +397,9 @@ caller, not new logic ([Debug menus: adding a feature](debug-menu.md#adding-a-fe
 | `Coney.Notice(text)` | `debug::DebugSession::notice()` (the debug noclip change, not on main yet) | Prints a line and shows it as a short notice under the corner lines | engine-only, on its branch |
 | `Coney.TraceCalls(path)` | `script::ScriptSystem::traceCalls()` (`--script-trace`) | Writes every binding call the scripts make, and every call into them, to a log | engine-only |
 | `Coney.Log(category, level, text)`, `Coney.WriteBugReport()` | `logging::write()`, `logging::dump()` (`src/core/log.h`, [The run log](run-log.md)) | Writes a stamped line to the run log in one of its categories; writes the last 30 s of it into the log file | engine-only |
+| `Coney.CreateScreen(def)`, `Coney.OpenScreen(screen, slot)`, `Coney.CloseScreen(screen)` | `gui::UiModel::createScreen()`, `openScreen()`, `closeScreen()`, `destroyScreen()` ([The UI widget model for mods](mod-ui.md)) | Makes a mod screen (menu or HUD) and shows it for a player slot on its flow or over play; refused while a trusted screen is open | engine-only |
+| `Coney.AddText`, `AddSprite`, `AddGrid`, `AddList`, `AddBar`, `AddHeader`, `SetUsage`, `AddItem`, `SetWidget`, `RemoveWidget`, `Focus` | `gui::UiModel::addWidget()`, `addItem()`, `setText()`, `setVisible()`, `setPosition()`, `setFill()`, `removeWidget()`, `focus()` | Builds a screen of the game's widget kinds by id, within the limits | engine-only |
+| `Coney.AskChoice(text, choices, default, fn, slot)`, `Coney.AskText(prompt, maxLength, fn, slot)` | `gui::UiModel::askChoice()`; the keyboard widget (`gui::UiWidgetKind::Keyboard`) | The message box's choice dialog and the pad keyboard (at most 32 characters) on a mod screen | engine-only |
 
 Not candidates, because a script has no use for them or the original already has the native: the debug menus'
 navigation and front ends; the Lua console (a script can run Lua itself); the test aids `--start`, `--frames`,
@@ -432,7 +438,7 @@ An honest list: what each modernisation buys, what has to exist first, and what 
 
 - **Converting a file does not change who owns it.** A game texture saved as PNG, upscaled, renamed or packed is
   still the game's texture. The same goes for a sound decoded to WAV or a model exported to glTF. Everything in
-  `game/`, `open/`, `index/` and any override made from game assets is the player's local copy. It never goes into
+  `game/` and any mod or pack made from game assets is the player's local copy. It never goes into
   the repository, a release, a CI cache, an issue or a test fixture ([LEGAL.md](repo:LEGAL.md#no-game-data)).
 - **What keeps Coney clean** is not the format. It is that Coney **ships no game data** and **extracts it from the
   player's own disc at install**, on the player's machine. Tests use synthetic fixtures (`MemorySource`), and disc
@@ -457,7 +463,6 @@ decided ([Enhancements plan: Decided](enhancements.md#decided)).
 3. **Settings location.** The decision is that only save data goes to the pref path, but `coney-tunables.ini` and
    `coney-imgui.ini` are written there today. Proposal: move them to `<install>/config/`, and keep the pref path
    for `profiles/` only.
-4. **The modding kit** (`open/`, about 9.5 GB): optional at install, or left to `coney-tools extract`.
 
 ## Timing {#timing}
 

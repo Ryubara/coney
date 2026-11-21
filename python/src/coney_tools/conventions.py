@@ -1179,6 +1179,28 @@ class OverlapRules:
 REVIEW_KINDS = ("code", "docs", "research", "orig", "text", "commits")
 
 
+#: The reasons a delta review falls back to a full one (`tasks.review.delta.full_when`,
+#: docs/guides/review/task.md#delta): the delta changes an `@orig` function's body or addresses (or the pairs), a
+#: claim line of research work, or a test.
+DELTA_FALLBACKS = ("orig-body", "research-claim", "test-body")
+
+
+@dataclass(frozen=True)
+class DeltaReview:
+    """`tasks.review.delta`: when `task review` reviews only what changed since the last passing review."""
+
+    #: Which changes in the delta make the review a full one (`DELTA_FALLBACKS`).
+    full_when: tuple[str, ...]
+    #: A line of research work that matches one of these (regular expressions) is a claim: an address or an evidence
+    #: level. A delta that adds or removes such a line changes a claim.
+    claim_patterns: tuple[str, ...]
+    #: Files under these prefixes hold tests: a `TEST_CASE` (C++) or a `test_` function (Python) whose code the delta
+    #: changes, adds or removes is a changed test body.
+    test_paths: tuple[str, ...]
+    #: The file in the review folder that shows the reviewer the delta.
+    diff_file: str
+
+
 @dataclass(frozen=True)
 class TaskReview:
     """`task review` (docs/guides/review/task.md): the reviewer agent, the files of a review and which model may do
@@ -1206,6 +1228,8 @@ class TaskReview:
     reverse_engineering_kinds: tuple[str, ...]
     #: A substring (any case) the reviewer's model name must contain for such a review.
     reverse_engineering_models: tuple[str, ...]
+    #: The delta review's rules; None: every review is a full one (rules from before the delta review).
+    delta: DeltaReview | None = None
 
     def is_research_page(self, path: str) -> bool:
         """Whether a changed path is a research page: a documentation file (`docs_suffixes`) under `research_paths`.
@@ -1581,6 +1605,11 @@ class CiTidy:
     findings_listed: int
     #: The build setup: a pull request changing one of these (a folder ending in /, or a file) is checked on every file.
     whole_when: tuple[str, ...]
+    #: The major version of LLVM's clang-tidy that CI runs (`clang-tidy-<major>`) and a local run must match.
+    llvm_major: int
+    #: Checks whose findings depend on the standard library's own code, so a local run against another library (MSVC's
+    #: on Windows) reports them as advice, never as a failure: they differ from CI's both ways.
+    local_advisory: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -2624,7 +2653,7 @@ def _read_task_review(data: object, where: str) -> TaskReview:
         ),
         # Optional, so a tool that has the key reads the default branch's rules before the branch that adds it is
         # merged (`load_release_rules_at` never falls back to the branch's own); absent, no file is a reference list.
-        ("reference_paths",),
+        ("reference_paths", "delta"),
     )
     agent = _text(table["agent"], _at(where, "agent"))
     # The agent is a file name under .claude/agents/, so it holds no path separator.
@@ -2658,6 +2687,25 @@ def _read_task_review(data: object, where: str) -> TaskReview:
         pages_min_addresses=_count(table["pages_min_addresses"], _at(where, "pages_min_addresses")),
         reverse_engineering_kinds=kinds,
         reverse_engineering_models=_texts(table["reverse_engineering_models"], models_where),
+        delta=_read_delta_review(table["delta"], _at(where, "delta")) if "delta" in table else None,
+    )
+
+
+def _read_delta_review(data: object, where: str) -> DeltaReview:
+    """The `tasks.review.delta` table: what makes a delta review a full one, what a claim line is, where tests are."""
+    table = _table(data, where, ("full_when", "claim_patterns", "test_paths", "diff_file"))
+    full_when = _texts(table["full_when"], _at(where, "full_when"), empty_ok=True)
+    for reason in full_when:
+        if reason not in DELTA_FALLBACKS:
+            raise _fail(_at(where, "full_when"), f"'{reason}' is not one of {', '.join(DELTA_FALLBACKS)}")
+    diff_file = _text(table["diff_file"], _at(where, "diff_file"))
+    if "/" in diff_file or "\\" in diff_file or diff_file in (".", ".."):
+        raise _fail(_at(where, "diff_file"), f"'{diff_file}' must be a file name, not a path")
+    return DeltaReview(
+        full_when=full_when,
+        claim_patterns=_patterns(table["claim_patterns"], _at(where, "claim_patterns")),
+        test_paths=_texts(table["test_paths"], _at(where, "test_paths")),
+        diff_file=diff_file,
     )
 
 
@@ -3072,7 +3120,16 @@ def _read_ci(
     tidy = _table(
         table["tidy"],
         tidy_where,
-        ("folders", "sources", "headers", "sarif_category", "findings_listed", "whole_when"),
+        (
+            "folders",
+            "sources",
+            "headers",
+            "sarif_category",
+            "findings_listed",
+            "whole_when",
+            "llvm_major",
+            "local_advisory",
+        ),
     )
     folders = _texts(tidy["folders"], _at(tidy_where, "folders"))
     for folder in folders:
@@ -3146,6 +3203,8 @@ def _read_ci(
             sarif_category=_text(tidy["sarif_category"], _at(tidy_where, "sarif_category")),
             findings_listed=_count(tidy["findings_listed"], _at(tidy_where, "findings_listed")),
             whole_when=whole_when,
+            llvm_major=_count(tidy["llvm_major"], _at(tidy_where, "llvm_major")),
+            local_advisory=_texts(tidy["local_advisory"], _at(tidy_where, "local_advisory")),
         ),
         failure=CiFailure(
             workflows=_texts(failure["workflows"], _at(failure_where, "workflows")),

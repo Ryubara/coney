@@ -42,7 +42,8 @@ void ImGuiOverlay::configureIo(ImGuiIO& io) {
 }
 
 ImGuiOverlay::ImGuiOverlay(debug::DebugSession& session, std::string iniPath)
-    : m_view(session.model()), m_scale(session.display()), m_iniPath(std::move(iniPath)) {}
+    : m_view(session.model()), m_scale(session.display().uiScaleChoice, session.display().uiScaleApplied),
+      m_iniPath(std::move(iniPath)) {}
 
 std::expected<std::unique_ptr<ImGuiOverlay>, Error>
 ImGuiOverlay::start(RenderEngine& renderer, debug::DebugSession& session, std::string iniPath) {

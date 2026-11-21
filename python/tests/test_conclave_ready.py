@@ -138,7 +138,9 @@ def test_a_unit_whose_branch_has_a_pull_request_raises_no_event(tmp_path: Path) 
     src.coord.gh = FakeGh(
         {
             **github_answers(),
-            ("pr", "list", "--state", "all"): [{"number": 5, "headRefName": "work", "state": "OPEN", "closedAt": None}],
+            ("pr", "list", "--state", "all"): [
+                {"number": 5, "headRefName": "work", "isCrossRepository": False, "state": "OPEN", "closedAt": None}
+            ],
             ("pr", "list", "--state", "open"): [],
         }
     )

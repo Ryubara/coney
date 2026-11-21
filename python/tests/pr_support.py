@@ -312,9 +312,14 @@ class Built:
         return pr_text.hashes_of(self.unit.dir / "PR.md")
 
     def review(
-        self, functions: dict[str, str] | None = None, reviewer: dict[str, str] | None = None, **detail: Any
+        self,
+        functions: dict[str, str] | None = None,
+        reviewer: dict[str, str] | None = None,
+        covers: dict[str, str] | None = None,
+        **detail: Any,
     ) -> None:
-        """Stamp a passing Review of the change, the pairs and the text as they are now."""
+        """Stamp a passing Review of the change, the pairs and the text as they are now; `covers` adds hashes (a delta
+        review's `delta_rules_sha256`)."""
         text = self.text_hashes()
         pairs = pr_proof.pairs_set_sha256(self.unit, [ADDRESS] if self.pairs_path.is_file() else [])
         info: dict[str, Any] = {
@@ -334,6 +339,7 @@ class Built:
                 "title_sha256": text.title_sha256,
                 "paragraph_sha256": text.paragraph_sha256,
                 "images_sha256": text.images_sha256,
+                **(covers or {}),
             },
             detail=info,
             who=REVIEWER,

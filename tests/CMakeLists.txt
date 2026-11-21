@@ -3,8 +3,11 @@ add_executable(coney_tests
     camera/camera_lens_test.cpp
     console/arg_types_test.cpp
     console/catalog_test.cpp
+    console/command_picker_test.cpp
+    console/console_pad_test.cpp
     console/console_test.cpp
     console/player_commands_test.cpp
+    console/line_editor_test.cpp
     console/registry_test.cpp
     console/terminal_test.cpp
     console/tokenizer_test.cpp
@@ -16,6 +19,7 @@ add_executable(coney_tests
     core/cpak_writer_test.cpp
     core/deferred_input_test.cpp
     core/event_log_test.cpp
+    core/game_events_test.cpp
     core/log_test.cpp
     core/frame_clock_test.cpp
     core/frame_rate_meter_test.cpp
@@ -39,6 +43,7 @@ add_executable(coney_tests
     core/story_manifest_test.cpp
     core/story_merge_test.cpp
     core/story_view_test.cpp
+    core/ui_scale_test.cpp
     core/mesh_view_option_test.cpp
     core/world_edit_option_test.cpp
     core/draw_hash_option_test.cpp
@@ -82,6 +87,7 @@ add_executable(coney_tests
     gamemodes/disc_front_end_test.cpp
     gamemodes/disc_lighting_test.cpp
     gamemodes/frame_rate_test.cpp
+    gamemodes/ui_screen_mode_test.cpp
     gamemodes/gameplay_objects_test.cpp
     gamemodes/gameplay_sound_call_test.cpp
     gamemodes/play_level_simulation_test.cpp
@@ -99,6 +105,7 @@ add_executable(coney_tests
     gamemodes/movie_player_test.cpp
     movies/captions_test.cpp
     movies/movie_mode_test.cpp
+    gamemodes/sound_events_test.cpp
     gamemodes/start_up_flow_test.cpp
     gamemodes/rumble_start_test.cpp
     gamemodes/story_start_test.cpp
@@ -129,6 +136,11 @@ add_executable(coney_tests
     gui/markup_test.cpp
     gui/menu_input_test.cpp
     gui/mods_story_list_test.cpp
+    gui/mod_ui/ui_flow_screen_test.cpp
+    gui/mod_ui/ui_input_mask_test.cpp
+    gui/mod_ui/ui_model_test.cpp
+    gui/mod_ui/ui_screen_test.cpp
+    gui/mod_ui/ui_view_test.cpp
     gui/message_paging_test.cpp
     gui/circled_text_header_test.cpp
     gui/game_stats_test.cpp
@@ -179,6 +191,7 @@ add_executable(coney_tests
     platform/disc_flash_test.cpp
     platform/disc_crew_commands_test.cpp
     platform/disc_given_weapon_test.cpp
+    platform/disc_scripted_held_test.cpp
     platform/disc_level80_wreck_test.cpp
     platform/disc_revive_test.cpp
     platform/disc_level80_story_test.cpp
@@ -189,6 +202,7 @@ add_executable(coney_tests
     platform/disc_level99_heap_test.cpp
     platform/disc_level99_scene_speech_test.cpp
     platform/disc_level99_hud_test.cpp
+    platform/disc_level99_scene_crew_test.cpp
     platform/disc_level99_story_sounds_test.cpp
     platform/disc_level99_power_lesson_test.cpp
     platform/disc_level99_scene_grab_test.cpp
@@ -260,6 +274,7 @@ add_executable(coney_tests
     platform/world_set_test.cpp
     platform/world_draw_stream_test.cpp
     platform/object_draw_stream_test.cpp
+    platform/human_draw_stream_test.cpp
     platform/material_change_test.cpp
     physics/overlaps_test.cpp
     physics/sphere_box_sweep_test.cpp
@@ -390,6 +405,7 @@ target_sources(coney_tests PRIVATE
     camera/stick_turn_cameras_test.cpp
     human/disc_player_placement_test.cpp
     human/disc_player_test.cpp
+    human/disc_stealth_kill_test.cpp
     human/class_flags_test.cpp
     human/human_edit_test.cpp
     human/human_test.cpp
@@ -414,6 +430,7 @@ target_sources(coney_tests PRIVATE
     human/moving_attacks_test.cpp
     human/attack_turn_test.cpp
     human/player_stance_test.cpp
+    human/stealth_kill_test.cpp
     human/player_targeting_test.cpp
     human/target_passes_test.cpp
     human/being_hit_test.cpp
@@ -526,8 +543,9 @@ target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cp
 # (docs/guides/multiplayer.md).
 target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/input_buffer_test.cpp net/link_conditioner_test.cpp
                                    net/link_quality_test.cpp net/loopback_transport_test.cpp net/net_id_test.cpp net/protocol_test.cpp net/replicated_fields_test.cpp net/snapshot_test.cpp
-                                   net/jitter_buffer_test.cpp net/client_world_test.cpp net/state_digest_test.cpp net/game_humans_test.cpp net/session_record_test.cpp
-                                   net/sessions_test.cpp platform/enet_transport_test.cpp platform/net_play_test.cpp
+                                   net/jitter_buffer_test.cpp net/client_world_test.cpp net/event_channel_test.cpp net/state_digest_test.cpp net/game_humans_test.cpp net/session_record_test.cpp
+                                   net/player_huds_test.cpp
+                                   net/sessions_test.cpp net/level_sync_test.cpp platform/enet_transport_test.cpp platform/net_play_test.cpp
                                    platform/game_console_test.cpp platform/game_settings_test.cpp)
 # What the console takes from the running game, apart from the list above so that its tests' registration stays theirs.
 target_sources(coney_tests PRIVATE platform/game_console_links_test.cpp)
@@ -552,6 +570,10 @@ set_source_files_properties(support/test_paths.cpp PROPERTIES COMPILE_DEFINITION
 # coney_platform for librw, which the texture tests run on its NULL device (no window, no GPU); coney_launcher for the
 # launcher's library (docs/guides/launcher.md).
 target_link_libraries(coney_tests PRIVATE coney_platform coney_launcher Catch2::Catch2WithMain)
+# The player console's F8 bar over a bare Dear ImGui context (docs/guides/console.md#front-end), with the size rule's
+# Dear ImGui side it shares with the debug tools' overlay, in every build.
+target_sources(coney_tests PRIVATE platform/console_view_test.cpp platform/ui_scale_test.cpp)
+target_link_libraries(coney_tests PRIVATE coney_console_ui)
 # The tests of the debug tools (the menus, the overlay, the sandbox, the viewers, the play mode's debug controls and the
 # disc tests that drive them through those), only in a build with them (docs/guides/building.md#debug-tools); the
 # release build runs every other test, so the game is tested without them.
@@ -584,7 +606,6 @@ if(CONEY_DEBUG_TOOLS)
         debug/time_scale_test.cpp
         debug/display_tunables_test.cpp
         debug/tunables_test.cpp
-        debug/ui_scale_test.cpp
         debug/world_split_test.cpp
         gamemodes/play_level_step_test.cpp
         gamemodes/sheet_viewer_mode_test.cpp
@@ -626,7 +647,6 @@ if(CONEY_DEBUG_TOOLS)
         platform/gpu_timer_test.cpp
         platform/imgui_model_view_test.cpp
         platform/imgui_overlay_test.cpp
-        platform/imgui_ui_scale_test.cpp
         platform/lighting_rows_test.cpp
         platform/mesh_views_test.cpp
         platform/test_card_test.cpp

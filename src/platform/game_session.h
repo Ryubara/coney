@@ -15,10 +15,12 @@
 #include "core/assert.h"
 #include "core/chunk_system.h"
 #include "core/error.h"
+#include "core/game_events.h"
 #include "core/language.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/loading_screen.h"
+#include "gamemodes/sound_events.h"
 #include "gamemodes/start_up_flow.h"
 #include "graphics/font.h"
 #include "graphics/lighting_switches.h"
@@ -82,6 +84,12 @@ class GameSession {
     /// loading screen's banks, the movies' mixer, the pause's sound, the HUD's sounds and the play modes' scene sounds.
     /// Call it before the first frame; null: the run stays silent.
     void attachAudio(AudioOutput* audio);
+    /// Hands the game's subsystems the one call through which they raise what the players see or hear (network play's
+    /// coney::GameEvents, which must outlive the session; null: none): the sound's calls (SoundEvents), the scripts'
+    /// objectives, messages and particle systems and the level's breaks and scenes (the binding context's `events`),
+    /// and the movies' starts and ends (docs/guides/multiplayer.md#events).
+    /// @coney-only network play; the original has none
+    void setGameEvents(GameEvents* events);
     /// The lines every level's play mode draws into its scene (PlayLevelMode::setSceneLines(): the debug tools' Debug
     /// draw page); empty: none.
     void setSceneLines(SceneLines lines) { m_sceneLines = std::move(lines); }
@@ -175,7 +183,8 @@ class GameSession {
     std::optional<graphics::Font> m_captionFont;
     std::optional<movies::MovieMode> m_movieMode;
     std::optional<LoadingScreen> m_loadingScreen;
-    std::unique_ptr<StartUpFlow> m_flow; // after everything its modes point at
+    SoundEvents m_soundEvents{nullptr, nullptr}; // the game's sound with its events, which the scripts call
+    std::unique_ptr<StartUpFlow> m_flow;         // after everything its modes point at
 };
 
 } // namespace coney::platform

@@ -7,9 +7,12 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include "core/error.h"
 #include "core/pad.h"
+#include "net/event_channel.h"
 #include "net/link_quality.h"
 #include "net/protocol.h"
 #include "net/snapshot.h"
@@ -110,6 +113,25 @@ class NetClient {
     /// The snapshots decoded from the server this session: the newest's humans, and the history the next ones are
     /// decoded against. Empty until the first.
     [[nodiscard]] const SnapshotReceiver& snapshots() const { return m_snapshots; }
+    /// The server's game events this session, held until takeEvents() reaches their step.
+    [[nodiscard]] const EventReceiver& events() const { return m_events; }
+    /// The server's game events whose step is at most `step` (the server's step the client now shows), each once, in
+    /// order (EventReceiver::take()).
+    [[nodiscard]] std::vector<ArrivedEvent> takeEvents(std::uint32_t step) { return m_events.take(step); }
+    /// The newest level order (LoadLevel) not yet taken, once: the level this client's game should load. A newer order
+    /// that comes before this one is taken replaces it. Nothing when there is none.
+    [[nodiscard]] std::optional<LoadLevel> takeLevelOrder() { return std::exchange(m_levelOrder, std::nullopt); }
+    /// The level being loaded: the newest order until levelLoaded() answers it; nothing when this client is in the
+    /// host's level (or none was ordered). Snapshots and one-shot events that arrive meanwhile are dropped.
+    [[nodiscard]] const std::optional<LoadLevel>& loadingLevel() const { return m_loading; }
+    /// This client's game has loaded the level of order `load`: tells the server at once (LevelLoaded). Nothing happens
+    /// for any load but the one being loaded.
+    void levelLoaded(std::uint32_t load);
+    /// The ends of the host's missions since the last call, oldest first.
+    [[nodiscard]] std::vector<MissionEnd> takeMissionEnds() { return std::exchange(m_missionEnds, {}); }
+    /// This client's copy of the host's movie of `movieStep` (the host's step its MovieStart came in) has ended, or its
+    /// player skipped it: tells the server at once (MovieDone). Nothing happens when not Connected.
+    void movieDone(std::uint32_t movieStep, bool skipped);
     /// The round trip and loss to the server.
     [[nodiscard]] const LinkQuality& quality() const { return m_quality; }
     /// One line for the Network page and the log: the state, and for an ended session why.
@@ -143,7 +165,11 @@ class NetClient {
     // The pads of the latest steps sent, by step % kMaxInputCommands, for the next InputCommands to repeat.
     std::array<PadSample, kMaxInputCommands> m_sent{};
     SnapshotReceiver m_snapshots;
+    EventReceiver m_events;
     std::uint32_t m_ackDue = 0; // the newest snapshot decoded since the last send(), to acknowledge; 0 for none
+    std::optional<LoadLevel> m_levelOrder; // takeLevelOrder()
+    std::optional<LoadLevel> m_loading;    // loadingLevel()
+    std::vector<MissionEnd> m_missionEnds; // takeMissionEnds()
 };
 
 } // namespace coney::net

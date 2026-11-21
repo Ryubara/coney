@@ -85,6 +85,10 @@ BOUND = (
 )
 #: A stamp's `detail` may hold this many bytes (stamps.MAX_DETAIL); a longer function list is left to the verdict file.
 _DETAIL_LIMIT = 2048
+#: How long a stamp's `detail` may be before the reviewer's identity and the pointer are added to it.
+DETAIL_ROOM = _DETAIL_LIMIT - 400
+#: A review's scopes: the whole change, the delta since an earlier passing review, or the description alone.
+SCOPES = ("full", "delta", "text")
 
 
 #: The keys an entry of `functions`, `pages` and `images` may have (`path`/`key` is required).
@@ -388,7 +392,7 @@ def stamp_detail(verdict: Mapping[str, Any]) -> dict[str, Any]:
     stop = blocking(verdict)
     detail: dict[str, Any] = {
         "verdict": verdict["verdict"],
-        "scope": "text" if mode == "text" else "full",
+        "scope": mode if mode in SCOPES else "full",
         "kinds": list(verdict["applied"]),
         "functions": functions,
         "pages": [item["path"] for item in verdict["pages"]],
@@ -396,7 +400,7 @@ def stamp_detail(verdict: Mapping[str, Any]) -> dict[str, Any]:
         "notes": len(_findings(verdict)) - len(stop),
         "not_reviewed": len(verdict["not_reviewed"]),
     }
-    if len(json.dumps(detail, sort_keys=True, separators=(",", ":"))) > _DETAIL_LIMIT - 400:
+    if len(json.dumps(detail, sort_keys=True, separators=(",", ":"))) > DETAIL_ROOM:
         # The reviewer's identity and the pointer are added by the caller: leave room for them.
         detail["function_count"] = len(functions)
         del detail["functions"]

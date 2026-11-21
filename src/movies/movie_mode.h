@@ -15,6 +15,7 @@
 
 #include "audio/mixer.h"
 #include "audio/pcm_stream.h"
+#include "core/game_events.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/movie_player.h"
 #include "graphics/font.h"
@@ -134,6 +135,11 @@ class MovieMode final : public GameMode, public MoviePlayer {
     void setCaptionSource(CaptionSource source) { m_captionSource = std::move(source); }
     /// The captions are drawn in `font` (Coney's stand-in: the page does not name the caption font); null: none drawn.
     void setCaptionFont(const graphics::Font* font);
+    /// Raises each movie's start and end on `events` (null: none; it must outlive the mode): a MovieStart when one
+    /// opens and a MovieEnd when it ends or is skipped, so a network session's guests play it too
+    /// (docs/guides/multiplayer.md#events). The debug menu's movies are this game's own and raise none.
+    /// @coney-only network play; the original has none
+    void setEvents(GameEvents* events) { m_events = events; }
 
     /// Queues the movie `name` and puts the player on the stack if it is not there yet.
     /// @orig 0x0042a938 Movie_Play (unknown)
@@ -209,6 +215,7 @@ class MovieMode final : public GameMode, public MoviePlayer {
     SoundHold m_soundHold;
     MovieSettings m_settings;
     std::function<void(std::string_view)> m_log;
+    GameEvents* m_events = nullptr; // setEvents()
     CaptionSource m_captionSource;
 
     std::deque<std::pair<std::string, MovieRequest>> m_queue;

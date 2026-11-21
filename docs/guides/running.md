@@ -36,8 +36,9 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--preset ps2|xbox|enhanced|high] [--tunables FILE]
       [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
-      [--profiles DIR] [--dev-overlay N] [--mesh-view SPEC] [--no-activate] [--window-display DISPLAY] [--event-log FILE]
-      [--pad-pipe] [--record FILE [--record-seconds N]]
+      [--profiles DIR] [--dev-overlay N] [--console-open N] [--mesh-view SPEC] [--no-activate]
+      [--window-display DISPLAY] [--event-log FILE]
+      [--pad-pipe] [--record FILE [--record-seconds N] [--record-from-frame N]]
       [--bench FILE [--bench-fighters N] [--bench-allies N] [--bench-god] [--bench-spawn-step N] [--bench-warmup N]
         [--bench-measure N] [--bench-frames FILE] [--bench-real-time] [--bench-place X,Y,Z,H]
         [--bench-neutrals N] [--bench-fps]]
@@ -106,7 +107,8 @@ a PS2 or Xbox save comes in with `--import-save` or from the `import` folder bes
 `--install DISC --data DIR` copies your PS2 disc into an install folder, so the game runs from it with no disc or
 image afterwards, then exits. `DISC` is a mounted disc, a folder of its files or an ISO image, read directly on every
 system (no mounting); `DIR` is the folder you pick, made if needed. The layout is the one on
-[The install folder](asset-and-script-architecture.md#install-folder):
+[The install folder](asset-and-script-architecture.md#install-folder) (the interim layout: the disc's files as they
+are, and `overrides/`, until the cpak install replaces them):
 
 ```sh
 build/dev/src/platform/coney --install /path/to/warriors.iso --data ../../Coney
@@ -208,6 +210,7 @@ command are in [Script patches](script-patches.md#command-line).
 * [`--host`, `--join`](running-options.md#network-play): network play; `--digest`, `--digest-net`, `--net-record` and
   `--net-replay`, its proof without a person.
 * [`--tunables`, `--dev-overlay`, `--mesh-view`](running-options.md#the-debug-menus): the debug menus' options.
+* [`--console-open`](running-options.md#console): the console bar opened for a test's first frames, in every build.
 
 ### [Loading and viewing your disc](running-viewers.md)
 

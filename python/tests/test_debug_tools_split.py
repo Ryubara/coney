@@ -21,8 +21,18 @@ pytestmark = pytest.mark.reads("engine")
 
 ROOT = Path(__file__).resolve().parents[2]
 
-#: The libraries a player's build is made of.
-GAME_TARGETS = ("coney_core", "coney_audio", "coney_install", "coney_movies", "coney_net", "coney_platform")
+#: The libraries a player's build is made of: the game, and the player console's F8 bar (coney_console_ui).
+GAME_TARGETS = (
+    "coney_core",
+    "coney_audio",
+    "coney_install",
+    "coney_movies",
+    "coney_net",
+    "coney_platform",
+    "coney_console_ui",
+)
+#: The game's libraries whose sources are in src/platform/.
+_PLATFORM_TARGETS = ("coney_platform", "coney_console_ui")
 #: The debug tools' libraries.
 DEBUG_TARGETS = ("coney_debug", "coney_devtools")
 
@@ -100,7 +110,7 @@ def _game_files() -> list[Path]:
     sources, _ = _targets()
     files: list[Path] = []
     for name in GAME_TARGETS:
-        folder = ROOT / "src" / ("platform" if name == "coney_platform" else "")
+        folder = ROOT / "src" / ("platform" if name in _PLATFORM_TARGETS else "")
         for source in sources.get(name, []):
             path = folder / source
             files += [p for p in (path, path.with_suffix(".h")) if p.exists()]
@@ -136,10 +146,12 @@ def test_no_game_library_links_the_debug_tools() -> None:
     assert offenders == []
 
 
-def test_only_the_devtools_link_dear_imgui() -> None:
+def test_only_the_devtools_and_the_console_bar_link_dear_imgui() -> None:
+    # The player console's bar is the one part of the release build drawn with Dear ImGui
+    # (docs/guides/studio/console.md#release); the debug tools' overlay is the other user.
     _, links = _targets()
     linking = sorted(name for name, libraries in links.items() if "imgui" in libraries)
-    assert linking == ["coney_devtools"]
+    assert linking == ["coney_console_ui", "coney_devtools"]
 
 
 def test_the_debug_source_pattern() -> None:
@@ -229,4 +241,39 @@ def test_the_console_include_rule() -> None:
     assert _console_includes('#include "debug/menu_model.h"\n#include "scripting/lua_state.h"\n') == [
         "debug/menu_model.h",
         "scripting/lua_state.h",
+    ]
+
+
+#: What a file of the console's bar may include besides Dear ImGui and the standard library: the console's model, the
+#: engine's plumbing, its own headers and the platform's window (docs/guides/studio/console.md#release). Nothing of
+#: the debug tools or the game itself.
+_CONSOLE_UI_ALLOWED = re.compile(r"^(?:console|core)/|^platform/(?:console_[a-z_]+|ui_scale|render_engine|window)\.h$")
+
+
+def _console_ui_includes(text: str) -> list[str]:
+    """The project headers a file of the console's bar includes that it may not."""
+    return [header for header in _QUOTED_INCLUDE.findall(text) if not _CONSOLE_UI_ALLOWED.match(header)]
+
+
+def test_the_console_bar_includes_only_the_console_and_the_window() -> None:
+    sources, _ = _targets()
+    files: list[Path] = []
+    for source in sources["coney_console_ui"]:
+        path = ROOT / "src" / "platform" / source
+        files += [p for p in (path, path.with_suffix(".h")) if p.exists()]
+    assert files, "coney_console_ui holds the console's bar"
+    offenders = [
+        f"{path.relative_to(ROOT).as_posix()}: {header}"
+        for path in sorted(set(files))
+        for header in _console_ui_includes(path.read_text(encoding="utf-8"))
+    ]
+    assert offenders == [], "the bar reaches the game only through the console's model"
+
+
+def test_the_console_bar_include_rule() -> None:
+    allowed = '#include "console/console.h"\n#include "platform/console_view.h"\n#include "platform/render_engine.h"\n'
+    assert _console_ui_includes(allowed) == []
+    assert _console_ui_includes('#include "debug/debug_session.h"\n#include "platform/game_session.h"\n') == [
+        "debug/debug_session.h",
+        "platform/game_session.h",
     ]

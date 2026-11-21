@@ -329,6 +329,39 @@ TEST_CASE("every call whose recorded lights differ from Coney's is reported with
                       "difference at slot 1") != std::string::npos);
 }
 
+TEST_CASE("a far object whose list is over its cap and a far glowing human replay as the original chose",
+          "[debug][lighting]") {
+    // Expected: lighting.md#select, confirmed (code) at 0x0017de10: the list is copied whole and the glow appended
+    // with no check against the cap; a count at the cap or over it skips the point lights.
+    std::vector<FixtureCall> fixture;
+    const FixtureLight kFill{1, 0.0F, {0.0625F, 0.125F, 0.0625F, 1.0F}, {0, 0, 0}};
+    const FixtureLight beside = lamp(0, 0, 80, 3);
+
+    // 0. An object beyond 69.3 m (cap 3) with four lights in list B: all four, not the lamp that meets it.
+    FixtureCall object = fixtureCall(kObject, 5000, {0, 0, 80, 1}, 1, 1, 200);
+    object.lists = {{{kWorldAmbient}, {kMoon, kReflected, kObjectAmbient, kFill}, {}, {beside}, {}}};
+    object.chosen = {kMoon, kReflected, kObjectAmbient, kFill};
+    fixture.push_back(object);
+
+    // 1. A glowing human beyond 69.3 m (cap 3) with three lights in list B: the three and the glow, not the lamp.
+    FixtureCall human = fixtureCall(kHuman, 5000, {0, 0.9F, 80, 1}, 1, 1, 200);
+    human.human = 1;
+    human.glow = "200";
+    const FixtureLight glow{
+        0x80, 0.4F, {200.0F / 255.0F, 100.0F / 255.0F, 50.0F / 255.0F, 200.0F / 255.0F}, {0, 1, 80}};
+    human.lists = {{{kWorldAmbient}, {kMoon, kReflected, kObjectAmbient}, {}, {beside}, {}}};
+    human.chosen = {kMoon, kReflected, kObjectAmbient, glow};
+    fixture.push_back(human);
+    const std::vector<TraceCall> calls = parsed(fixture);
+
+    const LightReplay replay = coney::debug::replayLightTrace(calls);
+    INFO(coney::debug::lightReplayReport(replay));
+    CHECK(replay.calls == 2);
+    CHECK(replay.equal == 2);
+    CHECK(replay.glowCalls == 1);
+    CHECK(replay.differences.empty());
+}
+
 TEST_CASE("a glow call is compared after the glow, which is taken from the original's chosen lights",
           "[debug][lighting]") {
     // Expected: lighting.md#glow, confirmed (code): the glow comes after the copied list, for a glow byte above 10

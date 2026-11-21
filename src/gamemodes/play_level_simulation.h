@@ -29,6 +29,7 @@
 #include "combat/stick.h"
 #include "combat/throw_aim.h"
 #include "core/error.h"
+#include "core/game_events.h"
 #include "core/interpolation.h"
 #include "core/options.h"
 #include "core/pad.h"
@@ -53,6 +54,7 @@
 #include "world_objects/lock_pick.h"
 #include "world_objects/loose_objects.h"
 #include "world_objects/object_bodies.h"
+#include "world_objects/object_list.h"
 #include "world_objects/object_tasks.h"
 #include "world_objects/pickups.h"
 
@@ -143,6 +145,12 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     /// @coney-only Coney's hand-over of the game's HUD to the level
     void useHud(hud::Hud& shared);
 
+    /// Each player slot's HUD state of the newest step, slot i at index i: what the HUD's step was given for panel i
+    /// (docs/guides/network-architecture.md#sub-hud). Slot 0 is player 1's; slot 1 stays empty until a second player
+    /// plays in a level, and drives panel 1 as it is.
+    /// @coney-only network play's per-slot HUD state; the original's panels read their players themselves
+    [[nodiscard]] std::span<const hud::PlayerHudState> playerHuds() const { return m_playerHuds; }
+
     /// The level's world objects (the scripts' spawn records brought in round the camera, the objective markers):
     /// what the newest step draws (play_level_world.cpp).
     [[nodiscard]] const world_objects::ObjectTasks& worldObjects() const { return m_objectTasks; }
@@ -183,7 +191,16 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     /// @coney-only a disc test's count of the doors drawn
     [[nodiscard]] std::size_t doorsDrawnNear(anim::Vec3 at, float radius) const;
 
+    /// Raises what the level makes its players see or hear that passes no other seam (its objects' breaks, its scenes'
+    /// starts and ends) on `events` from now on (null: none; it must outlive the level), for network play
+    /// (docs/guides/multiplayer.md#events).
+    /// @coney-only network play; the original has none
+    void setGameEvents(GameEvents* events) { m_events = events; }
+
   protected:
+    /// Where the level raises its events (setGameEvents()); null for none.
+    [[nodiscard]] GameEvents* gameEvents() const { return m_events; }
+
     /// The simulation on `ground` (owned from now on) with player 1 playing `character` (the scene's character, which
     /// the sandbox's targets and fighters play too) as model `model`, at the ground's start (dropped onto it when
     /// `snapToGround`), made as character type `type` of `types` (human::playerClassOf()). `wad` (which must outlive
@@ -336,6 +353,8 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     bool stepLockPick(const Pad& pad);
     // After the player's step: his object attack's hit sent to its object, then the objects' two 60 Hz ticks.
     void stepObjects();
+    // Raises a car's breaking glass as an object break, for network play.
+    void raiseCarBreak(const world_objects::CarHitEffect& effect);
     // Player 1's object attack under way (Player_ObjectAttack's clip, 661 or 662, with its object): whether its hit
     // lands on the object this step. It lands when the clip's strike shapes come on (a car or other object) or strike
     // it (a pane or door, through strikeObjects()), not at the attack's start
@@ -475,6 +494,8 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     void stepMugging(human::Human& human);
     // The stereo-theft panel follows player 1's theft: shown from the press, its progress each update with cue 0x22 per
     // stage (and 0x23 for the last), gone as the end clip starts (docs/research/hud-functions-panels.md#stereo-layout).
+    // @coney-only the level's glue between player 1's theft and its panel: the original's HUD_StereoTheftStart, Set
+    // and End calls from StereoTheft_Start, Theft_UpdateStereo and StereoTheft_End, in one step
     void stepStereoPanel(const human::Human& human);
     // The mug meter follows player 1's mugging: shown while it runs, with the raw left stick, whether it is on target
     // and both bars' fills (docs/research/hud-functions-panels.md#mug-meter-layout).
@@ -508,6 +529,15 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     [[nodiscard]] std::optional<HeldDraw> heldDrawOf(double held, const human::Human& human,
                                                      const human::PlayerCharacter& character, const anim::Pose& pose,
                                                      anim::Vec3 feet, float heading) const;
+    // Before the pick-ups' step: every object a script (`HuPlaceItemInHand`) or a class's weapon put in a human's hand
+    // is made, as its handle has no world object yet (docs/research/objects.md#held, Scripted placement).
+    // @coney-only Coney's pass over the humans for placeItemInHand()
+    void stepPlacedHeld();
+    // Makes the object `human` holds by name, when it has no record yet: a record of its type at his feet, held by him
+    // (`holder`, his script handle) as its pick-up clip places it (heldDrawOf()), with its anim set his. An unknown
+    // type, or a type he would carry as a prop, leaves his hand empty.
+    // @orig 0x0024c280 Human_PlaceItemInHand (unknown)
+    void placeItemInHand(human::Human& human, double holder);
 
     // --- play_level_hats.cpp: the hats the humans wear (docs/research/characters.md#hats).
 
@@ -597,6 +627,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // they outlive the humans playing them.
     std::map<std::string, std::unique_ptr<human::PlayerCharacter>, std::less<>> m_castCharacters;
     ScriptedCast m_cast;            // the level's scripts' humans and brains; all null without them
+    GameEvents* m_events = nullptr; // setGameEvents()
     bool m_castPlayerBound = false; // whether player 1's creation is bound to the player
     // The level's route planner (null without path data), before the AI so it outlives the brains that use it.
     std::unique_ptr<ai::RoutePlanner> m_planner;
@@ -614,6 +645,9 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     double m_playerHandle = 0.0; // player 1's handle in the scripts and the scenes
     // The level's glass panes and doors (gameplay's; null without them), the lock pick under way, and its difficulty.
     world_objects::LevelObjects* m_objects = nullptr;
+    // The Object List (bindObjects() loads it; null when the disc has none): the objects' models, and the next model
+    // a damaged one swaps to (world_objects::ObjectWorld::models).
+    std::unique_ptr<world_objects::ObjectList> m_objectList;
     double m_heldObject = 0.0;             // what player 1 held at the last step (world_objects::kNoObject for nothing)
     world_objects::Cars* m_cars = nullptr; // the level's parked cars, for their stereos; not owned
     std::optional<double> m_theftCar;      // the car whose stereo player 1 is stealing
@@ -664,6 +698,8 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     std::set<double> m_carriedProps;
     // The HUD the steps drive: the simulation's own, or the game's after useHud().
     std::unique_ptr<hud::HudOwner> m_hud = std::make_unique<hud::HudOwner>();
+    // Each player slot's HUD state, which builds every step's HUD frame (playerHuds()).
+    std::array<hud::PlayerHudState, hud::kPlayers> m_playerHuds{};
     PlayStats m_stats;
     std::uint32_t m_lastAnimId = 0; // player 1's clip at the last step, for the run log's clip lines
     bool m_frozen = false;          // player 1 frozen (he ignores the pad)

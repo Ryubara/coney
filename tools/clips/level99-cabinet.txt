@@ -1,0 +1,21 @@
+# The level99 store's glass display cabinet punched twice, for the `level99-cabinet` clips pair scenario
+# (tools/clips/level99-cabinet.toml), played from checkpoint 2 (`--play-level level99 --checkpoint 2 --skip-movies`): the
+# checkpoint's scene fades the view in and holds the player 2 s, so cross skips it first (a scene takes a skip only after
+# 60 of its updates). Frames are 1/30 s from the level's first frame of play.
+# It lives here, not under tests/support, because it steers with `steer` waypoints (the engine's input script has them; the
+# Python trace reader, which reads every tests/support script, does not).
+65 tap cross
+# Walk to the store's window at (54.5, 50.9), face it and punch it until it breaks (square at 300).
+80 steer 100 54.5,50.2 54.5,50.9
+280 stick left 0 0
+300 tap square
+# Walk in through the broken window to the display cabinet at x 57.98 and stop in front of it.
+480 steer 100 54.5,52.6 56.0,53.17 58.0,53.17
+730 stick left 0 0
+# Two punches at the cabinet: the first leaves its door at 8 hitpoints, the second takes it under 7, so a leaf's model
+# changes to the bent one (docs/research/objects.md#leaf-damage).
+770 tap square
+810 tap square
+# Step aside so the cabinet's door shows, then stand.
+850 steer 40 56.6,51.3
+940 stick left 0 0

@@ -169,6 +169,11 @@ enum class MaterialColour : std::uint8_t {
     /// Every material's colour set to Material3d::tint and kept: a car part's paint, or white
     /// (docs/research/graphics.md#car-draw).
     Paint,
+    /// The first material's colour replaced by Material3d::tint with its red, green and blue times Material3d::shade
+    /// (truncated) and its alpha Material3d::fade, and kept: a human's colour (HuColor, white unless a script sets it)
+    /// times the shadow dimming and his distance fade, as HumanRender_Draw writes them
+    /// (docs/research/graphics.md#human-draw, steps 3 and 4).
+    Shade,
 };
 
 /// What a 3D draw changes about its mesh's own materials this frame.
@@ -178,8 +183,12 @@ struct Material3d {
     /// The alpha of every material colour under MaterialColour::Fade: a streamed sector's fade-in
     /// (World_RenderSectorAtomic, docs/research/world.md#a-frame), 255 once faded in.
     std::uint8_t fade = 255;
-    /// The colour MaterialColour::Tint gives the first material and MaterialColour::Paint gives every one.
+    /// The colour MaterialColour::Tint gives the first material, MaterialColour::Paint gives every one and
+    /// MaterialColour::Shade dims for the first: an object's tint, a car's paint, a human's colour.
     Rgba tint = kWhite;
+    /// What MaterialColour::Shade multiplies the human's red, green and blue by (0 to 1): a human's shadow dimming
+    /// (graphics::ShadowDim::factor()), 1 for a human it does not dim.
+    float shade = 1.0F;
     /// Texture levels picked by the distance to the camera, as the original draws the streamed sectors alone
     /// (docs/research/rendering.md#world); level 0 otherwise.
     bool distanceLevels = false;
@@ -197,17 +206,33 @@ struct Transform3d {
     friend bool operator==(const Transform3d&, const Transform3d&) = default;
 };
 
+/// How a 3D draw's dual layer is drawn over its mesh.
+enum class DualPass : std::uint8_t {
+    /// A world's or an object's dual layer (docs/research/rendering.md#dual): at the alpha of the mesh's first
+    /// material, with no alpha test, in the draw's states.
+    Layer,
+    /// A human's blood layer (docs/research/rendering.md#characters, GS context 2): in the mesh's colours, blended by
+    /// its texture's alpha (source alpha over inverse source alpha, the vertex alpha on) with no alpha test, Z tested
+    /// and written; after it the alpha test is GREATEREQUAL again and the vertex alpha off.
+    Blood,
+};
+
 /// One draw of a scene pass: a mesh of the asset store by id, where it is, what it changes of its materials, its
 /// states and its lights; then, when it has one, its dual layer (docs/research/rendering.md#dual), a second mesh on
-/// the same frame drawn right after it at the same fade with no alpha test. The textures of each mesh's materials, in
-/// the order of MeshData::materials, and the lights are ranges of the frame's arrays (FrameDescription::texturesOf(),
-/// dualTexturesOf(), lightsOf()), set when the draw is added.
+/// the same frame drawn right after it as `dualPass` says. A skinned mesh (a human) also carries its pose: the
+/// skinning matrices, one per skin node, in the character's space, which `transform` (the character's placement) puts
+/// into the world. The textures of each mesh's materials, in the order of MeshData::materials, the lights and the
+/// pose are ranges of the frame's arrays (FrameDescription::texturesOf(), dualTexturesOf(), lightsOf(), bonesOf()),
+/// set when the draw is added.
 struct Draw3d {
     MeshId mesh;
     MeshId dualLayer; ///< invalid (0) for none
+    DualPass dualPass = DualPass::Layer;
     Transform3d transform;
     Material3d material;
     SceneStates states;
+    std::uint32_t firstBone = 0;
+    std::uint32_t boneCount = 0; ///< 0: not skinned
     std::uint32_t firstLight = 0;
     std::uint32_t lightCount = 0;
     std::uint32_t firstTexture = 0;
@@ -219,8 +244,8 @@ struct Draw3d {
 };
 
 /// A pass of 3D draws through the frame's camera, in their order: the streamed world's sectors (item 7 of
-/// docs/engine/renderer.md#order), the world objects and the parked cars (item 8); humans and effects join it with
-/// items 9 and 10.
+/// docs/engine/renderer.md#order), the world objects and the parked cars (item 8) and the humans (item 9); the effects
+/// join it with item 10.
 struct ScenePass {
     std::vector<Draw3d> draws;
 };
@@ -244,12 +269,12 @@ struct FrameStart {
 /// far). Textures are held by id, so a description names no graphics API: the GL3 renderer draws it through librw
 /// (platform/gl3_renderer.h) and the SDL3 GPU renderer will draw the same description.
 ///
-/// It holds the 2D side, the screen passes, the streamed world's sectors, the world objects and the parked cars (scene
-/// passes of 3D draws, each a mesh and its textures by AssetStore id). The rest of the 3D scene (the camera, the
-/// level's background, humans and effects) still goes to librw directly between them (items 9 and 10 of
-/// docs/engine/renderer.md#order move it here), so the GL3 renderer draws each part as it is added rather than the
-/// whole frame at its end. Draws are given in logical pixels with the window rectangle they are mapped onto, or in
-/// window pixels, and are kept in window pixels.
+/// It holds the 2D side, the screen passes, the streamed world's sectors, the world objects, the parked cars and the
+/// humans with their poses (scene passes of 3D draws, each a mesh and its textures by AssetStore id). The rest of the
+/// 3D scene (the camera, the level's background and the effects) still goes to librw directly between them (item 10
+/// of docs/engine/renderer.md#order moves the effects here), so the GL3 renderer draws each part as it is added rather
+/// than the whole frame at its end. Draws are given in logical pixels with the window rectangle they are mapped onto,
+/// or in window pixels, and are kept in window pixels.
 class FrameDescription {
   public:
     /// Forgets the last frame's passes, textures and primitives and starts a new frame as `start` says.
@@ -275,11 +300,11 @@ class FrameDescription {
     void addTriangles(const Material2d& material, std::span<const LogicalVertex> vertices, const ScreenRect& onto);
     /// Adds a screen pass after everything added so far; the next 2D draw starts a new overlay pass.
     void addScreenPass(const ScreenPass& pass);
-    /// Adds the 3D draw `draw` lit by `lights`, its mesh's material `textures` and its dual layer's `dualTextures` (the
-    /// ranges in `draw` are set here) to the scene pass the last pass is, or to a new one; the next 2D draw starts a
-    /// new overlay pass.
+    /// Adds the 3D draw `draw` lit by `lights`, its mesh's material `textures`, its dual layer's `dualTextures` and,
+    /// for a skinned mesh, its pose `bones` (the ranges in `draw` are set here) to the scene pass the last pass is, or
+    /// to a new one; the next 2D draw starts a new overlay pass.
     void addSceneDraw(Draw3d draw, std::span<const SceneLight> lights, std::span<const TextureId> textures,
-                      std::span<const TextureId> dualTextures);
+                      std::span<const TextureId> dualTextures, std::span<const Transform3d> bones = {});
 
     /// The passes, in the order they draw.
     [[nodiscard]] std::span<const FramePass> passes() const { return m_passes; }
@@ -298,6 +323,9 @@ class FrameDescription {
     [[nodiscard]] std::span<const TextureId> texturesOf(const Draw3d& draw) const;
     /// The textures of `draw`'s dual layer's materials, as texturesOf().
     [[nodiscard]] std::span<const TextureId> dualTexturesOf(const Draw3d& draw) const;
+    /// The pose of `draw`, a 3D draw of this frame: its skinning matrices in skin node order; empty when it is not
+    /// skinned.
+    [[nodiscard]] std::span<const Transform3d> bonesOf(const Draw3d& draw) const;
 
   private:
     // The overlay pass the next draw joins: the last pass when it is one, else a new one.
@@ -312,6 +340,7 @@ class FrameDescription {
     std::vector<ScreenVertex> m_vertices;
     std::vector<SceneLight> m_lights;
     std::vector<TextureId> m_sceneTextures; // the 3D draws' textures, then each one's dual layer's
+    std::vector<Transform3d> m_bones;       // the skinned 3D draws' poses
 };
 
 } // namespace coney::graphics

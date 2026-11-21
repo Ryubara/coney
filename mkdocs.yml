@@ -240,6 +240,7 @@ nav:
       - Mesh and texture formats: engine/asset-formats.md
       - Renderer: engine/renderer.md
       - Renderer performance: engine/renderer-performance.md
+      - Anti-aliasing, scaling and HDR: engine/renderer-scaling.md
       - Simulation and drawing threads: engine/render-threads.md
       - GPU renderer: engine/gpu-renderer.md
   - Game references:
@@ -356,6 +357,7 @@ nav:
       - Conclave, the Claude Code mod: guides/conclave.md
       - The debug menus: guides/debug-menu.md
       - The Coney console: guides/console.md
+      - The UI widget model for mods: guides/mod-ui.md
       - Console commands: guides/console-commands.md
       - Performance: guides/performance.md
       - The run log: guides/run-log.md

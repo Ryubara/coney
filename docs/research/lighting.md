@@ -241,7 +241,8 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
 `LightManager_SelectLights(distSq, manager, sphere, flags, pointLights, pulse, human)` (`0x0017de10`) fills the
 upload list (`0x00715300`, at most 8). Confirmed (code):
 
-1. Nothing when the global `0x005e5374` is 0.
+1. Nothing when the global `0x005e5374` is 0 (the upload list then keeps the last call's lights). Nothing else
+   writes it but `StreamManager_StaticInit`, which sets it to 1 (`0x00155adc`), so it is always 1. Confirmed (code).
 2. **World** (`flags` bit 0 clear): copy list A; the cap is 8. **Objects** (bit 0 set): copy list B (`pulse` = 0) or
    list C (`pulse` = 1); the cap is `6 - min(int(distSq / 1600), 3)` (list B) or `6 - min(int(distSq / 1600), 2)` (list
    C). With `distSq` the squared distance to the camera, that is 6 lights within 40 m, 5 to 56.6 m, 4 to 69.3 m, then 3
@@ -286,6 +287,15 @@ r-20261119-light-selection-replay: the four steps above applied to the inputs in
 hashes checked against its record) gave the recorded lights in the same order in 300 of 300 calls, as in run
 r-20261030-light-selection. Coney's own selection, replayed on the same trace by the `[trace]` test of
 [the faithful comparison](../guides/realtime-lighting.md#test-selection), gives the same 300 of 300.
+
+**A list over the cap and the glow, at runtime.** Confirmed (runtime), run r-20261119-light-selection-glow, `level99`
+checkpoint 2 from the `pedestrian-grab` state with two edits before the trace: four more ambient and directional lights
+that light objects, made with `SetLight` through the `lua` recipe (`call-brains` patch), so list B holds 7, over every
+object's cap of 6 at most; and the player's glow bytes `+0x644`-`+0x647` written as 200, 100, 50, 200. Of its 300
+calls (204 objects, 78 sectors, 12 humans, 6 background) every object got all 7 lights of list B and no point light,
+and in 6 human calls (the player) the glow followed the 7, 8 lights against a cap of 6; at most 8 in a call. Coney's
+selection replayed on that trace by the same `[trace]` test gives the recorded lights in 300 of 300, the 6 glow calls
+compared after the glow.
 
 `LightManager_UploadSelected` (`0x0017e810`) then queues each chosen light with `RwPS2_QueueLightForVU1`
 (`0x00476cc8`): a block header with two scales of 1.0, then per light its colour (RpLight `+0x18`) and type, plus the
@@ -520,12 +530,13 @@ models against the GS dumps). Coney's choices:
   The [health rings](hud-radar.md#the-health-rings) are drawn over the shadows.
 - A light with radius 0 given `SetLightFlicker` keeps its corona and flickers (no `sub_flashing_light` particle);
   light bugs are not spawned. No object uses the pulse or the glow yet.
-- **Differences in the selection** (`LightManager::select`, against [step 2 and 3](#select)): Coney stops copying the
-  ambient and directional list at the cap and adds the glow only below the cap, where the original copies the list
-  whole and adds the glow uncapped. Nothing shows in `level99`, whose list B holds 3 lights, the smallest cap; a level
-  or an object with more would differ far from the camera. The cull's corona-only lights, which Coney leaves out of
-  the point lists, are a finding of [#654](issue:654). The fix and the trace comparison that catches it are build
-  issues of [Realtime lighting](../guides/realtime-lighting.md#build-issues).
+- **The selection** (`LightManager::select`) copies the ambient and directional list whole and adds the glow with no
+  check against the cap, as [step 2 and 3](#select) say ([#1253](issue:1253); before it Coney cut the list at the cap
+  and added the glow only below it). One stand-in remains: the original's lists and upload list have room for 8 and
+  are never checked, so a ninth light (a list of 9, or the glow after 8 lights) writes over the list's count word
+  (`0x00715320` for the upload list; confirmed (code) at `0x0017de10` and `0x0017d880`); Coney stops at 8 and then adds
+  no glow. No level is known to come near it (`level99`'s list B holds 3). The cull's corona-only lights, which Coney
+  leaves out of the point lists, are a finding of [#654](issue:654).
 - `SetShadowColor`, `SetShadowLightOffset` and `EnableShadow`, empty here, keep their values as the Xbox port does
   ([Xbox lighting: the shadow light](xbox-lighting.md#shadow-light)), render-side only: the stealth flag and the
   dimming above read the ground check, never them. Each frame the play mode's rig builds the **lighting frame**
@@ -545,6 +556,12 @@ models against the GS dumps). Coney's choices:
   against the prelight and the lights read at the same frame.
 - **The glow's colour**{#q-glow-colour}: what sets a human's glow colour `+0x644` (a rage or power-up effect?). Find
   out: in Ghidra, the message `Human_HandleMessage` handles at its write; or in PCSX2, a write watchpoint on the byte.
+  Until it is known no Coney human glows, and the glow's place (the bone `+0x92`, raised by half the scale) is the
+  caller's to give `LightManager::select`.
+- **A ninth light**{#q-ninth-light}: whether any level reaches a ninth light in a list or in the upload list (more
+  than 8 ambient and directional lights for objects, or 8 and a glowing human), where the original writes over a
+  count and Coney stops at 8 ([In Coney](#coneys-implementation)). Find out: count each level's `SetLight` calls of
+  type 2 or 3 that light objects or the world, from the disc's scripts.
 - **The pulse flag**{#q-pulse-flag}: what object flag `0x80` (the pulse, light B) marks. Find out: in Ghidra, the
   writers of the flag in the object set-up; or the objects that carry it, counted per level from the disc.
 - **Mode 4's flicker**{#q-flicker-mode4}: the RpLight's colour is not updated by it (`0x0017caa8` writes only the base,

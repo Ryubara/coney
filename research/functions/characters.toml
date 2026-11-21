@@ -470,6 +470,20 @@ coney = "src/human/human.h:Human::idleUnderControl"
 status = "legacy"
 
 [[function]]
+address = 0x00225520
+name = "Human_CanBeGrabbedBy"
+page = "stealth.md#stealth-kill"
+role = "Whether another human may grab this one now: no flag 0x40, not down, dead or in a scene, within 0.25 m of height, none of the blocking state or held bits; a knocked-down one only past half its rise."
+level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::grabbableNow"
+status = "compared"
+
+[[function.gaps]]
+what = "the scene state and the state word's mask are read as standing with health left; the knocked-down branch cannot pass"
+relation = "stand-in"
+issue = 684
+
+[[function]]
 address = 0x002256a0
 name = "Human_CanBeGrabbed"
 page = "characters.md#code-core"
@@ -534,7 +548,12 @@ page = "characters.md#original-structure"
 role = "joins the player list, takes a pad and a HUD panel, brain type 0 ([Players](characters.md#players))"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::stepCrew"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the record's slot and pad, the enemy lists cleared, the player list and HUD panel, the brain reset, the war-chief choice, the damage scale, the class flags and gear, the gang's update after the level start's follow (a switch runs it), and the body and move-style settings are not ported"
+relation = "not-ported"
+issue = 1520
 
 [[function]]
 address = 0x0022a2a8

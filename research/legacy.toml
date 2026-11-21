@@ -482,7 +482,6 @@ front-matter = 1
 skeleton = 1
 verified = 1
 evidence = 5
-stale-wording = 1
 
 ["docs/research/tasks.md"]
 front-matter = 1

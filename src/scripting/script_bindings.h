@@ -9,6 +9,7 @@
 #include <string_view>
 #include <vector>
 
+#include "core/game_events.h"
 #include "gui/global_strings.h"
 #include "gui/rumble_mode_gui/rumble_data.h"
 #include "human/carried_drop.h"
@@ -199,7 +200,10 @@ struct BindingContext {
     /// The screen tint `SetLevelColour`, `EnterStore` and `ExitStore` set, before the level effects' own (the front
     /// end's, which has no level effects); null: the effects' tint, or none.
     effects::ScreenTint* tint = nullptr;
-    SoundHost* sound = nullptr;                       ///< The game's sound (sound_bindings.h); null plays nothing.
+    SoundHost* sound = nullptr; ///< The game's sound (sound_bindings.h); null plays nothing.
+    /// Where what the players see or hear is raised for network play (core/game_events.h): the scripts' objectives
+    /// and particle systems, the level's breaks and scenes; null raises nothing.
+    GameEvents* events = nullptr;
     world_objects::Cars* cars = nullptr;              ///< The level's parked cars (`CarSpawn`); null keeps none.
     world_objects::Radios* radios = nullptr;          ///< The level's radios (`SetupRadio`); null keeps none.
     world_objects::TagSpots* tagSpots = nullptr;      ///< The level's tag spots (`CfgTagSettings`); null keeps none.

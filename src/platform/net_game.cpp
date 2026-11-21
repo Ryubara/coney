@@ -110,6 +110,7 @@ void NetGame::afterStep(NetPlay& net) {
                   << '\n';
     }
     net.setGameHumans(m_humans.humans());
+    net.setGameHuds(m_humans.huds());
     // The next step's capture; with no session nobody can name a retired id, so they are freed for use again.
     const bool session = net.inSession();
     if (!session) {

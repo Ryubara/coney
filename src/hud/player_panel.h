@@ -30,6 +30,8 @@ struct PanelValues {
     std::array<int, 4> items{};
     bool selectShows = true;  ///< The per-player record's `+0x1b`: SELECT shows the panel.
     bool promptWakes = false; ///< The player's action prompt names a dealer's goods (promptWakesPanel()): activity.
+
+    friend bool operator==(const PanelValues&, const PanelValues&) = default;
 };
 
 /// Whether an action prompt `text` wakes the player panel: it names `Spray`, `Flash`, `Blades` or `Give Mon` (the

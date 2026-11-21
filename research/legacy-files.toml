@@ -575,7 +575,7 @@ tag = 1
 tag = 3
 
 ["src/effects/particles.cpp"]
-tag = 28
+tag = 27
 
 ["src/effects/room_smoke.cpp"]
 tag = 3
@@ -632,7 +632,7 @@ tag = 1
 tag = 6
 
 ["src/gamemodes/level_object_services.cpp"]
-tag = 21
+tag = 18
 
 ["src/gamemodes/level_object_services.h"]
 tag = 3
@@ -995,7 +995,7 @@ tag = 15
 tag = 5
 
 ["src/human/fighter_victim.cpp"]
-tag = 9
+tag = 8
 
 ["src/human/holdable.h"]
 comment = 1
@@ -1093,7 +1093,7 @@ tag = 3
 tag = 4
 
 ["src/movies/movie_mode.cpp"]
-tag = 11
+tag = 9
 
 ["src/net/bit_stream.cpp"]
 comment = 3
@@ -1152,14 +1152,8 @@ comment = 1
 ["src/platform/hud_layer.h"]
 comment = 1
 
-["src/platform/imgui_ui_scale.cpp"]
-comment = 3
-
-["src/platform/imgui_ui_scale.h"]
-comment = 3
-
 ["src/platform/placed_objects.cpp"]
-comment = 2
+comment = 1
 
 ["src/platform/placed_objects.h"]
 comment = 1
@@ -1801,9 +1795,6 @@ citation = 2
 ["tests/core/perf_test.cpp"]
 citation = 8
 
-["tests/core/player_options_test.cpp"]
-citation = 6
-
 ["tests/core/ps2_float_test.cpp"]
 citation = 2
 
@@ -1844,9 +1835,6 @@ citation = 3
 citation = 4
 
 ["tests/debug/time_scale_test.cpp"]
-citation = 6
-
-["tests/debug/ui_scale_test.cpp"]
 citation = 6
 
 ["tests/effects/blur_pulse_test.cpp"]
@@ -1961,7 +1949,7 @@ citation = 3
 citation = 5
 
 ["tests/graphics/light_manager_test.cpp"]
-citation = 13
+citation = 12
 
 ["tests/graphics/overlay_camera_test.cpp"]
 citation = 7
@@ -2221,9 +2209,6 @@ citation = 2
 ["tests/platform/disc_front_end_wheel_test.cpp"]
 citation = 1
 
-["tests/platform/disc_game_session_test.cpp"]
-citation = 1
-
 ["tests/platform/disc_given_weapon_test.cpp"]
 citation = 1
 
@@ -2375,7 +2360,7 @@ citation = 2
 citation = 1
 
 ["tests/platform/disc_story_missions_test.cpp"]
-citation = 7
+citation = 4
 
 ["tests/platform/disc_story_start_test.cpp"]
 citation = 6
@@ -2404,14 +2389,11 @@ citation = 1
 ["tests/platform/front_end_scene_test.cpp"]
 citation = 2
 
-["tests/platform/imgui_ui_scale_test.cpp"]
-citation = 8
-
 ["tests/platform/log_output_test.cpp"]
 citation = 4
 
 ["tests/platform/net_play_test.cpp"]
-citation = 12
+citation = 11
 
 ["tests/platform/pad_pipe_test.cpp"]
 citation = 2
@@ -2555,7 +2537,7 @@ citation = 8
 citation = 7
 
 ["tests/scripting/script_bindings_test.cpp"]
-citation = 10
+citation = 9
 
 ["tests/scripting/script_system_test.cpp"]
 citation = 11
@@ -2654,9 +2636,6 @@ citation = 5
 citation = 3
 
 ["tests/world_objects/object_breaks_test.cpp"]
-citation = 2
-
-["tests/world_objects/object_list_test.cpp"]
 citation = 2
 
 ["tests/world_objects/object_tasks_test.cpp"]

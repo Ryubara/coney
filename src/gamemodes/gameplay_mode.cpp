@@ -230,6 +230,8 @@ GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem&
       m_recorded(recorded), m_loader(std::move(loader)), m_log(std::move(log)),
       m_objectServices(scripts, flags, nullptr) {
     m_objectServices.setPlayers(&state, &humans);
+    // Network play: the objects' sounds are raised on the binding context's events, which the session sets later.
+    m_objectServices.setEvents(&context.events);
     // A broken prop's piece becomes a spawn record of the level.
     m_objectServices.setSpawnRecords(context.spawnRecords);
     // Damage a human does reaches the volume boxes he stands in as their message 6, (human, box, object).
@@ -1599,25 +1601,25 @@ void GameplayMode::stepCrew(std::uint64_t nowMs) {
         return;
     }
     CharacterRules& rules = m_state.characters;
-    // A switch of player 1 gives his crew the follow (the level's start gives it as he is made, above).
+    // A switch of player 1 gives his crew the follow forced at once, with no unlock, then runs his gang's update so
+    // the new tactic starts in this call, as Human_MakePlayer does (the spawner part of its update with 1 is
+    // Spawners::update()'s; the level's start gives the follow as he is made, above, without the update yet, #1520).
+    // The dispatcher refuses the follow while a scene camera is current or his menu is locked; only a cinematic's end
+    // gives one after it (SceneTask::end()).
     if (player->handle != m_crewChief) {
-        m_crewFollowDue = m_crewFollowDue || m_crewChief != 0.0;
+        const bool switched = m_crewChief != 0.0;
         m_crewChief = player->handle;
+        if (switched) {
+            script::issueWarriorCommand(m_scripts, m_context, player->handle, ai::kCrewFollow, true);
+            if (ai::Gang* crew = chief->gang(); crew != nullptr) {
+                crew->update();
+            }
+        }
     }
-    // A scene that held him has ended.
-    const bool inScene = playerInScene();
-    if (m_crewInScene && !inScene) {
-        m_crewFollowDue = true;
-    }
-    m_crewInScene = inScene;
-    const bool sceneCamera = m_cameras && m_cameras->current().kind == camera::CameraKind::Scene;
-    if (m_crewFollowDue && !inScene && !sceneCamera) {
-        m_crewFollowDue = false;
-        m_state.story.menuLocked.at(0) = false;
-        script::issueWarriorCommand(m_scripts, m_context, player->handle, ai::kCrewFollow, true);
-    }
-    // The automatic commands, his menu unlocked every 10 updates, while they are on (game state `+0x431`,
-    // `WCEnableAutomaticSwitching`; the Rumble arenas turn them off).
+    // PlayerBrain_Update's crew steps: the automatic commands, his menu unlocked every 10 updates, while they are on
+    // (game state `+0x431`, `WCEnableAutomaticSwitching`; the Rumble arenas turn them off). Not built yet (#1520): a
+    // target no longer up dropped, the near-enemy scan every 2 s, the crew range check every 40 updates (with his
+    // heading cached) and the TauntPlayer ring while a Warrior hits back at him.
     if (!m_state.autoSwitch) {
         return;
     }

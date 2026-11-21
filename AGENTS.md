@@ -27,7 +27,7 @@ section Your first hour; the rest is for agents. Other tools: `uvx pre-commit in
   whole suite); a hook refuses raw `cmake --build`, `ctest`, `ninja`: [`build`](docs/guides/coney-tools-build.md#build).
 - Python: `uv run --project python pytest python/tests`; `uvx pre-commit run --all-files` before committing.
 - Docs: `.venv/Scripts/python -m mkdocs build --strict`; `coney-tools docs check`. Details: `docs/guides/building.md`.
-- On Windows, no local WSL builds or clang-tidy runs: GitHub CI is the Linux and macOS gate; fix failures forward.
+- No local WSL builds: CI is the Linux and macOS gate. clang-tidy runs in `task check` ([how](docs/guides/clang-tidy.md#local)).
 
 ## Rules (never broken)
 

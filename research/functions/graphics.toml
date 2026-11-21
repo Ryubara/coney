@@ -84,8 +84,18 @@ name = "HumanRender_Draw"
 page = "graphics.md#code-characters"
 role = "[Drawing a human](graphics.md#human-draw), [Lighting](lighting.md#humans)"
 level = "confirmed-code"
-coney = "src/graphics/human_blood.h:bloodLayerFor"
-status = "legacy"
+coney = "src/platform/play_lighting.h:PlayLighting::drawHumanPasses"
+status = "compared"
+
+[[function.gaps]]
+what = "the first second's fade-in after the instance's stamp not drawn"
+relation = "stand-in"
+issue = 1526
+
+[[function.gaps]]
+what = "the blob shadow's conditions (HuShadow, viewport, state 0x1cc, a held object), the scene-state ground ray and the sprite's turn and scale"
+relation = "not-ported"
+issue = 654
 
 [[function]]
 address = 0x00175210
@@ -216,7 +226,7 @@ page = "graphics.md#code-models"
 role = "chunk `0x46` ([WAD contents](formats/wad-contents.md#object-list))"
 level = "confirmed-code"
 coney = "src/world_objects/object_list.h:ObjectList::parse"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001811b0
@@ -659,3 +669,24 @@ role = "`CfgSetOutdoorMode`: `+0x3e4`"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
 status = "legacy"
+
+[[function]]
+address = 0x0046d010
+name = "RpMaterialSetTexture"
+page = "graphics.md#texture-lifetime"
+role = "gives a material a texture: raises its reference count (`+0x54`), destroys the one held before"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00488c58
+name = "RwTexDictionaryDestroy"
+page = "graphics.md#texture-lifetime"
+role = "destroys a texture dictionary: `RwTextureDestroy` on each texture, then unlinks it"
+level = "confirmed-code"
+
+[[function]]
+address = 0x00488d90
+name = "RwTextureDestroy"
+page = "graphics.md#texture-lifetime"
+role = "drops one reference to a texture (count at `+0x54`), freeing it at 0"
+level = "confirmed-code"

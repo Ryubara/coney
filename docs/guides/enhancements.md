@@ -112,7 +112,7 @@ player's Xbox disc ([Xbox assets](../research/xbox-assets.md)).
 | MSAA | Low-poly scenery, many long straight edges: MSAA suits it well | **yes** | On the SDL3 GPU renderer only, a multisampled F2 target ([Renderer: order](../engine/renderer.md#order), item 26); the GL3 path gets none. The motion blur's copy then becomes a resolve, since a multisampled buffer cannot be copied into a texture | F2 for the blur | S |
 | Alpha-to-coverage | Chain-link fences, foliage and railings are alpha cut-outs that MSAA does not smooth | **yes** | Alpha-to-coverage on alpha-tested materials in Coney's shaders on the GPU renderer, with coverage-preserving mips (below) | F3, MSAA | S |
 | FXAA / SMAA | Post-process AA; cheap, a little blur | **yes** | One post pass. SMAA's reference code is MIT; FXAA 3.11's NVIDIA licence is permissive (check at adoption) | F2 | S |
-| TAA | Removes shimmer on fences and thin wires; blurs the already soft 64 × 64 textures and ghosts. Needs jitter, velocity and history | **partly** | Per-object velocity from the two blended steps (we have them); jittered projection. FSR 3.1 (MIT) can be the TAA and upscaler, and stays the default the build ships; FSR 1 is the fallback, and DLSS, FSR 4 and XeSS are optional plug-ins beside the GPL code ([Decided](#decided)); the tiers are on [Renderer: Upscalers](../engine/renderer.md#upscalers) | F2, F3, F5 | M |
+| TAA | Removes shimmer on fences and thin wires; blurs the already soft 64 × 64 textures and ghosts. Needs jitter, velocity and history | **partly** | Per-object velocity from the two blended steps (we have them); jittered projection. FSR 3.1 (MIT) can be the TAA and upscaler, and stays the default the build ships; FSR 1 is the fallback, and DLSS, FSR 4 and XeSS are optional plug-ins beside the GPL code ([Decided](#decided)); the tiers are on [Renderer: Upscalers](../engine/renderer-scaling.md#upscalers) | F2, F3, F5 | M |
 | Anisotropic filtering | Streets and pavements at grazing angles | **yes**, but only with mips | The GPU renderer's sampler anisotropy per texture | mip generation | S |
 | Mip generation | 98% of textures have no mips, so they alias in the distance at any resolution | **yes** | Build mips when textures are converted into Coney's own formats ([Renderer: Order](../engine/renderer.md#order), item 6), by Coney's own box filter with alpha coverage kept at the alpha-test reference so fences do not vanish; LOD bias as a setting. Changes the look slightly (less shimmer than the PS2) | F4 (one load path) | S |
 
@@ -142,7 +142,7 @@ Realtime shadows, per-pixel lighting and reflections have their own design page:
 | Chromatic aberration | Not in the original; purely cosmetic | **yes** | One post pass, off by default | F2 | S |
 | Colour grading | The game tints through looks (`SetLevelColour`, stores) and the brightness option; PCSX2 shows the picture about 70% bright, the game's own colours ([Graphics](../research/graphics.md#open-questions)) | **yes** | A 3D LUT after the game's own looks; presets *Faithful TV* (the measured brightness) and *Neutral* | F2; the display-brightness research | S |
 | Depth of field | No focus data. Cutscene cameras have targets, the follow camera has a look-at point 1.4 m above the player | **partly** | Cutscenes only: focus on the scene camera's target; gameplay off (it would blur the street) | F2 | S-M |
-| HDR | Content is LDR on the GS scale (0x80 = 1.0); lit colours clamp at 1.0, so there is no overbright range (measured in the graphics research) | **partly**, low value | HDR10 / scRGB output with a paper-white setting; only additive effects (glows, coronas, bloom) could go above it. Not on OpenGL portably; SDL3's GPU API has HDR swapchains. Designed on [Renderer: HDR output](../engine/renderer.md#hdr) | F5 | M after F5 |
+| HDR | Content is LDR on the GS scale (0x80 = 1.0); lit colours clamp at 1.0, so there is no overbright range (measured in the graphics research) | **partly**, low value | HDR10 / scRGB output with a paper-white setting; only additive effects (glows, coronas, bloom) could go above it. Not on OpenGL portably; SDL3's GPU API has HDR swapchains. Designed on [Renderer: HDR output](../engine/renderer-scaling.md#hdr) | F5 | M after F5 |
 
 ## AI upscaling {#ai-upscaling}
 
@@ -203,7 +203,7 @@ milliseconds each, so the whole disc takes minutes to an hour; on a CPU it takes
 
 ### Texture packs {#packs}
 
-Coney imports any pack placed in `overrides/`, keyed by the original texture's hash. An entry
+Coney imports any pack placed in `packs/`, keyed by the original texture's hash. An entry
 whose hash matches no texture on the player's disc is ignored. `coney-tools` makes and exports packs as a folder
 with a manifest. There are three kinds:
 
@@ -238,7 +238,7 @@ Maintainer decisions (2026-10-07):
   and its groundwork comes first ([Renderer: Backend](../engine/renderer.md#backend)). The GPU renderer's MSAA
   replaces any on the GL3 path.
 - **Sharing texture packs**: Coney helps players share packs, in the model under [Packs](#packs). It imports from
-  `overrides/` by texture hash and exports with `coney-tools`; recipe packs are the default; pre-made upscales can
+  `packs/` by texture hash and exports with `coney-tools`; recipe packs are the default; pre-made upscales can
   be imported but are never hosted or linked by the project.
 
 ## Questions for the maintainer

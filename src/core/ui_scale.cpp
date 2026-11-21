@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The developer overlay's size rule (docs/guides/debug-menu.md#ui-scale). Coney's own tool: nothing in the original
+// The size rule of Coney's Dear ImGui interfaces, the console's bar and the developer overlay
+// (docs/guides/debug-menu.md#ui-scale). Coney's own tool: nothing in the original
 // corresponds.
-#include "debug/ui_scale.h"
+#include "core/ui_scale.h"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <format>
 
-namespace coney::debug {
+namespace coney {
 
 namespace {
 
@@ -48,4 +49,4 @@ float uiScaleFor(std::size_t choice, float displayHeight) {
     return kFixedScales[choice - 1];
 }
 
-} // namespace coney::debug
+} // namespace coney

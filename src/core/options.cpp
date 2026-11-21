@@ -22,11 +22,11 @@ namespace coney {
 namespace {
 
 // The options of OptionSet::Player (playerOptions()).
-constexpr std::array<std::string_view, 24> kPlayerOptions{
-    "--install",     "--data",        "--verify",         "--disc",         "--language", "--profiles",
-    "--import-save", "--fps-cap",     "--vsync",          "--line-blend",   "--show-fps", "--no-audio",
-    "--skip-movies", "--no-activate", "--window-display", "--host",         "--join",     "--net-name",
-    "--help",        "--headless",    "--frames",         "--input-script", "--renderer", "--preset"};
+constexpr std::array<std::string_view, 25> kPlayerOptions{
+    "--install",        "--data",     "--verify",     "--disc",        "--language", "--profiles",    "--import-save",
+    "--fps-cap",        "--vsync",    "--line-blend", "--show-fps",    "--no-audio", "--skip-movies", "--no-activate",
+    "--window-display", "--host",     "--join",       "--net-name",    "--help",     "--headless",    "--frames",
+    "--input-script",   "--renderer", "--preset",     "--console-open"};
 
 // The synopsis of usageText(OptionSet::Player), before its options' lines.
 constexpr std::string_view kPlayerSynopsis =
@@ -38,7 +38,7 @@ constexpr std::string_view kPlayerSynopsis =
     "             [--renderer gl3|gpu] [--preset ps2|xbox|enhanced|high]\n"
     "             [--no-activate] [--window-display DISPLAY] [--no-audio] [--skip-movies]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
-    "             [--headless] [--frames N] [--input-script FILE] [--help]\n"
+    "             [--headless] [--frames N] [--input-script FILE] [--console-open N] [--help]\n"
     "\n";
 
 // The text usageText() returns (see its doc comment in options.h).
@@ -64,13 +64,13 @@ constexpr std::string_view kUsage =
     "                           [--bench-spawn-step N] [--bench-measure N]\n"
     "                           [--bench-place X,Y,Z,H] [--bench-neutrals N] [--bench-fps]]\n"
     "             [--log-file FILE] [--log-verbose CATEGORIES]\n"
-    "             [--dev-overlay N] [--mesh-view SPEC] [--world-edit FILE]\n"
+    "             [--dev-overlay N] [--console-open N] [--mesh-view SPEC] [--world-edit FILE]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N|vrr] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
     "             [--renderer gl3|gpu] [--preset ps2|xbox|enhanced|high]\n"
     "             [--no-activate] [--window-display DISPLAY]\n"
     "             [--no-audio | --audio-test] [--skip-movies] [--cpu-skinning]\n"
-    "             [--record FILE [--record-seconds N] [--record-debug-draw]]\n"
+    "             [--record FILE [--record-seconds N] [--record-from-frame N] [--record-debug-draw]]\n"
     "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
     "             [--digest FILE] [--digest-net FILE] [--net-record FILE | --net-replay FILE]\n"
     "\n"
@@ -228,6 +228,10 @@ constexpr std::string_view kUsage =
     "                     FFmpeg (CONEY_FFMPEG or PATH). Test mode; with --play-level from the first\n"
     "                     frame of play\n"
     "  --record-seconds N the clip's length, 1 to 10 seconds (default and most: 10)\n"
+    "  --record-from-frame N\n"
+    "                     with --play-level: start the clip at the N-th frame of play (counted as\n"
+    "                     an --input-script is, from 0), so a long scripted run is recorded at its\n"
+    "                     end; the clip is still at most 10 seconds\n"
     "  --record-debug-draw\n"
     "                     keep the Debug draw lines the run switched on (the world edits' collision\n"
     "                     wireframe) in the clip; the menus and the overlay stay out\n"
@@ -243,6 +247,7 @@ constexpr std::string_view kUsage =
     "                     PCSX2 card file or folder card, a card dump, a .psu export, the save's\n"
     "                     folder BASLUS-21215 or its data file; the save itself is only read\n"
     "  --dev-overlay N    show the developer overlay (F1) for the first N frames, then hide it; a test aid\n"
+    "  --console-open N   open the console's bar (F8) for the first N frames, then close it; a test aid\n"
     "  --mesh-view SPEC   the Debug draw page's mesh views from the first frame of play: items separated by\n"
     "                     commas, wire=selection|humans|all, view=wire|material|draw|lod,\n"
     "                     scope=selection|humans|all, normals, bones, select=nearest|player, frames=N\n"
@@ -520,6 +525,13 @@ std::expected<void, Error> checkRecord(const Options& options) {
     if (options.recordDebugDraw && !options.recordPath.has_value()) {
         return invalidArgument("--record-debug-draw needs --record: it keeps the debug lines in the clip");
     }
+    if (options.recordFromFrame.has_value() && !options.recordPath.has_value()) {
+        return invalidArgument("--record-from-frame needs --record: it sets the frame the clip starts at");
+    }
+    if (options.recordFromFrame.has_value() && !options.playLevel.has_value()) {
+        return invalidArgument("--record-from-frame needs --play-level: its frames count from the level's first frame "
+                               "of play");
+    }
     if (!options.recordPath.has_value()) {
         return {};
     }
@@ -709,6 +721,23 @@ std::expected<int, Error> parseRecordSeconds(std::string_view text) {
     }
     return invalidArgument(
         std::format("--record-seconds needs a whole number from 1 to {}, got \"{}\"", clips::kMaxClipSeconds, text));
+}
+
+// The most frames `--record-from-frame` may wait for: a million, over nine hours of play at 30 frames a second.
+constexpr std::uint64_t kMaxRecordFromFrame = 1'000'000;
+
+// Parses the value after `--record-from-frame`: a whole number of frames from 0 to kMaxRecordFromFrame, written with
+// decimal digits only.
+std::expected<std::uint64_t, Error> parseRecordFromFrame(std::string_view text) {
+    std::uint64_t value = 0;
+    if (isAllDigits(text)) {
+        const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
+        if (parsed.ec == std::errc{} && value <= kMaxRecordFromFrame) {
+            return value;
+        }
+    }
+    return invalidArgument(std::format("--record-from-frame needs a whole number of frames from 0 to {}, got \"{}\"",
+                                       kMaxRecordFromFrame, text));
 }
 
 // Parses the value after `--fps-cap`: a whole number from 0 to kMaxFpsCap, written with decimal digits only.
@@ -961,6 +990,7 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     std::optional<std::string> languageArg;      // as typed, so a repeat is refused like any other option
     std::optional<std::string> fpsCapArg;        // as typed, likewise
     std::optional<std::string> recordSecondsArg; // as typed, likewise
+    std::optional<std::string> fromFrameArg;     // as typed, likewise
     std::optional<std::string> kindArg;          // as typed, likewise
     std::optional<std::string> vsyncArg;         // as typed, likewise
     std::optional<std::string> lineBlendArg;     // as typed, likewise
@@ -1019,6 +1049,19 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(frames.error()));
             }
             options.devOverlayFrames = *frames;
+        } else if (arg == "--console-open") {
+            if (options.consoleOpenFrames.has_value()) {
+                return invalidArgument("--console-open given twice");
+            }
+            if (i + 1 == args.size()) {
+                return invalidArgument(std::format("--console-open needs a whole number from 1 to {}", kMaxFrameLimit));
+            }
+            ++i;
+            auto frames = parseFrameLimit(args[i], "--console-open");
+            if (!frames) {
+                return std::unexpected(std::move(frames.error()));
+            }
+            options.consoleOpenFrames = *frames;
         } else if (arg == "--disc") {
             if (options.discPath.has_value()) {
                 return invalidArgument("--disc given twice");
@@ -1532,6 +1575,15 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(seconds.error()));
             }
             options.recordSeconds = *seconds;
+        } else if (arg == "--record-from-frame") {
+            if (auto value = takeValue(args, i, fromFrameArg, "--record-from-frame", "a frame number"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto frame = parseRecordFromFrame(fromFrameArg.value_or(std::string{}));
+            if (!frame) {
+                return std::unexpected(std::move(frame.error()));
+            }
+            options.recordFromFrame = *frame;
         } else if (arg == "--screenshot") {
 
             if (auto value = takeValue(args, i, options.screenshotPath, "--screenshot", "the path of a PNG file");

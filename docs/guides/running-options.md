@@ -10,7 +10,9 @@ overview](running.md#pages).
 `--record FILE` writes a short video clip of the run for an issue or a pull request: H.264 in an MP4, 30 frames a
 second (one per fixed step), 720 lines high at the picture's shape (960 x 720 for the usual 4:3), CRF 26 with the
 `slow` preset, and the game's own sound as AAC at 96 kbit/s. `--record-seconds N` sets its length, 1 to 10 seconds;
-10, the default, is also the most. Coney's own debug tooling, with no counterpart in the original.
+10, the default, is also the most. With `--play-level`, `--record-from-frame N` starts the clip at the N-th frame of
+play (counted as an input script is, from 0), so a scripted run longer than a clip is recorded at its end. Coney's own
+debug tooling, with no counterpart in the original.
 
 ```sh
 CLIPS=$(uv run --project python coney-tools clips folder my-task)   # the absolute path of the clips folder
@@ -24,7 +26,10 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 -
   ones the run itself switched on (the [world edits'](running-viewers.md#world-edits) collision wireframe, for a clip
   of collision being changed). It never reads the screen or a window. The sound is the mixer's own output, step by
   step.
-- **When.** From the first frame, or with `--play-level` from the level's first frame of play (as `--frames` counts).
+- **When.** From the first frame, or with `--play-level` from the level's first frame of play (as `--frames` counts), or
+  from the frame `--record-from-frame N` names (counted the same way, from 0; only with `--play-level`, at most
+  1,000,000). The frames before it are played, with the script and the sound's mixing, but not recorded, so a run may be
+  as long as it needs and only the clip is capped at 10 seconds.
   Without `--frames` the run ends when the clip is done. `--record` puts Coney in test mode (one step and one render a
   frame, no clock), so the same command and `--input-script` give the same frames: the line it prints ends with a hash
   of every frame recorded.
@@ -188,6 +193,19 @@ build/dev/src/platform/coney --headless --frames 200 --input-script tests/suppor
     --join 127.0.0.1:PORT --digest-net guest-net.txt
 build/dev/src/platform/coney --headless --frames 300 --input-script tests/support/net_host.txt \
     --net-replay session.txt --digest replay.txt
+```
+
+## The console {#console}
+
+Every build, the release build included, has the Coney console: F8 (or SELECT and R3 on a gamepad) opens its bar over
+the game in a window ([The F8 bar](console.md#front-end)). One option is for tests, in every build: `--console-open N`
+opens the bar for the first N frames (1 to 1000000) and then closes it, the one way a test-mode run draws it. The last
+frame of `--frames 60 --console-open 30 --screenshot a.png` is byte-identical to the same run without
+`--console-open`, which `coney.console_bar_leaves_frame` checks (in a build with the debug tools, and skipped on a
+machine with no display, and where two runs without the bar already differ). Headless, it does nothing.
+
+```sh
+build/dev/src/platform/coney --frames 60 --console-open 30 --screenshot ../../scratch/console-closed.png
 ```
 
 ## The debug menus {#the-debug-menus}

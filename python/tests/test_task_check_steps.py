@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from conventions_support import REPO
 
-from coney_tools import check_cli, docs_check, docs_cli, task_check_steps, uv_environment
+from coney_tools import check_cli, ci_tidy, docs_check, docs_cli, local_tidy, task_check_steps, uv_environment
 from coney_tools.conventions import load_conventions
 from coney_tools.task_check_steps import CheckUnavailable, StepContext
 
@@ -189,10 +189,70 @@ def test_docs_check_fails_when_a_page_fails_the_standards(monkeypatch: pytest.Mo
     assert task_check_steps.docs_check_step(context(Commands())).ok
 
 
-def test_no_check_runs_clang_tidy() -> None:
-    assert "clang-tidy" not in task_check_steps.IMPLEMENTED
-    source = Path(task_check_steps.__file__).read_text(encoding="utf-8")
-    assert "run-clang-tidy" not in source and "clang-tidy-" not in source
+def test_the_clang_tidy_check_is_one_of_the_full_profiles_and_only_for_cpp_folders() -> None:
+    conventions = load_conventions(REPO)
+    assert task_check_steps.IMPLEMENTED["clang-tidy"] is task_check_steps.clang_tidy_step
+    full = next(profile for profile in conventions.proof.profiles if profile.name == "full")
+    # after the build, whose compile database it reads
+    assert full.checks.index("clang-tidy") > full.checks.index(conventions.proof.build.checks[0])
+    assert tuple(conventions.proof.only_when["clang-tidy"]) == conventions.ci.tidy.folders
+
+
+def test_the_clang_tidy_check_cannot_run_without_a_program(monkeypatch: pytest.MonkeyPatch) -> None:
+    def missing(root: Path, major: int) -> str:
+        raise local_tidy.TidyUnavailable("clang-tidy 19 is not installed")
+
+    monkeypatch.setattr(local_tidy, "find_program", missing)
+    with pytest.raises(CheckUnavailable, match="not installed"):
+        task_check_steps.clang_tidy_step(context(Commands()))
+
+
+def test_the_clang_tidy_program_is_looked_for_before_the_run_and_not_its_database(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert task_check_steps.PREFLIGHT["clang-tidy"] is task_check_steps.clang_tidy_preflight
+    asked: list[int] = []
+
+    def found(root: Path, major: int) -> str:
+        asked.append(major)
+        return "clang-tidy"
+
+    monkeypatch.setattr(local_tidy, "find_program", found)
+    monkeypatch.setattr(local_tidy, "compile_database", lambda root, preset: pytest.fail("the build writes it"))
+    conventions = load_conventions(REPO)
+    task_check_steps.clang_tidy_preflight(REPO, conventions)
+    assert asked == [conventions.ci.tidy.llvm_major]
+
+    def missing(root: Path, major: int) -> str:
+        raise local_tidy.TidyUnavailable("clang-tidy 19 is not installed")
+
+    monkeypatch.setattr(local_tidy, "find_program", missing)
+    with pytest.raises(CheckUnavailable, match="not installed"):
+        task_check_steps.clang_tidy_preflight(REPO, conventions)
+
+
+def fake_local(monkeypatch: pytest.MonkeyPatch, result: local_tidy.LocalResult) -> None:
+    """Make the clang-tidy check find a program and a database and return `result` without running anything."""
+    monkeypatch.setattr(local_tidy, "find_program", lambda root, major: "clang-tidy")
+    monkeypatch.setattr(local_tidy, "compile_database", lambda root, preset: root / "build")
+    monkeypatch.setattr(local_tidy, "default_jobs", lambda root: 1)
+    monkeypatch.setattr(local_tidy, "run_local", lambda *args, **kwargs: result)
+
+
+def test_a_clang_tidy_finding_fails_the_check_naming_file_line_and_check(monkeypatch: pytest.MonkeyPatch) -> None:
+    plan = ci_tidy.TidyPlan([ci_tidy.Unit("src/a.cpp")])
+    found = ci_tidy.TidyResult([ci_tidy.Finding("src/a.cpp", 4, 2, "error", "bugprone-x", "bad")])
+    fake_local(monkeypatch, local_tidy.LocalResult(plan, found, "clang-tidy"))
+    result = task_check_steps.clang_tidy_step(context(Commands(), paths=("src/a.cpp",)))
+    assert not result.ok and result.detail == "1 finding on the changed lines (1 source checked)"
+    assert result.output == ("src/a.cpp:4:2 [bugprone-x] bad",)
+
+
+def test_a_clean_clang_tidy_run_passes(monkeypatch: pytest.MonkeyPatch) -> None:
+    plan = ci_tidy.TidyPlan([ci_tidy.Unit("src/a.cpp"), ci_tidy.Unit("src/b.cpp")])
+    fake_local(monkeypatch, local_tidy.LocalResult(plan, ci_tidy.TidyResult(), "clang-tidy"))
+    result = task_check_steps.clang_tidy_step(context(Commands(), paths=("src/a.cpp",)))
+    assert result.ok and result.detail == "clean on the changed lines (2 sources checked)"
 
 
 def built_root(tmp_path: Path) -> Path:

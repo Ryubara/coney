@@ -7,23 +7,34 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <format>
+#include <functional>
 #include <memory>
+#include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/game_events.h"
 #include "core/options.h"
 #include "core/pad.h"
 #include "core/pads.h"
+#include "gamemodes/sound_event_player.h"
+#include "gamemodes/sound_events.h"
+#include "hud/hud.h"
+#include "net/event_channel.h"
 #include "net/loopback_transport.h"
 #include "net/net_id.h"
 #include "net/net_status.h"
+#include "net/player_huds.h"
 #include "net/snapshot.h"
 #include "net/state_digest.h"
 #include "net/transport.h"
 #include "platform/net_game.h"
+#include "scripting/sound_bindings.h"
 
 using coney::InputSource;
 using coney::PadSample;
@@ -104,6 +115,60 @@ struct TwoGames {
         REQUIRE(guest.join());
         run(4);
     }
+};
+
+// A game's sound that writes down each sound started, moved and stopped, with the step it was asked in; each start
+// takes the next handle from `next`.
+class StepSound final : public coney::script::SoundHost {
+  public:
+    explicit StepSound(double first) : next(first) {}
+    std::vector<std::string> calls;
+    std::uint32_t step = 0; ///< the step the calls are written down for
+    double next;
+
+    double play3D(std::uint32_t sound, const std::array<float, 3>& position) override {
+        calls.push_back(std::format("{}: start {:#x} at {}", step, sound, position[0]));
+        return next++;
+    }
+    void moveSound(double /*handle*/, const std::array<float, 3>& position, float volume) override {
+        calls.push_back(std::format("{}: move to {} at {}", step, position[0], volume));
+    }
+    void stopSound(double /*handle*/) override { calls.push_back(std::format("{}: stop", step)); }
+    // What this test does not use.
+    void configureMusicTrack(std::uint32_t /*track*/, float /*barMs*/, float /*volume*/) override {}
+    void setInterfaceSound(int /*cue*/, std::uint32_t /*sound*/) override {}
+    void allocateCharacterVoices(int /*count*/) override {}
+    void setCommandSoundPercent(int /*voiceSet*/, std::uint32_t /*command*/, std::uint32_t /*percent*/) override {}
+    void loadSoundBank(std::string_view /*name*/) override {}
+    void setNonDuckableDuck(float /*factor*/) override {}
+    void setPitchFactor(float /*factor*/) override {}
+    void humanSound(const coney::script::HumanSoundCall& /*call*/) override {}
+    void addAmbientSound(int /*index*/, std::uint32_t /*sound*/) override {}
+    double addAmbientEmitter(const coney::script::AmbientEmitterCall& /*call*/) override { return 0.0; }
+    void setAmbientEmitterPositions(std::string_view /*name*/,
+                                    std::span<const std::array<float, 3>> /*points*/) override {}
+    void playAmbientTrack(std::uint32_t /*sound*/) override {}
+    void pauseSound(bool /*on*/) override {}
+    double play2D(std::uint32_t /*sound*/) override { return 0.0; }
+    void stopAmbientTrack() override {}
+    void setAmbientTrackVolume(float /*volume*/) override {}
+    void playMusic(std::uint32_t /*track*/, bool /*loop*/, std::string_view /*callback*/) override {}
+    void stopMusic() override {}
+    void setMusicVolume(float /*volume*/) override {}
+    void setListener(int /*listener*/) override {}
+    bool speak(const coney::script::SpeechCall& /*call*/, std::string_view /*callback*/,
+               std::optional<double> /*callbackArg*/) override {
+        return false;
+    }
+    void shutUp(double /*human*/, bool /*force*/) override {}
+    std::optional<double> sayCommand(const coney::script::CommandCall& /*call*/,
+                                     std::string_view /*callback*/) override {
+        return std::nullopt;
+    }
+    void gameplayEntered() override {}
+    void levelLoadStarted(int /*levelNumber*/) override {}
+    void levelLoaded() override {}
+    void gameplayLeft() override {}
 };
 
 // Whether `log` has a line containing `text`.
@@ -319,6 +384,7 @@ TEST_CASE("a guest with no pad plugged in leaves the host's port 2 unplugged", "
     CHECK_FALSE(games.hostSees[1].connected);
 }
 
+// Expected: frontend.md#pad-record, confirmed (code)
 TEST_CASE("a host takes one remote player, as the console has two pad ports", "[net][net_play]") {
     // Expected: docs/guides/multiplayer.md#player-two (one remote player, on pad port 2)
     TwoGames games;
@@ -375,6 +441,30 @@ TEST_CASE("a host sends its game's humans, and the guest's digests match what ea
     CHECK(sent.back().step == games.host.steps() - 1);
 }
 
+TEST_CASE("a host sends its players' HUDs with its snapshots, and the guest holds each slot's as the host had it",
+          "[net][net_play][hud]") {
+    // Expected: unverified, #1447 (Coney's own snapshots; docs/guides/snapshots.md#hud-state)
+    TwoGames games;
+    CHECK(games.guest.arrivedHuds().empty()); // not joined
+    games.connect();
+    // Two players' HUDs, the second's money rising each step: the host's game hands them over before each send.
+    std::array<coney::hud::PlayerHudState, 2> slots{};
+    slots[0].panel.rage = 20;
+    slots[1].panel.rage = 50;
+    for (int i = 0; i < 20; ++i) {
+        slots[1].panel.money = 10 + i;
+        games.host.setGameHuds(coney::net::snapshotHuds(slots));
+        games.run(1);
+    }
+    // The guest decodes each step's snapshot at the start of the next: it holds the step before last's HUDs.
+    const coney::net::SnapshotHuds held = games.guest.arrivedHuds();
+    REQUIRE(held.size() == 2);
+    CHECK(coney::net::playerHudState(held.at(0)) == slots[0]);
+    slots[1].panel.money = 10 + 18;
+    CHECK(coney::net::playerHudState(held.at(1)) == slots[1]);
+    CHECK(games.host.arrivedHuds().empty()); // a host draws its own
+}
+
 TEST_CASE("a host with nobody joined sends nothing and writes no snapshot digest", "[net][net_play]") {
     // Expected: unverified, #558 (Coney's own digest)
     TwoGames games;
@@ -413,4 +503,156 @@ TEST_CASE("the game's humans are captured only while a session or a proof needs 
     auto hostOpened = coney::platform::NetGame::open(hosting);
     REQUIRE(hostOpened.has_value());
     CHECK((**hostOpened).humans().capturing());
+}
+
+// Expected: unverified, #547 (Coney's own network play; the original has none)
+TEST_CASE("a host's game events reach the joined guest once each, at the host's step", "[net][net_play][events]") {
+    TwoGames games;
+    // Offline the game's events are not kept.
+    games.host.gameEvents().raise(coney::GameEvent{.kind = coney::GameEventKind::Sound2D, .id = 1});
+    CHECK(games.host.gameEvents().size() == 0);
+    games.connect();
+    CHECK(games.host.gameEvents().recording());
+    CHECK_FALSE(games.guest.gameEvents().recording());
+    // Raised during the host's next step: a sound and an objective.
+    const std::uint32_t step = games.host.steps();
+    games.host.gameEvents().raise(coney::GameEvent{.kind = coney::GameEventKind::Sound2D, .id = 0x99});
+    games.host.gameEvents().raise(
+        coney::GameEvent{.kind = coney::GameEventKind::Objective, .id = 0, .extra = 8000, .text = "Go"});
+    games.run(3);
+    CHECK(games.guest.takeArrivedEvents(step - 1).empty());
+    const std::vector<coney::net::ArrivedEvent> arrived = games.guest.takeArrivedEvents(step);
+    REQUIRE(arrived.size() == 2);
+    CHECK(arrived[0].step == step);
+    CHECK(arrived[0].event.kind == coney::GameEventKind::Sound2D);
+    CHECK(arrived[0].event.id == 0x99);
+    CHECK(arrived[1].event.kind == coney::GameEventKind::Objective);
+    CHECK(arrived[1].event.text == "Go");
+    CHECK(games.guest.takeArrivedEvents(games.host.steps()).empty());
+    // Leaving stops the recording.
+    games.host.disconnect();
+    CHECK_FALSE(games.host.gameEvents().recording());
+    CHECK(games.host.takeArrivedEvents(100).empty());
+}
+
+// Expected: unverified, #1473 (Coney's own network play; the original has none)
+TEST_CASE("a sound the host starts, moves and stops is started, moved and stopped once on the guest at those steps",
+          "[net][net_play][events]") {
+    TwoGames games;
+    games.connect();
+    // The host's game sound behind its events (as GameSession wires it), and the guest's own sound with the player
+    // that applies the host's events to it. Their handles differ: the host's from 100, the guest's from 500.
+    StepSound hostSound(100.0);
+    coney::SoundEvents seam(&hostSound, &games.host.gameEvents());
+    StepSound guestSound(500.0);
+    coney::SoundEventPlayer player(&guestSound);
+    // The guest applies the host's events step by step, at the host's step each happened in.
+    std::uint32_t shown = 0;
+    const auto guestCatchesUp = [&] {
+        for (; shown < games.host.steps(); ++shown) {
+            guestSound.step = shown;
+            for (const coney::net::ArrivedEvent& arrived : games.guest.takeArrivedEvents(shown)) {
+                player.apply(coney::net::toGameEvent(arrived.event));
+            }
+        }
+    };
+    guestCatchesUp();
+    // A radio's track: started, followed where it is (nothing to send), halved for a scene, then stopped; one host
+    // step for each call, with a step between.
+    double track = 0.0;
+    const std::array<std::function<void()>, 4> calls{
+        [&] { track = seam.play3D(0x42, {3.0F, 0.0F, 0.0F}); },
+        [&] { seam.moveSound(track, {3.0F, 0.0F, 0.0F}, 1.0F); },
+        [&] { seam.moveSound(track, {5.0F, 0.0F, 0.0F}, 0.5F); },
+        [&] { seam.stopSound(track); },
+    };
+    for (const std::function<void()>& call : calls) {
+        hostSound.step = games.host.steps();
+        call();
+        games.run(1);
+        games.run(1);
+    }
+    games.run(4);
+    guestCatchesUp();
+
+    CHECK(hostSound.calls.size() == 4);
+    // The host's move to where it already plays sends nothing; everything else plays once on the guest, at the
+    // step the host made it in, on the guest's own handle.
+    const std::vector<std::string> expected{hostSound.calls[0], hostSound.calls[2], hostSound.calls[3]};
+    CHECK(guestSound.calls == expected);
+    CHECK(player.instances() == 0);
+}
+
+// Expected: unverified, #557 (Coney's own barrier; network-architecture.md#story: the server waits until every client
+// has loaded before the first step)
+TEST_CASE("a host's level reaches the guest, and the host holds its steps until the guest has loaded it",
+          "[net][net_play][level]") {
+    TwoGames games;
+    games.connect();
+    CHECK_FALSE(games.host.holdsStep());
+
+    games.host.loadLevel("level2", 3);
+    CHECK(games.host.holdsStep());
+    games.run(2);
+    const std::optional<coney::net::LoadLevel> order = games.guest.takeLevelOrder();
+    REQUIRE(order.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, unseen by clang-tidy
+    CHECK(order->level == "level2");
+    CHECK(order->checkpoint == 3);
+    CHECK_FALSE(games.guest.holdsStep()); // a guest holds nothing: it is not the server
+    games.run(5);
+    CHECK(games.host.holdsStep());
+
+    games.guest.levelLoaded(order->load);
+    // NOLINTEND(bugprone-unchecked-optional-access)
+    games.run(2);
+    CHECK_FALSE(games.host.holdsStep());
+    const std::vector<std::string> log = games.host.log();
+    CHECK(std::ranges::find(log, "Guest is loading level2 at checkpoint 3") != log.end());
+    CHECK(std::ranges::find(log, "Guest has loaded level2") != log.end());
+}
+
+// Expected: unverified, #557 (Coney's own; network-architecture.md#authority: a player drops in mid-level)
+TEST_CASE("a guest who joins a host already in a level is told the level on joining", "[net][net_play][level]") {
+    TwoGames games;
+    games.host.loadLevel("level99", 1); // offline: nobody to wait for
+    CHECK_FALSE(games.host.holdsStep());
+    games.connect();
+    CHECK(games.host.holdsStep());
+    const std::optional<coney::net::LoadLevel> order = games.guest.takeLevelOrder();
+    REQUIRE(order.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, unseen by clang-tidy
+    CHECK(order->level == "level99");
+    CHECK(order->reason == coney::net::LoadReason::Join);
+    games.guest.levelLoaded(order->load);
+    // NOLINTEND(bugprone-unchecked-optional-access)
+    games.run(2);
+    CHECK_FALSE(games.host.holdsStep());
+
+    // The host's mission ends; the guest hears how.
+    games.host.endMission(coney::net::MissionOutcome::Passed);
+    games.run(2);
+    const std::vector<coney::net::MissionEnd> ends = games.guest.takeMissionEnds();
+    REQUIRE(ends.size() == 1);
+    CHECK(ends[0].outcome == coney::net::MissionOutcome::Passed);
+}
+
+// Expected: unverified, #557 (Coney's own; network-architecture.md#story: a movie waits for every client's end or skip)
+TEST_CASE("a host's movie waits for the guest's end, and the guest's skip ends it", "[net][net_play][level][movie]") {
+    TwoGames games;
+    games.host.loadLevel("level1", 1);
+    games.connect();
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): an empty order throws, which fails the test
+    games.guest.levelLoaded(games.guest.takeLevelOrder().value().load);
+    // NOLINTEND(bugprone-unchecked-optional-access)
+    games.run(2);
+
+    const std::uint32_t movie = games.host.startMovie();
+    CHECK_FALSE(games.host.movieMayEnd()); // the host's own copy still plays
+    games.host.endHostMovie();
+    CHECK_FALSE(games.host.movieMayEnd());
+    games.guest.movieDone(movie, true);
+    games.run(2);
+    CHECK(games.host.movieSkipped());
+    CHECK(games.host.movieMayEnd());
 }

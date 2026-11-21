@@ -36,6 +36,7 @@
 #include "audio/object_sounds.h"
 #include "characters/character_types.h"
 #include "console/command_spec.h"
+#include "console/console_pad.h"
 #include "core/chunk_system.h"
 #include "core/clip_recording.h"
 #include "core/deferred_input.h"
@@ -75,6 +76,7 @@
 #include "platform/character_skin.h"
 #include "platform/character_viewer_mode.h"
 #include "platform/clip_recorder.h"
+#include "platform/console_ui.h"
 #include "platform/debug_menus.h"
 #include "platform/error_dialogs.h"
 #include "platform/frame_pacer.h"
@@ -797,8 +799,8 @@ int main(int argc, char** argv) {
     if (!coney::platform::startNetPlay(netPlay, *options)) {
         return 1;
     }
-    // The console (docs/guides/console.md), taking the developer set as well; no front end yet, so its lines come from
-    // the input script.
+    // The console (docs/guides/console.md), taking the developer set as well; its lines come from the F8 bar below and
+    // from the input script.
     coney::platform::GameConsole gameConsole(*options, netPlay, coney::console::Access::Developer);
     if (script != nullptr) {
         gameConsole.listenTo(*script);
@@ -880,6 +882,7 @@ int main(int argc, char** argv) {
     // `--script-trace`) apply to the first level it loads.
     if (session) {
         session->attachAudio(audio.get());
+        session->setGameEvents(&netPlay.gameEvents());
         session->setHumansTrace(humansTrace);
         session->setNetHumans(&netGame.humans());
         if (commandLineLevel) {
@@ -1010,7 +1013,10 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
-    coney::debug::DebugSession debugSession(tunables, debugServices, input.get(), logText);
+    // The console's own pad gate (docs/guides/console.md#front-end) before the debug tools' gate, so SELECT and R3
+    // reach the console first and port 1 is the console's while it is open. Not in test mode, which reads no device.
+    coney::console::ConsolePad consolePad(input.get(), gameConsole.console());
+    coney::debug::DebugSession debugSession(tunables, debugServices, testMode ? input.get() : &consolePad, logText);
     // The display preset (docs/engine/renderer.md#presets-built): test mode draws PS2, or the preset `--preset` names,
     // whatever the file saved; outside test mode `--preset` is chosen over the file once its values land. The settings
     // settle after each batch of tunable changes, so a preset chosen in the menus writes its values for the next frame.
@@ -1135,6 +1141,7 @@ int main(int argc, char** argv) {
         sandboxViewer.reset();
         coney::platform::GameSession& started = makeSession();
         started.attachAudio(audio.get());
+        started.setGameEvents(&netPlay.gameEvents());
         started.setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
         started.setMeshViews(meshViews);
         started.setLightingSwitches(&debugSession.lighting());
@@ -1155,11 +1162,28 @@ int main(int argc, char** argv) {
             logWarning(std::format("{}; running without the developer overlay", started.error().message));
         }
     }
-    // Both menus draw over every frame, the overlay last so it stays on top.
-    renderer.setPresentOverlay([&padMenu, &devOverlay](coney::graphics::RenderDevice& device) {
+    // The console's F8 bar (docs/guides/console.md#front-end), only with a window, in a Dear ImGui context of its own.
+    std::unique_ptr<coney::platform::ConsoleUi> consoleUi;
+    if (windowed) {
+        auto started = coney::platform::ConsoleUi::start(renderer, gameConsole.console(), consolePad,
+                                                         coney::platform::consoleUiSettings(testMode));
+        if (started) {
+            consoleUi = std::move(*started);
+            if (const std::optional<int> openFor = options->consoleOpenFrames; openFor) {
+                consoleUi->showForFrames(static_cast<std::uint64_t>(*openFor));
+            }
+        } else {
+            logWarning(std::format("{}; running without the console bar", started.error().message));
+        }
+    }
+    // Both menus and the console's bar draw over every frame, the bar last so it stays on top.
+    renderer.setPresentOverlay([&padMenu, &devOverlay, &consoleUi](coney::graphics::RenderDevice& device) {
         padMenu.draw(device);
         if (devOverlay) {
             devOverlay->draw();
+        }
+        if (consoleUi) {
+            consoleUi->draw();
         }
     });
     // The time controls hold steps (pause, a scale below 1x); a held step still reads the pads for the menus, and the
@@ -1237,11 +1261,13 @@ int main(int argc, char** argv) {
 
     // The main loop, paced as set up above.
     std::optional<coney::platform::Window> window = renderer.window();
-    // The window's events go past the developer overlay first; while it has the keyboard, the keyboard pad is off.
+    // The window's events go past the console's bar first, then the developer overlay; while either has the keyboard,
+    // the keyboard pad is off.
     coney::FrameHooks hooks;
     coney::platform::HumanWatch humanWatch; // the humans' events for the event log
-    hooks.beginFrame = [&window, &devOverlay, devices, &pendingSandbox, &playSandbox, &pendingStart, &startSessionAt,
-                        &session, &playFramesDone, &humanWatch, &playLevel, &sessionPlayMode, &eventFile] {
+    hooks.beginFrame = [&window, &devOverlay, &consoleUi, devices, &pendingSandbox, &playSandbox, &pendingStart,
+                        &startSessionAt, &session, &playFramesDone, &humanWatch, &playLevel, &sessionPlayMode,
+                        &eventFile] {
         // The event log: what the last frame's step did to the humans, then the step the next frame runs.
         if (coney::events::enabled()) {
             humanWatch.update(playLevel ? playLevel.get() : sessionPlayMode());
@@ -1271,11 +1297,12 @@ int main(int argc, char** argv) {
         if (!window) {
             return true;
         }
-        const bool running =
-            devOverlay ? window->pumpEvents([&devOverlay](const void* event) { return devOverlay->handleEvent(event); })
-                       : window->pumpEvents();
+        const bool running = window->pumpEvents([&devOverlay, &consoleUi](const void* event) {
+            return (consoleUi && consoleUi->handleEvent(event)) || (devOverlay && devOverlay->handleEvent(event));
+        });
         if (devices != nullptr) {
-            devices->setKeyboardEnabled(!(devOverlay && devOverlay->wantsKeyboard()));
+            devices->setKeyboardEnabled(!(devOverlay && devOverlay->wantsKeyboard()) &&
+                                        !(consoleUi && consoleUi->wantsKeyboard()));
         }
         return running;
     };
@@ -1391,13 +1418,19 @@ int main(int argc, char** argv) {
         }
         const bool endsWithClip = !frameLimit && !playFrameLimit;
         hooks.beginFrame = [inner = std::move(hooks.beginFrame), &clip, &clipDone, &debugSession, &session,
-                            endsWithClip, armed = !commandLineLevel, keepLines = options->recordDebugDraw]() mutable {
+                            endsWithClip, armed = !commandLineLevel, keepLines = options->recordDebugDraw,
+                            fromFrame = options->recordFromFrame.value_or(0), playFrames = std::uint64_t{0}]() mutable {
             // The debug menus' lines in the 3D scene stay off while recording: a clip shows the game only, unless
             // `--record-debug-draw` keeps the lines the run itself switched on (the world edits' wireframe).
             debugSession.debugDraw() = coney::debug::recordedDebugDraw(debugSession.debugDraw(), keepLines);
+            // With `--play-level` the clip starts at the `--record-from-frame` frame of play (0 unless given), counted
+            // from the first frame the level plays as an input script is, so a long scripted run is recorded at its
+            // end.
             if (!armed && session && session->inPlay()) {
-                armed = true;
-                clip->start();
+                if (playFrames++ >= fromFrame) {
+                    armed = true;
+                    clip->start();
+                }
             }
             if (endsWithClip && clipDone) {
                 return false;

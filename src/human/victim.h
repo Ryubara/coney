@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "animation/anim_math.h"
+#include "characters/anim_set.h"
 #include "combat/power_class.h"
 #include "combat/reactions.h"
 #include "combat/stick.h"
@@ -75,6 +76,13 @@ struct DyingState {
     bool woundable = false;  ///< Human flag `0x8` (flag::kWoundable).
 };
 
+/// A dying clip the caller names, from another human's set: a paired move's victim side that defeats it
+/// (`Human_PlayDeathReaction`'s clip and the attacker given as the set's owner, docs/research/stealth.md#stealth-kill).
+struct NamedDying {
+    std::uint32_t clip = 0;
+    const characters::AnimSet* from = nullptr; ///< The attacker's set, which the clip and its rate come from.
+};
+
 /// One clip of the death chain before its loop, and the blend it hands over to the next clip with.
 struct DeathStep {
     std::uint32_t clip = 0;
@@ -128,10 +136,12 @@ class Victim {
     /// time, else 292), then a fall (308 when the clip has no knockdown event and the human is not down, 198 when its
     /// event's value is 0), then 205 for a woundable human not yet wounded, then the loop (200 after 205, 323 cuffed,
     /// else 349), each clip holding `0x2000`. Its owner knocks it out as the last clip before the loop ends. The hit
-    /// waiting is dropped. deathChain() keeps the clips and their blends.
+    /// waiting is dropped. deathChain() keeps the clips and their blends. With `named` the dying clip is that one, from
+    /// its set (no special state's or hit's clip is picked), and its knockdown event decides the fall.
     /// Research: docs/research/combat-reactions.md#knockout-timing
     /// @orig 0x00267a00 Human_PlayDeathReaction (unknown)
-    void die(const IncomingHit& hit, const VictimFrame& frame, const DyingState& dying, HumanAnimator& animator);
+    void die(const IncomingHit& hit, const VictimFrame& frame, const DyingState& dying, HumanAnimator& animator,
+             const NamedDying* named = nullptr);
     /// The chain the last die() played.
     [[nodiscard]] const DeathChain& deathChain() const { return m_deathChain; }
 

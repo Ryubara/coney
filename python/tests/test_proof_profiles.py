@@ -52,7 +52,8 @@ def test_the_checks_of_a_profile_keep_the_order_the_file_lists() -> None:
     docs = proof_profiles.required_checks(CONVENTIONS, "docs", ["docs/a.md"])
     assert docs == ["docs-check", "mkdocs", "pre-commit", "pytest"]
     full = proof_profiles.required_checks(CONVENTIONS, "full", ["src/a.cpp"])
-    assert full[-2:] == ["msvc-ci-build", "ctest-full-disc"]
+    # the clang-tidy check comes after the build, whose compile database it reads
+    assert full[-3:] == ["msvc-ci-build", "ctest-full-disc", "clang-tidy"]
 
 
 def test_a_bigger_profile_than_needed_is_allowed_and_a_smaller_one_is_not() -> None:

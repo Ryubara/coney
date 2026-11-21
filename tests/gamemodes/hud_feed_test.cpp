@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// What the play mode's HUD frame takes from player 1's human (feedHumanToHud()): whether he is knocked out, which
+// What a player slot's HUD state takes from his human (feedHumanToHud()): whether he is knocked out, which
 // drops his Armies panel (docs/research/armies.md#the-join-messages), and his rage meter. A synthetic fighter beaten to
 // 0 health, and a script's mark.
 #include "gamemodes/hud_feed.h"
@@ -36,15 +36,14 @@ TEST_CASE("the HUD frame reads a player beaten to 0 health as knocked out, with 
     // the dying reaction ends (combat-reactions.md#knockout-timing, confirmed (runtime)); no script is involved.
     const coney::test::FightCharacter character;
     coney::test::Fight fight(character, 30.0F);
-    coney::hud::HudFrame frame;
-    coney::feedHumanToHud(frame, 0, fight.human());
-    CHECK_FALSE(frame.knockedOut.at(0));
+    coney::hud::PlayerHudState state;
+    coney::feedHumanToHud(state, fight.human());
+    CHECK_FALSE(state.knockedOut);
     beatToZero(fight);
     REQUIRE(fight.human().fighter().health().depleted());
     REQUIRE_FALSE(fight.human().script().knockedOut);
-    coney::feedHumanToHud(frame, 0, fight.human());
-    CHECK(frame.knockedOut.at(0));
-    CHECK_FALSE(frame.knockedOut.at(1));
+    coney::feedHumanToHud(state, fight.human());
+    CHECK(state.knockedOut);
     // The feed drops his panel: the frame after the one he is knocked out shows his join message.
     coney::hud::ArmiesHud armies;
     armies.levelSetUp();
@@ -52,8 +51,8 @@ TEST_CASE("the HUD frame reads a player beaten to 0 health as knocked out, with 
     armies.setJoinMessage(0, true);
     armies.update(0, 60, {true, false}, {false, false});
     REQUIRE_FALSE(armies.joinShowing(0));
-    armies.update(10, 60, {true, false}, frame.knockedOut);
-    armies.update(20, 60, {true, false}, frame.knockedOut);
+    armies.update(10, 60, {true, false}, {state.knockedOut, false});
+    armies.update(20, 60, {true, false}, {state.knockedOut, false});
     CHECK(armies.joinShowing(0));
 }
 
@@ -64,9 +63,9 @@ TEST_CASE("the HUD frame reads a script's HuSetConscious(false) as knocked out, 
     coney::test::Fight fight(character, 30.0F);
     fight.human().script().knockedOut = true;
     REQUIRE_FALSE(fight.human().fighter().health().depleted());
-    coney::hud::HudFrame frame;
-    coney::feedHumanToHud(frame, 0, fight.human());
-    CHECK(frame.knockedOut.at(0));
+    coney::hud::PlayerHudState state;
+    coney::feedHumanToHud(state, fight.human());
+    CHECK(state.knockedOut);
 }
 
 TEST_CASE("the HUD frame takes the player's rage meter: its value, maximum and whether he rages", "[hud]") {
@@ -76,11 +75,11 @@ TEST_CASE("the HUD frame takes the player's rage meter: its value, maximum and w
     const coney::test::FightCharacter character;
     coney::test::Fight fight(character, 30.0F);
     fight.human().fighter().combat().rage().set(5);
-    coney::hud::HudFrame frame;
-    coney::feedHumanToHud(frame, 1, fight.human());
+    coney::hud::PlayerHudState state;
+    coney::feedHumanToHud(state, fight.human());
     const auto& rage = fight.human().fighter().combat().rage();
-    CHECK(frame.players.at(1).rage == rage.value());
-    CHECK(frame.players.at(1).rage == 5);
-    CHECK(frame.players.at(1).rageMax == rage.maximum());
-    CHECK(frame.players.at(1).raging == rage.raging());
+    CHECK(state.panel.rage == rage.value());
+    CHECK(state.panel.rage == 5);
+    CHECK(state.panel.rageMax == rage.maximum());
+    CHECK(state.panel.raging == rage.raging());
 }

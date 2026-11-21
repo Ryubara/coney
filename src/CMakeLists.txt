@@ -3,10 +3,13 @@ add_library(coney_core STATIC
     camera/camera_lens.cpp
     console/arg_types.cpp
     console/catalog.cpp
+    console/command_picker.cpp
     console/command_queue.cpp
     console/command_spec.cpp
     console/commands_table.cpp
     console/console.cpp
+    console/console_pad.cpp
+    console/line_editor.cpp
     console/owned_spec.cpp
     console/player_commands.cpp
     console/registry.cpp
@@ -18,6 +21,7 @@ add_library(coney_core STATIC
     core/chunk_types.cpp
     core/deferred_input.cpp
     core/event_log.cpp
+    core/game_events.cpp
     core/log.cpp
     core/log_record.cpp
     core/log_ring.cpp
@@ -56,6 +60,7 @@ add_library(coney_core STATIC
     core/story_manifest.cpp
     core/story_merge.cpp
     core/story_view.cpp
+    core/ui_scale.cpp
     core/sha256.cpp
     fileio/disc.cpp
     fileio/executable.cpp
@@ -70,12 +75,16 @@ add_library(coney_core STATIC
     gamemodes/front_end_services.cpp
     gamemodes/game_mode_stack.cpp
     gamemodes/gameplay_mode.cpp
+    gamemodes/gameplay_scene_crew.cpp
     gamemodes/gameplay_tag.cpp
     gamemodes/tag_lines.cpp
     gamemodes/gameplay_revive.cpp
     gamemodes/gameplay_uncuff.cpp
     gamemodes/gameplay_war_commands.cpp
+    gamemodes/sound_event_player.cpp
+    gamemodes/sound_events.cpp
     gamemodes/system_music.cpp
+    gamemodes/ui_screen_mode.cpp
     gamemodes/legal_screen_mode.cpp
     gamemodes/level_crime_services.cpp
     gamemodes/loading_screen.cpp
@@ -156,6 +165,11 @@ add_library(coney_core STATIC
     gui/menu_input.cpp
     gui/mods_story_list.cpp
     gui/message_box.cpp
+    gui/mod_ui/ui_flow_screen.cpp
+    gui/mod_ui/ui_input_mask.cpp
+    gui/mod_ui/ui_model.cpp
+    gui/mod_ui/ui_screen.cpp
+    gui/mod_ui/ui_view.cpp
     gui/option_grid.cpp
     gui/pause_menu/armies_game_over_menu.cpp
     gui/pause_menu/mission_failed_menu.cpp
@@ -369,6 +383,7 @@ target_sources(coney_core PRIVATE
     human/fighter_counter.cpp
     human/fighter_grab.cpp
     human/fighter_script.cpp
+    human/fighter_stealth.cpp
     human/fighter_tandem.cpp
     human/fighter_victim.cpp
     human/player.cpp
@@ -549,7 +564,9 @@ target_link_libraries(coney_movies PUBLIC coney_core coney_audio)
 # (docs/guides/multiplayer.md).
 add_library(coney_net STATIC net/bit_stream.cpp net/input_buffer.cpp net/link_conditioner.cpp net/link_quality.cpp net/net_id.cpp net/replicated_fields.cpp net/snapshot.cpp
                              net/loopback_transport.cpp net/net_client.cpp net/net_server.cpp net/protocol.cpp net/snapshot_wire.cpp
-                             net/jitter_buffer.cpp net/client_world.cpp net/state_digest.cpp net/game_humans.cpp net/session_record.cpp)
+                             net/event_wire.cpp net/event_channel.cpp net/level_wire.cpp net/level_barrier.cpp
+                             net/jitter_buffer.cpp net/client_world.cpp net/state_digest.cpp net/game_humans.cpp net/session_record.cpp
+                             net/player_huds.cpp)
 coney_target_defaults(coney_net)
 target_link_libraries(coney_net PUBLIC coney_core)
 if(CONEY_DEBUG_TOOLS)
@@ -596,7 +613,6 @@ if(CONEY_DEBUG_TOOLS)
         debug/time_control.cpp
         debug/time_series.cpp
         debug/tunables.cpp
-        debug/ui_scale.cpp
         debug/world_edits.cpp
         debug/world_split.cpp
         gamemodes/sheet_viewer_mode.cpp

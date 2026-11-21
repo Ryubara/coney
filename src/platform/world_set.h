@@ -107,9 +107,9 @@ class WorldSet final : public world::PartStore {
     [[nodiscard]] std::size_t residentAtomics() const;
 
     /// Materials, over every part loaded so far, whose texture the lookup found in another loaded part's dictionary
-    /// rather than in the part's own or a world's: SceneAssets notes their texture ids when the part loads, and those
-    /// ids would go stale when the other part unloads. The disc has none, so this is a guard: a part that has some is
-    /// also reported with a warning (docs/engine/renderer.md#texture-lifetime).
+    /// rather than in the part's own or a world's. The disc has none (a disc check counts them); one that does keep
+    /// its texture after the other part unloads, as SceneAssets holds a texture while a held mesh names it
+    /// (docs/engine/renderer.md#texture-lifetime).
     [[nodiscard]] std::size_t borrowedTextures() const { return m_borrowedTextures; }
 
     /// Reads part `part` of world `world` (readPart()), then holds its sectors' meshes in the scene assets beside the

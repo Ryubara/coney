@@ -14,9 +14,11 @@
 #include <utility>
 #include <vector>
 
+#include "core/game_events.h"
 #include "core/options.h"
 #include "core/pad.h"
 #include "core/pads.h"
+#include "net/event_channel.h"
 #include "net/input_buffer.h"
 #include "net/link_conditioner.h"
 #include "net/net_client.h"
@@ -113,6 +115,13 @@ bool NetPlay::hostOn(const std::string& bindAddress) {
         return false;
     }
     note(std::format("hosting on port {} as {}", m_server->port(), m_playerName));
+    // Hosting from inside a level: whoever joins is told to load it.
+    m_loadingSlots.clear();
+    if (m_level) {
+        (void)m_server->loadLevel(m_level->first, m_level->second);
+    }
+    // From the next step the game's events are kept, to be sent to whoever joins.
+    m_gameEvents.setRecording(true);
     return true;
 }
 
@@ -181,6 +190,7 @@ bool NetPlay::inSession() const {
 }
 
 void NetPlay::teardown() {
+    m_gameEvents.setRecording(false);
     m_server.reset();
     m_client.reset();
     if (m_link) {
@@ -248,10 +258,19 @@ void NetPlay::afterStep() {
     const std::uint32_t step = m_steps++;
     if (m_server) {
         sendSnapshots(step);
+        // The step's events, raised by the game since the last step, go before the flush that sends them.
+        const std::vector<GameEvent> events = m_gameEvents.take();
+        if (!events.empty()) {
+            m_server->sendEvents(step, net::toNetEvents(events, m_eventIds));
+        }
         m_server->send();
+        noteLoaded();
         for (const net::ServerEvent& event : m_server->takeEvents()) {
             if (event.kind == net::ServerEvent::Kind::Joined) {
                 note(std::format("{} joined as player {} on pad port {}", event.name, event.slot + 1, kRemotePort + 1));
+                if (m_level) {
+                    note(std::format("{} is loading {} at checkpoint {}", event.name, m_level->first, m_level->second));
+                }
             } else {
                 note(std::format("{} (player {}) {}", event.name, event.slot + 1,
                                  event.connectionLost ? std::string_view("lost the connection")
@@ -273,8 +292,17 @@ void NetPlay::setGameHumans(std::span<const net::SnapshotHuman> humans) {
     m_gameHumans.assign(humans.begin(), humans.end());
 }
 
+void NetPlay::setGameHuds(std::span<const net::SnapshotHud> huds) { m_gameHuds.assign(huds.begin(), huds.end()); }
+
+net::SnapshotHuds NetPlay::arrivedHuds() const {
+    if (!m_client) {
+        return {};
+    }
+    return m_client->snapshots().huds();
+}
+
 void NetPlay::sendSnapshots(std::uint32_t step) {
-    m_server->sendSnapshots(step, m_gameHumans);
+    m_server->sendSnapshots(step, m_gameHumans, m_gameHuds);
     if (!m_snapshotDigests) {
         return;
     }
@@ -314,6 +342,13 @@ void NetPlay::noteDecoded() {
                                           .pads = std::nullopt});
     }
     m_lastDecoded = newest;
+}
+
+std::vector<net::ArrivedEvent> NetPlay::takeArrivedEvents(std::uint32_t step) {
+    if (!m_client) {
+        return {};
+    }
+    return m_client->takeEvents(step);
 }
 
 PortSamples NetPlay::pads(const PortSamples& local) {
@@ -378,6 +413,79 @@ net::NetStatus NetPlay::status() const {
 std::string NetPlay::summary() const {
     const net::NetStatus now = status();
     return std::format("net: {}; {} B sent, {} B received\n", now.state, now.bytesSent, now.bytesReceived);
+}
+
+void NetPlay::loadLevel(const std::string& level, std::uint16_t checkpoint) {
+    m_level = std::pair{level, checkpoint};
+    if (!m_server) {
+        return;
+    }
+    (void)m_server->loadLevel(level, checkpoint);
+    for (const net::ServerClient& client : m_server->clients()) {
+        if (client.joined) {
+            note(std::format("{} is loading {} at checkpoint {}", client.name, level, checkpoint));
+        }
+    }
+}
+
+void NetPlay::noteLoaded() {
+    // Each joined player's load, once each: loading at the last look and no longer now.
+    std::vector<std::uint8_t> loading;
+    for (const net::ServerClient& client : m_server->clients()) {
+        if (!client.joined) {
+            continue;
+        }
+        if (m_server->loading(client.slot)) {
+            loading.push_back(client.slot);
+        } else if (std::ranges::find(m_loadingSlots, client.slot) != m_loadingSlots.end() && m_level) {
+            note(std::format("{} has loaded {}", client.name, m_level->first));
+        }
+    }
+    m_loadingSlots = std::move(loading);
+}
+
+void NetPlay::endMission(net::MissionOutcome outcome) {
+    if (m_server) {
+        m_server->endMission(outcome);
+    }
+}
+
+bool NetPlay::holdsStep() const { return m_server && !m_server->levelReady(); }
+
+std::uint32_t NetPlay::startMovie() {
+    // The movie's MovieStart event is raised in this step, which afterStep() will send numbered m_steps.
+    if (m_server) {
+        m_server->startMovie(m_steps);
+    }
+    return m_steps;
+}
+
+void NetPlay::endHostMovie() {
+    if (m_server) {
+        m_server->endHostMovie();
+    }
+}
+
+bool NetPlay::movieSkipped() const { return m_server && m_server->movieSkipped(); }
+
+bool NetPlay::movieMayEnd() const { return !m_server || m_server->movieMayEnd(); }
+
+std::optional<net::LoadLevel> NetPlay::takeLevelOrder() { return m_client ? m_client->takeLevelOrder() : std::nullopt; }
+
+void NetPlay::levelLoaded(std::uint32_t load) {
+    if (m_client) {
+        m_client->levelLoaded(load);
+    }
+}
+
+std::vector<net::MissionEnd> NetPlay::takeMissionEnds() {
+    return m_client ? m_client->takeMissionEnds() : std::vector<net::MissionEnd>{};
+}
+
+void NetPlay::movieDone(std::uint32_t movieStep, bool skipped) {
+    if (m_client) {
+        m_client->movieDone(movieStep, skipped);
+    }
 }
 
 } // namespace coney::platform

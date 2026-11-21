@@ -93,7 +93,11 @@ inline combat::AnimRangeList fightRanges(const std::map<int, std::int16_t>& code
         {174, {350, 0, 0}},
         {180, {350, 0, 0}},
         {186, {500, 0, 0}},
-        {192, {600, 0, 0}}};
+        {192, {600, 0, 0}},
+        // The stealth kills (combat-moves.md#stealth): 3000 each.
+        {637, {3000, 0, 0}},
+        {639, {3000, 0, 0}},
+        {641, {3000, 0, 0}}};
     test::Bytes bytes;
     bytes.u32(722);
     for (int animId = 0; animId < 722; ++animId) {

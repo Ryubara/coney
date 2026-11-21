@@ -1,0 +1,52 @@
+version = 1
+id = "r-20261119-light-selection-glow"
+date = "2026-11-19"
+kind = "trace"
+tool = "trace lights"
+digest = "8f8a904474265b794d9e3b890995d823836eecab8be218584c9137937288aa05"
+
+[who]
+agent = "a907d1167f222f1da"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "unknown"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = []
+
+[run]
+name = "light-selection"
+method = "Breakpoints on LightManager_SelectLights' entry and its callers' return addresses through the debug server: at the entry the arguments and lists A, B, C and the manager's point lights, at the return the upload list; every light read as values (type, radius, colour, frame position). The CSVs stay in scratch; their hashes are below."
+
+[values]
+calls = 300
+frames = 6
+calls_human = 12
+calls_sector = 78
+calls_object = 204
+calls_car = 0
+calls_background = 6
+calls_other = 0
+chosen_directional = 1080
+chosen_ambient = 516
+chosen_point = 39
+chosen_spot = 0
+glow_calls = 6
+max_count = 8
+
+[addresses]
+LightManager_SelectLights = 0x0017de10
+upload_list = 0x00715300
+list_a = 0x00715324
+list_b = 0x00715348
+list_c = 0x0071536c
+
+[hashes]
+selections_csv = "00a69667c3bfdbdd6bcdd131b64b635bee85198c89ad5757ba1c8b7633cf3b4e"
+calls_csv = "3ae707d3aeb89aa40338fe8276ceccfb2fbf64e03d1bdda9035ac2cc74ca91ab"
+lists_csv = "67193c10c9d02e636ef1a9e494d25f7946ce60f12f6a1abe63ebb68aa63b725a"

@@ -55,9 +55,18 @@ class Out:
         now: datetime = NOW,
         head: Callable[[int], str] = lambda number: "a1b2c3d4e5f6" + "0" * 28,
         conflicting: Callable[[int], bool] = lambda number: False,
+        fork: Callable[[int], str | None] = lambda number: None,
     ) -> int:
         return pr_hold.run_hold(
-            args(*words), scratch, rules, now, self.out.append, self.err.append, head, conflicting=conflicting
+            args(*words),
+            scratch,
+            rules,
+            now,
+            self.out.append,
+            self.err.append,
+            head,
+            conflicting=conflicting,
+            fork_of=fork,
         )
 
 
@@ -185,6 +194,53 @@ def test_a_hold_records_the_head_commit_it_was_made_on(tmp_path: Path) -> None:
     assert run.run(tmp_path, "812", "--who", "engineer-2") == 0
     [held] = pr_hold.read_active(tmp_path, NOW).holds
     assert held.head == "a1b2c3d" and "a1b2c3d" in run.out[0]
+
+
+def test_a_hold_by_an_agent_on_a_forks_pull_request_says_its_branch_is_no_units(tmp_path: Path) -> None:
+    # #1522: Conclave briefed task 285's fixes against a contributor's #1415, whose fork branch had the same name.
+    run = Out()
+    assert run.run(tmp_path, "1415", "--who", "engineer-2", fork=lambda number: "contributor:285-add-x") == 0
+    assert run.err == [
+        "pr hold: note: #1415 comes from a fork (contributor:285-add-x), so it is no unit's pull request here, even "
+        "when a unit's branch has the same name; engineer-2 fixes the fork's branch, not a unit's"
+    ]
+    asked: list[int] = []
+
+    def fork(number: int) -> str:
+        asked.append(number)
+        return "contributor:285-add-x"
+
+    waiver = Out()
+    assert waiver.run(tmp_path, "1415", "--note", "the contributor fixes it", fork=fork) == 0
+    assert asked == [] and waiver.err == []
+    ours = Out()
+    assert ours.run(tmp_path, "812", "--who", "engineer-2") == 0 and ours.err == []
+
+
+def test_a_hold_whose_fork_cannot_be_told_is_made_all_the_same(tmp_path: Path) -> None:
+    def broken(number: int) -> str | None:
+        raise OSError("gh pr view failed")
+
+    run = Out()
+    assert run.run(tmp_path, "812", "--who", "engineer-2", fork=broken) == 0
+    assert run.err == []
+
+
+def test_the_fork_of_a_pull_request_is_read_through_the_one_head_match(monkeypatch: pytest.MonkeyPatch) -> None:
+    answers = {
+        1415: {"headRefName": "b", "headRepositoryOwner": {"login": "contributor"}, "isCrossRepository": True},
+        812: {"headRefName": "b", "headRepositoryOwner": {"login": "acme"}, "isCrossRepository": False},
+    }
+    asked: list[list[str]] = []
+
+    def gh(arguments: list[str], *rest: object, **more: object) -> str:
+        asked.append(arguments)
+        return json.dumps(answers[int(arguments[2])])
+
+    monkeypatch.setattr(pr_hold, "run_gh", gh)
+    assert pr_hold.fork_of(1415) == "contributor:b"
+    assert pr_hold.fork_of(812) is None
+    assert asked[0][:4] == ["pr", "view", "1415", "--json"] and "isCrossRepository" in asked[0][4]
 
 
 def test_a_hold_whose_head_cannot_be_read_is_refused_and_writes_nothing(tmp_path: Path) -> None:

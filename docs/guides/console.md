@@ -1,19 +1,19 @@
 # The Coney console
 
-The Coney console is the terminal F8 will open in the game: a line to type a command into, the output above it, and
-the commands every build offers. This page is what is built of it; the whole design, with the front end, the panels,
-the commands' handlers and the mods' commands still to come, is [Coney Studio: the Coney console](studio/console.md).
+The Coney console is the terminal F8 opens in the game: a line to type a command into, the output above it, and the
+commands every build offers. This page is what is built of it; the whole design, with the panels, the commands'
+handlers and the mods' commands still to come, is [Coney Studio: the Coney console](studio/console.md).
 Every command is listed in the generated [console commands reference](console-commands.md).
 
 ## What is built {#built}
 
 The console's core, build issue 1 of [the design](studio/console.md#build-issues): the model in `src/console/` with no
-user interface, its catalog and generators, the input script's `console` action and test mode's rules; and the player
+user interface, its catalog and generators, the input script's `console` action and test mode's rules; the player
 commands, build issue 2: the handlers of the release set, over the game session's and network play's hosts
-([Player commands](#player-commands)). Not built yet: the F8 front end (issue 3), the panels and the commands that open
-them (`log`, `resmon`, `perf`, `net` and `profiler`, issues 4 and 5: they wait in the catalog for their feature and
-are unknown when typed), the developer set (issue 6) and mod commands through the SDK (issue 7). Until the front end
-exists, lines reach the console only from an input script.
+([Player commands](#player-commands)); and the F8 bar, issue 3 ([The F8 bar](#front-end)), in the release build and the
+debug tools' builds alike. Not built yet: the panels and the commands that open them (`log`, `resmon`, `perf`, `net` and
+`profiler`, issues 4 and 5: they wait in the catalog for their feature and are unknown when typed), the developer set
+(issue 6) and mod commands through the SDK (issue 7).
 
 | Part | Where | What it does |
 | --- | --- | --- |
@@ -28,6 +28,8 @@ exists, lines reach the console only from an input script.
 | The hosts | `src/console/hosts.h` | The interfaces the game implements ([Hosts](#hosts)) |
 | The console | `src/console/console.h` | A line in: checked, then run now or queued; its output in the terminal and the run log |
 | The game's console | `src/platform/game_console.h`, `game_console_links.h`, `game_settings.h` | Both entry points' set-up: the session host, network play's host and the settings ([In the game](#in-the-game)) |
+| The line, the picker, the pad gate | `src/console/line_editor.h`, `command_picker.h`, `console_pad.h` | The F8 bar's model: typing, the gamepad's picker, SELECT and R3 ([The F8 bar](#front-end)) |
+| The bar | `src/platform/console_view.h`, `console_ui.h` | The bar's widgets and its window, in `coney_console_ui` ([The F8 bar](#front-end)) |
 
 The core is in `coney_core`, so the release build has it. Its files include only `console/`, `core/` and the standard
 library, which the split test checks (`python/tests/test_debug_tools_split.py`,
@@ -210,6 +212,9 @@ The entry points call `setLinks()` once the game, the renderer and the sound exi
 `src/platform/game_console_links.h`): the needs (a game and a disc when there is a session, a level in play), the
 version and build, the level in play, the settings and the bug report. `quit` makes the frame hook's `beginFrame` say
 the run is over at the next frame.
+Beside it each entry point puts the console's pad gate in front of the game's input (outside test mode; in the debug
+tools' `coney`, in front of their own gate, so SELECT and R3 reach the console first) and, in a window, starts the bar
+([The F8 bar](#front-end)), whose events come before the developer overlay's and which draws over it.
 
 ## The input script's console action {#input-script}
 
@@ -226,11 +231,68 @@ still starts a comment, so a console line cannot hold one.
 The trace tools' reader of input scripts (`coney_tools.input_script`) takes the line too, so a script with console lines
 still drives the original, whose pad ignores them: it has no console.
 
+## The F8 bar {#front-end}
+
+F8 opens the console's bar over the game in a window, and F8 or Escape closes it; on a gamepad, SELECT and R3 held
+together (the back button and the right stick's press) open and close it. The game goes on while it is open, as
+FiveM's console does. It is drawn with Dear ImGui in its own context, at the same physical size at any resolution by
+the developer overlay's rule ([Size at any resolution](debug-menu.md#ui-scale)), which lives outside the debug tools
+for it (`core/ui_scale.h`, `platform/ui_scale.h`).
+
+| Part | Does |
+| --- | --- |
+| The bar | Across the top: the title, the View menu (pin the terminal, the command picker), Close, and the reminder of how to close it |
+| The terminal | The output, the echoed line dimmed and errors in red, following new lines; the line under it, with up to 8 candidates above it while typing |
+| The line | Tab completes (one candidate whole, followed by a space; several to what they share), Up and Down walk the history, Enter runs the line (`console::LineEditor`) |
+| The command picker | Shown when the pad opened the console: the commands by group, then one row per argument, then `run` (`console::CommandPicker`) |
+| A pinned terminal | Pinned from the View menu, the terminal stays on screen, half see-through, with the console closed and takes no input; kept in `coney-console.ini` |
+
+**The keyboard and the pad while it is open.** The keyboard is the console's: it does not play on port 1, and Escape
+does not quit. The console's own gate (`console::ConsolePad`, in the console's model, since the debug tools' input gate
+is not in the release build) sits between the pads and the game: the game sees port 1 plugged in with nothing pressed
+and port 2 as it is, and port 1's presses drive the picker. The chord's buttons never reach the game while both are
+held, and the buttons still held when the console closes stay hidden until let go, by the debug tools' rule
+([Opening it and the controls](debug-menu.md#controls)). No control of the original holds SELECT and R3 together
+([Input and the gamepad](studio/console.md#input)).
+
+**The picker with a pad.** Up and down (the d-pad, or the left stick pushed well over) move between the rows, cross
+chooses, circle goes back and, on the commands, closes the console. A command without arguments runs at once. On an
+argument's row, left and right step through the values its type completes to (a mission's from the session host's
+list, `on` and `off`, a choice's), or change a number by one; a required argument starts at its first value, one with
+a default at the default, and changing one puts the arguments after it back to their defaults. Cross on the last row
+runs the line, which the terminal shows as typed. A `text` argument cannot be typed with the pad yet
+([#1437](issue:1437)): the debug menus' pad typing has not moved into the console's model, and the platform's
+on-screen keyboard is not used yet.
+
+**Events while it is closed.** A closed bar shows Dear ImGui no event: Dear ImGui drains its input queue only in a frame
+it begins, which a closed bar does not, so events shown to it then would pile up and replay into the line when F8
+opens it. Closed, the bar looks only for F8 (`routeConsoleEvent`, which the tests reach with no window), and each
+opening starts with no key held.
+
+**Whose line it is.** The bar runs every line as player slot 0, the host's, as the input script's lines do for port 0:
+a guest's bar does not know its own slot yet. Nothing reads the slot until mod commands, which are build issue 7 of
+[the console design](studio/console.md#build-issues), and it must take the local player's slot from the session then.
+
+**Where it lives.** The model (the line, the picker, the gate) is in `src/console/` in `coney_core`; the bar is
+`coney_console_ui` in `src/platform/` (`ConsoleView` draws it in a frame someone else begins, so its tests run on a
+bare Dear ImGui context; `ConsoleUi` gives it the window, the backends and the events). Both entry points start it
+when there is a window with an OpenGL context; a headless run and the GPU renderer run without it. Dear ImGui is
+fetched in every build for it, and `coney_console_ui` and `coney_devtools` are the only targets that link it
+([The debug tools and the game](building.md#debug-tools)). `coney.release.has_console_bar` finds the bar's window name
+in the release executable, so the release build is proved to carry it.
+
 ## Off in test mode {#test-mode}
 
 A test-mode run (`--headless`, `--frames`, `--input-script`, `--screenshot`) reads no device and touches no user folder
 ([Update and render](conventions.md#update-and-render)), and the console keeps to that: it takes lines only from the
 input script (a typed line is ignored) and neither reads nor writes `console-history.txt`. The console's unit tests
-prove both on the model (`tests/console/console_test.cpp`). The rest of the design's test-mode rules come with what
-they govern: the pad chord and F8 with the front end, `--console-open` and `--capture-dir` with the front end and the
-captures ([Off in test mode](studio/console.md#test-mode)).
+prove both on the model (`tests/console/console_test.cpp`). The bar keeps to it too: F8 is not caught, the pad gate is
+left out of the input chain (so a scripted SELECT and R3 reach the game as on a PS2), and `coney-console.ini` is
+neither read nor written, so no pinned terminal from an earlier run appears (a test-mode run does not even ask SDL
+for the preference folder, which would create it; `consoleUiSettings`, tested in `tests/platform/console_view_test.cpp`,
+with F8 not caught). `--console-open N` opens the bar for the
+first N frames, the one way a test-mode run draws it ([The console](running-options.md#console)), and
+`coney.console_bar_leaves_frame` checks that the last frame after it closes is byte-identical to a run without it (a
+check of the debug tools' `coney` only, which reports itself skipped on a machine with no display, or where two runs
+without the bar already differ).
+`--capture-dir` comes with the captures ([Off in test mode](studio/console.md#test-mode)).

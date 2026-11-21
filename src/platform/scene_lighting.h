@@ -76,6 +76,12 @@ class SceneLighting {
     /// applied: for the frame description's draw of it (drawObject()). Counts the atomic as drawn and adds the lighting
     /// frame's row of its selection, as drawCarAtomic() does.
     [[nodiscard]] std::vector<graphics::SceneLight> carLights(rw::Atomic* atomic);
+    /// The lights a human's atomic is drawn with (the objects' lights for his squared distance to the camera, and the
+    /// point lights his sphere overlaps unless `hidden`), by value, as drawHumanAtomic() would put them in librw's
+    /// world, with the lighting lab's layers applied: for the frame description's draw of him, whose blood layer takes
+    /// the same lights (PlayLighting::drawHumanPasses()). Counts the atomic as drawn and adds the lighting frame's row
+    /// of its selection, as drawHumanAtomic() does; noteHiddenHuman() says `hidden` for the row first.
+    [[nodiscard]] std::vector<graphics::SceneLight> humanLights(rw::Atomic* atomic, bool hidden);
     /// Whether the debug tools' mesh views are set (setMeshViews()): they decide per atomic what is drawn, so the world
     /// renderer then draws its sectors through drawWorldAtomic().
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
@@ -130,6 +136,11 @@ class SceneLighting {
     /// for the lighting frame's rows of them; the caller of drawHumanAtomic() says so before each human.
     /// @coney-only the lighting frame's selection rows
     void noteHiddenHuman(bool hidden) { m_hiddenHuman = hidden; }
+    /// Whether the atomics drawn from now on go through the draw layer (draw::renderAtomic(), recorded) rather than to
+    /// librw directly: PlayLighting turns it on around the humans' draws through the rig (item 9 of
+    /// docs/engine/renderer.md#order), as the world's, the objects' and the cars' draw functions do around theirs.
+    /// @coney-only the draw-stream hashes' draw layer (docs/engine/renderer.md#comparing)
+    void setRouted(bool routed) { m_routed = routed; }
     /// Whether the humans' blob shadows are drawn: off only under the lighting lab's layer.
     /// @coney-only the lighting lab's layers (docs/guides/realtime-lighting.md#lab)
     [[nodiscard]] bool drawsBlobShadows() const { return m_switches == nullptr || m_switches->layers.blobShadows; }
@@ -142,8 +153,7 @@ class SceneLighting {
     /// only with the shaded draw; null: none. The caller marks it, so the original's draw functions stay as they are.
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
     void setMeshLayer(const rw::Atomic* atomic) { m_meshLayer = atomic; }
-    /// How many atomics the rig has drawn since it was made, with or without the mesh views: the play mode counts a
-    /// human's passes from it for the Entity inspector's Mesh group.
+    /// How many atomics the rig has drawn or selected lights for since it was made, with or without the mesh views.
     /// @coney-only the Entity inspector's Mesh group (docs/guides/debug-menu.md#mesh-group)
     [[nodiscard]] std::uint64_t atomicsDrawn() const { return m_atomicsDrawn; }
 
@@ -167,7 +177,7 @@ class SceneLighting {
     void renderInRig(rw::Atomic* atomic);
     // Draws `atomic` inside the rig's world, so librw lights it with the rig's lights, with its dual layer
     // (drawLitAtomic()), through the draw layer while m_routed is set (the world's atomics, the objects' and the cars',
-    // items 7 and 8 of docs/engine/renderer.md#order), else on librw directly (the humans, which item 9 routes).
+    // items 7 and 8 of docs/engine/renderer.md#order, and the humans', item 9: setRouted()), else on librw directly.
     void renderLit(rw::Atomic* atomic);
     // Adds the row of the selection useLights() kept to the lighting frame, for `atomic`: its caller from the draw
     // kind, its sphere and the inputs the draw functions pass (docs/research/lighting.md#select).
@@ -199,7 +209,7 @@ class SceneLighting {
     bool m_carPart = false;     // the atomic drawn next is a car part's, its selection at squared distance 0
     bool m_background = false;  // the atomic drawn next is the background's
     bool m_hiddenHuman = false; // noteHiddenHuman()
-    bool m_routed = false;      // the atomic drawn next goes through the draw layer
+    bool m_routed = false;      // the atomic drawn next goes through the draw layer (setRouted())
 };
 
 } // namespace coney::platform

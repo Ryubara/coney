@@ -6,10 +6,13 @@ runtime profilers and the log viewer, whose panels are [a page of their own](con
 gamepad, where the code lives, how the release checks prove the split, and the tests, and it ends with the build issues
 it proposes, in order. The parent issue is [#1054](issue:1054); this page is [#1064](issue:1064).
 
-**Status: design, build issues 1 and 2 built.** The console's core, its catalog and generators, the input script's
-`console` action and test mode's rules, and the release set's handlers over the game session's and network play's hosts
-are built and described in the guide [The Coney console](../console.md), with every command in the generated [console
-commands reference](../console-commands.md); the rest of this page is not built yet. It is a
+**Status: design, build issues 1, 2 and 3 built.** The console's core, its catalog and generators, the input script's
+`console` action and test mode's rules, the release set's handlers over the game session's and network play's hosts, and
+the F8 bar (its terminal, the gamepad's command picker, the pad gate, the pinned terminal and `--console-open`) are
+built and described in the guide [The Coney console](../console.md), with every command in the generated [console
+commands reference](../console-commands.md); the rest of this page is not built yet. Of issue 3, the debug menus' pad
+typing has not moved into the console's model, so the picker cannot type a `text` argument yet ([The F8
+bar](../console.md#front-end)). It is a
 design in the sense of [Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It builds on the
 debug tools' split ([The debug tools and the game](../building.md#debug-tools)), the [debug menus](../debug-menu.md),
 the [run log](../run-log.md), the [profiler](../performance.md#zones) and the [Lua SDK](lua-sdk.md), and does not repeat
@@ -592,7 +595,12 @@ Every check runs without a person, as [Testing](../testing.md) asks:
   draws every row of its model; a pinned panel draws with the console closed and takes no input.
 - **Closed means untouched** (on the debug tools' `coney`, which takes `--screenshot`): the last frame of a windowed run
   that opens and closes the console in its first frames (`--console-open N`) is byte-identical to the same run without
-  it, as `--dev-overlay` is checked ([The developer overlay](../debug-menu.md#the-developer-overlay)).
+  it, as `--dev-overlay` is checked ([The developer overlay](../debug-menu.md#the-developer-overlay)). The check runs
+  the run without the bar twice first and skips itself when the two pictures differ, since a picture that is not
+  repeatable says nothing about the bar (the reason and both hashes are in the build tree's
+  `Testing/Temporary/LastTest.log`, as ctest shows nothing of a skipped test's output). Why a baseline might not repeat
+  is unproven (a window nobody sees may leave the frame buffer undefined, as perhaps on a macOS runner with no screen);
+  a failure with a repeatable baseline is a real difference to find.
 - **The panels' numbers**: a synthetic mod with a known loop shows its exact instruction count, memory and native calls
   in its Resources row, the same in two runs; the times are only checked to be present and not negative.
 - **The log viewer**: the filters by level, category, mod and text; a line kept off the file copies with its length
@@ -707,9 +715,10 @@ page's issue 1.
 3. **platform: Add the F8 console bar to the release build.** The `coney_console_ui` target with Dear ImGui (fetched
    in the release configure for it), the bar, the terminal's widgets with completion and the picker, pinned panels,
    `coney-console.ini`, F8 and the SELECT + R3 chord caught by the console's own gate in `src/console/` (the debug
-   tools' input gate's rule, not its code), Escape, the UI scale rule moved out of the debug tools, the pad typing
-   moved into the console's model; the split test's rules for the new target and the `imgui` link; the release marker
-   list changed (`imgui.ini` out, the developer commands' summaries in); `--console-open`. It depends on the shared
+   tools' input gate's rule, not its code), Escape, the UI scale rule moved out of the debug tools; the split test's
+   rules for the new target and the `imgui` link; the release marker list changed (`imgui.ini` out; the developer
+   commands' summaries wait for build issue 6, and the pad typing's move into the console's model is #1437);
+   `--console-open`. It depends on the shared
    change of the rule's text, build issue 7 of the script security design. Tests: the front end
    over a bare context, the frame unchanged with the console opened and closed, the pad chord and the picker running
    `missions` from an input script.

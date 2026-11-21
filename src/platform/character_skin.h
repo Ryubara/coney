@@ -32,6 +32,9 @@ using BonePalette = std::array<float, kMaxSkinBones * kBoneFloats>;
 struct SkinVertexData {
     std::vector<std::array<float, 4>> weights;        ///< 0 for an unused slot.
     std::vector<std::array<std::uint8_t, 4>> indices; ///< Into the bone palette.
+    /// How many of the palette's matrices the indices reach: the highest index plus one (0 for no vertex). The
+    /// shader reads no other, so the draw stream records these alone (draw::renderAtomic()).
+    std::size_t bones = 0;
 };
 
 /// Registers the plugins the skinned pipeline keeps its data in (a geometry's vertex weights, an atomic's palette) and
@@ -54,5 +57,15 @@ void allowCharacterSkin(bool allowed);
 /// Puts `atomic` on the skinned pipeline, its geometry's weights from `vertices` and its bones from `palette`; both
 /// must outlive the atomic, and `vertices` must hold one entry per geometry vertex. Needs characterSkinOn().
 void useCharacterSkin(rw::Atomic* atomic, const SkinVertexData& vertices, const BonePalette& palette);
+
+/// The bone palette `atomic` is drawn with when it is on the skinned pipeline (useCharacterSkin()); null when it is
+/// not, as on the NULL backend, where the pipeline never runs.
+[[nodiscard]] const BonePalette* characterSkinPalette(const rw::Atomic* atomic);
+/// The weights and bones of `atomic`'s geometry when the atomic is on the skinned pipeline; null when it is not.
+[[nodiscard]] const SkinVertexData* characterSkinVertices(const rw::Atomic* atomic);
+/// Points `atomic`, which must be on the skinned pipeline, at `palette` (which must outlive its use) and returns the
+/// palette it had: the GL3 renderer draws a human with the pose its frame description carries, then puts the mesh's
+/// own palette back.
+const BonePalette* swapCharacterSkinPalette(rw::Atomic* atomic, const BonePalette* palette);
 
 } // namespace coney::platform

@@ -78,7 +78,9 @@ def conflicting(layout: Layout, trial: Any = None, extra: tuple[int, ...] = (), 
     pulls = answers[("pr", "list", "--state", "open")]
     pulls[0]["mergeable"] = "CONFLICTING"
     for number in extra:
-        pulls.append({**pulls[0], "number": number, "headRefName": "fix-new", "headRefOid": "e" * 40})
+        pulls.append(
+            {**pulls[0], "number": number, "headRefName": "fix-new", "isCrossRepository": False, "headRefOid": "e" * 40}
+        )
     src = sources(layout, FakeGh(answers), trial=trial or answering(), **changes)
     stuck = [
         {"number": n, "branch": b, "cause": "conflict", "detail": "with main", "checks": []}

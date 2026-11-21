@@ -61,6 +61,12 @@ GuiPoint InstructionArrow::offset() const {
     return GuiPoint{step * std::sin(angle) / kArrowBobDivisor, -step * std::cos(angle) / kArrowBobDivisor};
 }
 
+void applyPlayerHud(HudFrame& frame, std::size_t slot, const PlayerHudState& state) {
+    frame.players.at(slot) = state.panel;
+    frame.knockedOut.at(slot) = state.knockedOut;
+    frame.cameraIgnoresStick.at(slot) = state.cameraIgnoresStick;
+}
+
 Hud::Hud(HudServices services) : m_services(std::move(services)), m_hints(m_services.sound) {}
 
 // @coney-only the lookup through the HUD's string services, which may be absent in a test

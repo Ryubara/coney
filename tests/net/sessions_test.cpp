@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -18,8 +19,10 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/pad.h"
+#include "hud/hud.h"
 #include "net/link_conditioner.h"
 #include "net/loopback_transport.h"
+#include "net/player_huds.h"
 #include "net/protocol.h"
 #include "net/snapshot.h"
 #include "net/transport.h"
@@ -686,4 +689,143 @@ TEST_CASE("a client that acknowledges a snapshot never sent is dropped for a pro
     CHECK(events[0].kind == ServerEvent::Kind::Left);
     CHECK(events[0].reason == ByeReason::ProtocolError);
     CHECK(match.server.joinedCount() == 0);
+}
+
+namespace {
+
+// Each player slot's HUD at the server's `step`: player 1's rage builds and his money comes in steps; player 2 scores,
+// is knocked out for a while and picks up items; both raging for a spell.
+std::array<coney::hud::PlayerHudState, 2> scriptedHuds(std::uint32_t step) {
+    std::array<coney::hud::PlayerHudState, 2> slots{};
+    slots[0].panel.rage = static_cast<int>(step % 60);
+    slots[0].panel.money = 20 + (25 * static_cast<int>(step / 40));
+    slots[0].panel.raging = step % 90 > 70;
+    slots[1].panel.rage = 78 - static_cast<int>(step % 20);
+    slots[1].panel.score = 100 * static_cast<int>(step / 7);
+    slots[1].panel.items = {static_cast<int>(step / 50), 0, static_cast<int>((step / 30) % 3), 0};
+    slots[1].knockedOut = step % 100 >= 40 && step % 100 < 55;
+    slots[1].cameraIgnoresStick = step % 64 >= 32;
+    slots[1].panel.raging = step % 90 > 70;
+    return slots;
+}
+
+// A HUD with both players' panels attached, as a level with two players has.
+coney::hud::Hud twoPlayerHud() {
+    coney::hud::Hud hud;
+    REQUIRE(hud.attachPlayer(0, 0) == 0);
+    REQUIRE(hud.attachPlayer(1, 0) == 1);
+    return hud;
+}
+
+// One HUD step at the server's `step` from the slots' states, as the play mode's step gives it.
+void stepHud(coney::hud::Hud& hud, std::uint32_t step, const std::array<coney::hud::PlayerHudState, 2>& slots) {
+    coney::hud::HudFrame frame;
+    frame.nowMs = static_cast<std::uint64_t>(step) * 33;
+    frame.levelNumber = 99;
+    for (std::size_t slot = 0; slot < slots.size(); ++slot) {
+        coney::hud::applyPlayerHud(frame, slot, slots.at(slot));
+    }
+    hud.update(frame);
+}
+
+// What two HUDs' panels show, compared field by field: the values given, the activity that times the fade, the
+// counting score and money, the counters' slots.
+void checkSamePanels(const coney::hud::Hud& client, const coney::hud::Hud& server) {
+    for (std::size_t player = 0; player < 2; ++player) {
+        const coney::hud::PlayerPanel& mine = client.panel(player);
+        const coney::hud::PlayerPanel& theirs = server.panel(player);
+        CHECK(mine.values() == theirs.values());
+        CHECK(mine.activityMs() == theirs.activityMs());
+        CHECK(mine.fade() == theirs.fade());
+        CHECK(mine.score().shown() == theirs.score().shown());
+        CHECK(mine.money().shown() == theirs.money().shown());
+        CHECK(mine.slots() == theirs.slots());
+    }
+}
+
+} // namespace
+
+// Expected: unverified, #1447 (Coney's own snapshots; the panel's step is hud.md#the-player-panel's, confirmed (code))
+TEST_CASE("each player's HUD reaches a joined client in every step's snapshot, and its panels match the server's",
+          "[net][sessions][snapshot][hud]") {
+    Match match;
+    NetClient& client = match.join("Cochise");
+    match.run(3);
+    REQUIRE(client.state() == ClientState::Connected);
+
+    // The server's game steps its HUD from the slots' states and sends them; the client steps its own HUD from the
+    // states each snapshot it decodes holds, at the step that snapshot shows.
+    coney::hud::Hud serverHud = twoPlayerHud();
+    coney::hud::Hud clientHud = twoPlayerHud();
+    std::map<std::uint32_t, std::array<coney::hud::PlayerHudState, 2>> sentAt;
+    std::uint32_t step = 0;
+    std::uint32_t seen = 0;
+    std::vector<std::uint32_t> stepsDrawn;
+    std::size_t mismatched = 0;
+    const auto stepGame = [&] {
+        const SnapshotReceiver& received = client.snapshots();
+        for (std::uint32_t sequence = seen + 1; sequence <= received.newest(); ++sequence) {
+            const SnapshotHuds* huds = received.holdingHuds(sequence);
+            const auto shows = received.heldStep(sequence);
+            if (huds == nullptr || !shows) {
+                continue;
+            }
+            REQUIRE(huds->size() == 2);
+            const std::array<coney::hud::PlayerHudState, 2> decoded{playerHudState(huds->at(0)),
+                                                                    playerHudState(huds->at(1))};
+            mismatched += decoded == sentAt.at(*shows) ? 0 : 1;
+            stepHud(clientHud, *shows, decoded);
+            stepsDrawn.push_back(*shows);
+        }
+        seen = received.newest();
+        const auto slots = scriptedHuds(step);
+        sentAt.emplace(step, slots);
+        stepHud(serverHud, step, slots);
+        match.server.sendSnapshots(step, {}, snapshotHuds(slots));
+        ++step;
+    };
+
+    // A clean link: the client decodes every step's snapshot, a step later, so its HUD steps as the server's did and
+    // after each its panels are the server's of the step before.
+    coney::hud::Hud previousServer = twoPlayerHud();
+    for (int i = 0; i < 200; ++i) {
+        match.run(1, kStepNs, stepGame);
+        if (step >= 2) {
+            checkSamePanels(clientHud, previousServer);
+        }
+        stepHud(previousServer, step - 1, scriptedHuds(step - 1));
+    }
+    CHECK(mismatched == 0);
+    REQUIRE(stepsDrawn.size() == 199);
+    for (std::size_t i = 0; i < stepsDrawn.size(); ++i) {
+        CHECK(stepsDrawn[i] == i); // every step, in order
+    }
+
+    // A lossy, reordering link: whatever the client decodes is the server's record of that snapshot, and most are
+    // deltas against an acknowledged baseline.
+    const LinkConditions bad{.latencyMs = 20,
+                             .jitterMs = 30,
+                             .lossFraction = 0.2F,
+                             .duplicateFraction = 0.1F,
+                             .reorderFraction = 0.2F,
+                             .reorderDelayMs = 50};
+    match.serverLink.setConditions(bad);
+    match.guests[0]->link.setConditions(bad);
+    std::size_t deltas = 0;
+    std::size_t checked = 0;
+    std::uint32_t recordSeen = client.snapshots().newest();
+    for (int i = 0; i < 300; ++i) {
+        match.run(1, kStepNs, stepGame);
+        if (client.snapshots().newest() != recordSeen) {
+            recordSeen = client.snapshots().newest();
+            const SnapshotHuds* record = match.server.clients().at(0).snapshots.holdingHuds(recordSeen);
+            REQUIRE(record != nullptr);
+            CHECK(client.snapshots().huds() == *record);
+            ++checked;
+        }
+        deltas += match.server.clients().at(0).snapshots.acknowledged() != 0 ? 1 : 0;
+    }
+    CHECK(mismatched == 0);
+    CHECK(checked > 100);
+    CHECK(deltas > 250);
 }

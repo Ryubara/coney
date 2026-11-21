@@ -187,7 +187,8 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     } else {
         m_print(std::format("humans: no blood textures ({}); drawn without them\n", blood.error().message));
     }
-    m_mesh = std::make_unique<CharacterMesh>(m_character->assets().model, m_texture, Skinning::Gpu);
+    m_mesh =
+        std::make_unique<CharacterMesh>(m_character->assets().model, m_texture, Skinning::Gpu, &m_engine.sceneAssets());
     // The level's lights as its scripts set them, or a stand-in; the scenery draws with them too.
     m_lights = std::make_unique<PlayLighting>(engine, wad, cast != nullptr ? cast->lighting : nullptr,
                                               m_playScenery.lightDirection(), m_print);
@@ -197,7 +198,8 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     makeTargets();
     for (const Target& target : m_targets) {
         m_targetMeshes.emplace(target.human.get(),
-                               std::make_unique<CharacterMesh>(m_character->assets().model, m_texture, Skinning::Gpu));
+                               std::make_unique<CharacterMesh>(m_character->assets().model, m_texture, Skinning::Gpu,
+                                                               &m_engine.sceneAssets()));
     }
     // The glints' blink draws from the game's random table when the disc's executable has the NTSC-U one.
     if (auto table = io::readExecutableWords(wad.disc(), GameRandom::kExecutableName, GameRandom::kTableAddress,
@@ -228,6 +230,9 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     m_hudLayer = HudLayer::create(*m_hud, wad, engine.drawsPixels(), m_print);
     m_hud->hud().attachPlayer(0, m_type);
     makeStage();
+    // The puppets are drawn from the frame description, their meshes held by id
+    // (docs/engine/renderer.md#frame-description).
+    m_stage->setSceneAssets(&m_engine.sceneAssets());
     // Whose face clips show (Human_UsesQueuedPose, docs/research/face.md): nobody a scene holds; an AI
     // Warrior always; anyone else within 17.5 m of the camera. The original measures to the nearest camera
     // (Human_UpdateLod's +0x334); Coney has player 1's alone.
@@ -467,14 +472,12 @@ void PlayLevelMode::drawCharacter() const {
 }
 
 void PlayLevelMode::drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood) const {
-    // The marks are around the original's draw, not in it: the rig counts each atomic it draws, so the difference is
-    // the passes (0 too far, 1, or 2 with the blood layer), and the layer it names is drawn only shaded.
+    // The mark is around the original's draw, not in it: the layer it names is drawn only shaded by the mesh views,
+    // and its selection adds no row to the lighting frame when it goes through the rig.
     SceneLighting& scene = m_lights->scene();
-    const std::uint64_t before = scene.atomicsDrawn();
     scene.setMeshLayer(mesh.bloodAtomic());
     m_lights->drawHumanPasses(mesh, player, blood);
     scene.setMeshLayer(nullptr);
-    mesh.setDrawnPasses(static_cast<std::size_t>(scene.atomicsDrawn() - before));
 }
 
 rw::Texture* PlayLevelMode::bloodTextureFor(const combat::Health& health) const {
@@ -522,6 +525,10 @@ PlayLevelSimulation::StepView PlayLevelMode::stepScenery(const FrameTime& frame)
 }
 
 void PlayLevelMode::hudStepped() {
+    // Network play's view of each player's HUD, as this step's HUD was given it.
+    if (m_netHumans != nullptr) {
+        m_netHumans->captureHuds(playerHuds());
+    }
     m_hudLayer->render();
     recordIconPoses();
 }

@@ -24,6 +24,7 @@ Bytes twoRecords() {
 } // namespace
 
 TEST_CASE("the Object List's 36-byte records are read and found by name in any case", "[object_list]") {
+    // Expected: formats/wad-contents.md#object-list, confirmed (code)
     auto list = ObjectList::parse(twoRecords().span());
     REQUIRE(list.has_value());
     REQUIRE(list->records().size() == 2);
@@ -35,7 +36,7 @@ TEST_CASE("the Object List's 36-byte records are read and found by name in any c
     CHECK(bat->texturesSize == 300);
     const coney::world_objects::ObjectRecord* door = list->find("dyn_door");
     REQUIRE(door != nullptr);
-    CHECK(door->variantOf == 21);
+    CHECK(door->nextModel == 21);
     CHECK(door->modelHash == 22);
     CHECK(door->fourthHash == 24);
     CHECK(door->fourthSize == 500);
@@ -43,9 +44,19 @@ TEST_CASE("the Object List's 36-byte records are read and found by name in any c
 }
 
 TEST_CASE("an Object List shorter than its count is refused", "[object_list]") {
+    // Expected: formats/wad-contents.md#object-list, confirmed (code)
     const Bytes chunk = twoRecords();
     auto cut = ObjectList::parse(chunk.span().first(chunk.size() - 4));
     REQUIRE_FALSE(cut.has_value());
     CHECK(cut.error().code == ErrorCode::Truncated);
     CHECK_FALSE(ObjectList::parse({}).has_value());
+}
+
+TEST_CASE("a model's next model is its record's +0x04, 0 without a record", "[object_list]") {
+    // Expected: formats/wad-contents.md#object-list, confirmed (code) at 0x003a4d10
+    auto list = ObjectList::parse(twoRecords().span());
+    REQUIRE(list.has_value());
+    CHECK(list->nextModelOf(coney::crc32("dyn_door")) == 21);
+    CHECK(list->nextModelOf(coney::crc32("dyn_bat")) == 0);
+    CHECK(list->nextModelOf(coney::crc32("dyn_nothing")) == 0);
 }

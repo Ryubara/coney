@@ -7,7 +7,6 @@
 #include <rw.h>
 
 #include "core/assert.h"
-#include "core/log.h"
 #include "world/world_manifest.h"
 #include "world/world_streams.h"
 
@@ -274,8 +273,11 @@ void WorldSet::refreshMesh(std::size_t world, std::uint32_t sector) {
     if (!mesh || atomic == nullptr) {
         return;
     }
-    removeMeshes(*mesh);
+    // The new meshes go in before the old ones go, so a texture the old ones were the last to hold (one borrowed from
+    // a part since unloaded: renderer.md#texture-lifetime) is still held when the new ones name it.
+    const SectorMesh old = *mesh;
     mesh = addMeshes(atomic);
+    removeMeshes(old);
 }
 
 std::size_t WorldSet::residentAtomics() const {
@@ -306,15 +308,9 @@ std::expected<void, Error> WorldSet::loadPart(std::size_t world, std::uint32_t p
             borrowed += countBorrowed(atomic, world, part) + countBorrowed(dualLayerOf(atomic), world, part);
         }
     }
-    // Guard: the disc has no such material (renderer.md#texture-lifetime), so SceneAssets notes texture ids once; one
-    // that does appear (a modded file) is counted and reported, as its id goes stale when the other part unloads.
-    if (borrowed > 0) {
-        m_borrowedTextures += borrowed;
-        logging::warn(logging::Category::World,
-                      std::format("{} part {}: {} material(s) take their texture from another part's dictionary; the "
-                                  "GPU renderer would draw them untextured once that part unloads",
-                                  m_worlds[world]->state.name(), part, borrowed));
-    }
+    // Counted, not warned of: the disc has no such material (renderer.md#texture-lifetime), and one that does appear
+    // (a modded file) keeps its texture, as the scene assets hold a texture while a held mesh's material names it.
+    m_borrowedTextures += borrowed;
     return read;
 }
 

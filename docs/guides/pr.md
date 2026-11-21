@@ -119,6 +119,8 @@ What it refuses, exactly (`<...>` is filled in):
 | `reviewed` | `reviewed: Review did not grade the research pages this change touches` (a change to a [research page](#research-page)) | `task review` |
 | `reviewed` | `reviewed: reviewer engineer-1 also worked on this task` (the reviewer wrote any stamp of the unit other than a `reviewed` one, whatever its agent type: the rule `task review --record` applies); `reviewed: the Review stamp names no reviewer` | `task review` (another reviewer) |
 | `reviewed` | `reviewed: the reviewer's type is engineer, not reviewer`; `reviewed: a review of orig work must run on opus; this review ran on <model>` (the agent and the model words of `tasks.review`, the rule `task review --record` applies; only with `stamps.require_hook_source`) | `task review` |
+| `reviewed` | `reviewed: the delta review #9 names no earlier review it stacks on` (or `the text review #9 ...`); `... stacks on #7, which did not pass`; `... which is no review of the code`; `... names full review #5, not #7` (a [delta or text review](review/task.md#delta) whose stack does not end in a passing full review; each review in the stack is held to the reviewer rules of this table, a delta one to the model its own kinds need) | `task review --full` |
+| `reviewed` | `reviewed: the delta review #9 was planned under other delta rules than origin/main's` (its `delta_rules_sha256` is not the default branch's `tasks.review.delta`, or the default branch has none: [whose rules](review/task.md#delta)) | `task review` |
 | `clips` | `clips: '## Screenshots' needs a 'Before:' and an 'After:' clip (...) or a line 'Clips: none (<reason>)' (...), because the title area 'gameplay' is one a player sees` (or `because it changes src/studio/...`); `clips: ... a clip pair needs its 'After:' line too`; `clips: 'Clips: none' needs its reason in parentheses` (`pull_requests.clips`) | the engineer |
 | `done` | `done: Done item 'Reference pictures' is left for #1500 but the task still finishes its issue (the description would say Fixes and close it with work left); write finishes: false in TASK.md's front block, so the Summary says Refs, or finish the item` (a Done item marked `(left for ...)` while the front block does not say `finishes: false`) | the engineer |
 | `done` | `done: Done item 'The required check' is unticked and names no follow-up: ...`; `done: Done item '...' is ticked and also left for #1500: it is either met or left`; `done: every Done item is left for a follow-up, so this pull request finishes nothing` | the engineer |
@@ -325,13 +327,16 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    the default branch (the proof inside `pr open` too), and the branch's file is read only for the rest.
 2. **The claim (exit 1).** Each issue of the task is claimed by the person running the command (the card is present and
    not released); otherwise the message names the claimant.
-3. **The pull request (exit 1).** The branch's pull request is looked up (`gh pr list --head`). Merged: refused. Closed
-   and not merged: refused unless `--reopen`. A fix task (`parent:` in its `TASK.md`) is released onto its parent's pull
-   request, log and text, and is refused when the parent has no open pull request; a fix with no `unit.json` (made by
-   hand, or before the records) goes out through the parent's unit record, which the task file names, and says so. With
-   [`--adopt <head>`](#adopt) the pull request must exist, no earlier run may have pushed it, and its branch must be at
-   that head on the remote and the unit's branch must hold the changes of its commits (exit 2 otherwise, with nothing
-   touched; [Taking over](#adopt)).
+3. **The pull request (exit 1).** The branch's pull request is looked up (`gh pr list --head`) and matched by its head
+   repository as well as its branch name ([The head match](#head-match)): a fork's pull request from a branch of the
+   same name is never this branch's, and a `note:` line names it. The one found is read back (`gh pr view`) and its head
+   checked before anything is pushed, edited, reopened or merged; a head that is not the unit's branch in this
+   repository is refused, nothing touched. Merged: refused. Closed and not merged: refused unless `--reopen`. A fix task
+   (`parent:` in its `TASK.md`) is released onto its parent's pull request, log and text, and is refused when the parent
+   has no open pull request; a fix with no `unit.json` (made by hand, or before the records) goes out through the
+   parent's unit record, which the task file names, and says so. With [`--adopt <head>`](#adopt) the pull request must
+   exist, no earlier run may have pushed it, and its branch must be at that head on the remote and the unit's branch
+   must hold the changes of its commits (exit 2 otherwise, with nothing touched; [Taking over](#adopt)).
 4. **The proof (exit 1).** [`pr verify`](#verify) and [`pr text`](#text) run on the unit as it is (`pr_ready.prove`,
    which Conclave's [`unit-ready` wake](conclave.md#ready) asks too), so a doomed run costs seconds and leaves the
    branch alone. Every problem is listed under the stage to redo; the unit goes back to its
@@ -357,7 +362,8 @@ commit: what is pushed is exactly what Check and Review saw. Its options and exi
    request was closed) is expected absent, so `--reopen` pushes it again.
 8. **Create or update.** `gh pr create` (or `gh pr edit`, after a reopen when asked) with the generated title and
    description and one `--attach` per picture and per clip, run in the folder of the engineer's file so `./shots/x.png`
-   and `./clips/x.mp4` are the paths `gh` matches. The title, the body and `pr-published.json` are kept in the task's
+   and `./clips/x.mp4` are the paths `gh` matches. A pull request just created is read back and its head checked
+   before auto-merge goes on, as one found in step 3 was. The title, the body and `pr-published.json` are kept in the task's
    folder, whatever file `--text` names. On an update only pictures and clips that are new are attached; an unchanged
    one (or a clip deleted after its upload) keeps the address of its upload from `pr-published.json`. Then `gh pr merge
    --squash --auto`, unless `--no-auto-merge` is given, `merge.auto_merge` is off, the change touches a path of
@@ -411,11 +417,38 @@ What it refuses, besides the proof's refusals above (each message starts with "p
 | 2 | `--adopt: the pull request's branch has N commit(s) whose change the unit's branch lacks (...)` | the engineer cherry-picks them into the unit, or the coordinator adds `--adopt-rewrite` when dropping them is intended |
 | 2 | `origin/HEAD is not set here, so the default branch is unknown; run git remote set-head origin --auto` | the coordinator runs the command named |
 | 1 | `refused: the claim is not yours to release in <task>`, with the claim's state under it | the coordinator re-claims |
+| 1 | `#N is not the pull request of this branch: its head is <owner/name>:<branch>, not <repo>:<branch>; nothing was pushed or changed` (or, for one just created, `the branch was pushed, the pull request left as it was`) | none: a fork's pull request is never released onto; report it |
 | 1 | `#N already merged this branch; new work is a new task`; `#N was closed; --reopen to continue it`; `<fix> has no open pull request to fix (...)` | a new task; `--reopen`; none |
 | 1 | the proof's refusals, each under its stage | the stage named |
 | 3 | `rebase onto <remote>/<default> conflicts at <12 digits> in <paths>; the branch is as it was` | the engineer resolves; the stale stamps are redone |
 | 4 | `auto-merge on #N stays on and this release must not be merged by it; nothing was pushed` | turn it off on GitHub, rerun |
 | 4 | `push: ...` (the lease was refused: fetch the branch and have the engineer rebase onto it); `gh: ...; run pr open again`; `read-back: <url> is wrong: ...`; `git rebase <remote>/<default> stopped with no conflict: <git's message>; aborted, the branch is as it was`; a git error from the rebase on | rerun (after fixing what git names) |
+
+### The head match {#head-match}
+
+GitHub names a pull request's head branch without its repository: `gh pr list --head <branch>` and the `headRefName`
+field match the name alone, so a contributor's fork with a branch of the same name (task names are made from issue
+titles) matches too. On 2026-11-20 `pr open` for task 285 took the contributor's fork pull request #1415 for the task's
+own, retitled it, replaced its description and turned on auto-merge, and only the read-back after the edit saw that
+the head was not the pushed tip (#1522). Every tool that finds a pull request by branch now matches through one helper,
+`coney_tools/pr_head.py`, which reads the head fields (`headRefName`, `headRepository`, `headRepositoryOwner`,
+`isCrossRepository`) with the rest:
+
+- **`pr open`** keeps only the pull requests whose head is the unit's branch in the repository it releases to
+  (`head_problem`), notes each fork's it left out, and reads the one it found back before any push, edit, reopen or
+  auto-merge (step 3), and a new one before auto-merge (step 8).
+- **The listings** (`pr list-stuck`, `coord status`, Conclave's snapshot and its pull request wakes, `slot fill`, the
+  overlap check of `task start`, `workspace clean`, the repository audit) give each pull request's branch as GitHub
+  labels it (`head_label`): the bare branch for one of this repository, `owner:branch` for a fork's. A unit, a worktree
+  or a stacked base is matched against that label, so a fork's pull request never releases a unit, never makes it
+  look opened or merged, never gets a unit's conflict fix, and is listed as someone else's pending work rather than
+  skipped as the task's own.
+- **`pr hold`** with `--who` on a fork's pull request says so ([pr hold](#hold)).
+- **`ci pr`** takes no opening moment from a fork's pull request.
+
+A pull request that does not say where its head is (the fields were not asked for, or the fork was deleted) is never
+taken for this repository's. `pr open` matches the head against the repository it opens in (`--repo`, or what `gh`
+resolves for the remote).
 
 ### Taking over a pull request opened by hand {#adopt}
 
@@ -489,6 +522,10 @@ holds. `pr hold` records that somebody holds the problem, so it is neither told 
 - `--cause checks-failed` (or `conflict`, `ci-stuck`, `auto-merge-off`) covers that cause only; without it the hold
   covers every cause of the pull request, and counts as a hold for each cause everywhere a cause is checked (the
   snapshot's events and the stop guard alike).
+- **A fork's pull request is no unit's.** `--who` on a pull request whose head is a fork's branch is held all the same
+  (an agent may fix a contributor's branch when the maintainers ask), with a note on stderr naming its `owner:branch`:
+  it is matched by head repository as well as name ([The head match](#head-match)), so a unit whose branch has the same
+  name is not its pull request.
 - **A pull request keeps one hold for each cause.** A new hold replaces only the earlier hold of the same cause (or
   the earlier hold on every cause, when it names none), so a conflict that waits on the maintainer and auto-merge off
   on a fork can both be held: `pr hold 812 --note "auto-merge is off on a fork"` and `pr hold 812 --who engineer-2

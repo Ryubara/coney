@@ -630,9 +630,18 @@ void RenderEngine::drawTexturedQuads(const graphics::Texture* texture, std::span
 
 void RenderEngine::drawDescribed() { m_gl3.drawNew(m_frame, Gl3Renderer::Target{m_camera, m_frameSize, &m_assets}); }
 
-void RenderEngine::drawScene(const graphics::Draw3d& draw, std::span<const graphics::SceneLight> lights) {
+void RenderEngine::drawScene(const graphics::Draw3d& draw, std::span<const graphics::SceneLight> lights,
+                             std::span<const graphics::Transform3d> bones, const rw::Texture* dualTexture) {
     CONEY_ASSERT(m_inFrame);
-    m_frame.addSceneDraw(draw, lights, m_assets.materialTextures(draw.mesh), m_assets.materialTextures(draw.dualLayer));
+    std::span<const graphics::TextureId> dualTextures = m_assets.materialTextures(draw.dualLayer);
+    // A texture given for the dual layer this frame: its id (invalid when the scene assets do not hold it) for each
+    // of the layer's materials.
+    std::vector<graphics::TextureId> given;
+    if (dualTexture != nullptr) {
+        given.assign(dualTextures.size(), m_assets.textureOf(dualTexture));
+        dualTextures = given;
+    }
+    m_frame.addSceneDraw(draw, lights, m_assets.materialTextures(draw.mesh), dualTextures, bones);
     drawDescribed();
 }
 

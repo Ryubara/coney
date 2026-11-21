@@ -286,3 +286,37 @@ TEST_CASE("a scene draw keeps its lights and textures in the frame's arrays and 
     frame.begin(FrameStart{});
     CHECK(frame.passes().empty());
 }
+
+TEST_CASE("a skinned scene draw keeps its pose in the frame's bones", "[graphics][frame-description]") {
+    // Expected: docs/engine/renderer.md#frame-description: a skinned mesh's draw carries its pose, the skinning
+    // matrices (one per skin node, in the character's space) by value in the frame's array, set when the draw is added;
+    // a draw given none has an empty pose, and the next frame forgets them.
+    FrameDescription frame;
+    frame.begin(FrameStart{});
+    const std::array<coney::graphics::Transform3d, 2> bones{{
+        coney::graphics::Transform3d{.position = {1.0F, 2.0F, 3.0F}},
+        coney::graphics::Transform3d{.right = {0.0F, 1.0F, 0.0F}, .up = {-1.0F, 0.0F, 0.0F}, .position = {4.0F, 0, 0}},
+    }};
+    Draw3d posed;
+    posed.mesh = MeshId{5};
+    frame.addSceneDraw(posed, {}, {}, {}, bones);
+    Draw3d still;
+    still.mesh = MeshId{6};
+    frame.addSceneDraw(still, {}, {}, {});
+    frame.addSceneDraw(posed, {}, {}, {}, std::span<const coney::graphics::Transform3d>(bones).last(1));
+
+    const ScenePass& scene = std::get<ScenePass>(frame.passes()[0]);
+    REQUIRE(scene.draws.size() == 3);
+    const std::span<const coney::graphics::Transform3d> first = frame.bonesOf(scene.draws[0]);
+    REQUIRE(first.size() == 2);
+    CHECK(first[0] == bones[0]);
+    CHECK(first[1] == bones[1]);
+    CHECK(frame.bonesOf(scene.draws[1]).empty());
+    const std::span<const coney::graphics::Transform3d> third = frame.bonesOf(scene.draws[2]);
+    REQUIRE(third.size() == 1);
+    CHECK(third[0] == bones[1]);
+
+    frame.begin(FrameStart{});
+    frame.addSceneDraw(still, {}, {}, {});
+    CHECK(frame.bonesOf(std::get<ScenePass>(frame.passes()[0]).draws[0]).empty());
+}

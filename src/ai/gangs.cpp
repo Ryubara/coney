@@ -230,6 +230,13 @@ bool Gang::onEvent(Brain& member, const BrainEvent& event) {
     return m_tactic->event(*this, member, event);
 }
 
+void Gang::update() {
+    // The tactic's process needs members (the handle list not empty) and a tactic.
+    if (!m_members.empty() && m_tactic != nullptr) {
+        processTactic();
+    }
+}
+
 void Gang::processTactic() {
     if (const int result = m_tactic->process(*this); result != 0) {
         m_tactic->fireCallback(*this, result);

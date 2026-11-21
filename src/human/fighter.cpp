@@ -123,9 +123,12 @@ const std::string& Fighter::logName() const {
     return m_player ? kPlayer : kHuman;
 }
 
+// Human_IsBusy's state word and "out" state, as Coney's combat states; the stealth kill's clip stands for the killer's
+// +0x08 bit 1 (Attack_StartPaired 0x00262ac8). The airborne and +0x08 tests are the locomotion gate's (stickBusy), and
+// the pad lock (+0x1e) is not ported (#1011). A stand-in for those state bits.
 bool Fighter::holdsMovement(const HumanAnimator& animator) const {
     return m_combat.blocking() || m_combat.mode() != combat::CombatMode::Free || grabbed() || m_holdState.has_value() ||
-           m_tandemRole != TandemRole::None || helpless(animator);
+           m_tandemRole != TandemRole::None || m_stealthKillClip.has_value() || helpless(animator);
 }
 
 anim::Vec3 Fighter::takeSlide() {
@@ -745,9 +748,10 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         return;
     }
 
-    // 3. A grab's alignment turns, then its pair's moments as the grabber's clips change.
+    // 3. A grab's alignment turns, then its pair's moments as the grabber's clips change; a stealth kill's end.
     stepAlignment(heading);
     followPairClips(input, animator, heading);
+    followStealthKill(animator);
 
     // 4. A player's stance and target, then the L1 handlers, before his commands (`Player_UpdateActions` `0x0027c120`
     // runs `Player_UpdateStanceOrIdle` just ahead of them); the duck's counter takes a square or cross in its window;
@@ -767,6 +771,20 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     combat::CombatInput in = combatInput(input, animator, false);
     if (riseCountered || duckCounter(humansOnly(input), animator)) {
         in.command = combat::command::kNone;
+    }
+    // Hidden, L1's bit makes square, cross and circle the stealth kill's test (Player_UpdateActionsHidden 0x0027e040),
+    // which uses the press whether or not the kill starts. **Coney's choice**: while the kill's clip plays the killer
+    // takes no command, as for the tandem's clips.
+    if (m_player && !powerMove && tryStealthKill(input, animator, heading)) {
+        in.command = combat::command::kNone;
+    }
+    if (m_stealthKillClip.has_value()) {
+        in.command = combat::command::kNone;
+        // The killer is a paired move's attacker (state 0x1000, set by Grab_BreakOnHit 0x0022b960 from
+        // Attack_StartPaired 0x00262ac8), so Human_UpdateDown 0x00256a60 neither refills his power meter nor counts
+        // the kill's time toward the next refill (stealth.md#stealth-kill; run r-20261119-stealth-kill-power: 300 for
+        // the kill's 52 updates).
+        m_combat.power().hold(input.nowMs);
     }
 
     // **Coney's choice**: the attacker and the grabber take no command until their tandem clips are over (the
@@ -1878,19 +1896,27 @@ void Fighter::updateStance(const FighterInput& input, std::uint32_t phase) {
 void Fighter::updateL1(const FighterInput& input, std::uint32_t phase) {
     // Player_UpdateActions reaches the L1 handlers only out of the block (R1 held), the busy gate and a hold; the
     // stance update's own returns do not skip them. With no command it clears L1's bit (0x8008). **Coney's choice**:
-    // its Human_IsBusy (0x00228258) state test, which also clears the bit, is not made: Coney's player keeps no such
-    // state word.
+    // its Human_IsBusy (0x00228258) state test, which also clears the bit, and the hidden branch's clearing of state
+    // 0x8000 first are not made: Coney's player keeps no such state word.
     if (blocking() || (phase & kStanceGate) != 0 || m_held != nullptr) {
         return;
     }
+    // **Coney's choice**: the hidden player's state 0x20000000, set with the clear, is not kept either.
     if (input.command == combat::command::kNone) {
         m_l1Lock = false;
         return;
     }
-    // Let go (the matcher's release command; in a throw aim it ends the aim instead): L1's bit and the lock clear
-    // (0xc) and the release window opens.
+    // Let go (the matcher's release command). Hidden (Player_UpdateActionsHidden 0x0027e040), L1's bit clears (0x8
+    // only, not the lock's 0x4) and the release window opens whether or not he is in a throw aim, and only then is a
+    // throw aim ended. Out of hiding (Player_UpdateActions 0x0027c120) a throw aim is ended instead of
+    // Player_OnL1Released, which clears L1's bit and the lock (0xc) and opens the window.
+    // **Coney's choice**: the hidden player's state 0x20000000, set with the clear, is not kept, and the aim is not
+    // ended in either branch: a throw aim is a script's, which L1 does not end.
     if (input.command == combat::command::kL1Released) {
-        if (!input.throwAiming) {
+        if (m_lockBlocked) {
+            m_l1Lock = false;
+            m_l1WindowEndMs = input.nowMs + kL1ReleaseWindowMs;
+        } else if (!input.throwAiming) {
             m_l1Lock = false;
             m_lockOn = false;
             m_l1WindowEndMs = input.nowMs + kL1ReleaseWindowMs;

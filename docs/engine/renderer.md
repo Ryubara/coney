@@ -132,7 +132,7 @@ nothing of several passes, depth pre-passes, shadow casters, previous-frame tran
 | Machines with no Vulkan or D3D12 (old GPUs, some VMs) | the GL3 platform stays | the GL3 renderer stays as fallback while needed | bgfx and Diligent keep a GL backend | none |
 | Coney's code that changes | the 133 `rw::gl3::` sites and 35 direct GL calls get a per-platform twin; the rest keeps calling librw | the ~460 drawing sites in about 24 files move behind Coney's own draw interface ([Migration](#migration)) | the same ~460 sites, against the library's API | the same ~460, three times below them |
 | New code | a librw platform per API, larger than the GL3 one (memory, descriptors, synchronisation, pipeline cache): **XL per API** | Coney's renderer once, shaders once in HLSL compiled offline to SPIR-V, DXIL and MSL: **XL**, in steps that each land | the renderer once against the library, plus its build and shader tools: **XL** | three backends and their shaders: **XL × 3** |
-| Risk | Coney maintains a fork of a library whose upstream is a small project with occasional commits; PSO hitches from immediate render states; the fork only reaches what librw's single-pass pipelines can express | SDL's GPU API is young (SDL 3.2 and later); it exposes no native device or command-list handles, so a vendor upscaler cannot be plugged in without patching SDL ([Upscalers](#upscalers)); no geometry or tessellation stages, no ray tracing | a large dependency with its own build and shader compiler; Diligent needs MoltenVK on macOS; bgfx's API has its own conventions for views and state | highest effort and three sets of bugs; only worth it for ray tracing |
+| Risk | Coney maintains a fork of a library whose upstream is a small project with occasional commits; PSO hitches from immediate render states; the fork only reaches what librw's single-pass pipelines can express | SDL's GPU API is young (SDL 3.2 and later); it exposes no native device or command-list handles, so a vendor upscaler cannot be plugged in without patching SDL ([Upscalers](renderer-scaling.md#upscalers)); no geometry or tessellation stages, no ray tracing | a large dependency with its own build and shader compiler; Diligent needs MoltenVK on macOS; bgfx's API has its own conventions for views and state | highest effort and three sets of bugs; only worth it for ray tracing |
 | Per-pixel lighting, shadow maps | only inside librw's pipelines, one camera pass: shadow passes and light lists fight its model | yes, as Coney's passes | yes | yes |
 | TAA, motion vectors | needs previous transforms and jitter that librw has no place for | yes: the blended steps already give previous poses | yes | yes |
 | Uncapped rate without tearing | mailbox present only if the fork adds it | `MAILBOX` present mode built in | yes | yes |
@@ -154,8 +154,8 @@ data.**
 - **The work is the same size in (b), (c) and (d) on Coney's side** (the ~460 sites move behind one interface), and (b)
   adds the least on top: no third-party renderer to learn, build and track, and one backend instead of three.
 - **What (b) gives up** is native handles (vendor upscalers) and ray tracing. Both are optional extras on this page;
-  [Upscalers](#upscalers) says how they would be reached, and either can be added later behind the same seam with a
-  narrow native path, without changing the passes above it.
+  [Upscalers](renderer-scaling.md#upscalers) says how they would be reached, and either can be added later behind the
+  same seam with a narrow native path, without changing the passes above it.
 
 A local spike settled what the reading could not, and nothing from it lands: [Spike](#spike).
 
@@ -254,12 +254,13 @@ screen passes made before, so the draw-stream hashes did not move. It owns the s
 including the motion blur's kept frame, which `MotionBlurPass` now only names; that frame is now a bare raster, with no
 librw texture around it (the draw binds the raster and sets the filter as render states, so the picture is the same).
 The named disc frames' hashes cover the line blend (`--line-blend on`) but not the blur pulse or the motion blur, which
-neither frame draws. Because the camera, the level's background and the humans still draw through librw between the 2D
-layers, the world's sectors, the objects and the cars, `Gl3Renderer` draws each part as it is added rather than the
-whole frame at `present()`; once items 9 and 10 move them onto the description too, a frame can be drawn whole, and by
-the SDL3 GPU renderer (item 11). Not in it yet: the texture viewer's `RenderEngine::drawTexture`, which draws a librw
-texture of a texture dictionary and waits for Coney's own texture ids (item 6). Dear ImGui's `sdlgpu3` backend (item 12)
-draws the developer overlay over the GPU renderer's frame ([The developer overlay](gpu-renderer.md#overlay)).
+neither frame draws. Because the camera, the level's background and the effects still draw through librw between the 2D
+layers, the world's sectors, the objects, the cars and the humans, `Gl3Renderer` draws each part as it is added rather
+than the whole frame at `present()`; once item 10 moves the effects onto the description too, a frame can be drawn
+whole, and by the SDL3 GPU renderer (item 11). Not in it yet: the texture viewer's `RenderEngine::drawTexture`, which
+draws a librw texture of a texture dictionary and waits for Coney's own texture ids (item 6). Dear ImGui's `sdlgpu3`
+backend (item 12) draws the developer overlay over the GPU renderer's frame ([The developer
+overlay](gpu-renderer.md#overlay)).
 
 **Built for the streamed world's sectors (item 7).** A *scene pass* (`ScenePass`) lists 3D draws (`Draw3d`): the mesh
 and its [dual layer](../research/rendering.md#dual) by the asset store's `MeshId`, the frame's matrix, the fade and
@@ -275,7 +276,7 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
   sector through `RenderEngine::drawScene` with its fade and lights (`SceneLighting::worldLights`), and `Gl3Renderer`
   draws it at once: its states where they differ from those in force, the fade into the atomic's materials, the lights
   in a librw world of its own (`LightRig`), then `drawLitAtomic` ([lit_atomic.h](repo:src/platform/lit_atomic.h)), which
-  `SceneLighting` still draws the humans through. The draw-stream hashes did not move between item 7's commits.
+  `SceneLighting`'s own draws go through too. The draw-stream hashes did not move between item 7's commits.
 - **Not in it yet** (drawn through the draw layer as before): the camera, the level's background (sky, clouds, skyline,
   glows: the level file's models), the debug tools' own sector draws, and every sector while the mesh views are on. The
   GL3 renderer draws the atomic at its own frame, so only the GPU renderer (item 13) will read the transform.
@@ -301,32 +302,49 @@ frame's arrays holding its lights by value (`SceneLight`) and each material's `T
   commits. While the mesh views are on, or a mesh did not convert, the atomic goes through the lighting rig as before
   (`SceneLighting::drawObjectAtomic` or `drawCarAtomic`) with the same colours.
 
+**Built for the humans (item 9).** Each human is one draw (`PlayLighting::drawHumanPasses`, `HumanRender_Draw`,
+`0x00174320`): his body and blood layer by id, his placement and his skinning matrices (`FrameDescription::bonesOf`).
+`MaterialColour::Shade` writes his colour (`HuColor`, white until it is ported) times the shadow dimming as the first
+material's colour, in place of the disc's `0x969696`, with the distance fade as its alpha, and leaves it there ([Drawing
+a human](../research/graphics.md#human-draw)). The blood layer is the dual layer with `DualPass::Blood`
+([Characters](../research/rendering.md#characters)). The lights are selected once for both passes
+(`SceneLighting::humanLights`). On the skinned pipeline `Gl3Renderer` lends both atomics a palette filled from the
+bones; CPU skinning blended the same matrices. The human scene's hash and the disc frames' did not move between item 9's
+first two commits; the colour, ported after them, moved both (the humans brighter by 255/150). Left for item 14: a
+converted character mesh lacks the skin weights, and the blood textures are not in the scene assets. Held objects and
+hats draw as objects.
+
 #### Texture lifetime {#texture-lifetime}
 
-`SceneAssets::addAtomic` notes each material's `TextureId` once, when a part loads, and `WorldSet` drops a part's
-dictionary's textures when the part unloads. Because materials find their textures by name through every loaded
-dictionary ([Finding textures by name](../research/graphics.md#texture-lookup); how the original reads a part's
-dictionary: [Part file](../research/world.md#part-file)), a part's material could take its texture
-from another loaded part's dictionary; its id would then go stale when that part unloads. GL3 would still draw it
-through librw (the material holds a reference on the librw texture), but the GPU renderer (item 13) would draw it
-untextured.
+`SceneAssets::addAtomic` notes each material's `TextureId` once, when a mesh goes in: a sector's when its part loads,
+an object's or a car part's when its model is loaded (`addObjectMesh`). Materials find their textures by name through
+every loaded dictionary ([Finding textures by name](../research/graphics.md#texture-lookup); how the original reads a
+part's dictionary: [Part file](../research/world.md#part-file)), so a mesh's material can take its texture from a
+dictionary that goes before the mesh does: an object's materials after the first (the objects and cars of item 8 add
+only their dictionary's first texture themselves, taken before its raster is converted) can find a streamed part's
+texture, and a part's material could find another loaded part's. `WorldSet` drops a part's dictionary's textures when
+the part unloads.
 
-**The disc has none** (NTSC-U PS2, counts only): the disc check *no part's material takes its texture from
-another part's dictionary* (`disc_world_streaming_test.cpp`) loads every part of each of the 80 levels, then loads each
-of the 1,564 parts again with every other part loaded, so the lookup could reach any other part's dictionary before the
-worlds' (parts are newer). Of 88,406 textured materials (19 have no texture), **0** take their texture from another
-part; each comes from its own part's dictionary or a world's, and the worlds' stay loaded as long as the `WorldSet`.
+**A texture is held while anything uses it**, as RenderWare keeps one while a material references it
+([Texture lifetime](../research/graphics.md#texture-lifetime)): `SceneAssets` counts each `addTexture` (the
+dictionary's hold, by `WorldSet` or the object loaders) and each held mesh's material that names the texture.
+`removeTexture` lets go of one hold and `removeMesh` of its materials', and the texture leaves the store at the last.
+So when a part unloads while an object whose material took one of its textures stays, the object's mesh still names a
+texture the store holds, and the GPU renderer draws it textured, as GL3 does through librw (the material holds a
+reference on the librw texture, which outlives its dictionary). Resolving the id at draw time alone would not have
+helped, as the texture would be gone from the store by then. The debug tools' refresh of a sector's mesh
+(`WorldSet::refreshMesh`) adds the new meshes before it removes the old, so a texture the old mesh was the last to hold
+stays. Three synthetic tests (`world_set_test.cpp`) cover it: an object's material that takes a part's texture, and a
+part's material that takes another part's, each keep it after that part unloads, and the object's is dropped when its
+mesh goes; a refreshed part mesh keeps such a texture.
 
-So the ids stay noted once, and a guard stands in for a fix: `WorldSet::loadPart` counts such materials
-(`WorldSet::borrowedTextures()`) and logs a `World` warning naming the part, so a modded file that does it is not
-missed. A synthetic test (`world_set_test.cpp`) has part 2 use a texture only part 1 holds and checks the count. If one
-ever matters, the fix is to keep a texture alive while a mesh uses it (a use count in `SceneAssets` beside the
-dictionary's hold): resolving the id at draw time alone would not help, as the texture is gone from the store by then.
-
-The objects and cars of item 8 note only their dictionary's first texture (taken before its raster is converted); an
-object's materials after the first find their texture by name when the model is read, which can be a streamed part's
-texture whose id goes stale when that part unloads. GL3 is unaffected, as above; the GPU renderer would draw such a
-material untextured, a case the guard above does not cover: follow-up [#1452](issue:1452).
+**Between parts the disc has none** (NTSC-U PS2, counts only): the disc check *no part's material takes its texture
+from another part's dictionary* (`disc_world_streaming_test.cpp`) loads every part of each of the 80 levels, then loads
+each of the 1,564 parts again with every other part loaded, so the lookup could reach any other part's dictionary
+before the worlds' (parts are newer). Of 88,406 textured materials (19 have no texture), **0** take their texture from
+another part; each comes from its own part's dictionary or a world's, and the worlds' stay loaded as long as the
+`WorldSet`. `WorldSet::borrowedTextures()` still counts such materials for that check (a synthetic test has part 2 use a
+texture only part 1 holds); it no longer warns, as such a material now keeps its texture.
 
 ### Testing while it grows {#migration-testing}
 
@@ -430,47 +448,10 @@ The work order is in [Order](#order): the lighting frame first (item 19: simulat
 renderer), then, once the new renderer has its scene target (item 22), the gamma ramp, the *Xbox* preset's light caps
 and fog, the shadow maps and per-pixel lights (items 24, 25 and 28 to 31).
 
-## Anti-aliasing and scaling {#aa}
+## Anti-aliasing, scaling and HDR {#aa}
 
-All of these draw into the scene target at the internal resolution and resolve or upscale into the window
-([Enhancements: foundation F2](../guides/enhancements.md#foundations)).
-
-| Technique | Where it fits | Licence |
-| --- | --- | --- |
-| MSAA 2×, 4×, 8× | geometry edges, which this game's long straight scenery edges are full of; with alpha-to-coverage for fences and foliage. On the SDL3 GPU renderer only (item 26): the GL3 path draws none | none (API feature) |
-| FXAA 3.11 | cheapest post AA, slight blur | NVIDIA's FXAA licence, permissive; check at adoption |
-| SMAA 1×, T2× | better edges than FXAA, cheap; the default post AA | MIT |
-| TAA (Coney's own) | shimmer on thin wires and fences; uses the blended steps' previous poses for motion vectors and a jittered projection | Coney's code |
-| Render scale 0.5-2× | above 1 is supersampling; a *640 × 448* mode with nearest filtering for the PS2 look | Coney's code |
-| Upscalers | from a render scale below 1, in tiers ([below](#upscalers)) | per tier |
-
-### Upscalers {#upscalers}
-
-Listed as options, in tiers, each off in *PS2* and *Xbox*. Each licence is dealt with when its item comes: FSR's MIT
-needs no decision, and a proprietary SDK or binary is a maintainer decision then. The versions are the current ones
-as this design was written; the item checks them again.
-
-| Tier | Upscaler | Runs on | Licence (as its project states it; not confirmed, checked at adoption) | Reach from SDL3's GPU API | Item |
-| --- | --- | --- | --- | --- | --- |
-| Fallback | AMD FSR 1 (EASU and RCAS): spatial upscale and sharpen | any GPU; the one tier CI can test, on its software drivers | MIT | plain shaders of Coney's | 33 |
-| Main, portable | AMD FSR 3.1 (FidelityFX SDK): temporal, from TAA's motion vectors | any vendor | MIT | the SDK's upscaler shaders ported as Coney's compute passes; its own backends want native handles | 34 |
-| Vendor | NVIDIA DLSS 4 and DLAA (Streamline or NGX SDK) | NVIDIA RTX | NVIDIA's proprietary SDK licence; redistributable binaries | native handles and a vendor binary beside the executable; a separate opt-in plug-in, as the [Enhancements plan](../guides/enhancements.md#decided) records for proprietary SDKs | 35 |
-| Vendor | AMD FSR 4 ("Redstone"): machine-learned | AMD RX 9000 and 7000; 4.1 adds RX 6000 and some APUs; never NVIDIA. Shader Model 6.6, so Direct3D 12 only until AMD's announced Vulkan version ships | the FidelityFX SDK's terms for its prebuilt ML upscaler | as DLSS | 36 |
-| Optional | Intel XeSS | Intel Arc best; other GPUs through its fallback | Intel's XeSS SDK licence; redistributable binaries | as DLSS | filed if a maintainer asks for it |
-
-The vendor tiers need the device and command buffer underneath SDL's GPU API: a small patch to Coney's pinned SDL (or
-an upstream extension) that exposes them, used only by the plug-in. Whether to carry that change to SDL is decided
-with item 35, the first that needs it; FSR 3.1 is ported so that it does not.
-
-## HDR output {#hdr}
-
-The game's content is SDR on the GS scale, so HDR output is a presentation of it, not new range
-([Enhancements: HDR](../guides/enhancements.md#lighting-and-post-processing)). On the GPU renderer, an HDR10 or scRGB
-swapchain (SDL3's GPU API has both) takes an inverse tone map of the SDR picture, with highlights from what the
-lighting work adds (coronas, glows, bloom). Paper white and peak brightness are display values; the HUD and the front
-end draw at paper white. It is a live toggle on the debug menu's Display page and a command-line flag, greyed out with
-the reason when the display or its driver has no HDR. The PS2 look stays the default and test mode forces SDR. Its
-pull request shows a picture check for each output mode (item 23).
+The anti-aliasing techniques, the render scale, the upscalers in their tiers and HDR output are designed on their own
+page, [Anti-aliasing, scaling and HDR](renderer-scaling.md), split out to keep this one short.
 
 ## Presets {#presets}
 
@@ -502,8 +483,8 @@ also a toggle of its own, off in *PS2*, so a player can take one without the res
 research's In Coney section places under *Faithful*. The frame-rate gaps are closed in every preset
 ([Gaps](#frame-rate-gaps)); at 30 frames a second and in test mode the drawn values are the newest step's, so the
 *PS2* tests do not see them. Ray-traced shadows and AO are in no preset: SDL3's GPU API has no ray tracing, so they
-need a native Vulkan or D3D12 path beside it (the same native handles as [Upscalers](#upscalers)), a later option
-after item 21.
+need a native Vulkan or D3D12 path beside it (the same native handles as
+[Upscalers](renderer-scaling.md#upscalers)), a later option after item 21.
 
 *PS2* is what tests use and is forced in test mode. Which preset a player gets by default is open
 ([Questions](#questions)); until a maintainer decides, every option ships off, which is *PS2*.
@@ -589,12 +570,13 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   than the estimate of about 290 because the `rw::gl3::` vertex types are not calls and the renders below wait. Routed
   with item 7 ([#1199](issue:1199)): `WorldRenderer::render`'s render states and camera begin, and the world's atomic
   renders (`draw::renderAtomic`): each streamed sector, its dual layer, and the level's sky, clouds, skyline and light
-  glows, each one record (the states, distance levels, frame, geometry, materials and lights: draw_calls.h). Routed
-  with item 8 ([#1200](issue:1200)): `ParkedCars::draw`'s and `PlacedObjects::draw`'s render states and their atomic
-  renders, each car part and world object one record (`SceneLighting::drawObjectAtomic` and an object drawn with no
-  lights of its own). With item 9: `PlayLighting::drawHumanPasses` ([#1201](issue:1201)), its renders and what runs
-  inside their pipelines (the `VERTEXALPHA` state in `texture_lod.cpp` and `character_skin.cpp`, the skinning
-  buffers). Never: the start-up and the profiler's queries.
+  glows, each one record (the states, distance levels, frame, geometry, materials and lights: draw_calls.h). Routed with
+  item 8 ([#1200](issue:1200)): `ParkedCars::draw`'s and `PlacedObjects::draw`'s render states and their atomic renders,
+  each car part and world object one record (`SceneLighting::drawObjectAtomic` and an object drawn with no lights of its
+  own). Routed with item 9 ([#1201](issue:1201)): each human's body and blood layer, the states
+  `PlayLighting::drawHumanPasses` sets, and the `VERTEXALPHA` the default and skinned pipelines set inside a draw; a
+  record of a GPU-skinned body also holds its weights, bones and palette, the vertex buffer being filled once from them.
+  Never: the start-up and the profiler's queries.
 - **What a record holds.** A draw holds its primitive, every render state set so far with its value as it stands at
   the draw (a raster as its place in the recording's order of first use, its size and format, and a digest of the
   pixels Coney uploaded to it), the vertices and the indices; Im3D also its normals, world matrix and flags. A camera's
@@ -608,16 +590,19 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   today, is recorded as "no camera" by both camera begin and end and reaches librw in neither, forwarding or not.
 - **Synthetic scenes** in [draw_calls_test.cpp](repo:tests/platform/draw_calls_test.cpp), drawn headless: a 2D scene
   through `RenderEngine` (the fill, quads, alpha-tested triangles, a view wash, a window rectangle), a textured Im3D
-  mesh under a placed camera with a Coney-made checkerboard, the throw arc's ribbon drawn by `ThrowArcRenderer`, and
-  the named operations. Their expected hashes are in the test, beside checks that a repeated state keeps the hash and
-  a grid step, a texel or a state moves it; the grid and the encoding are checked against the definition in
+  mesh under a placed camera with a Coney-made checkerboard, the throw arc's ribbon drawn by `ThrowArcRenderer`, and the
+  named operations. Their expected hashes are in the test, beside checks that a repeated state keeps the hash and a grid
+  step, a texel or a state moves it; the grid and the encoding are checked against the definition in
   [draw_stream_test.cpp](repo:tests/platform/draw_stream_test.cpp). The world scene
   ([world_draw_stream_test.cpp](repo:tests/platform/world_draw_stream_test.cpp), item 7): two Coney-made textured
   sectors drawn headless by `WorldRenderer` through a camera of its own, with its hash and a check that a fade moves it.
   The object scene ([object_draw_stream_test.cpp](repo:tests/platform/object_draw_stream_test.cpp), item 8): two
   Coney-made crates (one tinted and translucent) and a painted car of 26 parts, loaded from a synthetic archive by
   `PlacedObjects` and `ParkedCars` and drawn headless by `WorldRenderer` among the objects and after the worlds, with
-  its hash and checks that a tint and a paint move it.
+  its hash and checks that a tint and a paint move it. The human scene
+  ([human_draw_stream_test.cpp](repo:tests/platform/human_draw_stream_test.cpp), item 9): four Coney-made characters
+  drawn headless by `PlayLighting::drawHumanPasses` (skinned on the CPU; the disc frames cover the skinned pipeline),
+  with its hash and checks that a turn, the blood layer and the fade move it.
 - **Disc frames.** `--draw-hash` prints the last frame's counts and hash ([Running Coney](../guides/running.md)). The
   named frames are run with a window, the world frozen and a fixed size, from the level's first frame of play:
 
@@ -640,7 +625,13 @@ its grid and its hash are `DrawStream` ([draw_stream.h](repo:src/platform/draw_s
   `0x87ef01e331e744cb`; their screenshots again matched the base's pixel for pixel. `level99` now plays its intro movie
   before its first frame of play, so `level99-street` is run with `--skip-movies`: `0x31226d29c17742e4` (132 records,
   107 atomic draws), the same before and after item 8's two fixes (a car's lights at squared distance 0, an object's
-  tint on its first material), with the screenshot unchanged.
+  tint on its first material), with the screenshot unchanged. Item 9's, the same after both its commits:
+  `level99-street` 144 records (119 atomic draws), `0xbd96883072a978f9`; `level95-hub` 74 (56), `0x3ea8db9c32d56092`;
+  with `--cpu-skinning` `0x292b3d9dc97355d1` and `0x37f02cb07ff2b76f`; both paths' screenshots matched the base's. With
+  the humans' colour then ported (their white `HuColor` times the dimming, not the material's `0x969696`), the same
+  counts: `level99-street` `0xc8c5be7c138a978e`, `level95-hub` `0x5a39681c1dd355c9`; with `--cpu-skinning`
+  `0xf737a41632222772` and `0x304202659c4bd0c8`; `level99-street`'s screenshot 19,151 pixels over 2 (6.7 %, largest
+  difference 59), all on the humans, and `level95-hub`'s black one unchanged.
 - **The grid across systems** is the open question this item leaves to CI: the expected hashes were recorded on
   Windows, and the first CI run on Linux and macOS shows whether they hold. If one differs, the fallback grid is 1/256
   of a unit for positions and texture coordinates (`kDrawGridSteps`) with colours kept at 8 bits, and the expected

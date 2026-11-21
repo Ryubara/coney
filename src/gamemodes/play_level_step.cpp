@@ -103,6 +103,7 @@ ModeResult PlayLevelSimulation::update(GameModeStack& stack, const FrameTime& fr
         CONEY_PERF_ZONE("play.ai_capture");
         m_ai->capture();
     }
+    stepPlacedHeld();
     stepPickups();
     stepThrowAim(actionPad);
     stepMugMeter(m_player->human(), actionPad);
@@ -134,14 +135,17 @@ ModeResult PlayLevelSimulation::update(GameModeStack& stack, const FrameTime& fr
     const StepView view = stepScenery(frame);
     stepWorldObjects(view, static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
     recordDrawnPoses();
-    // The HUD's step (docs/research/hud.md#the-huds-frame), with the player's rage on panel 0.
+    // The HUD's step (docs/research/hud.md#the-huds-frame), each panel from its player slot's state: player 1's in slot
+    // 0, made afresh each step; slot 1 has no player yet.
     hud::HudFrame hudFrame;
     hudFrame.nowMs = millisecondsOf(frame.gameTicks);
     hudFrame.pads.at(0) = &actionPad;
     // The fixed-camera icon: a locked camera (type 1) or switch 0 off ignores the right stick. Coney has no fixed (0),
     // transition (5) or rail (9) camera.
+    hud::PlayerHudState& player1 = m_playerHuds.at(0);
+    player1 = hud::PlayerHudState{};
     if (const camera::Cameras* cameras = m_cast.cameras; cameras != nullptr) {
-        hudFrame.cameraIgnoresStick.at(0) =
+        player1.cameraIgnoresStick =
             cameras->current().kind == camera::CameraKind::Locked || !cameras->enabled(camera::Cameras::kSwitchStick);
     }
     hudFrame.levelNumber = m_levelNumber;
@@ -153,7 +157,7 @@ ModeResult PlayLevelSimulation::update(GameModeStack& stack, const FrameTime& fr
     // A scene's letterbox in or moving hides the HUD.
     hudFrame.letterbox = letterboxShown(hudFrame.nowMs);
     // Player 1's rage meter and whether he is knocked out (`Human_IsKnockedOut`), which drops his Armies panel.
-    feedHumanToHud(hudFrame, 0, m_player->human());
+    feedHumanToHud(player1, m_player->human());
     // Player 1's radar: his feet, facing and speed, and the camera's facing in the humans' convention (0 faces +y,
     // positive to the left); RenderWare's (x, y, z) is the game's (x, -z, y).
     hudFrame.radar.known = true;
@@ -164,12 +168,15 @@ ModeResult PlayLevelSimulation::update(GameModeStack& stack, const FrameTime& fr
     // The score, the money and the four item counters, which the original's panel reads from the stats object and the
     // inventory itself (docs/research/hud.md#item-counters).
     if (m_pickups != nullptr) {
-        hud::PanelValues& values = hudFrame.players.at(0);
+        hud::PanelValues& values = player1.panel;
         values.score = m_pickups->score(0);
         values.money = m_pickups->carried(0, item::kMoney);
         // **Coney's stand-in** for the handcuff counter's `Human_GetCuffCount` (not traced): inventory item 5.
         values.items = {m_pickups->carried(0, item::kRevive), m_pickups->carried(0, item::kSprayPaint),
                         m_pickups->carried(0, item::kHandcuffs), m_pickups->carried(0, item::kHandcuffKey)};
+    }
+    for (std::size_t slot = 0; slot < m_playerHuds.size(); ++slot) {
+        hud::applyPlayerHud(hudFrame, slot, m_playerHuds.at(slot));
     }
     m_hud->hud().update(hudFrame);
     hudStepped();

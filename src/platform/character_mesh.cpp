@@ -10,6 +10,7 @@
 
 #include "characters/character_rig.h"
 #include "core/assert.h"
+#include "platform/scene_assets.h"
 
 namespace coney::platform {
 
@@ -159,6 +160,9 @@ SkinVertexData packSkinVertices(std::span<const characters::SkinVertex> vertices
     for (const characters::SkinVertex& vertex : vertices) {
         data.weights.push_back(vertex.weights);
         data.indices.push_back(vertex.bones);
+        for (const std::uint8_t bone : vertex.bones) {
+            data.bones = std::max(data.bones, static_cast<std::size_t>(bone) + 1);
+        }
     }
     return data;
 }
@@ -185,13 +189,24 @@ anim::Mat34 characterPlacement(anim::Vec3 feet, float heading, float lean) {
     return anim::multiply(toRenderWare, anim::multiply(turn, roll));
 }
 
-CharacterMesh::CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture, Skinning skinning)
-    : m_texture(texture) {
+CharacterMesh::CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture, Skinning skinning,
+                             SceneAssets* assets)
+    : m_texture(texture), m_assets(assets) {
     if (m_texture != nullptr) {
         m_texture->addRef();
     }
     m_atomic = makeAtomic(model, m_texture, &characters::SkinVertex::texCoords);
     m_blood = makeAtomic(model, nullptr, &characters::SkinVertex::secondTexCoords);
+    // Held by id for the frame description's draws; an atomic that does not convert keeps no id, and the human is then
+    // drawn through the lighting rig as before (PlayLighting::drawHumanPasses()).
+    if (m_assets != nullptr) {
+        if (auto id = m_assets->addAtomic(*m_atomic); id) {
+            m_meshId = *id;
+        }
+        if (auto id = m_assets->addAtomic(*m_blood); id) {
+            m_bloodMeshId = *id;
+        }
+    }
     m_gpu = skinsOnGpu(skinning, characterSkinOn(), model.clump.skin.inverseBind.size());
     if (!m_gpu) {
         m_vertices = model.vertices; // blended on the CPU at each pose
@@ -206,8 +221,12 @@ CharacterMesh::CharacterMesh(const characters::CharacterModel& model, rw::Textur
     useCharacterSkin(m_blood, m_skin, *m_palette);
 }
 
-// Both atomics with their geometry and frames, then the mesh's texture reference.
+// The scene assets' ids, both atomics with their geometry and frames, then the mesh's texture reference.
 CharacterMesh::~CharacterMesh() {
+    if (m_assets != nullptr) {
+        m_assets->removeMesh(m_meshId);
+        m_assets->removeMesh(m_bloodMeshId);
+    }
     destroyAtomic(m_blood); // its materials drop their blood texture references
     destroyAtomic(m_atomic);
     if (m_texture != nullptr) {
@@ -227,6 +246,7 @@ void CharacterMesh::pose(std::span<const anim::Mat34> skinning, const anim::Mat3
     // keep a hair below 1 (characters.md#character-geometry).
     placeFrame(m_atomic, placement);
     placeFrame(m_blood, placement);
+    m_skinning.assign(skinning.begin(), skinning.end());
     if (m_gpu) {
         poseOnGpu(skinning);
     } else {

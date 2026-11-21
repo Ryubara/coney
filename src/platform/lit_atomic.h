@@ -36,8 +36,9 @@ void placeLight(rw::Light& light, const graphics::SceneLight& values);
 /// reference, so a fainter pixel is still blended but writes no Z (docs/research/rendering.md#shared-state). Then
 /// `layer`, the atomic's dual layer when not null (docs/research/rendering.md#dual): blended by its texture's alpha
 /// with no alpha test, writing Z, at the alpha of the atomic's first material. `routed` draws through the draw layer
-/// (draw::renderAtomic(): the world's atomics, the objects' and the cars'), else on librw directly (the humans until
-/// item 9 of docs/engine/renderer.md#order routes theirs).
+/// (draw::renderAtomic(): the world's atomics, the objects', the cars' and, since item 9 of
+/// docs/engine/renderer.md#order, the humans'), else on librw directly, unrecorded, as the rig draws an atomic no draw
+/// function of it marks as routed (SceneLighting::setRouted()).
 void drawLitAtomic(rw::Atomic* atomic, rw::Atomic* layer, rw::World* lights, bool routed);
 
 /// Sets a 3D draw's fixed states (graphics::SceneStates) on the draw layer, each only where it differs from the one in
@@ -54,8 +55,9 @@ void applySceneStates(const graphics::SceneStates& states);
 /// (docs/engine/renderer.md#comparing), and the GPU renderer, which reads only SceneStates, relies on that.
 [[nodiscard]] graphics::SceneStates sceneStatesInForce();
 
-/// Changes an atomic's materials as a 3D draw's graphics::Material3d says while it lives: a fade or a paint is kept, a
-/// tint (the first material's colour and the modulation it turns on) is put back when it goes. The one place the GL3
+/// Changes an atomic's materials as a 3D draw's graphics::Material3d says while it lives: a fade, a paint or a shade
+/// (a human's colour and fade) is kept, and a tint (the first material's colour and the modulation it turns on) is
+/// put back when it goes. The one place the GL3
 /// renderer and the draws outside the frame description (the debug tools' mesh views) change them, so both draw the
 /// same colours.
 class MaterialChange {
@@ -70,9 +72,9 @@ class MaterialChange {
 
   private:
     rw::Geometry* m_geometry;
-    std::vector<std::array<std::uint8_t, 4>> m_own; // a tint's first material's own colour (RGBA), if any
+    std::vector<std::array<std::uint8_t, 4>> m_own; // the colour (RGBA) to put back: a tint's first
     std::uint32_t m_flags = 0;                      // a tint's geometry flags before it
-    bool m_restore = false;                         // a tint: put the colours and flags back
+    bool m_restore = false;                         // a tint: put the colour and flags back
 };
 
 /// A librw world holding a list of chosen lights (graphics::SceneLight), for drawing an atomic lit by exactly those

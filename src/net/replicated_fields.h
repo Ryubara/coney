@@ -80,17 +80,19 @@ void writeField(BitWriter& writer, const FieldSpec& field, const FieldValue& val
 [[nodiscard]] std::size_t fieldsBits(std::span<const FieldSpec> fields);
 
 /// The kinds of replicated thing that carry fields (docs/guides/network-architecture.md#net-ids): a camera is named by
-/// its player's slot and a sound, a particle or a message is an event, so none of those has a table.
+/// its player's slot and a sound, a particle or a message is an event, so none of those has a table. A player's HUD is
+/// named by his slot, not by a network id.
 /// @coney-only network play; the original has none
 enum class ReplicatedKind : std::uint8_t {
     Human,       ///< A player or an AI human.
     WorldObject, ///< A door, a prop, glass, a pick-up or a loose object, once changed from the level's data.
     Car,         ///< A car.
+    PlayerHud,   ///< A player slot's HUD state (hud::PlayerHudState): what his panel is given each step.
 };
 
 /// Every replicated kind, in order.
-inline constexpr std::array<ReplicatedKind, 3> kReplicatedKinds{ReplicatedKind::Human, ReplicatedKind::WorldObject,
-                                                                ReplicatedKind::Car};
+inline constexpr std::array<ReplicatedKind, 4> kReplicatedKinds{ReplicatedKind::Human, ReplicatedKind::WorldObject,
+                                                                ReplicatedKind::Car, ReplicatedKind::PlayerHud};
 
 /// A kind's name, for logs and test names.
 /// @coney-only network play; the original has none
@@ -157,6 +159,27 @@ enum class CarField : std::uint8_t {
     PositionZ, ///< Metres (up).
     Heading,   ///< Radians.
     Speed,     ///< Metres a second along its heading; negative backing up.
+    Count,
+};
+
+/// A player slot's HUD fields, indexes into fieldTable(ReplicatedKind::PlayerHud): hud::PlayerHudState, what the HUD's
+/// step is given for his panel (docs/research/hud.md#the-player-panel).
+/// @coney-only network play; the original has none
+enum class HudField : std::uint8_t {
+    Rage,               ///< The rage meter (human `+0x650`; docs/research/hud.md#the-rage-meter).
+    RageMax,            ///< Its maximum (the Warrior class's s16 `+0x00`).
+    Raging,             ///< Raging (human `+0xe0` flag `0x80000`).
+    AltBanner,          ///< The banner's blue-grey (human state flag `0x200000`; docs/research/hud.md#the-name-banner).
+    Score,              ///< The score in the stats object (docs/research/hud.md#score-and-money).
+    Money,              ///< Inventory item 2.
+    Flash,              ///< The first item counter's count (docs/research/hud.md#item-counters).
+    SprayPaint,         ///< The second's.
+    Handcuffs,          ///< The third's.
+    Keys,               ///< The fourth's.
+    SelectShows,        ///< The per-player record's `+0x1b`: SELECT shows the panel.
+    KnockedOut,         ///< Knocked out (`Human_IsKnockedOut`), which drops an Armies panel.
+    CameraIgnoresStick, ///< His camera ignores the right stick: the fixed-camera icon
+                        ///< (docs/research/hud.md#hud-fixed-cam-icon).
     Count,
 };
 

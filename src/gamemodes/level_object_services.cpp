@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gamemodes/level_object_services.h"
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -14,20 +16,39 @@
 namespace coney {
 
 void LevelObjectServices::playSound(std::uint32_t nameHash, anim::Vec3 at) {
+    // Network play (Coney's own): each sound is raised before it plays.
+    raise(GameEvent{.kind = GameEventKind::Sound3D, .id = nameHash, .position = {at.x, at.y, at.z}});
     if (m_sounds != nullptr) {
         m_sounds->playSound(nameHash, at);
     }
 }
 
 void LevelObjectServices::playCueAt(int cue, anim::Vec3 at) {
+    raise(GameEvent{.kind = GameEventKind::Cue,
+                    .id = static_cast<std::uint32_t>(cue >= 0 ? cue : 0),
+                    .value = 1,
+                    .position = {at.x, at.y, at.z}});
     if (m_sounds != nullptr) {
         m_sounds->playCueAt(cue, at);
     }
 }
 
 void LevelObjectServices::playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at, float volume) {
+    // The volume in thousandths: the objects' are 1 / (n + 1) and halves of it, at most 1.
+    constexpr float kThousandths = 1000.0F;
+    raise(GameEvent{.kind = GameEventKind::MaterialPair,
+                    .id = a,
+                    .value = b,
+                    .extra = static_cast<std::uint32_t>(std::lround(std::max(volume, 0.0F) * kThousandths)),
+                    .position = {at.x, at.y, at.z}});
     if (m_sounds != nullptr) {
         m_sounds->playMaterialPair(a, b, at, volume);
+    }
+}
+
+void LevelObjectServices::raise(GameEvent event) const {
+    if (m_events != nullptr) {
+        raiseGameEvent(*m_events, std::move(event));
     }
 }
 

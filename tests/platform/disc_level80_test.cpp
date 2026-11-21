@@ -412,7 +412,8 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
     CHECK(level.scripts->scripts().errors() == 0);
     std::printf("  level80 uncuff: %d freed, checkpoint %g\n", freed, level.checkPoint());
 
-    // The talk prompt and the swap: with an object in player 1's hand (a stand-in handle: the test gives him one) a
+    // The talk prompt and the swap: with an object in player 1's hand (a bat the test puts there as a script's
+    // `HuPlaceItemInHand` does, a new handle and its type's name, which the level's next step makes) a
     // freed Warrior in his gang, 1 m in front of him, offers the swap prompt, GSTRING.HUD 0xe, from his brain's think;
     // triangle hands it over; with both hands empty, nothing.
     REQUIRE(level.gameplay->brains() != nullptr);
@@ -462,6 +463,7 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
     };
     constexpr double kHeld = 9999.0;
     player->human().script().heldObject = kHeld;
+    player->human().script().heldObjectName = "dyn_bat_tuff";
     facingHim();
     CHECK(warrior->human().script().talkable);
     CHECK(level.scripts->hud().actionPrompt(0) == level.scripts->context().strings->get(coney::ai::kSwapPlayerHolds));
@@ -477,6 +479,7 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
     CHECK(level.scripts->hud().actionPrompt(0) == level.scripts->context().strings->get(coney::ai::kSwapWarriorHolds));
     // With neither holding anything, nothing.
     warrior->human().script().heldObject = 0.0;
+    warrior->human().script().heldObjectName.clear();
     facingHim();
     CHECK_FALSE(warrior->human().script().talkable);
     CHECK(level.scripts->hud().actionPrompt(0).empty());

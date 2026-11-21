@@ -108,6 +108,31 @@ class RecordingHost final : public scenes::SceneHost {
     }
 };
 
+// A crew that writes down what a cinematic does to player 1's gang: into `steps` and, for the order against the
+// scene's Lua calls, into `order` too.
+class RecordingCrew final : public scenes::SceneCrew {
+  public:
+    explicit RecordingCrew(std::vector<std::string>& order) : m_order(&order) {}
+    std::vector<std::string> steps;
+    std::set<double> players;  // the humans that are players (human +0x1b0 not -1)
+    bool chiefHitBack = false; // player 1's brain +0x2e4
+
+    void clearBums() override { note("bums"); }
+    bool isPlayer(double human) override { return players.contains(human); }
+    bool hitBack() override { return chiefHitBack; }
+    void unlockCommandMenu() override { note("unlock"); }
+    void followForced() override { note("follow"); }
+    void updateGang() override { note("update"); }
+
+  private:
+    // Writes `step` to both lists.
+    void note(const std::string& step) {
+        steps.push_back(step);
+        m_order->push_back(step);
+    }
+    std::vector<std::string>* m_order;
+};
+
 // An object scene of one second, like the front end's Wonder Wheel: one object track and nothing else, with a loop
 // point (event 29 at frame 0, restarting from frame 0) when `loopPoint` is set.
 test::SceneSpec objectSceneSpec(std::string name, bool loopPoint) {
@@ -774,6 +799,7 @@ TEST_CASE("event 73 holds a character's intro card before the scene camera for i
 }
 
 TEST_CASE("an intro card is held along the camera's own view axis", "[scenes]") {
+    // Expected: scenes.md#intro-cards, confirmed (code): SceneTask_HoldObject (0x003a0ed8), on the view axis.
     // A camera turned 90° about z looks along -x (its local +y): the card is d ahead of it that way, turned with it.
     const float half = std::numbers::sqrt2_v<float> / 2.0F;
     const scenes::ScenePose camera{.position = {1.0F, 2.0F, 3.0F}, .rotation = {0.0F, 0.0F, half, half}};
@@ -783,4 +809,106 @@ TEST_CASE("an intro card is held along the camera's own view axis", "[scenes]") 
     CHECK(card.position.y == Approx(2.0F).margin(1e-4));
     CHECK(card.position.z == Approx(3.0F).margin(1e-4));
     CHECK(card.rotation.z == Approx(half));
+}
+
+// ---- The player's gang (docs/research/scenes.md#gang) ----
+
+namespace {
+
+// Plays tst_long (scene 3) with human 7 in role 0 as `request` asks, through the update of its end; skipped with
+// cross after 2 s when `skip` is set.
+void playLong(Harness& h, const scenes::PlayRequest& request, bool skip = false) {
+    h.system.preload("tst_long", "");
+    h.step();
+    REQUIRE(h.system.joinHuman(7.0, 3, 0, 2));
+    REQUIRE(h.system.play(3, request));
+    // To the update in which it ends (done() holds from state 7, the update before the end).
+    for (int i = 0; i < 200 && h.system.stats().ended == 0; ++i) {
+        h.step(skip && i > 70 ? scenes::kSkipCross : 0);
+    }
+    REQUIRE(h.system.stats().ended == 1);
+}
+
+} // namespace
+
+TEST_CASE("a cinematic's start sends player 1's bums away once, as the scene state leaves 0", "[scenes][crew]") {
+    // Expected: scenes.md#gang, confirmed (code): SceneTask_Start (0x0039d870) calls Gang_ClearBums (0x0016b8d0) as
+    // it steps the scene state from 0 to 1, for a cinematic only; nothing else in the start touches the gang.
+    Harness h;
+    RecordingCrew crew(h.lua);
+    h.system.setCrew(&crew);
+    h.system.preload("tst_long", "");
+    h.step();
+    REQUIRE(h.system.joinHuman(7.0, 3, 0, 2));
+    REQUIRE(h.system.play(3, Harness::cinematic()));
+    h.step();
+    CHECK(h.system.cinematicActive()); // the scene state is 1
+    CHECK(crew.steps == std::vector<std::string>{"bums"});
+    for (int i = 0; i < 5; ++i) {
+        h.step();
+    }
+    REQUIRE(h.system.state(3) == scenes::SceneState::Playing);
+    CHECK(crew.steps == std::vector<std::string>{"bums"});
+
+    // A fixed scene leaves the gang alone, at its start and at its end.
+    Harness fixed;
+    RecordingCrew untouched(fixed.lua);
+    untouched.players = {7.0};
+    fixed.system.setCrew(&untouched);
+    playLong(fixed, Harness::fixedScene());
+    CHECK(untouched.steps.empty());
+}
+
+TEST_CASE("a cinematic a player took part in ends with his menu unlocked, follow forced and one gang update",
+          "[scenes][crew]") {
+    // Expected: scenes.md#gang, confirmed (code): SceneTask_End (0x0039f450), after the camera's pop and the letterbox
+    // out and before the end function, unlocks player 1's menu (game state +0x42e), dispatches command 0 forced
+    // (0x0039ff5c) and runs the gang update with 0 (0x0039ff70), when a bound human was a player.
+    for (const bool skip : {false, true}) {
+        Harness h;
+        RecordingCrew crew(h.lua);
+        crew.players = {7.0};
+        h.system.setCrew(&crew);
+        playLong(h, Harness::cinematic(), skip);
+        CHECK(h.lua == std::vector<std::string>{"bums", "unlock", "follow", "update", "PreCashTheWorld(3)"});
+        CHECK(h.system.stats().skipped == (skip ? 1U : 0U));
+        CHECK(h.host.made("camera end -1"));
+        CHECK(h.host.made("screen 3 1.5"));
+    }
+}
+
+TEST_CASE("with no player bound the end leaves the gang, unless a Warrior hits back at player 1", "[scenes][crew]") {
+    // Expected: scenes.md#gang, confirmed (code) at 0x0039ff1c: with no bound player the end reads player 1's brain
+    // +0x2e4 (a Warrior hitting back at him) and does the three steps only when it is set.
+    Harness h;
+    RecordingCrew crew(h.lua);
+    h.system.setCrew(&crew);
+    playLong(h, Harness::cinematic());
+    CHECK(crew.steps == std::vector<std::string>{"bums"});
+
+    Harness hit;
+    RecordingCrew hitCrew(hit.lua);
+    hitCrew.chiefHitBack = true;
+    hit.system.setCrew(&hitCrew);
+    playLong(hit, Harness::cinematic());
+    CHECK(hitCrew.steps == std::vector<std::string>{"bums", "unlock", "follow", "update"});
+}
+
+TEST_CASE("a cinematic given up after 10 s only gives player 1's gang the follow, forced", "[scenes][crew]") {
+    // Expected: scenes.md#gang, confirmed (code): SceneTask_Abort (0x0039ec60) dispatches command 0 forced for player 1
+    // (0x0039f3f0) for a cinematic, without the menu unlock, the player test or the gang update.
+    Harness h;
+    RecordingCrew crew(h.lua);
+    crew.players = {7.0};
+    h.system.setCrew(&crew);
+    h.host.soundtrackBuffered = false; // the start waits for it past the scene state's steps, and gives up
+    h.system.preload("tst_long", "");
+    h.step();
+    REQUIRE(h.system.joinHuman(7.0, 3, 0, 2));
+    REQUIRE(h.system.play(3, Harness::cinematic()));
+    for (int i = 0; i < 400 && h.system.stats().aborted == 0; ++i) {
+        h.step();
+    }
+    REQUIRE(h.system.stats().aborted == 1);
+    CHECK(crew.steps == std::vector<std::string>{"bums", "follow"});
 }

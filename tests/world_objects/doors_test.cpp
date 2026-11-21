@@ -5,6 +5,7 @@
 #include "world_objects/doors.h"
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <numbers>
 #include <string>
@@ -18,9 +19,11 @@
 #include "core/game_random.h"
 #include "core/name_hash.h"
 #include "raycast/collision_mesh.h"
+#include "support/fixtures.h"
 #include "support/object_fixtures.h"
 #include "world/path_map.h"
 #include "world_objects/level_objects.h"
+#include "world_objects/object_list.h"
 #include "world_objects/object_services.h"
 
 using coney::world_objects::Door;
@@ -264,7 +267,6 @@ TEST_CASE("a cabin door: two plain hits break a leaf, three the door", "[world_o
     CHECK_FALSE(doors.find(handle)->leavesBroken);
     doors.hit(handle, hitBy(HitKind::Plain), fixture.world);
     CHECK(doors.find(handle)->leavesBroken);
-    CHECK(fixture.services.nextModels.size() == 1);
     CHECK(fixture.services.bursts == 1);
     doors.hit(handle, hitBy(HitKind::Plain), fixture.world);
     CHECK(doors.find(handle)->state == door_state::kBroken);
@@ -274,6 +276,64 @@ TEST_CASE("a cabin door: two plain hits break a leaf, three the door", "[world_o
     tick(doors, fixture, coney::world_objects::kCabinInterval);
     CHECK(doors.find(handle)->ended);
     CHECK_FALSE(doors.hit(handle, hitBy(HitKind::Plain), fixture.world));
+}
+
+// The model a door's leaf `index` is drawn with (doorDraws, left leaf first).
+std::uint32_t drawnLeafModel(const Doors& doors, std::size_t index) {
+    const std::vector<coney::world_objects::DoorDraw> draws = coney::world_objects::doorDraws(doors);
+    REQUIRE(draws.size() > index);
+    return draws.at(index).modelHash;
+}
+
+TEST_CASE("a cabin door's leaves take their damaged model on every hit below 7 hitpoints, the left one always",
+          "[world_objects][doors]") {
+    // Expected: objects.md#door-break, confirmed (code) at 0x003f9ad0 and confirmed (runtime), run
+    // r-20261120-cabinet-door-leaf-models (dyn_dr_cabin_a's next model is dyn_dr_cabin_aa; the second plain hit takes
+    // the 12-hitpoint door to 4 and damages the left leaf, or both when the right one is drawn); objects.md#leaf-damage
+    // for the left leaf in both draws and the bursts 1 m above the chosen leaf's hinge.
+    coney::test::ObjectWorldFixture fixture;
+    const std::uint32_t whole = coney::crc32("dyn_dr_cabin_a");
+    const std::uint32_t damaged = coney::crc32("dyn_dr_cabin_aa");
+    // The Object List: dyn_dr_cabin_a's record names dyn_dr_cabin_aa as its next model.
+    coney::test::Bytes chunk;
+    chunk.header(2, 0, 0, 0);
+    chunk.u32(whole).u32(damaged).u32(1).u32(2).u32(0).u32(0).u32(0).u32(0).u32(0);
+    chunk.u32(damaged).u32(0).u32(3).u32(4).u32(0).u32(0).u32(0).u32(0).u32(0);
+    auto list = coney::world_objects::ObjectList::parse(chunk.span());
+    REQUIRE(list.has_value());
+    fixture.world.models = &*list;
+    Doors doors;
+    // 13 hitpoints: 9, then 5 and 1 (two hits below 7), then the break at -3.
+    const ObjectTypeInfo info = swinging(13);
+    const double handle =
+        doors
+            .spawn(
+                fixture.handle(), at("dyn_door_cabin_a"), &info, [&fixture] { return fixture.handle(); }, fixture.world)
+            .handle;
+    doors.hit(handle, hitBy(HitKind::Plain), fixture.world);
+    CHECK(drawnLeafModel(doors, 0) == whole);
+    CHECK(drawnLeafModel(doors, 1) == whole);
+    CHECK(fixture.services.bursts == 0);
+    bool rightTaken = false;
+    for (int hit = 0; hit < 2; ++hit) {
+        // The draw the hit makes (Random_Int(1) on the effects stream): 0 the left leaf, 1 the right.
+        coney::GameRandom copy = fixture.random;
+        const bool right = copy.range(coney::RandomStream::Effects, 0, 1) == 1;
+        rightTaken = rightTaken || right;
+        doors.hit(handle, hitBy(HitKind::Plain), fixture.world);
+        CHECK(drawnLeafModel(doors, 0) == damaged);
+        CHECK(drawnLeafModel(doors, 1) == (rightTaken ? damaged : whole));
+        REQUIRE(fixture.services.burstsAt.size() == static_cast<std::size_t>(hit + 1));
+        // 1 m above the chosen leaf's hinge: the door's position, or 2w along its -x for the right leaf.
+        CHECK(fixture.services.burstsAt.back().x == Catch::Approx(right ? 2.0F : 4.0F));
+        CHECK(fixture.services.burstsAt.back().z == Catch::Approx(1.0F));
+    }
+    // The break runs the leaf step too, then its own two bursts 1 m up and the GLASS x GLASS pair.
+    fixture.services.pairs.clear();
+    doors.hit(handle, hitBy(HitKind::Plain), fixture.world);
+    CHECK(doors.find(handle)->state == door_state::kBroken);
+    CHECK(fixture.services.burstsAt.size() == 5);
+    CHECK(fixture.services.pairs == std::vector<std::pair<std::uint8_t, std::uint8_t>>{{2, 2}});
 }
 
 TEST_CASE("dyn_door_liz: model stages, then wreck pieces and the links opened", "[world_objects][doors]") {

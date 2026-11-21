@@ -276,15 +276,14 @@ the game with none of the debug tools compiled in and one console, the
 [player console](studio/mods.md#player-console); the launcher installs it. The debug tools are the
 [debug menus](debug-menu.md) and their pages, the developer overlay, the debug lines, the viewers, the cheats and
 tunables, the [sandbox](sandbox.md) and the developers' command-line options. The CMake option `CONEY_DEBUG_TOOLS` (on
-by default) chooses: off, the debug libraries are not made and Dear ImGui is not fetched at all, so nothing can link
-them by mistake.
+by default) chooses: off, the debug libraries are not made, so nothing can link them by mistake; Dear ImGui is fetched
+in every build, for the player console's bar.
 
 **The one console in the release build** (a maintainer decision, 2026-10-29) is the **player console** ([The Coney
 console](studio/console.md)): the F8 console drawn with Dear ImGui, limited to what a player can already do or only
 read. It is kept apart from the debug tools by target (`coney_console_ui`, over a core in `coney_core` that includes
-nothing of the debug tools) and by model (its catalog holds the player's commands alone). Built so far: the core and
-the player commands ([The Coney console](console.md)), which the release build runs from an input script; the F8 front
-end and `coney_console_ui` are not built yet, and the rest of this section describes the build as it is.
+nothing of the debug tools) and by model (its catalog holds the player's commands alone). Its core, its player
+commands and its F8 bar are built ([The Coney console](console.md)); the panels are still to come.
 
 The split is made by target, not by `#ifdef`. The game is `coney_core`, `coney_audio`, `coney_movies`, `coney_net`
 and `coney_platform`; the debug tools are two libraries of their own:
@@ -292,10 +291,11 @@ and `coney_platform`; the debug tools are two libraries of their own:
 | Target | Folder | Holds |
 | --- | --- | --- |
 | `coney_debug` | `src/` | the debug menus' model and pages (`src/debug/`), the pad menu's renderer and bitmap font, the sandbox's worlds, the sheet and text viewers |
-| `coney_devtools` | `src/platform/` | the menus' platform glue and their controls of the play mode, the sound output and network play, the developer overlay (links Dear ImGui, as the player console's `coney_console_ui` will), the sandbox as a scenery and its renderer, the texture, character and sandbox viewers, the reference images |
+| `coney_devtools` | `src/platform/` | the menus' platform glue and their controls of the play mode, the sound output and network play, the developer overlay (links Dear ImGui, as the player console's `coney_console_ui` does; the overlay's size rule is `coney_console_ui`'s `ImGuiUiScale`, which both use), the sandbox as a scenery and its renderer, the texture, character and sandbox viewers, the reference images |
 | `coney_studio` | `src/studio/` | [Coney Studio](studio/prototype.md)'s editor over `coney_devtools`; its executable `coney-studio` is made in `src/platform/` beside `coney`, with Studio's fonts |
 
-`coney` and `coney_tests` link both. The game reaches the debug tools only through hooks it offers, never the other way
+`coney` and `coney_tests` link both, and the console's bar `coney_console_ui`, as the release build's `coney` does. The
+game reaches the debug tools only through hooks it offers, never the other way
 round: the play mode has Coney's own capabilities as its own API (teleport, freeze, noclip, spawn, change character),
 and `PlayLevelControls` in `coney_devtools` turns them into the debug menus' `debug::PlayControls`, with the Entity
 inspector, the Animation player and the Debug draw lines, which it hands the mode as a hook
@@ -329,7 +329,8 @@ console's banner, `Coney console`, in the executable, and the `console_*` ones t
 `coney.release.has_no_debug_tools` looks for strings only the debug tools put in an executable (the debug pages' titles
 and items, the developer overlay's settings file; `cmake/debug_tools_markers.cmake`) and fails when it finds one.
 `imgui.ini`, Dear ImGui's default settings file, is no marker: the player console links it ([the release
-checks](studio/console.md#release)).
+checks](studio/console.md#release)); `coney.release.has_console_bar` finds the bar's window name
+(`coney-console-terminal`) in the release build.
 On the debug tools' `coney` the same script must find them (`coney.debug_tools_markers_found`), so the check cannot pass
 by finding nothing. The release build also builds and runs every unit test of the game; the tests of the
 debug tools (the menus, the overlay, the sandbox, the viewers and the disc tests that drive the game through them) are
@@ -337,13 +338,14 @@ listed apart in `tests/CMakeLists.txt` and built only with the tools, and a Pyth
 build's list that includes a debug tools' header. CI builds the release build and runs its tests on Windows and Linux
 ([What CI runs](#what-ci-runs)). `python/tests/test_debug_tools_split.py` reads the CMake files and the game's sources
 and fails when a game library lists a debug source, includes a `debug/` or `sandbox/` header or links a debug library,
-or anything but `coney_devtools` (and, once built, `coney_console_ui`) links `imgui`.
+or anything but `coney_devtools` and `coney_console_ui` links `imgui`, or the bar includes more than the console's
+model, `core/`, the platform's window and Dear ImGui.
 
 **What it saves.** Measured with MSVC on Windows (2026-10-21): the `release` preset's `coney.exe` is 8.4 MB
 (Release, no tools); the `dev` preset's `coney.exe` is 33.0 MB and its `coney_release.exe`, the same Debug build
 without the tools, 27.4 MB, so the tools are about a sixth of a Debug executable. For comparison, the old
 `release` preset (RelWithDebInfo with the tools, debug information kept in the objects) made a 19.9 MB `coney.exe`.
-A release configure fetches no Dear ImGui (`build/release/_deps` has no `imgui` folder).
+A release configure fetches Dear ImGui for the console's bar, and neither of Studio's fonts.
 
 ### Debug information on MSVC {#debug-info}
 
@@ -509,9 +511,9 @@ much less than the Linux and macOS runs that CI does anyway.
 
 ## clang-tidy {#clang-tidy}
 
-CI tidies the lines a pull request or a push changes, and the whole codebase nightly, by hand and for a build-setup
-change; there is no local clang-tidy. How the job works, the list of checks and how to add one:
-[clang-tidy](clang-tidy.md).
+`task check` tidies the lines a change touches here, Windows included ([clang-tidy here](clang-tidy.md#local)); CI the
+lines a pull request changes, and every file on `main`, nightly, by hand and for a build-setup change. How the jobs
+work, the list of checks and how to add one: [clang-tidy](clang-tidy.md).
 
 ## Python tools
 
@@ -613,7 +615,7 @@ job no workflow has, or a required check is in none.
 | Formatting | local; CI: every pull request, a push to main, a push to a release branch, nightly, a manual run (applied by a git pre-commit hook, verified by CI) | `build/format` |
 | GCC 13, Clang 19 and AppleClang builds with the unit and smoke tests; MSVC and GCC release builds | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/build` |
 | Linux and macOS sanitizers | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/sanitizers` |
-| clang-tidy: the lines a change touches; the whole codebase nightly, in a manual run and for a build-setup change | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/clang-tidy` |
+| clang-tidy: the lines a change touches (here in task check, then on the pull request); the whole codebase on main, nightly, in a manual run and for a build-setup change | local; CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/clang-tidy` |
 | Software pictures: Coney's synthetic scenes drawn through Mesa's llvmpipe in a pinned container, compared with the reference pictures | CI: every pull request, a push to main, a push to a release branch, nightly, a manual run | `build/software-pictures` |
 | Python: ruff, mypy, pytest, the repository, render and progress checks | local; CI: every pull request, a push to main, a push to a release branch | `python/python`, `python/python-ok` |
 | Docs: mkdocs strictly, markdownlint, actionlint, the page standards | local; CI: every pull request, a push to main, a push to a release branch | `docs/mkdocs`, `docs/markdownlint`, `docs/actionlint` |
@@ -639,8 +641,8 @@ One more workflow runs on issues, not pull requests: `issue-check` runs `coney-t
 opened or edited and keeps one comment listing the problems ([Filing an issue](issues.md#filing)); it is not a required
 check.
 
-On Windows, do not run WSL builds or clang-tidy locally to stand in for the Linux and macOS jobs: GitHub CI is that
-gate, and a failure there is fixed forward on the branch.
+On Windows, do not run WSL builds locally to stand in for the Linux and macOS jobs: GitHub CI is that gate, and a
+failure there is fixed forward on the branch (clang-tidy runs here: [clang-tidy here](clang-tidy.md#local)).
 
 ### What a pull request runs {#what-a-pull-request-runs}
 
@@ -794,8 +796,9 @@ repository has 10 GB of them; when that is full GitHub drops the least recently 
   after the build jobs outside pull requests, deletes every older entry of the same job (and older dependency entries
   of the same OS) on that branch, so `main` keeps one per job. Before saving, a job drops what it did not use
   (`ccache --evict-older-than` the job's own duration), so the entry is the size of one build, not of the cap.
-- **Sharing.** The clang-tidy job builds with the same compiler, preset and flags as `build (linux-clang-19)`,
-  so it restores that job's entry and leaves the saving to it. The `asan` jobs differ in flags and keep their own.
+- **Sharing.** The clang-tidy job configures like `build (linux-clang-19)`, restores that job's entry and leaves the
+  saving to it; its own result cache is pruned like these ([The result cache](clang-tidy.md#cache)). The `asan` jobs
+  differ in flags and keep their own.
 - **What a cache can store.** MSVC's default `/Zi` writes every object's debug information into one shared PDB,
   which ccache refuses; every preset uses `/Z7` instead ([Debug information on MSVC](#debug-info)), so that is
   settled for the cache too. SDL3's precompiled header made its 265 sources uncacheable everywhere, so every preset

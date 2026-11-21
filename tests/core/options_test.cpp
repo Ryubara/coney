@@ -796,6 +796,44 @@ TEST_CASE("the record options refuse what cannot work", "[options]") {
     CHECK_FALSE(parse(std::array<std::string_view, 1>{"--record"}).has_value());
 }
 
+TEST_CASE("the record-from-frame option starts the clip at a frame of play", "[options]") {
+    // Expected: unverified, #1533 (debug tooling with no counterpart in the original; the bounds are Coney's own)
+    // A scripted run can be longer than the clip: only the seconds from that frame on are recorded.
+    auto options =
+        parse(std::array<std::string_view, 9>{"--disc", "x", "--play-level", "level99", "--record", "s/t/clips/a.mp4",
+                                              "--record-from-frame", "2100", "--skip-movies"});
+    REQUIRE(options.has_value());
+    CHECK(options->recordFromFrame == 2100);
+    CHECK(options->recordSeconds == std::nullopt);
+    CHECK(coney::usageText().find("--record-from-frame") != std::string_view::npos);
+    // Unset, the clip starts with the level's first frame of play.
+    auto plain =
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--record", "s/t/clips/a.mp4"});
+    REQUIRE(plain.has_value());
+    CHECK_FALSE(plain->recordFromFrame.has_value());
+}
+
+TEST_CASE("the record-from-frame option refuses what cannot work", "[options]") {
+    // Expected: unverified, #1533 (debug tooling with no counterpart in the original; the bounds are Coney's own)
+    // Each refusal says what the option needs, not that the argument is unknown, as an engine without it would.
+    const auto refusal = [](auto args) {
+        const auto result = parse(args);
+        return result.has_value() ? std::string{} : result.error().message;
+    };
+    // The frame counts from the level's first frame of play, so it needs a level and a clip.
+    CHECK(
+        refusal(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--record-from-frame", "30"})
+            .find("needs --record") != std::string::npos);
+    CHECK(refusal(std::array<std::string_view, 4>{"--record", "s/t/clips/a.mp4", "--record-from-frame", "30"})
+              .find("needs --play-level") != std::string::npos);
+    // A whole number of frames, and not past a sensible run (a million frames is over nine hours).
+    for (const std::string_view bad : {"-1", "abc", "1x", "", "1000001"}) {
+        CHECK(refusal(std::array<std::string_view, 8>{"--disc", "x", "--play-level", "level99", "--record",
+                                                      "s/t/clips/a.mp4", "--record-from-frame", bad})
+                  .find("record-from-frame needs") != std::string::npos);
+    }
+}
+
 TEST_CASE("the ai-player option hands player 1 to the AI in a Rumble match, and needs one", "[options]") {
     auto handed = parse(std::array<std::string_view, 9>{"--disc", "x", "--rumble", "1", "--arena", "102", "--gang-size",
                                                         "9", "--ai-player"});

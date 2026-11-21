@@ -305,8 +305,8 @@ uv run --project python coney-tools task index [--no-gh]
 uv run --project python coney-tools task overlap [TASK] [--write]
 uv run --project python coney-tools task check [TASK] [--worktree DIR] [--base REF] [--agent ID] [--profile P]
     [--keep-going] [--no-resume] [--no-fix] [--dry-run] [--max-wait MIN]
-uv run --project python coney-tools task review [TASK] [--text] [--record | --run | --dry-run] [--worktree DIR] [--base REF]
-    [--pr-file FILE] [--claude CMD] [--model M] [--effort E] [--timeout-minutes N]
+uv run --project python coney-tools task review [TASK] [--text | --full | --delta] [--record | --run | --dry-run]
+    [--worktree DIR] [--base REF] [--pr-file FILE] [--claude CMD] [--model M] [--effort E] [--timeout-minutes N]
 ```
 
 The coordinator's triage step ([Task files](issues.md#task-files)); the rules are `claims` and `tasks` of
@@ -435,8 +435,10 @@ reaches](#task-check-ctest) (`-L`) or the whole suite (`--full`), and read the b
 record](stamps.md#build-record)): one answers whether it built (MSVC with /WX), the other whether those tests ran with
 none failed and no disc test skipped. The local gate is the tests a change needs, not the full suite ([The local
 gate](testing.md#local-gate) says which gate runs the rest). The ruff and mypy
-commands are the ones of `ci run`; there is no clang-tidy here: clang-tidy is CI's alone, on the changed lines of every
-pull request and on the whole codebase nightly ([building](clang-tidy.md)).
+commands are the ones of `ci run`. The `clang-tidy` check runs after the build, only when a changed path is under
+`src/` or `tests/` (`proof.only_when`): CI's pull-request pass on this machine, clang-tidy of CI's major version on the
+lines the change touches, against the compile database the build just wrote; a finding fails it with its file, line
+and check, and no such clang-tidy is "cannot run" ([clang-tidy here](clang-tidy.md#local)).
 
 **It refuses to start on a machine short of memory** {#task-check-memory}. A language server that grew to 19.9 GB
 (lua-language-server, twice) starved a full suite of memory for an hour, and the run ended with no
@@ -771,7 +773,7 @@ coney-tools task check [TASK] [--worktree WORKTREE] [--base BASE] [--agent AGENT
 Review a task: prepare what to judge, record the reviewer's verdict as a `reviewed` stamp, or run both.
 
 ```text
-coney-tools task review [TASK] [--worktree WORKTREE] [--base BASE] [--pr-file PR_FILE] [--text]
+coney-tools task review [TASK] [--worktree WORKTREE] [--base BASE] [--pr-file PR_FILE] [--text | --full | --delta]
     [--record | --dry-run | --run] [--claude CLAUDE] [--model MODEL] [--effort EFFORT]
     [--timeout-minutes TIMEOUT_MINUTES]
 ```
@@ -782,7 +784,9 @@ coney-tools task review [TASK] [--worktree WORKTREE] [--base BASE] [--pr-file PR
 | `--worktree WORKTREE` | path | none | the unit's worktree (default: the one the unit record names, else the current checkout) |
 | `--base BASE` | text | none | what the branch is compared with (default: origin/\<default branch\>) |
 | `--pr-file PR_FILE` | path | none | the description file (default: \<scratch\>/\<task\>/PR.md) |
-| `--text` | flag | off | review the description alone (a full pass must still hold) |
+| `--text` | flag | off | review the description alone (a passing review of the code, full or a delta on one, must still hold). Not with `--full`, `--delta`. |
+| `--full` | flag | off | review the whole change even when a delta review could be given. Not with `--text`, `--delta`. |
+| `--delta` | flag | off | review only the delta since the last passing review; refused when the change needs a full review. Not with `--text`, `--full`. |
 | `--record` | flag | off | record the reviewer's verdict as a `reviewed` stamp. Not with `--dry-run`, `--run`. |
 | `--dry-run` | flag | off | say the kinds and the model the reviewer needs, and what would refuse the review; write nothing. Not with `--record`, `--run`. |
 | `--run` | flag | off | prepare, run a headless reviewer and report what it recorded. Not with `--record`, `--dry-run`. |

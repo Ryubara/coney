@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/lit_atomic.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -278,6 +279,22 @@ MaterialChange::MaterialChange(rw::Atomic& atomic, const graphics::Material3d& m
         const rw::RGBA colour{material.tint.r, material.tint.g, material.tint.b, material.tint.a};
         for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
             geometry->matList.materials[i]->color = colour;
+        }
+        break;
+    }
+    case graphics::MaterialColour::Shade: {
+        // The human's colour (Material3d::tint: his HuColor, white until a script sets it) with red, green and blue
+        // times the shadow dimming, truncated, and the fade as its alpha, written as the first material's colour in
+        // place of its own and left there, as HumanRender_Draw writes it (docs/research/graphics.md#human-draw, steps
+        // 3 and 4). A character has one material; the Entity inspector reads the alpha back as the last fade.
+        const float shade = std::clamp(material.shade, 0.0F, 1.0F);
+        const auto scaled = [shade](std::uint8_t channel) {
+            return static_cast<rw::uint8>(static_cast<float>(channel) * shade);
+        };
+        if (geometry->matList.numMaterials > 0) {
+            const graphics::Rgba human = material.tint;
+            geometry->matList.materials[0]->color =
+                rw::RGBA{scaled(human.r), scaled(human.g), scaled(human.b), material.fade};
         }
         break;
     }

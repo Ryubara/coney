@@ -49,6 +49,7 @@ def pull(number: int = 10, **changes: Any) -> dict[str, Any]:
         "number": number,
         "title": "tools: Add a thing",
         "headRefName": f"branch-{number}",
+        "isCrossRepository": False,
         "baseRefName": "main",
         "isDraft": False,
         "mergeable": "MERGEABLE",

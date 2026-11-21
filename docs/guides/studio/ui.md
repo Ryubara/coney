@@ -8,13 +8,13 @@ main menu with its extension points and edits a mod's screens, what stays out fo
 that prove a mod's menu works with a pad and a keyboard. It ends with the build issues it proposes, in order. The parent
 issue is [#1054](issue:1054); this page is [#1063](issue:1063).
 
-**Status: design.** Nothing on this page is built. It is a design in the sense of
-[Page kinds](../writing-docs.md#page-kinds): what is built moves into a guide. It builds on the
-[Lua SDK and natives](lua-sdk.md) design (its terms, the `Coney` table, project scripts in Lua 5.4, the sandbox) and the
-[technology](technology.md) design (Dear ImGui, the Test Engine, Play in Studio's process), and does not repeat them.
-What the original does is on the research pages [Start-up and the front end](../../research/frontend.md),
-[GUI](../../research/gui.md) and [The in-game HUD](../../research/hud.md); this page cites them and adds the few
-readings it needed.
+**Status: design, build issue 2 built:** the widget model, described in [The UI widget model for mods](../mod-ui.md);
+the rest is not built yet. It is a design in the sense of [Page kinds](../writing-docs.md#page-kinds): what is built
+moves into a guide. It builds on the [Lua SDK and natives](lua-sdk.md) design (its terms, the `Coney` table, project
+scripts in Lua 5.4, the sandbox) and the [technology](technology.md) design (Dear ImGui, the Test Engine, Play in
+Studio's process), and does not repeat them. What the original does is on the research pages [Start-up and the front
+end](../../research/frontend.md), [GUI](../../research/gui.md) and [The in-game HUD](../../research/hud.md); this page
+cites them and adds the few readings it needed.
 
 Two rules from the parent issue shape every section. **Studio offers only what Coney has:** a UI native or a widget
 reaches mods once Coney implements it, and each one below says whether Coney has it today or what it waits on. **The
@@ -152,7 +152,7 @@ for scripts is Coney's to add.
 | The debug menus: one model of pages and items, drawn by the pad menu in the game's font and by the Dear ImGui overlay | `src/debug/`, `src/gui/debug_menu_view.h` | Built ([One model](../debug-menu.md#one-model)); debug tooling, never in a release build |
 | The input gate: port 1 taken from the game while the debug menu is open | `src/debug/input_gate.h` | Built ([Controls](../debug-menu.md#controls)) |
 | Keyboard and gamepads as the PS2 pad; input scripts | `src/platform/sdl_input.h`, `src/core/input_script.h` | Built ([Controls and input scripts](../running-input.md#controls)); scripts drive pad buttons and sticks, not keys |
-| Anything a mod can draw or add to a menu | none | None: there is no mod runtime ([Lua SDK](lua-sdk.md)) |
+| Anything a mod can draw or add to a menu | `src/gui/mod_ui/` | The widget model is built in C++ ([The UI widget model for mods](../mod-ui.md)); no script reaches it yet: there is no mod runtime ([Lua SDK](lua-sdk.md)) |
 
 Two things follow. **The widgets mods need exist**, as faithful ports, so a mod's screen can be drawn with the game's
 own look and feel and needs no new renderer. **The debug menus already prove a data model drawn by front ends**: pages
@@ -223,7 +223,7 @@ additions are drawn. A point's name is what `Coney.AddMenuEntry` and the manifes
 | `rumble.arenas` | Choose Area | An arena: `CfgRumbleArena` in [`rumbleArenas`](#data-events) | After the disc's | Waits on project levels that are arenas ([#1058](issue:1058)) |
 | `missions` | The mission select (mode 0x10, [`MissionSelectHUD.cpp`](../../research/frontend.md#fn-missionselecthud)) | A mission: the project's level or mission file, its checkpoints, an area of the project's with its own map marker | After the game's areas | Waits on a port of the mission select screen, which Coney lacks ([#1071](issue:1071), [How UI works in Coney today](#coney)) |
 | `options` | The pause menu's Options title list ([The Options screen](../../research/pause.md#options)) | Option rows: a toggle, a choice, a bar, or a row that opens a sub-screen ([Option rows](#options)) | One title, MOD OPTIONS (Coney's text), after the game's seven, opening one page per project | The Options screen is built; the page is Coney's to add (build issue 7) |
-| `hud` | During play | HUD elements ([HUD elements](#hud)) | After the game's HUD parts | Waits on the widget model (build issue 2) |
+| `hud` | During play | HUD elements ([HUD elements](#hud)) | After the game's HUD parts | The widget model is built (build issue 2); waits on the natives (build issue 4) |
 
 Sections that are **not** points: the main menu's own items (MODS is Coney's, [below](#mods-screen)), EXTRAS (its one
 item, TRAILER, stays alone: a maintainer decision), the pause menu's grid, the profile, save and card screens, the
@@ -742,9 +742,9 @@ runtime, the loader and the first Coney natives, [Proposed build issues](lua-sdk
    through the same table `SdlInput` maps the keyboard with, factored out so both use it; the controls table and the
    input scripts section of [Controls and input scripts](../running-input.md) updated. Tests: a script's keys give the
    same pad samples as the matching buttons; the front-end walk to PM_Mode passes by keys alone.
-2. **core: Add the UI widget model for mods.** The retained tree in the game mode's state: screens and widgets by id
-   over the existing classes (text, sprite, grid, list, item, bar, header, usage line, message box, keyboard); screens
-   hosted on the profile manager's flow or as a Coney game mode over play; focus, the game's commands and cues,
+2. **core: Add the UI widget model for mods** (built). The retained tree in the game mode's state: screens and widgets
+   by id over the existing classes (text, sprite, grid, list, item, bar, header, usage line, message box, keyboard);
+   screens hosted on the profile manager's flow or as a Coney game mode over play; focus, the game's commands and cues,
    neighbours and order; the input mask for a screen over play; the trusted layer and the frame label; back always
    closes; the limits. C++ only, no Lua. Tests: navigation reaches every focusable widget with the original's timings;
    the input mask; a model screen cannot open over a trusted one; the frame label is drawn above every widget.

@@ -10,7 +10,9 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
+#include "core/game_events.h"
 #include "gamemodes/level_pickups.h"
 #include "human/human.h"
 #include "human/human_sounds.h"
@@ -172,6 +174,8 @@ void PlayLevelMode::stepScenes(std::uint64_t nowMs, std::uint16_t buttons) {
     m_stage->setWidescreen(m_engine.widescreen());
     m_scenes->update(nowMs, buttons);
     m_stage->setCinematic(m_scenes->cinematicActive());
+    // Network play: the scenes that started or ended in this update.
+    raiseSceneChanges(gameEvents(), m_scenesPlaying, m_scenes->playingScenes());
 }
 
 void PlayLevelMode::placeReleased(const SceneStage::Release& release) {

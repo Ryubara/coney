@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#include "platform/imgui_ui_scale.h"
+#include "platform/ui_scale.h"
 
 #include <algorithm>
 #include <cmath>
@@ -9,7 +9,7 @@
 
 #include <imgui_internal.h> // the window list, the settings entries
 
-#include "debug/ui_scale.h"
+#include "core/ui_scale.h"
 
 namespace coney::platform {
 
@@ -52,8 +52,8 @@ void ImGuiUiScale::applyStyle(float scale) {
 }
 
 bool ImGuiUiScale::update(float displayHeight) {
-    const float target = debug::uiScaleFor(m_display.uiScaleChoice, displayHeight);
-    m_display.uiScaleApplied = target;
+    const float target = uiScaleFor(m_choice, displayHeight);
+    m_reported = target;
     if (target == m_applied) {
         return false;
     }
@@ -103,10 +103,12 @@ void ImGuiUiScale::scaleSavedWindows() {
     m_savedScale = m_applied;
 }
 
+// The settings file's `[ConeyUi][Scale]` entry is this scaler.
 void* ImGuiUiScale::openSettings(ImGuiContext* /*context*/, ImGuiSettingsHandler* handler, const char* name) {
     return std::string_view(name) == "Scale" ? handler->UserData : nullptr;
 }
 
+// Reads one line of that entry: the scale the windows were saved at, and the choice.
 void ImGuiUiScale::readSettingsLine(ImGuiContext* /*context*/, ImGuiSettingsHandler* /*handler*/, void* entry,
                                     const char* line) {
     auto* self = static_cast<ImGuiUiScale*>(entry);
@@ -115,17 +117,18 @@ void ImGuiUiScale::readSettingsLine(ImGuiContext* /*context*/, ImGuiSettingsHand
     constexpr std::string_view kChoice = "Choice=";
     if (text.starts_with(kApplied)) {
         const float saved = std::strtof(line + kApplied.size(), nullptr);
-        if (saved >= debug::kUiScaleMin && saved <= debug::kUiScaleMax) {
+        if (saved >= kUiScaleMin && saved <= kUiScaleMax) {
             self->m_savedScale = saved;
         }
     } else if (text.starts_with(kChoice)) {
         const unsigned long choice = std::strtoul(line + kChoice.size(), nullptr, 10);
-        if (choice < debug::uiScaleLabels().size()) {
-            self->m_display.uiScaleChoice = static_cast<std::size_t>(choice);
+        if (choice < uiScaleLabels().size()) {
+            self->m_choice = static_cast<std::size_t>(choice);
         }
     }
 }
 
+// After the settings are read: the saved windows are to be scaled to the scale applied.
 void ImGuiUiScale::applySettings(ImGuiContext* /*context*/, ImGuiSettingsHandler* handler) {
     auto* self = static_cast<ImGuiUiScale*>(handler->UserData);
     self->m_savedWindowsPending = true;
@@ -135,11 +138,12 @@ void ImGuiUiScale::applySettings(ImGuiContext* /*context*/, ImGuiSettingsHandler
     }
 }
 
+// Writes the entry: the scale applied and the choice.
 void ImGuiUiScale::writeSettings(ImGuiContext* /*context*/, ImGuiSettingsHandler* handler, ImGuiTextBuffer* out) {
     const auto* self = static_cast<const ImGuiUiScale*>(handler->UserData);
     out->append("[ConeyUi][Scale]\n");
     out->appendf("Applied=%g\n", static_cast<double>(self->scale()));
-    out->appendf("Choice=%u\n", static_cast<unsigned>(self->m_display.uiScaleChoice));
+    out->appendf("Choice=%u\n", static_cast<unsigned>(self->m_choice));
     out->append("\n");
 }
 

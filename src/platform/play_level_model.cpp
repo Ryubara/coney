@@ -118,8 +118,8 @@ std::expected<void, Error> PlayLevelControls::swapModel(debug::EntityId id, cons
             return std::unexpected(std::move(look.error()));
         }
         PlayLevelMode::Target& target = mode.m_targets[*index];
-        mode.m_targetMeshes[target.human.get()] =
-            std::make_unique<CharacterMesh>(look->character->assets().model, look->texture, Skinning::Gpu);
+        mode.m_targetMeshes[target.human.get()] = std::make_unique<CharacterMesh>(
+            look->character->assets().model, look->texture, Skinning::Gpu, &mode.m_engine.sceneAssets());
         target.character = look->character == mode.m_character.get() ? nullptr : look->character;
         target.model = model;
         return {};
@@ -137,8 +137,8 @@ std::expected<void, Error> PlayLevelControls::swapModel(debug::EntityId id, cons
             return std::unexpected(std::move(look.error()));
         }
         // What draws him, and the character the simulation has him play.
-        found->second.mesh =
-            std::make_unique<CharacterMesh>(look->character->assets().model, look->texture, Skinning::Gpu);
+        found->second.mesh = std::make_unique<CharacterMesh>(look->character->assets().model, look->texture,
+                                                             Skinning::Gpu, &mode.m_engine.sceneAssets());
         mode.m_played[&human] = PlayLevelMode::Played{.character = look->character, .model = model};
         human.setSkeleton(&look->character->skeleton());
         if (const ai::Brain* brain = mode.m_ai->brainOf(human); brain != nullptr) {

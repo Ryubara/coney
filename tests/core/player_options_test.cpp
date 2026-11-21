@@ -44,6 +44,7 @@ std::vector<std::string> allOptions() {
 } // namespace
 
 TEST_CASE("the release build takes a player's options", "[options]") {
+    // Expected: Coney's own rule, docs/guides/building.md#debug-tools
     const std::array<std::string_view, 17> args{
         "--disc",  "game.iso",      "--language",   "fr",         "--fps-cap",     "60",
         "--vsync", "off",           "--no-audio",   "--show-fps", "--skip-movies", "--profiles",
@@ -58,6 +59,7 @@ TEST_CASE("the release build takes a player's options", "[options]") {
 }
 
 TEST_CASE("the release build takes the install's options", "[options]") {
+    // Expected: Coney's own rule, docs/guides/building.md#debug-tools
     // The player installs their disc with the executable they got (docs/guides/running.md#install).
     const std::array<std::string_view, 5> args{"--install", "game.iso", "--data", "Coney", "--verify"};
     auto options = parsePlayer(args);
@@ -77,6 +79,7 @@ TEST_CASE("the release build takes the install's options", "[options]") {
 }
 
 TEST_CASE("the release build keeps test mode for its smoke tests", "[options]") {
+    // Expected: Coney's own rule, docs/guides/building.md#debug-tools
     const std::array<std::string_view, 5> args{"--headless", "--frames", "10", "--input-script", "pad.txt"};
     auto options = parsePlayer(args);
     REQUIRE(options.has_value());
@@ -86,6 +89,7 @@ TEST_CASE("the release build keeps test mode for its smoke tests", "[options]") 
 }
 
 TEST_CASE("the release build refuses a developer's option and names the debug tools", "[options]") {
+    // Expected: Coney's own rule, docs/guides/building.md#debug-tools
     const std::array<std::string_view, 4> args{"--disc", "game.iso", "--play-level", "level99"};
     auto options = parsePlayer(args);
     REQUIRE_FALSE(options.has_value());
@@ -97,6 +101,7 @@ TEST_CASE("the release build refuses a developer's option and names the debug to
 }
 
 TEST_CASE("every option is either a player's or refused by the release build", "[options]") {
+    // Expected: Coney's own rule, docs/guides/building.md#debug-tools
     const std::vector<std::string> names = allOptions();
     REQUIRE(names.size() > 40);
     std::size_t player = 0;
@@ -115,6 +120,7 @@ TEST_CASE("every option is either a player's or refused by the release build", "
 }
 
 TEST_CASE("the release build's usage text lists only a player's options", "[options]") {
+    // Expected: Coney's own rule, docs/guides/building.md#debug-tools
     const std::string usage = coney::usageText(OptionSet::Player);
     CHECK(usage.find("--disc") != std::string::npos);
     CHECK(usage.find("--skip-movies") != std::string::npos);
@@ -141,6 +147,7 @@ TEST_CASE("the release build's usage text lists only a player's options", "[opti
 }
 
 TEST_CASE("the release build takes network play's options", "[options][net]") {
+    // Expected: Coney's own rule, docs/guides/building.md#debug-tools
     // Network play ships to players (docs/guides/multiplayer.md), so a player's build hosts and joins from the
     // command line as the debug tools' build does.
     const std::array<std::string_view, 4> host{"--host", "127.0.0.1:27615", "--net-name", "Tester"};
@@ -161,4 +168,20 @@ TEST_CASE("the release build takes network play's options", "[options][net]") {
     if (joinOptions.netJoin.has_value()) {
         CHECK(joinOptions.netJoin->address == "127.0.0.1");
     }
+}
+
+TEST_CASE("every build takes --console-open, a test aid for the console's bar", "[options]") {
+    // Expected: Coney's own rule, docs/guides/studio/console.md#test-mode
+    const std::array<std::string_view, 5> args{"--frames", "60", "--console-open", "30", "--headless"};
+    auto player = parsePlayer(args);
+    REQUIRE(player.has_value());
+    CHECK(player->consoleOpenFrames == 30);
+    auto all = parseOptions(std::span<const std::string_view>(args));
+    REQUIRE(all.has_value());
+    CHECK(all->consoleOpenFrames == 30);
+    CHECK(coney::usageText(OptionSet::Player).find("--console-open N") != std::string::npos);
+    const std::array<std::string_view, 2> zero{"--console-open", "0"};
+    CHECK_FALSE(parsePlayer(zero).has_value());
+    const std::array<std::string_view, 4> twice{"--console-open", "3", "--console-open", "4"};
+    CHECK_FALSE(parsePlayer(twice).has_value());
 }

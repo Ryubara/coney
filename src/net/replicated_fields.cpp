@@ -278,6 +278,26 @@ std::size_t fieldsBits(std::span<const FieldSpec> fields) {
     return bits;
 }
 
+// A player's HUD fields. The rage, its maximum and the money carry an s16's whole range, as the original's rage meter
+// and class do (docs/research/hud.md#the-rage-meter); the score 25 bits, past the panel's seven digits either way.
+// **Coney's choice**: the money's s16 (the panel clamps it to -99..9999, docs/research/hud.md#score-and-money) and the
+// counts' 0 to 255 (the panel clamps them to 9); a value beyond is held at the range's end (net/player_huds.h).
+constexpr std::array<FieldSpec, static_cast<std::size_t>(HudField::Count)> kHudFields{{
+    {.name = "rage", .encoding = FieldEncoding::Integer, .bits = 16, .min = -32768.0F, .max = 32767.0F},
+    {.name = "rageMax", .encoding = FieldEncoding::Integer, .bits = 16, .min = -32768.0F, .max = 32767.0F},
+    {.name = "raging", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "altBanner", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "score", .encoding = FieldEncoding::Integer, .bits = 25, .min = -16777216.0F, .max = 16777215.0F},
+    {.name = "money", .encoding = FieldEncoding::Integer, .bits = 16, .min = -32768.0F, .max = 32767.0F},
+    {.name = "flash", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "sprayPaint", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "handcuffs", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "keys", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "selectShows", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "knockedOut", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "cameraIgnoresStick", .encoding = FieldEncoding::Bool, .bits = 1},
+}};
+
 std::string_view replicatedKindName(ReplicatedKind kind) {
     switch (kind) {
     case ReplicatedKind::Human:
@@ -286,6 +306,8 @@ std::string_view replicatedKindName(ReplicatedKind kind) {
         return "worldObject";
     case ReplicatedKind::Car:
         return "car";
+    case ReplicatedKind::PlayerHud:
+        return "playerHud";
     }
     return "unknown";
 }
@@ -298,6 +320,8 @@ std::span<const FieldSpec> fieldTable(ReplicatedKind kind) {
         return kWorldObjectFields;
     case ReplicatedKind::Car:
         return kCarFields;
+    case ReplicatedKind::PlayerHud:
+        return kHudFields;
     }
     return {};
 }

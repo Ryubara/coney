@@ -14,6 +14,7 @@
 
 #include <rw.h>
 
+#include "platform/character_skin.h"
 #include "platform/draw_stream.h"
 #include "platform/texture_lod.h"
 
@@ -255,6 +256,29 @@ void writeGeometry(DrawStream& out, const rw::Geometry& geometry) {
     }
 }
 
+// Writes what a character on the skinned pipeline is posed by, which its geometry (the bind positions) does not hold:
+// each vertex's weights and bones, then the palette's matrices the bones reach. Nothing for any other atomic, so the
+// records of the world's, the objects' and the CPU-skinned characters' draws are as they were.
+void writeSkin(DrawStream& out, const rw::Atomic& atomic) {
+    const BonePalette* palette = characterSkinPalette(&atomic);
+    const SkinVertexData* vertices = characterSkinVertices(&atomic);
+    if (palette == nullptr || vertices == nullptr) {
+        return;
+    }
+    out.word(static_cast<std::uint32_t>(vertices->weights.size()));
+    for (std::size_t i = 0; i < vertices->weights.size(); ++i) {
+        for (std::size_t slot = 0; slot < 4; ++slot) {
+            out.gridValue(vertices->weights[i][slot]);
+            out.word(vertices->indices[i][slot]);
+        }
+    }
+    const std::size_t bones = std::min(vertices->bones, kMaxSkinBones);
+    out.word(static_cast<std::uint32_t>(bones));
+    for (std::size_t i = 0; i < bones * kBoneFloats; ++i) {
+        out.gridValue((*palette)[i]);
+    }
+}
+
 // Records a render of `atomic`: the states, the distance levels switch, its frame, its geometry, its materials and
 // the lights librw lights it with (renderAtomic() says which).
 void recordAtomic(rw::Atomic* atomic) {
@@ -300,6 +324,7 @@ void recordAtomic(rw::Atomic* atomic) {
             writeLights(*out, world->localLights);
         }
     }
+    writeSkin(*out, *atomic);
 }
 
 // Starts a record of `kind` with `values` after it, when a recording runs.

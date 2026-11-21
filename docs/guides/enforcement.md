@@ -488,7 +488,7 @@ run on every pull request, whatever made it.
 | --- | --- | --- | --- |
 | clang-format decides layout | [Conventions](conventions.md#formatting) | pre-commit; CI `format` (required) | enforced |
 | Warning-free on MSVC, GCC, Clang and Apple Clang | [Conventions](conventions.md#standard-and-compilers) | `/WX` and `-Werror` in every CI build | enforced at CI |
-| clang-tidy's checks (`bugprone-*`, `performance-*`, unchecked optional access) | [Conventions](conventions.md#portability-traps) | CI `clang-tidy` (required) on the lines a pull request changes; the nightly pass on every file | enforced at CI (a finding in a line the pull request did not change waits for the nightly pass) |
+| clang-tidy's checks (`bugprone-*`, `performance-*`, unchecked optional access) | [Conventions](conventions.md#portability-traps) | `task check`'s `clang-tidy` check on the changed lines, here; CI `clang-tidy` (required) on the lines a pull request changes; every file on `main` and nightly | enforced before review (a finding only Linux's headers show, or in a line the pull request did not change, waits for CI) |
 | Only the frame pacer reads the real clock or sleeps | [Conventions](conventions.md#update-and-render) | pre-commit `no-real-clock` | enforced |
 | Every code file starts with the SPDX line | [Conventions](conventions.md#licence-header), [LEGAL.md](repo:LEGAL.md#licences) | None | written: four files lack it; best point pre-commit |
 | The engine throws no exceptions | [AGENTS.md](repo:AGENTS.md), [Conventions](conventions.md#errors) | None (no `throw`, `try` or `catch` in `src/` today) | written; best point the engine targets' compile flags |

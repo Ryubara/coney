@@ -236,7 +236,8 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
         ReactionShake{.level = combat::decodeHitCode(hit.code).strength, .attackerIsPlayer = hit.attackerIsPlayer};
 }
 
-void Fighter::dieNow(const IncomingHit& hit, const FighterInput& input, HumanAnimator& animator) {
+void Fighter::dieNow(const IncomingHit& hit, const FighterInput& input, HumanAnimator& animator,
+                     const NamedDying* named) {
     // Out of health: whatever it held goes, a hold on it or a tandem it plays ends, and the death chain plays for the
     // state it was in before they ended (the original ends only a mugging, a 0x8000000 pair and a tackle's hold first).
     const DyingState dying = dyingState(input);
@@ -256,7 +257,7 @@ void Fighter::dieNow(const IncomingHit& hit, const FighterInput& input, HumanAni
     if (animator.animId() == kDeathLoopClip) {
         return;
     }
-    m_victim.die(hit, frame(input), dying, animator);
+    m_victim.die(hit, frame(input), dying, animator, named);
     m_reacting = true;
     const std::string_view attacker = hit.attackerName.empty() ? std::string_view("no one") : hit.attackerName;
     logging::info(logging::Category::Combat, std::format("death: {} by {}", logName(), attacker));

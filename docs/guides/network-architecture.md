@@ -278,7 +278,7 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
 | Pads sampled once per step through one `InputSource` and the pad record; the AI writes the same `PlayerRecord` | **Simulation inside `src/platform/`**: the level's simulation and its step are core now (`PlayLevelSimulation`, [Missions](#sub-missions)), the streaming, the lights, the glints, the rings and the HUD's sprites behind its presentation hooks, but the scenes' binding is still the platform's (#1449), and the character and level loaders need librw |
 | Script handles from one deterministic counter, and ordered `std::map<double, ...>` almost everywhere | **No copy or restore** of simulation state; `Human`, `Brain` and `Player` are not copyable, and humans link to each other by raw pointer |
 | Per-human and per-brain `CombatRandom` streams; cosmetic effects on their own streams | **`GameRandom`** is drawn by presentation-adjacent code too (system music, radios, effects), each on its own stream as the original's ([Maths](../research/maths.md#random)), so those draws no longer move the gameplay stream, but they still run in the simulation |
-| A headless mode that runs the whole simulation, and input scripts | **Sounds, particles and HUD changes** are direct calls from the simulation, with no event that could be sent |
+| A headless mode that runs the whole simulation, and input scripts | **The HUD's prompts and radar** are not in the snapshot yet: each player's panel state is ([HUD state](snapshots.md#hud-state)), and the sounds, particles, messages, scenes and movies go through the [game events](multiplayer.md#events) |
 | `PlayerSnapshot` and `TargetSnapshot`, ready-made per-human presentation state | **Tuning singletons** the debug menus change live, and debug tools that change the game out of band |
 
 ### Loop, time and input {#sub-loop}
@@ -378,8 +378,7 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   started particle system *n* at a place) start them on the client.
 - **Today:** particles, glints, fog, litter, smoke and light tasks each have their own fixed-seed stream; nothing in
   `human/`, `ai/` or `combat/` includes `effects/`. Ready.
-- **In the way:** particle starts are calls from simulation code, not events; they need the one call the
-  [checklist](#checklist) asks for.
+- **Built:** particle starts are game events (`ParticleSystems::spawn()`, [Game events](multiplayer.md#events)).
 
 ### Scripts (`scripting/`) {#sub-scripts}
 
@@ -415,20 +414,24 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   that camera: the world objects are brought in round it, so a server's camera choice is still to come), the glints,
   the world objects' drawn poses, the HUD's sprites (`hudStepped()`), the health rings, the traces and
   `--freeze-world`. The scenes are reached through three interim hooks until their binding moves to the core (#1449).
-- **In the way:** the two-player game state paths are unbuilt; level changes need a load barrier
-  ([Story](#story)).
+- **In the way:** the two-player game state paths are unbuilt; the load barrier's session side is built
+  ([Levels](multiplayer.md#levels)), but the game's level starts, restarts and mission ends do not call it yet
+  (#1530, [Story](#story)).
 
 ### HUD, menus and pause (`hud/`, `gui/`, `gamemodes/`) {#sub-hud}
 
 - **Sync:** each player's panel (health, meters, money, items), messages, objectives, counters, radar blips,
   prompts. **Owner:** server. **How:** a per-player HUD state in that player's snapshot, and messages as reliable
   events; the client draws it.
-- **Today:** `HUD` has two player panels, of which only panel and radar 0 are driven. Menus read pad port 0; the
-  pause menu leaves out the co-op quit. The play mode's HUD state is the simulation's (`hud::HudOwner`, its own HUD or
-  the game's), and so is its update in the step; `platform::HudLayer` only lists and draws the sprites of the HUD's
-  newest step.
-- **In the way:** panel 1 and the second radar; a menu driven by whichever player opened it (the original's pause
-  stores the player).
+- **Today:** `HUD` has two player panels, each driven from its player slot's `hud::PlayerHudState`, which the play
+  mode owns (`PlayLevelSimulation::playerHuds()`; slot 1 stays empty until a second player plays in a level), and each
+  slot's state travels in the snapshots ([HUD state](snapshots.md#hud-state)); only radar 0 is driven. Menus read pad
+  port 0; the pause menu leaves out the co-op quit. The play mode's HUD state is the simulation's (`hud::HudOwner`, its
+  own HUD or the game's), and so is its update in the step; `platform::HudLayer` only lists and draws the sprites of the
+  HUD's newest step.
+- **In the way:** the second radar, and the HUD's standing state outside the panels' inputs (the prompts, the radar's
+  blips, the counter panels, a panel's script flags such as `ForceShowPlayerHud`), which no snapshot carries yet; a
+  menu driven by whichever player opened it (the original's pause stores the player).
 
 ### Audio (`audio/`, `platform/audio_output`) {#sub-audio}
 
@@ -437,8 +440,11 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   reliable for music and loops.
 - **Today:** the simulation calls `GameSound` and the sound engine directly; the listener is player 1; system music
   draws from `GameRandom`, and the sound engine's randomisation calls back into it.
-- **In the way:** no sound event can be recorded today; the music's draws must stay on the server, with the client
-  playing what the server picked.
+- **Built:** the sounds, hits, music, the ambient loop and the lines said the simulation plays are game events through
+  `SoundEvents`, the world objects' sounds through `LevelObjectServices` and gameplay's HUD cues through `playHudCue()`
+  ([Game events](multiplayer.md#events)); a sound's later stop or move on its handle travels as a SoundStop or
+  SoundMove that names the instance its start carried ([A playing sound](multiplayer.md#sound-instances)). The music's
+  draws stay on the server, and the client plays what the server picked.
 
 ### Movies and scenes (`movies/`, `scenes/`) {#sub-movies}
 
@@ -446,7 +452,7 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   **Owner:** server. **How:** reliable events ([Story](#story)).
 - **Today:** `SceneSystem` steps inside the simulation and holds the player; `MovieMode` stops the game clock and any
   pad's button skips it.
-- **In the way:** nothing beyond the events and the barrier.
+- **In the way:** the barrier; the starts and ends are game events ([Game events](multiplayer.md#events)).
 
 ### Debug tools (`debug/`) {#sub-debug}
 
@@ -908,7 +914,7 @@ The work in order; each row is about one pull request. Each is an issue, a sub-i
 | 9 | Snapshots: humans first, deltas against acknowledged baselines, the budget | P1 | 8 | #554 |
 | 10 | The client's world: jitter buffer, interpolation through `Interpolated<T>` and `DrawnPoses`, a client game mode with no simulation | P1 | 9 | #555 |
 | 11 | Events: sounds, particles, HUD messages, scenes, movies | P1 | 9 | #556 |
-| 12 | Level loads, checkpoints and the loading barrier | P1 | 11 | #557 |
+| 12 | Level loads, checkpoints and the loading barrier (the session's side built: [Levels](multiplayer.md#levels)) | P1 | 11 | #557 |
 | 13 | The state digest, two-process tests in CI, replays (built: [Proof](multiplayer.md#proof)) | P1 | 9 | #558 |
 | 13a | Measure press to screen at 30 and 60 Hz ([Tick rate](#sixty-measure)) | P2 | 10, 14 | #568 |
 | 14 | Prediction of the client's own Warrior | P2 | 10 | #559 |

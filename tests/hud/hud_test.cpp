@@ -922,3 +922,48 @@ TEST_CASE("the revive prompt's stick picture alternates with the prompt's own ti
     hud.setActionPrompt(0, revive + " ");
     CHECK(stickAt(11700) == own);
 }
+
+TEST_CASE("each player's panel is driven from his own slot's HUD state, panel 1 from slot 1's", "[hud][net]") {
+    // Expected: hud.md#the-player-panel, confirmed (code): HUD_Update (0x001af010) steps both panels, each reading its
+    // own player (PlayerHUD_Update, 0x00214138); a change of score, money or a count is activity (0x001c7928,
+    // 0x001becb0). The split by slot is Coney's (network-architecture.md#sub-hud).
+    Hud hud = makeHud(nullptr);
+    REQUIRE(hud.attachPlayer(0, 0) == 0);
+    REQUIRE(hud.attachPlayer(1, 0) == 1);
+    coney::hud::PlayerHudState first;
+    first.panel.rage = 12;
+    first.panel.score = 300;
+    first.panel.money = 25;
+    coney::hud::PlayerHudState second;
+    second.panel.rage = 40;
+    second.panel.rageMax = 90;
+    second.panel.raging = true;
+    second.panel.money = 7;
+    second.panel.items = {1, 0, 2, 0};
+    second.knockedOut = true;
+    second.cameraIgnoresStick = true;
+    HudFrame frame;
+    frame.nowMs = 5000;
+    frame.levelNumber = 99;
+    coney::hud::applyPlayerHud(frame, 0, first);
+    coney::hud::applyPlayerHud(frame, 1, second);
+    CHECK(frame.players.at(0) == first.panel);
+    CHECK(frame.players.at(1) == second.panel);
+    CHECK_FALSE(frame.knockedOut.at(0));
+    CHECK(frame.knockedOut.at(1));
+    CHECK_FALSE(frame.cameraIgnoresStick.at(0));
+    CHECK(frame.cameraIgnoresStick.at(1));
+    hud.update(frame);
+    CHECK(hud.panel(0).values() == first.panel);
+    CHECK(hud.panel(1).values() == second.panel);
+    // Slot 1's counters (none to one and two) were panel 1's activity; his money change is again, and only his.
+    CHECK(hud.panel(1).activityMs() == 5000);
+    const std::uint64_t firstActivity = hud.panel(0).activityMs();
+    second.panel.money = 9;
+    frame.nowMs = 9000;
+    coney::hud::applyPlayerHud(frame, 0, first);
+    coney::hud::applyPlayerHud(frame, 1, second);
+    hud.update(frame);
+    CHECK(hud.panel(0).activityMs() == firstActivity);
+    CHECK(hud.panel(1).activityMs() == 9000);
+}

@@ -26,13 +26,16 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import tempfile
 from collections.abc import Callable, Iterable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from coney_tools import tidy_cache
 from coney_tools.conventions import CiTidy
+from coney_tools.tidy_cache import TidyCache
 
 #: Runs a command in a folder and returns its exit code and its output (stdout and stderr together).
 Runner = Callable[[list[str], Path], tuple[int, str]]
@@ -279,6 +282,44 @@ def make_plan(
     return plan
 
 
+def every_source(build_dir: Path, root: Path, settings: CiTidy) -> list[Unit]:
+    """Every source of Coney's own (under `settings.folders`, with a source extension) the compile database of
+    `build_dir` compiles, never one of the fetched dependencies (`_deps/`): the units of the whole-codebase pass."""
+    return [
+        Unit(name)
+        for name in sorted(tidy_cache.load_commands(build_dir, root))
+        if _own_folder(name, settings) is not None and name.endswith(settings.sources) and "_deps/" not in name
+    ]
+
+
+#: The object file of a compile command: `<folder>/CMakeFiles/<target>.dir/<source>.o` (or `.obj`).
+_TARGET_DIR = re.compile(r"(?:^|[/\\])CMakeFiles[/\\](?P<target>[^/\\]+)\.dir[/\\]")
+#: A phony target of CMake's Ninja generator that builds what a target's objects need before they compile (the
+#: headers its custom commands generate, and its dependencies'), without compiling anything.
+ORDER_TARGET = "cmake_object_order_depends_target_"
+
+
+def build_targets(build_dir: Path, root: Path, units: Sequence[Unit]) -> list[str]:
+    """The Ninja targets that make what clang-tidy needs to analyse `units`: for each, the order-only target of the
+    CMake target that compiles it (its generated headers and the targets it depends on, but none of its own sources),
+    when the build file has one, else its object file. clang-tidy needs the compile database and the generated
+    headers, not the objects, so the job builds these instead of the whole project."""
+    commands = tidy_cache.load_commands(build_dir, root)
+    try:
+        ninja = (build_dir / "build.ninja").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        ninja = ""
+    found: list[str] = []
+    for unit in units:
+        output = str(commands.get(unit.source, {}).get("output", ""))
+        match = _TARGET_DIR.search(output)
+        target = f"{ORDER_TARGET}{match.group('target')}" if match else ""
+        chosen = target if target and f"build {target}:" in ninja else output.replace("\\", "/")
+        if chosen and chosen not in found:
+            found.append(chosen)
+    return found
+
+
 # --- running clang-tidy -----------------------------------------------------------------------------------------------
 
 
@@ -326,6 +367,8 @@ class TidyResult:
 
     findings: list[Finding] = field(default_factory=list)
     failures: list[str] = field(default_factory=list)
+    #: How many units took their outcome from the cache instead of running clang-tidy.
+    cached: int = 0
 
     @property
     def ok(self) -> bool:
@@ -339,13 +382,35 @@ class TidyResult:
 MAX_FILTER_BYTES = 100_000
 
 
-def _tidy_command(tool: str, build_dir: Path, plan: TidyPlan, source: str) -> list[str]:
-    """The clang-tidy command for one source: the compile database, quiet, and the line filter when it fits."""
+@dataclass(frozen=True)
+class RunOptions:
+    """How `run_plan` runs clang-tidy beyond the plan itself."""
+
+    #: More arguments for every clang-tidy command, before the source (local_tidy.py's header filter on Windows).
+    extra_args: tuple[str, ...] = ()
+    #: Hand the plan's lines to clang-tidy as `--line-filter`. Off, clang-tidy reports every line and `run_plan` keeps
+    #: the changed ones itself (the same result: the filter only decides what is printed, not what is analysed). Off
+    #: on Windows, where clang-tidy matches the filter's names against paths written with backslashes.
+    line_filter: bool = True
+    #: The result cache (tidy_cache.py): a source whose compile command, configuration and every file it read are
+    #: unchanged takes its findings from there instead of running clang-tidy. It always runs without the line filter,
+    #: so one entry serves any change.
+    cache: TidyCache | None = None
+
+
+def _tidy_command(
+    tool: str, build_dir: Path, plan: TidyPlan, source: str, options: RunOptions, depfile: Path | None
+) -> list[str]:
+    """The clang-tidy command for one source: the compile database, quiet, the line filter when it fits and is
+    wanted, the dependency file the cache needs, the extra arguments and the source last."""
     command = [tool, "-p", str(build_dir), "--quiet"]
     line_filter = json.dumps(plan.line_filter(), separators=(",", ":"))
-    if len(line_filter.encode("utf-8")) <= MAX_FILTER_BYTES:
+    wanted = options.line_filter and options.cache is None and not plan.everything
+    if wanted and len(line_filter.encode("utf-8")) <= MAX_FILTER_BYTES:
         command.append(f"--line-filter={line_filter}")
-    return [*command, source]
+    if depfile is not None:
+        command += [f"--extra-arg={word}" for word in tidy_cache.depfile_arguments(depfile)]
+    return [*command, *options.extra_args, source]
 
 
 COMPILE_ERROR = "clang-diagnostic-error"
@@ -357,31 +422,74 @@ def _on_changed_line(item: Finding, lines: dict[str, list[tuple[int, int]]]) -> 
     return any(first <= item.line <= last for first, last in lines.get(item.path, ()))
 
 
-def run_plan(plan: TidyPlan, root: Path, build_dir: Path, tool: str, jobs: int, run: Runner) -> TidyResult:
-    """Run clang-tidy on every unit of `plan`, `jobs` at a time, and gather what it reports.
+@dataclass(frozen=True)
+class UnitOutcome:
+    """One source's run (or cache entry): clang-tidy's exit code, every finding it printed and its last line."""
+
+    code: int
+    findings: tuple[Finding, ...]
+    tail: str
+    cached: bool = False
+
+
+def _run_unit(
+    unit: Unit, plan: TidyPlan, root: Path, build_dir: Path, tool: str, run: Runner, options: RunOptions
+) -> UnitOutcome:
+    """Run clang-tidy on one source, or take its outcome from the cache; a clean outcome or one with findings is kept
+    in the cache, a failure of the tool never, nor a source that does not compile: a missing include is not in the
+    dependency file, so a kept compile error would outlive the arrival of the header it lacked."""
+    cache = options.cache
+    if cache is not None:
+        kept = cache.get(unit.source)
+        if kept is not None:
+            return UnitOutcome(kept.code, kept.findings, "", cached=True)
+    with tempfile.TemporaryDirectory(prefix="coney-tidy-") as temp:
+        depfile = Path(temp) / "deps.d" if cache is not None else None
+        code, output = run(_tidy_command(tool, build_dir, plan, unit.source, options, depfile), root)
+        findings = tuple(parse_findings(output, root))
+        tail = next((line.strip() for line in reversed(output.splitlines()) if line.strip()), "no output")
+        compiled = not any(item.check == COMPILE_ERROR for item in findings)
+        if cache is not None and depfile is not None and (code == 0 or findings) and compiled:
+            cache.put(unit.source, tidy_cache.Entry(code, findings), depfile)
+    return UnitOutcome(code, findings, tail)
+
+
+def run_plan(
+    plan: TidyPlan,
+    root: Path,
+    build_dir: Path,
+    tool: str,
+    jobs: int,
+    run: Runner,
+    options: RunOptions | None = None,
+) -> TidyResult:
+    """Run clang-tidy on every unit of `plan`, `jobs` at a time, and gather what it reports: the findings on the
+    plan's lines, or every finding for a plan of `everything` (the whole-codebase pass).
 
     A unit where clang-tidy exits non-zero without printing a single finding is a failure of the tool (a missing
     program, a missing compile database, a crash), never a pass. So is a unit that does not compile
     (`clang-diagnostic-error`, on any line): clang-tidy could not analyse it, so its changed lines were never checked.
     """
+    options = options or RunOptions()
     result = TidyResult()
     if not plan.units:
         return result
     with ThreadPoolExecutor(max_workers=max(1, min(jobs, len(plan.units)))) as pool:
-        outcomes = list(pool.map(lambda unit: run(_tidy_command(tool, build_dir, plan, unit.source), root), plan.units))
+        outcomes = list(pool.map(lambda unit: _run_unit(unit, plan, root, build_dir, tool, run, options), plan.units))
     seen: set[tuple[str, int, int, str, str]] = set()
-    for unit, (code, output) in zip(plan.units, outcomes, strict=True):
-        reported = parse_findings(output, root)
-        if code != 0 and not reported:
-            tail = next((line.strip() for line in reversed(output.splitlines()) if line.strip()), "no output")
-            result.failures.append(f"{unit.source}: clang-tidy exited {code} with no finding: {tail}")
-        broken = next((item for item in reported if item.check == COMPILE_ERROR), None)
+    for unit, outcome in zip(plan.units, outcomes, strict=True):
+        result.cached += outcome.cached
+        if outcome.code != 0 and not outcome.findings:
+            result.failures.append(f"{unit.source}: clang-tidy exited {outcome.code} with no finding: {outcome.tail}")
+        broken = next((item for item in outcome.findings if item.check == COMPILE_ERROR), None)
         if broken is not None:
             result.failures.append(
                 f"{unit.source}: does not compile ({broken.path}:{broken.line}: {broken.message}), "
                 "so it was not checked"
             )
-        for item in (item for item in reported if _on_changed_line(item, plan.lines)):
+        for item in outcome.findings:
+            if not (plan.everything or _on_changed_line(item, plan.lines)):
+                continue
             key = (item.path, item.line, item.column, item.check, item.message)
             if key not in seen:
                 seen.add(key)
@@ -460,18 +568,19 @@ def _files(count: int) -> str:
     return f"{count} file{'' if count == 1 else 's'}"
 
 
-def summary_lines(findings: Sequence[Finding], sources: Sequence[str], limit: int, notes: Sequence[str]) -> list[str]:
-    """The job summary: a headline, up to `limit` findings, a count of the rest, and the plan's notes."""
+def summary_lines(
+    findings: Sequence[Finding], sources: Sequence[str], limit: int, notes: Sequence[str], *, everything: bool = False
+) -> list[str]:
+    """The job summary: a headline, up to `limit` findings, a count of the rest, and the plan's notes; `everything`
+    says the run was the whole-codebase pass, not a change's lines."""
+    where = "in every file" if everything else "on the lines this change touches"
     if not sources:
-        head = "clang-tidy: no file to check on the lines this change touches"
+        head = f"clang-tidy: no file to check {where}"
     elif not findings:
-        head = f"clang-tidy: clean on the lines this change touches ({_files(len(sources))} checked)"
+        head = f"clang-tidy: clean {where} ({_files(len(sources))} checked)"
     else:
         count = len(findings)
-        head = (
-            f"clang-tidy: {count} finding{'' if count == 1 else 's'} on the lines this change touches "
-            f"({_files(len(sources))} checked)"
-        )
+        head = f"clang-tidy: {count} finding{'' if count == 1 else 's'} {where} ({_files(len(sources))} checked)"
     lines = [head]
     lines += [
         f"- {item.path}:{item.line}:{item.column} [{item.check}] {item.message}" for item in list(findings)[:limit]

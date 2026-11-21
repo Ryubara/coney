@@ -17,10 +17,10 @@
 
 #include "core/pad.h"
 #include "core/perf.h"
+#include "core/ui_scale.h"
 #include "debug/audio_controls.h"
 #include "debug/debug_session.h"
 #include "debug/mesh_views.h"
-#include "debug/ui_scale.h"
 
 namespace coney::debug {
 

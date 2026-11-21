@@ -33,7 +33,7 @@ from coney_tools.config import ConfigError
 PLATFORMS: tuple[str, ...] = ("windows", "linux", "macos")
 
 #: The tools `--fetch` accepts, in the order they are fetched.
-TOOLS: tuple[str, ...] = ("ghidra", "ghidra-mcp", "pcsx2-mcp", "pcsx2-mcp-release", "ccache", "lua")
+TOOLS: tuple[str, ...] = ("ghidra", "ghidra-mcp", "pcsx2-mcp", "pcsx2-mcp-release", "ccache", "clang-tidy", "lua")
 
 #: The tools installed as a git clone at a pinned commit rather than from a release archive.
 CLONED: frozenset[str] = frozenset({"ghidra-mcp", "pcsx2-mcp"})
@@ -111,6 +111,20 @@ CCACHE_WINDOWS = Pin(
     "6219f3865ca59aec41ee4b678df171d5d35855ecb2b6dbbbd20690b3a68af7b4",
 )
 
+#: clang-tidy for `task check`'s `clang-tidy` check on Windows (local_tidy.py): LLVM's official Windows release, the
+#: exact version CI's Ubuntu runner installs as clang-tidy-19 (`ci.tidy.llvm_major` in .github/conventions.yml holds
+#: the major version both must be; a test keeps this pin, the workflow and that key equal). The archive is the whole
+#: toolchain (845 MB); only clang-tidy.exe and clang's own headers (`lib/clang/<major>/include`, which clang-tidy reads
+#: in place of the compiler's) are unpacked. Linux and macOS install clang-tidy-19 with apt or Homebrew's llvm@19.
+CLANG_TIDY_VERSION = "19.1.1"
+CLANG_TIDY_WINDOWS = Pin(
+    "clang-tidy (LLVM)",
+    CLANG_TIDY_VERSION,
+    f"{_GH}/llvm/llvm-project/releases/download/llvmorg-{CLANG_TIDY_VERSION}/"
+    f"clang+llvm-{CLANG_TIDY_VERSION}-x86_64-pc-windows-msvc.tar.xz",
+    "621fc299fceb1bbdae927e355d1073034c9a1bbdda5a46a27e217c56af72f72a",
+)
+
 #: The fork's public release (Windows only): its PCSX2 2.9.129 build with the debug server, and the MCP server with
 #: its dependencies beside it, the same shape as a build of the clone's `release/` folder, so `pcsx2_mcp_dir` can
 #: name it and `pcsx2 setup-copies` spreads it over the copies. This is the newcomer's way; building from the clone
@@ -141,6 +155,7 @@ PINS: dict[str, Callable[[str], list[Pin]]] = {
     "pcsx2-mcp": lambda platform: [PCSX2_MCP],
     "pcsx2-mcp-release": lambda platform: [PCSX2_MCP_RELEASE] if platform == "windows" else [],
     "ccache": lambda platform: [CCACHE_WINDOWS] if platform == "windows" else [],
+    "clang-tidy": lambda platform: [CLANG_TIDY_WINDOWS] if platform == "windows" else [],
     "lua": lambda platform: [LUA],
 }
 
@@ -152,6 +167,7 @@ _DESTINATIONS = {
     "pcsx2-mcp": "tools/pcsx2-mcp",
     "pcsx2-mcp-release": f"tools/PCSX2-MCP-v{PCSX2_MCP_RELEASE_VERSION}-win64",
     "ccache": f"tools/ccache-{CCACHE_VERSION}",
+    "clang-tidy": f"tools/clang-tidy-{CLANG_TIDY_VERSION}",
     "lua": f"tools/lua-{LUA_VERSION}",
 }
 
@@ -334,7 +350,42 @@ def _install(tool: str, pins: Sequence[Pin], files: Sequence[Path], dest: Path, 
     if tool == "ccache" and files:
         unpack(files[0], dest)  # the release's one folder is stripped: dest/ccache.exe
         return
+    if tool == "clang-tidy" and files:
+        unpack_kept(files[0], dest, clang_tidy_kept(pins[0].version))  # dest/bin/clang-tidy.exe, dest/lib/clang/...
+        return
     raise ConfigError(f"unknown tool {tool!r} on {platform}")
+
+
+def clang_tidy_kept(version: str) -> tuple[str, ...]:
+    """The parts of LLVM's Windows archive (below its top folder) clang-tidy needs: the program and clang's own
+    headers for the version's major number."""
+    return ("bin/clang-tidy.exe", f"lib/clang/{version.split('.')[0]}/include/")
+
+
+def unpack_kept(archive: Path, dest: Path, kept: Sequence[str]) -> None:
+    """Unpack only the regular files of `kept` (paths below the archive's top folder; one ending in / is a folder) from
+    a tar archive into the new folder `dest`, reading it as a stream: LLVM's archive unpacks to several GB, of which
+    clang-tidy needs about 100 MB. Raises ConfigError when a kept path is not in the archive."""
+    dest.mkdir(parents=True)
+    found: set[str] = set()
+    with tarfile.open(archive, mode="r|*") as tarred:
+        for member in tarred:
+            inner = member.name.partition("/")[2]
+            match = next(
+                (entry for entry in kept if inner == entry or (entry.endswith("/") and inner.startswith(entry))), None
+            )
+            if match is None or not member.isfile() or ".." in Path(inner).parts:
+                continue
+            found.add(match)
+            target = dest / inner
+            target.parent.mkdir(parents=True, exist_ok=True)
+            source = tarred.extractfile(member)
+            if source is not None:
+                with target.open("wb") as handle:
+                    shutil.copyfileobj(source, handle, length=1 << 20)
+    missing = [entry for entry in kept if entry not in found]
+    if missing:
+        raise ConfigError(f"{archive}: no {', '.join(missing)} in it")
 
 
 #: The parts of Lua's source archive `luac` is built from (below its top folder): the core, luac and the licence.

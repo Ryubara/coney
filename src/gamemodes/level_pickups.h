@@ -151,6 +151,11 @@ class LevelPickups {
     /// player's inventory; what an AI's take of one gives is not on the page), any other kind goes into his hand. An
     /// owned object's take is a theft (ownedTaken()).
     TakeResult takeByAi(double handle, double taker);
+    /// Object `handle`, just made for it, is put straight into `holder`'s hand with no pick-up, as a script's
+    /// `HuPlaceItemInHand` or a class's weapon puts one (docs/research/objects.md#held, Scripted placement): its record
+    /// is pinned and held, with no take's loot or theft. False when it has no record, is removed or is already held.
+    /// @coney-only Coney's record of an object in a hand that no pick-up took
+    bool placeInHand(double handle, double holder);
     /// The theft's receiver: told (taker, object, where it was) each time an owned object is taken, after its owned
     /// state is cleared. Empty: nobody is told.
     using OwnedTaken = std::function<void(double taker, double object, anim::Vec3 at)>;
