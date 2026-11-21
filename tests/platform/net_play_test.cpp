@@ -34,6 +34,7 @@
 #include "net/state_digest.h"
 #include "net/transport.h"
 #include "platform/net_game.h"
+#include "platform/net_levels.h"
 #include "scripting/sound_bindings.h"
 
 using coney::InputSource;
@@ -48,7 +49,11 @@ using coney::net::NetRole;
 using coney::net::NetSimulation;
 using coney::net::SnapshotHuman;
 using coney::net::SnapshotHumans;
+using coney::platform::LevelAt;
+using coney::platform::LevelGame;
+using coney::platform::MissionCounts;
 using coney::platform::NetInput;
+using coney::platform::NetLevels;
 using coney::platform::NetPlay;
 
 namespace {
@@ -169,6 +174,92 @@ class StepSound final : public coney::script::SoundHost {
     void levelLoadStarted(int /*levelNumber*/) override {}
     void levelLoaded() override {}
     void gameplayLeft() override {}
+};
+
+// A game's levels as NetLevels sees them: a jump it takes starts that level's load at the next frame, which plays
+// `loadSteps` frames later (never, while `loads` is off).
+struct FakeLevels final : LevelGame {
+    bool playing = false;
+    std::uint64_t starts = 0;
+    std::optional<LevelAt> at;
+    MissionCounts missions;
+    bool acceptsJumps = true;
+    bool loads = true;
+    int loadSteps = 5;
+    std::vector<LevelAt> jumps;
+    std::optional<LevelAt> pendingJump;
+    int loadingLeft = -1;
+
+    [[nodiscard]] bool inPlay() const override { return playing; }
+    [[nodiscard]] std::uint64_t levelStarts() const override { return starts; }
+    [[nodiscard]] std::optional<LevelAt> currentLevel() const override { return at; }
+    [[nodiscard]] MissionCounts missionEnds() const override { return missions; }
+    bool jumpToLevel(std::string_view level, int checkpoint) override {
+        if (!acceptsJumps) {
+            return false;
+        }
+        jumps.push_back(LevelAt{.level = std::string(level), .checkpoint = checkpoint});
+        pendingJump = jumps.back();
+        return true;
+    }
+    // The game starts loading `where` (gameplay's level load), out of play until it has loaded.
+    void start(const LevelAt& where) {
+        ++starts;
+        at = where;
+        playing = false;
+        loadingLeft = loads ? loadSteps : -1;
+    }
+    // Between two frames: a jump asked for starts its load; a load under way counts down to play.
+    void frame() {
+        if (pendingJump) {
+            const LevelAt where = *pendingJump;
+            pendingJump.reset();
+            start(where);
+            return;
+        }
+        if (loadingLeft > 0 && --loadingLeft == 0) {
+            playing = true;
+        }
+    }
+};
+
+// Two games with their levels, stepped as the main loop steps them: each frame the games' jumps and loads move on,
+// then network play receives, NetLevels looks, the host's step gate asks NetLevels, and network play sends.
+struct LevelGames {
+    TwoGames games;
+    FakeLevels hostGame;
+    FakeLevels guestGame;
+    NetLevels hostLevels{games.host};
+    NetLevels guestLevels{games.guest};
+    int held = 0; // the host's steps the gate held
+
+    LevelGames() {
+        hostGame.loadSteps = 3;
+        hostLevels.setGame(&hostGame);
+        guestLevels.setGame(&guestGame);
+    }
+    // Runs `steps` frames of one step each on both games.
+    void run(int steps) {
+        for (int i = 0; i < steps; ++i) {
+            hostGame.frame();
+            guestGame.frame();
+            games.host.advance(kStepNs);
+            games.guest.advance(kStepNs);
+            games.host.beforeStep();
+            games.guest.beforeStep();
+            hostLevels.beforeStep();
+            guestLevels.beforeStep();
+            held += hostLevels.holdsStep() ? 1 : 0;
+            games.host.afterStep();
+            games.guest.afterStep();
+        }
+    }
+    // The host's game in play in `level` at `checkpoint`, as after its own load.
+    void hostPlays(const std::string& level, int checkpoint) {
+        hostGame.start(LevelAt{.level = level, .checkpoint = checkpoint});
+        hostGame.playing = true;
+        hostGame.loadingLeft = -1;
+    }
 };
 
 // Whether `log` has a line containing `text`.
@@ -678,4 +769,181 @@ TEST_CASE("a host's movie waits for the guest's end, and the guest's skip ends i
     games.run(2);
     CHECK(games.host.movieSkipped());
     CHECK(games.host.movieMayEnd());
+}
+
+// Expected: unverified, #1530 (Coney's own; network-architecture.md#story: the guest's game loads the host's level, and
+// the server waits for every client before the level's first step)
+TEST_CASE("the guest's game loads the host's new level, and the host holds its first frame of play until it has",
+          "[net][net_play][level]") {
+    LevelGames g;
+    g.hostPlays("level1", 1);
+    g.games.connect();
+    // Joined from the front end, the guest is sent to level1; it loads.
+    g.run(12);
+    CHECK_FALSE(g.hostLevels.holdsStep());
+    CHECK(g.guestGame.jumps == std::vector<LevelAt>{{.level = "level1", .checkpoint = 1}});
+
+    // The host's game goes on to level2: its load is not held, its first frame of play is.
+    g.hostGame.loadSteps = 2;
+    g.guestGame.loadSteps = 20;
+    g.hostGame.start(LevelAt{.level = "level2", .checkpoint = 1});
+    g.held = 0;
+    g.run(6);
+    CHECK(g.guestGame.jumps.back() == LevelAt{.level = "level2", .checkpoint = 1});
+    CHECK(g.hostGame.inPlay());
+    CHECK(g.hostLevels.holdsStep());
+    CHECK(g.held > 0);
+    g.run(25);
+    CHECK(g.guestGame.inPlay());
+    CHECK_FALSE(g.hostLevels.holdsStep());
+    CHECK(logged(g.games.host.log(), "Guest has loaded level2"));
+    CHECK(logged(g.games.guest.log(), "in the host's level level2"));
+}
+
+// Expected: unverified, #1530 (Coney's own; docs/guides/multiplayer.md#levels: a checkpoint restart reloads the guest)
+TEST_CASE("a checkpoint restart on the host reloads the guest's game at that checkpoint", "[net][net_play][level]") {
+    LevelGames g;
+    g.hostPlays("level2", 1);
+    g.games.connect();
+    g.run(12);
+    REQUIRE(g.guestGame.jumps.size() == 1);
+    g.hostGame.start(LevelAt{.level = "level2", .checkpoint = 2});
+    g.run(15);
+    CHECK(g.guestGame.jumps.size() == 2);
+    CHECK(g.guestGame.jumps.back() == LevelAt{.level = "level2", .checkpoint = 2});
+    CHECK(g.guestGame.inPlay());
+    CHECK_FALSE(g.hostLevels.holdsStep());
+}
+
+// Expected: unverified, #1530 (Coney's own; network-architecture.md#authority: a player drops in mid-level)
+TEST_CASE("a guest who joins mid-level is sent to the host's level, or answers at once when it plays it already",
+          "[net][net_play][level]") {
+    // From the front end: a jump, and the host waits at its frame of play until the guest plays.
+    LevelGames fromMenus;
+    fromMenus.hostPlays("level99", 1);
+    fromMenus.run(1); // offline: network play keeps the level for the guests who join
+    fromMenus.games.connect();
+    fromMenus.run(2);
+    CHECK(fromMenus.hostLevels.holdsStep());
+    fromMenus.run(10);
+    CHECK(fromMenus.guestGame.jumps == std::vector<LevelAt>{{.level = "level99", .checkpoint = 1}});
+    CHECK_FALSE(fromMenus.hostLevels.holdsStep());
+
+    // Already playing level99 at checkpoint 1 (started there itself): no second load.
+    LevelGames already;
+    already.hostPlays("level99", 1);
+    already.guestGame.start(LevelAt{.level = "level99", .checkpoint = 1});
+    already.guestGame.playing = true;
+    already.guestGame.loadingLeft = -1;
+    already.run(1);
+    already.games.connect();
+    already.run(3);
+    CHECK(already.guestGame.jumps.empty());
+    CHECK_FALSE(already.hostLevels.holdsStep());
+    CHECK(logged(already.games.host.log(), "Guest has loaded level99"));
+}
+
+// Expected: unverified, #1530 (Coney's own; docs/guides/multiplayer.md#levels: a player still loading after the load
+// time-out, 1,800 steps, is dropped and the host goes on)
+TEST_CASE("the host holds for a guest that never loads only until the load time-out drops it",
+          "[net][net_play][level]") {
+    LevelGames g;
+    g.guestGame.acceptsJumps = false;
+    g.hostPlays("level1", 1);
+    g.games.connect();
+    g.run(100);
+    CHECK(g.hostLevels.holdsStep());
+    CHECK(logged(g.games.guest.log(), "cannot load the host's level level1 yet"));
+    g.run(1800);
+    CHECK_FALSE(g.hostLevels.holdsStep());
+    CHECK(g.games.host.status().players.empty());
+    CHECK(g.held >= 1700);
+}
+
+// Expected: unverified, #1530 (Coney's own; docs/guides/multiplayer.md#levels: MissionEnd)
+TEST_CASE("the guest hears each of the host's mission ends, and a guest's own are not sent", "[net][net_play][level]") {
+    LevelGames g;
+    g.hostPlays("level1", 1);
+    g.games.connect();
+    g.run(12);
+    g.hostGame.missions.passed = 1;
+    g.run(3);
+    g.hostGame.missions.failed = 1;
+    g.guestGame.missions.passed = 4; // the guest's own game: nothing is sent
+    g.run(3);
+    const std::vector<std::string> log = g.games.guest.log();
+    CHECK(std::ranges::count(log, std::string("the host's mission ended: passed")) == 1);
+    CHECK(std::ranges::count(log, std::string("the host's mission ended: failed")) == 1);
+}
+
+// Expected: unverified, #1530 (Coney's own; the LoadLevel name rule, docs/guides/multiplayer.md#levels)
+TEST_CASE("a mod's mission level path goes to the guest as its file name, and a level with no such name is not sent",
+          "[net][net_play][level]") {
+    LevelGames g;
+    g.games.connect();
+    g.hostPlays("levels/alley.clevel", 1);
+    g.run(3);
+    REQUIRE_FALSE(g.guestGame.jumps.empty());
+    CHECK(g.guestGame.jumps.front().level == "alley");
+
+    g.hostPlays("levels/two words.clevel", 1);
+    g.run(3);
+    CHECK(g.guestGame.jumps.size() == 1);
+    CHECK(logged(g.games.host.log(), "level levels/two words.clevel has no network name"));
+}
+
+// Expected: unverified, #1530 (Coney's own; network-architecture.md#story: a movie waits for every client's end or
+// skip, and a client's skip ends the host's)
+TEST_CASE("the host's movie waits for the guest's own copy to end, and the guest's skip ends the host's",
+          "[net][net_play][level][movie]") {
+    LevelGames g;
+    g.hostPlays("level1", 1);
+    g.games.connect();
+    g.run(12);
+    const coney::movies::MovieSync host = g.hostLevels.movieSync();
+    const coney::movies::MovieSync guest = g.guestLevels.movieSync();
+
+    // The host's movie starts in a step: its MovieStart event and the wait.
+    g.games.host.gameEvents().raise(
+        coney::GameEvent{.kind = coney::GameEventKind::MovieStart, .value = 1, .text = "L1_OUT"});
+    host.started("L1_OUT");
+    g.run(3);
+    host.ended("L1_OUT", false);
+    CHECK_FALSE(host.mayGoOn());
+    // The guest's copy ends; the host goes on.
+    guest.ended("L1_OUT", false);
+    g.run(3);
+    CHECK(host.mayGoOn());
+    CHECK_FALSE(host.skippedElsewhere());
+
+    // A second movie, which the guest skips before the host's ends: the host's copy is to end as a skip.
+    g.games.host.gameEvents().raise(
+        coney::GameEvent{.kind = coney::GameEventKind::MovieStart, .value = 1, .text = "L2_IN"});
+    host.started("L2_IN");
+    g.run(3);
+    guest.ended("L2_IN", true);
+    g.run(3);
+    CHECK(host.skippedElsewhere());
+    host.ended("L2_IN", true);
+    CHECK(host.mayGoOn());
+}
+
+// Expected: unverified, #1530 (Coney's own; a guest's MovieDone names the host's movie by its MovieStart's step)
+TEST_CASE("a guest knows the host's newest movie by the step its MovieStart came in", "[net][net_play][level][movie]") {
+    LevelGames g;
+    g.hostPlays("level1", 1);
+    g.games.connect();
+    g.run(12);
+    CHECK_FALSE(g.games.guest.hostMovie().has_value());
+    const std::uint32_t step = g.games.host.startMovie();
+    g.games.host.gameEvents().raise(
+        coney::GameEvent{.kind = coney::GameEventKind::MovieStart, .value = 1, .text = "L1_OUT"});
+    g.run(3);
+    const std::optional<coney::net::HostMovie> movie = g.games.guest.hostMovie();
+    REQUIRE(movie.has_value());
+    // NOLINTBEGIN(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty, unseen by clang-tidy
+    CHECK(movie->step == step);
+    CHECK(movie->name == "L1_OUT");
+    // NOLINTEND(bugprone-unchecked-optional-access)
+    CHECK_FALSE(g.games.host.hostMovie().has_value()); // a host has no host's movie
 }

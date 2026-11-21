@@ -348,6 +348,9 @@ std::expected<graphics::SpriteSheet, Error> GameSession::loadSheet(std::string_v
 
 std::expected<std::unique_ptr<GameMode>, Error> GameSession::loadLevel(const LevelStart& start,
                                                                        const ScriptedCast& cast) {
+    // Network play follows every load gameplay starts, whether or not it loads (NetLevels).
+    ++m_levelStarts;
+    m_lastLevelStart.emplace(start.level, start.checkpoint);
     auto mode = PlayLevelMode::create(m_renderer, m_wad, start.level, m_budget, m_log, playerStartOf(start),
                                       playerSetupOf(start, *cast.recorded), &cast);
     if (!mode) {

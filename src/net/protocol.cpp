@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <expected>
 #include <limits>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -421,6 +422,8 @@ bool validLevelName(std::string_view name) {
     }
     return true;
 }
+
+std::optional<std::string> levelNameOf(std::string_view /*level*/) { return std::nullopt; }
 
 std::string_view describe(RejectReason reason) {
     switch (reason) {

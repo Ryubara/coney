@@ -141,6 +141,11 @@ class GameSession {
     [[nodiscard]] GameplayMode& gameplay() { return m_flow->gameplay(); }
     /// Whether the next step is a frame of play: gameplay on top of the stack with a level playing.
     [[nodiscard]] bool inPlay() const;
+    /// How many level loads gameplay has started (a level change and a checkpoint restart count alike): what network
+    /// play's NetLevels follows (docs/guides/multiplayer.md#levels).
+    [[nodiscard]] std::uint64_t levelStarts() const { return m_levelStarts; }
+    /// The level and checkpoint of the newest of those loads; nothing before the first.
+    [[nodiscard]] const std::optional<std::pair<std::string, int>>& lastLevelStart() const { return m_lastLevelStart; }
     /// The play mode of the level in gameplay; null when none is loaded.
     [[nodiscard]] PlayLevelMode* play();
     /// The movie player.
@@ -173,6 +178,8 @@ class GameSession {
     std::shared_ptr<HumansTrace> m_humansTrace;
     net::GameHumans* m_netHumans = nullptr; // setNetHumans()
     std::optional<std::string> m_pendingLevel;
+    std::uint64_t m_levelStarts = 0;                             // levelStarts()
+    std::optional<std::pair<std::string, int>> m_lastLevelStart; // lastLevelStart()
     int m_pendingCheckpoint = 1;
     std::optional<std::pair<std::string, bool>> m_pendingMovie; // playDebugMovie(): the name and the captions switch
     std::optional<std::vector<std::string>> m_discMovies;

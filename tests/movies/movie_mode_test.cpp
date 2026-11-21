@@ -4,6 +4,7 @@
 #include "movies/movie_mode.h"
 
 #include <cstdint>
+#include <format>
 #include <map>
 #include <memory>
 #include <span>
@@ -403,4 +404,62 @@ TEST_CASE("movie player: a debug request can show ordinary captions with the sub
         CHECK((h.player->caption() != nullptr) == always);
         CHECK(h.player->counts().captionsShown == (always ? 1U : 0U));
     }
+}
+
+// Expected: unverified, #1530 (Coney's own network play; docs/guides/multiplayer.md#levels: a host's movie waits for
+// every player's end or skip, and a player's skip ends it)
+TEST_CASE("movie player: in a session a movie reports its start and end and waits for the other players before leaving",
+          "[movies][net]") {
+    Harness h;
+    std::vector<std::string> calls;
+    bool othersDone = false;
+    h.player->setSync(coney::movies::MovieSync{
+        .started = [&calls](std::string_view name) { calls.push_back(std::format("start {}", name)); },
+        .ended = [&calls](std::string_view name,
+                          bool skipped) { calls.push_back(std::format("end {}{}", name, skipped ? " skipped" : "")); },
+        .skippedElsewhere = [] { return false; },
+        .mayGoOn = [&othersDone] { return othersDone; },
+    });
+    h.player->playMovie("PLOGO");
+    // The movie's 20 steps, then it waits on a black screen while the others still watch theirs.
+    for (int step = 0; step < 30; ++step) {
+        h.step();
+    }
+    CHECK(h.stack.top() == h.player.get());
+    CHECK(h.below.updates == 0);
+    CHECK(calls == std::vector<std::string>{"start PLOGO", "end PLOGO"});
+    othersDone = true;
+    CHECK(h.runToEnd() == 1);
+    // A debug movie is this game's own: nobody is told and nothing waits.
+    othersDone = false;
+    h.player->playMovie("L1_IN", coney::movies::MovieRequest{.debug = true});
+    CHECK(h.runToEnd() == 20);
+    CHECK(calls.size() == 2);
+}
+
+// Expected: unverified, #1530 (Coney's own; network-architecture.md#story: any player's skip ends the movie, as any
+// pad's skip does in the original, Movie_CheckSkip 0x0042a820)
+TEST_CASE("movie player: another player's skip ends a skippable movie as a pad's would, never LOGO", "[movies][net]") {
+    Harness h;
+    bool skipped = false;
+    std::vector<std::string> ends;
+    h.player->setSync(coney::movies::MovieSync{
+        .started = {},
+        .ended = [&ends](std::string_view name,
+                         bool wasSkipped) { ends.push_back(std::format("{}{}", name, wasSkipped ? " skipped" : "")); },
+        .skippedElsewhere = [&skipped] { return skipped; },
+        .mayGoOn = [] { return true; },
+    });
+    h.player->playMovie("PLOGO");
+    h.step();
+    h.step();
+    skipped = true;
+    CHECK(h.runToEnd() == 1);
+    CHECK(h.player->counts().skipped == 1);
+    CHECK(ends == std::vector<std::string>{"PLOGO skipped"});
+
+    // LOGO cannot be skipped, by a pad or by another player.
+    h.player->playMovie("LOGO");
+    CHECK(h.runToEnd() == 11);
+    CHECK(ends.back() == "LOGO");
 }

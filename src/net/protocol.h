@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -436,6 +437,13 @@ using Message = std::variant<Hello, Welcome, Reject, Bye, Ping, Pong, InputComma
 /// network can never be a path (no slash, no dot, so no "..") or hold a NUL or a control byte.
 /// @coney-only network play; the original has none
 [[nodiscard]] bool validLevelName(std::string_view name);
+
+/// The name a LoadLevel carries for the level the host's game started as `level`: an original level's name (`level34`)
+/// as it is, and a path, such as a story mod's mission level (`levels/alley.clevel`,
+/// docs/guides/studio/mission-mods.md#story-manifest), as its file name up to the first dot (`alley`). Nothing when
+/// that is not a name validLevelName() accepts, so the guests cannot be told.
+/// @coney-only network play; the original has none
+[[nodiscard]] std::optional<std::string> levelNameOf(std::string_view level);
 
 /// Short English text for the Network page and the log.
 [[nodiscard]] std::string_view describe(RejectReason reason);

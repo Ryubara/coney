@@ -23,6 +23,7 @@ MissionFailedMode::MissionFailedMode(graphics::RenderDevice& device, PauseSheetL
 
 void MissionFailedMode::launch(std::string_view reason) {
     m_reason = reason;
+    ++m_launches; // Coney's count, for a network host's guests (launches())
     m_log(std::format("mission failed: reason of {} bytes\n", reason.size()));
     if (m_stack.topId() != kId) {
         m_stack.push(*this);

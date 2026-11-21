@@ -119,6 +119,8 @@ void NetGame::afterStep(NetPlay& net) {
     m_humans.setCapturing(m_proofNeedsHumans || session);
 }
 
+bool NetGame::holdsStep(bool sessionHolds) { return sessionHolds; }
+
 void NetGame::note(std::string_view line) {
     if (!m_record) {
         return;

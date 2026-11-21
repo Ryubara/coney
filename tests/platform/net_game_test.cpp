@@ -11,6 +11,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -136,4 +137,45 @@ TEST_CASE("NetGame records each step's remote pad and network play's notes", "[n
     auto replay = coney::net::SessionReplay::parse(readText(path));
     REQUIRE(replay.has_value());
     CHECK(replay->steps() == 2);
+}
+
+TEST_CASE("NetGame records the steps the loading barrier held, and a replay of the record holds the same steps",
+          "[net][net_game][level]") {
+    // Expected: unverified, #1530 (Coney's own proof files; docs/guides/multiplayer.md#replays)
+    TempDir dir;
+    const std::filesystem::path path = dir.path() / "record.txt";
+    HeldPads pads;
+    std::vector<bool> heldLive;
+    {
+        Options options;
+        options.netRecordFile = path.string();
+        auto opened = NetGame::open(options);
+        REQUIRE(opened.has_value());
+        NetGame& game = **opened;
+        game.setInner(&pads);
+        // Steps 1 and 2 are held by the session; the gate is asked once a step, after its pads.
+        for (std::uint64_t step = 0; step < 4; ++step) {
+            (void)game.sample(step);
+            heldLive.push_back(game.holdsStep(step == 1 || step == 2));
+        }
+    }
+    CHECK(heldLive == std::vector<bool>{false, true, true, false});
+    const std::string record = readText(path);
+    CHECK(record.find(coney::net::formatHoldLine(1) + "\n") != std::string::npos);
+    CHECK(record.find(coney::net::formatHoldLine(2) + "\n") != std::string::npos);
+    CHECK(record.find(coney::net::formatHoldLine(0)) == std::string::npos);
+
+    // The replay has no session: it holds where the record says, whatever it is told.
+    Options replayOptions;
+    replayOptions.netReplayFile = path.string();
+    auto replayed = NetGame::open(replayOptions);
+    REQUIRE(replayed.has_value());
+    NetGame& replay = **replayed;
+    replay.setInner(&pads);
+    std::vector<bool> heldReplay;
+    for (std::uint64_t step = 0; step < 4; ++step) {
+        (void)replay.sample(step);
+        heldReplay.push_back(replay.holdsStep(false));
+    }
+    CHECK(heldReplay == heldLive);
 }

@@ -92,6 +92,8 @@ std::string formatEventLine(std::uint32_t step, std::string_view text) {
     return std::format("{} {} {}", kEventWord, step, text);
 }
 
+std::string formatHoldLine(std::uint32_t /*step*/) { return {}; }
+
 std::expected<RecordLine, Error> parseRecordLine(std::string_view text) {
     const auto invalid = [text] {
         return std::unexpected(Error{ErrorCode::Invalid, std::format("not a session record line: '{}'", text)});
@@ -153,7 +155,7 @@ std::expected<SessionReplay, Error> SessionReplay::parse(std::string_view text) 
             return std::unexpected(Error{ErrorCode::Invalid, std::format("line {}: {}", number, read.error().message)});
         }
         if (read->kind != RecordLine::Kind::Pad) {
-            continue; // a note of the session; the pads alone change the game
+            continue; // a note of the session; the pads and the held steps alone change the game
         }
         if (!replay.m_pads.emplace(read->step, read->pad).second) {
             return std::unexpected(

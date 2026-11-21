@@ -56,6 +56,13 @@ enum class ClientEnd : std::uint8_t {
     ProtocolError,  ///< the server sent something that does not decode or comes out of turn
 };
 
+/// A movie the host's game started (its MovieStart event): what a client's MovieDone names it by.
+/// @coney-only network play; the original has none
+struct HostMovie {
+    std::uint32_t step = 0; ///< the server's step its MovieStart came in
+    std::string name;       ///< the movie's name
+};
+
 /// A client's session layer: connects, says Hello, waits for Welcome or Reject, keeps the connection alive with
 /// Pings and notices when the server goes quiet, all counted in fixed steps. It knows nothing of the game; later
 /// layers send input commands and receive snapshots over the same connection.
@@ -129,6 +136,9 @@ class NetClient {
     void levelLoaded(std::uint32_t load);
     /// The ends of the host's missions since the last call, oldest first.
     [[nodiscard]] std::vector<MissionEnd> takeMissionEnds() { return std::exchange(m_missionEnds, {}); }
+    /// The host's newest movie this session: the server's step its MovieStart event came in and the movie's name, which
+    /// this client's own copy names in its movieDone(). Nothing before the first.
+    [[nodiscard]] const std::optional<HostMovie>& hostMovie() const { return m_hostMovie; }
     /// This client's copy of the host's movie of `movieStep` (the host's step its MovieStart came in) has ended, or its
     /// player skipped it: tells the server at once (MovieDone). Nothing happens when not Connected.
     void movieDone(std::uint32_t movieStep, bool skipped);
@@ -170,6 +180,7 @@ class NetClient {
     std::optional<LoadLevel> m_levelOrder; // takeLevelOrder()
     std::optional<LoadLevel> m_loading;    // loadingLevel()
     std::vector<MissionEnd> m_missionEnds; // takeMissionEnds()
+    std::optional<HostMovie> m_hostMovie;  // hostMovie()
 };
 
 } // namespace coney::net
