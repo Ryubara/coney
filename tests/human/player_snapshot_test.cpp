@@ -26,6 +26,7 @@ TEST_CASE("a snapshot's camera up is world up unless set, and is mixed between t
 }
 
 TEST_CASE("between two steps across a camera cut the view is the new camera's, not a sweep", "[player]") {
+    // Expected: rendering.md#interpolation, Coney's own (drawing between steps)
     PlayerSnapshot before;
     before.feet = Vec3{0.0F, 0.0F, 0.0F};
     before.cameraEye = Vec3{0.0F, -5.0F, 2.0F};
@@ -47,6 +48,7 @@ TEST_CASE("between two steps across a camera cut the view is the new camera's, n
 }
 
 TEST_CASE("a human's feet between two steps are where his whole snapshot's blend puts them", "[player]") {
+    // Expected: rendering.md#interpolation, Coney's own (drawing between steps)
     // What the render's cull before posing reads of a human it may leave unposed (graphics::cullHuman()).
     coney::human::TargetSnapshot before;
     before.feet = Vec3{2.0F, -4.0F, 1.0F};

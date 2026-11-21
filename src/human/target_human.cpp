@@ -23,6 +23,7 @@ constexpr std::array<std::uint32_t, 0> kNoClips{};
 
 } // namespace
 
+// @coney-only render glue: drawing between two steps (docs/research/rendering.md#interpolation)
 TargetSnapshot interpolate(const TargetSnapshot& previous, const TargetSnapshot& current, float alpha) {
     if (alpha >= 1.0F) {
         return current;

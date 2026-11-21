@@ -92,7 +92,7 @@ back, then against the draw distance plus the radius:
 
 **What it saves.** The sweep's brawl of 1000 fighters in `level95` (500 enemies, 500 allies, rows of 25, lockstep,
 960 × 720, a `playtest` build of `main` at `c0285b415` and of the change, the main thread's CPU time, the median of two
-interleaved runs, 2026-11-21): with the view pinned on the crowd `render.skin` goes from 27.3 to 15.7 ms, the render
+interleaved runs): with the view pinned on the crowd `render.skin` goes from 27.3 to 15.7 ms, the render
 from 34.4 to 21.2 ms and the draws from 1389 to 1158; with the follow camera `render.skin` from 27.4 to 13.1 ms, the
 render from 34.5 to 17.9 ms and the draws from 1290 to 931. The last frame's screenshot hashes the same before and
 after with either camera. The draw distance it tests is `graphics::humanDrawDistance()`, the value the fade reads

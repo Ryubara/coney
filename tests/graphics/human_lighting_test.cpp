@@ -59,6 +59,7 @@ TEST_CASE("the blob shadow is a near-black sprite at half alpha on RenderWare's 
 }
 
 TEST_CASE("A human fades out from 60 to 70 m from the camera") {
+    // Expected: graphics.md#human-draw, confirmed (runtime) (0x0050cc60, 0x0050cc68)
     CHECK(coney::graphics::humanDistanceFade(10.0F) == Approx(1.0F));
     CHECK(coney::graphics::humanDistanceFade(60.0F) == Approx(1.0F));
     CHECK(coney::graphics::humanDistanceFade(65.0F) == Approx(0.5F));
@@ -67,6 +68,8 @@ TEST_CASE("A human fades out from 60 to 70 m from the camera") {
 }
 
 TEST_CASE("A human is culled before posing only when no pose of his can be in the picture") {
+    // Expected: graphics.md#human-draw, Coney's choice (the draw distance from there; the sphere and the view test are
+    // Coney's cull before posing, docs/engine/renderer-performance.md#cull-before-posing)
     using coney::graphics::cullHuman;
     using coney::graphics::HumanCull;
     using W = coney::world::Vec3;
