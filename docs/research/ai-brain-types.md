@@ -124,7 +124,7 @@ limited to the gang: it is event `0x14` (20, violence) sent to everyone nearby. 
       `+0x138` (event 20's radius, 20 m by default). So the reach is min(range, the receiver's `+0x138`).
     - Both distances are 3D: `Humans_FindAhead` sums x, y and z squared (`vsub.xyz`, then `vaddy` and `vaddz`,
       `0x00227518`-`0x00227530`) and stores that square beside each human for the filter. Coney measures them in plan
-      (a stand-in, issue #1594).
+      (a stand-in, marked at `broadcastHelpCall` and `humansAround`).
 3. **The ranges at the call sites**:
     - 5 m: `Brain_CallForHelp`.
     - 10 m: the Grabbed and Mounted goals (a civilian held).
