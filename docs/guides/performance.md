@@ -64,10 +64,8 @@ uv run --project python coney-tools perf bench --out ../../scratch/perf --headle
 
 **Measure the right build.** The `dev` preset is a Debug build, several times slower than an optimised one and not
 what a player runs; measure the `playtest` preset (`RelWithDebInfo`: optimised, with debug information and the debug
-tools, compiled with `/Ob2` and linked as the release build is: [What `playtest` compiles
-with](building.md#playtest-flags)) and say so. The `release` preset is the player's build: it has no debug tools, so
-it refuses `--bench` ([The debug tools and the game](building.md#debug-tools)). The report's `build` field names the
-build type.
+tools) and say so. The `release` preset is the player's build: it has no debug tools, so it refuses `--bench`
+([The debug tools and the game](building.md#debug-tools)). The report's `build` field names the build type.
 
 **Measure on a quiet machine.** The times are real time on a shared computer. Numbers taken while other builds run
 are noisy (on the agents' machine a dozen builds may be running): check `coney-tools build status` first, run each
@@ -358,11 +356,43 @@ lockstep frame went from 38.9 to 24.3 ms.
 
 **What is left.** A step of the brawl is now `humans.state` 8.2 ms (3.5 ms of it the strike tests, which test a
 striking human's capsules against every opposed human; the rest the walking bodies' sweeps against every other
-human's capsule), `humans.actions` 5.3 ms (2.6 ms gathering, each pair still two hash lookups), `humans.brains` 2.7 ms
+human's capsule), `humans.actions` 5.3 ms (2.6 ms gathering, each pair still two hash lookups, since
+[#1551](issue:1551) none: [The brain lookup](#brain-lookup)), `humans.brains` 2.7 ms
 and the fighters' pose snapshots 0.8 ms; the render is 10.6 ms, of which posing the 313 humans is 7.9 ms. The worst
 real-time frames left are the ones that run two steps while many fighters strike at once (the strike tests up to 17 ms
 a step). The sweeps and strikes are port code of the original's pair loops, so a broad phase that skips the far pairs
 without changing a result is its own task.
+
+### The brain lookup without a hash table (#1551) {#brain-lookup}
+
+Whether two humans may fight (`human::Humans::opposed`) and whether one is a threat to the other each ask
+`ai::Brains::find` for both humans' brains, for every pair of humans every step. Since #1031 the lookup was a hash
+table keyed by the human's address (`std::unordered_map`), and MSVC's hash of a pointer is a byte-by-byte FNV hash:
+the #1542 sweep measured the hashing at 30 % of the brawl's step. The table is gone: each human keeps the slot of his
+brain (`human::Human::brainSlot()`, written only by `ai::Brains`, renumbered when a removal closes the slots up), and
+`find` reads the slot and checks it against a small array of each slot's human kept beside the brains. Checking it
+against the brain itself cost a cache miss per lookup: 100 ms a brawl step against 86 ms for a bare pointer, where the
+array is as fast as the pointer. The brain found is the same as before (the first one a human was given); a human with
+brains in two tables at once, which only tests make, is found by a walk over the second table's slots.
+
+Taken on 2026-11-21 from two `playtest` builds in one build folder (`main` at `61ae9883a` and the change on it), the
+sweep's bench (headless, 500 enemies and 500 allies, 25 a row, the main thread's CPU time, best of three interleaved
+runs of 150 steps; the processor at 100 % with other agents' builds). "Engaged" puts every fighter in a gang and scales
+the scan tokens, the sweep's measurement switches, from 15 s after the spawn:
+
+| Step, CPU ms (best / median of runs) | Before | After |
+| --- | --- | --- |
+| Brawl 1000, step | 90.4 / 92.2 | 70.0 / 70.0 |
+| Brawl 1000, `humans.actions` | 76.6 / 78.1 | 56.1 / 56.3 |
+| Engaged 1000, step | 96.7 / 97.1 | 79.1 / 79.9 |
+| Engaged 1000, `humans.actions` | 54.2 / 55.0 | 37.7 / 38.2 |
+
+The step is 23 % shorter in the brawl, 18 % when engaged. The sweep's 30 % (133 to 92 ms) was measured on the
+`playtest` build before [#1552](issue:1552) made it inline as a release does, on an older `main`. The same day's
+`/Ob1` build, before #1552 landed, gave 112 ms before and 86 ms with the sweep's own form (a bare pointer), 23 %: the
+base step had already shortened since the sweep, and inlining shortens it again to 90 ms. Gameplay is unchanged:
+the all-humans trace, the event log and the lockstep digest hash the same before and after, on brawl 300 for 500 steps
+and engaged 300 for 700 steps.
 
 ### The AI fighters page with a crowd (#1031) {#ai-page-1031}
 
