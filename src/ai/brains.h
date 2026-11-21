@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <unordered_map>
 #include <vector>
 
 #include "ai/brain.h"
@@ -36,6 +35,12 @@ class Brains {
   public:
     /// No brains; every brain's and the gangs' rolls seeded through variedSeed() with `variation` (0: as always).
     explicit Brains(std::uint32_t variation = 0);
+    /// Takes its slots off the humans it leaves (they outlive their brains), so none points into a table that is gone.
+    ~Brains();
+    Brains(const Brains&) = delete;
+    Brains& operator=(const Brains&) = delete;
+    Brains(Brains&&) = delete;
+    Brains& operator=(Brains&&) = delete;
     /// Adds a brain for `human` (not owned; it must outlive the brain, or be removed first) as the next slot, of
     /// `type`, fighting by `settings`, its rolls seeded with `seed`.
     /// @coney-only Coney's table of brains; the original fills one of its 60 fixed slots, in code not traced here
@@ -44,8 +49,10 @@ class Brains {
     /// has none.
     /// @coney-only Coney's table of brains; the original frees a fixed slot, in code not traced here
     void remove(const human::Human& human);
-    /// `human`'s brain; null when it has none. Constant time: the opposition test between every two humans asks it
-    /// for both, many times a step (docs/guides/performance.md#crowd-1031).
+    /// `human`'s brain (his first in slot order, when he has two); null when he has none. Constant time: the slot is
+    /// kept on the human (human::Human::brainSlot()), as the opposition test between every two humans asks it for both,
+    /// many times a step (docs/guides/performance.md#brain-lookup). A human with brains in two tables at once (only
+    /// tests make one) holds the slot of one; the other finds his brain by a walk over its slots.
     /// @coney-only lookup in Coney's brain table; the original reaches a human's brain through its own pointer
     [[nodiscard]] Brain* find(const human::Human& human);
     /// Gives every brain, and each added later, `planner` (null for none; it must outlive them or be replaced).
@@ -100,6 +107,11 @@ class Brains {
     [[nodiscard]] const Brain& at(std::size_t index) const { return *m_brains[index]; }
 
   private:
+    // Whether the slot on `human` is this table's: true unless he is one of m_unlinked.
+    [[nodiscard]] bool linked(const human::Human& human) const;
+    // The slot of `human`'s first brain here, by a walk over the slots; nothing for none.
+    [[nodiscard]] std::optional<std::size_t> firstSlotOf(const human::Human& human) const;
+
     // A player brain's books: its enemies are the brains whose target it is.
     // @coney-only Coney's choice of keeping them every step; the original recounts them every 300 updates
     // (docs/research/ai-brain-types.md#think-player)
@@ -129,7 +141,9 @@ class Brains {
     Gangs m_gangs;
     Formations m_formations;
     std::vector<std::unique_ptr<Brain>> m_brains;
-    std::unordered_map<const human::Human*, Brain*> m_byHuman; // each brain by its human, for find()
+    // The humans with a brain here whose slot (human::Human::brainSlot()) another table holds; empty unless a human has
+    // brains in two tables at once. Every other human with a brain here holds the slot of his first one.
+    std::vector<const human::Human*> m_unlinked;
     std::uint64_t m_steps = 0;
     std::uint32_t m_variation = 0;
     RoutePlanner* m_planner = nullptr;
