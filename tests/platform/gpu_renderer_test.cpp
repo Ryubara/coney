@@ -6,12 +6,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <filesystem>
 #include <memory>
 #include <optional>
 #include <span>
 #include <string>
-#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -257,7 +255,9 @@ TEST_CASE("the GPU renderer draws a frame's 2D passes and reads the frame back",
     REQUIRE(started.has_value());
     RenderEngine& engine = **started;
     REQUIRE(engine.frameSize().width == 400);
-    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-2d-capture.png").string();
+    // A folder of its own: runs at once never write the same file (docs/guides/testing.md#capture-paths).
+    const coney::test::TempDir folder;
+    const std::string path = (folder.path() / "capture.png").string();
     engine.requestCapture(0, path);
 
     using coney::graphics::LogicalQuad;
@@ -310,8 +310,6 @@ TEST_CASE("the GPU renderer draws a frame's 2D passes and reads the frame back",
     CHECK(near(pixelAt(rgba, width, 72, 192), fill, 0));  // tested at a half, dropped
     // Tested at 0: a quarter of white over the fill.
     CHECK(near(pixelAt(rgba, width, 328, 192), Rgba{79, 94, 109, 255}, 2));
-    std::error_code ignored;
-    std::filesystem::remove(path, ignored);
 }
 
 TEST_CASE("the GPU renderer hands each frame's logical screen to the frame tap, before the overlays",
@@ -351,7 +349,9 @@ TEST_CASE("the GPU renderer hands each frame's logical screen to the frame tap, 
         tapped = size;
         frame.assign(rgba.begin(), rgba.end());
     });
-    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-tap-capture.png").string();
+    // A folder of its own: runs at once never write the same file (docs/guides/testing.md#capture-paths).
+    const coney::test::TempDir folder;
+    const std::string path = (folder.path() / "capture.png").string();
     engine.requestCapture(0, path);
 
     const coney::graphics::Rgba fill{20, 40, 60, 255};
@@ -375,6 +375,4 @@ TEST_CASE("the GPU renderer hands each frame's logical screen to the frame tap, 
 
     engine.setFrameTap({});
     engine.removeGpuOverlay(overlay);
-    std::error_code ignored;
-    std::filesystem::remove(path, ignored);
 }

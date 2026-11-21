@@ -5,10 +5,8 @@
 // renderer that cannot start here (no display, no OpenGL 3.3, no GPU device) skips its own case, as the other window
 // tests do.
 #include <cstdint>
-#include <filesystem>
 #include <memory>
 #include <string>
-#include <system_error>
 
 #include <SDL3/SDL.h>
 #include <catch2/catch_test_macros.hpp>
@@ -18,6 +16,7 @@
 #include "graphics/render_device.h"
 #include "platform/imgui_overlay.h"
 #include "platform/render_engine.h"
+#include "support/fixtures.h"
 
 using coney::debug::DebugServices;
 using coney::debug::DebugSession;
@@ -42,7 +41,8 @@ FrameStats presentCaptured(RenderEngine& engine, const std::string& path) {
     // Checked by an `if` rather than REQUIRE, which clang-tidy's optional-access check does not read as a guard; the
     // failed check names the missing capture and the empty stats fail the test's comparisons after it.
     if (!captured.has_value() || !captured->has_value()) {
-        FAIL_CHECK("the frame was not captured");
+        FAIL_CHECK("the frame was not captured: " << (captured.has_value() ? captured->error().message
+                                                                           : std::string("no capture was requested")));
         return {};
     }
     return (*captured)->stats;
@@ -69,7 +69,9 @@ void runOverlayOn(RenderBackend backend) {
     ImGuiOverlay& developer = **overlay;
     CHECK_FALSE(developer.visible());
     engine.setPresentOverlay([&developer](coney::graphics::RenderDevice&) { developer.draw(); });
-    const std::string path = (std::filesystem::temp_directory_path() / "coney-overlay-capture.png").string();
+    // A folder of its own: runs at once never write the same file (docs/guides/testing.md#capture-paths).
+    const coney::test::TempDir folder;
+    const std::string path = (folder.path() / "capture.png").string();
 
     // Closed it draws nothing: the frame is the background alone.
     const FrameStats closed = presentCaptured(engine, path);
@@ -99,8 +101,6 @@ void runOverlayOn(RenderBackend backend) {
 
     // The overlay goes before the renderer it draws through.
     engine.setPresentOverlay({});
-    std::error_code ignored;
-    std::filesystem::remove(path, ignored);
 }
 
 } // namespace
@@ -147,7 +147,9 @@ TEST_CASE("two overlays on the GPU renderer each draw, and one going away leaves
             (*second)->draw();
         }
     });
-    const std::string path = (std::filesystem::temp_directory_path() / "coney-overlay-two-capture.png").string();
+    // A folder of its own: runs at once never write the same file (docs/guides/testing.md#capture-paths).
+    const coney::test::TempDir folder;
+    const std::string path = (folder.path() / "capture.png").string();
 
     CHECK(presentCaptured(engine, path).notBackground == 0);
     (*first)->setVisible(true);
@@ -166,6 +168,4 @@ TEST_CASE("two overlays on the GPU renderer each draw, and one going away leaves
 
     engine.setPresentOverlay({});
     second->reset();
-    std::error_code ignored;
-    std::filesystem::remove(path, ignored);
 }
