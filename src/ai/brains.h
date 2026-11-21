@@ -36,6 +36,7 @@ class Brains {
     /// No brains; every brain's and the gangs' rolls seeded through variedSeed() with `variation` (0: as always).
     explicit Brains(std::uint32_t variation = 0);
     /// Takes its slots off the humans it leaves (they outlive their brains), so none points into a table that is gone.
+    /// @coney-only bookkeeping of Coney's brain table
     ~Brains();
     Brains(const Brains&) = delete;
     Brains& operator=(const Brains&) = delete;
@@ -108,8 +109,10 @@ class Brains {
 
   private:
     // Whether the slot on `human` is this table's: true unless he is one of m_unlinked.
+    // @coney-only bookkeeping of Coney's brain table
     [[nodiscard]] bool linked(const human::Human& human) const;
     // The slot of `human`'s first brain here, by a walk over the slots; nothing for none.
+    // @coney-only bookkeeping of Coney's brain table
     [[nodiscard]] std::optional<std::size_t> firstSlotOf(const human::Human& human) const;
 
     // A player brain's books: its enemies are the brains whose target it is.
