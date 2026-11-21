@@ -71,7 +71,7 @@ std::expected<LevelScenery, Error> loadLevelScenery(RenderEngine& engine, const 
     // The level file, read after the worlds as LoadLevel does.
     std::unique_ptr<world::LevelObject> level;
     if (wad.lookup(std::string(name) + ".lev")) {
-        auto loaded = loadLevel(wad, name, engine.drawsPixels());
+        auto loaded = loadLevel(wad, name, engine.drawsPixels(), &engine.sceneAssets());
         if (!loaded) {
             return std::unexpected(std::move(loaded.error()));
         }

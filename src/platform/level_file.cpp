@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/level_file.h"
 
+#include <array>
 #include <format>
 #include <optional>
 #include <string>
@@ -128,10 +129,50 @@ void addLevelFileReaders(chunk::ChunkHandlerTable& table) {
     world::addLevelFileHandlers(table, linkLevelModel);
 }
 
-void holdLevelMeshes(world::LevelObject& /*level*/, SceneAssets& /*assets*/) {}
+LevelAtomicObject::~LevelAtomicObject() {
+    if (m_assets == nullptr) {
+        return;
+    }
+    removeObjectMesh(*m_assets, m_meshes);
+    for (const graphics::TextureId id : m_textures) {
+        m_assets->removeTexture(id);
+    }
+}
+
+void LevelAtomicObject::holdIn(SceneAssets& assets) {
+    if (m_assets != nullptr) {
+        return;
+    }
+    m_assets = &assets;
+    // The materials' textures first: SceneAssets::addAtomic() notes only the ids of textures already held.
+    const std::array<const rw::Atomic*, 2> atomics{m_atomic.atomic(), dualLayerOf(m_atomic.atomic())};
+    for (const rw::Atomic* atomic : atomics) {
+        if (atomic == nullptr || atomic->geometry == nullptr) {
+            continue;
+        }
+        const rw::Geometry& geometry = *atomic->geometry;
+        for (rw::int32 m = 0; m < geometry.matList.numMaterials; ++m) {
+            if (rw::Texture* texture = geometry.matList.materials[m]->texture; texture != nullptr) {
+                if (auto id = assets.addTexture(*texture); id && id->valid()) {
+                    m_textures.push_back(*id);
+                }
+            }
+        }
+    }
+    m_meshes = addObjectMesh(assets, *m_atomic.atomic());
+}
+
+void holdLevelMeshes(world::LevelObject& level, SceneAssets& assets) {
+    for (chunk::LoadedObject* object :
+         {level.levelWorld.get(), level.skyline.model.get(), level.skyBox.model.get(), level.cloudBox.model.get()}) {
+        if (auto* model = dynamic_cast<LevelAtomicObject*>(object); model != nullptr) {
+            model->holdIn(assets);
+        }
+    }
+}
 
 std::expected<std::unique_ptr<world::LevelObject>, Error> loadLevel(const io::Wad& wad, std::string_view level,
-                                                                    bool forDrawing, SceneAssets* /*assets*/) {
+                                                                    bool forDrawing, SceneAssets* assets) {
     installGlobalTextureLookup();
     const std::string file = std::string(level) + ".lev";
     auto entry = wad.lookup(file);
@@ -147,6 +188,10 @@ std::expected<std::unique_ptr<world::LevelObject>, Error> loadLevel(const io::Wa
     auto loaded = world::loadLevelFile(*stream, table);
     if (!loaded) {
         return std::unexpected(Error{loaded.error().code, file + ": " + loaded.error().message});
+    }
+    // Held for the frame description while the PS2 rasters are as loaded, before any conversion for drawing.
+    if (assets != nullptr) {
+        holdLevelMeshes(**loaded, *assets);
     }
     if (forDrawing) {
         world::LevelObject& object = **loaded;

@@ -117,8 +117,8 @@ class WorldRenderer {
     /// (docs/engine/renderer.md#comparing), which has no window.
     /// @coney-only the draw-stream hashes' synthetic scenes; the original has no headless renderer
     void recordHeadless(bool on) { m_recordHeadless = on; }
-    /// Chooses whether render() leaves out the level's background (sky, clouds, skyline, light glows) and the coronas,
-    /// which the GPU renderer does not draw yet: `--scene-only` (docs/engine/renderer.md#comparing).
+    /// Chooses whether render() leaves out the coronas, which the GPU renderer does not draw yet: `--scene-only`
+    /// (docs/engine/renderer.md#comparing). The level's background is drawn either way.
     /// @coney-only a developer's test aid; the original has none
     void sceneOnly(bool on) { m_sceneOnly = on; }
 
@@ -127,11 +127,19 @@ class WorldRenderer {
 
   private:
     /// The level's background, before the world: the sky box and the turning cloud box round the camera, then the
-    /// skyline in place from min(39, pendingDistance) to 560, then a Z-only clear so the world covers it. Leaves the
-    /// camera as `view` places it.
+    /// skyline in place from min(39, pendingDistance) to 560, then a Z-only clear so the world covers it, each part a
+    /// scene draw through its own camera in the frame description and the clear a scene pass that clears the depth
+    /// (docs/engine/gpu-renderer.md#scene). Leaves librw's camera and the description's as `view` places them.
     /// @orig 0x0040d0a8 LevelObject_RenderBackground (unknown)
-    void renderBackground(rw::Camera* camera, const world::LevelObject& level, const WorldView& view,
-                          graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs) const;
+    void renderBackground(RenderEngine& engine, rw::Camera* camera, const world::LevelObject& level,
+                          const WorldView& view, float pendingDistance, std::uint64_t nowMs) const;
+
+    /// Draws one of the level's background parts (a LevelAtomicObject; nothing for another object) with the world's
+    /// ambient and directional lights, lit though it has no light flag and its colours as loaded: into the frame
+    /// description as a 3D draw of the meshes holdLevelMeshes() held, in the render states in force; through the
+    /// lighting rig (SceneLighting::drawBackgroundAtomic()) while it holds none or the debug tools' mesh views are on.
+    /// @coney-only the frame description's seam for the background's draws (docs/engine/renderer.md#frame-description)
+    void drawBackgroundPart(RenderEngine& engine, const chunk::LoadedObject* part) const;
 
     /// Fades one sector's atomic in by its material colours' alpha and lights it with the world's lights: recorded
     /// into the frame description as a 3D draw of `mesh` (its meshes by id, docs/engine/renderer.md#frame-description)

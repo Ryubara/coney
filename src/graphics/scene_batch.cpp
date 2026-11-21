@@ -91,9 +91,8 @@ DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, c
 DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, const Transform3d& where,
                      const MeshBounds& bounds, bool alwaysLit) {
     DrawLights out;
-    static_cast<void>(alwaysLit);
-    // A geometry without RenderWare's LIGHT flag takes no light at all (lightingCB).
-    if (!mesh.lit) {
+    // A geometry without RenderWare's LIGHT flag takes no light at all (lightingCB), unless the draw sets it.
+    if (!mesh.lit && !alwaysLit) {
         return out;
     }
     // The mesh's sphere in the world, its radius unscaled (Atomic::getWorldBoundingSphere).

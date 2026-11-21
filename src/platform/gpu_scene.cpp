@@ -421,7 +421,8 @@ void GpuScene::prepareMesh(const GpuMesh& uploaded, const graphics::MeshData& me
     shared.world = graphics::worldMatrixOf(draw.transform);
     shared.viewProjection = graphics::multiply(graphics::projectionOf(camera), graphics::viewMatrixOf(camera));
     shared.skin = {draw.firstBone, look.skinned ? 1U : 0U, 0U, 0U};
-    const graphics::DrawLights lit = graphics::lightsFor(lights, mesh, draw.transform, graphics::boundsOf(draw, mesh));
+    const graphics::DrawLights lit =
+        graphics::lightsFor(lights, mesh, draw.transform, graphics::boundsOf(draw, mesh), draw.material.lit);
     shared.ambient = four(lit.ambient, 1.0F);
     for (std::size_t i = 0; i < lit.count; ++i) {
         const graphics::DrawLight& light = lit.lights[i];

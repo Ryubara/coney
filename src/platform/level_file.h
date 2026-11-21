@@ -35,6 +35,12 @@ class LevelAtomicObject final : public chunk::LoadedObject {
     /// Wraps `atomic`, placed at `frame`; `what` names it for diagnostics ("level model", "level world").
     LevelAtomicObject(WorldAtomic atomic, const world::FrameMatrix& frame, std::string_view what)
         : m_atomic(std::move(atomic)), m_frame(frame), m_what(what) {}
+    /// Lets go of what holdIn() held, before the atomic goes.
+    ~LevelAtomicObject() override;
+    LevelAtomicObject(const LevelAtomicObject&) = delete;
+    LevelAtomicObject& operator=(const LevelAtomicObject&) = delete;
+    LevelAtomicObject(LevelAtomicObject&&) = delete;
+    LevelAtomicObject& operator=(LevelAtomicObject&&) = delete;
     [[nodiscard]] std::string_view describe() const override { return m_what; }
     /// The librw atomic. Valid as long as this object.
     [[nodiscard]] rw::Atomic* atomic() const { return m_atomic.atomic(); }
@@ -42,10 +48,16 @@ class LevelAtomicObject final : public chunk::LoadedObject {
     [[nodiscard]] const world::FrameMatrix& frame() const { return m_frame; }
     /// Places the atomic at `frame` for drawing, leaving frame() as it was loaded.
     void place(const world::FrameMatrix& frame) { m_atomic.setTransform(frame); }
-    /// The atomic's meshes in the scene assets (holdLevelMeshes()); invalid ids while it holds none.
+    /// Holds the atomic and its dual layer in `assets` (addObjectMesh()), with the textures their materials name first
+    /// so the meshes find their ids, until this goes; nothing more when it already holds them. A mesh that does not
+    /// convert keeps no id.
+    void holdIn(SceneAssets& assets);
+    /// The atomic's meshes in the scene assets (holdIn()); invalid ids while it holds none.
     [[nodiscard]] const ObjectMesh& meshes() const { return m_meshes; }
 
   private:
+    SceneAssets* m_assets = nullptr;             // holdIn()'s, null while nothing is held
+    std::vector<graphics::TextureId> m_textures; // the textures holdIn() holds
     ObjectMesh m_meshes;
     WorldAtomic m_atomic;
     world::FrameMatrix m_frame;

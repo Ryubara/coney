@@ -113,7 +113,16 @@ void FrameDescription::setSceneCamera(const SceneCamera& camera) {
     m_passes.emplace_back(ScenePass{camera, false, {}});
 }
 
-void FrameDescription::clearSceneDepth() {}
+void FrameDescription::clearSceneDepth() {
+    // A scene pass with no draw yet clears instead; else the draws after it start a new pass that clears first.
+    if (!m_passes.empty()) {
+        if (auto* last = std::get_if<ScenePass>(&m_passes.back()); last != nullptr && last->draws.empty()) {
+            last->clearDepth = true;
+            return;
+        }
+    }
+    m_passes.emplace_back(ScenePass{m_camera, true, {}});
+}
 
 void FrameDescription::addSceneDraw(Draw3d draw, std::span<const SceneLight> lights,
                                     std::span<const TextureId> textures, std::span<const TextureId> dualTextures,

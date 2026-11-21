@@ -304,6 +304,15 @@ MaterialChange::MaterialChange(rw::Atomic& atomic, const graphics::Material3d& m
         // The colours as the mesh has them: nothing written (the level's background).
         break;
     }
+    // A lit draw of a geometry without RenderWare's LIGHT flag (the level's background) is lit for the draw alone, as
+    // SceneLighting::drawBackgroundAtomic() lit it (docs/research/lighting.md#coneys-implementation).
+    if (material.lit && (geometry->flags & rw::Geometry::LIGHT) == 0) {
+        if (!m_restore) {
+            m_flags = geometry->flags;
+            m_restore = true;
+        }
+        geometry->flags |= rw::Geometry::LIGHT;
+    }
 }
 
 // Puts back what a tint changed: the geometry's flags and the first material's own colour.

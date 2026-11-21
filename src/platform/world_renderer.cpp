@@ -13,6 +13,8 @@
 
 #include "platform/draw_calls.h"
 #include "platform/level_file.h"
+#include "platform/lit_atomic.h"
+#include "platform/object_draw.h"
 #include "world/streamed_world.h"
 
 namespace coney::platform {
@@ -74,23 +76,63 @@ graphics::AlphaTest sceneAlphaTest(rw::uint32 value) {
 // The atomic of a level object's part, or null.
 rw::Atomic* atomicOf(const chunk::LoadedObject* object) { return levelAtomic(object); }
 
-} // namespace
-
-void placeWorldCamera(rw::Camera* camera, const WorldView& view) { placeCamera(camera, view); }
-
-graphics::SceneCamera sceneCameraOf(const WorldView& view) {
+// The frame description's camera as placeCamera() places librw's: at `position` with the view's axes, from `nearClip`
+// to `farClip`, its fog plane at the view's fog start of the far clip.
+graphics::SceneCamera sceneCameraAt(const WorldView& view, world::Vec3 position, float nearClip, float farClip) {
     const auto axis = [](world::Vec3 v) { return std::array<float, 3>{v.x, v.y, v.z}; };
     graphics::SceneCamera camera;
     camera.frame = graphics::Transform3d{.right = axis(view.pose.right),
                                          .up = axis(view.pose.up),
                                          .at = axis(view.pose.forward),
-                                         .position = axis(view.pose.position)};
+                                         .position = axis(position)};
     camera.halfWidth = view.halfWidth;
     camera.halfHeight = view.halfHeight;
-    camera.nearClip = view.nearClip;
-    camera.farClip = view.drawDistance;
-    camera.fogStart = view.drawDistance * view.fogStart; // placeCamera()'s fog plane
+    camera.nearClip = nearClip;
+    camera.farClip = farClip;
+    camera.fogStart = farClip * view.fogStart; // placeCamera()'s fog plane
     return camera;
+}
+
+// Moves librw's camera (replaceCamera()) and the frame description's with it, for the draws that follow.
+void moveCameras(RenderEngine& engine, rw::Camera* camera, const WorldView& view, world::Vec3 position, float nearClip,
+                 float farClip) {
+    replaceCamera(camera, view, position, nearClip, farClip);
+    engine.setSceneCamera(sceneCameraAt(view, position, nearClip, farClip));
+}
+
+} // namespace
+
+void placeWorldCamera(rw::Camera* camera, const WorldView& view) { placeCamera(camera, view); }
+
+graphics::SceneCamera sceneCameraOf(const WorldView& view) {
+    return sceneCameraAt(view, view.pose.position, view.nearClip, view.drawDistance);
+}
+
+void WorldRenderer::drawBackgroundPart(RenderEngine& engine, const chunk::LoadedObject* part) const {
+    const auto* model = dynamic_cast<const LevelAtomicObject*>(part);
+    if (model == nullptr) {
+        return;
+    }
+    rw::Atomic* atomic = model->atomic();
+    // The frame description's draw: the meshes by id where the atomic is placed, its colours as loaded, lit though it
+    // has no light flag, in the states in force; drawn through the lighting rig as before while it has no mesh id or
+    // the debug tools' mesh views are on.
+    const ObjectMesh& mesh = model->meshes();
+    if (!mesh.mesh.valid() || lighting().meshViewsOn()) {
+        lighting().drawBackgroundAtomic(atomic);
+        return;
+    }
+    const rw::Matrix* ltm = atomic->getFrame()->getLTM();
+    const auto axis = [](const rw::V3d& v) { return std::array<float, 3>{v.x, v.y, v.z}; };
+    graphics::Draw3d draw;
+    draw.mesh = mesh.mesh;
+    draw.dualLayer = mesh.dualLayer;
+    draw.transform = graphics::Transform3d{
+        .right = axis(ltm->right), .up = axis(ltm->up), .at = axis(ltm->at), .position = axis(ltm->pos)};
+    draw.material = graphics::Material3d{.colour = graphics::MaterialColour::Own, .lit = true};
+    draw.states = sceneStatesInForce();
+    const std::vector<graphics::SceneLight> lights = lighting().backgroundLights(atomic);
+    engine.drawScene(draw, lights);
 }
 
 world::FrameMatrix cloudFrame(const world::FrameMatrix& base, std::uint64_t nowMs) {
@@ -104,38 +146,33 @@ world::FrameMatrix cloudFrame(const world::FrameMatrix& base, std::uint64_t nowM
         .right = turn(base.right), .up = turn(base.up), .at = turn(base.at), .position = turn(base.position)};
 }
 
-void WorldRenderer::renderBackground(rw::Camera* camera, const world::LevelObject& level, const WorldView& view,
-                                     graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs) const {
-    // 1-2. The background is lit by the world's ambient and directional lights, no point lights.
+void WorldRenderer::renderBackground(RenderEngine& engine, rw::Camera* camera, const world::LevelObject& level,
+                                     const WorldView& view, float pendingDistance, std::uint64_t nowMs) const {
+    // 1-2. The background is lit by the world's ambient and directional lights, no point lights (drawBackgroundPart()).
     // The original's two switches for the sky and the skyline are always 1 (level-loading.md#render-order), so their
     // off branches, which only set the render states, are dead code and not ported.
-    SceneLighting& lit = lighting();
     // 3. The sky box, then the turning cloud box, round the camera with its translation zeroed: near 0.05, far 5;
-    // Z write and fog off, nothing culled.
-    replaceCamera(camera, view, world::Vec3{}, kSkyNearClip, kSkyFarClip);
+    // Z write and fog off, nothing culled. librw's camera and the frame description's move together.
+    moveCameras(engine, camera, view, world::Vec3{}, kSkyNearClip, kSkyFarClip);
     draw::setRenderState(rw::ZWRITEENABLE, 0);
     draw::setRenderState(rw::FOGENABLE, 0);
     draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
-    if (rw::Atomic* sky = atomicOf(level.skyBox.model.get()); sky != nullptr) {
-        lit.drawBackgroundAtomic(sky);
-    }
+    drawBackgroundPart(engine, level.skyBox.model.get());
     if (auto* clouds = dynamic_cast<LevelAtomicObject*>(level.cloudBox.model.get()); clouds != nullptr) {
         clouds->place(cloudFrame(clouds->frame(), nowMs));
-        lit.drawBackgroundAtomic(clouds->atomic());
+        drawBackgroundPart(engine, clouds);
     }
     // 4. The skyline in place, from 39 (or the nearest missing scenery, if nearer) to 560, with Z write on and fog
-    // off; then Z alone is cleared so the world, with its much shorter far clip, covers it where it has geometry.
+    // off; then Z alone is cleared so the world, with its much shorter far clip, covers it where it has geometry: a
+    // frame description step, which the GL3 renderer does at once and the GPU renderer at its pass.
     // Stand-in: the original also tells the PS2 driver the camera's far clip here, which no PC renderer has.
-    replaceCamera(camera, view, view.pose.position, std::min(kSkylineNearClip, pendingDistance), kSkylineFarClip);
+    moveCameras(engine, camera, view, view.pose.position, std::min(kSkylineNearClip, pendingDistance), kSkylineFarClip);
     draw::setRenderState(rw::ZWRITEENABLE, 1);
-    if (rw::Atomic* skyline = atomicOf(level.skyline.model.get()); skyline != nullptr) {
-        lit.drawBackgroundAtomic(skyline);
-    }
+    drawBackgroundPart(engine, level.skyline.model.get());
     draw::setRenderState(rw::FOGENABLE, 1);
-    rw::RGBA clearColour = rw::makeRGBA(fogColour.r, fogColour.g, fogColour.b, fogColour.a); // librw takes it non-const
-    draw::clearCamera(camera, &clearColour, rw::Camera::CLEARZ);
+    engine.clearSceneDepth();
     // 5. The world pass's camera again (stand-in: there is no PS2 driver far clip to put back).
-    replaceCamera(camera, view, view.pose.position, view.nearClip, view.drawDistance);
+    moveCameras(engine, camera, view, view.pose.position, view.nearClip, view.drawDistance);
 }
 
 WorldRenderer::WorldRenderer()
@@ -242,20 +279,21 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
     draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
 
-    // The level's background, before the world (LevelObject_RenderBackground, from the viewport pass).
-    if (level != nullptr && !m_sceneOnly) { // Coney's --scene-only (debug): no background, as on the GPU renderer.
-        renderBackground(camera, *level, view, fogColour, pendingDistance, animationMs);
+    // The world pass's camera, for a renderer that draws the frame description through its own (the GPU renderer).
+    engine.setSceneCamera(sceneCameraOf(view));
+    // The level's background, before the world (LevelObject_RenderBackground, from the viewport pass), which ends with
+    // the world pass's camera again.
+    if (level != nullptr) {
+        renderBackground(engine, camera, *level, view, pendingDistance, animationMs);
         // 5. The level world, the light glows: nothing culled, Z test and write and fog on.
-        if (rw::Atomic* glows = atomicOf(level->levelWorld.get()); glows != nullptr) {
+        if (atomicOf(level->levelWorld.get()) != nullptr) {
             draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
-            lit.drawBackgroundAtomic(glows);
+            drawBackgroundPart(engine, level->levelWorld.get());
             ++m_drawn;
         }
         draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
     }
 
-    // The world pass's camera, for a renderer that draws the frame description through its own (the GPU renderer).
-    engine.setSceneCamera(sceneCameraOf(view));
     // 6. The `s` world. 7. The objects, when there are any. 8. The `d` world, the same way as the `s` world. The
     // sectors' draws carry the world pass's states, with the alpha test as it stands at each.
     graphics::SceneStates states;

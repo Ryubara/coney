@@ -85,6 +85,8 @@ class Gl3Renderer {
 
     // One 2D draw of `frame`.
     void drawOverlay(const graphics::FrameDescription& frame, const graphics::Draw2d& draw, const Target& target);
+    // Clears librw's camera's depth buffer for a scene pass that clears it first (graphics::ScenePass::clearDepth).
+    static void clearDepth(const graphics::FrameDescription& frame, const Target& target);
     // One screen pass.
     void drawScreenPass(const graphics::ScreenPass& pass, const Target& target);
     // One 3D draw of `frame`: a sector's, an object's, a car part's or a human's atomic as its draw function records
@@ -120,6 +122,7 @@ class Gl3Renderer {
 
     std::size_t m_pass = 0;             // the pass drawNew() is in
     std::size_t m_draw = 0;             // the first draw of that pass not drawn yet
+    bool m_passStarted = false;         // whether drawNew() has begun that pass (a scene pass clears once)
     rw::Raster* m_lineRaster = nullptr; // the line blend's copy of the view
     rw::Raster* m_blurRaster = nullptr; // the blur pulse's copies: the view, then its half-size image
     rw::Raster* m_halfRaster = nullptr;
