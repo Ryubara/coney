@@ -8,8 +8,9 @@ of [Coney Studio: mission mods](mission-mods.md), and **Coney's own**: the origi
 plays the chapter its checkpoint names. What the original's hub scripts do, which this rests on, is
 [Story progress: the hub](../../research/story-progress.md#hub).
 
-**Status: built, not yet called.** The rule, the plan and the change to the hub's scripts are built
-([#1302](issue:1302)); the hub load calls them once the natives over the graph exist ([#1300](issue:1300)).
+**Status: built.** The rule, the plan and the change to the hub's scripts are built ([#1302](issue:1302)), and the
+hub load calls them ([#1300](issue:1300)); Coney starts no mods yet, so in the game the hub plays the original
+chapters.
 
 ## Contents {#contents}
 
@@ -60,7 +61,7 @@ the default chapter's red circle.
 ## What is built {#built}
 
 - `story::StoryGraph` (`repo:src/core/story_graph.h`) answers by step: `nextStep`, `offerOf` and
-  `hubChapterAt`. The latest story mission complete is not asked of the graph: [#1300](issue:1300) passes
+  `hubChapterAt`. The latest story mission complete is not asked of the graph: the hub load passes
   `latestMission(...)->id()` (`repo:src/warriors/mod_story_progress.h`, which walks both kinds of progress) to
   `planHubChapter`. `hubOffers()` keeps the 12 rows of the original chapters.
 - `story::planHubChapter` (`repo:src/core/story_chapter.h`) gives the chapter the hub plays, its offer, its mod and its
@@ -68,7 +69,9 @@ the default chapter's red circle.
 - `script::applyHubChapter` (`repo:src/scripting/hub_chapter.h`) applies a plan to the hub's script state after
   `level95.lua`'s main chunk.
 
-Calling them at the hub load, with the session's progress, comes with the natives ([#1300](issue:1300)).
+- `script::enterHub` (`repo:src/scripting/story_natives.h`) is the hub load: after `level95.lua`'s main chunk it
+  plans the chapter at the game state's checkpoint with the session's progress and applies the plan
+  ([#1300](issue:1300)).
 `repo:tests/core/story_chapter_test.cpp` walks a merged story through a new chapter at chapter 6's checkpoint to
 `hub:11`; `repo:tests/scripting/hub_chapter_test.cpp` plays the default chapter, a mod's chapter script and a failing
 one over a synthetic hub.

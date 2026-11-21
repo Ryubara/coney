@@ -42,6 +42,7 @@ add_executable(coney_tests
     core/story_graph_test.cpp
     core/story_manifest_test.cpp
     core/story_merge_test.cpp
+    core/story_numbers_test.cpp
     core/story_view_test.cpp
     core/ui_scale_test.cpp
     core/mesh_view_option_test.cpp
@@ -289,6 +290,7 @@ add_executable(coney_tests
     scripting/disc_script_system_test.cpp
     scripting/hub_bindings_test.cpp
     scripting/hub_chapter_test.cpp
+    scripting/story_natives_test.cpp
     scripting/mission4_bindings_test.cpp
     scripting/mission7_bindings_test.cpp
     scripting/hud_bindings_test.cpp

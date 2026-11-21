@@ -225,7 +225,15 @@ void ScriptSystem::enterLevel(std::string_view level) {
     const auto entry = m_scheduler.enter(ScriptEntry::levelEntry(level));
     // Coney's choice: only the PS2's names; the PC-style paths are a dead branch in this build.
     runFile(kGlobalScript);
+    // Coney's natives over the story graph go over global.lua's functions before the level's script runs.
+    if (m_levelEntryHook) {
+        m_levelEntryHook(level, LevelEntryStage::AfterGlobal);
+    }
     runFile(std::format("{}.lua", level));
+    // The hub's offer goes into fRunMission once level95.lua's main chunk has made it.
+    if (m_levelEntryHook) {
+        m_levelEntryHook(level, LevelEntryStage::AfterLevel);
+    }
 }
 
 // RunFile's run of the loaded bytes as a chunk, a File entry of the scheduler.

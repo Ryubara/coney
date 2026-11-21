@@ -376,6 +376,12 @@ native menus ([Who calls them](../../research/story-progress.md#callers)).
   are. Every lookup keyed by a number (the unlock records, the inventory table `MS`, the tag offsets) has no row for a
   free number and takes the game's own default. The number is never saved: saves, replays and messages use the id.
 
+**Built** ([#1300](issue:1300)): `script::installStoryNatives`, `script::enterHub` and `script::StoryHooks`
+(`repo:src/scripting/story_natives.h`), with the pool and the numbering in `repo:src/core/story_numbers.h`; what each
+does and how it is tested is [Story progress: in Coney](../../research/story-progress.md#coney). Coney's stand-in:
+the pool is also cut to the level table's free records, 17 on the NTSC-U disc, an
+[open question](../../research/story-progress.md#open-questions).
+
 ### The manifest's `[story]` section {#story-manifest}
 
 ```toml
@@ -471,7 +477,8 @@ graph's hash is the seed's.
 story mods in load order and gives the merged graph, the missions placed (each with its manifest entry, for the
 readers below), the refusals with their messages, and whether the session is modded: any story mod given makes it so,
 even one whose missions were all refused. A mod's step carries its story id in `StoryStep::modId`; its level number is
-0 until the natives give it one from the pool ([#1300](issue:1300)), and the new hub chapters play as
+0 until the session gives it one from the pool ([The natives that read it](#graph-natives)), and the new hub
+chapters play as
 [Hub chapters that mod missions open](#hub-chapters) describes. Nothing calls the merge yet: Coney does not start
 mods yet, and the story session holds the seed. `repo:tests/core/story_merge_test.cpp` and
 `repo:tests/core/story_manifest_test.cpp` check each rule above on synthetic manifests.
@@ -725,8 +732,9 @@ Under [#1054](issue:1054), in order; the save format is [#1179](issue:1179)'s.
 
 1. **core: Add the story graph seeded with the original's order** ([#1299](issue:1299), built:
    [In Coney](../../research/story-progress.md#coney)): the chain, its views and the walk and disc tests.
-2. **core: Add native runNextMission and findLastMission over the graph** ([#1300](issue:1300)): the two natives, the
-   hub's offer written into `fRunMission`, level numbers for mod missions from the pool of free numbers 2-59.
+2. **core: Add native runNextMission and findLastMission over the graph** ([#1300](issue:1300), built:
+   [The natives that read it](#graph-natives)): the two natives, the hub's offer written into `fRunMission`, level
+   numbers for mod missions from the pool of free numbers 2-59.
 3. **core: Add the manifest's story section and the story graph merge** ([#1301](issue:1301), built:
    [Merging and refusals](#graph-merge)): `[story]`, anchors, the merge and its refusals.
 4. **core: Add hub chapters that mod missions open** ([#1302](issue:1302), built:

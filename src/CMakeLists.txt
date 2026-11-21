@@ -59,6 +59,7 @@ add_library(coney_core STATIC
     core/story_graph.cpp
     core/story_manifest.cpp
     core/story_merge.cpp
+    core/story_numbers.cpp
     core/story_view.cpp
     core/ui_scale.cpp
     core/sha256.cpp
@@ -243,6 +244,7 @@ add_library(coney_core STATIC
     scripting/mission7_bindings.cpp
     scripting/story_bindings.cpp
     scripting/story_effects_bindings.cpp
+    scripting/story_natives.cpp
     scripting/trigger_bindings.cpp
     scripting/world_bindings.cpp
     warriors/created_humans.cpp

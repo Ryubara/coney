@@ -25,6 +25,7 @@
 #include "core/error.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
+#include "core/story_graph.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
@@ -227,6 +228,25 @@ TEST_CASE("story: the profile manager's exit launches the mission-complete mode 
     CHECK(run.stack.topId() == LevelFlowMode::kId);
     CHECK(run.flow->levelFlow().levelRequests() == std::vector<std::string>{"level1", "level1"});
     CHECK(run.starts.empty());
+}
+
+TEST_CASE("story: every level entry sets Coney's findLastMission and runNextMission natives over global.lua's",
+          "[story_start][story_natives]") {
+    // Expected: mission-mods.md#graph-natives (set after global.lua's main chunk at each level load, mods or none)
+    StoryRun run(storyScript(), true);
+    run.frames(420);
+    run.untilTopLeaves(coney::ProfileManagerMode::kId);
+    run.frames(3);
+    REQUIRE(run.starts.size() == 1);
+    for (const std::string_view name : {"findLastMission", "runNextMission"}) {
+        INFO(name);
+        const auto function = run.flow->scripts().vm().global(name).function();
+        REQUIRE(function != nullptr);
+        CHECK(static_cast<bool>(function->native));
+    }
+    // The session's story is the original's: no story mod is running.
+    CHECK(run.flow->story().hash() == coney::story::StoryGraph::original().hash());
+    CHECK(run.flow->scripts().errors() == 0);
 }
 
 TEST_CASE("story: the level flow pushes gameplay, whose level script places player 1 for the checkpoint",

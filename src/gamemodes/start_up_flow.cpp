@@ -79,6 +79,8 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
     m_context.hud = &m_hud;
     m_hud.setServices(script::hudServicesOf(m_context));
     m_services.attachScripts(&m_scripts);
+    // Coney's findLastMission and runNextMission natives, and the hub's offer, at every level entry.
+    m_storyHooks.attach();
     m_gameplay.setMoviePlayer(&m_services);
     m_missionComplete.setProfiles(m_profiles.get());
     m_memoryCard.setProfiles(m_profiles.get());

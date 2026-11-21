@@ -239,23 +239,39 @@ checks of the last row as a story mission's does.
 
 ## In Coney {#coney}
 
-Coney runs `global.lua` and the hub's scripts as the original does, so the story follows the scripts' own tables:
+Coney runs `global.lua` and the hub's scripts as the original does, with two of `global.lua`'s functions and the
+hub's `fRunMission` rows answered from Coney's story graph (below). The callers are the original's:
 `MissionCompleteMode` calls `UnlockAndLoad` (`repo:src/gamemodes/mission_complete_mode.h`), the pause, mission-failed,
 Rumble result and Armies game-over menus call `runNextMission(0)` (`repo:src/gamemodes/pause_mode.h`,
 `repo:src/gamemodes/rumble_result_mode.h`, `repo:src/gamemodes/armies_game_over_mode.h`), and the level start's
 `UnlockAndLoad` path is `repo:src/gamemodes/level_start.h`. The mission menu's screen is missing: `HUDShowMissionSelect`
-opens nothing yet ([#1071](issue:1071)). Coney's own story graph, which replaces the two Lua tables for mods, is
-designed in [Coney Studio: mission mods](../guides/studio/mission-mods.md#story-graph).
+opens nothing yet ([#1071](issue:1071)). Coney's own story graph, which replaces the two Lua tables, is designed in
+[Coney Studio: mission mods](../guides/studio/mission-mods.md#story-graph).
 
 The graph's data is built: `story::StoryGraph` (`repo:src/core/story_graph.h`) holds the 31 steps of
 [The order](#order) as level and chapter numbers, and gives `runNextMission`'s 20 rows, `findLastMission`'s 19 levels
 and the 12 offers of `fRunMission` as views of that chain. The story session (`StartUpFlow`) holds the original's
 chain; its hash, for a co-op session to compare, is the SHA-256 of a fixed text form (a version line, then each step's
-id, level, checkpoint and side-step mark). Nothing reads it yet: the scripts still run their own tables until the
-natives over the graph ([#1300](issue:1300)) replace them. `repo:tests/core/story_graph_test.cpp` checks each view
-against the rows above and walks the story from an empty profile; `repo:tests/platform/disc_story_graph_test.cpp` runs
-the disc's own `runNextMission` and `findLastMission` against the graph for each prefix of the story complete, and for
-`level64` alone, and prints only how many of the 21 cases agree.
+id, level, checkpoint and side-step mark). `repo:tests/core/story_graph_test.cpp` checks each view against the rows
+above and walks the story from an empty profile; `repo:tests/platform/disc_story_graph_test.cpp` runs the disc's own
+`runNextMission` and `findLastMission` against the graph for each prefix of the story complete, and for `level64`
+alone, and prints only how many of the 21 cases agree.
+
+The scripts read the graph through Coney's natives ([#1300](issue:1300), `repo:src/scripting/story_natives.h`), as
+[The natives that read it](../guides/studio/mission-mods.md#graph-natives) designs them. At every level entry, after
+`global.lua`'s main chunk and before the level's own script, the session (`script::StoryHooks`, held by
+`StartUpFlow`) sets a `findLastMission` and a `runNextMission` native over the Lua functions of those names, mods or
+none; `UnlockAndLoad`, `MissionCompleteUnlocks` and every caller in [Who calls them](#callers) are unchanged and reach
+them by name. `findLastMission` walks the chain latest first and asks the scripts' own `UM_IsLevelComplete` for an
+original mission, the calls the Lua makes in the same order; `runNextMission` keeps the Lua's `LastLevel` rule and
+calls `SetCheckPoint`, `SoundStopMusicTrack`, `MenuLoadLevel` and `HUDLaunchMissionComplete(4)` by name, and loads
+nothing (with a line in the run log) where the Lua's table has no row. After `level95.lua`'s main chunk the hub load
+plans the chapter with `planHubChapter` from `latestMission` and applies it with `applyHubChapter`, which writes the
+chapter's offer into `fRunMission[checkpoint].level`: the row already there for the original chapters.
+`repo:tests/scripting/story_natives_test.cpp` checks the natives against the 20 rows of
+[The four functions](#global-functions) for every prefix of the story, the missing row and the hub's offer, on
+synthetic scripts; the disc test above runs the disc's own two functions and the natives side by side for the same 21
+cases and prints how many agree (21 of 21).
 
 The merge of the story mods' missions into that chain is built too: `story::mergeStory`
 (`repo:src/core/story_merge.h`) places the missions of each mod's `[story]` section
@@ -275,16 +291,27 @@ keeps `MissionBest`'s four described fields. The save system puts a loaded profi
 at each save, entries of mods the session lacks included, and a new profile starts with none; no checkpoint is kept.
 `latestMission` walks the chain latest first, an original mission by its record and a mod's by its entry, so a save
 loaded without one of its story mods goes on from the latest mission present, and `warnMissingStoryMods` names each
-missing mod in the run log. Nothing gives mod missions numbers in the game yet: the natives over the graph
-([#1300](issue:1300)) number them from the pool with `ModStoryProgress::assign` and call the other two.
+missing mod in the run log, at the first level the story enters after the front end.
+
+Mod missions get their numbers once per session, at the first level entry after the preloads have filled the level
+table (`StoryHooks::numberMissions`): the numbers 2-59 that no record uses (`story::levelNumberPool`,
+`repo:src/core/story_numbers.h`), in chain order, each with a level record `level<n>` at a free index of the table and
+its id given to `ModStoryProgress::assign`; the numbers are never saved. A mission past the pool is refused with a
+message and leaves the chain, with the new hub chapter it opened (a replacement gives the original mission its place
+back). **Coney's stand-in:** a mission needs a free record as well as a free number, so the pool is cut to the
+table's free records, 17 of 128 on the NTSC-U disc's table, where the design counts the 45 numbers only
+([Open questions](#open-questions)). The disc test runs each of the 45 numbers through the disc's own `global.lua`:
+`GetLevel` keeps it, `SetupLevelInventory` takes it for a level below 100, and `UnlockAndLoad` completes the mission by
+its id and the natives load the step after it (it prints how many pass: 45 of 45). Coney starts no mods yet, so in
+the game the session's merge is the original's chain and nothing is numbered.
 
 A mission after hub chapter *n* opens a new chapter at *n*'s checkpoint, which the hub tells from chapter *n* by the
 story's progress, not the checkpoint:
 [Hub chapters that mod missions open](../guides/studio/hub-chapters.md) gives the rule and what is built, resting on
 the chapter's file and its configuration as [The hub](#hub) describes them (`Main` and `clubhouse.Setup`,
 `level95.lua:f229` and `f220`; chapter 11's actions).
-The graph answers by step for it, with the latest mission complete from `latestMission` above
-([#1300](issue:1300) passes its id to `planHubChapter`), and `fRunMission`'s view keeps the original chapters' 12 rows.
+The graph answers by step for it, with the latest mission complete from `latestMission` above (the hub load passes
+its id to `planHubChapter`), and `fRunMission`'s view keeps the original chapters' 12 rows.
 
 ## Open questions {#open-questions}
 
@@ -292,6 +319,10 @@ The graph answers by step for it, with the latest mission complete from `latestM
   completion unlocks those records (the `Unlockables` table of `global.lua`) is not traced here.
 - **Hub chapters 11 and 12 at runtime.** That every completion after `level64` leads to chapter 12 is read in the code;
   a run with `level64` complete would confirm it.
+- **More mod missions than free level records.** Coney's level table has the original's 128 records, and the disc's
+  `CfgLevels` fills 111, so at most 17 mod missions get a record and a number, not the 45 free numbers the design
+  counts. Whether Coney's table grows past the original's for mods, or the design's count is cut to the free records,
+  is open; until it is decided, Coney cuts the pool to the free records (`StoryHooks::numberMissions`).
 
 ## How this was checked
 

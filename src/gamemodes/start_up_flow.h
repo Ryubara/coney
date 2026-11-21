@@ -11,6 +11,7 @@
 #include <string_view>
 
 #include "core/story_graph.h"
+#include "core/story_merge.h"
 #include "gamemodes/armies_game_over_mode.h"
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode_stack.h"
@@ -36,6 +37,7 @@
 #include "scripting/message_handlers.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
+#include "scripting/story_natives.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "warriors/profile_store.h"
@@ -98,8 +100,9 @@ class StartUpFlow final : public script::BindingHost {
     [[nodiscard]] script::BindingContext& context() { return m_context; }
     /// The game state (language, level table).
     [[nodiscard]] GameState& state() { return m_state; }
-    /// The story's order for this session (story::StoryGraph): built when the flow is made and fixed while it runs.
-    [[nodiscard]] const story::StoryGraph& story() const { return m_story; }
+    /// The story's order for this session (story::StoryGraph): built when the flow is made and fixed while it runs,
+    /// with its mod missions numbered at the first level entry (script::StoryHooks).
+    [[nodiscard]] const story::StoryGraph& story() const { return m_storyHooks.merge().graph; }
     /// The configuration the stub bindings recorded.
     [[nodiscard]] const script::RecordedCalls& recorded() const { return m_recorded; }
     /// The save system: the profiles on disk, or for the run only.
@@ -228,7 +231,6 @@ class StartUpFlow final : public script::BindingHost {
     GameModeStack& m_stack;
     std::function<void(std::string_view)> m_log;
     GameState m_state;
-    story::StoryGraph m_story = story::StoryGraph::original(); // the session's story order, fixed while it runs
     script::RecordedCalls m_recorded;
     CreatedHumans m_humans;
     world_objects::WorldFlags m_flags;
@@ -246,6 +248,8 @@ class StartUpFlow final : public script::BindingHost {
     script::BindingContext m_context;
     bool m_hasScripts;
     script::ScriptSystem m_scripts; // after everything its bindings refer to
+    // The session's story (the original's chain: Coney starts no mods yet) and its natives at every level entry.
+    script::StoryHooks m_storyHooks{m_scripts, m_state, story::mergeStory(story::StoryGraph::original(), {})};
     ProfileManagerMode m_profileManager;
     GameplayMode m_gameplay;
     LevelFlowMode m_levelFlow;
