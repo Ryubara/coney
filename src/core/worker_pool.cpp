@@ -141,7 +141,8 @@ class WorkerPool::Workers {
 };
 
 // The workers beside the caller; none with one thread.
-WorkerPool::WorkerPool(std::size_t threads) {
+// Stub: `mayStart` is not yet honoured.
+WorkerPool::WorkerPool(std::size_t threads, const std::function<bool(std::size_t worker)>& /*mayStart*/) {
     if (threads > 1) {
         m_workers = std::make_unique<Workers>(threads - 1);
     }

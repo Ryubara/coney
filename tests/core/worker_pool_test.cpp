@@ -92,6 +92,19 @@ TEST_CASE("a worker pool of several threads shares a long loop among them", "[co
     CHECK(threads.size() > 1);
 }
 
+TEST_CASE("a worker pool whose workers cannot all start runs on those that did", "[core][workers]") {
+    // Expected: docs/engine/render-threads.md#workers: a worker the system refuses to start is no failure: the pool
+    // runs on the workers that started, or on the caller alone when none did, and every body still runs once.
+    for (const std::size_t refusedFrom : {std::size_t{0}, std::size_t{1}, std::size_t{2}}) {
+        INFO("workers refused from " << refusedFrom);
+        WorkerPool pool(4, [refusedFrom](std::size_t worker) { return worker < refusedFrom; });
+        CHECK(pool.threads() == refusedFrom + 1);
+        std::vector<int> runs(500, 0);
+        pool.parallelFor(runs.size(), [&runs](std::size_t index) { ++runs[index]; });
+        CHECK(runs == std::vector<int>(runs.size(), 1));
+    }
+}
+
 TEST_CASE("the shared pool's size is half the hardware threads, between 1 and 8", "[core][workers]") {
     // Expected: docs/engine/render-threads.md#workers: the performance sweep's choice (#1542), half the hardware
     // threads (about the physical cores), at most 8, and one thread when the count is unknown.

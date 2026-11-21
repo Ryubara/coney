@@ -18,15 +18,16 @@ namespace coney {
 class WorkerPool {
   public:
     /// A pool of `threads` threads counting the caller (at least 1), so `threads - 1` workers; 1 runs every loop on
-    /// the calling thread.
-    explicit WorkerPool(std::size_t threads);
+    /// the calling thread. A worker the system cannot start leaves the pool on those that did (threads() says how
+    /// many), none at worst, never a failure. `mayStart`, for tests, refuses worker `worker` as the system would.
+    explicit WorkerPool(std::size_t threads, const std::function<bool(std::size_t worker)>& mayStart = {});
     ~WorkerPool();
     WorkerPool(const WorkerPool&) = delete;
     WorkerPool& operator=(const WorkerPool&) = delete;
     WorkerPool(WorkerPool&&) = delete;
     WorkerPool& operator=(WorkerPool&&) = delete;
 
-    /// The threads a loop runs on, the caller's included.
+    /// The threads a loop runs on, the caller's included: fewer than asked when some workers could not start.
     [[nodiscard]] std::size_t threads() const;
 
     /// Runs `body(index)` once for every index below `count`, on the calling thread and the workers, and returns when
