@@ -212,6 +212,44 @@ TEST_CASE("the mesh format takes a geometry's vertices, attributes and meshes as
     geometry->destroy();
 }
 
+TEST_CASE("the mesh format keeps the geometry's lighting flags and its materials' surface properties",
+          "[asset_convert]") {
+    // Expected: ../engine/asset-formats.md#parts: what librw's GL3 device reads when it lights a mesh: the geometry's
+    // LIGHT and MODULATE flags (gl3render.cpp's lightingCB, rwgl3.h's setMaterial) and each material's ambient and
+    // diffuse (setMaterial's u_surfProps).
+    auto engine = startHeadless();
+    rw::Geometry* plain = square(0);
+    auto unlit = meshFromRw(*plain);
+    REQUIRE(unlit.has_value());
+    CHECK_FALSE(unlit->lit);
+    CHECK_FALSE(unlit->modulate);
+    plain->destroy();
+
+    rw::Geometry* geometry = square(rw::Geometry::LIGHT | rw::Geometry::MODULATE);
+    geometry->matList.materials[1]->surfaceProps.ambient = 0.5F;
+    geometry->matList.materials[1]->surfaceProps.diffuse = 0.25F;
+    auto mesh = meshFromRw(*geometry);
+    REQUIRE(mesh.has_value());
+    CHECK(mesh->lit);
+    CHECK(mesh->modulate);
+    REQUIRE(mesh->materials.size() == 2);
+    CHECK(mesh->materials[0].ambient == 1.0F); // librw's material default
+    CHECK(mesh->materials[0].diffuse == 1.0F);
+    CHECK(mesh->materials[1].ambient == 0.5F);
+    CHECK(mesh->materials[1].diffuse == 0.25F);
+    // Each of them changes the mesh's hash.
+    coney::graphics::MeshData changed = *mesh;
+    changed.lit = false;
+    CHECK(coney::graphics::hashMesh(changed) != coney::graphics::hashMesh(*mesh));
+    changed = *mesh;
+    changed.modulate = false;
+    CHECK(coney::graphics::hashMesh(changed) != coney::graphics::hashMesh(*mesh));
+    changed = *mesh;
+    changed.materials[1].diffuse = 1.0F;
+    CHECK(coney::graphics::hashMesh(changed) != coney::graphics::hashMesh(*mesh));
+    geometry->destroy();
+}
+
 TEST_CASE("the mesh format keeps a strip geometry's strips as librw built them", "[asset_convert]") {
     // Expected: formats/renderware.md#native-geometry, confirmed (code): strips stay strips, the header's indices as
     // they are

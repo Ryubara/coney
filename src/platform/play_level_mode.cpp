@@ -410,6 +410,11 @@ void PlayLevelMode::stepFrozen(const FrameTime& frame) {
     ++m_stats.frames;
 }
 
+void PlayLevelMode::sceneOnly() {
+    m_sceneOnly = true;
+    m_playScenery.sceneOnly();
+}
+
 void PlayLevelMode::pinCamera(const CameraPin& pin) {
     m_pinnedCamera = pin;
     m_print(std::format("camera: pinned at ({:.3f}, {:.3f}, {:.3f}) quaternion ({:.4f}, {:.4f}, {:.4f}, {:.4f}) "
@@ -664,7 +669,8 @@ void PlayLevelMode::render(const RenderTime& time) {
         m_lightingSwitches != nullptr ? m_lightingSwitches->parts : graphics::WorldParts{};
     // Between the `s` and the `d` world (step 7): the humans, the cars' opaque parts, the world objects.
     const auto drawObjects = [this, &drawCars, &parts, alpha] {
-        if (parts.humans) {
+        // `--scene-only` leaves the humans out of the frame description, whatever the World page says.
+        if (parts.humans && !m_sceneOnly) {
             drawCharacter();
         }
         if (!parts.objects) {
@@ -679,6 +685,14 @@ void PlayLevelMode::render(const RenderTime& time) {
     // (graphics.md#a-frame), the blob shadows, and the health rings over them. **Coney's choice**: the coronas, which
     // the original batches between the shadows and the rings, follow the rings (WorldRenderer::render draws them).
     const auto afterWorlds = [this, &drawCars, &snapshot, &blended, &ringFeet, &parts, alpha] {
+        // `--scene-only`: of what follows the worlds, only the cars' glass, which goes into the frame description.
+        if (m_sceneOnly) {
+            if (parts.objects) {
+                const DrawKindScope kind(DrawKind::Objects);
+                drawCars(graphics::CarPass::Glass);
+            }
+            return;
+        }
         std::optional<DrawKindScope> kind(std::in_place, DrawKind::Effects);
         if (m_levelEffects && parts.water) {
             m_levelEffects->drawWater();

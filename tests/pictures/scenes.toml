@@ -57,3 +57,10 @@ renderers = ["gl3", "gpu"]
 name = "test-card-triangles"
 args = ["--test-card", "triangles"]
 renderers = ["gl3", "gpu"]
+
+# The 3D test card: Coney's own meshes and textures through the frame description's scene pass (lights, fog, the GS
+# alpha test, a tint, a dual layer, back-face culling), drawn by both renderers and compared the same way.
+[[scene]]
+name = "test-card-scene"
+args = ["--test-card", "scene"]
+renderers = ["gl3", "gpu"]

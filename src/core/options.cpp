@@ -54,7 +54,7 @@ constexpr std::string_view kUsage =
     "             [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]]\n"
     "             [--give ITEM,COUNT]...\n"
     "             [--trace FILE] [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]]\n"
-    "             [--freeze-world] [--light-trace FILE]]\n"
+    "             [--freeze-world] [--scene-only] [--light-trace FILE]]\n"
     "             [--sandbox [NAME]] [--test-card NAME]\n"
     "             [--assets DIR]\n"
     "             [--event-log FILE] [--pad-pipe] [--trace-humans FILE]\n"
@@ -156,14 +156,16 @@ constexpr std::string_view kUsage =
     "                     (degrees, default 60); a test aid for matching the original's frames\n"
     "  --freeze-world     with --play-level: after the first step nothing in the world moves\n"
     "                     (people, cars, particles, animation, scripts), so every frame is the same\n"
+    "  --scene-only       with --play-level: draw only the world, objects and cars in 3D (no sky,\n"
+    "                     humans, effects, panes or coronas), to compare the GL3 and GPU renderers\n"
     "  --light-trace FILE with --play-level: load the original's light-selection trace (coney-tools\n"
     "                     trace lights) for the Lighting page, beside Coney's lights\n"
     "  --scene NAME       with --play-level levelN: play the in-engine scene NAME (such as l99_c1) at\n"
     "                     once, with stand-ins in its roles and the player in his; a test aid\n"
     "  --sandbox [NAME]   fly round a sandbox test world: default (the default), parkour, or a\n"
     "                     .layout file; needs no disc\n"
-    "  --test-card NAME   draw one of Coney's own 2D test cards: shapes, textures or triangles; needs\n"
-    "                     no disc (the software pictures draw them on both renderers)\n"
+    "  --test-card NAME   draw one of Coney's own test cards: shapes, textures or triangles (2D) or\n"
+    "                     scene (3D); needs no disc (the software pictures draw them on both renderers)\n"
     "  --assets DIR       the folder of Coney's own assets (sandbox layouts and textures), in place\n"
     "                     of the assets folder beside the executable\n"
     "  --render-references DIR\n"
@@ -187,7 +189,8 @@ constexpr std::string_view kUsage =
     "                     shows the frame as drawn\n"
     "  --show-fps         print the frame and step rates once a second\n"
     "  --renderer gl3|gpu draw with librw's OpenGL 3.3 (gl3, the default) or SDL3's GPU API (gpu:\n"
-    "                     Vulkan, Direct3D 12 or Metal; it draws the 2D layers so far); unset,\n"
+    "                     Vulkan, Direct3D 12 or Metal; it draws the 2D layers, the world,\n"
+    "                     objects and cars so far); unset,\n"
     "                     the saved Display/Renderer setting outside test mode, but a saved 1 starts\n"
     "                     gl3, with a warning, while the GPU renderer draws no developer\n"
     "                     overlay\n"
@@ -417,6 +420,9 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     if (options.freezeWorld && !options.playLevel.has_value()) {
         return invalidArgument("--freeze-world needs --play-level: it freezes the level's world");
     }
+    if (options.sceneOnly && !options.playLevel.has_value()) {
+        return invalidArgument("--scene-only needs --play-level: it limits what the level draws");
+    }
     if (options.lightTrace.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--light-trace needs --play-level: the Lighting page compares a level's lights");
     }
@@ -457,16 +463,15 @@ std::expected<void, Error> checkReferenceRenderer(const Options& options) {
     return {};
 }
 
-// Refuses `--renderer gpu` where it cannot work: part of checkCombinations(). It opens a window of its own, hands no
-// frame to the clip recorder, and the reference renders are GL3's offscreen; a screenshot it takes.
+// Refuses `--renderer gpu` where it cannot work: part of checkCombinations(). It opens a window of its own, and the
+// reference renders are GL3's offscreen; a screenshot and a clip (`--record`) it takes.
 std::expected<void, Error> checkRenderer(const Options& options) {
     if (options.renderer != RendererKind::Gpu) {
         return {};
     }
-    if (options.headless || !options.loads.empty() || options.recordPath.has_value() ||
-        options.renderReferences.has_value()) {
-        return invalidArgument("--renderer gpu opens a window and records no clip or reference render, so it cannot "
-                               "be combined with --headless, --load, --record or --render-references");
+    if (options.headless || !options.loads.empty() || options.renderReferences.has_value()) {
+        return invalidArgument("--renderer gpu opens a window and draws no reference render, so it cannot be combined "
+                               "with --headless, --load or --render-references");
     }
     return {};
 }
@@ -1552,6 +1557,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument("--draw-hash given twice");
             }
             options.drawHash = true;
+        } else if (arg == "--scene-only") {
+            if (options.sceneOnly) {
+                return invalidArgument("--scene-only given twice");
+            }
+            options.sceneOnly = true;
         } else if (arg == "--freeze-world") {
             if (options.freezeWorld) {
                 return invalidArgument("--freeze-world given twice");

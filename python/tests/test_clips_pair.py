@@ -167,6 +167,14 @@ def test_coney_records_in_test_mode_with_a_window(checkout: Path) -> None:
     # A run that starts its clip with the first frame of play passes no start.
     first = clips_pair.PairRun("w", "level99", script, seconds=5)
     assert "--record-from-frame" not in clips_pair.coney_arguments(Path("coney.exe"), "H:/", first, Path("/s/t/a.mp4"))
+    assert "--renderer" not in args  # Coney's own choice (GL3 in test mode) unless one is given
+
+
+def test_coney_records_on_the_renderer_it_is_given(checkout: Path) -> None:
+    script = checkout / "tests" / "support" / "walk.txt"
+    run = clips_pair.PairRun("w", "level99", script, seconds=5)
+    args = clips_pair.coney_arguments(Path("coney.exe"), "H:/", run, Path("/s/t/clips/after.mp4"), renderer="gpu")
+    assert args[args.index("--renderer") + 1] == "gpu"
 
 
 def test_the_record_line_gives_the_frames_and_their_hash() -> None:
@@ -481,6 +489,7 @@ class FakeMachine:
         self.busy_seen: list[bool] = []
         self.recorded_seconds: list[int] = []  # each --record-seconds Coney was given
         self.ffmpeg_graphs: list[str] = []  # each FFmpeg argument that trims a panel
+        self.arguments: dict[str, list[str]] = {}
 
     def git(self, folder: Path, args: Sequence[str]) -> str:
         if args[0] == "merge-base":
@@ -508,6 +517,7 @@ class FakeMachine:
     def coney(self, args: Sequence[str], cwd: Path, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
         out = Path(args[args.index("--record") + 1])
         side = out.stem.rsplit("-", 1)[-1]
+        self.arguments[side] = list(args)
         self.events.append(f"record {side} in {'base' if cwd.name.startswith('clips-base-') else 'task'}")
         assert "CONEY_FFMPEG" in env
         self.recorded_seconds.append(int(args[args.index("--record-seconds") + 1]))
@@ -583,6 +593,20 @@ def test_a_pair_builds_both_sides_records_the_same_run_and_stacks_them(
     printed = capsys.readouterr().out
     assert "0x01" in printed
     assert "0x02" in printed
+
+
+def test_a_pair_records_each_side_on_the_renderer_it_names(space: dict[str, Path]) -> None:
+    # A change to the GPU renderer shows its picture after against GL3's before, the reference it matches, while the
+    # merge base cannot record the GPU renderer's.
+    machine = FakeMachine("c" * 40, {"before": "0x01", "after": "0x02"})
+    assert _pair(space, machine, renderers=("gl3", "gpu")) == 0
+    before = machine.arguments["before"]
+    after = machine.arguments["after"]
+    assert before[before.index("--renderer") + 1] == "gl3"
+    assert after[after.index("--renderer") + 1] == "gpu"
+    record = json.loads((space["scratch"] / "my-task" / "clips" / "pair.json").read_text(encoding="utf-8"))
+    assert record["before"]["renderer"] == "gl3"
+    assert record["after"]["renderer"] == "gpu"
 
 
 def test_a_pair_with_the_original_and_a_gif_has_three_panels(space: dict[str, Path]) -> None:

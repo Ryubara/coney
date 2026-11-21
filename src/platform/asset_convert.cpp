@@ -148,6 +148,9 @@ std::expected<graphics::MeshData, Error> meshFromRw(const rw::Geometry& geometry
     mesh.attributes.texCoordSets = static_cast<std::uint8_t>(
         std::clamp<rw::int32>(geometry.numTexCoordSets, 0, static_cast<rw::int32>(graphics::kMeshTexCoordSets)));
     mesh.attributes.skinned = skin != nullptr;
+    // How librw's GL3 device lights and colours it (gl3render.cpp's lightingCB, rwgl3.h's setMaterial).
+    mesh.lit = (geometry.flags & rw::Geometry::LIGHT) != 0;
+    mesh.modulate = (geometry.flags & rw::Geometry::MODULATE) != 0;
 
     // The vertices, what they do not carry left at its neutral value.
     mesh.vertices.resize(count);
@@ -179,7 +182,8 @@ std::expected<graphics::MeshData, Error> meshFromRw(const rw::Geometry& geometry
     for (rw::int32 m = 0; m < geometry.matList.numMaterials; ++m) {
         const rw::Material* material = geometry.matList.materials[m];
         mesh.materials.push_back({rgbaOf(material->color),
-                                  material->texture != nullptr ? std::string(material->texture->name) : std::string()});
+                                  material->texture != nullptr ? std::string(material->texture->name) : std::string(),
+                                  material->surfaceProps.ambient, material->surfaceProps.diffuse});
     }
     const rw::Mesh* meshes = geometry.meshHeader->getMeshes();
     mesh.indices.reserve(geometry.meshHeader->totalIndices);

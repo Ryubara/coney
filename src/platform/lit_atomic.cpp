@@ -112,7 +112,9 @@ void drawLitAtomic(rw::Atomic* atomic, rw::Atomic* layer, rw::World* lights, boo
     const auto render = [routed](rw::Atomic* drawn) {
         if (routed) {
             draw::renderAtomic(drawn);
-        } else {
+        } else if (draw::forwarding()) {
+            // Not with the GPU backend, whose librw is open for data only (its pipelines would call OpenGL):
+            // docs/engine/gpu-renderer.md#scene.
             drawn->render();
         }
     };

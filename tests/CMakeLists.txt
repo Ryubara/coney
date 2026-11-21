@@ -115,6 +115,7 @@ add_executable(coney_tests
     graphics/frame_description_test.cpp
     graphics/frame_stats_test.cpp
     graphics/overlay_batch_test.cpp
+    graphics/scene_batch_test.cpp
     graphics/car_draw_test.cpp
     graphics/throw_arc_test.cpp
     graphics/vertex_light_test.cpp
@@ -251,6 +252,7 @@ add_executable(coney_tests
     platform/frame_recording_test.cpp
     platform/ffmpeg_info_test.cpp
     platform/gpu_renderer_test.cpp
+    platform/gpu_scene_test.cpp
     platform/pixel_texture_test.cpp
     platform/present_mode_test.cpp
     platform/profile_folder_test.cpp

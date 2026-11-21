@@ -7,16 +7,15 @@
 #include <span>
 #include <string>
 #include <utility>
+#include <variant>
 
 #include <SDL3/SDL.h>
 #include <rw.h>
 
+#include "platform/gpu_scene.h"
+#include "platform/gpu_shader.h"
 #include "platform/pixel_texture.h"
 #include "platform/sprite_sheets.h"
-
-#if defined(CONEY_GPU_SHADERS)
-#include "platform/shaders/embedded_shaders.h"
-#endif
 
 namespace coney::platform {
 
@@ -63,47 +62,6 @@ graphics::TextureFilter filterOf(rw::Texture& texture) {
         return graphics::TextureFilter::Linear;
     }
 }
-
-#if defined(CONEY_GPU_SHADERS)
-// The shader `name` made for `device` in the first format it takes; null when SDL refuses it.
-SDL_GPUShader* makeShader(SDL_GPUDevice* device, std::string_view name) {
-    const shaders::Shader* shader = shaders::findShader(name);
-    if (shader == nullptr) {
-        SDL_SetError("no shader %.*s in the build", static_cast<int>(name.size()), name.data());
-        return nullptr;
-    }
-    const SDL_GPUShaderFormat offered = SDL_GetGPUShaderFormats(device);
-    struct Choice {
-        SDL_GPUShaderFormat sdl;
-        shaders::Format ours;
-    };
-    // A device takes the format of its own API: SPIR-V (Vulkan), DXIL (Direct3D 12) or MSL (Metal).
-    constexpr std::array<Choice, 3> choices{{{SDL_GPU_SHADERFORMAT_SPIRV, shaders::Format::Spirv},
-                                             {SDL_GPU_SHADERFORMAT_DXIL, shaders::Format::Dxil},
-                                             {SDL_GPU_SHADERFORMAT_MSL, shaders::Format::Msl}}};
-    for (const Choice& choice : choices) {
-        if ((offered & choice.sdl) == 0) {
-            continue;
-        }
-        const std::span<const std::uint8_t> code = shader->codeFor(choice.ours);
-        const std::string entry(shaders::entryPoint(choice.ours));
-        SDL_GPUShaderCreateInfo info{};
-        info.code_size = code.size();
-        info.code = code.data();
-        info.entrypoint = entry.c_str();
-        info.format = choice.sdl;
-        info.stage =
-            shader->stage == shaders::Stage::Vertex ? SDL_GPU_SHADERSTAGE_VERTEX : SDL_GPU_SHADERSTAGE_FRAGMENT;
-        info.num_samplers = shader->resources.samplers;
-        info.num_storage_textures = shader->resources.storageTextures;
-        info.num_storage_buffers = shader->resources.storageBuffers;
-        info.num_uniform_buffers = shader->resources.uniformBuffers;
-        return SDL_CreateGPUShader(device, &info);
-    }
-    SDL_SetError("the device takes none of SPIR-V, DXIL and MSL");
-    return nullptr;
-}
-#endif
 
 // The vertex shader's uniform: the target's size in pixels.
 struct FrameUniform {
@@ -156,14 +114,23 @@ std::expected<std::unique_ptr<GpuRenderer>, Error> GpuRenderer::create(SDL_GPUDe
                                  "(-DCONEY_SHADERS=OFF)"});
 #else
     std::unique_ptr<GpuRenderer> renderer(new GpuRenderer(device));
-    SDL_GPUShader* vertex = makeShader(device, "overlay2d.vert");
-    SDL_GPUShader* fragment = vertex != nullptr ? makeShader(device, "overlay2d.frag") : nullptr;
-    if (vertex == nullptr || fragment == nullptr) {
-        if (vertex != nullptr) {
-            SDL_ReleaseGPUShader(device, vertex);
+    auto madeVertex = makeShader(device, "overlay2d.vert");
+    auto madeFragment = madeVertex ? makeShader(device, "overlay2d.frag") : std::unexpected(madeVertex.error());
+    if (!madeVertex || !madeFragment) {
+        if (madeVertex) {
+            SDL_ReleaseGPUShader(device, *madeVertex);
         }
         return failure("its shaders");
     }
+    SDL_GPUShader* vertex = *madeVertex;
+    SDL_GPUShader* fragment = *madeFragment;
+    // The depth buffer the scene passes test against: 24 bits where the device has them, as OpenGL's default frame
+    // buffer usually gives, else a 32-bit float.
+    renderer->m_depthFormat =
+        SDL_GPUTextureSupportsFormat(device, SDL_GPU_TEXTUREFORMAT_D24_UNORM, SDL_GPU_TEXTURETYPE_2D,
+                                     SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET)
+            ? SDL_GPU_TEXTUREFORMAT_D24_UNORM
+            : SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
 
     // One vertex buffer of Overlay2dVertex: the position and texture coordinate as floats, the colour as 8-bit
     // channels.
@@ -198,6 +165,9 @@ std::expected<std::unique_ptr<GpuRenderer>, Error> GpuRenderer::create(SDL_GPUDe
     info.multisample_state.sample_count = SDL_GPU_SAMPLECOUNT_1;
     info.target_info.color_target_descriptions = &target;
     info.target_info.num_color_targets = 1;
+    // The render pass has the scene's depth buffer, which the 2D pass neither tests nor writes.
+    info.target_info.depth_stencil_format = static_cast<SDL_GPUTextureFormat>(renderer->m_depthFormat);
+    info.target_info.has_depth_stencil_target = true;
     renderer->m_pipeline = SDL_CreateGPUGraphicsPipeline(device, &info);
     // The pipeline holds what it needs of the shaders.
     SDL_ReleaseGPUShader(device, vertex);
@@ -239,15 +209,25 @@ std::expected<std::unique_ptr<GpuRenderer>, Error> GpuRenderer::create(SDL_GPUDe
         return failure("its white texture");
     }
     renderer->m_white = OwnedTexture(device, made, 1, 1, false);
+
+    // The scene passes' drawing: without it the 2D passes still draw, and the reason is kept.
+    if (auto scene = GpuScene::create(device, static_cast<std::uint32_t>(kTargetFormat), renderer->m_depthFormat);
+        scene) {
+        renderer->m_scene = std::move(*scene);
+    } else {
+        renderer->m_sceneProblem = scene.error().message;
+    }
     return renderer;
 #endif
 }
 
 GpuRenderer::~GpuRenderer() {
     SDL_WaitForGPUIdle(m_device);
+    m_scene.reset();
     m_textures.clear();
     m_white = OwnedTexture();
     m_target = OwnedTexture();
+    m_depth = OwnedTexture();
     for (SDL_GPUSampler* sampler : m_samplers) {
         if (sampler != nullptr) {
             SDL_ReleaseGPUSampler(m_device, sampler);
@@ -265,13 +245,16 @@ GpuRenderer::~GpuRenderer() {
     if (m_upload != nullptr) {
         SDL_ReleaseGPUTransferBuffer(m_device, m_upload);
     }
-    if (m_download != nullptr) {
-        SDL_ReleaseGPUTransferBuffer(m_device, m_download);
+    for (const Download& download : m_downloads) {
+        if (download.buffer != nullptr) {
+            SDL_ReleaseGPUTransferBuffer(m_device, download.buffer);
+        }
     }
 }
 
 bool GpuRenderer::ensureTarget(graphics::Extent size) {
-    if (m_target.texture != nullptr && m_target.width == size.width && m_target.height == size.height) {
+    if (m_target.texture != nullptr && m_depth.texture != nullptr && m_target.width == size.width &&
+        m_target.height == size.height) {
         return true;
     }
     // A colour target the presenter blits from (which needs SAMPLER) and reads back.
@@ -285,7 +268,16 @@ bool GpuRenderer::ensureTarget(graphics::Extent size) {
     info.num_levels = 1;
     SDL_GPUTexture* made = SDL_CreateGPUTexture(m_device, &info);
     m_target = OwnedTexture(m_device, made, size.width, size.height, false);
-    return made != nullptr;
+    // Its depth buffer, the same size.
+    info.format = static_cast<SDL_GPUTextureFormat>(m_depthFormat);
+    info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
+    SDL_GPUTexture* depth = made != nullptr ? SDL_CreateGPUTexture(m_device, &info) : nullptr;
+    m_depth = OwnedTexture(m_device, depth, size.width, size.height, false);
+    if (depth == nullptr) {
+        m_target = OwnedTexture();
+        return false;
+    }
+    return true;
 }
 
 bool GpuRenderer::ensureBuffer(SDL_GPUBuffer*& buffer, std::uint32_t& capacity, std::uint32_t bytes,
@@ -411,14 +403,15 @@ void GpuRenderer::forgetUploads(const std::vector<PendingUpload>& uploads) {
 std::uint32_t GpuRenderer::targetFormat() { return static_cast<std::uint32_t>(kTargetFormat); }
 
 SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphics::FrameDescription& frame,
-                                    graphics::Extent size) {
+                                    graphics::Extent size, const graphics::AssetStore* store) {
     ++m_frame;
     m_textures.evict(m_frame, kTextureKeepFrames);
     if (size.width <= 0 || size.height <= 0 || !ensureTarget(size)) {
         return nullptr;
     }
 
-    // 1. The frame's draws as one batch, and the texture each one samples (uploaded this frame when new).
+    // 1. The frame's 2D draws as one batch, and the texture each one samples (uploaded this frame when new); then the
+    // scene passes' draws, with their meshes and textures.
     const graphics::OverlayBatch batch = graphics::batchOverlays(frame);
     std::vector<PendingUpload> uploads;
     if (!m_whiteUploaded) {
@@ -430,8 +423,13 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
         const graphics::Texture* texture = frame.textureOf(batch.draws[i].texture);
         drawTextures[i] = texture == nullptr ? &m_white : textureFor(texture, uploads);
     }
+    GpuScene* scene = store != nullptr ? m_scene.get() : nullptr;
+    if (scene != nullptr) {
+        scene->prepare(frame, *store, m_frame, m_white.texture);
+    }
 
-    // 2. Everything uploaded through one transfer buffer: the vertices, the indices, then each texture's pixels.
+    // 2. Everything uploaded through one transfer buffer: the vertices, the indices, each texture's pixels, then the
+    // scene's new meshes and textures.
     const auto vertexBytes = static_cast<std::uint32_t>(batch.vertices.size() * sizeof(graphics::Overlay2dVertex));
     const auto indexBytes = static_cast<std::uint32_t>(batch.indices.size() * sizeof(std::uint32_t));
     std::uint32_t total = alignUp(vertexBytes + indexBytes, kTextureAlignment);
@@ -440,11 +438,21 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
         uploadOffsets.push_back(total);
         total = alignUp(total + static_cast<std::uint32_t>(upload.pixels.size()), kTextureAlignment);
     }
+    if (scene != nullptr) {
+        total = scene->layUploads(total);
+    }
+    // Forgets what this frame meant to upload, when nothing of it reached the GPU.
+    const auto forget = [this, &uploads, scene] {
+        forgetUploads(uploads);
+        if (scene != nullptr) {
+            scene->forgetUploads();
+        }
+    };
     const bool drawsSomething = vertexBytes > 0 && indexBytes > 0;
     if (drawsSomething && (!ensureBuffer(m_vertices, m_vertexCapacity, vertexBytes, SDL_GPU_BUFFERUSAGE_VERTEX) ||
                            !ensureBuffer(m_indices, m_indexCapacity, indexBytes, SDL_GPU_BUFFERUSAGE_INDEX))) {
         // No buffer to draw from: forget the pixels this frame meant to upload, as a failed upload buffer does.
-        forgetUploads(uploads);
+        forget();
         return nullptr;
     }
     if (total > 0) {
@@ -455,7 +463,7 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
         if (bytes == nullptr) {
             // Nothing reached the GPU: forget what this frame meant to upload, so the next frame uploads it again
             // rather than drawing it from pixels it never got, and draw nothing from the last frame's buffers.
-            forgetUploads(uploads);
+            forget();
             return nullptr;
         }
         if (vertexBytes > 0) {
@@ -466,6 +474,9 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
         }
         for (std::size_t i = 0; i < uploads.size(); ++i) {
             std::memcpy(bytes + uploadOffsets[i], uploads[i].pixels.data(), uploads[i].pixels.size());
+        }
+        if (scene != nullptr) {
+            scene->writeUploads(bytes);
         }
         SDL_UnmapGPUTransferBuffer(m_device, m_upload);
         SDL_GPUCopyPass* copy = SDL_BeginGPUCopyPass(commands);
@@ -487,10 +498,14 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
             to.d = 1;
             SDL_UploadToGPUTexture(copy, &from, &to, true);
         }
+        if (scene != nullptr) {
+            scene->recordUploads(copy, m_upload);
+        }
         SDL_EndGPUCopyPass(copy);
     }
 
-    // 3. One render pass: the window cleared as the frame starts, then every draw in order.
+    // 3. One render pass: the window cleared as the frame starts and the depth buffer to the far plane, then every
+    // pass in order, the 2D passes' draws and the scene passes' between them.
     const graphics::Rgba clear = graphics::windowClearOf(frame.start());
     SDL_GPUColorTargetInfo target{};
     target.texture = m_target.texture;
@@ -499,11 +514,32 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     target.load_op = SDL_GPU_LOADOP_CLEAR;
     target.store_op = SDL_GPU_STOREOP_STORE;
     target.cycle = true;
-    SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(commands, &target, 1, nullptr);
+    SDL_GPUDepthStencilTargetInfo depth{};
+    depth.texture = m_depth.texture;
+    depth.clear_depth = 1.0F;
+    depth.load_op = SDL_GPU_LOADOP_CLEAR;
+    depth.store_op = SDL_GPU_STOREOP_DONT_CARE;
+    depth.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
+    depth.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
+    depth.cycle = true;
+    SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(commands, &target, 1, &depth);
     if (pass == nullptr) {
         return nullptr;
     }
-    if (drawsSomething) {
+    const std::span<const graphics::FramePass> passes = frame.passes();
+    for (std::size_t p = 0; p < passes.size(); ++p) {
+        if (std::holds_alternative<graphics::ScenePass>(passes[p])) {
+            if (scene != nullptr) {
+                scene->draw(commands, pass, p);
+            }
+            continue;
+        }
+        const std::uint32_t first = p < batch.passDraws.size() ? batch.passDraws[p] : 0;
+        const std::uint32_t end = p + 1 < batch.passDraws.size() ? batch.passDraws[p + 1] : first;
+        if (!drawsSomething || first == end) {
+            continue;
+        }
+        // The 2D pipeline and its buffers again for each 2D pass, since a scene pass may have bound its own.
         SDL_BindGPUGraphicsPipeline(pass, m_pipeline);
         const FrameUniform frameUniform{static_cast<float>(size.width), static_cast<float>(size.height), {0, 0}};
         SDL_PushGPUVertexUniformData(commands, 0, &frameUniform, sizeof(frameUniform));
@@ -511,7 +547,7 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
         SDL_BindGPUVertexBuffers(pass, 0, &vertices, 1);
         const SDL_GPUBufferBinding indices{m_indices, 0};
         SDL_BindGPUIndexBuffer(pass, &indices, SDL_GPU_INDEXELEMENTSIZE_32BIT);
-        for (std::size_t i = 0; i < batch.draws.size(); ++i) {
+        for (std::uint32_t i = first; i < end; ++i) {
             const graphics::OverlayDraw& draw = batch.draws[i];
             const OwnedTexture* texture = drawTextures[i];
             if (texture == nullptr) {
@@ -528,21 +564,22 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     return m_target.texture;
 }
 
-bool GpuRenderer::recordReadBack(SDL_GPUCommandBuffer* commands) {
+bool GpuRenderer::recordReadBack(SDL_GPUCommandBuffer* commands, ReadBack at) {
     if (m_target.texture == nullptr) {
         return false;
     }
+    Download& download = m_downloads[static_cast<std::size_t>(at)];
     const auto bytes = static_cast<std::uint32_t>(m_target.width) * static_cast<std::uint32_t>(m_target.height) * 4;
-    if (m_download == nullptr || m_downloadCapacity < bytes) {
-        if (m_download != nullptr) {
-            SDL_ReleaseGPUTransferBuffer(m_device, m_download);
+    if (download.buffer == nullptr || download.capacity < bytes) {
+        if (download.buffer != nullptr) {
+            SDL_ReleaseGPUTransferBuffer(m_device, download.buffer);
         }
         SDL_GPUTransferBufferCreateInfo info{};
         info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD;
         info.size = bytes;
-        m_download = SDL_CreateGPUTransferBuffer(m_device, &info);
-        m_downloadCapacity = m_download != nullptr ? bytes : 0;
-        if (m_download == nullptr) {
+        download.buffer = SDL_CreateGPUTransferBuffer(m_device, &info);
+        download.capacity = download.buffer != nullptr ? bytes : 0;
+        if (download.buffer == nullptr) {
             return false;
         }
     }
@@ -552,27 +589,28 @@ bool GpuRenderer::recordReadBack(SDL_GPUCommandBuffer* commands) {
     from.w = static_cast<Uint32>(m_target.width);
     from.h = static_cast<Uint32>(m_target.height);
     from.d = 1;
-    const SDL_GPUTextureTransferInfo to{m_download, 0, static_cast<Uint32>(m_target.width),
+    const SDL_GPUTextureTransferInfo to{download.buffer, 0, static_cast<Uint32>(m_target.width),
                                         static_cast<Uint32>(m_target.height)};
     SDL_DownloadFromGPUTexture(copy, &from, &to);
     SDL_EndGPUCopyPass(copy);
-    m_downloadSize = graphics::Extent{m_target.width, m_target.height};
+    download.size = graphics::Extent{m_target.width, m_target.height};
     return true;
 }
 
-std::vector<std::uint8_t> GpuRenderer::readBack() {
-    const graphics::Extent size = std::exchange(m_downloadSize, graphics::Extent{});
-    if (m_download == nullptr || size.width <= 0 || size.height <= 0) {
+std::vector<std::uint8_t> GpuRenderer::readBack(ReadBack at) {
+    Download& download = m_downloads[static_cast<std::size_t>(at)];
+    const graphics::Extent size = std::exchange(download.size, graphics::Extent{});
+    if (download.buffer == nullptr || size.width <= 0 || size.height <= 0) {
         return {};
     }
     const std::size_t bytes = static_cast<std::size_t>(size.width) * static_cast<std::size_t>(size.height) * 4;
-    const auto* mapped = static_cast<const std::uint8_t*>(SDL_MapGPUTransferBuffer(m_device, m_download, false));
+    const auto* mapped = static_cast<const std::uint8_t*>(SDL_MapGPUTransferBuffer(m_device, download.buffer, false));
     if (mapped == nullptr) {
         return {};
     }
     // SDL's textures count rows from the top on every backend, as images do.
     std::vector<std::uint8_t> rgba(mapped, mapped + bytes);
-    SDL_UnmapGPUTransferBuffer(m_device, m_download);
+    SDL_UnmapGPUTransferBuffer(m_device, download.buffer);
     return rgba;
 }
 

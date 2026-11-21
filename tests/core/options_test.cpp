@@ -546,6 +546,19 @@ TEST_CASE("the camera option pins a view with the camera's quaternion and field 
     CHECK(coney::usageText().find("--camera X,Y,Z,QX,QY,QZ,QW") != std::string_view::npos);
 }
 
+TEST_CASE("the scene-only option draws a played level's scene passes alone", "[options]") {
+    // Expected: ../engine/renderer.md#comparing: a level frame drawn by both renderers with only what both draw.
+    auto only = parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "level99", "--scene-only"});
+    REQUIRE(only.has_value());
+    CHECK(only->sceneOnly);
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--play-level", "level99"})->sceneOnly);
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--scene-only", "--scene-only"})
+            .has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 3>{"--disc", "x", "--scene-only"}).has_value());
+    CHECK(coney::usageText().find("--scene-only") != std::string_view::npos);
+}
+
 TEST_CASE("the freeze option freezes a played level's world", "[options]") {
     auto frozen = parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "level99", "--freeze-world"});
     REQUIRE(frozen.has_value());

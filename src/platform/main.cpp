@@ -654,6 +654,9 @@ int main(int argc, char** argv) {
             if (options->freezeWorld) {
                 playLevel->freezeWorld();
             }
+            if (options->sceneOnly) {
+                playLevel->sceneOnly();
+            }
             playLevel->giveAtStart(options->gives);
             if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
                 if (auto traced = playLevel->traceTo(*tracePath); !traced) {
@@ -688,7 +691,7 @@ int main(int argc, char** argv) {
         sandboxViewer = std::move(*viewerMode);
         modes.push(*sandboxViewer);
     } else if (const std::optional<std::string> cardName = options->testCard; cardName) {
-        // One of Coney's own 2D test cards: no disc needed (docs/guides/running-viewers.md#test-cards).
+        // One of Coney's own test cards: no disc needed (docs/guides/running-viewers.md#test-cards).
         auto card = coney::platform::TestCardMode::create(renderer, *cardName);
         if (!card) {
             logError(card.error().message);
@@ -903,6 +906,9 @@ int main(int argc, char** argv) {
                     }
                     if (options->freezeWorld) {
                         mode.freezeWorld();
+                    }
+                    if (options->sceneOnly) {
+                        mode.sceneOnly();
                     }
                     // `--give`: player 1's inventory counts from the first step, for a capture that needs an item.
                     mode.giveAtStart(options->gives);
@@ -1397,7 +1403,7 @@ int main(int argc, char** argv) {
         }
     };
     if (const std::optional<std::string>& recordPath = options->recordPath; recordPath) {
-        if (!renderer.drawsPixels()) {
+        if (!renderer.drawsFrames()) {
             std::fprintf(stderr, "coney: --record needs a window that draws\n");
             return 1;
         }

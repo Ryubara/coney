@@ -58,10 +58,12 @@ std::uint64_t hashMesh(const MeshData& mesh) {
     for (const MeshMaterial& material : mesh.materials) {
         hash.add(material.colour.r).add(material.colour.g).add(material.colour.b).add(material.colour.a);
         hash.add(material.texture);
+        hash.add(material.ambient).add(material.diffuse);
     }
     hash.add(mesh.attributes.normals).add(mesh.attributes.prelit).add(mesh.attributes.texCoordSets);
     hash.add(mesh.attributes.skinned).add(static_cast<std::uint8_t>(mesh.topology));
     hash.add(mesh.bounds.centre).add(mesh.bounds.radius);
+    hash.add(mesh.lit).add(mesh.modulate);
     return hash.value();
 }
 

@@ -740,8 +740,9 @@ renderer (`--renderer gpu`) through lavapipe, Mesa's Vulkan of the same pinned v
 `NAME.gpu.png`, and the two are compared with each other by the looser cross-renderer tolerance
 (`cross_channel_tolerance` and `cross_max_share_percent`, the Across renderers row of the [renderer
 design](../engine/renderer.md#comparing)) instead of with a reference: GL3 is the GPU renderer's reference until the
-switch, and GL3's own 2D drawing is held by the draw-stream hashes. These are Coney's 2D [test
-cards](running-viewers.md#test-cards). A run asked for the GPU renderer whose log does not say `renderer: gpu on`
+switch, and GL3's own drawing is held by the draw-stream hashes. These are Coney's [test
+cards](running-viewers.md#test-cards), the 2D ones and the 3D `scene`. A run asked for the GPU renderer whose log does
+not say `renderer: gpu on`
 (no GPU device, so Coney fell back to GL3) fails the job, so the comparison never passes by comparing GL3 with
 itself. The log line `across renderers:` totals them.
 

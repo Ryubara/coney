@@ -169,7 +169,7 @@ struct Options {
     /// a `.layout` file; kDefaultSandbox when given without one. Needs no disc; cannot be combined with `--load`, the
     /// viewers or `--play-level`.
     std::optional<std::string> sandbox;
-    /// `--test-card`: one of Coney's own 2D test cards to draw (`shapes`, `textures`, `triangles`;
+    /// `--test-card`: one of Coney's own test cards to draw (`shapes`, `textures`, `triangles`, `scene`;
     /// platform/test_card_mode.h), for the software pictures. Needs no disc; cannot be combined with `--load`, the
     /// viewers, `--play-level`, `--sandbox` or `--render-references`.
     std::optional<std::string> testCard;
@@ -380,6 +380,12 @@ struct Options {
     /// animation, the scripts), so every frame shows the same picture; the scenery still streams round the camera and
     /// the fixed step still runs. Requires playLevel.
     bool freezeWorld = false;
+    /// `--scene-only`: play's 3D is only what the GPU renderer draws of it today, the world, objects and cars of the
+    /// scene passes, with no level background, humans, effects, see-through panes or coronas (the 2D is drawn as
+    /// ever), so that the GL3 and GPU renderers' frames can be compared on their shared part
+    /// (docs/engine/renderer.md#comparing). Requires playLevel.
+    /// @coney-only a developer's test aid; the original has none
+    bool sceneOnly = false;
     /// `--light-trace FILE`: the original's light-selection trace (`coney-tools trace lights`: this selections file and
     /// its two inputs files beside it), which the Lighting page sets beside Coney's lights
     /// (docs/guides/realtime-lighting.md#lab-built). Requires playLevel.
@@ -410,8 +416,8 @@ struct Options {
     std::optional<ReferenceKind> referenceKind;
     /// `--renderer gl3|gpu`: the renderer a windowed run draws with (docs/engine/renderer.md#migration); unset takes
     /// the saved `Display/Renderer` setting outside test mode, else GL3 (chooseRenderer()). `gpu`
-    /// needs a window and records no clip or reference render, so it cannot be combined with `--headless`, `--load`,
-    /// `--record` or `--render-references`.
+    /// needs a window and draws no reference render, so it cannot be combined with `--headless`, `--load` or
+    /// `--render-references`; it records a clip with `--record` (docs/engine/gpu-renderer.md#capture).
     std::optional<RendererKind> renderer;
     /// `--preset ps2|xbox|enhanced|high`: the display preset (docs/engine/renderer.md#presets). Outside test mode it is
     /// chosen at the start, over the saved settings, and the player may change it after; in test mode it is what

@@ -40,7 +40,8 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 -
   starts.
 - **What the file holds.** Only the picture and the sound: no title, comment, encoder version or path (FFmpeg runs
   with `-map_metadata -1`, bit-exact headers and x264's settings note removed). `coney-tools clips check` confirms it.
-- **Needs** a window (not `--headless`, `--load` or `--render-references`) and FFmpeg: `CONEY_FFMPEG` names the
+- **Needs** a window (not `--headless`, `--load` or `--render-references`), on either renderer (`--renderer gl3` or
+  `gpu`: [The capture](../engine/gpu-renderer.md#capture)), and FFmpeg: `CONEY_FFMPEG` names the
   program, else `ffmpeg` is looked up on `PATH`. Frames go to FFmpeg through its standard input (its only input), the
   sound is muxed in a second pass; the part files beside the clip are deleted. A clip over 10 MB prints a warning.
 
@@ -106,7 +107,7 @@ so motion is smooth above 30 frames a second and the game's speed never changes
 | `--vsync on\|off` | wait for the display's vertical blank when presenting (on, the default) or not (frames may tear) |
 | `--line-blend on\|off` | an optional PS2 look: soften the picture as the PS2's video output does, each shown line the mean of two neighbouring lines of the original's 448 (on; [Rendering](../research/rendering.md#output)), or show the frame as drawn (off, the default); reference renders are never blended |
 | `--show-fps` | print the frame and step rates once a second, and the totals when Coney stops |
-| `--renderer gl3\|gpu` | draw with librw's OpenGL 3.3 (`gl3`, the default) or start SDL3's GPU API (`gpu`: Vulkan, Direct3D 12 or Metal), which so far draws the 2D layers (the front end, the legal screens, the movies, the HUD) and no 3D scene ([Renderer](../engine/gpu-renderer.md)); unset, a windowed run takes the saved `Display/Renderer` setting outside test mode ([The way back to GL3](../engine/gpu-renderer.md#way-back)). A `gpu` start that finds no GPU device says why in the run log and draws with GL3 |
+| `--renderer gl3\|gpu` | draw with librw's OpenGL 3.3 (`gl3`, the default) or start SDL3's GPU API (`gpu`: Vulkan, Direct3D 12 or Metal), which so far draws the 2D layers (the front end, the legal screens, the movies, the HUD) and a level's world, objects and cars, not yet its sky, humans or effects ([Renderer](../engine/gpu-renderer.md)); unset, a windowed run takes the saved `Display/Renderer` setting outside test mode ([The way back to GL3](../engine/gpu-renderer.md#way-back)). A `gpu` start that finds no GPU device says why in the run log and draws with GL3 |
 | `--preset ps2\|xbox\|enhanced\|high` | the display preset ([Presets](../engine/renderer.md#presets)): outside test mode chosen at the start, over the saved `Display/Preset` and its values, and changeable after on the Tunables page; in test mode, where drawing is otherwise pinned to *PS2* whatever a player saved, the preset drawn instead. Nothing draws a preset's values yet, so each draws today's picture ([Presets: Built](../engine/renderer.md#presets-built)) |
 
 The default, no cap with vsync on, draws one frame per refresh of the display. On the GPU renderer the two choose its

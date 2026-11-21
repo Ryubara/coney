@@ -63,6 +63,12 @@ class SceneAssets {
     /// Before the texture's raster is converted for drawing: a PS2 raster is read as loaded. Fails as
     /// platform::textureFromRw() or AssetStore::addTexture() does, holding nothing.
     [[nodiscard]] std::expected<graphics::TextureId, Error> addTexture(rw::Texture& texture);
+    /// Takes `data` as the converted texture of `texture`, a texture Coney made itself (the test cards'), whose raster
+    /// need not be readable: held as addTexture() holds one, under the same rules (an invalid id when the assets do
+    /// not convert; the same id, held once more, when `texture` is already held, `data` then unused). Fails as
+    /// AssetStore::addTexture() does, holding nothing.
+    [[nodiscard]] std::expected<graphics::TextureId, Error> addTexture(rw::Texture& texture,
+                                                                       graphics::TextureData data);
     /// Lets go of one hold of the texture `id` names (an addTexture()'s), and drops it from the store when no hold and
     /// no held mesh's material is left; nothing when it names none.
     void removeTexture(graphics::TextureId id);

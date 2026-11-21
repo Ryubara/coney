@@ -78,6 +78,21 @@ rw::Atomic* atomicOf(const chunk::LoadedObject* object) { return levelAtomic(obj
 
 void placeWorldCamera(rw::Camera* camera, const WorldView& view) { placeCamera(camera, view); }
 
+graphics::SceneCamera sceneCameraOf(const WorldView& view) {
+    const auto axis = [](world::Vec3 v) { return std::array<float, 3>{v.x, v.y, v.z}; };
+    graphics::SceneCamera camera;
+    camera.frame = graphics::Transform3d{.right = axis(view.pose.right),
+                                         .up = axis(view.pose.up),
+                                         .at = axis(view.pose.forward),
+                                         .position = axis(view.pose.position)};
+    camera.halfWidth = view.halfWidth;
+    camera.halfHeight = view.halfHeight;
+    camera.nearClip = view.nearClip;
+    camera.farClip = view.drawDistance;
+    camera.fogStart = view.drawDistance * view.fogStart; // placeCamera()'s fog plane
+    return camera;
+}
+
 world::FrameMatrix cloudFrame(const world::FrameMatrix& base, std::uint64_t nowMs) {
     // Each row, and the position, turned by -a about y, as the original's camera turned by +a shows the model:
     // (x, y, z) -> (x cos a - z sin a, y, x sin a + z cos a), clockwise seen from above.
@@ -192,9 +207,11 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     // a resized window gets a new camera there, which is then set up and begun again.
     engine.beginWindowFrame(fogColour);
     rw::Camera* camera = engine.camera();
-    if (camera == nullptr && m_recordHeadless && draw::recording()) {
-        // NULL backend while the draw layer records a synthetic scene (docs/engine/renderer.md#comparing): a camera of
-        // the renderer's own with no buffers, so the world's draws are recorded as a window would draw them.
+    if (camera == nullptr && (engine.backend() == RenderBackend::Gpu || m_recordHeadless)) {
+        // The GPU backend, which has no librw camera and draws the frame description through its own
+        // (docs/engine/gpu-renderer.md#scene), or the NULL backend drawing a synthetic scene for the tests
+        // (docs/engine/renderer.md#comparing): a camera of the renderer's own with no buffers, so the world's draws are
+        // added, and recorded while the draw layer records, as a window would draw them.
         camera = recordingCamera();
     }
     if (camera == nullptr) {
@@ -226,7 +243,7 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
 
     // The level's background, before the world (LevelObject_RenderBackground, from the viewport pass).
-    if (level != nullptr) {
+    if (level != nullptr && !m_sceneOnly) { // Coney's --scene-only (debug): no background, as on the GPU renderer.
         renderBackground(camera, *level, view, fogColour, pendingDistance, animationMs);
         // 5. The level world, the light glows: nothing culled, Z test and write and fog on.
         if (rw::Atomic* glows = atomicOf(level->levelWorld.get()); glows != nullptr) {
@@ -237,6 +254,8 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
         draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
     }
 
+    // The world pass's camera, for a renderer that draws the frame description through its own (the GPU renderer).
+    engine.setSceneCamera(sceneCameraOf(view));
     // 6. The `s` world. 7. The objects, when there are any. 8. The `d` world, the same way as the `s` world. The
     // sectors' draws carry the world pass's states, with the alpha test as it stands at each.
     graphics::SceneStates states;
@@ -276,7 +295,9 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
         afterWorlds();
     }
     // The coronas of the visible lights, over the world.
-    lit.drawCoronas();
+    if (!m_sceneOnly) { // Coney's --scene-only (debug): no coronas, which the GPU renderer does not draw yet.
+        lit.drawCoronas();
+    }
     draw::setRenderState(rw::FOGENABLE, 0);
     // The 2D pass over the world (the menus or the HUD): no depth test, nothing culled.
     if (overlay) {

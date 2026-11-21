@@ -129,6 +129,8 @@ std::expected<std::unique_ptr<RenderEngine>, Error> startRenderer(RendererKind r
             logText(std::format("renderer: gpu on {}\n", (*gpu)->gpuDriver()));
             if (const std::string_view problem = (*gpu)->gpuDrawingProblem(); !problem.empty()) {
                 logWarning(std::format("{}; the GPU renderer only clears each frame", problem));
+            } else if (const std::string scene = (*gpu)->gpuSceneProblem(); !scene.empty()) {
+                logWarning(std::format("{}; the GPU renderer draws no 3D scene", scene));
             }
             return gpu;
         }

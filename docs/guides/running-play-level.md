@@ -321,6 +321,10 @@ Three options make a frame that can be laid beside a screenshot of the original 
 - `--freeze-world` (with `--play-level`) stops the world after the first step of play: the scripts, people, cars,
   particles and animation stand still, while the fixed step runs on and the scenery still streams in (and fades in)
   round the camera, so every later frame shows the same picture.
+- `--scene-only` (with `--play-level`) draws of the 3D only what the GPU renderer draws today, the world, the objects
+  and the cars, and leaves out the level's sky and glows, the humans, the effects, the see-through panes and the
+  coronas, so that a frame drawn by GL3 and by `--renderer gpu` can be compared on the part both draw ([How pictures
+  are compared](../engine/renderer.md#comparing)).
 - `--light-trace FILE` (with `--play-level`) loads the original's light-selection trace (`coney-tools trace lights`)
   for the Lighting page, which sets the original's lights beside Coney's for the selected atomic
   ([What is built](realtime-lighting.md#lab-built)).

@@ -3,15 +3,16 @@
 Coney's own mesh and texture data: what both renderers draw from, converted once from what librw reads and held by
 id. It is item 6 of [the renderer's migration](renderer.md#order). The streamed world's sectors and their textures
 are held in it while they are loaded, and the [frame description](renderer.md#frame-description) names them by id
-(item 7; objects, cars and humans follow with items 8 and 9). Nothing draws its data yet: the GL3 renderer keeps
-librw's instancing, drawing each mesh's librw atomic, and the GPU renderer (items 13 and 14) will be the first to
-upload it. All of it is Coney's own.
+(item 7; objects and cars with item 8, humans with item 9). The GL3 renderer keeps librw's instancing, drawing each
+mesh's librw atomic; the GPU renderer uploads the data itself and draws the world's sectors, the objects and the cars
+from it (item 13, [Drawing the scene passes](gpu-renderer.md#scene)), the humans with item 14. All of it is Coney's
+own.
 
 ## The parts {#parts}
 
 | Part | What it holds | Where |
 | --- | --- | --- |
-| Mesh (`graphics::MeshData`) | One vertex layout for every mesh: position, normal, prelit colour (RGBA bytes), two texture-coordinate sets (the base layer and the world's dual layer), four bone indices and weights. Which of them the source carried (`MeshAttributes`); what it did not is neutral (zero normal, white prelighting, zero weights). 16-bit indices, a topology (lists or strips, as librw's mesh header has them), one sub-mesh per librw mesh (an index range and a material: colour and texture name) and the bounding sphere | `src/graphics/mesh_data.h` |
+| Mesh (`graphics::MeshData`) | One vertex layout for every mesh: position, normal, prelit colour (RGBA bytes), two texture-coordinate sets (the base layer and the world's dual layer), four bone indices and weights. Which of them the source carried (`MeshAttributes`); what it did not is neutral (zero normal, white prelighting, zero weights). 16-bit indices, a topology (lists or strips, as librw's mesh header has them), one sub-mesh per librw mesh (an index range and a material: colour, texture name and RenderWare's ambient and diffuse surface properties), the bounding sphere, and whether the scene's lights light it and its material colours modulate it (the geometry's LIGHT and MODULATE flags), which the GPU renderer reads as librw's GL3 device does | `src/graphics/mesh_data.h` |
 | Texture (`graphics::TextureData`) | The name, a format (`Rgba8` only: every PS2 raster is 4- or 8-bit with a 32-bit palette, [PS2 raster](../research/formats/renderware.md#ps2-raster); BC1 to BC3 join with the Xbox build's DXT rasters), every mip level, the sampler (RenderWare's filter and addressing) and, for a PS2 raster, the GS level of detail (`graphics::TextureLod`) | `src/graphics/texture_data.h` |
 | Store (`graphics::AssetStore`) | Meshes and textures by `MeshId` and `TextureId`: counted up from 1 and never handed out twice, so a stale id finds nothing. It takes only data that holds together (`validateMesh`, `validateTexture`), so a renderer uploads what it finds without checking it again. One thread; the loader thread (item 43) decides how it is shared | `src/graphics/asset_store.h` |
 | Conversion | `platform::meshFromRw` reads plain `rw::Geometry` (world atomics after `WorldAtomic::unpack()`; characters with their `SkinVertexData`); `platform::textureFromRw` reads a texture's raster on either backend, the headless one included | `src/platform/asset_convert.h` |

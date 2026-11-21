@@ -14,6 +14,7 @@
 #include "platform/movie_screen.h"
 #include "platform/pixel_texture.h"
 #include "platform/render_engine.h"
+#include "platform/test_card_scene.h"
 
 namespace coney::platform {
 
@@ -88,7 +89,8 @@ std::array<LogicalVertex, 6> rectangleTriangles(float x, float y, float w, float
 std::expected<std::unique_ptr<TestCardMode>, Error> TestCardMode::create(RenderEngine& engine, std::string_view name) {
     const auto found = std::ranges::find(kTestCardNames, name);
     if (found == kTestCardNames.end()) {
-        return fail(ErrorCode::NotFound, std::format("no test card \"{}\" (shapes, textures or triangles)", name));
+        return fail(ErrorCode::NotFound,
+                    std::format("no test card \"{}\" (shapes, textures or triangles, or the 3D card scene)", name));
     }
     const auto card = static_cast<Card>(found - kTestCardNames.begin());
     return std::unique_ptr<TestCardMode>(new TestCardMode(engine, card));
@@ -101,6 +103,9 @@ TestCardMode::TestCardMode(RenderEngine& engine, Card card) : m_engine(engine), 
     m_textures.push_back(makeTexture(engine, checker, graphics::TextureFilter::Linear));
     m_textures.push_back(makeTexture(engine, checker, graphics::TextureFilter::Nearest));
     m_textures.push_back(makeTexture(engine, alphaRampTexels(), graphics::TextureFilter::Linear));
+    if (card == Card::Scene) {
+        m_scene = std::make_unique<TestCardScene>(engine);
+    }
 }
 
 TestCardMode::~TestCardMode() = default;
@@ -115,6 +120,9 @@ void TestCardMode::render(const RenderTime& /*time*/) {
         break;
     case Card::Triangles:
         drawTriangles();
+        break;
+    case Card::Scene:
+        m_scene->draw();
         break;
     }
     m_engine.present();

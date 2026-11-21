@@ -41,10 +41,16 @@ enum class RenderBackend : std::uint8_t {
     OpenGl, ///< librw's GL3 device: a window with an OpenGL 3.3 core context (2.1 or GLES as fallbacks), drawn into.
     Null,   ///< librw's NULL device: no window, no GPU, nothing drawn; for CI, tests and console tools.
     /// SDL3's GPU API (docs/engine/renderer.md#migration): a window Coney makes, SDL's GPU device and swapchain, and
-    /// librw on its NULL device for data only, as for Null. Each frame's 2D passes are drawn (GpuRenderer); the 3D
-    /// scene, which still draws through librw, is not yet.
+    /// librw on its NULL device for data only, as for Null. Each frame's passes are drawn (GpuRenderer): the 2D, and
+    /// the world, objects and cars of the scene passes (docs/engine/gpu-renderer.md#scene).
     Gpu,
 };
+
+/// Whether `backend` draws the 3D scene, so that play loads the world's objects and cars for it: GL3 through librw,
+/// the GPU renderer from the frame description (docs/engine/gpu-renderer.md#scene); not the NULL backend.
+[[nodiscard]] constexpr bool drawsSceneOn(RenderBackend backend) {
+    return backend == RenderBackend::OpenGl || backend == RenderBackend::Gpu;
+}
 
 /// A frame read back from the screen by RenderEngine::requestCapture().
 struct CapturedFrame {
@@ -91,8 +97,13 @@ class RenderEngine final : public graphics::RenderDevice {
     /// The backend it runs.
     [[nodiscard]] RenderBackend backend() const { return m_backend; }
     /// Whether librw's GL3 device draws the picture: true for OpenGL only. Textures can be converted for librw's
-    /// drawing only then, and the 3D scene, which still draws through librw, is drawn only then.
+    /// drawing only then, and what still draws through librw (the humans, the effects) is drawn only then.
     [[nodiscard]] bool drawsPixels() const { return m_backend == RenderBackend::OpenGl; }
+    /// Whether the 3D scene is drawn, by librw or by the GPU renderer: drawsSceneOn() for this backend.
+    [[nodiscard]] bool drawsScene() const { return drawsSceneOn(m_backend); }
+    /// Whether it draws frames in a window, which a frame tap (setFrameTap()) and a capture read back: GL3 and the GPU
+    /// renderer; not the NULL backend.
+    [[nodiscard]] bool drawsFrames() const { return m_backend != RenderBackend::Null; }
     /// Whether librw runs its NULL device, reading RenderWare data and drawing nothing: the NULL and GPU backends.
     [[nodiscard]] bool librwDataOnly() const { return m_backend != RenderBackend::OpenGl; }
     /// The GPU backend's SDL driver (`vulkan`, `direct3d12`, `metal`); empty for the others.
@@ -100,6 +111,9 @@ class RenderEngine final : public graphics::RenderDevice {
     /// Why the GPU backend only clears its frames (its 2D drawing could not be made); empty while it draws, and for
     /// the other backends.
     [[nodiscard]] std::string_view gpuDrawingProblem() const;
+    /// Why the GPU backend draws its 2D passes but not its scene passes (SDL refused their drawing); empty while it
+    /// draws them, and for the other backends.
+    [[nodiscard]] std::string gpuSceneProblem() const;
     /// The present mode the GPU backend's swapchain shows frames with (setVsync(), setFpsCap(), applied at the next
     /// present()); Vsync for the others.
     [[nodiscard]] PresentMode presentMode() const;
@@ -246,7 +260,8 @@ class RenderEngine final : public graphics::RenderDevice {
     /// Hands every frame present() shows to `tap` (empty for none), read back from the frame buffer: the logical
     /// screen's rectangle (where WindowDesc::logicalFrame puts it), RGBA from the top left with alpha 255, after the
     /// modes' 2D layers and the line blend and before the present overlay (the debug menus), so no debug overlay is
-    /// ever in it. For `--record` (ClipRecorder), Coney's own debug tooling; nothing with the NULL backend.
+    /// ever in it (the GPU renderer reads its frame back before its overlays draw). For `--record` (ClipRecorder),
+    /// Coney's own debug tooling; nothing with the NULL backend.
     void setFrameTap(std::function<void(std::span<const std::uint8_t>, graphics::Extent)> tap) {
         m_frameTap = std::move(tap);
     }
@@ -294,6 +309,10 @@ class RenderEngine final : public graphics::RenderDevice {
     /// beginFrame() and present() (checked by CONEY_ASSERT).
     void drawScene(const graphics::Draw3d& draw, std::span<const graphics::SceneLight> lights,
                    std::span<const graphics::Transform3d> bones = {}, const rw::Texture* dualTexture = nullptr);
+    /// Sees the 3D draws added after it through `camera` (graphics::FrameDescription::setSceneCamera()): the camera
+    /// the GPU renderer draws them through, placed as librw's camera is for the GL3 renderer. Only between beginFrame()
+    /// and present() (checked by CONEY_ASSERT).
+    void setSceneCamera(const graphics::SceneCamera& camera);
 
   private:
     // Only start() makes one, which then fills it in as librw comes up.
@@ -319,6 +338,9 @@ class RenderEngine final : public graphics::RenderDevice {
     void destroyCamera() noexcept;
     /// Reads the logical screen's rectangle back and hands it to the frame tap (setFrameTap()).
     void tapFrame();
+    /// Hands the frame tap the logical screen's rectangle of `rgba`, the GPU renderer's whole frame read back before
+    /// the debug menus drew over it.
+    void tapGpuFrame(std::span<const std::uint8_t> rgba);
     /// Reads the back buffer, summarises it and writes it as a PNG, for requestCapture().
     [[nodiscard]] std::expected<CapturedFrame, Error> captureBackBuffer(const std::string& path) const;
     /// Summarises `rgba` (the frame, rows top first) and writes it as a PNG at `path` with alpha 255: the part of a

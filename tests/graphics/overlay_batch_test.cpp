@@ -112,6 +112,23 @@ TEST_CASE("an overlay batch keeps the draws' order, textures and addressing acro
     CHECK(batch.skippedPasses == 1);
 }
 
+TEST_CASE("an overlay batch says where each of the frame's passes starts among its draws", "[graphics][gpu-renderer]") {
+    // Expected: docs/engine/gpu-renderer.md#drawing: OverlayBatch::passDraws, one start per pass and the draw count
+    // last, a scene pass between two 2D passes holding none of the 2D draws.
+    FrameDescription frame;
+    frame.begin(FrameStart{});
+    const LogicalQuad quad{0.0F, 0.0F, 8.0F, 8.0F, UvRect{}, Rgba{1, 1, 1, 255}};
+    frame.addQuads(Material2d{}, std::span<const LogicalQuad>(&quad, 1), kWholeScreen);
+    frame.addQuads(Material2d{kNoFrameTexture, TextureAddress::Wrap, {}}, std::span<const LogicalQuad>(&quad, 1),
+                   kWholeScreen);
+    frame.addSceneDraw(coney::graphics::Draw3d{}, {}, {}, {});
+    frame.addQuads(Material2d{}, std::span<const LogicalQuad>(&quad, 1), kWholeScreen);
+
+    const OverlayBatch batch = batchOverlays(frame);
+    REQUIRE(batch.draws.size() == 3);
+    CHECK(batch.passDraws == std::vector<std::uint32_t>{0, 2, 2, 3});
+}
+
 TEST_CASE("an overlay draw keeps the alpha GL3 keeps", "[graphics][gpu-renderer]") {
     // Expected: docs/engine/gpu-renderer.md#drawing (What it matches), from librw's GL3 device: the quads with its
     // start state, at least 10 of 255; a reference above 0 as at least round(ref * 255) / 255; 0 as every fragment,

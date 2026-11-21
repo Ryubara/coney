@@ -1,0 +1,284 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// The GPU renderer's scene passes (docs/engine/gpu-renderer.md#scene, item 13 of docs/engine/renderer.md#order): Coney-
+// made meshes and a texture in the engine's scene assets, drawn through the frame description's camera on a hidden
+// window and read back pixel by pixel. No game data: every vertex, texel and light is made here. The case needs SDL's
+// video and a GPU device, and skips where there is none. The expected colours are librw's GL3 device's arithmetic, the
+// picture the GPU renderer is compared with (scene_batch_test.cpp names each source).
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <filesystem>
+#include <string>
+#include <system_error>
+#include <vector>
+
+#include <SDL3/SDL.h>
+#include <catch2/catch_test_macros.hpp>
+#include <rw.h>
+
+#include "graphics/frame_description.h"
+#include "graphics/texture_data.h"
+#include "platform/render_engine.h"
+#include "platform/scene_assets.h"
+#include "support/optional_value.h"
+
+using coney::graphics::Rgba;
+using coney::platform::RenderBackend;
+using coney::platform::RenderEngine;
+using coney::platform::WindowDesc;
+
+namespace {
+
+// Whether SDL's video starts here, sees a display and has a GPU driver that takes Coney's shader formats. Leaves the
+// video stopped again.
+bool gpuHere() {
+    if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+        return false;
+    }
+    int displays = 0;
+    SDL_DisplayID* list = SDL_GetDisplays(&displays);
+    SDL_free(list);
+    const bool ready =
+        displays > 0 && SDL_GPUSupportsShaderFormats(
+                            SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_DXIL | SDL_GPU_SHADERFORMAT_MSL, nullptr);
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+    return ready;
+}
+
+// What a test quad is: its corners, how its geometry is flagged and coloured, and its texture.
+struct QuadSpec {
+    std::array<float, 3> topLeft{};
+    std::array<float, 3> topRight{};
+    std::array<float, 3> bottomLeft{};
+    std::array<float, 3> bottomRight{};
+    bool lit = false;      // RenderWare's LIGHT, with normals facing the camera (-z)
+    bool modulate = false; // MODULATE
+    bool prelit = false;   // PRELIT, every vertex `prelight`
+    Rgba prelight{255, 255, 255, 255};
+    Rgba colour{255, 255, 255, 255}; // the material's colour
+    rw::Texture* texture = nullptr;
+    bool facingAway = false; // wound clockwise as the camera sees it, so back-face culling drops it
+};
+
+// A librw atomic of one quad as `spec` says, at the world's origin: texture coordinates (0, 0) at its top left to
+// (1, 1) at its bottom right, wound counter-clockwise as the camera sees it unless it faces away. The caller destroys
+// it and its frame.
+rw::Atomic* makeQuad(const QuadSpec& spec) {
+    rw::uint32 flags = rw::Geometry::POSITIONS | rw::Geometry::NORMALS | rw::Geometry::TEXTURED;
+    if (spec.lit) {
+        flags |= rw::Geometry::LIGHT;
+    }
+    if (spec.modulate) {
+        flags |= rw::Geometry::MODULATE;
+    }
+    if (spec.prelit) {
+        flags |= rw::Geometry::PRELIT;
+    }
+    rw::Geometry* geometry = rw::Geometry::create(4, 2, flags);
+    rw::MorphTarget& target = geometry->morphTargets[0];
+    const std::array<std::array<float, 3>, 4> corners{spec.topLeft, spec.topRight, spec.bottomLeft, spec.bottomRight};
+    const std::array<rw::TexCoords, 4> uvs{{{0.0F, 0.0F}, {1.0F, 0.0F}, {0.0F, 1.0F}, {1.0F, 1.0F}}};
+    for (rw::int32 i = 0; i < 4; ++i) {
+        const auto& corner = corners[static_cast<std::size_t>(i)];
+        target.vertices[i] = rw::makeV3d(corner[0], corner[1], corner[2]);
+        target.normals[i] = rw::makeV3d(0.0F, 0.0F, -1.0F);
+        geometry->texCoords[0][i] = uvs[static_cast<std::size_t>(i)];
+        if (spec.prelit) {
+            geometry->colors[i] = rw::makeRGBA(spec.prelight.r, spec.prelight.g, spec.prelight.b, spec.prelight.a);
+        }
+    }
+    // Corners 0 top left, 1 top right, 2 bottom left, 3 bottom right: (0, 2, 1) and (1, 2, 3) wind counter-clockwise
+    // on a screen whose y is up, the front faces OpenGL keeps.
+    const std::array<std::array<rw::uint16, 3>, 2> front{{{0, 2, 1}, {1, 2, 3}}};
+    for (std::size_t t = 0; t < 2; ++t) {
+        rw::Triangle& triangle = geometry->triangles[t];
+        triangle.v[0] = front[t][0];
+        triangle.v[1] = spec.facingAway ? front[t][2] : front[t][1];
+        triangle.v[2] = spec.facingAway ? front[t][1] : front[t][2];
+        triangle.matId = 0;
+    }
+    rw::Material* material = rw::Material::create();
+    material->color = rw::makeRGBA(spec.colour.r, spec.colour.g, spec.colour.b, spec.colour.a);
+    if (spec.texture != nullptr) {
+        material->setTexture(spec.texture);
+    }
+    geometry->matList.appendMaterial(material);
+    material->destroy(); // the list holds its own reference
+    geometry->buildMeshes();
+    geometry->calculateBoundingSphere();
+    rw::Atomic* atomic = rw::Atomic::create();
+    atomic->setGeometry(geometry, 0);
+    geometry->destroy(); // the atomic holds its own reference
+    atomic->setFrame(rw::Frame::create());
+    return atomic;
+}
+
+// Destroys `atomic` and its frame.
+void destroyQuad(rw::Atomic* atomic) {
+    rw::Frame* frame = atomic->getFrame();
+    atomic->setFrame(nullptr);
+    atomic->destroy();
+    frame->destroy();
+}
+
+// The colour of pixel (`x`, `y`) of an RGBA image `width` wide, rows top first.
+Rgba pixelAt(const std::vector<std::uint8_t>& rgba, int width, int x, int y) {
+    const std::size_t at = ((static_cast<std::size_t>(y) * static_cast<std::size_t>(width)) + x) * 4;
+    return Rgba{rgba[at], rgba[at + 1], rgba[at + 2], rgba[at + 3]};
+}
+
+// Whether `got` is `want` give or take `slack` in each colour channel (a GPU rounds its own way).
+bool near(Rgba got, Rgba want, int slack) {
+    const auto close = [slack](int a, int b) { return a - b <= slack && b - a <= slack; };
+    return close(got.r, want.r) && close(got.g, want.g) && close(got.b, want.b);
+}
+
+// Reads back the PNG a capture wrote, as RGBA rows top first; empty when librw cannot read it.
+std::vector<std::uint8_t> readCapture(const std::string& path, int& width, int& height) {
+    rw::Image* image = rw::readPNG(path.c_str());
+    if (image == nullptr) {
+        return {};
+    }
+    image->convertTo32();
+    width = image->width;
+    height = image->height;
+    std::vector<std::uint8_t> rgba(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4);
+    for (int y = 0; y < height; ++y) {
+        std::memcpy(&rgba[static_cast<std::size_t>(y) * static_cast<std::size_t>(width) * 4],
+                    image->pixels + (static_cast<std::ptrdiff_t>(y) * image->stride),
+                    static_cast<std::size_t>(width) * 4);
+    }
+    image->destroy();
+    return rgba;
+}
+
+} // namespace
+
+TEST_CASE("the GPU renderer draws a scene pass's meshes lit, textured, blended, fogged and depth tested",
+          "[render][renderer][window][scene]") {
+    // Expected: ../engine/gpu-renderer.md#scene, Coney's own renderer drawing what librw's GL3 device draws
+    // (scene_batch_test.cpp): a lit mesh with no prelighting is black plus the ambient (0.25) and the directional
+    // light facing it (0.5) times its texel; a translucent painted mesh is blended by its alpha; a mesh at 75 of a fog
+    // from 50 to 100 is half the fog's colour; the nearest of three meshes drawn far to near and then farther is the
+    // one seen; a mesh facing away is culled. The window, camera and meshes are the test's own: 320 x 240, the view
+    // 0.5 by 0.375 at a distance of 1, so at a distance of 10 each 80-pixel column is 2.5 units wide.
+    if (!gpuHere()) {
+        SKIP("no display or no GPU device here");
+    }
+    WindowDesc desc;
+    desc.activate = false;
+    desc.hidden = true;
+    desc.width = 320;
+    desc.height = 240;
+    auto started = RenderEngine::start(RenderBackend::Gpu, desc);
+    REQUIRE(started.has_value());
+    RenderEngine& engine = **started;
+    REQUIRE(engine.frameSize().width == 320);
+    coney::platform::SceneAssets& assets = engine.sceneAssets();
+
+    // A 2 x 2 texture taken to the nearest texel: red, green over blue, white.
+    rw::Texture* texture = rw::Texture::create(nullptr);
+    std::memcpy(texture->name, "check", 6); // the name and its terminator
+    coney::graphics::TextureData texels;
+    texels.name = "check";
+    texels.levels.push_back({2, 2, {255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255}});
+    texels.sampler = {coney::graphics::TextureFilter::Nearest, coney::graphics::TextureAddress::Clamp,
+                      coney::graphics::TextureAddress::Clamp};
+    auto textureId = assets.addTexture(*texture, texels);
+    REQUIRE(textureId.has_value());
+
+    // The column of a distance `z`: from `left` to `right` pixels, the whole height.
+    const auto column = [](float z, int left, int right, QuadSpec spec) {
+        const float halfWidth = 0.5F * z;
+        const float halfHeight = 0.375F * z;
+        const auto x = [halfWidth](int pixel) { return (static_cast<float>(pixel) / 160.0F - 1.0F) * halfWidth; };
+        spec.topLeft = {x(left), halfHeight, z};
+        spec.topRight = {x(right), halfHeight, z};
+        spec.bottomLeft = {x(left), -halfHeight, z};
+        spec.bottomRight = {x(right), -halfHeight, z};
+        return spec;
+    };
+    std::vector<rw::Atomic*> quads;
+    std::vector<coney::graphics::MeshId> meshes;
+    const auto add = [&](const QuadSpec& spec) {
+        quads.push_back(makeQuad(spec));
+        auto id = assets.addAtomic(*quads.back());
+        REQUIRE(id.has_value());
+        meshes.push_back(*id);
+        return meshes.size() - 1;
+    };
+    const std::size_t textured = add(column(10.0F, 0, 80, QuadSpec{.lit = true, .texture = texture}));
+    const std::size_t blue = add(column(10.0F, 80, 160, QuadSpec{.modulate = true, .prelit = true}));
+    const std::size_t fogged = add(column(75.0F, 160, 240, QuadSpec{.prelit = true}));
+    const std::size_t middle = add(column(30.0F, 240, 320, QuadSpec{.prelit = true, .prelight = {0, 255, 0, 255}}));
+    const std::size_t nearest = add(column(20.0F, 240, 320, QuadSpec{.prelit = true, .prelight = {255, 0, 0, 255}}));
+    const std::size_t farthest = add(column(40.0F, 240, 320, QuadSpec{.prelit = true, .prelight = {255, 255, 0, 255}}));
+    const std::size_t away =
+        add(column(5.0F, 0, 320, QuadSpec{.prelit = true, .prelight = {255, 0, 255, 255}, .facingAway = true}));
+
+    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-scene-capture.png").string();
+    engine.requestCapture(0, path);
+    const Rgba clear{100, 100, 100, 255};
+    engine.beginWindowFrame(clear);
+    coney::graphics::SceneCamera camera;
+    camera.halfWidth = 0.5F;
+    camera.halfHeight = 0.375F;
+    camera.nearClip = 1.0F;
+    camera.farClip = 100.0F;
+    camera.fogStart = 50.0F;
+    engine.setSceneCamera(camera);
+    const std::array<coney::graphics::SceneLight, 2> lights{{
+        {.type = coney::graphics::LightType::Ambient, .colour = {0.25F, 0.25F, 0.25F}},
+        {.type = coney::graphics::LightType::Directional,
+         .colour = {0.5F, 0.5F, 0.5F},
+         .direction = {0.0F, 0.0F, 1.0F}},
+    }};
+    coney::graphics::SceneStates states;
+    states.fogColour = Rgba{0, 200, 0, 255};
+    const auto draw = [&](std::size_t which, coney::graphics::Material3d material = {}) {
+        coney::graphics::Draw3d scene;
+        scene.mesh = meshes[which];
+        scene.material = material;
+        scene.states = states;
+        engine.drawScene(scene, lights);
+    };
+    draw(textured);
+    draw(blue, {.colour = coney::graphics::MaterialColour::Paint, .tint = Rgba{0, 0, 255, 128}});
+    draw(fogged);
+    draw(middle);
+    draw(nearest);
+    draw(farthest);
+    draw(away);
+    engine.present();
+
+    const auto captured = coney::test::got(engine.capture());
+    REQUIRE(captured.has_value());
+    int width = 0;
+    int height = 0;
+    const std::vector<std::uint8_t> rgba = readCapture(path, width, height);
+    REQUIRE(width == 320);
+    REQUIRE(height == 240);
+    // Lit at 0.75: the texture's quarters, red at the top left.
+    CHECK(near(pixelAt(rgba, width, 20, 60), Rgba{191, 0, 0, 255}, 2));
+    CHECK(near(pixelAt(rgba, width, 60, 60), Rgba{0, 191, 0, 255}, 2));
+    CHECK(near(pixelAt(rgba, width, 20, 180), Rgba{0, 0, 191, 255}, 2));
+    CHECK(near(pixelAt(rgba, width, 60, 180), Rgba{191, 191, 191, 255}, 2));
+    // Blue at half alpha over the clear colour.
+    CHECK(near(pixelAt(rgba, width, 120, 120), Rgba{50, 50, 178, 255}, 2));
+    // White, half fogged.
+    CHECK(near(pixelAt(rgba, width, 200, 120), Rgba{128, 228, 128, 255}, 2));
+    // The nearest of the three.
+    CHECK(near(pixelAt(rgba, width, 280, 120), Rgba{255, 0, 0, 255}, 2));
+
+    for (rw::Atomic* atomic : quads) {
+        destroyQuad(atomic);
+    }
+    for (const coney::graphics::MeshId mesh : meshes) {
+        assets.removeMesh(mesh);
+    }
+    assets.removeTexture(*textureId);
+    texture->destroy();
+    std::error_code ignored;
+    std::filesystem::remove(path, ignored);
+}

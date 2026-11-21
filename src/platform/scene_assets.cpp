@@ -88,6 +88,26 @@ std::expected<graphics::TextureId, Error> SceneAssets::addTexture(rw::Texture& t
     return *id;
 }
 
+std::expected<graphics::TextureId, Error> SceneAssets::addTexture(rw::Texture& texture, graphics::TextureData data) {
+    if (!m_convert) {
+        return graphics::TextureId{};
+    }
+    if (const graphics::TextureId have = textureOf(&texture); have.valid()) {
+        ++m_uses[have.value].uses;
+        return have;
+    }
+    // Held as a converted one is, under the librw texture its meshes' materials name.
+    const std::uint64_t bytes = bytesOf(data);
+    auto id = m_store.addTexture(std::move(data));
+    if (!id) {
+        return std::unexpected(std::move(id.error()));
+    }
+    m_textures.emplace(&texture, *id);
+    m_uses.emplace(id->value, TextureEntry{.source = &texture, .uses = 1});
+    hold(m_totals.textureBytes, bytes);
+    return *id;
+}
+
 void SceneAssets::removeTexture(graphics::TextureId id) { release(id); }
 
 void SceneAssets::release(graphics::TextureId id) {

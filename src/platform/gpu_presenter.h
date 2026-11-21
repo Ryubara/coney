@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "core/error.h"
+#include "graphics/asset_store.h"
 #include "graphics/frame_description.h"
 #include "graphics/render_device.h"
 #include "graphics/texture_grid.h"
@@ -90,17 +91,24 @@ class GpuPresenter {
         /// The frame read back, RGBA with rows top first at the frame's size, when present() was asked for it; an Error
         /// when it could not be.
         std::optional<std::expected<std::vector<std::uint8_t>, Error>> capture;
+        /// The frame read back before the overlays drew over it, RGBA with rows top first at the frame's size, when
+        /// present() was asked for it and could read it: a clip's frame.
+        std::optional<std::vector<std::uint8_t>> game;
     };
 
     /// Draws `frame`'s 2D passes at `size` (GpuRenderer), copies the picture onto the window's next swapchain image and
     /// presents it, waiting for an image to be free as the present mode says; with `capture`, also reads the picture
-    /// back, waiting for the GPU. Without the 2D drawing, the window is cleared to the frame's colour and nothing can
-    /// be read back.
-    Presented present(const graphics::FrameDescription& frame, graphics::Extent size, bool capture);
+    /// back, waiting for the GPU; with `game`, also reads back the picture as it is before the overlays draw over it.
+    /// Without the 2D drawing, the window is cleared to the frame's colour and nothing can be read back.
+    Presented present(const graphics::FrameDescription& frame, graphics::Extent size, bool capture,
+                      const graphics::AssetStore* store = nullptr, bool game = false);
 
     /// Why the frames are only cleared (the 2D drawing could not be made: a build without the shaders, or SDL refused
     /// it); empty while it draws.
     [[nodiscard]] const std::string& drawingProblem() const { return m_drawingProblem; }
+    /// Why the scene passes are not drawn while the 2D passes are (GpuRenderer::sceneProblem()); empty when they are
+    /// drawn, or when there is no drawing at all (drawingProblem()).
+    [[nodiscard]] std::string sceneProblem() const;
 
     /// Clears the window's next swapchain image to `colour` and presents it, waiting for one to be free as the present
     /// mode says. Returns whether an image was shown: none is while the window is minimised or hidden, which is not an
