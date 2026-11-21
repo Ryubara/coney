@@ -59,8 +59,9 @@ void writeLevelMessage(BitWriter& out, const MovieDone& message) {
     out.writeBool(message.skipped);
 }
 
-void writeLevelMessage(BitWriter& out, const MovieBegan& /*message*/) {
+void writeLevelMessage(BitWriter& out, const MovieBegan& message) {
     out.writeU8(static_cast<std::uint8_t>(MessageId::MovieBegan));
+    out.writeVarUint(message.movieStep);
 }
 
 std::expected<Message, Error> readLoadLevelBody(BitReader& in) {
