@@ -1595,12 +1595,12 @@ Confirmed (code) at `0x0039a580`. In `level34` zone 51 is enabled by `level34_ri
 by no script, so the Huns' `TacticVandalize` on zone 29 (`P1.HunsSteal`) answers 1 at its first check, 3 s on (inferred:
 from the scripts' `ObjEnableZone` calls and the code at `0x0039a580`).
 
-**Coney** (`repo:src/ai/tactic_vandalize.h`, `repo:src/ai/destroy_goal.h`, issue #326): the tactic, its events 1,
-10, 11, 16, 19, 20 and 22, and the Destroy goal ([Destroy](ai-goals.md#goal-destroy)) over the level's object
-records (`LevelItems::zoneHasObjects`, `LevelItems::nearestZoneTarget`). **Stand-ins**: the cars of
-`TacticVandalizeCars` (issue #716), the vandal brain byte `+0x28d` and the event's flag `+0x11` (not identified), and
-event 23: Coney sends no event when an object breaks, so the waiting members' cheer (`0x0031e770`) and code 16 for a
-broken object of the zone are not built.
+**Coney** (`repo:src/ai/tactic_vandalize.h`, `repo:src/ai/destroy_goal.h`): the tactic, its events 1, 10, 11, 16, 19, 20
+and 22, and the Destroy goal ([Destroy](ai-goals.md#goal-destroy)) over the level's object records
+(`LevelItems::zoneHasObjects`, `LevelItems::nearestZoneTarget`). **Stand-ins**: the cars of `TacticVandalizeCars` (not
+built), the vandal brain byte `+0x28d` and the event's flag `+0x11` (not identified), and event 23: Coney sends no event
+when an object breaks, so the waiting members' cheer (`0x0031e770`, confirmed (code)) and code 16 for a broken object of
+the zone are not built.
 
 ### TacticWalkinTall (type 0x15) {#t2-walkin-tall}
 

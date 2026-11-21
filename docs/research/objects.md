@@ -784,7 +784,7 @@ details are in [Throws](#throws).
 
 The release runs in the human's own event handler, so an AI human's throw lets go of his object as player 1's does,
 and his take sends him message 3 the same way (inferred: neither path tests for a player; the handler is
-`0x00245920` for every human). Coney (issue #326): the play's AI step releases an AI human's held object at his throw
+`0x00245920` for every human). Coney: the play's AI step releases an AI human's held object at his throw
 clip's release event (`PlayLevelSimulation::stepAiThrows`), from his hand at his last pose, and an AI pick-up sets his
 anim set (`LevelItems::collectTakes`). **Stand-in**: an AI throw aims at his fighter's target, as player 1's does
 without the aim; the brain's own throw target is not read.

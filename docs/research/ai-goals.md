@@ -1154,17 +1154,16 @@ Wreck the objects of a zone, given cars or glass, for the wreck tactic.
 
 **The pick, step by step** (`DestroyGoal_PickTarget`, confirmed (code) at `0x002cd698`). Each pick counts one in
 `+0x39`. With no cars it asks the zone for its nearest object (`ObjZone_FindNearestObject(zone, his place, 0x20)`,
-`0x0039a2c0`): of the zone's records not removed, those whose type is carried (anim set `+0x87` 4 or 5) or has a bit
-of `0x24` in its word `+0x5e`, and is worth something (`+0x5a`) or of class `dyn_masks` (the string at `0x00581260`);
-a record whose object is made is skipped while attached, in flight (flag bit 26), broken, or claimed by any gang
-(`+0xec`) with its claim time (`+0xf0`) still ahead. The nearest is by the squared distance to his place for a record
-not made, but by the object's own float `+0x134` for one that is (not identified; speculative: a distance the object
-manager keeps). Confirmed (code) at `0x0039a2c0`-`0x0039a510`. With nothing found, every second pick (an even count)
-claims a pane round him (`Glass_ClaimPane(15, ...)`). With an object: when the radius `+0x2c` is 0 or more and the
-object lies farther than it from the gang's leader the pick ends with no target; on an odd pick the object is claimed
-for his gang for 5 s; on an even one a pane within 15 m **of the object** (`Glass_ClaimPane`'s last argument, its
-search centre, which is the searcher's feet when null: confirmed (code) at `0x0029d928`) is taken instead, and the
-object, claimed, when there is none.
+`0x0039a2c0`): of the zone's records not removed, those whose type is carried (anim set `+0x87` 4 or 5) or has a bit of
+`0x24` in its word `+0x5e`, and is worth something (`+0x5a`) or of class `dyn_masks` (the string at `0x00581260`); a
+record whose object is made is skipped while attached, in flight (flag bit 26), broken, or claimed by any gang (`+0xec`)
+with its claim time (`+0xf0`) still ahead. The nearest is by the squared distance to his place for a record not made,
+but by the object's own float `+0x134` for one that is (not identified). Confirmed (code) at `0x0039a2c0`-`0x0039a510`.
+With nothing found, every second pick (an even count) claims a pane round him (`Glass_ClaimPane(15, ...)`). With an
+object: when the radius `+0x2c` is 0 or more and the object lies farther than it from the gang's leader the pick ends
+with no target; on an odd pick the object is claimed for his gang for 5 s; on an even one a pane within 15 m **of the
+object** (`Glass_ClaimPane`'s last argument, its search centre, which is the searcher's feet when null: confirmed (code)
+at `0x0029d928`) is taken instead, and the object, claimed, when there is none.
 
 **The update** (`DestroyGoal_Process`, confirmed (code) at `0x002cdbc0`): nothing while actions are queued or he
 winds up a swing; after a swing or an empty-handed fetch (`+0x36`) the target is released and a wait of `+0x30` to
@@ -1172,8 +1171,8 @@ winds up a swing; after a swing or an empty-handed fetch (`+0x36`) the target is
 pushed three times (`+0x28` above 2) is released. A broken object still resolves, so after its DestroyItem ends the goal
 pushes DestroyItem twice more (each done at once on a broken object) before it lets the object go.
 
-**Coney** (`repo:src/ai/destroy_goal.h`, issue #326): Start, Resume, End, IsWaiting, the pick and the update above.
-**Stand-ins**: cars (issue #716), the fight stance (issue #959), `DestroyGoal_TryPickUp` (Coney's objects carry no
+**Coney** (`repo:src/ai/destroy_goal.h`): Start, Resume, End, IsWaiting, the pick and the update above.
+**Stand-ins**: cars, the fight stance, `DestroyGoal_TryPickUp` (Coney's objects carry no
 breaking flag `0x10000`), dropping what he holds, the turn to the crowd ahead and the taunt before a swing, the brain
 byte `+0x265`, and the live object's `+0x134` (Coney weighs it by its distance too). The turn and the taunt before
 each swing are why Coney's `level34` intro looters empty their zone a check sooner than the original's (inferred;
