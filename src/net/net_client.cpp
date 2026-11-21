@@ -52,6 +52,7 @@ std::expected<void, Error> NetClient::connect(std::string_view address, std::uin
     m_levelOrder.reset();
     m_loading.reset();
     m_missionEnds.clear();
+    m_hostMovie.reset();
     return {};
 }
 
@@ -183,6 +184,13 @@ void NetClient::handle(const Message& message) {
         }
         if (!m_events.apply(*batch)) {
             finish(ClientEnd::ProtocolError, true, ByeReason::ProtocolError);
+            return;
+        }
+        // The host's newest movie, for this game's MovieDone; a repeat of an older batch never replaces a newer one.
+        for (const NetEvent& event : batch->events) {
+            if (event.kind == GameEventKind::MovieStart && (!m_hostMovie || batch->step >= m_hostMovie->step)) {
+                m_hostMovie = HostMovie{.step = batch->step, .name = event.text};
+            }
         }
     } else if (const auto* order = std::get_if<LoadLevel>(&message); order != nullptr) {
         // Reliable and ordered behind Welcome, so it never comes before it; a newer order replaces one not yet taken.

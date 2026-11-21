@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <format>
+#include <functional>
 #include <optional>
 #include <string>
 #include <utility>
@@ -240,6 +241,22 @@ void addNetPlayHooks(FrameHooks& hooks, NetPlay& net, NetGame& game, bool realTi
         auto pacer = std::make_shared<FramePacer>(30);
         hooks.waitForFrame = [pacer] { return pacer->waitForFrame(); };
     }
+}
+
+void addNetLevelHooks(FrameHooks& hooks, GameModeStack& modes, NetLevels& levels, NetGame& game,
+                      std::function<bool()> otherGate) {
+    // After network play's receive, so a level order or a guest's load that has arrived counts in this step.
+    hooks.beforeStep = [inner = std::move(hooks.beforeStep), &levels] {
+        if (inner) {
+            inner();
+        }
+        levels.beforeStep();
+    };
+    // The loading barrier is asked first, so a held step is recorded even when the time controls hold it too.
+    modes.setStepGate([&levels, &game, other = std::move(otherGate)] {
+        const bool held = game.holdsStep(levels.holdsStep());
+        return !held && (!other || other());
+    });
 }
 
 void finishNetPlay(NetPlay& net, const Options& options) {

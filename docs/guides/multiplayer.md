@@ -467,8 +467,10 @@ disc, `coney.net.two_processes_level99` and `coney.net.offline_unchanged_level99
 [`ci disc-suite`](coney-tools-ci.md#disc-suite)) play level99, whose crew and gang are humans the snapshots carry;
 level99 rather than the sandbox, which holds the player alone. There the guest starts once the host prints that the
 intro movie is skipped (`--guest-after`), the level's first frame of play: the load before it can take longer than the
-guest's whole run, and a guest that left during it was seen by the host as a lost connection. The checks print counts
-and hashes only.
+guest's whole run, and a guest that left during it was seen by the host as a lost connection. The level99 pair runs
+with `--barrier`: the guest plays level99 too, so the host's [loading barrier](#levels) holds its steps from the
+guest's join until the guest's game plays the level; the check asks for held steps in the record, and the replay holds
+them. The checks print counts and hashes only.
 
 The two games step on their own, so a test-mode run with `--host` or `--join` waits for each frame to take a real
 1/30 s (`addNetPlayHooks()`), still one step a frame: unpaced, a host could end its run before the guest had joined,
@@ -483,15 +485,18 @@ script.
 `pad STEP 1 BUTTONS STICKS PRESSURES` in hex) and each line of network play's log as `event STEP TEXT` (joins,
 leaves). The remote pad is the only thing a session changes in the host's game, so `--net-replay FILE`, which plays the
 recorded port 2 over the run's own pads with no session, with the host's input script and level gives the host's
-`--digest` lines again, step for step. `net::SessionReplay` reads a record strictly (a malformed line or a step
-recorded twice is refused, naming the line) and ignores the events.
+`--digest` lines again, step for step. A step the [loading barrier](#levels) held is recorded as `hold STEP` after its
+pad line, and the replay holds the same steps (`NetGame::holdsStep()`): the steps of the record and of the digest lines
+are counted by the pads read, a held step included, so a held step has a number of its own and the replay reads the
+same pads on the same steps. `net::SessionReplay` reads a record strictly (a malformed line, a step's pad recorded
+twice or a step held twice is refused, naming the line) and ignores the events.
 
 ## Levels, checkpoints and the loading barrier {#levels}
 
 The host's game is the story, and the guest plays in it ([Story](network-architecture.md#story)): when the host's game
 loads a level, restarts it at a checkpoint or ends a mission, the guest's does too, and the host never steps a level the
-guest has not loaded. The session's side of it is built and tested on the loopback; the game's main loop does not call
-it yet ([What is not wired yet](#levels-not-wired)).
+guest has not loaded. The session's side is below, and how the running game calls it is [In the running
+game](#levels-in-the-game).
 
 **A load.** `NetServer::loadLevel(level, checkpoint)` (`NetPlay::loadLevel()` in the game) numbers the load (1, 2, ...
 in a session) and sends each joined player a **LoadLevel**: the level's name, the checkpoint and why. The reason is a
@@ -538,12 +543,39 @@ ended (`endHostMovie()`) and every player watching has ended theirs, or `ServerC
 `movieSkipped()`: the host then ends its own copy, as any pad's skip does in the original
 ([Story](network-architecture.md#story)), and the MovieEnd event tells the others.
 
-<span id="levels-not-wired"></span>**What is not wired yet.** Nothing in the running game calls these yet: the host's
-`GameSession` does not report its level starts, restarts and mission ends to `NetPlay`, its step gate does not hold on
-`holdsStep()`, the guest's game does not jump to the ordered level (`GameSession::jumpToLevel()`) or report it loaded,
-and `MovieMode` neither waits for `movieMayEnd()` nor reports its end. A guest still runs its own whole game until the
-client game mode that draws the snapshots is built, and a held host step reuses its step's number, which the digest
-lines and the session record must allow for first. That wiring is #1530.
+<span id="levels-in-the-game"></span>**In the running game.** `NetLevels` (`src/platform/net_levels.h`) joins network play
+to the game session, which it sees through `LevelGame` (`SessionLevelGame` over whichever `GameSession` runs, a fake in
+the tests). Both entry points set it up the same way (`addNetLevelHooks()`): it looks at the game once a step, after
+network play's receive and before the step gate.
+
+- **The host** (and an offline game, so that hosting later in the level tells the guests who join) reports each level
+  load gameplay starts (`GameSession::levelStarts()`, a level change and a checkpoint restart alike) as
+  `NetPlay::loadLevel()`, and each mission-complete and mission-failed screen as `endMission()` (passed or failed;
+  quitting through the pause menu is not reported, and what follows a quit still comes as a LoadLevel). The level goes
+  on the wire as its name, `net::levelNameOf()`: an original level's name as it is, a path such as a story mod's
+  mission level (`levels/alley.clevel`, [Story manifest](studio/mission-mods.md#story-manifest)) as its file name up
+  to the first dot (`alley`); a level with no such name is not sent, and the log says so. A guest cannot load a mod's
+  level by that name yet: the mod's levels do not load in gameplay.
+- **The step gate** holds a step while `NetPlay::holdsStep()` and the game is in a frame of play
+  (`GameSession::inPlay()`): the host loads the level and plays its intro movie at its own pace and then waits at the
+  level's first frame of play, the step the barrier is for. A held step reads its pads and runs nothing, as a paused
+  one does.
+- **The guest** takes the host's newest order each step and sends its game there with `GameSession::jumpToLevel()`,
+  asked again each step while the game cannot take it yet (the level table is read with the front end's preloads). It
+  answers `levelLoaded()` at the first frame of play of a load started since. A join order for the level and checkpoint
+  its game already plays or loads (a guest started at the level itself) needs no second load and is answered once that
+  load plays. The host's mission ends are noted in its log (`the host's mission ended: passed`).
+- **Movies.** `MovieMode` tells network play of each of the game's own movies and asks it (`movies::MovieSync`,
+  `NetLevels::movieSync()`). On the host a movie's start is `startMovie()` and its end or skip `endHostMovie()`; a
+  guest's skip (`movieSkipped()`) ends a skippable movie as a pad's skip does; and once a movie has ended the mode stays,
+  on black with the game clock still, until `movieMayEnd()`. A guest's own copy of a movie, when it ends, is reported
+  with `movieDone()`, naming the host's movie by the step its MovieStart came in (`NetClient::hostMovie()`, the newest
+  MovieStart the guest received); a copy that ends before the host's MovieStart arrives is reported when it does, and
+  one the host never plays is never reported, so the host waits for it only until the movie time-out. The debug menu's
+  movies are the game's own and wait for nobody.
+
+A guest still runs its own whole game until the client game mode that draws the snapshots is built: its level is the
+host's, but what happens in it is its own, including the movies its own scripts play.
 
 ## Game events {#events}
 
@@ -700,7 +732,11 @@ guest's own sound does each once, at the host's step; the [two-process checks](#
 `tests/net/level_sync_test.cpp` pins the level messages' bytes and refusals and runs a level change, a checkpoint
 restart, a mid-level join with its full snapshot, a client that never loads dropped after the time-out, and a movie's
 wait, skip and time-out between a `NetServer` and its clients on the loopback, and `net_play_test.cpp` the host's held
-steps, the order a guest gets on joining and the movie's wait through `NetPlay`;
+steps, the order a guest gets on joining and the movie's wait through `NetPlay`, and through `NetLevels` over two fake
+games a level change, a checkpoint restart, a guest joining from the menus or already in the level, a guest that never
+loads dropped, the mission ends, a mod's level path and the movies' wait and skip; `tests/movies/movie_mode_test.cpp`
+covers the movie player's side of the wait, and `net_game_test.cpp` and `session_record_test.cpp` the held steps in
+the record and the replay;
 `tests/debug/net_page_test.cpp` drives the Network page over a fake
 `NetControls`; and the `coney.hosts_headless` smoke test runs `coney --headless --frames 3 --host 127.0.0.1:0`.
 
@@ -722,6 +758,5 @@ Each step is a pull request that builds and is tested on its own.
 6. **AI humans, events, mission state:** the rest of what a client must see and hear: the game events (built: [Game
    events](#events)), each player's panel state and the HUD's standing state in the snapshot (built: [HUD
    state](snapshots.md#hud-state), [The HUD's standing state](snapshots.md#hud-standing); the radar's blips: #1537),
-   the AI humans and the mission state; level loads, checkpoints and the loading barrier (the session's side built:
-   [Levels](#levels); the game's main loop to call it: #1530).
+   the AI humans and the mission state; level loads, checkpoints and the loading barrier (built: [Levels](#levels)).
 7. **Prediction:** the local player predicted and corrected from the server's snapshots.

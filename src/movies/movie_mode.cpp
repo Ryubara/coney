@@ -87,6 +87,7 @@ void MovieMode::exit() {
     if (m_current) {
         finish(false);
     }
+    m_waiting = false;
     m_queue.clear();
     m_onStack = false;
 }
@@ -171,6 +172,9 @@ bool MovieMode::start(std::string name, MovieRequest request) {
         raiseGameEvent(
             m_events,
             GameEvent{.kind = GameEventKind::MovieStart, .value = playing->skippable ? 1U : 0U, .text = playing->name});
+        if (m_sync.started) {
+            m_sync.started(playing->name);
+        }
     }
     m_current = std::move(playing);
     return true;
@@ -201,6 +205,11 @@ void MovieMode::finish(bool skipped) {
     if (!m_current->request.debug) {
         raiseGameEvent(m_events,
                        GameEvent{.kind = GameEventKind::MovieEnd, .value = skipped ? 1U : 0U, .text = m_current->name});
+        // A network session's other players are waited for before the game goes on (update()).
+        if (m_sync.ended) {
+            m_sync.ended(m_current->name, skipped);
+        }
+        m_waiting = true;
     }
     m_current.reset();
     // Black until whoever called fades in (Movie_Play leaves both buffers black).
@@ -275,8 +284,9 @@ bool MovieMode::step(const GameModeStack& stack, const FrameTime& frame) {
         }
     }
     layOutCaption();
-    // Movie_CheckSkip, after the frame, every pass.
-    if (playing.skippable && anyButton(stack)) {
+    // Movie_CheckSkip, after the frame, every pass; in a network session another player's skip counts as a pad's.
+    const bool skippedElsewhere = m_sync.skippedElsewhere && m_sync.skippedElsewhere();
+    if (playing.skippable && (anyButton(stack) || skippedElsewhere)) {
         if (playing.captions) {
             playing.captions->captions.command(4); // the skip clears the caption
         }
@@ -288,6 +298,13 @@ bool MovieMode::step(const GameModeStack& stack, const FrameTime& frame) {
 }
 
 ModeResult MovieMode::update(GameModeStack& stack, const FrameTime& frame) {
+    // A game movie that ended waits, on black, until every other player in a network session has ended theirs.
+    if (m_waiting) {
+        if (m_sync.mayGoOn && !m_sync.mayGoOn()) {
+            return ModeResult::Stay;
+        }
+        m_waiting = false;
+    }
     // Start the next queued movie that opens. A movie that ends lets the next one start on the next step, as the
     // original returns from Movie_Play between two movies, so the press that skipped one is not counted twice.
     while (!m_current) {
@@ -299,6 +316,11 @@ ModeResult MovieMode::update(GameModeStack& stack, const FrameTime& frame) {
         start(std::move(name), request);
     }
     if (!step(stack, frame) && m_queue.empty()) {
+        // The last movie's end: in a network session the mode stays, on black, until the others have ended theirs.
+        if (m_waiting && m_sync.mayGoOn && !m_sync.mayGoOn()) {
+            return ModeResult::Stay;
+        }
+        m_waiting = false;
         return ModeResult::Leave;
     }
     return ModeResult::Stay;

@@ -218,6 +218,11 @@ int main(int argc, char** argv) {
     // Network play (docs/guides/multiplayer.md), hosted or joined from the start with `--host` or `--join`; a port that
     // cannot be opened ends the run, as any bad argument does.
     coney::platform::NetPlay netPlay(coney::platform::makeEnetTransport, printText);
+    // The session's levels in the game (docs/guides/multiplayer.md#levels): the host's loads told and held for, the
+    // guest's game sent to the host's level.
+    coney::platform::SessionLevelGame netLevelGame([&session] { return session ? &*session : nullptr; });
+    coney::platform::NetLevels netLevels(netPlay);
+    netLevels.setGame(&netLevelGame);
     if (!coney::platform::startNetPlay(netPlay, *options)) {
         return 1;
     }
@@ -259,6 +264,7 @@ int main(int argc, char** argv) {
     if (session) {
         session->attachAudio(audio.get());
         session->setGameEvents(&netPlay.gameEvents());
+        session->movies().setSync(netLevels.movieSync());
         session->startStory();
     }
     // What the console's commands reach in the running game: the session, the pacing, the sound, the log's bug report.
@@ -328,6 +334,8 @@ int main(int argc, char** argv) {
         hooks.endFrame = [&audio](std::uint32_t steps) { audio->endFrame(steps); };
     }
     coney::platform::addNetPlayHooks(hooks, netPlay, netGame, pacer.has_value(), options->netHost || options->netJoin);
+    // The loading barrier holds the host's steps while a guest loads its level.
+    coney::platform::addNetLevelHooks(hooks, modes, netLevels, netGame, {});
     gameConsole.addHooks(hooks);
     modes.runUntilEmpty(timer, clock, hooks, frameLimit);
     if (pacer && options->showFps) {

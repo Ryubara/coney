@@ -2,6 +2,7 @@
 #pragma once
 
 #include <expected>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -15,6 +16,7 @@
 #include "platform/game_session.h"
 #include "platform/log_output.h"
 #include "platform/net_game.h"
+#include "platform/net_levels.h"
 #include "platform/net_play.h"
 #include "platform/render_engine.h"
 #include "platform/window.h"
@@ -90,6 +92,13 @@ void printGameSummary(GameSession& session, AudioOutput* audio, const audio::Obj
 /// steps on its own, and without the wait one game would end its run before the other had joined. It stays one step a
 /// frame (docs/guides/multiplayer.md#two-processes).
 void addNetPlayHooks(FrameHooks& hooks, NetPlay& net, NetGame& game, bool realTime, bool session);
+
+/// A network session's levels in the main loop (docs/guides/multiplayer.md#levels), after addNetPlayHooks(): `levels`
+/// looks at the game each step once network play has received, and `modes`' step gate holds a step the loading
+/// barrier holds (NetGame::holdsStep(), which records it or, replaying, holds where the record says) as well as one
+/// `otherGate` holds (the debug menus' time controls; empty: none). `game` and `levels` must outlive the loop.
+void addNetLevelHooks(FrameHooks& hooks, GameModeStack& modes, NetLevels& levels, NetGame& game,
+                      std::function<bool()> otherGate);
 
 /// The end of network play: the summary line when the run hosted or joined, then the leave, waiting a little real time
 /// for the other games to get this one's Bye (NetPlay::shutdown()).

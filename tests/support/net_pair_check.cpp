@@ -4,21 +4,24 @@
 // and compares the digests they write.
 //
 //   net_pair_check pair    --coney EXE --work DIR --host-script FILE --guest-script FILE --frames N --guest-frames N
-//                          [--guest-after TEXT] [-- ARGS...]
+//                          [--guest-after TEXT] [--barrier] [-- ARGS...]
 //   net_pair_check offline --coney EXE --work DIR --host-script FILE --frames N [-- ARGS...]
 //
 // `pair` starts a headless host on a free port of 127.0.0.1 and, once it says it is hosting, a headless guest that
 // joins it, each with its input script; then replays the host's session record headless with no session. It checks
 // that every snapshot the guest decoded has the digest of what the host's snapshot left it holding, that the host
 // played the guest's pad on port 2, and that the replay gives the host's digest on every step. With --guest-after the
-// guest starts only once the host has also printed TEXT (a level's first frame of play).
+// guest starts only once the host has also printed TEXT (a level's first frame of play). With --barrier the guest takes
+// ARGS too, so its game loads the host's level, and the host's loading barrier holds its steps until the guest plays it
+// (docs/guides/multiplayer.md#levels): the check then also asks for held steps in the session record, which the replay
+// holds as well.
 //
 // `offline` runs the host's script offline and as a host nobody joins, and checks that the two digests are the same on
 // every step (a session changes nothing in the game) and that the pads the offline run played are the script's, from
 // the step the script starts on.
 //
-// ARGS go to the host's runs (the disc and a level, for the disc-backed checks); the guest needs neither. Prints counts
-// and hashes only. Exits 0 when every check passes, 1 when one fails, 2 for a bad command line.
+// ARGS go to the host's runs (the disc and a level, for the disc-backed checks), and with --barrier to the guest's.
+// Prints counts and hashes only. Exits 0 when every check passes, 1 when one fails, 2 for a bad command line.
 
 #include <SDL3/SDL_iostream.h>
 #include <SDL3/SDL_process.h>
@@ -61,7 +64,8 @@ struct Args {
     std::string frames;
     std::string guestFrames;
     std::string guestAfter;         // the host's output to wait for before the guest starts; empty: its hosting line
-    std::vector<std::string> extra; // after `--`: the host's runs only
+    bool barrier = false;           // --barrier: the guest loads the level too, and the host holds for it
+    std::vector<std::string> extra; // after `--`: the host's runs, and the guest's with --barrier
 };
 
 // Prints a line of the check's own output.
@@ -88,6 +92,10 @@ std::optional<Args> parseArgs(int argc, char** argv) {
         if (arg == "--") {
             args.extra.assign(argv + i + 1, argv + argc);
             break;
+        }
+        if (arg == "--barrier") {
+            args.barrier = true;
+            continue;
         }
         const auto found = values.find(arg);
         if (found == values.end() || i + 1 == argc) {
@@ -307,10 +315,21 @@ int checkPair(const Args& args) {
         say("FAIL: the host never printed the --guest-after text");
         return 1;
     }
-    Run guest(args.coney,
-              {"--headless", "--frames", args.guestFrames, "--input-script", args.guestScript, "--join",
-               std::format("127.0.0.1:{}", port), "--net-name", "Guest", "--digest-net", guestNet.string()},
-              "guest");
+    std::vector<std::string> guestArgs{"--headless",
+                                       "--frames",
+                                       args.guestFrames,
+                                       "--input-script",
+                                       args.guestScript,
+                                       "--join",
+                                       std::format("127.0.0.1:{}", port),
+                                       "--net-name",
+                                       "Guest",
+                                       "--digest-net",
+                                       guestNet.string()};
+    if (args.barrier) {
+        guestArgs.insert(guestArgs.end(), args.extra.begin(), args.extra.end());
+    }
+    Run guest(args.coney, guestArgs, "guest");
     const int guestCode = guest.finish();
     const int hostCode = host.finish();
     if (hostCode != 0 || guestCode != 0) {
@@ -339,15 +358,22 @@ int checkPair(const Args& args) {
     std::ifstream recordFile(record);
     std::size_t pressed = 0;
     std::size_t events = 0;
+    std::size_t held = 0;
     for (std::string text; std::getline(recordFile, text);) {
         if (const auto line = coney::net::parseRecordLine(text); line) {
             pressed += line->kind == coney::net::RecordLine::Kind::Pad && line->pad.connected && line->pad.buttons != 0;
             events += line->kind == coney::net::RecordLine::Kind::Event;
+            held += line->kind == coney::net::RecordLine::Kind::Hold;
         }
     }
-    say(std::format("record: {} steps with a button held on port 2, {} events", pressed, events));
+    say(std::format("record: {} steps with a button held on port 2, {} events, {} steps held for the guest's load",
+                    pressed, events, held));
     if (pressed == 0) {
         say("FAIL: the host never played the guest's buttons on port 2");
+        ok = false;
+    }
+    if (args.barrier && held == 0) {
+        say("FAIL: the host never held a step for the guest's load of its level");
         ok = false;
     }
 
@@ -427,7 +453,7 @@ int main(int argc, char** argv) {
     const std::optional<Args> args = parseArgs(argc, argv);
     if (!args) {
         std::fputs("usage: net_pair_check pair|offline --coney EXE --work DIR --host-script FILE [--guest-script FILE] "
-                   "--frames N [--guest-frames N] [--guest-after TEXT] [-- ARGS...]\n",
+                   "--frames N [--guest-frames N] [--guest-after TEXT] [--barrier] [-- ARGS...]\n",
                    stderr);
         return 2;
     }

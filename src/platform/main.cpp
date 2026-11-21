@@ -797,6 +797,11 @@ int main(int argc, char** argv) {
         netGame.note(line);
     });
     netGame.attach(netPlay);
+    // The session's levels in the game: the host's level loads told to the guests and held for, the guest's game sent
+    // to the host's level (docs/guides/multiplayer.md#levels); it follows whichever game session runs.
+    coney::platform::SessionLevelGame netLevelGame([&session] { return session ? &*session : nullptr; });
+    coney::platform::NetLevels netLevels(netPlay);
+    netLevels.setGame(&netLevelGame);
     coney::platform::NetPlayControls netControls(netPlay); // the Network page's view of network play
     debugServices.net = [&netControls]() -> coney::debug::NetControls* { return &netControls; };
     if (!coney::platform::startNetPlay(netPlay, *options)) {
@@ -886,6 +891,7 @@ int main(int argc, char** argv) {
     if (session) {
         session->attachAudio(audio.get());
         session->setGameEvents(&netPlay.gameEvents());
+        session->movies().setSync(netLevels.movieSync());
         session->setHumansTrace(humansTrace);
         session->setNetHumans(&netGame.humans());
         if (commandLineLevel) {
@@ -1149,6 +1155,7 @@ int main(int argc, char** argv) {
         coney::platform::GameSession& started = makeSession();
         started.attachAudio(audio.get());
         started.setGameEvents(&netPlay.gameEvents());
+        started.movies().setSync(netLevels.movieSync());
         started.setSceneLines(coney::platform::PlayLevelControls::sceneLinesFor(debugSession.debugDraw()));
         started.setMeshViews(meshViews);
         started.setLightingSwitches(&debugSession.lighting());
@@ -1193,10 +1200,6 @@ int main(int argc, char** argv) {
             consoleUi->draw();
         }
     });
-    // The time controls hold steps (pause, a scale below 1x); a held step still reads the pads for the menus, and the
-    // frame still renders the game's last step.
-    modes.setStepGate([&debugSession] { return debugSession.time().shouldStep(); });
-
     // `--bench`: the profiler on for the run, its fighters and recording started from the frame hook below
     // (docs/guides/performance.md).
     std::optional<coney::platform::PerfBench> bench;
@@ -1364,6 +1367,10 @@ int main(int argc, char** argv) {
     }
     // Network play receives before each step and sends after it.
     coney::platform::addNetPlayHooks(hooks, netPlay, netGame, pacer.has_value(), options->netHost || options->netJoin);
+    // The time controls hold steps (pause, a scale below 1x), and so does the loading barrier; a held step still reads
+    // the pads for the menus, and the frame still renders the game's last step.
+    coney::platform::addNetLevelHooks(hooks, modes, netLevels, netGame,
+                                      [&debugSession] { return debugSession.time().shouldStep(); });
     // The console's queued commands run before each step, after network play's receive.
     gameConsole.addHooks(hooks);
     // `--bench-spawn-step` counts the steps of play.

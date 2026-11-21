@@ -414,9 +414,8 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   that camera: the world objects are brought in round it, so a server's camera choice is still to come), the glints,
   the world objects' drawn poses, the HUD's sprites (`hudStepped()`), the health rings, the traces and
   `--freeze-world`. The scenes are reached through three interim hooks until their binding moves to the core (#1449).
-- **In the way:** the two-player game state paths are unbuilt; the load barrier's session side is built
-  ([Levels](multiplayer.md#levels)), but the game's level starts, restarts and mission ends do not call it yet
-  (#1530, [Story](#story)).
+- **In the way:** the two-player game state paths are unbuilt. The load barrier is built and the game's level starts,
+  restarts, mission ends and movies call it ([Levels](multiplayer.md#levels), [Story](#story)).
 
 ### HUD, menus and pause (`hud/`, `gui/`, `gamemodes/`) {#sub-hud}
 
@@ -917,7 +916,7 @@ The work in order; each row is about one pull request. Each is an issue, a sub-i
 | 9 | Snapshots: humans first, deltas against acknowledged baselines, the budget | P1 | 8 | #554 |
 | 10 | The client's world: jitter buffer, interpolation through `Interpolated<T>` and `DrawnPoses`, a client game mode with no simulation | P1 | 9 | #555 |
 | 11 | Events: sounds, particles, HUD messages, scenes, movies | P1 | 9 | #556 |
-| 12 | Level loads, checkpoints and the loading barrier (the session's side built: [Levels](multiplayer.md#levels)) | P1 | 11 | #557 |
+| 12 | Level loads, checkpoints and the loading barrier (built: [Levels](multiplayer.md#levels)) | P1 | 11 | #557 |
 | 13 | The state digest, two-process tests in CI, replays (built: [Proof](multiplayer.md#proof)) | P1 | 9 | #558 |
 | 13a | Measure press to screen at 30 and 60 Hz ([Tick rate](#sixty-measure)) | P2 | 10, 14 | #568 |
 | 14 | Prediction of the client's own Warrior | P2 | 10 | #559 |
