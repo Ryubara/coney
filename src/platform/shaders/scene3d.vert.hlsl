@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The scene passes' vertices: the streamed world's sectors, the world objects and the parked cars, drawn by the GPU
-// renderer from the frame description (docs/engine/gpu-renderer.md#scene). The fragment half is scene3d.frag.hlsl.
+// The scene passes' vertices: the streamed world's sectors, the world objects, the parked cars and the humans, drawn by
+// the GPU renderer from the frame description (docs/engine/gpu-renderer.md#scene). The fragment half is
+// scene3d.frag.hlsl.
+//
+// A posed draw (a human) is skinned first, as the GL3 renderer's skinning shader skins him (platform/character_skin.cpp,
+// docs/engine/gpu-renderer.md#skinning): each slot with a weight moves the position and turns the normal by its bone of
+// the frame's palette, times the weight, summed, the normal then made unit; the draw's world matrix then places him.
+// graphics::skinVertex() is the same formula on the CPU, for the tests.
 //
 // It lights each vertex as librw's GL3 device does (its default.vert and header.vert, Coney's level-of-detail step in
 // platform/texture_lod.cpp), so both renderers draw the same picture: the prelighting (black for a mesh without it),
@@ -22,7 +28,11 @@ cbuffer Draw : register(b0, space1)
     float4 materialColour;             // the material's colour, or white for a mesh that does not modulate
     float4 surface;                    // the material's ambient, specular (unused), diffuse; 1 for a prelit mesh
     float4 fogData;                    // the fog's start, its end (the far plane), 1 / (start - end), 1 for no fog
+    uint4 skin;                        // the draw's first bone in Bones, 1 when the draw is posed; zw unused
 };
+
+// The frame's bone palette: every posed draw's skinning matrices, each four columns (graphics::bonePaletteOf()).
+StructuredBuffer<float4> Bones : register(t0, space0);
 
 struct Input
 {
@@ -30,6 +40,8 @@ struct Input
     float3 normal : TEXCOORD1;
     float4 prelit : TEXCOORD2; // 8 bits a channel, 0 to 1
     float2 uv : TEXCOORD3;
+    uint4 bones : TEXCOORD4;    // into the draw's part of the palette
+    float4 weights : TEXCOORD5; // 0 for an unused slot, and for every slot of a mesh that is not skinned
 };
 
 struct Output
@@ -89,9 +101,32 @@ float3 dynamicLight(float3 at, float3 normal)
 Output main(Input input)
 {
     Output output;
-    const float4 at = mul(world, float4(input.position, 1.0));
+    float3 position = input.position;
+    float3 normal = input.normal;
+    if (skin.y != 0)
+    {
+        float3 skinned = float3(0.0, 0.0, 0.0);
+        float3 skinnedNormal = float3(0.0, 0.0, 0.0);
+        for (int i = 0; i < 4; i++)
+        {
+            const float weight = input.weights[i];
+            if (weight != 0.0)
+            {
+                const uint first = (skin.x + input.bones[i]) * 4;
+                const float3 x = Bones[first].xyz;
+                const float3 y = Bones[first + 1].xyz;
+                const float3 z = Bones[first + 2].xyz;
+                const float3 t = Bones[first + 3].xyz;
+                skinned += (x * position.x + y * position.y + z * position.z + t) * weight;
+                skinnedNormal += (x * normal.x + y * normal.y + z * normal.z) * weight;
+            }
+        }
+        position = skinned;
+        normal = normalize(skinnedNormal);
+    }
+    const float4 at = mul(world, float4(position, 1.0));
     output.position = mul(viewProjection, at);
-    const float3 normal = mul((float3x3)world, input.normal);
+    normal = mul((float3x3)world, normal);
     float4 colour = surface.w > 0.5 ? input.prelit : float4(0.0, 0.0, 0.0, 1.0);
     colour.rgb += ambient.rgb * surface.x;
     colour.rgb += dynamicLight(at.xyz, normal) * surface.z;

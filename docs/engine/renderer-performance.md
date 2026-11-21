@@ -20,9 +20,9 @@ uv run --project python coney-tools perf bench --scene all --compare ../../scrat
   times, and the report's `meta` records the render size and the window beside the level.
 - **`--compare FOLDER`** prints each scene's median frame time beside the baseline's and the change in percent, and
   exits 1 when a scene is slower than the budget allows, on a quiet machine only ([Budget](#budget)).
-- **GPU time.** A `gpu.frame` measure from GPU timestamp queries (OpenGL timer queries, built; the new renderer's
-  waits for it, [GPU time](../guides/performance.md#gpu-time)), so a report shows whether a frame is bound by the CPU
-  or the GPU.
+- **GPU time.** A `gpu.frame` measure from GPU timestamp queries (OpenGL timer queries, built; the SDL3 GPU renderer has
+  none, as SDL3's GPU API has no timer queries, [GPU time](../guides/performance.md#gpu-time)), so a report shows
+  whether a frame is bound by the CPU or the GPU.
 - **`--display-preset` and `--renderer`** are passed through to Coney, so every display preset and renderer is
   measured the same way (`--preset` stays the build's CMake preset).
 

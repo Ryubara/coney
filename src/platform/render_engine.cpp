@@ -284,7 +284,7 @@ bool SDLCALL placeWhenShown(void* userdata, SDL_Event* event) {
 
 RenderEngine::RenderEngine(RenderBackend backend, const WindowDesc& desc)
     : m_backend(backend), m_title(desc.title), m_frameSize{desc.width, desc.height}, m_logicalFrame(desc.logicalFrame),
-      m_assets(convertsSceneAssets(backend)) {}
+      m_assets(convertsSceneAssets(backend), skinsInShaders(backend)) {}
 
 float RenderEngine::viewAspect() const {
     if (m_logicalFrame || m_frameSize.height <= 0) {

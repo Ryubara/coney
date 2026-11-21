@@ -19,6 +19,7 @@
 #include <variant>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <rw.h>
 
@@ -37,11 +38,14 @@
 #include "platform/render_engine.h"
 #include "platform/scene_assets.h"
 #include "platform/scene_lighting.h"
+#include "platform/texture_dictionary.h"
 #include "platform/world_renderer.h"
 #include "platform/world_set.h"
 #include "support/character_fixtures.h"
+#include "support/character_mesh_fixtures.h"
 #include "support/object_model_fixtures.h"
 #include "support/optional_value.h"
+#include "support/rw_fixtures.h"
 #include "world/sector_budget.h"
 
 using coney::anim::Vec3;
@@ -278,4 +282,111 @@ TEST_CASE("a human's two meshes are held by id while his mesh is", "[platform][h
         CHECK(engine->sceneAssets().store().meshCount() == 2);
     }
     CHECK(engine->sceneAssets().store().meshCount() == 0);
+}
+
+TEST_CASE("a human's meshes carry his bones, weights and texture for the GPU renderer",
+          "[platform][humans][scene-assets][skinning]") {
+    // Expected: ../engine/gpu-renderer.md#skinning: the GPU renderer skins a human from his converted meshes, so both
+    // (the body and the blood layer) carry each vertex's four bones and weights as the model has them
+    // (packSkinVertices(), docs/research/characters.md#character-geometry), and the character's texture is held with
+    // them, so his materials name it (as the GL3 renderer draws his atomic with it); all of it goes when he does.
+    auto engine = startHeadless();
+    auto model = coney::characters::decodeCharacterModel(
+        coney::test::characterClump(coney::test::testCharacterFields()).span(), coney::test::testBoneOffsets().span());
+    REQUIRE(model.has_value());
+    auto read = coney::platform::TextureDictionary::read(
+        coney::test::texDictionary({coney::test::rgbaTexture2x2("skin")}).span());
+    REQUIRE(read.has_value());
+    REQUIRE(read->textures().size() == 1);
+    rw::Texture* texture = read->textures()[0];
+    coney::platform::SceneAssets& assets = engine->sceneAssets();
+    {
+        const CharacterMesh mesh(*model, texture, coney::platform::Skinning::Gpu, &assets);
+        for (const coney::graphics::MeshId id : {mesh.meshId(), mesh.bloodMeshId()}) {
+            const coney::graphics::MeshData* converted = assets.store().mesh(id);
+            REQUIRE(converted != nullptr);
+            CHECK(converted->attributes.skinned);
+            REQUIRE(converted->vertices.size() == model->vertices.size());
+            for (std::size_t i = 0; i < model->vertices.size(); ++i) {
+                CHECK(converted->vertices[i].bones == model->vertices[i].bones);
+                CHECK(converted->vertices[i].weights == model->vertices[i].weights);
+            }
+        }
+        const coney::graphics::TextureId held = assets.textureOf(texture);
+        REQUIRE(held.valid());
+        const std::span<const coney::graphics::TextureId> textures = assets.materialTextures(mesh.meshId());
+        REQUIRE_FALSE(textures.empty());
+        for (const coney::graphics::TextureId id : textures) {
+            CHECK(id == held);
+        }
+        CHECK(assets.store().textureCount() == 1);
+    }
+    CHECK(assets.store().meshCount() == 0);
+    CHECK(assets.store().textureCount() == 0);
+}
+
+TEST_CASE("on a renderer that skins in its shaders a human is posed by his palette alone",
+          "[platform][humans][skinning]") {
+    // Expected: ../engine/gpu-renderer.md#skinning: only the GPU renderer skins the converted meshes in its shaders; a
+    // human's mesh given its scene assets is then posed as the GL3 renderer's skinned pipeline poses it: the geometry
+    // keeps the bind pose (no vertex is blended on the CPU) and the sphere is the box round each bone's box as the
+    // pose moved it (posedBox()), the sphere the lights are chosen by on both renderers. On the NULL backend, with no
+    // skinning pipeline, the mesh is skinned on the CPU as before.
+    using coney::platform::RenderEngine;
+    CHECK(RenderEngine::skinsInShaders(RenderBackend::Gpu));
+    CHECK_FALSE(RenderEngine::skinsInShaders(RenderBackend::OpenGl));
+    CHECK_FALSE(RenderEngine::skinsInShaders(RenderBackend::Null));
+    auto engine = startHeadless();
+    CHECK_FALSE(engine->sceneAssets().skinsInShaders());
+    auto model = coney::characters::decodeCharacterModel(
+        coney::test::characterClump(coney::test::testCharacterFields()).span(), coney::test::testBoneOffsets().span());
+    REQUIRE(model.has_value());
+    CHECK_FALSE(CharacterMesh(*model, nullptr, coney::platform::Skinning::Gpu, &engine->sceneAssets()).gpuSkinned());
+
+    coney::platform::SceneAssets shaders(true, true);
+    CHECK(shaders.skinsInShaders());
+    CharacterMesh mesh(*model, nullptr, coney::platform::Skinning::Gpu, &shaders);
+    CHECK(mesh.gpuSkinned());
+    const std::vector<coney::anim::Mat34> bent = coney::test::bentMatrices(*model);
+    mesh.pose(bent, coney::platform::characterPlacement(Vec3{1.0F, 2.0F, 0.0F}, 0.5F, 0.0F));
+    const coney::platform::BoneBox box = coney::platform::posedBox(coney::platform::boneBoxes(*model), bent);
+    REQUIRE_FALSE(box.empty);
+    for (rw::Atomic* atomic : {mesh.atomic(), mesh.bloodAtomic()}) {
+        const rw::MorphTarget& target = atomic->geometry->morphTargets[0];
+        for (std::size_t i = 0; i < model->vertices.size(); ++i) {
+            CHECK(target.vertices[i].x == model->vertices[i].position.x);
+            CHECK(target.vertices[i].y == model->vertices[i].position.y);
+            CHECK(target.vertices[i].z == model->vertices[i].position.z);
+        }
+        CHECK(atomic->boundingSphere.center.x == Catch::Approx((box.min.x + box.max.x) * 0.5F));
+        CHECK(atomic->boundingSphere.center.y == Catch::Approx((box.min.y + box.max.y) * 0.5F));
+        CHECK(atomic->boundingSphere.center.z == Catch::Approx((box.min.z + box.max.z) * 0.5F));
+    }
+    CHECK(mesh.skinning().size() == bent.size());
+}
+
+TEST_CASE("each human's draw carries the sphere his pose gave him", "[platform][humans][frame-description][skinning]") {
+    // Expected: ../engine/gpu-renderer.md#skinning: the GL3 renderer lights a human by his atomic's sphere as his pose
+    // moved it (CharacterMesh::pose()); his draw carries that sphere, in his own space (Draw3d::bounds), so the GPU
+    // renderer chooses the same lights (graphics::boundsOf()).
+    drawHumanScene(sceneHumans(), [&](const RenderEngine& engine,
+                                      const std::vector<std::unique_ptr<CharacterMesh>>& meshes,
+                                      const coney::platform::SceneLighting& /*lighting*/) {
+        const coney::graphics::ScenePass* scene = nullptr;
+        for (const auto& pass : engine.frame().passes()) {
+            if (const auto* found = std::get_if<coney::graphics::ScenePass>(&pass); found != nullptr) {
+                scene = found;
+            }
+        }
+        REQUIRE(scene != nullptr);
+        REQUIRE(scene->draws.size() == meshes.size());
+        for (std::size_t i = 0; i < meshes.size(); ++i) {
+            const rw::Sphere& sphere = meshes[i]->atomic()->boundingSphere;
+            const std::optional<coney::graphics::MeshBounds>& bounds = scene->draws[i].bounds;
+            REQUIRE(bounds.has_value());
+            const coney::graphics::MeshBounds posed = coney::test::got(bounds);
+            CHECK(posed.centre == std::array<float, 3>{sphere.center.x, sphere.center.y, sphere.center.z});
+            CHECK(posed.radius == sphere.radius);
+        }
+    });
 }

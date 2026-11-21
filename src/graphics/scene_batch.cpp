@@ -84,13 +84,18 @@ std::array<float, 4> transformPoint(const Matrix4& matrix, const std::array<floa
 }
 
 DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, const Transform3d& where) {
+    return lightsFor(lights, mesh, where, mesh.bounds);
+}
+
+DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, const Transform3d& where,
+                     const MeshBounds& bounds) {
     DrawLights out;
     // A geometry without RenderWare's LIGHT flag takes no light at all (lightingCB).
     if (!mesh.lit) {
         return out;
     }
     // The mesh's sphere in the world, its radius unscaled (Atomic::getWorldBoundingSphere).
-    const auto centre = transformPoint(worldMatrixOf(where), mesh.bounds.centre);
+    const auto centre = transformPoint(worldMatrixOf(where), bounds.centre);
     const std::array<float, 3> sphere{centre[0], centre[1], centre[2]};
     const bool normals = mesh.attributes.normals;
     std::vector<DrawLight> directionals;
@@ -116,7 +121,7 @@ DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, c
             }
             const std::array<float, 3> between{light.position[0] - sphere[0], light.position[1] - sphere[1],
                                                light.position[2] - sphere[2]};
-            if (std::sqrt(dot(between, between)) >= mesh.bounds.radius + light.radius) {
+            if (std::sqrt(dot(between, between)) >= bounds.radius + light.radius) {
                 break;
             }
             locals.push_back(
@@ -142,10 +147,68 @@ DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, c
     return out;
 }
 
-bool needsSkinning(const FrameDescription& frame, const Draw3d& draw) {
-    // A human comes posed by his skinning matrices; the scene shaders have no skinning yet and the converted character
-    // meshes no weights, so he would stand in his bind pose (#1206).
-    return !frame.bonesOf(draw).empty();
+MeshBounds boundsOf(const Draw3d& draw, const MeshData& mesh) { return draw.bounds.value_or(mesh.bounds); }
+
+Posing posingOf(const FrameDescription& frame, const Draw3d& draw, const MeshData& mesh, std::size_t bonesNeeded) {
+    const std::size_t bones = frame.bonesOf(draw).size();
+    if (bones == 0) {
+        return Posing::None;
+    }
+    // Bind-pose vertices would stand where no human is: only a mesh the pose can move whole is drawn.
+    return mesh.attributes.skinned && bonesNeeded <= bones ? Posing::Skinned : Posing::LeftOut;
+}
+
+std::size_t bonesNeededBy(const MeshData& mesh) {
+    if (!mesh.attributes.skinned) {
+        return 0;
+    }
+    std::size_t needed = 0;
+    for (const MeshVertex& vertex : mesh.vertices) {
+        for (std::size_t slot = 0; slot < kSkinSlots; ++slot) {
+            if (vertex.weights[slot] != 0.0F) {
+                needed = std::max(needed, static_cast<std::size_t>(vertex.bones[slot]) + 1);
+            }
+        }
+    }
+    return needed;
+}
+
+std::vector<Matrix4> bonePaletteOf(std::span<const Transform3d> bones) {
+    // A skinning matrix is laid out as a mesh's frame is: its axes, then its translation, column by column.
+    std::vector<Matrix4> palette;
+    palette.reserve(bones.size());
+    for (const Transform3d& bone : bones) {
+        palette.push_back(worldMatrixOf(bone));
+    }
+    return palette;
+}
+
+SkinnedVertex skinVertex(const MeshVertex& vertex, std::span<const Matrix4> palette) {
+    // The shader's loop: each weighted slot's bone moves the position (its columns times x, y, z, plus its translation)
+    // and turns the normal (the first three columns), times the weight.
+    SkinnedVertex out;
+    std::array<float, 3> normal{};
+    for (std::size_t slot = 0; slot < kSkinSlots; ++slot) {
+        const float weight = vertex.weights[slot];
+        if (weight == 0.0F) {
+            continue;
+        }
+        const Matrix4& bone = palette[vertex.bones[slot]];
+        for (std::size_t row = 0; row < 3; ++row) {
+            const float turned = (bone[row] * vertex.normal[0]) + (bone[4 + row] * vertex.normal[1]) +
+                                 (bone[8 + row] * vertex.normal[2]);
+            const float moved = (bone[row] * vertex.position[0]) + (bone[4 + row] * vertex.position[1]) +
+                                (bone[8 + row] * vertex.position[2]) + bone[12 + row];
+            out.position[row] += moved * weight;
+            normal[row] += turned * weight;
+        }
+    }
+    // Made unit, as the CPU skinning made it; a normal the weights cancel stays zero.
+    const float length = std::sqrt(dot(normal, normal));
+    if (length > 0.0F) {
+        out.normal = {normal[0] / length, normal[1] / length, normal[2] / length};
+    }
+    return out;
 }
 
 DrawColours coloursOf(const MeshData& mesh, const Material3d& material) {
@@ -196,6 +259,24 @@ DrawColours layerColoursOf(const MeshData& layer, const DrawColours& base) {
         out.colours.push_back(colour);
     }
     return out;
+}
+
+DrawColours dualColoursOf(const Draw3d& draw, const MeshData& layer, const DrawColours& base) {
+    // The blood atomic shares the body's materials, and the GL3 renderer changes its colours as the body's.
+    if (draw.dualPass == DualPass::Blood) {
+        return coloursOf(layer, draw.material);
+    }
+    return layerColoursOf(layer, base);
+}
+
+SceneStates dualStatesOf(const Draw3d& draw) {
+    SceneStates states = draw.states;
+    // GS context 2: source over by the blood texture's alpha, no alpha test; the Z test and write stay the draw's.
+    if (draw.dualPass == DualPass::Blood) {
+        states.alphaBlend = true;
+        states.alphaTest = AlphaTest::Always;
+    }
+    return states;
 }
 
 bool vertexAlphaOf(const MeshData& mesh, const SubMesh& sub) {

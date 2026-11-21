@@ -576,7 +576,8 @@ void PlayLevelMode::render(const RenderTime& time) {
     const auto ringKey = [](const void* human) {
         return static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(human));
     };
-    if (m_engine.drawsPixels()) {
+    // Posed wherever the scene is drawn: by librw on GL3, from the frame description on the GPU renderer.
+    if (m_engine.drawsScene()) {
         CONEY_PERF_ZONE("render.skin");
         m_stage->skinPuppets(alpha, [](const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
                                        float heading,
@@ -688,8 +689,7 @@ void PlayLevelMode::render(const RenderTime& time) {
         m_lightingSwitches != nullptr ? m_lightingSwitches->parts : graphics::WorldParts{};
     // Between the `s` and the `d` world (step 7): the humans, the cars' opaque parts, the world objects.
     const auto drawObjects = [this, &drawCars, &parts, alpha] {
-        // `--scene-only` leaves the humans out of the frame description, whatever the World page says.
-        if (parts.humans && !m_sceneOnly) {
+        if (parts.humans) {
             drawCharacter();
         }
         if (!parts.objects) {

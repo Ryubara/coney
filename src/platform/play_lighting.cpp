@@ -147,6 +147,9 @@ void PlayLighting::drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture
         .right = axisOf(ltm->right), .up = axisOf(ltm->up), .at = axisOf(ltm->at), .position = axisOf(ltm->pos)};
     draw.material = material;
     draw.states = sceneStatesInForce();
+    // The sphere his pose gave him, in his own space: the one his lights are chosen by.
+    draw.bounds =
+        graphics::MeshBounds{.centre = axisOf(atomic->boundingSphere.center), .radius = atomic->boundingSphere.radius};
     std::vector<graphics::Transform3d> bones;
     bones.reserve(mesh.skinning().size());
     for (const anim::Mat34& matrix : mesh.skinning()) {
