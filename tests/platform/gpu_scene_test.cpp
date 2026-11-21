@@ -340,7 +340,7 @@ TEST_CASE("the GPU renderer skins a posed mesh by its bones", "[render][renderer
     camera.halfHeight = 0.375F;
     camera.nearClip = 1.0F;
     camera.farClip = 100.0F;
-    camera.fogStart = 100.0F;
+    camera.fogStart = 50.0F; // beyond the quads
     engine.setSceneCamera(camera);
     const std::array<coney::graphics::SceneLight, 2> lights{{
         {.type = coney::graphics::LightType::Ambient, .colour = {0.25F, 0.25F, 0.25F}},
