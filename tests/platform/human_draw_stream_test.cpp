@@ -33,6 +33,7 @@
 #include "platform/character_mesh.h"
 #include "platform/draw_calls.h"
 #include "platform/draw_stream.h"
+#include "platform/mesh_view_hook.h"
 #include "platform/perf_probes.h"
 #include "platform/play_lighting.h"
 #include "platform/render_engine.h"
@@ -43,6 +44,7 @@
 #include "platform/world_set.h"
 #include "support/character_fixtures.h"
 #include "support/character_mesh_fixtures.h"
+#include "support/mesh_view_hide_hook.h"
 #include "support/object_model_fixtures.h"
 #include "support/optional_value.h"
 #include "support/rw_fixtures.h"
@@ -109,7 +111,8 @@ using SceneInspection = std::function<void(const RenderEngine&, const std::vecto
 // Draws the human scene headless on a fresh renderer, recording its one frame: each human posed in the synthetic
 // skeleton's bind pose turned by his heading, then drawn as the play mode draws the humans (depth tested and written,
 // back faces culled); then hands the renderer to `inspect`, when given, while the meshes are still held.
-DrawStream drawHumanScene(const std::vector<SceneHuman>& humans, const SceneInspection& inspect = {}) {
+DrawStream drawHumanScene(const std::vector<SceneHuman>& humans, const SceneInspection& inspect = {},
+                          coney::platform::MeshViewHook* hook = nullptr) {
     auto engine = startHeadless();
     const coney::test::ArchiveFixture archive({});
     coney::world::SectorBudget budget(10'000);
@@ -139,6 +142,10 @@ DrawStream drawHumanScene(const std::vector<SceneHuman>& humans, const SceneInsp
         WorldRenderer renderer;
         renderer.recordHeadless(true);
         renderer.setLighting(&lighting.scene());
+        // The mesh views' hook, when the scene has one, offered to the rig and the renderer with the passes off as the
+        // play mode leaves them on a renderer that records its draws.
+        lighting.scene().setMeshViews(hook, false);
+        engine->hideKindsOf(hook);
         const auto drawHumans = [&] {
             const DrawKindScope kind(DrawKind::Humans);
             coney::platform::draw::setRenderState(rw::ZTESTENABLE, 1);
@@ -154,6 +161,8 @@ DrawStream drawHumanScene(const std::vector<SceneHuman>& humans, const SceneInsp
         if (inspect) {
             inspect(*engine, meshes, lighting.scene());
         }
+        engine->hideKindsOf(nullptr);
+        lighting.scene().setMeshViews(nullptr);
     }
     blood->destroy();
     REQUIRE(stream.has_value());
@@ -389,4 +398,40 @@ TEST_CASE("each human's draw carries the sphere his pose gave him", "[platform][
             CHECK(posed.radius == sphere.radius);
         }
     });
+}
+
+TEST_CASE("hiding the humans leaves them out of the frame description, and no other kind does",
+          "[platform][humans][frame-description][world-page]") {
+    // Expected: docs/engine/gpu-renderer.md#scene: the World page's Humans switch hides the humans (with the
+    // blood layer) and nothing else: the renderer leaves out a recorded draw of a kind the hook hides
+    // (RenderEngine::hideKindsOf()), and a hook that hides another kind, or only views, leaves the four humans as they
+    // are recorded. Coney's own debug tooling.
+    using coney::test::HideHook;
+    const std::vector<SceneHuman> humans = sceneHumans();
+    // How many human draws the frame description holds with `hook`.
+    const auto recorded = [&humans](coney::platform::MeshViewHook* hook) {
+        std::size_t draws = 0;
+        drawHumanScene(
+            humans,
+            [&](const RenderEngine& engine, const std::vector<std::unique_ptr<CharacterMesh>>&,
+                const coney::platform::SceneLighting&) {
+                for (const auto& pass : engine.frame().passes()) {
+                    if (const auto* found = std::get_if<coney::graphics::ScenePass>(&pass); found != nullptr) {
+                        draws += found->draws.size();
+                    }
+                }
+            },
+            hook);
+        return draws;
+    };
+    CHECK(recorded(nullptr) == 4);
+    HideHook hidden({DrawKind::Humans});
+    CHECK(recorded(&hidden) == 0);
+    HideHook scenery({DrawKind::Scenery});
+    CHECK(recorded(&scenery) == 4);
+    HideHook objects({DrawKind::Objects});
+    CHECK(recorded(&objects) == 4);
+    // A mesh view on (the passes are GL3's) hides nothing here either.
+    HideHook viewing({}, true);
+    CHECK(recorded(&viewing) == 4);
 }

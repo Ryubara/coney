@@ -412,3 +412,77 @@ TEST_CASE("the lighting rig hands each atomic to the mesh views' hook as the kin
         scene.setMeshViews(nullptr);
     }
 }
+
+TEST_CASE("the mesh views say which kinds the World page hides and whether they draw passes", "[mesh][world-page]") {
+    // Expected: docs/guides/debug-menu.md#world: the Streamed world, Humans and Objects parts hide the scenery, the
+    // humans and the objects (an effect or any other model counts as an object, as the views' kinds do); a hidden
+    // kind is a query apart from passes, which only a wireframe or a mesh view other than shaded draws (the normals
+    // and bone axes are lines of their own).
+    using coney::platform::DrawKind;
+    coney::debug::DebugDrawOptions options;
+    coney::graphics::LightingSwitches switches;
+    coney::platform::MeshViews views(options, &switches);
+    for (const DrawKind kind :
+         {DrawKind::Scenery, DrawKind::Humans, DrawKind::Objects, DrawKind::Effects, DrawKind::Other}) {
+        CHECK_FALSE(views.hides(kind));
+    }
+    CHECK_FALSE(views.hasPasses());
+
+    switches.parts.scenery = false;
+    CHECK(views.hides(DrawKind::Scenery));
+    CHECK_FALSE(views.hides(DrawKind::Humans));
+    CHECK_FALSE(views.hides(DrawKind::Objects));
+    CHECK_FALSE(views.hasPasses()); // hiding a kind is no pass
+
+    switches.parts = {};
+    switches.parts.humans = false;
+    CHECK(views.hides(DrawKind::Humans));
+    CHECK_FALSE(views.hides(DrawKind::Scenery));
+    CHECK_FALSE(views.hides(DrawKind::Objects));
+
+    switches.parts = {};
+    switches.parts.objects = false;
+    CHECK(views.hides(DrawKind::Objects));
+    CHECK(views.hides(DrawKind::Effects));
+    CHECK(views.hides(DrawKind::Other));
+    CHECK_FALSE(views.hides(DrawKind::Scenery));
+    CHECK_FALSE(views.hides(DrawKind::Humans));
+
+    // Passes follow the views alone.
+    switches.parts = {};
+    options.mesh.normals = true;
+    CHECK_FALSE(views.hasPasses());
+    options.mesh.wireframe = coney::debug::MeshScope::Everything;
+    CHECK(views.hasPasses());
+    options.mesh.wireframe = coney::debug::MeshScope::Off;
+    options.mesh.view = coney::debug::MeshShading::Material;
+    CHECK(views.hasPasses());
+    CHECK_FALSE(views.hides(DrawKind::Scenery));
+}
+
+TEST_CASE("the rig's mesh views are on only while a hook with passes is set and the renderer draws them",
+          "[mesh][world-page]") {
+    // Expected: docs/guides/debug-menu.md#world: SceneLighting::meshViewsOn() is true only while a hook is set, the
+    // play mode leaves its passes on (GL3) and the hook has some; a hook that only hides kinds leaves the draws to be
+    // recorded into the frame description.
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    coney::graphics::LevelLighting level;
+    coney::platform::SceneLighting scene(level, std::nullopt, std::nullopt);
+    CHECK_FALSE(scene.meshViewsOn());
+
+    coney::debug::DebugDrawOptions options;
+    coney::graphics::LightingSwitches switches;
+    coney::platform::MeshViews views(options, &switches);
+    switches.parts.humans = false;
+    scene.setMeshViews(&views, true);
+    CHECK_FALSE(scene.meshViewsOn()); // a kind hidden, but no pass: the draws may be recorded
+
+    options.mesh.wireframe = coney::debug::MeshScope::Everything;
+    CHECK(scene.meshViewsOn());
+    // The passes left to GL3: a renderer that cannot draw them records the shaded draw.
+    scene.setMeshViews(&views, false);
+    CHECK_FALSE(scene.meshViewsOn());
+    scene.setMeshViews(nullptr);
+    CHECK_FALSE(scene.meshViewsOn());
+}

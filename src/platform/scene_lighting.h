@@ -154,7 +154,7 @@ class SceneLighting {
     /// Hands every atomic drawn from now on to the debug tools' mesh views (`hook`, which must outlive its use), or to
     /// nobody (null: each is drawn as it always is, the hook not consulted).
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
-    void setMeshViews(MeshViewHook* hook) { m_meshViews = hook; }
+    void setMeshViews(MeshViewHook* hook, bool /*passes*/ = true) { m_meshViews = hook; }
     /// Marks `atomic` as a second layer of the model drawn around it (a human's blood pass), which the mesh views draw
     /// only with the shaded draw; null: none. The caller marks it, so the original's draw functions stay as they are.
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none

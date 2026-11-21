@@ -92,6 +92,10 @@ bool MeshViews::beginFrame(const PlayLevelMode& mode) {
     return true;
 }
 
+bool MeshViews::hasPasses() const { return true; }
+
+bool MeshViews::hides(DrawKind /*kind*/) const { return false; }
+
 void MeshViews::draw(rw::Atomic* atomic, DrawKind kind, bool layer, const std::function<void()>& shaded) {
     // A kind the World page hides is drawn in no pass at all.
     if (debug::meshHidden(parts(), meshKindOf(kind))) {

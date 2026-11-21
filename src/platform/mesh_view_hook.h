@@ -24,6 +24,14 @@ class MeshViewHook {
 
     /// The start of a frame `mode` draws; false when every view is off this frame, and then draw() is not called.
     virtual bool beginFrame(const PlayLevelMode& mode) = 0;
+    /// Whether the hook draws passes of its own over the models this frame (a wireframe or a mesh view other than
+    /// shaded), so that every model must reach draw() through the lighting rig. A hook that only leaves kinds out
+    /// (hides()) says false, and a draw that is recorded into the frame description instead may skip a hidden kind
+    /// itself. The default is true: a hook decides for every model unless it says otherwise.
+    [[nodiscard]] virtual bool hasPasses() const { return true; }
+    /// Whether the hook draws no model of `kind` this frame (the World page's parts switched off). A recorded draw of
+    /// a model of a hidden kind is left out of the frame description, as draw() leaves it out of the rig's.
+    [[nodiscard]] virtual bool hides(DrawKind /*kind*/) const { return false; }
     /// Draws `atomic`, a model of `kind` (what the play mode's DrawKindScope around the draw names), as the views say.
     /// `shaded` makes the game's own draw of it, lit; the hook calls it, or not, and may draw the same atomic again in
     /// other passes (flat, wire) through its own pipeline, so the passes follow its skinning whether it is done on the

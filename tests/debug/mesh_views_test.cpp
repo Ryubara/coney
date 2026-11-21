@@ -382,3 +382,19 @@ TEST_CASE("the Debug draw page switches the mesh views", "[debug][mesh]") {
     CHECK(mesh.boneAxes);
     CHECK(item("Mesh view on").getChoice() == 0);
 }
+
+TEST_CASE("the Debug draw page says the wireframe and the mesh views are GL3's", "[debug][mesh][world-page]") {
+    // Expected: docs/engine/gpu-renderer.md#scene: the passes are draws through librw, which draws nothing on the GPU
+    // renderer, so the items that switch them say so plainly (#1545).
+    coney::debug::TunableRegistry tunables;
+    coney::debug::DebugSession session(tunables, coney::debug::DebugServices{}, nullptr);
+    const auto page = session.model().openPage("Debug draw");
+    REQUIRE(page != nullptr);
+    for (const std::string_view label : {"Model wireframe", "Mesh view"}) {
+        const coney::debug::MenuItem* found = page->find(label);
+        INFO(label);
+        REQUIRE(found != nullptr);
+        CHECK(found->help.find("GL3 only") != std::string::npos);
+        CHECK(found->help.find("--renderer gpu") != std::string::npos);
+    }
+}

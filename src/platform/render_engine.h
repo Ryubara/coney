@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <expected>
 #include <functional>
@@ -21,6 +22,8 @@
 #include "platform/draw_stream.h"
 #include "platform/gl3_renderer.h"
 #include "platform/gpu_overlay.h"
+#include "platform/mesh_view_hook.h"
+#include "platform/perf_probes.h"
 #include "platform/present_mode.h"
 #include "platform/scene_assets.h"
 #include "platform/window.h"
@@ -45,6 +48,9 @@ enum class RenderBackend : std::uint8_t {
     /// the world, objects, cars and humans of the scene passes (docs/engine/gpu-renderer.md#scene).
     Gpu,
 };
+
+/// Whether `backend` draws the debug tools' mesh view passes.
+[[nodiscard]] constexpr bool drawsMeshViewPassesOn(RenderBackend /*backend*/) { return true; }
 
 /// Whether `backend` draws the 3D scene, so that play loads the world's objects and cars for it: GL3 through librw,
 /// the GPU renderer from the frame description (docs/engine/gpu-renderer.md#scene); not the NULL backend.
@@ -322,6 +328,16 @@ class RenderEngine final : public graphics::RenderDevice {
     /// GL3 renderer clears librw's camera's Z at once, the GPU renderer when it reaches the pass. Only between
     /// beginFrame() and present() (checked by CONEY_ASSERT).
     void clearSceneDepth();
+
+    /// Leaves out, from now until the next call, the 3D draws drawScene() is given for models of the kinds `hook` hides
+    /// (MeshViewHook::hides(): the World page's scenery, humans and objects; null: none), a draw's kind being the
+    /// draw scope's it is made in (DrawKindScope). The play mode says it at each frame's start and clears it at its
+    /// end, so a renderer that records its draws (the GPU renderer) hides one kind without drawing the others through
+    /// librw.
+    /// @coney-only the World page's parts (docs/guides/debug-menu.md#world); the original has none
+    void hideKindsOf(const MeshViewHook* /*hook*/) {}
+    /// Whether drawScene() leaves out the draws of `kind` (hideKindsOf()).
+    [[nodiscard]] bool kindHidden(DrawKind /*kind*/) const { return false; }
 
   private:
     // Only start() makes one, which then fills it in as librw comes up.
