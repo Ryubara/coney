@@ -5,6 +5,7 @@
 // fronts, owned objects, panes and smash targets set by the test; a pick-up takes its object at once.
 
 #include <algorithm>
+#include <cstdint>
 #include <optional>
 #include <vector>
 
@@ -39,6 +40,41 @@ class FakeItems final : public ai::ItemServices {
     std::vector<ai::SmashTarget> targets; // what smashTargets() lists, likewise
     ai::HeldUse use = ai::HeldUse::Other; // what heldUse() says of any held object
     std::vector<double> flying;           // the objects in flight
+    std::vector<double> smashed;          // the objects broken (broken() says so, and the zone no longer counts them)
+    int carriedSet = 0;                   // the anim set wreckView() gives every owned object
+
+    [[nodiscard]] bool broken(double handle) const override {
+        const Object* object = find(handle);
+        return std::ranges::contains(smashed, handle) || (object != nullptr && object->gone);
+    }
+    // The zone's nearest object neither gone, broken nor claimed (ObjZone_FindNearestObject in mode 0x20).
+    [[nodiscard]] std::optional<double> nearestZoneTarget(int zone, anim::Vec3 from,
+                                                          std::uint64_t nowMs) const override {
+        std::optional<double> nearest;
+        float best = 1e9F;
+        for (const Object& object : objects) {
+            if (object.zone != zone || broken(object.handle) || claimedByAny(object.handle, nowMs)) {
+                continue;
+            }
+            const anim::Vec3 d = anim::subtract(object.position, from);
+            if (const float distance = anim::dot(d, d); distance < best) {
+                best = distance;
+                nearest = object.handle;
+            }
+        }
+        return nearest;
+    }
+    [[nodiscard]] bool zoneHasObjects(int zone) const override {
+        return std::ranges::any_of(objects,
+                                   [&](const Object& object) { return object.zone == zone && !broken(object.handle); });
+    }
+    [[nodiscard]] std::optional<ai::SmashTarget> wreckView(double handle) const override {
+        const Object* object = find(handle);
+        if (object == nullptr || object->gone) {
+            return std::nullopt;
+        }
+        return ai::SmashTarget{.handle = handle, .position = object->position, .animSet = carriedSet};
+    }
 
     [[nodiscard]] bool inFlight(double handle) const override { return std::ranges::contains(flying, handle); }
 
