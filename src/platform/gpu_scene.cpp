@@ -216,6 +216,9 @@ SDL_GPUGraphicsPipeline* GpuScene::pipelineFor(const PipelineKey& key) {
     info.rasterizer_state.cull_mode = sdlCull(key.cull);
     // OpenGL's default: counter-clockwise on a screen whose y is up is the front, which SDL's clip space shares.
     info.rasterizer_state.front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE;
+    // What lies past the far clip (or nearer than the near clip) is cut away, as OpenGL and librw do; SDL's default,
+    // a clamped depth, would draw it on the far plane instead.
+    info.rasterizer_state.enable_depth_clip = true;
     info.multisample_state.sample_count = SDL_GPU_SAMPLECOUNT_1;
     // librw's depth: tested less or equal, or always while the test is off but depth is still written.
     info.depth_stencil_state.enable_depth_test = key.depthTest || key.depthWrite;
