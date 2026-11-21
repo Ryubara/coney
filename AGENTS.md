@@ -43,8 +43,8 @@ Your first hour; the rest is for agents. Other tools: `uvx pre-commit install`, 
 - **Faithful first:** gameplay matches the PS2 exactly until the game is complete; Coney's own mechanics wait (designs
   may be written), debug tooling is fine. Whatever either build does natively (Xbox lighting, shadows, textures, movies)
   is faithful too, as an option off in test mode; graphics beyond both may be built now. Pages name the build.
-- **The original's fixed limits** (60 humans) **do not bind Coney** past their range, marked `@coney-only limit:`,
-  unless gameplay inside it, determinism, network play or test mode needs one (`conventions.md#original-limits`).
+- **The original's limits do not bind Coney** past their range (marked `@coney-only limit:`, documented beside its
+  number) unless gameplay inside it, determinism, network or test mode needs one (`conventions.md#original-limits`).
 - **Never exclude a file from the 512 KB large-file check** in `.pre-commit-config.yaml`: it catches game data
   committed by mistake. Split big generated data and pages instead.
 <!-- conventions:begin maintainer-decisions -->

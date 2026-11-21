@@ -418,12 +418,14 @@ not one (a damage, a delay, the distance a fight starts at, the five steps a blo
 number could be either, ask whether it says how many fit or how the game plays, and take it to the coordinator at a
 [decision point](how-we-work.md#decision-points) if that does not settle it.
 
-**When a limit stays.** Only when it is truly needed, which is one of these:
+**When a limit stays.** Only when it is truly needed, which is one of these three:
 
-- **Gameplay inside the range depends on it:** the cap produces an order or timing that a normal level shows. The five
-  scan tokens a step decide which human is looked at in which step, the lowest free slot decides who is found first, and
-  the corpse cull at 60 humans alive thins a normal level's crowd. Lifting such a limit moves a hash inside the range,
-  so the lift must keep what the cap did there, and a limit whose effect cannot be kept stays.
+- **Gameplay inside the range depends on it:** the cap produces an order or timing that a normal level shows (the
+  scan tokens a step and the order the slots give are the cases issue #1569 works out). Lifting such a limit moves a
+  hash inside the range, so the lift must keep what the cap did there, and a limit whose effect cannot be kept stays.
+- **The original's own data fixes the format:** a field width or an id count that the disc's data is laid out by (a
+  model's 34 bones, the 722 animation ids) stays where reading that data needs it. Past it Coney's own formats and
+  ids go on by their own rule, marked like any lift.
 - **Removing it breaks determinism, network play or the test mode:** a size every peer must agree on, a loop whose
   length would depend on the machine, anything that would make a run differ from one frame rate or process to another
   ([Update and render](#update-and-render), [network checklist](network-architecture.md#checklist)).
@@ -444,7 +446,8 @@ humans above it.
 - An `@orig` function keeps its original lines: the lifted value comes from a helper or constant of its own (marked
   as below), the `@orig` function reads it, and the line's pair in `orig compare` is a `stand-in` whose note names the
   limit, with a comment saying `stand-in` on or just above the line ([Pairs](stamps.md#pairs)). Never put the marker on
-  the `@orig` function itself.
+  the `@orig` function itself. The helper is not a [Coney-only capability](#coney-only-capabilities): it adds
+  nothing a script could call and the original's behaviour reads the same with it, so an `@orig` function may read it.
 
 **The marker.** Code that lifts a limit says so with a form of [`@coney-only`](#coney-only), in the doc comment of the
 function, constant or type that carries the lift:
