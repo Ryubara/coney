@@ -227,12 +227,12 @@ int scanEnemies(const Gangs& gangs, Brain& scanner) {
             }
         }
     }
-    const std::vector<bool> seen = nearestSeen(candidates, kScanMaxEnemies, [&scanner, &members](std::size_t k) {
+    const std::vector<bool> sighted = nearestSeen(candidates, kScanMaxEnemies, [&scanner, &members](std::size_t k) {
         return scanLineClear(scanner, *members[k]);
     });
     std::vector<Brain*> found;
     for (std::size_t k = 0; k < members.size(); ++k) {
-        if (seen[k]) {
+        if (sighted[k]) {
             found.push_back(members[k]);
         }
     }
