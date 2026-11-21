@@ -28,10 +28,12 @@ thread_local bool tInBody = false;
 // Marks this thread as running bodies for its lifetime.
 class BodyScope {
   public:
+    // Refuses a body that starts a loop, then marks the thread.
     BodyScope() {
         CONEY_ASSERT(!tInBody);
         tInBody = true;
     }
+    // The thread runs no body any more.
     ~BodyScope() { tInBody = false; }
     BodyScope(const BodyScope&) = delete;
     BodyScope& operator=(const BodyScope&) = delete;
@@ -46,12 +48,14 @@ class BodyScope {
 // takes chunks too and returns once every worker has said so, so no worker still reads the body after the loop.
 class WorkerPool::Workers {
   public:
+    // Starts `workers` threads, each waiting for a loop.
     explicit Workers(std::size_t workers) {
         m_threads.reserve(workers);
         for (std::size_t i = 0; i < workers; ++i) {
             m_threads.emplace_back([this] { work(); });
         }
     }
+    // Wakes every worker to stop, and waits for each.
     ~Workers() {
         {
             const std::lock_guard lock(m_mutex);
@@ -136,6 +140,7 @@ class WorkerPool::Workers {
     bool m_quit = false;
 };
 
+// The workers beside the caller; none with one thread.
 WorkerPool::WorkerPool(std::size_t threads) {
     if (threads > 1) {
         m_workers = std::make_unique<Workers>(threads - 1);
@@ -160,10 +165,12 @@ void WorkerPool::parallelFor(std::size_t count, const std::function<void(std::si
     m_workers->run(count, body);
 }
 
+// Half the hardware threads, clamped to 1-8.
 std::size_t defaultWorkerThreads(unsigned hardwareThreads) {
     return std::clamp<std::size_t>(hardwareThreads / 2, 1, 8);
 }
 
+// Started at the first call (a function's static), stopped at exit.
 WorkerPool& sharedWorkerPool() {
     static WorkerPool pool(defaultWorkerThreads(std::thread::hardware_concurrency()));
     return pool;

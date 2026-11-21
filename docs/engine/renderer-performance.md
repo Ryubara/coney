@@ -121,11 +121,11 @@ them in three passes:
 `CharacterMesh::pose()`, which player 1, the sandbox's targets and a scene's puppets still use, is `preparePose()`
 then `commitPose()`, so the arithmetic is the same on either path, and the results do not depend on how many threads
 ran it. **What the simulation reads is unchanged:** the hats, held objects and carried props that read the drawing
-pose (#1557) are posed in pass 3, in the same order and from the same pose as before.
+pose ([#1557](issue:1557)) are posed in pass 3, in the same order and from the same pose as before.
 
 **What it saves.** The same brawl of 1000 as the cull's (500 enemies, 500 allies, rows of 25, lockstep, 960 × 720,
 `level95`), a `playtest` build of `main` at `a1368987d` and of the change in the same build folder, the main thread's
-CPU time, the median of three interleaved runs, on a 16-thread machine (a pool of 8 threads): with the view pinned on the
+CPU time, the median of three interleaved runs, on a 16-thread machine (a pool of 8): with the view pinned on the
 crowd `render.skin` goes from 15.3 to 4.0 ms (the sweep measured 3.9 ms with the cull, [#1542](issue:1542)) and the
 render from 21.1 to 9.5 ms; with the follow camera `render.skin` from 13.0 to 3.6 ms and the render from 18.0 to
 8.5 ms. The draws are the same (1158 and 931), and the last frame's screenshot hashes the same before and after with
