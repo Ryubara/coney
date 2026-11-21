@@ -96,7 +96,8 @@ ObjectType wreckType(const char* name, int animSet, std::uint16_t bodyWord, int 
 
 // The level's items over synthetic records and types, in an enabled zone kZone: a carried bag, a thrown bottle, an
 // object of word bit 0x04 and one of bit 0x20, a plain one nobody carries, a carried one worth nothing and a mask worth
-// nothing.
+// nothing. The zone queries are asked of it, so a LevelItems that answers as the ItemServices defaults do (no
+// target, nothing left, no view) fails every test below that expects one.
 struct Wreck {
     coney::GameState state;
     coney::script::ScriptSystem scripts{[](std::string_view) -> std::expected<std::vector<std::byte>, coney::Error> {

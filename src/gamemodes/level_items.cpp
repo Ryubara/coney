@@ -74,66 +74,13 @@ std::vector<ai::LooseItem> LevelItems::ownedItems(int zone) const {
     return items;
 }
 
-std::optional<double> LevelItems::nearestZoneTarget(int zone, anim::Vec3 from, std::uint64_t nowMs) const {
-    // Coney stand-in: only mode 0x20, the Destroy goal's, is built; mode 2 and the others have no caller yet.
-    if (zone < 0 || !m_records.zoneEnabled(static_cast<std::uint32_t>(zone))) {
-        return std::nullopt;
-    }
-    std::optional<double> nearest;
-    float nearestDistance = kNoZoneTarget;
-    for (const world_objects::SpawnRecord& record : m_records.all()) {
-        if (record.zone != static_cast<std::uint32_t>(zone) || record.removed) {
-            continue;
-        }
-        // Carried, or of the wreck bits, and worth something (or a mask).
-        const world_objects::ObjectType* type = m_types.find(record.typeName);
-        if (type == nullptr ||
-            (type->animSet != kCarriedSet && type->animSet != kThrownSet && (type->bodyWord & kZoneWreckBits) == 0)) {
-            continue;
-        }
-        if (type->value == 0 && type->className != world_objects::kDynMasksClass) {
-            continue;
-        }
-        // An object in a hand, in flight, broken or claimed is no target. Coney stand-in: the play makes every
-        // record's object at once (SpawnRecord::live is the front end's), so each is tested as a made one.
-        if (m_pickups.inHand(record.handle) || m_pickups.airborne(record.handle) || broken(record.handle) ||
-            claimedByAny(record.handle, nowMs)) {
-            continue;
-        }
-        // Coney stand-in: the object is weighed by its distance to `from`, where the original reads a made object's
-        // own +0x134 (not identified).
-        const anim::Vec3 at{record.position[0], record.position[1], record.position[2]};
-        if (const float distance = distanceSquared(from, at); distance < nearestDistance) {
-            nearestDistance = distance;
-            nearest = record.handle;
-        }
-    }
-    return nearest;
+std::optional<double> LevelItems::nearestZoneTarget(int /*zone*/, anim::Vec3 /*from*/, std::uint64_t /*nowMs*/) const {
+    return std::nullopt;
 }
 
-bool LevelItems::zoneHasObjects(int zone) const {
-    // Coney stand-in: only mode 1 (an object in a hand does not count), the wreck tactic's, is built.
-    if (zone < 0 || !m_records.zoneEnabled(static_cast<std::uint32_t>(zone))) {
-        return false;
-    }
-    return std::ranges::any_of(m_records.all(), [&](const world_objects::SpawnRecord& record) {
-        if (record.zone != static_cast<std::uint32_t>(zone) || record.removed) {
-            return false;
-        }
-        // A made object counts while it is whole and in no hand. Coney stand-in: every record's object is made in
-        // play (SpawnRecord::live is the front end's), so the original's "not made yet counts" has no case here.
-        return !broken(record.handle) && !m_pickups.inHand(record.handle);
-    });
-}
+bool LevelItems::zoneHasObjects(int /*zone*/) const { return false; }
 
-std::optional<ai::SmashTarget> LevelItems::wreckView(double handle) const {
-    const world_objects::SpawnRecord* record = m_records.find(handle);
-    const world_objects::ObjectType* type = record != nullptr ? m_types.find(record->typeName) : nullptr;
-    if (type == nullptr || record->removed) {
-        return std::nullopt;
-    }
-    return smashTargetOf(handle, {record->position[0], record->position[1], record->position[2]}, *type);
-}
+std::optional<ai::SmashTarget> LevelItems::wreckView(double /*handle*/) const { return std::nullopt; }
 
 std::optional<anim::Vec3> LevelItems::itemPosition(double handle) const {
     const world_objects::SpawnRecord* record = m_records.find(handle);
