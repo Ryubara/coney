@@ -900,8 +900,9 @@ until the mode is gone (the menu writes `+0x214` of both managers, not traced).
 What a reload restores from `SetCheckPoint` is on [Scripts](scripting.md#run-next-mission).
 
 **The other ways out.** Three more toggles pop their screen and leave the level by the player's choice; with
-`PauseMenu_Toggle` they are the only callers that load the level `"menu"` (`0x0054e790`, by its references) and, by
-[Story progress](story-progress.md#callers), the only ones that call `runNextMission(0)` (`0x0054e798`). Confirmed
+`PauseMenu_Toggle` they are the only callers that load the level `"menu"` or call `runNextMission(0)`. Three of the
+four reference `"menu"` (`0x0054e790`): all but `ANGameOver_Toggle`, whose Quit calls `runNextMission(0)`
+(`0x0054e798`); the four are the callers of that call on [Story progress](story-progress.md#callers). Confirmed
 (code):
 
 - **`MissionFailed_Toggle`** (`0x00155408`, mode 0xc): to the hangout (`+0x7ac`): `W_GameState + 0x14c` = 3 and

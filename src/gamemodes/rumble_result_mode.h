@@ -10,6 +10,7 @@
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/pause_mode.h"
+#include "gamemodes/quit_count.h"
 #include "graphics/render_device.h"
 #include "gui/global_strings.h"
 #include "gui/pause_menu/pause_menu.h"
