@@ -28,8 +28,10 @@
 #include "core/perf.h"
 #include "fileio/executable.h"
 #include "graphics/human_blood.h"
+#include "graphics/human_lighting.h"
 #include "human/human_animator.h"
 #include "human/player_trace.h"
+#include "human/target_human.h"
 #include "net/game_humans.h"
 #include "platform/draw_calls.h"
 #include "platform/object_draw.h"
@@ -468,7 +470,7 @@ void PlayLevelMode::drawCharacter() const {
     }
     for (const ai::AiHuman& fighter : m_ai->humans()) {
         const auto mesh = m_fighterMeshes.find(fighter.human.get());
-        if (mesh != m_fighterMeshes.end() && !mesh->second.hidden) {
+        if (mesh != m_fighterMeshes.end() && !mesh->second.hidden && !mesh->second.culled) {
             drawHumanPasses(*mesh->second.mesh, false, bloodTextureFor(fighter.human->health()));
         }
     }
@@ -608,25 +610,42 @@ void PlayLevelMode::render(const RenderTime& time) {
                 found->second.hidden = true;
                 continue;
             }
-            human::TargetSnapshot pose = human::interpolate(fighters[i].previous, fighters[i].current, alpha);
-            // A cast human a scene holds is drawn as the scene poses it.
+            // A cast human a scene holds is drawn as the scene poses it; any other where his two steps' feet blend.
+            std::optional<scenes::RoleFrame> scenePose;
             if (const double handle = m_scenes != nullptr ? castHandleOf(fighters[i]) : 0.0;
                 handle != 0.0 && m_stage->holds(handle)) {
-                if (const std::optional<scenes::RoleFrame> posed = m_stage->frameOf(handle, alpha)) {
-                    pose.pose = posed->pose;
-                    pose.feet = posed->feet;
-                    pose.heading = posed->heading;
-                }
+                scenePose = m_stage->frameOf(handle, alpha);
             }
-            const human::PlayerCharacter& character = characterOf(*fighters[i].human);
-            skin(character, pose.pose, pose.feet, pose.heading, 0.0F, *found->second.mesh,
-                 fighters[i].human->meshScale());
-            poseHat(*fighters[i].human, character, pose.pose, pose.feet, pose.heading);
-            // What he holds, posed by his own hand as player 1's is (docs/research/objects.md#given-weapon).
-            poseHeldObject(*fighters[i].human, character, pose.pose, pose.feet, pose.heading);
-            poseCarriedProp(*fighters[i].human, character, pose.pose, pose.feet, pose.heading);
-            m_lights->addShadow(ground, pose.feet);
-            ringFeet[ringKey(fighters[i].human.get())] = pose.feet;
+            const anim::Vec3 feet =
+                scenePose ? scenePose->feet : human::interpolateFeet(fighters[i].previous, fighters[i].current, alpha);
+            // Culled before posing: one no pose of whom can be in the picture is neither posed nor drawn, which leaves
+            // the picture as it was. One who wears or holds something is posed in view whatever his distance, as what
+            // he carries is not faded with him (docs/engine/renderer-performance.md#cull-before-posing).
+            const graphics::HumanCull cull = graphics::cullHuman(blended.pose, blended.halfWidth, blended.halfHeight,
+                                                                 toRenderWare(feet), fighters[i].human->meshScale());
+            found->second.culled = cull == graphics::HumanCull::OutOfView ||
+                                   (cull == graphics::HumanCull::PastDrawDistance && !carriesDraws(*fighters[i].human));
+            if (found->second.culled) {
+                // Nothing of him drawn this frame, as the Mesh group reads it.
+                found->second.mesh->setDrawnPasses(0);
+            } else {
+                human::TargetSnapshot pose = human::interpolate(fighters[i].previous, fighters[i].current, alpha);
+                if (scenePose) {
+                    pose.pose = scenePose->pose;
+                    pose.feet = scenePose->feet;
+                    pose.heading = scenePose->heading;
+                }
+                const human::PlayerCharacter& character = characterOf(*fighters[i].human);
+                skin(character, pose.pose, pose.feet, pose.heading, 0.0F, *found->second.mesh,
+                     fighters[i].human->meshScale());
+                poseHat(*fighters[i].human, character, pose.pose, pose.feet, pose.heading);
+                // What he holds, posed by his own hand as player 1's is (docs/research/objects.md#given-weapon).
+                poseHeldObject(*fighters[i].human, character, pose.pose, pose.feet, pose.heading);
+                poseCarriedProp(*fighters[i].human, character, pose.pose, pose.feet, pose.heading);
+            }
+            // His blob shadow and ring are drawn whether or not he is: each makes its own draw.
+            m_lights->addShadow(ground, feet);
+            ringFeet[ringKey(fighters[i].human.get())] = feet;
         }
     }
     // Over the frame, before its present: the level's screen effects, the HUD's sprites of the newest step, then the
