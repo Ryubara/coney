@@ -147,8 +147,9 @@ begin to just before the buffer swap, in a timer query (`GL_TIME_ELAPSED`, OpenG
 - **It can be absent.** A headless run draws nothing and a driver without timer queries (older than OpenGL 3.3) has
   none: the report then has no `gpu.frame` zone, and the tables print `none`. Neither fails a run, so test mode stays
   possible with no GPU; the ring is tested against a fake driver in `tests/platform/gpu_timer_test.cpp`.
-- **Only the OpenGL renderer.** The SDL3 GPU renderer ([Renderer performance](../engine/renderer-performance.md)) takes
-  its timestamp queries with its own drawing, when it draws.
+- **Only the OpenGL renderer.** The SDL3 GPU renderer ([Renderer performance](../engine/renderer-performance.md)) has
+  no `gpu.frame`: SDL3's GPU API has no timer or timestamp queries, so its runs report `none` and a bench compares
+  only the CPU zones there ([Not yet](../engine/gpu-renderer.md#drawing)).
 
 ## Scenes {#scenes}
 

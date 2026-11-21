@@ -119,7 +119,7 @@ struct SkinnedVertex {
     std::array<float, 3> normal{};
 };
 
-/// `vertex` skinned by `palette` as the GPU renderer's shader (`scene3dskin.vert.hlsl`) and the GL3 renderer's
+/// `vertex` skinned by `palette` as the GPU renderer's shader (`scene3d.vert.hlsl`) and the GL3 renderer's
 /// (platform/character_skin.cpp) skin it, and as characters::skinVertices() did on the CPU: the position and the normal
 /// each bone of a slot with a weight moves them to, times the weight, summed (weights that sum a hair below 1 are kept
 /// as they are), the normal then made unit. A slot with no weight is skipped; its bone need not be in the palette.

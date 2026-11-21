@@ -18,8 +18,6 @@ namespace {
 constexpr std::uint32_t kTextureAlignment = 512;
 // Where a buffer's bytes start: a multiple of 16, enough for every API's copies.
 constexpr std::uint32_t kBufferAlignment = 16;
-// The bone palette's first size: four 50-bone humans before it grows.
-constexpr std::size_t kFirstBoneCapacity = 256;
 
 // `value` rounded up to a multiple of `step`.
 std::uint32_t alignUp(std::uint32_t value, std::uint32_t step) { return (value + step - 1) / step * step; }
@@ -152,7 +150,7 @@ std::expected<std::unique_ptr<GpuScene>, Error> GpuScene::create(SDL_GPUDevice* 
     }
     scene->m_fragmentShader = *fragment;
     // The bone palette's buffer exists from the start: every draw binds it, posed or not.
-    if (!scene->reserveBones(kFirstBoneCapacity)) {
+    if (!scene->m_bones.reserve(0)) {
         return failure("its bone palette");
     }
     // The world pass's most common states, made now so a device that refuses them is known at the start.
@@ -178,33 +176,6 @@ GpuScene::~GpuScene() {
     if (m_fragmentShader != nullptr) {
         SDL_ReleaseGPUShader(m_device, m_fragmentShader);
     }
-    if (m_bones != nullptr) {
-        SDL_ReleaseGPUBuffer(m_device, m_bones);
-    }
-}
-
-bool GpuScene::reserveBones(std::size_t bones) {
-    if (bones <= m_boneCapacity) {
-        return true;
-    }
-    // Doubled until it fits, so a growing crowd makes few buffers; SDL keeps the old one until the GPU is done with it.
-    std::size_t capacity = std::max(m_boneCapacity, kFirstBoneCapacity);
-    while (capacity < bones) {
-        capacity *= 2;
-    }
-    SDL_GPUBufferCreateInfo info{};
-    info.usage = SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ;
-    info.size = static_cast<Uint32>(capacity * sizeof(graphics::Matrix4));
-    SDL_GPUBuffer* made = SDL_CreateGPUBuffer(m_device, &info);
-    if (made == nullptr) {
-        return false;
-    }
-    if (m_bones != nullptr) {
-        SDL_ReleaseGPUBuffer(m_device, m_bones);
-    }
-    m_bones = made;
-    m_boneCapacity = capacity;
-    return true;
 }
 
 SDL_GPUGraphicsPipeline* GpuScene::pipelineFor(const PipelineKey& key) {
@@ -384,11 +355,7 @@ void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::
     m_levelUploads.clear();
     m_draws.clear();
     // The frame's poses, in one palette for the copy pass; posed draws are left out when it finds no room.
-    m_palette = graphics::bonePaletteOf(frame.bones());
-    const bool posesHeld = reserveBones(m_palette.size());
-    if (!posesHeld) {
-        m_palette.clear();
-    }
+    const bool posesHeld = m_bones.set(graphics::bonePaletteOf(frame.bones()));
     const std::span<const graphics::FramePass> passes = frame.passes();
     m_passDraws.assign(passes.size(), {0, 0});
     for (std::size_t p = 0; p < passes.size(); ++p) {
@@ -523,11 +490,7 @@ std::uint32_t GpuScene::layUploads(std::uint32_t offset) {
         upload.offset = at;
         at += alignUp(upload.size, 4); // an index buffer's copy is whole words
     }
-    if (!m_palette.empty()) {
-        at = alignUp(at, kBufferAlignment);
-        m_paletteOffset = at;
-        at += static_cast<std::uint32_t>(m_palette.size() * sizeof(graphics::Matrix4));
-    }
+    at = m_bones.lay(at);
     for (LevelUpload& upload : m_levelUploads) {
         at = alignUp(at, kTextureAlignment);
         upload.offset = at;
@@ -540,9 +503,7 @@ void GpuScene::writeUploads(std::uint8_t* mapped) const {
     for (const BufferUpload& upload : m_bufferUploads) {
         std::memcpy(mapped + upload.offset, upload.bytes, upload.size);
     }
-    if (!m_palette.empty()) {
-        std::memcpy(mapped + m_paletteOffset, m_palette.data(), m_palette.size() * sizeof(graphics::Matrix4));
-    }
+    m_bones.write(mapped);
     for (const LevelUpload& upload : m_levelUploads) {
         std::memcpy(mapped + upload.offset, upload.level->texels.data(), upload.level->texels.size());
     }
@@ -554,12 +515,7 @@ void GpuScene::recordUploads(SDL_GPUCopyPass* copy, SDL_GPUTransferBuffer* uploa
         const SDL_GPUBufferRegion to{bytes.buffer, 0, alignUp(bytes.size, 4)};
         SDL_UploadToGPUBuffer(copy, &from, &to, false);
     }
-    // The palette changes every frame: cycled, so the buffer the last frame's draws may still read is left alone.
-    if (!m_palette.empty()) {
-        const SDL_GPUTransferBufferLocation from{upload, m_paletteOffset};
-        const SDL_GPUBufferRegion to{m_bones, 0, static_cast<Uint32>(m_palette.size() * sizeof(graphics::Matrix4))};
-        SDL_UploadToGPUBuffer(copy, &from, &to, true);
-    }
+    m_bones.record(copy, upload);
     for (const LevelUpload& level : m_levelUploads) {
         const SDL_GPUTextureTransferInfo from{upload, level.offset, level.level->width, level.level->height};
         SDL_GPUTextureRegion to{};
@@ -581,7 +537,7 @@ void GpuScene::forgetUploads() {
     }
     m_bufferUploads.clear();
     m_levelUploads.clear();
-    m_palette.clear();
+    m_bones.forget();
     m_draws.clear();
     std::fill(m_passDraws.begin(), m_passDraws.end(), std::pair<std::size_t, std::size_t>{0, 0});
 }
@@ -598,7 +554,8 @@ void GpuScene::draw(SDL_GPUCommandBuffer* commands, SDL_GPURenderPass* target, s
             SDL_BindGPUGraphicsPipeline(target, sub.pipeline);
             bound = sub.pipeline;
             // The palette with every pipeline: the vertex shader declares it whether or not the draw is posed.
-            SDL_BindGPUVertexStorageBuffers(target, 0, &m_bones, 1);
+            SDL_GPUBuffer* palette = m_bones.buffer();
+            SDL_BindGPUVertexStorageBuffers(target, 0, &palette, 1);
         }
         const SDL_GPUBufferBinding vertices{sub.vertices, 0};
         SDL_BindGPUVertexBuffers(target, 0, &vertices, 1);

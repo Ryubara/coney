@@ -16,6 +16,7 @@
 #include "graphics/frame_description.h"
 #include "graphics/scene_batch.h"
 #include "graphics/upload_cache.h"
+#include "platform/gpu_bone_palette.h"
 
 // SDL's types, declared rather than included, so the engine's header stays free of SDL.
 struct SDL_GPUDevice;
@@ -183,7 +184,7 @@ class GpuScene {
         FragmentUniform fragment;
     };
 
-    explicit GpuScene(SDL_GPUDevice* device) : m_device(device) {}
+    explicit GpuScene(SDL_GPUDevice* device) : m_device(device), m_bones(device) {}
 
     /// What one mesh of a draw is drawn with: its colours, its materials' textures, its states, and whether it is a
     /// dual layer and skinned by the draw's pose.
@@ -200,8 +201,6 @@ class GpuScene {
     void prepareMesh(const GpuMesh& uploaded, const graphics::MeshData& mesh, const graphics::Draw3d& draw,
                      const graphics::SceneCamera& camera, std::span<const graphics::SceneLight> lights,
                      const MeshLook& look, const graphics::AssetStore& store, SDL_GPUTexture* white);
-    /// Makes the bone palette's buffer hold at least `bones` bones, growing it; false when SDL refused a larger one.
-    bool reserveBones(std::size_t bones);
     /// The uploaded mesh `id`, queuing its upload when it is new; null when SDL refused its buffers.
     const GpuMesh* meshFor(graphics::MeshId id, const graphics::MeshData& mesh);
     /// The uploaded texture `id`, queuing its upload when it is new; null when SDL refused it.
@@ -224,10 +223,7 @@ class GpuScene {
     std::vector<BufferUpload> m_bufferUploads;
     std::vector<LevelUpload> m_levelUploads;
     std::vector<SubDraw> m_draws;
-    SDL_GPUBuffer* m_bones = nullptr;                             // the frame's bone palette, cycled at each upload
-    std::size_t m_boneCapacity = 0;                               // bones it holds
-    std::vector<graphics::Matrix4> m_palette;                     // this frame's, for the copy pass
-    std::uint32_t m_paletteOffset = 0;                            // where it is in the upload buffer
+    GpuBonePalette m_bones;                                       // the frame's bone palette, cycled at each upload
     std::vector<std::pair<std::size_t, std::size_t>> m_passDraws; // per pass: the first sub-draw and how many
 };
 

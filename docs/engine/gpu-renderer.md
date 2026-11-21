@@ -92,9 +92,12 @@ the 2D quads is not known). Each texture is sampled with its own filter, nearest
 sample a sheet's own levels for a mip filter; 2D draws are near their textures' sizes, where level 0 is the one taken).
 
 **Not yet:** the screen passes and `--line-blend` (item 20), the 3D scene's effects (item 20; the world, objects, cars
-and humans are [below](#scene)), and the texture
-viewer's `RenderEngine::drawTexture`, which is not in the description. A frame the GPU renderer cannot draw part of
-misses that part; it never fails.
+and humans are [below](#scene)), and the texture viewer's `RenderEngine::drawTexture`, which is not in the
+description. The renderer also has no `gpu.frame` measure: GL3 takes it from OpenGL timer queries
+([GPU time](../guides/performance.md#gpu-time)), and SDL3's GPU API has no timer or timestamp queries, so a bench of
+`--renderer gpu` reports `gpu.frame none` (its CPU zones are all there). Its GPU time can be read only with a
+platform's own tools until SDL adds them. A frame the GPU renderer cannot draw part of misses that part; it never
+fails.
 
 ## Drawing the scene passes {#scene}
 
@@ -188,8 +191,9 @@ their hats and held objects when the backend draws the scene (`drawsScene()`), n
 **The palette.** Each frame's poses, every skinned draw's skinning matrices in the order the draws were added
 (`FrameDescription::bones()`), go up at once into one storage buffer, each bone four columns of a 4 x 4 matrix as GL3's
 palette holds them (`bonePaletteOf()`; the buffer is cycled, so the frame the GPU still reads is never overwritten, and
-grows as a frame needs). A draw names its first bone (`Draw3d::firstBone`) in its uniforms. Because the palette is one
-plain array the frame fills, the posing can later move to threads or to a compute pass without changing the shader.
+grows as a frame needs; `GpuBonePalette`, `src/platform/gpu_bone_palette.*`). A draw names its first bone
+(`Draw3d::firstBone`) in its uniforms. Because the palette is one plain array the frame fills, the posing can later move
+to threads or to a compute pass without changing the shader.
 
 **The shader.** `scene3d.vert.hlsl` skins a posed draw first: each slot with a weight moves the position and turns the
 normal by its bone, times the weight, summed (weights a hair below 1 kept as stored), the normal then made unit, then

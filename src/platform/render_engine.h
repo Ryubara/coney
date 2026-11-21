@@ -42,7 +42,7 @@ enum class RenderBackend : std::uint8_t {
     Null,   ///< librw's NULL device: no window, no GPU, nothing drawn; for CI, tests and console tools.
     /// SDL3's GPU API (docs/engine/renderer.md#migration): a window Coney makes, SDL's GPU device and swapchain, and
     /// librw on its NULL device for data only, as for Null. Each frame's passes are drawn (GpuRenderer): the 2D, and
-    /// the world, objects and cars of the scene passes (docs/engine/gpu-renderer.md#scene).
+    /// the world, objects, cars and humans of the scene passes (docs/engine/gpu-renderer.md#scene).
     Gpu,
 };
 

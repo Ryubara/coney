@@ -316,9 +316,9 @@ a human](../research/graphics.md#human-draw)). The blood layer is the dual layer
 ([Characters](../research/rendering.md#characters)). The lights are selected once for both passes
 (`SceneLighting::humanLights`). On the skinned pipeline `Gl3Renderer` lends both atomics a palette filled from the
 bones; CPU skinning blended the same matrices. The human scene's hash and the disc frames' did not move between item 9's
-first two commits; the colour, ported after them, moved both (the humans brighter by 255/150). Left for item 14: a
-converted character mesh lacks the skin weights, and the blood textures are not in the scene assets. Held objects and
-hats draw as objects.
+first two commits; the colour, ported after them, moved both (the humans brighter by 255/150). Item 14 later added
+the skin weights to the converted character mesh and the blood textures to the scene assets, for the GPU renderer
+([Skinned humans](gpu-renderer.md#skinning)). Held objects and hats draw as objects.
 
 #### Texture lifetime {#texture-lifetime}
 
@@ -384,7 +384,7 @@ bones). The GPU is nearly idle: 17 times the pixels cost no more, and a frame ma
 | Step | What it gains (estimate) | Measured by |
 | --- | --- | --- |
 | The backend switch itself (items 11, 13, 14, 20) | a little on this machine: the drawing besides posing (0.82 ms in the hub, 1.42 with 50 fighters, 1.19 in the street) and the present (0.19-0.38 ms) can shrink, perhaps by half, with fewer state changes, instancing and no per-draw librw dispatch: about 0.4-0.8 ms a frame. Its main gains are what GL3 cannot give: Metal on macOS, the present modes, HDR, the post chain | `perf bench --scene all --renderer gpu --compare` at each item, against GL3's baseline |
-| Skinned humans on the GPU renderer (item 14) | none beyond GL3's: the skinning is already on the GPU, and the posing (about 25-30 µs a human) stays on the CPU. The item keeps the gain; it does not add one | `--scene hub,hub-crowd --renderer gpu --compare`, `render.skin` and `gpu.frame` side by side |
+| Skinned humans on the GPU renderer (item 14) | none beyond GL3's: the skinning is already on the GPU, and the posing (about 25-30 µs a human) stays on the CPU. The item keeps the gain; it does not add one | `--scene hub,hub-crowd --renderer gpu --compare`, `render.skin` side by side (`gpu.frame` is GL3's only: [GPU time](../guides/performance.md#gpu-time)) |
 | The simulation thread (items 37 to 42) | the largest now: the step leaves the frames that carry one, so a frame is drawing only (1.4 ms in the hub, 3.6 with 50 fighters); the p99 frame and the frames over the display's period fall ([What it gains](render-threads.md#threads-gain)), and an uncapped rate rises by the steps' share of the second, about 6 % in the hub and 11 % in the crowd | item 42's real-time runs at a 240 cap, with and without the thread |
 
 The [Budget](renderer-performance.md#budget) turns these into the gates each item is held to.
