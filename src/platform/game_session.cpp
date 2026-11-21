@@ -302,12 +302,25 @@ bool GameSession::jumpToLevel(std::string_view level, int checkpoint) {
     }
     m_pendingLevel = std::string(level);
     m_pendingCheckpoint = checkpoint;
+    m_pendingLeave = false; // the newer ask is where the game goes
     return true;
 }
 
-bool GameSession::leaveLevel() { return false; }
+bool GameSession::leaveLevel() {
+    // A level in play or loading has gameplay on the stack; a jump asked for earlier is a level to be in, so it counts.
+    if (!m_pendingLevel && !m_flow->inLevel()) {
+        return false;
+    }
+    m_pendingLevel.reset();
+    m_pendingLeave = true;
+    return true;
+}
 
 void GameSession::beginFrame() {
+    if (m_pendingLeave) {
+        m_pendingLeave = false;
+        (void)m_flow->leaveToMenu();
+    }
     if (m_pendingLevel) {
         const std::string level = std::exchange(m_pendingLevel, std::nullopt).value_or(std::string{});
         (void)m_flow->jumpToLevel(level, m_pendingCheckpoint);

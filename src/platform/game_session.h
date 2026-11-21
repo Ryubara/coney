@@ -183,6 +183,7 @@ class GameSession {
     std::shared_ptr<HumansTrace> m_humansTrace;
     net::GameHumans* m_netHumans = nullptr; // setNetHumans()
     std::optional<std::string> m_pendingLevel;
+    bool m_pendingLeave = false;                                 // leaveLevel(): carried out at the next beginFrame()
     std::uint64_t m_levelStarts = 0;                             // levelStarts()
     std::optional<std::pair<std::string, int>> m_lastLevelStart; // lastLevelStart()
     int m_pendingCheckpoint = 1;

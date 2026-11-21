@@ -270,6 +270,8 @@ class PauseMode final : public GameMode {
     int m_cooldown = 0;
     int m_player = 0;
     std::uint64_t m_pauses = 0;
+    std::uint64_t m_quits = 0; // quits()
+    bool m_quitSeen = false;   // the menu's outcome was a quit when quits() last looked
     bool m_openPending = false;
 };
 

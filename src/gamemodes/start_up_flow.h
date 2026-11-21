@@ -182,12 +182,16 @@ class StartUpFlow final : public script::BindingHost {
     /// @coney-only the debug menus' level jump
     bool jumpToLevel(std::string_view level, int checkpoint);
     /// A guest's game leaves the level it plays for the front end, as the host's quit to the menu does: pops every mode
-    /// above the level flow, which brings the front end back. Call it between two frames, outside any step. Returns
-    /// false, changing nothing, when no level is in play or loading (the front end already runs).
+    /// above the level flow up to gameplay, whose leaving brings the front end back. Call it between two frames,
+    /// outside any step. Returns false, changing nothing, when no level is in play or loading (the front end already
+    /// runs).
     ///
     /// Coney's own: network play's guest follows the host out of a level (docs/guides/multiplayer.md#levels).
     /// @coney-only a network guest following the host's quit
     bool leaveToMenu();
+    /// Whether a level is in play or loading: gameplay (mode 1) is on the stack.
+    /// @coney-only a network guest following the host's quit
+    [[nodiscard]] bool inLevel() const { return m_stack.contains(m_gameplay); }
     /// How many times the pause menu chose a quit (PauseMode::quits()): a network host tells its guests of each
     /// (docs/guides/multiplayer.md#levels). Poll it between steps.
     /// @coney-only the count network play reads; the original keeps none

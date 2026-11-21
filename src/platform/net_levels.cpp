@@ -61,7 +61,8 @@ MissionCounts SessionLevelGame::missionEnds() const {
         return {};
     }
     return MissionCounts{.passed = session->flow().missionComplete().launches(),
-                         .failed = session->flow().missionFailures()};
+                         .failed = session->flow().missionFailures(),
+                         .quit = session->flow().missionQuits()};
 }
 
 bool SessionLevelGame::jumpToLevel(std::string_view level, int checkpoint) {
@@ -69,7 +70,10 @@ bool SessionLevelGame::jumpToLevel(std::string_view level, int checkpoint) {
     return session != nullptr && session->jumpToLevel(level, checkpoint);
 }
 
-bool SessionLevelGame::leaveLevel() { return false; }
+bool SessionLevelGame::leaveLevel() {
+    GameSession* session = m_session();
+    return session != nullptr && session->leaveLevel();
+}
 
 void NetLevels::beforeStep() {
     if (m_net.role() == net::NetRole::Client) {
@@ -77,10 +81,15 @@ void NetLevels::beforeStep() {
         if (m_game != nullptr) {
             m_missions = m_game->missionEnds();
         }
-        followHost();
+        // The mission ends first: a quit and the load that follows it (to the hangout) come in one step, and the leave
+        // must not undo the jump to that load.
         for (const net::MissionEnd& end : m_net.takeMissionEnds()) {
             m_net.report(std::format("the host's mission ended: {}", outcomeText(end.outcome)));
+            if (end.outcome == net::MissionOutcome::Quit) {
+                followHostQuit(end);
+            }
         }
+        followHost();
         reportMovieEnd();
         return;
     }
@@ -92,9 +101,37 @@ void NetLevels::beforeStep() {
 
 bool NetLevels::holdsStep() const { return m_game != nullptr && m_net.holdsStep() && m_game->inPlay(); }
 
+void NetLevels::followHostQuit(const net::MissionEnd& end) {
+    // An order of the level the host left that the client holds and this game has not taken yet is taken now, so the
+    // check below drops it with the order already taken; a later order (a quit to the hangout) is kept for followHost.
+    adoptPendingOrder();
+    // Out of the level the host left; a load the guest was still making of it is over, so it is answered and the host's
+    // load time-out does not drop the guest for it.
+    if (m_order && m_order->load <= end.load) {
+        m_net.levelLoaded(m_order->load);
+        m_order.reset();
+    }
+    m_movieEnd.reset();
+    if (m_game != nullptr && m_game->leaveLevel()) {
+        m_net.report("leaving the level with the host");
+    }
+}
+
 void NetLevels::reportHostGame() {
     if (m_game == nullptr) {
         return;
+    }
+    // Each mission-complete, mission-failed screen and quit since the last step, before the step's level load: a quit
+    // to the hangout is the end of the level left, then the load of the next.
+    const MissionCounts missions = m_game->missionEnds();
+    for (; m_missions.passed < missions.passed; ++m_missions.passed) {
+        m_net.endMission(net::MissionOutcome::Passed);
+    }
+    for (; m_missions.failed < missions.failed; ++m_missions.failed) {
+        m_net.endMission(net::MissionOutcome::Failed);
+    }
+    for (; m_missions.quit < missions.quit; ++m_missions.quit) {
+        m_net.endMission(net::MissionOutcome::Quit);
     }
     // A new level load: the newest one is the level the guests go to (two in one step tell only the second).
     if (const std::uint64_t starts = m_game->levelStarts(); starts != m_starts) {
@@ -107,17 +144,9 @@ void NetLevels::reportHostGame() {
             }
         }
     }
-    // Each mission-complete and mission-failed screen since the last step.
-    const MissionCounts missions = m_game->missionEnds();
-    for (; m_missions.passed < missions.passed; ++m_missions.passed) {
-        m_net.endMission(net::MissionOutcome::Passed);
-    }
-    for (; m_missions.failed < missions.failed; ++m_missions.failed) {
-        m_net.endMission(net::MissionOutcome::Failed);
-    }
 }
 
-void NetLevels::followHost() {
+void NetLevels::adoptPendingOrder() {
     if (std::optional<net::LoadLevel> order = m_net.takeLevelOrder(); order) {
         // A newer order replaces one not yet carried out; a movie of the level left is not answered.
         m_order = std::move(order);
@@ -125,6 +154,10 @@ void NetLevels::followHost() {
         m_refusalNoted = false;
         m_movieEnd.reset();
     }
+}
+
+void NetLevels::followHost() {
+    adoptPendingOrder();
     if (!m_order || m_game == nullptr) {
         return;
     }

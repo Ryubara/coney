@@ -220,7 +220,18 @@ PauseMode::PauseMode(graphics::RenderDevice& device, PauseSheetLoader loadSheet,
     m_menu.setOptionHooks(std::move(options));
 }
 
-std::uint64_t PauseMode::quits() { return 0; }
+std::uint64_t PauseMode::quits() {
+    using gui::PauseOutcome;
+    const PauseOutcome outcome = m_menu.outcome();
+    const bool quitting = outcome == PauseOutcome::QuitToHangout || outcome == PauseOutcome::QuitToRumbleQuick ||
+                          outcome == PauseOutcome::QuitToRumbleHangout || outcome == PauseOutcome::QuitToMainMenu;
+    // The menu keeps its outcome until it opens again (which clears it), so a quit counts when it is first seen.
+    if (quitting && !m_quitSeen) {
+        ++m_quits;
+    }
+    m_quitSeen = quitting;
+    return m_quits;
+}
 
 void PauseMode::playFrame(GameModeStack& stack, const Pads& pads) {
     // START is checked before the cool-down counts down, so it is ignored for one frame after a close.

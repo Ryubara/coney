@@ -32,7 +32,8 @@ struct LevelAt {
 struct MissionCounts {
     std::uint64_t passed = 0; ///< mission-complete screens launched
     std::uint64_t failed = 0; ///< mission-failed screens launched
-    std::uint64_t quit = 0; ///< levels left through a quit (the pause menu's, the failed screen's, the Rumble result's)
+    std::uint64_t quit =
+        0; ///< levels left through the pause menu's four quits (the failed and Rumble result screens' are #1583)
 };
 
 /// What NetLevels needs of the running game: the game session in the run (SessionLevelGame), a fake in tests. Read
@@ -112,6 +113,11 @@ class NetLevels {
   private:
     // Hosting or offline: tells network play of the game's new level loads and mission ends.
     void reportHostGame();
+    // Joined: the host quit its level: the game leaves for the front end, and an order of that level (taken or still in
+    // the client) or a load of it still going is answered as over.
+    void followHostQuit(const net::MissionEnd& end);
+    // Joined: takes the client's newest level order, if any, as the one to carry out.
+    void adoptPendingOrder();
     // Joined: takes the host's level order, sends the game there and answers it once loaded.
     void followHost();
     // Joined: sends the MovieDone of this game's ended movie once the host's start of it is known.
