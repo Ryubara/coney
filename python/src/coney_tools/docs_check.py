@@ -356,7 +356,7 @@ def _add_beyond(result: Result, root: Path, context: Context) -> None:
     for path, found in docs_beyond.check_root(
         root, context.beyond, context.code.folders, context.code.suffixes
     ).items():
-        if path not in result.findings:
+        if path not in result.pages:
             result.pages.append(path)
         result.findings.setdefault(path, []).extend(found)
 

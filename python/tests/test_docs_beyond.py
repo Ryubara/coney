@@ -295,6 +295,14 @@ def test_a_change_that_deletes_a_lift_leaves_its_entry_to_fail(tmp_path: Path) -
     assert list(result.failed) == [PAGE]
 
 
+def test_a_page_that_is_changed_and_fails_is_listed_once(tmp_path: Path) -> None:
+    entry = row("Scan tokens", marker="`src/core/crowd.h:scanTokens`")
+    root = checkout(tmp_path, files={PAGE: page((entry,)), INDEX: INDEX_TEXT})
+    write(root, PAGE, page((entry,), others={"multiplayer": (row("Co-op"),)}))
+    result = docs_check.check_changed(root, "main", docs_check.context_for(root))
+    assert result.pages.count(PAGE) == 1 and list(result.failed) == [PAGE]
+
+
 def test_a_page_named_on_the_command_line_is_held_to_the_sources(tmp_path: Path) -> None:
     root = checkout(tmp_path, files={PAGE: page(), "src/core/crowd.h": FUNCTION, INDEX: INDEX_TEXT})
     result = docs_check.check_paths(root, [PAGE], docs_check.context_for(root))
