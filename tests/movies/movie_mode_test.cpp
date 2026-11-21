@@ -383,6 +383,8 @@ TEST_CASE("movie player: the mode beneath a debug movie is suspended, frozen and
     CHECK(h.below.updates == 3);
 }
 
+// Expected: unverified, Coney's own debug menu (docs/guides/debug-menu.md#movies: its movies may show ordinary
+// captions)
 TEST_CASE("movie player: a debug request can show ordinary captions with the subtitle option off", "[movies][debug]") {
     // A caption scene `plogo_sub` whose first caption shows at the movie's start.
     const std::vector<coney::movies::CaptionRecord> records{

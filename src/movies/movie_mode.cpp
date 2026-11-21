@@ -284,9 +284,8 @@ bool MovieMode::step(const GameModeStack& stack, const FrameTime& frame) {
         }
     }
     layOutCaption();
-    // Movie_CheckSkip, after the frame, every pass; in a network session another player's skip counts as a pad's.
-    const bool skippedElsewhere = m_sync.skippedElsewhere && m_sync.skippedElsewhere();
-    if (playing.skippable && (anyButton(stack) || skippedElsewhere)) {
+    // Movie_CheckSkip, after the frame, every pass.
+    if (playing.skippable && anyButton(stack)) {
         if (playing.captions) {
             playing.captions->captions.command(4); // the skip clears the caption
         }
@@ -315,7 +314,16 @@ ModeResult MovieMode::update(GameModeStack& stack, const FrameTime& frame) {
         m_queue.pop_front();
         start(std::move(name), request);
     }
-    if (!step(stack, frame) && m_queue.empty()) {
+    // In a network session another player's skip ends a skippable movie as a pad's does, before its next frame.
+    if (m_current->skippable && m_sync.skippedElsewhere && m_sync.skippedElsewhere()) {
+        if (m_current->captions) {
+            m_current->captions->captions.command(4); // the skip clears the caption
+        }
+        finish(true);
+    } else if (step(stack, frame)) {
+        return ModeResult::Stay;
+    }
+    if (m_queue.empty()) {
         // The last movie's end: in a network session the mode stays, on black, until the others have ended theirs.
         if (m_waiting && m_sync.mayGoOn && !m_sync.mayGoOn()) {
             return ModeResult::Stay;

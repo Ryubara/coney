@@ -75,9 +75,6 @@ class MissionFailedMode final : public GameMode {
     [[nodiscard]] const gui::MissionFailedMenu& menu() const { return m_menu; }
     /// The reason of the last launch.
     [[nodiscard]] const std::string& reason() const { return m_reason; }
-    /// How many times launch() was called, whether or not the mode was on top: a network host tells its guests of each
-    /// (docs/guides/multiplayer.md#levels).
-    [[nodiscard]] std::uint64_t launches() const { return m_launches; }
 
   private:
     graphics::RenderDevice& m_device;
@@ -98,7 +95,6 @@ class MissionFailedMode final : public GameMode {
     RenderTime m_frozen;
     std::string m_reason;
     bool m_openPending = false;
-    std::uint64_t m_launches = 0; // launches()
 };
 
 } // namespace coney

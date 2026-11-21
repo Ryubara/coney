@@ -57,7 +57,7 @@ MissionCounts SessionLevelGame::missionEnds() const {
         return {};
     }
     return MissionCounts{.passed = session->flow().missionComplete().launches(),
-                         .failed = session->flow().missionFailed().launches()};
+                         .failed = session->flow().missionFailures()};
 }
 
 bool SessionLevelGame::jumpToLevel(std::string_view level, int checkpoint) {

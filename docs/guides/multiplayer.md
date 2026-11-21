@@ -567,12 +567,12 @@ network play's receive and before the step gate.
   load plays. The host's mission ends are noted in its log (`the host's mission ended: passed`).
 - **Movies.** `MovieMode` tells network play of each of the game's own movies and asks it (`movies::MovieSync`,
   `NetLevels::movieSync()`). On the host a movie's start is `startMovie()` and its end or skip `endHostMovie()`; a
-  guest's skip (`movieSkipped()`) ends a skippable movie as a pad's skip does; and once a movie has ended the mode stays,
-  on black with the game clock still, until `movieMayEnd()`. A guest's own copy of a movie, when it ends, is reported
-  with `movieDone()`, naming the host's movie by the step its MovieStart came in (`NetClient::hostMovie()`, the newest
-  MovieStart the guest received); a copy that ends before the host's MovieStart arrives is reported when it does, and
-  one the host never plays is never reported, so the host waits for it only until the movie time-out. The debug menu's
-  movies are the game's own and wait for nobody.
+  guest's skip (`movieSkipped()`) ends a skippable movie as a pad's skip does, before its next frame; and once a movie
+  has ended the mode stays, on black with the game clock still, until `movieMayEnd()`. A guest's own copy of a movie,
+  when it ends, is reported with `movieDone()`, naming the host's movie by the step its MovieStart came in
+  (`NetClient::hostMovie()`, the newest MovieStart the guest received); a copy that ends before the host's MovieStart
+  arrives is reported when it does, and one the host never plays is never reported, so the host waits for it only
+  until the movie time-out. The debug menu's movies are the game's own and wait for nobody.
 
 A guest still runs its own whole game until the client game mode that draws the snapshots is built: its level is the
 host's, but what happens in it is its own, including the movies its own scripts play.

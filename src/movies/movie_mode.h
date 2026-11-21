@@ -174,6 +174,8 @@ class MovieMode final : public GameMode, public MoviePlayer {
     /// Draws the due frame unscaled, centred on the screen over black, then the caption.
     /// @orig 0x00429b18 Movie_BuildUploadPacket (BinkMovie.cpp)
     void render(const RenderTime& time) override;
+    /// Ends the movie playing and forgets the queue and any wait for the other players.
+    /// @coney-only the mode's leave; the original's Movie_Play returns in place
     void exit() override;
 
     /// What the player has done, for tests and the log.
