@@ -999,6 +999,17 @@ def _add_clips_pair_commands(commands: Any) -> None:
     pair.add_argument("--prefix", default="", help="name the files PREFIX-before.mp4 and so on (several pairs)")
     pair.add_argument("--disc", help="the disc for Coney; default: game_dir of coney.local.toml")
     pair.add_argument("--base", help="the branch whose merge base is the before (default origin/main)")
+    pair.add_argument(
+        "--without",
+        metavar="COMMIT",
+        help="take this commit (a change already merged) out of the before, for the clips its pull request lacked",
+    )
+    pair.add_argument(
+        "--before",
+        metavar="REF",
+        help="record the before on this commit, built on the merge base, instead of --without's: the change taken "
+        "out by hand where --without cannot (a later commit edits its lines)",
+    )
     pair.add_argument("--task", help="the task whose clips folder takes the clips (default: the checkout's)")
     pair.add_argument(
         "--renderer", choices=("gl3", "gpu"), help="the renderer both sides draw with (default: Coney's own, GL3)"
@@ -1045,6 +1056,8 @@ def _run_clips_pair(args: argparse.Namespace) -> int:
         base_ref=args.base,
         task=args.task,
         renderers=(args.before_renderer or args.renderer, args.renderer),
+        without=args.without,
+        before_ref=args.before,
     )
 
 
