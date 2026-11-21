@@ -35,8 +35,18 @@ name = "Human_HandleMessage"
 page = "tasks.md#original-structure"
 role = "the human's message handler (vtable `+0xcc`)"
 level = "confirmed-code"
-coney = "src/human/fighter.h:Fighter::takeNotice"
-status = "legacy"
+coney = "src/gamemodes/held_throws.h:releasesHeldObject"
+status = "compared"
+
+[[function.gaps]]
+what = "only the warning and the held-object release (message 0x8a) are ported; the other messages are not"
+relation = "not-ported"
+issue = 1577
+
+[[function.gaps]]
+what = "the release tests the clip that plays, where the original tests the human's held flags"
+relation = "stand-in"
+issue = 1577
 
 [[function]]
 address = 0x00254e78

@@ -24,6 +24,12 @@ namespace coney::ai {
 class Formations;
 class ScriptServices;
 
+/// Whether `human` is winding up a throw of what he holds: the swing flag, or a throw clip holding its flags with an
+/// object in his hand (docs/research/characters.md, Human_IsSwingingHeld). **Coney's reading**: "an object in his
+/// hand" is any held object, where the original asks that the held object's anim set be other than 0.
+/// @orig 0x002286a0 Human_IsSwingingHeld (unknown)
+[[nodiscard]] bool swingingHeld(const human::Human& human);
+
 /// The steal tactic's type id.
 inline constexpr int kWarriorStealTacticType = 0x26;
 /// The store front must stand within this distance of the chief, metres.

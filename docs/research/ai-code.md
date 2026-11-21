@@ -1573,6 +1573,35 @@ the car count.
 | `0x0031ea00` | `VandalizeTactic_Process` | Process | every 3 s: with a zone, 1 `TacFinished` when it has no breakable object left (`ObjZone_HasObjects`); with cars, 1 when every car has all its spots blocked (`Car_AreAllSpotsBlocked`, inferred: wrecked) | confirmed (code) |
 | `0x0031eaf0` | `VandalizeTactic_OnEvent` | Event | 1 → damage handler and 5; 10 → 4; 11 own → 3; 16 → 6; 19/22 re-give; 20 consumed; 23 → cheer, and an object of the zone not intact (`+0x10d` / `+0x10e`) → 16 `TacObjectDestroyed` once per object, consumed | confirmed (code) |
 
+**When it ends.** The tactic never ends on a timer and never because its members are done swinging: its only own
+code is 1, returned by Process when its zone has nothing left (confirmed (code) at `0x0031ea00`), checked once every
+3 s from the moment it is made (`+0x38` = now + 3000 at `0x0031e3b8`; the test is `+0x38` < now). Codes 3-6 come from
+the members' events alone, so a looter answers 6 only when he is sent event 16 (an attack warning) and 5 only when he
+is hurt (confirmed (code) at `0x0031eaf0`). At runtime `level34`'s intro looters, left alone, gave seven codes 16 and
+answered 1 15.0 s after the tactic was set, at its fifth check, with no other code (confirmed (runtime), run
+r-20261121-level34-intro-looters). A code 16 is not one broken object: it comes only for an event 23 whose sender is a
+human and whose object still resolves to a world object of the zone that is not intact and is not the object reported
+last (confirmed (code) at `0x0031eaf0`). In two more runs zone 51's records were removed (record `+0x24` bit 18;
+inferred: broken and gone) faster than the codes came, 4 records against 2 codes and 3 against 1 (confirmed (runtime),
+run r-20261121-level34-looters-zone-records). So the first run shows that the zone held nothing whole and out of a hand
+at 15.0 s (the zone test below), not that two of its nine objects were left. In both later runs (player 1 left in the
+tunnel, `P1.StartIntroLooters` called through the script) a looter was hurt and the tactic answered 5, after 10.6 s
+and 11.4 s, with the zone half wrecked (inferred: hit by another looter's throw; the hit was not traced). The zone
+test (`ObjZone_HasObjects(zone, 1)`, `0x0039a580`) answers false at once for a zone that is not enabled (the zone's
+bit in the manager's mask, `+0x20`), and otherwise true for the first record of the zone not removed (record `+0x24`
+bit 18) whose object is not made yet, or is made, not broken (both hit counters `+0x10d` / `+0x10e` above 0) and not
+attached (`Task_IsAttached`; inferred: in a hand).
+Confirmed (code) at `0x0039a580`. In `level34` zone 51 is enabled by `level34_riot.lua` (the riot's set-up) and zone 29
+by no script, so the Huns' `TacticVandalize` on zone 29 (`P1.HunsSteal`) answers 1 at its first check, 3 s on (inferred:
+from the scripts' `ObjEnableZone` calls and the code at `0x0039a580`).
+
+**Coney** (`repo:src/ai/tactic_vandalize.h`, `repo:src/ai/destroy_goal.h`): the tactic, its events 1, 10, 11, 16, 19, 20
+and 22, and the Destroy goal ([Destroy](ai-goals.md#goal-destroy)) over the level's object records
+(`LevelItems::zoneHasObjects`, `LevelItems::nearestZoneTarget`). **Stand-ins**: the cars of `TacticVandalizeCars` (not
+built), the vandal brain byte `+0x28d` and the event's flag `+0x11` (not identified), and event 23: Coney sends no event
+when an object breaks, so the waiting members' cheer (`0x0031e770`, confirmed (code)) and code 16 for a broken object of
+the zone are not built.
+
 ### TacticWalkinTall (type 0x15) {#t2-walkin-tall}
 
 Vtable `0x005440a0` (stored by `WalkinTallTactic_Construct`, confirmed (code)): the gang walks to a flag in formation,

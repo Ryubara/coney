@@ -535,8 +535,8 @@ name = "Human_IsSwingingHeld"
 page = "characters.md#code-core"
 role = "Held flag 0x800000, or 0x1000010 while holding an object and playing one of the eleven object throw clips (467, 471, 472, 491, 502, 505-507, 551-553; a throw wind-up, not a melee swing). A hit drops the held object while it is true ([Combat: dropping what is held](combat-throws.md#keep-weapon))."
 level = "confirmed-code"
-coney = "src/ai/steal_goals.cpp:swingingHeld"
-status = "legacy"
+coney = "src/ai/steal_goals.h:swingingHeld"
+status = "compared"
 
 [[function]]
 address = 0x00228d70

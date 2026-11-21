@@ -92,14 +92,16 @@ class DestroyItemGoal final : public Goal {
 [[nodiscard]] std::optional<SmashTarget> findSmashTarget(Brain& searcher, const Brain& leader, ItemServices& items,
                                                          const ScriptServices& services, float radius, float range);
 
-/// `Glass_ClaimPane(radius, human, ray 1, claim 1, reach 1)`: of the panes within `radius` of `human`
+/// `Glass_ClaimPane(radius, human, ray 1, claim 1, reach 1, centre)`: of the panes within `radius` of `centre` (his
+/// feet when none is given)
 /// (ItemServices::panes(), nearest first), the first not claimed by his gang, not alarmed, upright (|normal z| at most
 /// kPaneUpright), low enough (its bottom at most kPaneReachHeight above his feet), with a clear ray from him to its
 /// centre that crosses glass (clearRayTo()'s result 2) and a stand point (standPoint()) he can walk to; it is claimed
 /// for his gang for kPaneClaimMs. Nothing when none qualifies. **Coney stand-in**: the reach test as
 /// findSmashTarget()'s.
 /// @orig 0x0029d928 Glass_ClaimPane (unknown)
-[[nodiscard]] std::optional<PaneView> claimPane(Brain& human, ItemServices& items, float radius);
+[[nodiscard]] std::optional<PaneView> claimPane(Brain& human, ItemServices& items, float radius,
+                                                std::optional<anim::Vec3> centre = std::nullopt);
 
 /// The stand point of DestroyItem and of the object and pane searches: `Nav_FindPolygonUnder` (`0x00252410`) of the
 /// object's own spot, which overwrites the stand-off its callers pass (f12) with its 10 m drop and never reads their

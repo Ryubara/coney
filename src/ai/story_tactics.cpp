@@ -15,6 +15,7 @@
 #include "ai/tactic_attack.h"
 #include "ai/tactic_boss.h"
 #include "ai/tactic_scout.h"
+#include "ai/tactic_vandalize.h"
 #include "ai/track_human_goal.h"
 #include "human/human.h"
 
@@ -428,6 +429,8 @@ std::unique_ptr<Tactic> makeStoryTactic(const script::TacticCall& call, std::vec
         return std::make_unique<BossDiegoVargasTactic>(call, services);
     case TacticKind::Scout:
         return std::make_unique<ScoutTactic>(call, services);
+    case TacticKind::Vandalize:
+        return std::make_unique<VandalizeTactic>(call, services);
     default:
         return std::make_unique<StationTactic>(call, services);
     }

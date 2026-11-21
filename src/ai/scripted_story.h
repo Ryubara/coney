@@ -163,6 +163,7 @@ class ScriptedStory final : public script::StoryBindingHost {
     void canUseWorldFlags(int gang, bool on, int percent) override;
     /// The gang takes the story tactic of the call's kind (ai/story_tactics.h); a TravelPath walks the path the call
     /// names. Attack and Confront are the AI host's (ScriptedBrains::tacticAttack(), tacticConfront()).
+    /// @coney-only dispatch: the original's script bindings set each tactic kind themselves
     void setTactic(const script::TacticCall& call) override;
 
     /// Every command first clears the crew's shared target (Gang::setSharedTarget()); the unforced attack then sets it

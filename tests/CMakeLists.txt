@@ -98,6 +98,7 @@ add_executable(coney_tests
     gamemodes/idle_mode_test.cpp
     gamemodes/legal_screen_mode_test.cpp
     gamemodes/hud_feed_test.cpp
+    gamemodes/held_throws_test.cpp
     gamemodes/level_items_test.cpp
     gamemodes/level_pickups_test.cpp
     gamemodes/loading_screen_test.cpp
@@ -200,6 +201,7 @@ add_executable(coney_tests
     platform/disc_level5_boss_camera_test.cpp
     platform/disc_level5_fights_test.cpp
     platform/disc_level34_furies_test.cpp
+    platform/disc_level34_looters_test.cpp
     platform/disc_level99_audio_test.cpp
     platform/disc_level99_heap_test.cpp
     platform/disc_level99_scene_speech_test.cpp
@@ -506,6 +508,7 @@ target_sources(coney_tests PRIVATE
     ai/crew_test.cpp
     ai/smash_goals_test.cpp
     ai/steal_goals_test.cpp
+    ai/vandalize_tactic_test.cpp
     ai/disc_ai_config_test.cpp
     ai/disc_route_test.cpp
     ai/formations_test.cpp
