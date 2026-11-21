@@ -598,11 +598,11 @@ void PlayLevelMode::render(const RenderTime& time) {
         // order again, each posed one's librw mesh is placed with what he wears, holds and carries, and every one's
         // shadow and ring are queued. Only the middle pass leaves this thread, and it writes nothing but the jobs and
         // their meshes, so what is posed, attached and queued, and in what order, is as when one thread did it all.
-        constexpr std::size_t kNoJob = static_cast<std::size_t>(-1);
         struct Drawn {
-            bool listed = false;      // he has a mesh and is not deleted: his shadow and ring are queued
-            anim::Vec3 feet;          // where his shadow and ring go
-            std::size_t job = kNoJob; // his job, when posed
+            bool listed = false; // he has a mesh and is not deleted: his shadow and ring are queued
+            anim::Vec3 feet;     // where his shadow and ring go
+            bool posed = false;  // he has a job
+            std::size_t job = 0; // his job, when posed
         };
         std::vector<Drawn> drawn(fighters.size());
         std::vector<HumanPoseJob> jobs;
@@ -651,6 +651,7 @@ void PlayLevelMode::render(const RenderTime& time) {
                 job.current = &fighters[i].current;
                 job.alpha = alpha;
             }
+            drawn[i].posed = true;
             drawn[i].job = jobs.size();
             jobs.push_back(job);
         }
@@ -659,7 +660,7 @@ void PlayLevelMode::render(const RenderTime& time) {
             if (!drawn[i].listed) {
                 continue;
             }
-            if (drawn[i].job != kNoJob) {
+            if (drawn[i].posed) {
                 const HumanPoseJob& job = jobs[drawn[i].job];
                 commitHumanPose(job);
                 const human::PlayerCharacter& character = characterOf(*fighters[i].human);
