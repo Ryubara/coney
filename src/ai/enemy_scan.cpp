@@ -259,7 +259,9 @@ int scanEnemies(const Gangs& gangs, Brain& scanner) {
         }
     }
     // 4. The nearest 16; the ones beyond leave the list. **Coney stand-in** (#1597): the original sorts only when
-    // more than 16 were found, so 16 or fewer keep the gangs' order (the list's and the events').
+    // more than 16 were found, so 16 or fewer keep the gangs' order (the list's and the events'). Fixing it must
+    // also change nearestSeen(), which stops casting at 16 found: it must cast until 17 are found, or otherwise know
+    // whether more than 16 would be, or a scan that skipped rays would keep the wrong order.
     std::ranges::stable_sort(
         found, [&scanner](const Brain* a, const Brain* b) { return scanner.distanceTo(*a) < scanner.distanceTo(*b); });
     for (std::size_t k = kScanMaxEnemies; k < found.size(); ++k) {

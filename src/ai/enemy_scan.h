@@ -55,7 +55,11 @@ struct SightCandidate {
 /// refers to him: such a one is not found. The result of the scan is the same as with every line cast: step 4 keeps
 /// the nearest `keep` of all it found, so a member farther than `keep` found ones would leave the list again, and
 /// forgetting him (Brain::forget()) changes nothing when the scanner does not refer to him. **Coney's order** (#1555):
-/// the original casts every candidate's line, in the gangs' order (up to 512 a scan in a crowd Coney allows).
+/// the original casts every candidate's line, in the gangs' order (at most 59 other humans there; Coney's 32 gangs of
+/// 16 slots allow up to 512 a scan). **Holds only while step 4 always sorts** (the #1597 stand-in): under the
+/// original's rule of sorting only past 16, a scan that found exactly 16 before skipping would keep the gangs' order
+/// where casting every line finds 17 or more and sorts, so fixing #1597 must cast until 17 are found, or otherwise know
+/// whether more than 16 would be.
 /// @orig 0x0028b358 Brain_ScanEnemies (unknown)
 [[nodiscard]] std::vector<bool> nearestSeen(std::span<const SightCandidate> candidates, std::size_t keep,
                                             const std::function<bool(std::size_t)>& clearLine);

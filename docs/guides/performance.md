@@ -410,7 +410,12 @@ the performance sweep's experiment 12 (#1542) made into Coney's only path.
 
 **The gain.** Main-thread CPU time (`CONEY_PERF_CPU_CLOCK`), best / median of three interleaved runs, a `playtest`
 build of `main` at `9a6660a8f` and of the change in the same build folder, headless lockstep in `level95`, rows of 25,
-engaged 1000 (every fighter in a gang, scaled scan tokens), 300 steps; the processor's load read 97 to 100 %:
+engaged 1000 (every fighter in a gang, scaled scan tokens), 300 steps; the processor's load read 97 to 100 %. Both
+builds carried two measuring patches that are not in the repository, as in the sweep (#1542): one adds the sweep's
+switches (`CONEY_PERF_CPU_CLOCK`, the thread's CPU time as the probes' clock on Windows;
+`CONEY_SWEEP_GANG_MEMBERS`, every fighter in a gang; `CONEY_SWEEP_SCAN_TOKENS`, scan tokens scaled with the crowd),
+the other counts each line of sight of a scan's step 1 as the bench counter `ai.scan_rays`. To repeat
+the runs, add the same to both sides:
 
 | Zone | Before (ms) | After (ms) |
 | --- | --- | --- |
