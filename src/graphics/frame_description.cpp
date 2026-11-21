@@ -94,7 +94,7 @@ void FrameDescription::addTriangles(const Material2d& material, std::span<const 
 ScenePass& FrameDescription::scene() {
     // A new scene pass keeps the camera set last this frame.
     if (m_passes.empty() || !std::holds_alternative<ScenePass>(m_passes.back())) {
-        m_passes.emplace_back(ScenePass{m_camera, {}});
+        m_passes.emplace_back(ScenePass{m_camera, false, {}});
     }
     return std::get<ScenePass>(m_passes.back());
 }
@@ -110,8 +110,10 @@ void FrameDescription::setSceneCamera(const SceneCamera& camera) {
             return;
         }
     }
-    m_passes.emplace_back(ScenePass{camera, {}});
+    m_passes.emplace_back(ScenePass{camera, false, {}});
 }
+
+void FrameDescription::clearSceneDepth() {}
 
 void FrameDescription::addSceneDraw(Draw3d draw, std::span<const SceneLight> lights,
                                     std::span<const TextureId> textures, std::span<const TextureId> dualTextures,

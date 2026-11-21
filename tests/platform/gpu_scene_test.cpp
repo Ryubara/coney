@@ -399,3 +399,121 @@ TEST_CASE("the GPU renderer skins a posed mesh by its bones", "[render][renderer
     std::error_code ignored;
     std::filesystem::remove(path, ignored);
 }
+
+TEST_CASE("the GPU renderer clears the depth for a scene pass that asks and lights a draw that is lit",
+          "[render][renderer][window][scene]") {
+    // Expected: ../engine/gpu-renderer.md#scene and docs/research/level-loading.md#render-order: after the level's
+    // skyline the depth alone is cleared (LevelObject_RenderBackground 0x0040d0a8 step 4), so the world drawn next,
+    // farther than the skyline, still shows (the left half: a near red quad, then the clear, then a far green one);
+    // the background's models have no light flag and are lit all the same (docs/research/lighting.md
+    // #coneys-implementation): a prelit grey (60) quad lit by an ambient of 0.25 is 60 + 64 = 124, unlit 60 (the right
+    // half, its top lit and its bottom not). The window and camera are the test's own, as in the case above; a strip
+    // along the bottom of the left half is a linearly filtered 2 x 2 texture stretched over it, so the picture holds
+    // more colours than a palette (the capture's PNG is then one librw reads).
+    if (!gpuHere()) {
+        SKIP("no display or no GPU device here");
+    }
+    WindowDesc desc;
+    desc.activate = false;
+    desc.hidden = true;
+    desc.width = 320;
+    desc.height = 240;
+    auto started = RenderEngine::start(RenderBackend::Gpu, desc);
+    REQUIRE(started.has_value());
+    RenderEngine& engine = **started;
+    coney::platform::SceneAssets& assets = engine.sceneAssets();
+
+    // A quad at distance `z` from `left` to `right` pixels and from `top` to `bottom` pixels.
+    const auto quadAt = [](float z, int left, int right, int top, int bottom, QuadSpec spec) {
+        const float halfWidth = 0.5F * z;
+        const float halfHeight = 0.375F * z;
+        const auto x = [halfWidth](int pixel) { return (static_cast<float>(pixel) / 160.0F - 1.0F) * halfWidth; };
+        const auto y = [halfHeight](int pixel) { return (1.0F - static_cast<float>(pixel) / 120.0F) * halfHeight; };
+        spec.topLeft = {x(left), y(top), z};
+        spec.topRight = {x(right), y(top), z};
+        spec.bottomLeft = {x(left), y(bottom), z};
+        spec.bottomRight = {x(right), y(bottom), z};
+        return spec;
+    };
+    std::vector<rw::Atomic*> quads;
+    std::vector<coney::graphics::MeshId> meshes;
+    const auto add = [&](const QuadSpec& spec) {
+        quads.push_back(makeQuad(spec));
+        auto id = assets.addAtomic(*quads.back());
+        REQUIRE(id.has_value());
+        meshes.push_back(*id);
+        return meshes.size() - 1;
+    };
+    // A 2 x 2 texture sampled linearly: red, green over blue, white.
+    rw::Texture* texture = rw::Texture::create(nullptr);
+    std::memcpy(texture->name, "blend", 6); // the name and its terminator
+    coney::graphics::TextureData texels;
+    texels.name = "blend";
+    texels.levels.push_back({2, 2, {255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255}});
+    texels.sampler = {coney::graphics::TextureFilter::Linear, coney::graphics::TextureAddress::Clamp,
+                      coney::graphics::TextureAddress::Clamp};
+    auto textureId = assets.addTexture(*texture, texels);
+    REQUIRE(textureId.has_value());
+    const std::size_t nearRed =
+        add(quadAt(10.0F, 0, 160, 0, 200, QuadSpec{.prelit = true, .prelight = {255, 0, 0, 255}}));
+    const std::size_t farGreen =
+        add(quadAt(40.0F, 0, 160, 0, 200, QuadSpec{.prelit = true, .prelight = {0, 255, 0, 255}}));
+    const std::size_t strip = add(quadAt(10.0F, 0, 160, 200, 240, QuadSpec{.prelit = true, .texture = texture}));
+    const std::size_t litGrey =
+        add(quadAt(10.0F, 160, 320, 0, 120, QuadSpec{.prelit = true, .prelight = {60, 60, 60, 255}}));
+    const std::size_t unlitGrey =
+        add(quadAt(10.0F, 160, 320, 120, 240, QuadSpec{.prelit = true, .prelight = {60, 60, 60, 255}}));
+
+    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-depth-clear.png").string();
+    engine.requestCapture(0, path);
+    engine.beginWindowFrame(Rgba{0, 0, 0, 255});
+    coney::graphics::SceneCamera camera;
+    camera.halfWidth = 0.5F;
+    camera.halfHeight = 0.375F;
+    camera.nearClip = 1.0F;
+    camera.farClip = 100.0F;
+    camera.fogStart = 50.0F;
+    engine.setSceneCamera(camera);
+    const std::array<coney::graphics::SceneLight, 1> ambient{
+        {{.type = coney::graphics::LightType::Ambient, .colour = {0.25F, 0.25F, 0.25F}}}};
+    coney::graphics::SceneStates states;
+    states.fog = false;
+    const auto draw = [&](std::size_t which, coney::graphics::Material3d material = {}) {
+        coney::graphics::Draw3d scene;
+        scene.mesh = meshes[which];
+        scene.material = material;
+        scene.states = states;
+        engine.drawScene(scene, ambient);
+    };
+    draw(nearRed);
+    draw(strip);
+    const coney::graphics::Material3d background{.colour = coney::graphics::MaterialColour::Own, .lit = true};
+    draw(litGrey, background);
+    draw(unlitGrey, coney::graphics::Material3d{.colour = coney::graphics::MaterialColour::Own});
+    engine.clearSceneDepth();
+    draw(farGreen);
+    engine.present();
+
+    const auto captured = coney::test::got(engine.capture());
+    REQUIRE(captured.has_value());
+
+    int width = 0;
+    int height = 0;
+    const std::vector<std::uint8_t> rgba = readCapture(path, width, height);
+    REQUIRE(width == 320);
+    REQUIRE(height == 240);
+    CHECK(near(pixelAt(rgba, width, 80, 120), Rgba{0, 255, 0, 255}, 2));
+    CHECK(near(pixelAt(rgba, width, 240, 60), Rgba{124, 124, 124, 255}, 2));
+    CHECK(near(pixelAt(rgba, width, 240, 180), Rgba{60, 60, 60, 255}, 2));
+
+    for (rw::Atomic* atomic : quads) {
+        destroyQuad(atomic);
+    }
+    for (const coney::graphics::MeshId mesh : meshes) {
+        assets.removeMesh(mesh);
+    }
+    assets.removeTexture(*textureId);
+    texture->destroy();
+    std::error_code ignored;
+    std::filesystem::remove(path, ignored);
+}

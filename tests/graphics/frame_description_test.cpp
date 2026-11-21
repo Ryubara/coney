@@ -362,3 +362,50 @@ TEST_CASE("a scene camera starts a scene pass that later scene passes of the fra
     REQUIRE(frame.passes().size() == 1);
     CHECK_FALSE(cameraOf(0).has_value());
 }
+
+TEST_CASE("a depth clear starts a scene pass that clears the depth first and keeps the camera",
+          "[graphics][frame-description]") {
+    // Expected: FrameDescription::clearSceneDepth's contract (src/graphics/frame_description.h), for the Z-only clear
+    // after the level's background (LevelObject_RenderBackground 0x0040d0a8 step 4, docs/research/level-loading.md
+    // #render-order): the draws after it start a scene pass that clears the depth first, seen through the camera set
+    // last; a camera set before any draw goes to that pass and keeps its clear; the next scene draw after a 2D draw
+    // starts a pass that does not clear.
+    FrameDescription frame;
+    frame.begin(FrameStart{});
+    coney::graphics::SceneCamera skyline;
+    skyline.farClip = 560.0F;
+    coney::graphics::SceneCamera world;
+    world.farClip = 300.0F;
+    frame.setSceneCamera(skyline);
+    Draw3d draw;
+    draw.mesh = MeshId{1};
+    frame.addSceneDraw(draw, {}, {}, {});
+    frame.clearSceneDepth();
+    frame.setSceneCamera(world); // no draw yet: the clearing pass takes it
+    frame.addSceneDraw(draw, {}, {}, {});
+    frame.addSceneDraw(draw, {}, {}, {});
+    const LogicalQuad quad{0.0F, 0.0F, 10.0F, 10.0F, UvRect{}, Rgba{}};
+    frame.addQuads(Material2d{}, std::span<const LogicalQuad>(&quad, 1), kPillarbox);
+    frame.addSceneDraw(draw, {}, {}, {});
+
+    REQUIRE(frame.passes().size() == 4);
+    const auto sceneAt = [&frame](std::size_t at) { return std::get<ScenePass>(frame.passes()[at]); };
+    REQUIRE(std::holds_alternative<ScenePass>(frame.passes()[0]));
+    CHECK_FALSE(sceneAt(0).clearDepth);
+    CHECK(sceneAt(0).camera == skyline);
+    REQUIRE(std::holds_alternative<ScenePass>(frame.passes()[1]));
+    CHECK(sceneAt(1).clearDepth);
+    CHECK(sceneAt(1).camera == world);
+    CHECK(sceneAt(1).draws.size() == 2);
+    REQUIRE(std::holds_alternative<ScenePass>(frame.passes()[3]));
+    CHECK_FALSE(sceneAt(3).clearDepth);
+    CHECK(sceneAt(3).camera == world);
+
+    // Cleared twice with no draw between: one pass that clears.
+    frame.begin(FrameStart{});
+    frame.clearSceneDepth();
+    frame.clearSceneDepth();
+    frame.addSceneDraw(draw, {}, {}, {});
+    REQUIRE(frame.passes().size() == 1);
+    CHECK(sceneAt(0).clearDepth);
+}

@@ -128,8 +128,10 @@ void addLevelFileReaders(chunk::ChunkHandlerTable& table) {
     world::addLevelFileHandlers(table, linkLevelModel);
 }
 
+void holdLevelMeshes(world::LevelObject& /*level*/, SceneAssets& /*assets*/) {}
+
 std::expected<std::unique_ptr<world::LevelObject>, Error> loadLevel(const io::Wad& wad, std::string_view level,
-                                                                    bool forDrawing) {
+                                                                    bool forDrawing, SceneAssets* /*assets*/) {
     installGlobalTextureLookup();
     const std::string file = std::string(level) + ".lev";
     auto entry = wad.lookup(file);

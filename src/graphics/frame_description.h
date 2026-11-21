@@ -174,6 +174,9 @@ enum class MaterialColour : std::uint8_t {
     /// times the shadow dimming and his distance fade, as HumanRender_Draw writes them
     /// (docs/research/graphics.md#human-draw, steps 3 and 4).
     Shade,
+    /// The materials' colours as the mesh has them, nothing written: the level's background, which the original draws
+    /// as loaded (LevelObject_RenderBackground, docs/research/level-loading.md#render-order).
+    Own,
 };
 
 /// What a 3D draw changes about its mesh's own materials this frame.
@@ -192,6 +195,10 @@ struct Material3d {
     /// Texture levels picked by the distance to the camera, as the original draws the streamed sectors alone
     /// (docs/research/rendering.md#world); level 0 otherwise.
     bool distanceLevels = false;
+    /// Lit by the draw's lights even where its mesh is not (RenderWare's LIGHT flag off, MeshData::lit): the level's
+    /// background, whose models carry no light flag and which the original lights with the world's ambient all the
+    /// same (docs/research/lighting.md#coneys-implementation).
+    bool lit = false;
 
     friend bool operator==(const Material3d&, const Material3d&) = default;
 };
@@ -270,6 +277,10 @@ struct ScenePass {
     /// The camera its draws are seen through (FrameDescription::setSceneCamera()); none when the frame set none before
     /// them, and a renderer that needs one draws nothing of the pass.
     std::optional<SceneCamera> camera;
+    /// The depth buffer cleared to the far plane before its draws, the colour left as it is
+    /// (FrameDescription::clearSceneDepth()): the Z-only clear after the level's background, so the world covers it
+    /// (LevelObject_RenderBackground, docs/research/level-loading.md#render-order).
+    bool clearDepth = false;
     std::vector<Draw3d> draws;
 };
 
@@ -332,6 +343,9 @@ class FrameDescription {
     /// it instead when it is a scene pass with no draw yet), and any later scene pass of the frame keeps it until the
     /// next call.
     void setSceneCamera(const SceneCamera& camera);
+    /// Clears the depth buffer before the 3D draws added after it: they start a new scene pass that clears it first,
+    /// seen through the camera set last (the last pass clears instead when it is a scene pass with no draw yet).
+    void clearSceneDepth();
 
     /// The passes, in the order they draw.
     [[nodiscard]] std::span<const FramePass> passes() const { return m_passes; }

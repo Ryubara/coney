@@ -528,3 +528,26 @@ TEST_CASE("the scene's fog is librw's linear fog from the fog plane to the far p
     CHECK(coney::graphics::fogAt(camera, true, 150.0F) == Approx(0.0F));
     CHECK(coney::graphics::fogAt(camera, false, 150.0F) == Approx(1.0F));
 }
+
+TEST_CASE("a lit draw of an unlit mesh takes its lights and keeps its colours", "[graphics][gpu-renderer][scene]") {
+    // Expected: ../engine/gpu-renderer.md#scene and docs/research/lighting.md#coneys-implementation: the level's
+    // background has no light flag, and the original adds the world's ambient to it all the same, so its draw is lit
+    // (Material3d::lit), as platform::MaterialChange sets RenderWare's LIGHT flag for the GL3 renderer: the ambients
+    // summed and, with no normals (the background has none), no other light; its colours left as the mesh has them
+    // (MaterialColour::Own).
+    const std::vector<SceneLight> lights{light(LightType::Ambient, 0.2F), light(LightType::Directional, 0.3F),
+                                         light(LightType::Ambient, 0.25F)};
+    MeshData sky = litMesh({MeshMaterial{Rgba{10, 20, 30, 200}, ""}});
+    sky.lit = false;
+    sky.attributes.normals = false;
+    const DrawLights unlit = coney::graphics::lightsFor(lights, sky, Transform3d{});
+    CHECK(unlit.ambient[0] == Approx(0.0F));
+    const DrawLights lit = coney::graphics::lightsFor(lights, sky, Transform3d{}, true);
+    CHECK(lit.ambient[0] == Approx(0.45F));
+    CHECK(lit.count == 0);
+
+    const DrawColours own = coney::graphics::coloursOf(sky, Material3d{.colour = MaterialColour::Own, .lit = true});
+    REQUIRE(own.colours.size() == 1);
+    CHECK(own.colours[0] == Rgba{10, 20, 30, 200});
+    CHECK_FALSE(own.modulate);
+}

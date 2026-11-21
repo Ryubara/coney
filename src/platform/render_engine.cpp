@@ -653,6 +653,8 @@ void RenderEngine::setSceneCamera(const graphics::SceneCamera& camera) {
     m_frame.setSceneCamera(camera);
 }
 
+void RenderEngine::clearSceneDepth() { CONEY_ASSERT(m_inFrame); }
+
 void RenderEngine::startFrame(graphics::Rgba clear, const graphics::FrameStart& start) {
     CONEY_ASSERT(!m_inFrame);
     m_inFrame = true;
