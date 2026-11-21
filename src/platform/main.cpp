@@ -1492,7 +1492,12 @@ int main(int argc, char** argv) {
                                                         : std::format("{}x{}", windowDesc.width, windowDesc.height)},
                            {"build", CONEY_BUILD_TYPE},
                            {"renderer", coney::platform::glRendererName()},
-                           {"skinning", coney::platform::characterSkinOn() ? "gpu" : "cpu"},
+                           // "gpu" when the humans are skinned on the GPU: by GL3's librw pipeline, or by the GPU
+                           // renderer's own shader, which skins whatever `--cpu-skinning` says.
+                           {"skinning", (coney::platform::characterSkinOn() ||
+                                         coney::platform::RenderEngine::skinsInShaders(renderer.backend()))
+                                            ? "gpu"
+                                            : "cpu"},
                            // What converting the world's textures and meshes into Coney's formats cost this run
                            // (docs/engine/renderer.md#frame-description): none of it under GL3.
                            {"scene_assets", renderer.sceneAssets().converting() ? "converting" : "not converting"},

@@ -149,6 +149,10 @@ std::expected<std::unique_ptr<GpuScene>, Error> GpuScene::create(SDL_GPUDevice* 
         return std::unexpected(std::move(fragment.error()));
     }
     scene->m_fragmentShader = *fragment;
+    // The bone palette's buffer exists from the start: every draw binds it, posed or not.
+    if (!scene->m_bones.reserve(0)) {
+        return failure("its bone palette");
+    }
     // The world pass's most common states, made now so a device that refuses them is known at the start.
     if (scene->pipelineFor(PipelineKey{}) == nullptr) {
         return failure("its pipeline");
@@ -178,13 +182,16 @@ SDL_GPUGraphicsPipeline* GpuScene::pipelineFor(const PipelineKey& key) {
     if (const auto found = m_pipelines.find(key); found != m_pipelines.end()) {
         return found->second;
     }
-    // One vertex buffer of graphics::MeshVertex: the position, normal, prelighting and first texture coordinates.
+    // One vertex buffer of graphics::MeshVertex: the position, normal, prelighting, first texture coordinates and the
+    // skinning's bones and weights (all 0 for a mesh that is not skinned).
     const SDL_GPUVertexBufferDescription buffer{0, sizeof(graphics::MeshVertex), SDL_GPU_VERTEXINPUTRATE_VERTEX, 0};
-    const std::array<SDL_GPUVertexAttribute, 4> attributes{{
+    const std::array<SDL_GPUVertexAttribute, 6> attributes{{
         {0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, offsetof(graphics::MeshVertex, position)},
         {1, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3, offsetof(graphics::MeshVertex, normal)},
         {2, 0, SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4_NORM, offsetof(graphics::MeshVertex, prelit)},
         {3, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2, offsetof(graphics::MeshVertex, texCoords)},
+        {4, 0, SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4, offsetof(graphics::MeshVertex, bones)},
+        {5, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, offsetof(graphics::MeshVertex, weights)},
     }};
     // Blended by source alpha (librw's SRCALPHA over INVSRCALPHA, the alpha channel by the same factors), or
     // replacing what is below (ONE over ZERO).
@@ -303,6 +310,7 @@ const GpuScene::GpuMesh* GpuScene::meshFor(graphics::MeshId id, const graphics::
     for (const graphics::SubMesh& sub : mesh.subMeshes) {
         made.vertexAlpha.push_back(graphics::vertexAlphaOf(mesh, sub));
     }
+    made.bonesNeeded = graphics::bonesNeededBy(mesh);
     m_bufferUploads.push_back(BufferUpload{made.vertices, mesh.vertices.data(), vertexBytes, 0, id.value});
     m_bufferUploads.push_back(BufferUpload{made.indices, mesh.indices.data(), indexBytes, 0, id.value});
     return &m_meshes.put(id.value, 0, m_frame, std::move(made)).value;
@@ -346,6 +354,8 @@ void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::
     m_bufferUploads.clear();
     m_levelUploads.clear();
     m_draws.clear();
+    // The frame's poses, in one palette for the copy pass; posed draws are left out when it finds no room.
+    const bool posesHeld = m_bones.set(graphics::bonePaletteOf(frame.bones()));
     const std::span<const graphics::FramePass> passes = frame.passes();
     m_passDraws.assign(passes.size(), {0, 0});
     for (std::size_t p = 0; p < passes.size(); ++p) {
@@ -356,38 +366,62 @@ void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::
         const graphics::SceneCamera& camera = *scene->camera;
         const std::size_t first = m_draws.size();
         for (const graphics::Draw3d& draw : scene->draws) {
-            // A human (a posed draw) waits for the GPU renderer's skinning (#1206): left out, not drawn in his bind
-            // pose, his blood layer with him.
             const graphics::MeshData* mesh = store.mesh(draw.mesh);
-            if (mesh == nullptr || graphics::needsSkinning(frame, draw)) {
+            const GpuMesh* body = mesh != nullptr ? meshFor(draw.mesh, *mesh) : nullptr;
+            if (body == nullptr) {
                 continue;
             }
-            // The base mesh, then its dual layer right after it at the base's first alpha.
-            const graphics::DrawColours colours = graphics::coloursOf(*mesh, draw.material);
-            prepareMesh(draw.mesh, *mesh, draw, camera, frame.lightsOf(draw), colours, frame.texturesOf(draw), false,
-                        store, white);
-            if (const graphics::MeshData* layer = store.mesh(draw.dualLayer); layer != nullptr) {
-                prepareMesh(draw.dualLayer, *layer, draw, camera, frame.lightsOf(draw),
-                            graphics::layerColoursOf(*layer, colours), frame.dualTexturesOf(draw), true, store, white);
+            // A posed draw (a human) is skinned by his pose, or left out with his blood layer rather than stand in
+            // his bind pose.
+            const graphics::Posing posing = graphics::posingOf(frame, draw, *mesh, body->bonesNeeded);
+            if (posing == graphics::Posing::LeftOut || (posing == graphics::Posing::Skinned && !posesHeld)) {
+                continue;
             }
+            // The base mesh, then its dual layer right after it: a world's or object's at the base's first alpha, a
+            // human's blood layer in his colours and the blood pass's states.
+            const graphics::DrawColours colours = graphics::coloursOf(*mesh, draw.material);
+            prepareMesh(*body, *mesh, draw, camera, frame.lightsOf(draw),
+                        MeshLook{.colours = &colours,
+                                 .textures = frame.texturesOf(draw),
+                                 .states = &draw.states,
+                                 .skinned = posing == graphics::Posing::Skinned},
+                        store, white);
+            const graphics::MeshData* layer = store.mesh(draw.dualLayer);
+            const GpuMesh* uploadedLayer = layer != nullptr ? meshFor(draw.dualLayer, *layer) : nullptr;
+            if (uploadedLayer == nullptr) {
+                continue;
+            }
+            const graphics::Posing layerPosing = graphics::posingOf(frame, draw, *layer, uploadedLayer->bonesNeeded);
+            if (layerPosing == graphics::Posing::LeftOut) {
+                continue;
+            }
+            const graphics::DrawColours layerColours = graphics::dualColoursOf(draw, *layer, colours);
+            const graphics::SceneStates layerStates = graphics::dualStatesOf(draw);
+            prepareMesh(*uploadedLayer, *layer, draw, camera, frame.lightsOf(draw),
+                        MeshLook{.colours = &layerColours,
+                                 .textures = frame.dualTexturesOf(draw),
+                                 .states = &layerStates,
+                                 .layer = true,
+                                 .skinned = layerPosing == graphics::Posing::Skinned},
+                        store, white);
         }
         m_passDraws[p] = {first, m_draws.size() - first};
     }
 }
 
-void GpuScene::prepareMesh(graphics::MeshId id, const graphics::MeshData& mesh, const graphics::Draw3d& draw,
+void GpuScene::prepareMesh(const GpuMesh& uploaded, const graphics::MeshData& mesh, const graphics::Draw3d& draw,
                            const graphics::SceneCamera& camera, std::span<const graphics::SceneLight> lights,
-                           const graphics::DrawColours& colours, std::span<const graphics::TextureId> textures,
-                           bool layer, const graphics::AssetStore& store, SDL_GPUTexture* white) {
-    const GpuMesh* uploaded = meshFor(id, mesh);
-    if (uploaded == nullptr) {
-        return;
-    }
-    // What every sub-mesh of the draw shares: where it is, the camera, its lights and the fog.
+                           const MeshLook& look, const graphics::AssetStore& store, SDL_GPUTexture* white) {
+    const graphics::DrawColours& colours = *look.colours;
+    const std::span<const graphics::TextureId> textures = look.textures;
+    const graphics::SceneStates& states = *look.states;
+    // What every sub-mesh of the draw shares: where it is, the camera, its pose, its lights (by its posed sphere when
+    // it has one) and the fog.
     VertexUniform shared;
     shared.world = graphics::worldMatrixOf(draw.transform);
     shared.viewProjection = graphics::multiply(graphics::projectionOf(camera), graphics::viewMatrixOf(camera));
-    const graphics::DrawLights lit = graphics::lightsFor(lights, mesh, draw.transform);
+    shared.skin = {draw.firstBone, look.skinned ? 1U : 0U, 0U, 0U};
+    const graphics::DrawLights lit = graphics::lightsFor(lights, mesh, draw.transform, graphics::boundsOf(draw, mesh));
     shared.ambient = four(lit.ambient, 1.0F);
     for (std::size_t i = 0; i < lit.count; ++i) {
         const graphics::DrawLight& light = lit.lights[i];
@@ -398,8 +432,8 @@ void GpuScene::prepareMesh(graphics::MeshId id, const graphics::MeshData& mesh, 
         shared.lightColour[i] = four(light.colour, 1.0F);
     }
     shared.fogData = {camera.fogStart, camera.farClip, 1.0F / (camera.fogStart - camera.farClip),
-                      draw.states.fog ? 0.0F : 1.0F};
-    const std::array<float, 4> fogColour = channels(draw.states.fogColour);
+                      states.fog ? 0.0F : 1.0F};
+    const std::array<float, 4> fogColour = channels(states.fogColour);
 
     for (std::size_t s = 0; s < mesh.subMeshes.size(); ++s) {
         const graphics::SubMesh& sub = mesh.subMeshes[s];
@@ -430,20 +464,20 @@ void GpuScene::prepareMesh(graphics::MeshId id, const graphics::MeshData& mesh, 
         }
         // Translucent: vertex alpha, a material colour that is not opaque or a texture with alpha (librw's
         // VERTEXALPHA and its raster's alpha), which turn blending and the alpha test on.
-        const bool translucent = uploaded->vertexAlpha[s] || colour.a != 255 || (texture != nullptr && texture->alpha);
-        for (const graphics::SceneDrawPass& pass : graphics::drawPassesOf(draw.states, translucent, layer)) {
+        const bool translucent = uploaded.vertexAlpha[s] || colour.a != 255 || (texture != nullptr && texture->alpha);
+        for (const graphics::SceneDrawPass& pass : graphics::drawPassesOf(states, translucent, look.layer)) {
             SDL_GPUGraphicsPipeline* pipeline =
                 pipelineFor(PipelineKey{.strip = mesh.topology == graphics::MeshTopology::TriangleStrip,
                                         .blend = pass.blend,
-                                        .depthTest = draw.states.depthTest,
+                                        .depthTest = states.depthTest,
                                         .depthWrite = pass.depthWrite,
-                                        .cull = draw.states.cull});
+                                        .cull = states.cull});
             if (pipeline == nullptr) {
                 continue;
             }
             fragment.alphaLow = pass.alpha.low;
             fragment.alphaHigh = pass.alpha.high;
-            m_draws.push_back(SubDraw{pipeline, uploaded->vertices, uploaded->indices, sub.firstIndex, sub.indexCount,
+            m_draws.push_back(SubDraw{pipeline, uploaded.vertices, uploaded.indices, sub.firstIndex, sub.indexCount,
                                       texture != nullptr ? texture->texture : white, sampler, vertex, fragment});
         }
     }
@@ -456,6 +490,7 @@ std::uint32_t GpuScene::layUploads(std::uint32_t offset) {
         upload.offset = at;
         at += alignUp(upload.size, 4); // an index buffer's copy is whole words
     }
+    at = m_bones.lay(at);
     for (LevelUpload& upload : m_levelUploads) {
         at = alignUp(at, kTextureAlignment);
         upload.offset = at;
@@ -468,6 +503,7 @@ void GpuScene::writeUploads(std::uint8_t* mapped) const {
     for (const BufferUpload& upload : m_bufferUploads) {
         std::memcpy(mapped + upload.offset, upload.bytes, upload.size);
     }
+    m_bones.write(mapped);
     for (const LevelUpload& upload : m_levelUploads) {
         std::memcpy(mapped + upload.offset, upload.level->texels.data(), upload.level->texels.size());
     }
@@ -479,6 +515,7 @@ void GpuScene::recordUploads(SDL_GPUCopyPass* copy, SDL_GPUTransferBuffer* uploa
         const SDL_GPUBufferRegion to{bytes.buffer, 0, alignUp(bytes.size, 4)};
         SDL_UploadToGPUBuffer(copy, &from, &to, false);
     }
+    m_bones.record(copy, upload);
     for (const LevelUpload& level : m_levelUploads) {
         const SDL_GPUTextureTransferInfo from{upload, level.offset, level.level->width, level.level->height};
         SDL_GPUTextureRegion to{};
@@ -500,6 +537,7 @@ void GpuScene::forgetUploads() {
     }
     m_bufferUploads.clear();
     m_levelUploads.clear();
+    m_bones.forget();
     m_draws.clear();
     std::fill(m_passDraws.begin(), m_passDraws.end(), std::pair<std::size_t, std::size_t>{0, 0});
 }
@@ -515,6 +553,9 @@ void GpuScene::draw(SDL_GPUCommandBuffer* commands, SDL_GPURenderPass* target, s
         if (sub.pipeline != bound) {
             SDL_BindGPUGraphicsPipeline(target, sub.pipeline);
             bound = sub.pipeline;
+            // The palette with every pipeline: the vertex shader declares it whether or not the draw is posed.
+            SDL_GPUBuffer* palette = m_bones.buffer();
+            SDL_BindGPUVertexStorageBuffers(target, 0, &palette, 1);
         }
         const SDL_GPUBufferBinding vertices{sub.vertices, 0};
         SDL_BindGPUVertexBuffers(target, 0, &vertices, 1);

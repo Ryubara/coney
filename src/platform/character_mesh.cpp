@@ -197,35 +197,48 @@ CharacterMesh::CharacterMesh(const characters::CharacterModel& model, rw::Textur
     }
     m_atomic = makeAtomic(model, m_texture, &characters::SkinVertex::texCoords);
     m_blood = makeAtomic(model, nullptr, &characters::SkinVertex::secondTexCoords);
-    // Held by id for the frame description's draws; an atomic that does not convert keeps no id, and the human is then
-    // drawn through the lighting rig as before (PlayLighting::drawHumanPasses()).
+    // The shader's weights and bones: GL3's skinned pipeline reads them, and the converted meshes carry them.
+    m_skin = packSkinVertices(model.vertices);
+    // Held by id for the frame description's draws, the texture first so the materials name it; an atomic that does
+    // not convert keeps no id, and the human is then drawn through the lighting rig as before
+    // (PlayLighting::drawHumanPasses()). A texture that does not convert leaves the materials untextured.
     if (m_assets != nullptr) {
-        if (auto id = m_assets->addAtomic(*m_atomic); id) {
+        if (m_texture != nullptr) {
+            if (auto id = m_assets->addTexture(*m_texture); id && id->valid()) {
+                m_textureId = *id;
+            }
+        }
+        if (auto id = m_assets->addAtomic(*m_atomic, &m_skin); id) {
             m_meshId = *id;
         }
-        if (auto id = m_assets->addAtomic(*m_blood); id) {
+        if (auto id = m_assets->addAtomic(*m_blood, &m_skin); id) {
             m_bloodMeshId = *id;
         }
     }
-    m_gpu = skinsOnGpu(skinning, characterSkinOn(), model.clump.skin.inverseBind.size());
+    const bool shaderSkins = m_assets != nullptr && m_assets->skinsInShaders();
+    m_gpu = skinsOnGpu(skinning, characterSkinOn() || shaderSkins, model.clump.skin.inverseBind.size());
     if (!m_gpu) {
         m_vertices = model.vertices; // blended on the CPU at each pose
         return;
     }
-    // The shader's weights and bones, and each bone's box of the vertices it moves.
-    m_skin = packSkinVertices(model.vertices);
+    // Each bone's box of the vertices it moves, and the palette: GL3's pipeline draws with it, the GPU renderer with
+    // the pose its frame description carries.
     m_boxes = boneBoxes(model);
     m_palette = std::make_unique<BonePalette>();
     m_palette->fill(0.0F);
-    useCharacterSkin(m_atomic, m_skin, *m_palette);
-    useCharacterSkin(m_blood, m_skin, *m_palette);
+    if (characterSkinOn()) {
+        useCharacterSkin(m_atomic, m_skin, *m_palette);
+        useCharacterSkin(m_blood, m_skin, *m_palette);
+    }
 }
 
-// The scene assets' ids, both atomics with their geometry and frames, then the mesh's texture reference.
+// The scene assets' ids and texture hold, both atomics with their geometry and frames, then the mesh's texture
+// reference.
 CharacterMesh::~CharacterMesh() {
     if (m_assets != nullptr) {
         m_assets->removeMesh(m_meshId);
         m_assets->removeMesh(m_bloodMeshId);
+        m_assets->removeTexture(m_textureId);
     }
     destroyAtomic(m_blood); // its materials drop their blood texture references
     destroyAtomic(m_atomic);

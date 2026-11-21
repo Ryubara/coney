@@ -42,7 +42,7 @@ enum class RenderBackend : std::uint8_t {
     Null,   ///< librw's NULL device: no window, no GPU, nothing drawn; for CI, tests and console tools.
     /// SDL3's GPU API (docs/engine/renderer.md#migration): a window Coney makes, SDL's GPU device and swapchain, and
     /// librw on its NULL device for data only, as for Null. Each frame's passes are drawn (GpuRenderer): the 2D, and
-    /// the world, objects and cars of the scene passes (docs/engine/gpu-renderer.md#scene).
+    /// the world, objects, cars and humans of the scene passes (docs/engine/gpu-renderer.md#scene).
     Gpu,
 };
 
@@ -293,6 +293,11 @@ class RenderEngine final : public graphics::RenderDevice {
     /// which draws the librw atomics and reads none of the converted data (#1422); the NULL backend's tests and the GPU
     /// renderer read it.
     [[nodiscard]] static bool convertsSceneAssets(RenderBackend backend) { return backend != RenderBackend::OpenGl; }
+    /// Whether `backend` skins posed meshes in its shaders from the converted scene assets, so play poses a character's
+    /// mesh by its bone palette alone (SceneAssets::skinsInShaders()): the GPU renderer
+    /// (docs/engine/gpu-renderer.md#skinning). GL3 skins in its own librw pipeline where it runs
+    /// (platform/character_skin.h), the NULL backend on the CPU.
+    [[nodiscard]] static bool skinsInShaders(RenderBackend backend) { return backend == RenderBackend::Gpu; }
 
     /// The meshes and textures the frame description's 3D draws name by id, with the librw atomics the GL3 renderer
     /// draws for them: WorldSet fills it with the streamed world's sectors. Whoever adds to it removes again before the

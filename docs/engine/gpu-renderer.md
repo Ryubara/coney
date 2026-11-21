@@ -5,8 +5,9 @@ to replace librw's GL3 device as it grows ([Migration](renderer.md#migration)). 
 works: the start of [Order](renderer.md#order) item 3, which opens the window, the GPU device and the swapchain and opens
 librw for data only, and item 11, which draws the frame description's 2D passes (the front end, the legal screens, the
 movies, the HUD) with Coney's own shaders and reads the frame back for `--screenshot`, item 12, which draws Dear
-ImGui's developer overlay over it, and item 13, which draws the scene passes: the streamed world, the world objects and
-the parked cars ([below](#scene)). It is Coney's own code with no counterpart in the original, which drew through the
+ImGui's developer overlay over it, item 13, which draws the scene passes: the streamed world, the world objects and
+the parked cars ([below](#scene)), and item 14, which skins the humans with their held objects and hats among them
+([Skinning](#skinning)). It is Coney's own code with no counterpart in the original, which drew through the
 PS2's GS. GL3 stays the default.
 
 ## The choice {#choice}
@@ -25,8 +26,8 @@ offscreen. It takes `--screenshot` and `--record` ([The capture](#capture)).
 The GPU renderer draws the 2D layers, the pad's debug menus among them, and the developer overlay ([below](#overlay)),
 so the Tunables page that sets `Display/Renderer` is reachable on it and a saved 1 starts it at the next start (a
 guard that started GL3 instead, while it could not, is gone). It draws a level's world, objects and cars
-([below](#scene)), but not yet its background (the sky, [#1527](issue:1527)), its humans or its effects (items 14
-and 20 of [Order](renderer.md#order)). The release build has no overlay and no overrides file, so there `--renderer
+and humans ([below](#scene)), but not yet its background (the sky, [#1527](issue:1527)) or its effects (item 20 of
+[Order](renderer.md#order)). The release build has no overlay and no overrides file, so there `--renderer
 gpu` is the only way to it.
 
 To go back to GL3 for good, set *Display / Renderer* to 0 on the Tunables page and *Save overrides*, or delete the
@@ -54,8 +55,8 @@ present.
 
 The GPU backend opens librw exactly as the NULL backend does, so texture dictionaries, streams and PS2 rasters load and
 the game runs; `drawsPixels()` is false, so nothing converts textures for librw's GL3 device, and what still draws
-through librw (the level's background, the effects) is not drawn (item 20 of [Order](renderer.md#order)), nor are the
-humans, which come through the description but wait for the GPU renderer's skinning (item 14, [below](#scene)).
+through librw (the level's background, the effects) is not drawn (item 20 of [Order](renderer.md#order)). The humans
+come through the description and are skinned by the GPU renderer ([Skinning](#skinning)).
 `drawsScene()` is true, as on GL3 (`drawsSceneOn()`), so play loads the world objects and parked cars, their textures
 held as read, for the scene passes ([below](#scene)). What draws the 2D layers runs on either windowed backend; the
 movie player picks its screen with `makeMovieScreen()` by backend.
@@ -90,10 +91,13 @@ the 2D quads is not known). Each texture is sampled with its own filter, nearest
 `MIPNEAREST`, linear for the rest, clamped or repeated as the draw says. No mip levels are uploaded (stand-in: GL3 would
 sample a sheet's own levels for a mip filter; 2D draws are near their textures' sizes, where level 0 is the one taken).
 
-**Not yet:** the screen passes and `--line-blend` (item 20), the 3D scene's humans and effects (items 14 and 20; the
-world, objects and cars are [below](#scene)), and the texture
-viewer's `RenderEngine::drawTexture`, which is not in the description. A frame the GPU renderer cannot draw part of
-misses that part; it never fails.
+**Not yet:** the screen passes and `--line-blend` (item 20), the 3D scene's effects (item 20; the world, objects, cars
+and humans are [below](#scene)), and the texture viewer's `RenderEngine::drawTexture`, which is not in the
+description. The renderer also has no `gpu.frame` measure: GL3 takes it from OpenGL timer queries
+([GPU time](../guides/performance.md#gpu-time)), and SDL3's GPU API has no timer or timestamp queries, so a bench of
+`--renderer gpu` reports `gpu.frame none` (its CPU zones are all there). Its GPU time can be read only with a
+platform's own tools until SDL adds them. A frame the GPU renderer cannot draw part of misses that part; it never
+fails.
 
 ## Drawing the scene passes {#scene}
 
@@ -110,10 +114,8 @@ VU1 pipelines and the GS, which GL3 already stands in for.
 draws librw would make go nowhere, librw being open for data only ([above](#librw)). Each scene pass carries the camera
 its draws are seen through (`graphics::SceneCamera`, set by `RenderEngine::setSceneCamera()` from the world pass's
 view: `sceneCameraOf()`). The humans come as scene draws too since item 9, each with his pose (his skinning matrices,
-`FrameDescription::bonesOf()`) and his blood layer, but `GpuScene` leaves out every posed draw, its dual layer with it
-(`needsSkinning()`), rather than stand him in his bind pose: the scene shaders do not skin, the converted character
-meshes have no skin weights and the blood textures are not in the scene assets, all three item 14's
-([#1206](issue:1206)).
+`FrameDescription::bonesOf()`), the sphere the pose gave him (`Draw3d::bounds`) and his blood layer, and are skinned in
+the vertex shader ([Skinning](#skinning)).
 
 **The steps.** In the renderer's one command buffer:
 
@@ -135,7 +137,7 @@ meshes have no skin weights and the blood textures are not in the scene assets, 
 | --- | --- | --- |
 | Camera | librw's view (the camera's frame inverted, its x flipped back) and perspective (the view window, the near and far planes); OpenGL's depth from -w to w taken onto 0 to w, so both depth buffers hold the same values | `viewMatrixOf()`, `projectionOf()` |
 | Lights | none for a geometry without RenderWare's LIGHT flag; the ambients summed and times the material's ambient; the directional lights, then the point and spot lights whose sphere meets the mesh's (both only with normals), eight at most, times its diffuse; prelighting (black for a mesh without it) plus the lights, clamped, times the material colour | `lightsFor()`, `scene3d.vert.hlsl` |
-| Colours | a sector's fade, an object's tint (with MODULATE while it is not opaque white), a car part's paint, a human's colour times his shadow dimming at his fade (`Shade`, for item 14), as `MaterialChange` writes them into librw's materials; white for a mesh that does not modulate; a dual layer at its base's first alpha | `coloursOf()`, `layerColoursOf()` |
+| Colours | a sector's fade, an object's tint (with MODULATE while it is not opaque white), a car part's paint, a human's colour times his shadow dimming at his fade (`Shade`), as `MaterialChange` writes them into librw's materials; white for a mesh that does not modulate; a dual layer at its base's first alpha, a human's blood layer in his own colours | `coloursOf()`, `layerColoursOf()`, `dualColoursOf()` |
 | Blending | on only for vertex alpha (prelighting not opaque), a material colour not opaque or a texture with a texel that is not; then the draw's blend (source alpha, or replace) and its alpha test as the render states stand at the draw, against librw's start reference (10 of 255) | `drawPassesOf()`, `vertexAlphaOf()`, `hasAlpha()` |
 | GS alpha test | a first pass (alpha test "at least") of a blended mesh that writes depth is drawn twice, as librw emulates the GS's FB_ONLY: the fragments at or above 128 of 255 with depth written, then the rest without ([shared state](../research/rendering.md#shared-state)); a dual layer with the test off | `drawPassesOf()` |
 | Depth and culling | tested less or equal (always while off but written), written as the pass says; back or front faces dropped, counter-clockwise the front | `GpuScene::pipelineFor()` |
@@ -158,7 +160,7 @@ sign, a lit window, the wall behind the fence), and what showed through instead 
 **Not yet:** the level's background, which still draws through librw and so never reaches the GPU renderer (the sky and
 cloud boxes, the skyline and the level world's light glows, which the original draws inside `WorldManager_Render`
 itself): no item of [Order](renderer.md#order) held it when the world was drawn, so it is left for [#1527](issue:1527),
-which item 20's parity needs. The humans are item 14 (left out, [above](#scene)), the effects drawn through librw
+which item 20's parity needs. The effects drawn through librw
 (the water, the see-through panes, the throw arc, particles, blob shadows, rings and coronas) item 20. A frame on
 `--renderer gpu` misses them; `--scene-only` leaves them out on both renderers, so that the frames can be compared on
 the part both draw ([How pictures are compared](renderer.md#comparing)).
@@ -170,6 +172,41 @@ there yet anyway (above). The Scenery, Humans and Objects parts do not ([#1545](
 views' hook, and while it is set (any of the three hidden, or any mesh view on) the sectors, the objects and the humans
 are drawn through librw instead of being recorded (`SceneLighting::meshViewsOn()`), so on `--renderer gpu` hiding one of
 them leaves the others out too. The mesh views themselves are GL3's.
+
+## Skinning {#skinning}
+
+Item 14 of [Order](renderer.md#order) ([#1206](issue:1206)): the humans, posed, drawn by the same shaders as the rest of
+the scene. It ports the GL3 renderer's skinning pipeline (`platform/character_skin.cpp`, [GPU
+skinning](../guides/performance.md#gpu-skinning)), Coney's own: the original skins on the PS2's vector unit.
+
+**The data.** A character's two meshes (the body and the blood layer, `CharacterMesh`) are converted with each vertex's
+four bones and weights (`SceneAssets::addAtomic()` with the mesh's `packSkinVertices()`, into `MeshVertex::bones` and
+`weights`), and the character's texture is held in the scene assets with them, so his materials name it; the three
+blood textures (`BloodTextures`) are held there too, so a blood layer is drawn with its texture. On the GPU backend
+(`RenderEngine::skinsInShaders()`, `SceneAssets::skinsInShaders()`) a character's mesh is posed as on GL3's skinned
+pipeline: its bone palette and the sphere round its bones' boxes (`posedBox()`), no vertex blended on the CPU, so the
+lights are chosen by the same sphere on both renderers and `render.skin` holds only the pose. Play poses the humans,
+their hats and held objects when the backend draws the scene (`drawsScene()`), not only on GL3.
+
+**The palette.** Each frame's poses, every skinned draw's skinning matrices in the order the draws were added
+(`FrameDescription::bones()`), go up at once into one storage buffer, each bone four columns of a 4 x 4 matrix as GL3's
+palette holds them (`bonePaletteOf()`; the buffer is cycled, so the frame the GPU still reads is never overwritten, and
+grows as a frame needs; `GpuBonePalette`, `src/platform/gpu_bone_palette.*`). A draw names its first bone
+(`Draw3d::firstBone`) in its uniforms. Because the palette is one plain array the frame fills, the posing can later move
+to threads or to a compute pass without changing the shader.
+
+**The shader.** `scene3d.vert.hlsl` skins a posed draw first: each slot with a weight moves the position and turns the
+normal by its bone, times the weight, summed (weights a hair below 1 kept as stored), the normal then made unit, then
+the draw's transform places the vertex, as the GL3 renderer's skinning shader does (`skinVertex()` is its CPU twin, tested
+against `characters::skinVertices()`). Every other draw has no weights and skips it.
+
+**What it matches.** A posed draw is drawn only when its mesh carries bones and weights and the pose holds every bone its
+vertices weigh (`posingOf()`, `bonesNeededBy()`); otherwise it is left out rather than drawn in its bind pose. His
+lights are tested against his posed sphere (`boundsOf()`, `lightsFor()`), as librw tests his atomic's. His blood layer
+is the GL3 renderer's blood pass (`Gl3Renderer::drawHuman()`, GS context 2 of
+[rendering](../research/rendering.md#characters)): in his own colours (`dualColoursOf()`), blended by source alpha with
+the alpha test off, his depth test, depth write and culling (`dualStatesOf()`). `--cpu-skinning` is GL3's: the GPU
+renderer always skins in its shader.
 
 ## Textures {#textures}
 
@@ -262,8 +299,11 @@ way, headless; checks that a start with no GPU device fails with that message an
 a GPU device opens, starts the GPU renderer in a hidden window, presents, and draws a frame of flat and textured quads
 and alpha-tested triangles whose capture it reads back pixel by pixel; and that the GPU backend draws the scene, so
 play loads its objects and cars on it. `tests/graphics/scene_batch_test.cpp` checks headless what each sub-mesh is
-drawn with against librw's GL3 maths, `tests/platform/gpu_scene_test.cpp` draws a scene pass on the GPU and reads it
-back, and `tests/platform/draw_calls_test.cpp` that the headless draw layer's states start as librw's GL3 device's do.
+drawn with against librw's GL3 maths, the skinning formula against `characters::skinVertices()` among them,
+`tests/platform/gpu_scene_test.cpp` draws a scene pass on the GPU, a skinned one too, and reads it back,
+`tests/platform/human_draw_stream_test.cpp` that a human's meshes carry his bones, weights and texture and his draw his
+posed sphere, and `tests/platform/draw_calls_test.cpp` that the headless draw layer's states start as librw's GL3
+device's do.
 `tests/platform/imgui_overlay_test.cpp` runs the developer overlay on each renderer in a hidden window, stepping every
 frame itself: closed, its frame is the background; opened, a capture shows it; closed again, the frame is byte-identical
 to the first. `tests/graphics/overlay_batch_test.cpp` checks

@@ -71,6 +71,14 @@ struct DrawLights {
 /// `where`, the radius unscaled), at most kMaxDrawLights of them; then the directional lights first and the rest after,
 /// kMaxDrawLights in all, each in the order given.
 [[nodiscard]] DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, const Transform3d& where);
+/// lightsFor() with the mesh's sphere taken as `bounds` (its own space) instead of MeshData::bounds: a posed mesh's,
+/// boundsOf().
+[[nodiscard]] DrawLights lightsFor(std::span<const SceneLight> lights, const MeshData& mesh, const Transform3d& where,
+                                   const MeshBounds& bounds);
+
+/// The sphere `draw` of `mesh` is lit by: the posed sphere the draw carries (Draw3d::bounds, a human's as his pose
+/// moved it, the sphere librw's GL3 device tests his atomic's lights against), else the mesh's own.
+[[nodiscard]] MeshBounds boundsOf(const Draw3d& draw, const MeshData& mesh);
 
 /// The colours a mesh's materials are drawn with this draw, in MeshData::materials' order, and whether the mesh is
 /// modulated by them (else the shaders take white): the mesh's own colours changed as `material` says, as the GL3
@@ -83,9 +91,39 @@ struct DrawColours {
     bool modulate = false;
 };
 
-/// Whether `draw`, a 3D draw of `frame`, has a pose (FrameDescription::bonesOf(): a human), which the GPU renderer
-/// leaves out of its scene passes until it skins meshes (#1206) rather than draw it in its bind pose.
-[[nodiscard]] bool needsSkinning(const FrameDescription& frame, const Draw3d& draw);
+/// How a 3D draw's mesh is placed by its pose.
+enum class Posing : std::uint8_t {
+    None,    ///< No pose: the mesh drawn as it is.
+    Skinned, ///< Posed, and the mesh has the bones and weights to be skinned by it.
+    LeftOut, ///< Posed, but the mesh cannot be skinned by it: drawn in its bind pose it would be wrong, so not drawn.
+};
+
+/// How `draw`, a 3D draw of `frame` of `mesh`, is posed: not at all without a pose (FrameDescription::bonesOf());
+/// skinned when `mesh` carries bones and weights (MeshAttributes::skinned) and the pose holds every bone its vertices
+/// name (`bonesNeeded`, bonesNeededBy()); left out otherwise, never drawn in its bind pose.
+[[nodiscard]] Posing posingOf(const FrameDescription& frame, const Draw3d& draw, const MeshData& mesh,
+                              std::size_t bonesNeeded);
+
+/// How many bones the vertices of `mesh` name with a weight: the highest such index plus one, 0 for a mesh that is not
+/// skinned.
+[[nodiscard]] std::size_t bonesNeededBy(const MeshData& mesh);
+
+/// The bone palette of a pose: each of its skinning matrices as a Matrix4, column by column with (0, 0, 0, 1) as the
+/// last row, the layout of the GL3 renderer's palette (platform::fillBonePalette(), docs/guides/performance.md#gpu-
+/// skinning), which the GPU renderer's skinning shader reads.
+[[nodiscard]] std::vector<Matrix4> bonePaletteOf(std::span<const Transform3d> bones);
+
+/// A vertex as the skinning shader places it, in the mesh's own space before the draw's transform.
+struct SkinnedVertex {
+    std::array<float, 3> position{};
+    std::array<float, 3> normal{};
+};
+
+/// `vertex` skinned by `palette` as the GPU renderer's shader (`scene3d.vert.hlsl`) and the GL3 renderer's
+/// (platform/character_skin.cpp) skin it, and as characters::skinVertices() did on the CPU: the position and the normal
+/// each bone of a slot with a weight moves them to, times the weight, summed (weights that sum a hair below 1 are kept
+/// as they are), the normal then made unit. A slot with no weight is skipped; its bone need not be in the palette.
+[[nodiscard]] SkinnedVertex skinVertex(const MeshVertex& vertex, std::span<const Matrix4> palette);
 
 /// The colours of `mesh` as `material` changes them (DrawColours).
 [[nodiscard]] DrawColours coloursOf(const MeshData& mesh, const Material3d& material);
@@ -94,6 +132,16 @@ struct DrawColours {
 /// base's first material (255 when the base has none), as the GL3 renderer writes them before the layer's draw
 /// (platform::drawLitAtomic()); modulated as its own MeshData::modulate says.
 [[nodiscard]] DrawColours layerColoursOf(const MeshData& layer, const DrawColours& base);
+
+/// The colours of `draw`'s dual layer `layer` drawn over a mesh coloured `base`: a human's blood layer
+/// (DualPass::Blood) in his own colours, `layer`'s as the draw changes them (coloursOf()), as the GL3 renderer changes
+/// the blood atomic's (platform::Gl3Renderer::drawHuman()); any other layer as layerColoursOf() says.
+[[nodiscard]] DrawColours dualColoursOf(const Draw3d& draw, const MeshData& layer, const DrawColours& base);
+
+/// The states `draw`'s dual layer is drawn in: a human's blood layer (GS context 2, docs/research/rendering.md#
+/// characters) blended by source alpha with the alpha test off, its depth and culling the draw's; any other layer the
+/// draw's own states.
+[[nodiscard]] SceneStates dualStatesOf(const Draw3d& draw);
 
 /// Whether any vertex `sub` of `mesh` draws has prelighting that is not opaque (librw's instancing marks such a mesh's
 /// draw as having vertex alpha): only a prelit mesh can, over the vertices from the least index `sub` uses to the most.
