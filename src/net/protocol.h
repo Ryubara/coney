@@ -28,7 +28,7 @@ namespace coney::net {
 
 /// The protocol's version. Bump it with any change to a message's layout or meaning: a client and a server of
 /// different versions refuse each other in the handshake rather than misread each other.
-inline constexpr std::uint16_t kProtocolVersion = 9;
+inline constexpr std::uint16_t kProtocolVersion = 10;
 /// The first field of Hello, "CONY" read as a little-endian number: a packet from another program is refused.
 inline constexpr std::uint32_t kProtocolMagic = 0x594e4f43U;
 /// The UDP port a server listens on unless told otherwise.
@@ -378,7 +378,11 @@ struct MovieDone {
     bool skipped = false;
 };
 
-/// This client's own copy of the host's movie has started (the stub of #1548's test commit).
+/// This client's own copy of the host's movie has started: its game plays the movie too, so the host waits for its end
+/// (MovieDone) for as long as the client stays joined, not only until the movie time-out. Sent before the MovieDone of
+/// the same movie, and not at all by a client whose game never plays it. The movie is named as in MovieDone. Reliable.
+///
+/// The packet: the movie's step (a varint, 32 bits at most).
 struct MovieBegan {
     std::uint32_t movieStep = 0;
 };

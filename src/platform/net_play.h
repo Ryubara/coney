@@ -144,6 +144,9 @@ class NetPlay final {
     [[nodiscard]] std::vector<net::MissionEnd> takeMissionEnds();
     /// Joined: this game's copy of the host's movie of `movieStep` has ended, or its player skipped it.
     void movieDone(std::uint32_t movieStep, bool skipped);
+    /// Joined: this game's own copy of the host's movie of `movieStep` has begun, so the host waits for its end past
+    /// the movie time-out (net::NetClient::movieBegan()).
+    void movieBegan(std::uint32_t movieStep);
     /// Joined: the host's newest movie (net::NetClient::hostMovie()), which this game's own copy names in movieDone();
     /// nothing otherwise, or before the first.
     [[nodiscard]] std::optional<net::HostMovie> hostMovie() const;

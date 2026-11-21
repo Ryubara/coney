@@ -288,6 +288,14 @@ bool NetServer::handle(ServerClient& client, const Message& message) {
         m_level.movieDone(client.slot, done->movieStep, done->skipped);
         return true;
     }
+    if (const auto* began = std::get_if<MovieBegan>(&message)) {
+        if (!client.joined) {
+            close(index, ByeReason::ProtocolError, true);
+            return false;
+        }
+        m_level.movieBegan(client.slot, began->movieStep);
+        return true;
+    }
     if (std::holds_alternative<Bye>(message)) {
         // The player is leaving: report it, and close without a Bye of our own.
         close(index, std::get<Bye>(message).reason, false);

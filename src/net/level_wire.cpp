@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The level messages' encoding (docs/guides/multiplayer.md#levels): LoadLevel, LevelLoaded, MissionEnd and MovieDone,
-// as protocol.h lays each out. Coney's own; the original has no network play.
+// The level messages' encoding (docs/guides/multiplayer.md#levels): LoadLevel, LevelLoaded, MissionEnd, MovieDone and
+// MovieBegan, as protocol.h lays each out. Coney's own; the original has no network play.
 #include <cstdint>
 #include <expected>
 #include <string>
@@ -134,6 +134,12 @@ std::expected<Message, Error> readMovieDoneBody(BitReader& in) {
     return MovieDone{.movieStep = *step, .skipped = *skipped};
 }
 
-std::expected<Message, Error> readMovieBeganBody(BitReader& /*in*/) { return MovieBegan{}; }
+std::expected<Message, Error> readMovieBeganBody(BitReader& in) {
+    auto step = readSequence(in);
+    if (!step) {
+        return std::unexpected(step.error());
+    }
+    return MovieBegan{.movieStep = *step};
+}
 
 } // namespace coney::net

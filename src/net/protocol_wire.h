@@ -38,9 +38,9 @@ void writeEventBatchBody(BitWriter& out, const EventBatch& batch);
 /// @coney-only network play; the original has none
 [[nodiscard]] std::expected<EventBatch, Error> readEventBatchBody(BitReader& in);
 
-/// Writes a level message (LoadLevel, LevelLoaded, MissionEnd, MovieDone) with its message id, as its comment lays it
-/// out. One that breaks its rules (a load of 0, a checkpoint of 0, a level name validLevelName() refuses) is
-/// a programmer error, as encode() says.
+/// Writes a level message (LoadLevel, LevelLoaded, MissionEnd, MovieDone, MovieBegan) with its message id, as its
+/// comment lays it out. One that breaks its rules (a load of 0, a checkpoint of 0, a level name validLevelName()
+/// refuses) is a programmer error, as encode() says.
 /// @coney-only network play; the original has none
 void writeLevelMessage(BitWriter& out, const LoadLevel& message);
 /// @copydoc writeLevelMessage(BitWriter&, const LoadLevel&)
@@ -65,7 +65,7 @@ void writeLevelMessage(BitWriter& out, const MovieBegan& message);
 /// Reads a MovieDone after its message id: Truncated when short.
 /// @coney-only network play; the original has none
 [[nodiscard]] std::expected<Message, Error> readMovieDoneBody(BitReader& in);
-/// Reads a MovieBegan after its message id.
+/// Reads a MovieBegan after its message id: Truncated when short.
 /// @coney-only network play; the original has none
 [[nodiscard]] std::expected<Message, Error> readMovieBeganBody(BitReader& in);
 

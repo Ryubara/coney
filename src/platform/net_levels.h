@@ -93,7 +93,7 @@ class SessionLevelGame final : public LevelGame {
 ///   mission ends are noted in the log.
 ///
 /// movieSync() is what the game's movie player tells and asks (movies::MovieSync): the host's movies wait for every
-/// guest watching, and a guest's own copy of the host's movie says when it ended.
+/// guest watching, and a guest's own copy of the host's movie says when it began and when it ended.
 class NetLevels {
   public:
     /// Over `net`, which must outlive it; no game until setGame().
@@ -120,18 +120,21 @@ class NetLevels {
     void adoptPendingOrder();
     // Joined: takes the host's level order, sends the game there and answers it once loaded.
     void followHost();
-    // Joined: sends the MovieDone of this game's ended movie once the host's start of it is known.
-    void reportMovieEnd();
+    // Joined: sends the MovieBegan and MovieDone of this game's own copy of a movie once the host's start of it is
+    // known.
+    void reportMovie();
 
     NetPlay& m_net;
     LevelGame* m_game = nullptr;
-    std::uint64_t m_starts = 0;            // the game's level starts already reported (hosting) or seen (joined)
-    MissionCounts m_missions;              // the game's mission ends already reported
-    std::optional<net::LoadLevel> m_order; // joined: the host's order being carried out
-    bool m_jumpAsked = false;              // the game took the order's jump (or needed none)
-    std::uint64_t m_startsAtJump = 0;      // the game's level starts when it took the jump
-    bool m_refusalNoted = false;           // the order's refused jump is in the log
+    std::uint64_t m_starts = 0;              // the game's level starts already reported (hosting) or seen (joined)
+    MissionCounts m_missions;                // the game's mission ends already reported
+    std::optional<net::LoadLevel> m_order;   // joined: the host's order being carried out
+    bool m_jumpAsked = false;                // the game took the order's jump (or needed none)
+    std::uint64_t m_startsAtJump = 0;        // the game's level starts when it took the jump
+    bool m_refusalNoted = false;             // the order's refused jump is in the log
+    std::optional<std::string> m_movieBegan; // joined: this game's movie that began, not yet told
     std::optional<std::pair<std::string, bool>> m_movieEnd; // joined: this game's movie that ended, and skipped
+    std::optional<std::uint32_t> m_movieBeganAt;            // joined: the host's movie step last told as begun
     std::optional<std::uint32_t> m_movieDone;               // joined: the host's movie step last answered
 };
 

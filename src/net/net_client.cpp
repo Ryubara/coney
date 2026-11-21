@@ -207,8 +207,8 @@ void NetClient::handle(const Message& message) {
         }
         m_missionEnds.push_back(*end);
     } else {
-        // A Hello, an InputCommands, a SnapshotAck, a LevelLoaded or a MovieDone only ever goes from a client to a
-        // server.
+        // A Hello, an InputCommands, a SnapshotAck, a LevelLoaded, a MovieDone or a MovieBegan only ever goes from a
+        // client to a server.
         finish(ClientEnd::ProtocolError, true, ByeReason::ProtocolError);
     }
 }
@@ -228,7 +228,11 @@ void NetClient::movieDone(std::uint32_t movieStep, bool skipped) {
     }
 }
 
-void NetClient::movieBegan(std::uint32_t /*movieStep*/) {}
+void NetClient::movieBegan(std::uint32_t movieStep) {
+    if (m_state == ClientState::Connected) {
+        sendToServer(MovieBegan{.movieStep = movieStep});
+    }
+}
 
 std::uint32_t NetClient::clockSpeedPercent() const {
     if (m_state != ClientState::Connected || !m_timing) {
