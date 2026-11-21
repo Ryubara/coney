@@ -271,6 +271,7 @@ pull_requests:
         - '\bno\s+(?:[\w-]+\s+){0,2}tools?\s+(?:to|for|that|which|exists?)\b'
         - '\b(?:missing|lacks?|lacking|without)\s+(?:an?\s+|the\s+|any\s+)?(?:[\w-]+\s+){0,3}(?:scenarios?|set-?ups?|presets?)\b'
         - '\b(?:missing|lacks?|lacking)\s+(?:an?\s+|the\s+)?(?:[\w-]+\s+){0,2}tools?\b'
+        - '\b(?:scenarios?|set-?ups?|presets?|tools?)\s+(?:is|are|was|were)\s+(?:still\s+)?(?:missing|lacking|absent|unavailable|not\s+(?:there|available|ready|built|written))\b'
         # "the scenarios do not reach it", "the clip tool cannot record it"
         - '\b(?:scenarios?|set-?ups?|presets?)\b[^.;:]{0,40}\b(?:does not|doesn.t|do not|don.t|cannot|can.t|not yet|yet to)\s+(?:\w+\s+){0,2}(?:reach|exist|cover|record|film|show|support)\b'
         - '\btools?\s+(?:cannot|can.t|can not|does not|doesn.t)\s+(?:\w+\s+){0,2}(?:record|film|capture|show|reach|reproduce)\b'

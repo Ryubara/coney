@@ -1069,6 +1069,11 @@ def test_a_broken_clip_line_is_refused(screenshots: str, expected: str) -> None:
 SNEAK_ATTACK_REASON = (
     "no clips pair scenario reaches a hidden player behind a guard yet: the two scenarios are level99's intro and walk"
 )
+#: #1504's reason exactly as its description wrote it, with the Markdown around the scenario's name.
+SNEAK_ATTACK_AS_WRITTEN = (
+    "no `clips pair` scenario reaches a hidden player behind a guard yet: "
+    "the two scenarios are level99's intro and walk"
+)
 
 
 def none_reason_problems(reason: str, title: str = PLAYER, **keywords: Any) -> list[str]:
@@ -1096,6 +1101,11 @@ def test_the_clip_reasons_are_read_from_the_conventions() -> None:
         "missing scenario for the guard",
         "without a scenario",
         "the clip tool cannot record it",
+        SNEAK_ATTACK_AS_WRITTEN,
+        "no **setup** exists for it",
+        "no behaviour reads it yet; the scenario is missing",
+        "nothing visible changes; no `clips pair` scenario exists for it",
+        "a refactor; the tool is not available",
         "no tool to record it",
         "no disc run reaches it",
         "no game disc on this machine",

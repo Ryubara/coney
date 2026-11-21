@@ -307,17 +307,23 @@ class ClipReasons:
     #: anywhere in the reason) that say it. A reason that holds none of them is refused.
     accepted: tuple[tuple[str, tuple[str, ...]], ...]
 
+    @staticmethod
+    def _plain(reason: str) -> str:
+        """`reason` without inline Markdown (backticks, bold), which a description may put around any words."""
+        return reason.replace("`", "").replace("*", "")
+
     def refused_by(self, reason: str) -> str | None:
-        """The words of `reason` that a refused pattern matches, or None when none does."""
+        """The words of `reason` (inline Markdown dropped) that a refused pattern matches, or None when none does."""
+        plain = self._plain(reason)
         for pattern in self.refused:
-            found = re.search(pattern, reason, re.IGNORECASE)
+            found = re.search(pattern, plain, re.IGNORECASE)
             if found is not None:
                 return found.group(0)
         return None
 
     def kind_of(self, reason: str) -> str | None:
-        """The accepted kind whose phrase `reason` holds, or None."""
-        lowered = reason.casefold()
+        """The accepted kind whose phrase `reason` (inline Markdown dropped) holds, or None."""
+        lowered = self._plain(reason).casefold()
         for kind, phrases in self.accepted:
             if any(phrase.casefold() in lowered for phrase in phrases):
                 return kind
