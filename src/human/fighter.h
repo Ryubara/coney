@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <span>
@@ -160,6 +161,30 @@ struct TargetPick {
 /// @orig 0x0027a070 Target_GlassFilter (unknown)
 [[nodiscard]] bool glassTargetable(const ObjectTarget& pane, anim::Vec3 from, float along, float cone);
 
+/// Where a fighter's searches find the humans it may fight, asked for on demand: the targets within a radius, whether
+/// one is still a target, whether the fight stance refuses one. The original's searches ask the same of its 60 human
+/// slots (`Humans_FindInRange` `0x00227598`: the slots in order, the distance first, then the search's filter); a
+/// source stands for that walk, so no list of every opposed human is built for every human every step (issue 1550).
+/// Its members are those FighterInput::targets would hold, in the same order (the passive targets first, then the
+/// humans in slot order), so every nearest-wins tie falls the same way.
+/// @coney-only Coney's per-slot target query, the dispatcher's input (human::Humans gives it)
+class TargetSource {
+  public:
+    TargetSource() = default;
+    TargetSource(const TargetSource&) = default;
+    TargetSource& operator=(const TargetSource&) = default;
+    TargetSource(TargetSource&&) = default;
+    TargetSource& operator=(TargetSource&&) = default;
+    virtual ~TargetSource() = default;
+    /// Every target within `radius` of `from` across the ground, and perhaps some beyond it, in the targets' order. The
+    /// span is good until the next call.
+    [[nodiscard]] virtual std::span<Combatant* const> within(const anim::Vec3& from, float radius) const = 0;
+    /// Whether `target` is among the targets (compared as a pointer, never read: it may be gone).
+    [[nodiscard]] virtual bool listed(const Combatant* target) const = 0;
+    /// Whether the fight stance never takes `target` (FighterInput::calm's members: no threat, or a pad player).
+    [[nodiscard]] virtual bool calm(const Combatant* target) const = 0;
+};
+
 /// What the fighter is given each update.
 struct FighterInput {
     combat::CommandId command = combat::command::kNone; ///< From the command matcher.
@@ -172,7 +197,9 @@ struct FighterInput {
     std::uint64_t nowMs = 0;               ///< Game time, whole milliseconds.
     std::span<Combatant* const> targets{}; ///< The humans that can be fought.
     std::span<Combatant* const> calm{};    ///< Of `targets`, those the fight stance never takes (no threat, a player).
-    float stepSeconds = kStepSeconds;      ///< The characters' step: 1/30 s, less in slow motion.
+    /// Where the searches find the targets in place of `targets` and `calm`, when set (human::Humans gives one).
+    const TargetSource* source = nullptr;
+    float stepSeconds = kStepSeconds;        ///< The characters' step: 1/30 s, less in slow motion.
     std::span<const ObjectTarget> objects{}; ///< The breakable objects square may strike.
     bool strikeShapes = false; ///< The human has strike shapes: its free attacks strike through them (strikeContact()).
     const raycast::CollisionMesh* mesh = nullptr; ///< The level's collision, for the wall throw's ray (none: no wall).
@@ -186,6 +213,29 @@ struct FighterInput {
     /// the human that reversed it (Holdable::takeReversedMount()). Null when none (then nothing can reverse it).
     Holdable* self = nullptr;
 };
+
+/// The targets a search within `radius` of the fighter reads: the source's when the input has one, else the list.
+/// Every search asks for at least its own reach across the ground, so the source leaves out only what the search would.
+/// @coney-only Coney's per-slot target query, the dispatcher's input
+[[nodiscard]] inline std::span<Combatant* const> targetsWithin(const FighterInput& input, float radius) {
+    return input.source != nullptr ? input.source->within(input.position, radius) : input.targets;
+}
+/// Whether `target` is among the input's targets.
+/// @coney-only Coney's per-slot target query, the dispatcher's input
+[[nodiscard]] inline bool targetListed(const FighterInput& input, const Combatant* target) {
+    if (input.source != nullptr) {
+        return input.source->listed(target);
+    }
+    return std::ranges::find(input.targets, target) != input.targets.end();
+}
+/// Whether `target` is among the input's calm targets, those the fight stance never takes.
+/// @coney-only Coney's per-slot target query, the dispatcher's input
+[[nodiscard]] inline bool targetCalm(const FighterInput& input, const Combatant* target) {
+    if (input.source != nullptr) {
+        return input.source->calm(target);
+    }
+    return std::ranges::find(input.calm, target) != input.calm.end();
+}
 
 /// The camera shake a reaction asks for (docs/research/camera.md#shake): on the attacker's camera when a player hit,
 /// and from level 2 on the victim's when it is a player.
@@ -847,6 +897,7 @@ class Fighter {
     // (a script's normal mode, a hit that knocked it down, a placement that broke the pair): the hold ends without
     // touching a victim that is gone; after a broken pair this side plays its reaction (138 or 106, or 244 from the
     // mount; docs/research/combat-grabs.md#pair-break).
+    // @coney-only Coney's end of a hold whose victim left the targets, which the original's handles make for it
     void dropLostHold(const FighterInput& input, HumanAnimator& animator);
     // A grab or tackle started on `victim`: the intro plays (the player turning to face it), the victim waits. A grab
     // connects with front clip `connect` (72, or a strong grapple's strike), the rear one 2 on.
@@ -947,6 +998,7 @@ class Fighter {
     // allows one (combat::tandemCanStart()) within `range`, else the nearest such target within `range`; null for none.
     // **Coney's reading**: the original's target rules for the tandem (Player_PickTarget, the grab's search) are not
     // traced for a held target, which Coney's searches skip; this search stands in for them.
+    // @coney-only Coney's stand-in search for the tandem's target (Coney's reading above)
     [[nodiscard]] Holdable* tandemTarget(const FighterInput& input, float range) const;
     // The attacker's side of a tandem with the set from `base` at `victim`: the victim starts its side (the grabber
     // joins from it), the attacker turns and slides to its intro's place (alignTandem()) and plays its intro and end,

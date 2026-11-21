@@ -56,7 +56,7 @@ constexpr float kWallThrowHeadOn = -0.70711F;
 void Fighter::dropLostHold(const FighterInput& input, HumanAnimator& animator) {
     // Compared as pointers only: a victim gone from the targets may no longer exist.
     const auto listed = [&input](const Holdable* victim) {
-        return std::ranges::find(input.targets, static_cast<const Combatant*>(victim)) != input.targets.end();
+        return targetListed(input, static_cast<const Combatant*>(victim));
     };
     if (m_lastThrown != nullptr && !listed(m_lastThrown)) {
         m_lastThrown = nullptr;

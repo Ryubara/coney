@@ -53,7 +53,7 @@ Holdable* Fighter::tandemTarget(const FighterInput& input, float range) const {
     // The current target first, then the nearest.
     Holdable* best = nullptr;
     float bestDistance = range;
-    for (Combatant* target : input.targets) {
+    for (Combatant* target : targetsWithin(input, range)) {
         Holdable* victim = allows(*target);
         if (victim == nullptr) {
             continue;

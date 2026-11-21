@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <span>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -118,11 +119,56 @@ class Humans {
     [[nodiscard]] std::uint64_t steps() const { return m_steps; }
 
   private:
-    // Who slot `slot` fights this step: the passive `targets` for a human added pad-controlled, and the humans it is
-    // opposed to; and of those, the ones its fight stance refuses (m_calm), which the human is given
-    // (Human::setCalm()).
-    // @coney-only Coney's per-slot target list, the dispatcher's input
-    void gatherTargets(std::size_t slot, std::span<Combatant* const> targets);
+    // Where the humans stood across the ground when the actions pass started: a uniform grid whose cells hold their
+    // slots in ascending order, so the slots near a point are found in slot order (issue 1550).
+    struct TargetGrid {
+        float cell = 2.5F;
+        float minX = 0.0F;
+        float minY = 0.0F;
+        int nx = 0;
+        int ny = 0;
+        std::vector<std::uint32_t> start; // per cell, where its slots begin in `items` (one more at the end)
+        std::vector<std::uint32_t> items; // the slots, ascending within a cell
+        std::vector<anim::Vec3> places;   // each slot's place as built
+        std::size_t count = 0;            // how many slots it holds (those added later are not in it)
+        bool valid = false;
+    };
+    // One slot's targets on demand (Fighter's TargetSource), from the grid: the passive targets for a human added
+    // pad-controlled, then the humans it is opposed to, in slot order: what a list of them all would hold, in its
+    // order.
+    // @coney-only Coney's per-slot target query, the dispatcher's input
+    class SlotTargets final : public TargetSource {
+      public:
+        // Starts slot `slot`'s actions: its passive targets, nothing kept.
+        void begin(Humans& owner, std::size_t slot, std::span<Combatant* const> passive);
+        [[nodiscard]] std::span<Combatant* const> within(const anim::Vec3& from, float radius) const override;
+        [[nodiscard]] bool listed(const Combatant* target) const override;
+        [[nodiscard]] bool calm(const Combatant* target) const override;
+
+      private:
+        Humans* m_owner = nullptr; // set by begin(): a moved Humans stays its own
+        std::size_t m_slot = 0;
+        std::span<Combatant* const> m_passive;
+        mutable std::vector<Combatant*> m_near; // the last within()'s answer
+        mutable float m_radius = -1.0F;         // what m_near covers; below 0: nothing
+        mutable anim::Vec3 m_from{};
+    };
+    // Builds the grid from where the humans stand now.
+    // @coney-only Coney's broad phase for the target searches
+    void buildTargetGrid();
+    // Builds the grid again when the human of slot `slot`, or the one he holds after his actions, moved further than
+    // the grid's margin since it was built: the actions pass moves no other, so no search misses one within reach.
+    // @coney-only Coney's broad phase for the target searches
+    void keepTargetGrid(std::size_t slot);
+    // Marks every slot the grid holds within `reach` of `at` (and some beyond) in m_marks; false when the grid cannot
+    // answer (not built, or no finite place or reach), so every slot is to be looked at. `at` is the acting human's
+    // place, so near the grid; a window past its edges is clamped to it and marks nothing there.
+    // @coney-only Coney's broad phase for the target searches
+    [[nodiscard]] bool markNear(const anim::Vec3& at, float reach);
+    // Calls `visit(slot)` for every marked slot in ascending order, then for the slots added since the grid was
+    // built, and clears the marks.
+    // @coney-only Coney's broad phase for the target searches
+    template <class Visit> void visitMarked(const Visit& visit);
     // Whether slot `slot` fights slot `other`.
     // @coney-only Coney's per-slot target list, the dispatcher's input
     [[nodiscard]] bool opposed(std::size_t slot, std::size_t other) const;
@@ -133,8 +179,10 @@ class Humans {
     std::vector<bool> m_held;          // per slot: setHeld()
     Opposition m_opposition;
     Threat m_threat;
-    std::vector<Combatant*> m_scratch; // gatherTargets()'s list
-    std::vector<Combatant*> m_calm;    // gatherTargets()'s targets that are no threat, or a pad player
+    TargetGrid m_grid;
+    std::vector<std::uint64_t> m_marks; // a bit per slot, for visitMarked()
+    SlotTargets m_slotTargets;
+    std::unordered_map<const Combatant*, std::size_t> m_slotOf; // each human's slot, kept by add() and remove()
     BrainsHook m_brains;
     Human::BodyContact m_bodyContact;
     Human::ObjectPush m_objectPush;

@@ -1045,6 +1045,8 @@ read from the scripts).
 
 Where Coney still differs (stand-ins, each marked at the code):
 
+- Of two humans at the same distance Coney's searches take the later slot, the original's sort the earlier
+  ([Equal distances](#searches-coney), issue #1590).
 - L1 picks as square does within 2.5 m; the original's `Player_FindLockTarget` (`0x0027b2a8`) searches to 6 m
   ([L1's own search](#open-questions)).
 - The clear-line test of the nearest enemy (`0x0021c240`) is not made, so the nearest is always taken, and a target in
@@ -1071,6 +1073,27 @@ for the others it means no human, as `Human_GetTarget` of an object is null. The
 whose type makes them a strike target with their body flags, the whole panes and the cars the car pass takes, each
 with its kind; the lists are the player's alone, as only a player's searches have these passes.
 Tests: `repo:tests/human/target_passes_test.cpp`.
+
+**How the humans are found** (issue #1550). The original's human search (`Humans_FindInRange` `0x00227598`) walks
+the 60 human slots in order, skips the searcher and the slot `0x005101f8` names, tests the squared distance against the
+range (and the minimum, record `+0xd8`) first, and only then calls the search's filter, stopping when the caller's list
+is full: confirmed (code) at that address. Coney's searches ask a `TargetSource` (`repo:src/human/fighter.h`) for the
+targets within their own reach; in the characters' step `human::Humans` answers from a uniform grid of where the humans
+stood when the actions pass began (2.5 m cells, a 2.5 m margin, built again when the acting human or the one he holds
+has moved further), visits the candidates in slot order and tests the distance before asking whether the two fight.
+The candidates any search sees are the old per-human list's in the same order, less those beyond its reach, so every
+nearest-wins tie falls as it did before the grid: Coney's choice for crowds above the original's 60, with the same
+results as Coney's old per-human lists. The all-humans trace, the event log and the lockstep digest of a brawl of 300
+and an engaged crowd of 300 hash the same before and after.
+
+**Equal distances** (issue #1590). The original's searches list the humans in slot order and sort the list with
+`SortByKeyAscending` `0x003868d0`, the library's BSD `qsort` (`Libc_QsortBsd` `0x00433fd8`) with the comparator
+`Cmp_KeyAscending` `0x00386860`, which answers 0 for equal keys. Below 7 entries that `qsort` sorts by insertion and
+moves an entry back only past a greater key, so of two humans at the same distance the one in the earlier slot stays
+first and is taken: confirmed (code) at those addresses. From 7 entries it partitions around a median and is not stable,
+so which of equals comes first depends on the rest of the list: inferred from the same code. Coney's nearest-wins loops
+(`distance <= best`) keep the last of equals, so a tie goes to the later slot: a marked stand-in at each loop, until
+issue #1590 keeps the first (the grid changes neither rule; exact ties of two distances need two humans placed alike).
 
 Where Coney still differs (stand-ins, each marked at the code):
 
