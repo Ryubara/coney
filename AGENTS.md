@@ -14,12 +14,10 @@ no debug tools; the player console, once built, is its one console (`docs/guides
 
 ## How we work
 
-Read `docs/guides/how-we-work.md` before starting: the pipeline from issue to merge, the tracks, the coordinator,
-sharing a machine and merging. Whoever starts agents follows `docs/guides/agents.md` (fork or fresh, which model,
-briefs, long commands and the prompt cache). Nobody waits for a person to play their work: the automated tests are the
-gate, so every piece of work proves itself as `docs/guides/testing.md` defines ("done" per kind of work, the player's
-path, gamepad input, playthrough tests, the checks before reporting). A person contributing starts at CONTRIBUTING.md,
-section Your first hour; the rest is for agents. Other tools: `uvx pre-commit install`, `ci pr --title` before a PR.
+Read `docs/guides/how-we-work.md` before starting: the pipeline, tracks, coordinator and merging. Whoever starts agents
+follows `docs/guides/agents.md`. Nobody waits for a person to play their work: the automated tests are the gate, so work
+proves itself as `docs/guides/testing.md` defines. A person contributing starts at CONTRIBUTING.md, section
+Your first hour; the rest is for agents. Other tools: `uvx pre-commit install`, `ci pr --title` before a PR.
 
 ## Build and test
 
@@ -45,11 +43,8 @@ section Your first hour; the rest is for agents. Other tools: `uvx pre-commit in
 - **Faithful first:** gameplay matches the PS2 exactly until the game is complete; Coney's own mechanics wait (designs
   may be written), debug tooling is fine. Whatever either build does natively (Xbox lighting, shadows, textures, movies)
   is faithful too, as an option off in test mode; graphics beyond both may be built now. Pages name the build.
-- **The original's fixed limits do not bind Coney** (60 human slots, 32 gangs of 10, 5 scan tokens a step, fixed pools
-  and tables): inside the original's range gameplay matches the PS2 exactly, past it Coney goes on by its own rule,
-  marked `@coney-only limit:` and documented beside the original's number. A limit stays only when gameplay inside
-  the range depends on it or lifting it breaks determinism, network play or the test mode
-  (`conventions.md#original-limits`).
+- **The original's fixed limits** (60 humans) **do not bind Coney** past their range, marked `@coney-only limit:`,
+  unless gameplay inside it, determinism, network play or test mode needs one (`conventions.md#original-limits`).
 - **Never exclude a file from the 512 KB large-file check** in `.pre-commit-config.yaml`: it catches game data
   committed by mistake. Split big generated data and pages instead.
 <!-- conventions:begin maintainer-decisions -->
