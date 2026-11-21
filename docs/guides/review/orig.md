@@ -45,7 +45,10 @@ the conventions allow:
 - a platform substitution;
 - an id in place of a pointer;
 - network play;
-- a marked stand-in for a part of the original that is not ported yet ([Stand-ins](../testing.md#stand-ins)).
+- a marked stand-in for a part of the original that is not ported yet ([Stand-ins](../testing.md#stand-ins));
+- a lifted fixed limit past the original's range, marked `@coney-only limit:` and documented, with the original's
+  behaviour kept inside the range ([The original's fixed limits](../conventions.md#original-limits)). A fixed limit
+  copied from the original with no reason given is a note asking whether it must stay, never a `diff-bug`.
 
 A difference a player can see for any other reason (taste, simplicity, "Coney's version is cleaner") is a
 `diff-bug` even when it is commented, because gameplay matches the original until the game is complete. When the
