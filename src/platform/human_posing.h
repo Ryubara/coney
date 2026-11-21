@@ -39,7 +39,7 @@ struct HumanPoseJob {
     const human::TargetSnapshot* current = nullptr;
     float alpha = 1.0F;
     /// The pose he is drawn in: the given one, or the blend once prepared.
-    human::TargetSnapshot pose;
+    human::TargetSnapshot pose{};
 };
 
 /// Works out every job's pose on `pool`'s threads, each job's arithmetic on one thread (its blend, its matrices and
