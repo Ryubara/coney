@@ -579,7 +579,8 @@ network play's receive and before the step gate.
   host's quit to the menu leaves its own, and a LoadLevel that follows (a quit to the hangout) takes it on from there;
   each step the guest handles the mission ends before the host's level order, so the leave never overrides the load that
   follows it. An order of the level the host quit, taken or still held by the client, is dropped, and a load of that
-  level still going is answered as loaded (the load is over), so the host's load time-out does not drop the guest. A
+  level still going is answered as loaded (the load is over), so the host's load time-out does not drop the guest, and a
+movie of that level the guest began or ended but has not yet told is dropped with it. A
   guest already at its front end has no level to leave, and nothing changes. The quits of the mission-failed and Rumble
   result screens are told the same way once counted (issue #1583).
 - **Movies.** `MovieMode` tells network play of each of the game's own movies and asks it (`movies::MovieSync`,
