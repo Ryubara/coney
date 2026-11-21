@@ -35,6 +35,7 @@ void VandalizeTactic::giveGoals(Gang& gang) {
     const script::TacticCall& order = call();
     for (Brain* member : gang.members()) {
         if (upAndAi(*member)) {
+            // Coney stand-in: the vandal brain byte +0x28d is not set (not identified).
             static_cast<void>(member->pushTacticGoal(
                 std::make_unique<DestroyGoal>(static_cast<int>(order.zone), order.delayMs, order.range, *items)));
         }
@@ -97,7 +98,9 @@ bool VandalizeTactic::event(Gang& gang, Brain& member, const BrainEvent& event) 
     case kEventViolence:
         return true;
     default:
-        // 10 → 4, 11 → 3, 16 → 6; the others are not answered.
+        // 10 → 4, 11 → 3, 16 → 6; the others are not answered. Coney stand-ins: event 11's spotter is not noted
+        // (Brain_NoteSpotter), and Coney sends no event 23 (an object broken), so its cheer
+        // (VandalizeTactic_OnObjectBroken) and code 16 for a broken object of the zone are not built.
         return StoryTactic::event(gang, member, event);
     }
 }
