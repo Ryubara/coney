@@ -432,8 +432,8 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   port 0; the pause menu leaves out the co-op quit. The play mode's HUD state is the simulation's (`hud::HudOwner`, its
   own HUD or the game's), and so is its update in the step; `platform::HudLayer` only lists and draws the sprites of the
   HUD's newest step.
-- **In the way:** the second radar, and the radar's blips, which no snapshot carries yet (#1537: they
-  need each blip's place or the network id of what it follows); a menu driven by whichever player opened it (the
+- **In the way:** the second radar, and the radar's blips, which no snapshot carries yet: they wait for #1537, as
+  they need each blip's place or the network id of what it follows; a menu driven by whichever player opened it (the
   original's pause stores the player).
 
 ### Audio (`audio/`, `platform/audio_output`) {#sub-audio}

@@ -128,7 +128,7 @@ the loopback; the Network page will put it in front of ENet.
 
 ## Protocol {#protocol}
 
-Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 8)
+Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 9)
 changes with any change to a layout or a meaning; a test pins the encoding byte for byte so a change cannot slip in
 unnoticed.
 

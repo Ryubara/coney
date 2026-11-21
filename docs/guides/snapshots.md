@@ -127,7 +127,7 @@ scoreboard's row counts only sort the rows when a script sets a score, on the ho
 
 **Not carried yet:** the radar's blips. They are a map keyed by script handle, each following an object a guest cannot
 look up by that handle, so carrying them needs each blip's place or the network id of what it follows, which the game
-does not give yet ([Game events](multiplayer.md#events)): #1537 takes them on. The second radar is not
+does not give yet ([Game events](multiplayer.md#events)). They wait for #1537. The second radar is not
 driven yet either ([HUD, menus and pause](network-architecture.md#sub-hud)).
 
 **Elements.** Each part travels as an element named by a key (5 bits), with its own field table
