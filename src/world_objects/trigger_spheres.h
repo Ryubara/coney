@@ -23,7 +23,7 @@ struct TriggerSphere {
     bool armed = false;  ///< `+0x180`.
     std::uint64_t stayPeriodMs = 1000;    ///< `+0x164`: the period of message 5 (TriggerSpheres::kDefaultStayPeriodMs).
     std::uint32_t handlerPeriodMs = 1000; ///< `TriggerSphereCfg`'s last argument, the handler component's `+0x74`.
-    std::vector<double> occupants;        ///< The humans inside, at most VolumeBoxes::kMaxOccupants.
+    std::vector<double> occupants;        ///< The humans inside, at most crowd::humanListCap() (60 up to 60).
     std::uint64_t nextStayMs = 0;         ///< When message 5 may be sent again.
 };
 
@@ -125,10 +125,10 @@ class TriggerSpheres {
     // Whether the sphere at `index` is still the one round `object`: false once a handler cleared the pool.
     // @orig 0x004146e0 TriggerSphere_Update (unknown)
     [[nodiscard]] bool stillChecked(std::size_t index, double object) const;
-    // Lists `human` in `sphere`: a free place, else the first whose handle no longer resolves, else nowhere; the
-    // list stays packed, unlike the original's fixed slots.
+    // Lists `human` in `sphere`: a free place among `room`, else the first whose handle no longer resolves, else
+    // nowhere; the list stays packed, unlike the original's fixed slots.
     // @orig 0x004146e0 TriggerSphere_Update (unknown)
-    void addOccupant(TriggerSphere& sphere, double human) const;
+    void addOccupant(TriggerSphere& sphere, double human, std::size_t room) const;
     // Whether `point` is within the sphere's radius of `centre`, in 3D.
     // @orig 0x004146e0 TriggerSphere_Update (unknown)
     [[nodiscard]] static bool withinRadius(const TriggerSphere& sphere, const std::array<float, 3>& centre,

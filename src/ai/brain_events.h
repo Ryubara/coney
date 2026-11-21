@@ -43,7 +43,8 @@ void gloatOver(Brain& downed);
 
 /// A help call by `caller` (`Gang_BroadcastHelpCall`): violence (`0x14`) with `aggressor` as its cause, `caller` as
 /// the victim, `value` at `+0x08` and the new-enemy flag, to every other human within `range` of the caller that hears
-/// that far (his help hearing range, `+0x138`), players included, up to 60 in the scene's order.
+/// that far (his help hearing range, `+0x138`), players included, up to crowd::humanListCap() of them in the scene's
+/// order (60 up to 60 humans, as the original). Distances are in plan, where the original measures in 3D (#1594).
 /// @orig 0x00293640 Gang_BroadcastHelpCall (unknown)
 /// @orig 0x00293768 AI_AlertNearby (unknown)
 /// @orig 0x002935d8 Brain_IsInHearRange (unknown)

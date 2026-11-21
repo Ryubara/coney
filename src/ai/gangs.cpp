@@ -12,6 +12,7 @@
 #include "ai/attack_kinds.h"
 #include "ai/script_services.h"
 #include "ai/targeting.h"
+#include "core/crowd_limits.h"
 #include "human/human_flags.h"
 
 namespace coney::ai {
@@ -298,6 +299,17 @@ void Gangs::remove(int id) {
     }
 }
 
+// @coney-only bookkeeping: counts the brains that may ask for a scan token, which Coney's crowd rule reads
+std::size_t Gangs::scanningBrains() const {
+    std::size_t count = 0;
+    for (const Gang& gang : m_gangs) {
+        if (gang.m_inUse) {
+            count += gang.m_members.size();
+        }
+    }
+    return count;
+}
+
 Gang* Gangs::find(int id) {
     if (id < 0 || id >= static_cast<int>(kGangSlots)) {
         return nullptr;
@@ -561,8 +573,10 @@ void Gangs::update(std::uint64_t nowMs) {
     // Coney stand-in: the debug build's check that player 1 stands on the path data, with its warning text, is left
     // out.
     m_nowMs = nowMs;
-    // A new update: the brains that follow may scan again.
-    m_scans.beginUpdate();
+    // A new update: the brains that follow may scan again. The original refills its tokens in Brains_Update
+    // 0x00293b28, not in Gangs_Update. Stand-in (limit): the tokens are crowd::scanTokens(), the original's five up
+    // to 60 scanning brains (docs/engine/crowd-rules.md#scans).
+    m_scans.beginUpdate(crowd::scanTokens(scanningBrains()));
     // The turn moves on: this update's fifth of the gangs updates its bounds.
     m_boundsTurn = m_boundsTurn + 1 >= kBoundsTurns ? 0 : m_boundsTurn + 1;
     for (Gang& gang : m_gangs) {

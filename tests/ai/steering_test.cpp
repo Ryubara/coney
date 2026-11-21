@@ -400,6 +400,7 @@ TEST_CASE("the ground probe refuses a detour point whose first ground below is m
 
 TEST_CASE("a move's start seeds the slow counter with the human's index; a new detour keeps the old count",
           "[ai][steering]") {
+    // Expected: ai-moving.md#steering, confirmed (code): Steering_ResetAvoidance 0x002890a8
     Scene scene;
     scene.add(30.0F, 30.0F, 0.0F);
     Brain& walker = scene.add(40.0F, 40.0F, 0.0F);
@@ -423,6 +424,7 @@ TEST_CASE("a move's start seeds the slow counter with the human's index; a new d
 
 TEST_CASE("at a shared route node only the human farther from it is held and follows; the nearer one steers",
           "[ai][steering]") {
+    // Expected: ai-pathing.md#route-claims, confirmed (code)
     const auto request = [](Vec3 node) {
         return ai::SteerRequest{
             .moveSpeed = 2.0F, .aim = node, .destination = Vec3{40.0F, 60.0F, 0.0F}, .arrivalRadius = 0.0F};
@@ -456,4 +458,43 @@ TEST_CASE("at a shared route node only the human farther from it is held and fol
         CHECK(walker.steering().overrideLeft == 0);
         CHECK(walker.steering().avoiding == &stander);
     }
+}
+
+namespace {
+
+// The walker (slot 0) at (40, 40) and `others` standers within 1.5 m of him, then every brain in table order.
+std::vector<Brain*> crowdAround(Scene& scene, int others) {
+    scene.add(40.0F, 40.0F, 0.0F);
+    for (int k = 0; k < others; ++k) {
+        const float angle = static_cast<float>(k) * 0.37F;
+        scene.add(40.0F + (1.5F * std::cos(angle)), 40.0F + (1.5F * std::sin(angle)), 0.0F);
+    }
+    std::vector<Brain*> all;
+    all.reserve(scene.brains.size());
+    for (std::size_t i = 0; i < scene.brains.size(); ++i) {
+        all.push_back(&scene.brains.at(i));
+    }
+    return all;
+}
+
+} // namespace
+
+TEST_CASE("with the original's 60 humans the list round a walker holds all 59 others", "[ai][steering][crowd]") {
+    // Expected: ai-brain-types.md#help-calls, confirmed (code): Humans_FindAhead 0x002274a8 lists at most 60, one per
+    // slot
+    Scene scene;
+    const std::vector<Brain*> all = crowdAround(scene, 59);
+    const std::vector<Brain*> list = ai::humansAround(*all.front(), all, 2.0F);
+    CHECK(list.size() == 59);
+}
+
+TEST_CASE("past 60 humans the list round a walker holds every human within its reach", "[ai][steering][crowd]") {
+    // Expected: unverified, #1569 (Coney's own rule past the original's 60 humans: docs/engine/crowd-rules.md)
+    Scene scene;
+    const std::vector<Brain*> all = crowdAround(scene, 80);
+    const std::vector<Brain*> list = ai::humansAround(*all.front(), all, 2.0F);
+    REQUIRE(list.size() == 80);
+    // In table order, the last stander too.
+    CHECK(list.front() == all[1]);
+    CHECK(list.back() == all.back());
 }

@@ -11,6 +11,8 @@
 #include <utility>
 #include <vector>
 
+#include "core/crowd_limits.h"
+
 namespace coney::world_objects {
 
 /// One volume box (`AddVolumeBox`): an axis-aligned box, turned about the vertical axis by a 2 × 2 matrix
@@ -24,7 +26,7 @@ struct VolumeBox {
     std::array<float, 3> high{};           ///< The opposite corner (`+0x28` holds its z).
     std::array<float, 4> turn{1, 0, 0, 1}; ///< `+0x48`-`+0x54`: m00, m01, m10, m11.
     bool enabled = true;                   ///< `+0x68`.
-    std::vector<double> occupants;         ///< `+0x70`: the humans inside, at most kMaxOccupants.
+    std::vector<double> occupants;         ///< `+0x70`: the humans inside, at most crowd::humanListCap().
     std::uint64_t nextStayMs = 0;          ///< `+0x1e0`: when message 5 may be sent again.
 };
 
@@ -45,8 +47,9 @@ struct BoxSubject {
 /// docs/references/bindings/world.md#rotatevolumebox
 class VolumeBoxes {
   public:
-    /// The most humans a box keeps inside it (`+0x70`, 60 handles).
-    static constexpr std::size_t kMaxOccupants = 60;
+    /// The most humans a box keeps inside it in the original (`+0x70`, 60 handles); past 60 humans Coney keeps
+    /// every one (crowd::humanListCap()).
+    static constexpr std::size_t kMaxOccupants = crowd::kOrigMaxHumans;
     /// The repeat period of message 5, ms, when setStayPeriod() gave none: the handler component's default (`+0x74`,
     /// 1000, `0x00384a10`).
     static constexpr std::uint64_t kStayPeriodMs = 1000;

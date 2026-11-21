@@ -6,6 +6,7 @@
 #include "ai/brain_events.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -15,6 +16,7 @@
 #include "ai/enemy_scan.h"
 #include "ai/gangs.h"
 #include "ai/goal.h"
+#include "core/crowd_limits.h"
 #include "support/ai_fixtures.h"
 
 using coney::ai::Brain;
@@ -160,6 +162,7 @@ TEST_CASE("a knocked-out soldier whose death chain holds no flag takes no side i
 
 TEST_CASE("Warriors who see two strange gangs fight take no side, and the strangers list them only once made enemies",
           "[ai][events]") {
+    // Expected: ai-brain-types.md#help-calls, confirmed (code): Brain_PickSideInFight 0x002912b0
     // level34 checkpoint 5 (docs/research/scripting.md#level34-fixes, item 14): the Furies (kind 8) fight the hurt
     // Rogues (kind 4) the script made their enemies, next to the Warriors (kind 0), who are friends of neither. The
     // Warriors stay out of it (Brain_PickSideInFight: neither a friend hit nor a threat), and the Furies leave them be
@@ -191,4 +194,31 @@ TEST_CASE("Warriors who see two strange gangs fight take no side, and the strang
     scene.brains.gangs().makeEnemies(warriorsGang, fury.gang()->id());
     static_cast<void>(coney::ai::scanEnemies(scene.brains.gangs(), fury));
     CHECK(std::ranges::find(fury.enemies(), &warrior) != fury.enemies().end());
+}
+
+TEST_CASE("past 60 humans a help call reaches more than 60 friends in range", "[ai][events][crowd]") {
+    // Expected: unverified, #1569 (Coney's own rule past the original's 60 humans: docs/engine/crowd-rules.md); up to
+    // 60 humans Gang_BroadcastHelpCall 0x00293640 lists at most 60 hearers (ai-brain-types.md#help-calls), which
+    // never binds
+    AiScene scene;
+    Brain& victim = member(scene, 19, "Punks", {44.0F, 40.0F, 0.0F});
+    auto& gangs = scene.brains.gangs();
+    std::vector<Brain*> mates;
+    for (int g = 0; g < 8; ++g) {
+        const int gang = gangs.create(19, "Mates " + std::to_string(g));
+        gangs.makeFriends(gang, victim.gang()->id());
+        for (int k = 0; k < 9; ++k) {
+            mates.push_back(
+                &scene.add({50.0F + static_cast<float>(k) * 0.5F, 42.0F + static_cast<float>(g), 0.0F}, 0.0F));
+            gangs.addMember(gang, *mates.back());
+        }
+    }
+    Brain& aggressor = member(scene, 21, "Others", {45.0F, 40.0F, 0.0F});
+    REQUIRE(scene.brains.size() > 60);
+    scene.run(1);
+
+    coney::ai::broadcastHelpCall(victim, coney::ai::kHelpCallShared, &aggressor);
+    // More take his side than a list of the original's 60 could reach (a mate busy with his own reaction may not).
+    const auto sided = std::ranges::count_if(mates, [&](const Brain* mate) { return mate->target() == &aggressor; });
+    CHECK(sided > static_cast<std::ptrdiff_t>(coney::crowd::kOrigMaxHumans));
 }

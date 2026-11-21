@@ -751,7 +751,8 @@ override acts from the next update on, for n updates.
 5. **Look-ahead.** L = 0.75 × the move's speed (the distance covered in 0.75 s). While that speed is below 4 the
    counter `+0x29` counts up (stored plus one), and when the new value reaches 16, L is × 10 once and the counter
    goes to 0; at 4 or more it goes to 0. `Humans_FindAhead` (`0x002274a8`) lists up to 60 humans within
-   **min(2L, 10) m** of P, in every direction, not counting me.
+   **min(2L, 10) m** of P, in every direction, not counting me. Coney lifts the 60 past 60 humans (rule: every
+   human in reach, [Crowd rules](../engine/crowd-rules.md#lists)).
 6. **Expiry.** When avoiding, `+0x2b` counts decisions. It is read, stored back plus one, and the **old** value
    compared: while it is below 4 × trunc(11 − s) (s my human's speed `+0x1ac`, `Float_ToUInt`), the walk heads for the
    held point instead of the aim; otherwise `Steering_Clear` ends the detour, which sets `+0x2b` back to 0. Only

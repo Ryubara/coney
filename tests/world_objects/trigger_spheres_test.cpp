@@ -3,6 +3,7 @@
 // messages 3, 5 and 4 to the sphere's object, and the clear-line modes. Synthetic objects and humans.
 #include "world_objects/trigger_spheres.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <optional>
@@ -278,4 +279,24 @@ TEST_CASE("TriggerSphereEnable arms a sphere, making one of radius 0 and mode 1;
     // Off for an object with no sphere does nothing.
     CHECK(spheres.arm(8, false));
     CHECK(spheres.find(8) == nullptr);
+}
+
+TEST_CASE("past 60 humans a sphere finds every one within its radius and lists them", "[trigger_spheres][crowd]") {
+    // Expected: unverified, #1569 (Coney's own rule past the original's 60 humans: docs/engine/crowd-rules.md); up to
+    // 60 humans, TriggerSphere_Update 0x004146e0 finds at most 60 (trigger-updates.md), which never binds
+    TriggerSpheres spheres;
+    spheres.setLocate(locate);
+    REQUIRE(spheres.configure(7, true, 4.0F, 0, 500));
+    std::vector<BoxSubject> humans;
+    humans.reserve(75);
+    for (int k = 0; k < 75; ++k) {
+        humans.push_back({.handle = 100.0 + k, .position = {3, 0, 0}, .alive = true, .player = false});
+    }
+    const Sent first = checkAll(spheres, humans, 0);
+    CHECK(first.size() == 75);
+    CHECK(std::ranges::all_of(first, [](const auto& one) { return std::get<1>(one) == VolumeBoxes::kEntered; }));
+    CHECK(spheres.find(7)->occupants.size() == 75);
+    // The next check: nobody enters again.
+    CHECK(std::ranges::none_of(checkAll(spheres, humans, 100),
+                               [](const auto& one) { return std::get<1>(one) == VolumeBoxes::kEntered; }));
 }

@@ -243,6 +243,7 @@ nav:
       - Anti-aliasing, scaling and HDR: engine/renderer-scaling.md
       - Simulation and drawing threads: engine/render-threads.md
       - GPU renderer: engine/gpu-renderer.md
+      - Crowd rules: engine/crowd-rules.md
   - Game references:
       - references/index.md
       - Entities: references/entities.md

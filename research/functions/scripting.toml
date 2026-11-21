@@ -2183,6 +2183,11 @@ coney = "src/world_objects/trigger_spheres.h:TriggerSpheres::update"
 status = "compared"
 
 [[function.gaps]]
+what = "the 60 found and the 60 occupant places: past 60 humans as many as there are humans (crowd::humanListCap, docs/engine/crowd-rules.md#lists)"
+relation = "stand-in"
+issue = 1569
+
+[[function.gaps]]
 what = "the found humans: Coney's subjects by handle, the dead never found"
 relation = "stand-in"
 question = "trigger-updates.md#q-found-mask"
@@ -2227,6 +2232,11 @@ page = "trigger-updates.md#box"
 level = "confirmed-code"
 coney = "src/world_objects/volume_boxes.h:VolumeBoxes::updateBox"
 status = "compared"
+
+[[function.gaps]]
+what = "the 60 found and the 60 occupant places: past 60 humans as many as there are humans (crowd::humanListCap, docs/engine/crowd-rules.md#lists)"
+relation = "stand-in"
+issue = 1569
 
 [[function.gaps]]
 what = "the found humans: Coney's subjects by handle, the dead never found, the inside test for the bounding sphere"

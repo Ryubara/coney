@@ -21,6 +21,7 @@
 #include "combat/ai_counter.h"
 #include "combat/anim_ids.h"
 #include "combat/commands.h"
+#include "core/crowd_limits.h"
 #include "human/fighter.h"
 #include "human/human.h"
 
@@ -28,8 +29,6 @@ namespace coney::ai {
 
 namespace {
 
-// The most humans one help call reaches (`Humans_FindAhead`'s list).
-constexpr int kMostHearers = 60;
 // The gang kind whose members leave violence alone (`0x17`).
 constexpr int kIgnoresViolenceKind = 0x17;
 // HelpRespond: a target within this share of the far range is watched, not walked to.
@@ -268,14 +267,20 @@ void broadcastHelpCall(Brain& caller, float range, Brain* aggressor, int value, 
     }
     // Who is in reach first, then the calls: a hearer's answer may not change the list under the loop.
     std::vector<Brain*> hearers;
+    // Stand-in (limit): the original's list holds 60, its table's size; past 60 humans every one in reach hears
+    // (crowd::humanListCap(), docs/engine/crowd-rules.md#lists).
+    const std::size_t mostHearers = crowd::humanListCap(peers->size());
     for (const std::unique_ptr<Brain>& peer : *peers) {
+        // Stand-in: every brain is looked at, where the original's search also leaves out a slot whose flag word
+        // lacks bit 0 (Humans_FindAhead's mask 1).
         if (peer.get() == &caller) {
             continue;
         }
+        // Stand-in: the reach is measured in plan where the original measures in 3D (#1594).
         const float distance = caller.distanceTo(*peer);
         if (distance <= range && distance <= peer->senses().helpHearRange) {
             hearers.push_back(peer.get());
-            if (static_cast<int>(hearers.size()) == kMostHearers) {
+            if (hearers.size() == mostHearers) {
                 break;
             }
         }
