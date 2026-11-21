@@ -134,7 +134,6 @@ graphics::TextureId SceneAssets::textureOf(const rw::Texture* texture) const {
 }
 
 std::expected<graphics::MeshId, Error> SceneAssets::addAtomic(rw::Atomic& atomic, const SkinVertexData* skin) {
-    (void)skin; // stub
     if (atomic.geometry == nullptr) {
         return std::unexpected(Error{ErrorCode::Invalid, "the atomic has no geometry"});
     }
@@ -145,7 +144,7 @@ std::expected<graphics::MeshId, Error> SceneAssets::addAtomic(rw::Atomic& atomic
         return bare;
     }
     const ConversionTimer timer(m_totals.nanoseconds);
-    auto converted = meshFromRw(*atomic.geometry);
+    auto converted = meshFromRw(*atomic.geometry, skin);
     if (!converted) {
         return std::unexpected(std::move(converted.error()));
     }

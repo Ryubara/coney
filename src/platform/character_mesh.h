@@ -80,7 +80,10 @@ class CharacterMesh {
     /// every material, as the models' materials name no texture of their own (characters.md); the mesh keeps a
     /// reference to it. Lit by the world's lights with the vertex normals, modulated by the material colour. With
     /// `assets` (which must outlive the mesh: the RenderEngine's), both atomics are held there by id for the frame
-    /// description's draws (meshId(), bloodMeshId(); docs/engine/renderer.md#frame-description) until the mesh goes.
+    /// description's draws (meshId(), bloodMeshId(); docs/engine/renderer.md#frame-description) until the mesh goes,
+    /// with each vertex's bones and weights and the texture, which a renderer that skins them needs; and where those
+    /// assets are for a renderer that skins in its shaders (SceneAssets::skinsInShaders()), the mesh is posed by its
+    /// bone palette alone, as on GL3's skinned pipeline (docs/engine/gpu-renderer.md#skinning).
     CharacterMesh(const characters::CharacterModel& model, rw::Texture* texture, Skinning skinning = Skinning::Cpu,
                   SceneAssets* assets = nullptr);
     ~CharacterMesh();
@@ -147,6 +150,7 @@ class CharacterMesh {
     std::size_t m_drawnPasses = 0;          // setDrawnPasses()
     std::vector<anim::Mat34> m_skinning;    // skinning()
     SceneAssets* m_assets = nullptr;        // where meshId() and bloodMeshId() are held; null: nowhere
+    graphics::TextureId m_textureId;        // the texture's hold there, for the meshes' materials
     graphics::MeshId m_meshId;
     graphics::MeshId m_bloodMeshId;
 };

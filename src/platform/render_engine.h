@@ -297,10 +297,7 @@ class RenderEngine final : public graphics::RenderDevice {
     /// mesh by its bone palette alone (SceneAssets::skinsInShaders()): the GPU renderer
     /// (docs/engine/gpu-renderer.md#skinning). GL3 skins in its own librw pipeline where it runs
     /// (platform/character_skin.h), the NULL backend on the CPU.
-    [[nodiscard]] static bool skinsInShaders(RenderBackend backend) {
-        (void)backend; // stub
-        return false;
-    }
+    [[nodiscard]] static bool skinsInShaders(RenderBackend backend) { return backend == RenderBackend::Gpu; }
 
     /// The meshes and textures the frame description's 3D draws name by id, with the librw atomics the GL3 renderer
     /// draws for them: WorldSet fills it with the streamed world's sectors. Whoever adds to it removes again before the

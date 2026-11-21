@@ -380,9 +380,9 @@ struct Options {
     /// animation, the scripts), so every frame shows the same picture; the scenery still streams round the camera and
     /// the fixed step still runs. Requires playLevel.
     bool freezeWorld = false;
-    /// `--scene-only`: play's 3D is only what the GPU renderer draws of it today, the world, objects and cars of the
-    /// scene passes, with no level background, humans, effects, see-through panes or coronas (the 2D is drawn as
-    /// ever), so that the GL3 and GPU renderers' frames can be compared on their shared part
+    /// `--scene-only`: play's 3D is only what the GPU renderer draws of it today, the world, objects, cars and humans
+    /// of the scene passes, with no level background, effects, see-through panes or coronas (the 2D is drawn as ever),
+    /// so that the GL3 and GPU renderers' frames can be compared on their shared part
     /// (docs/engine/renderer.md#comparing). Requires playLevel.
     /// @coney-only a developer's test aid; the original has none
     bool sceneOnly = false;

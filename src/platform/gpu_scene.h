@@ -31,12 +31,12 @@ struct SDL_GPUShader;
 
 namespace coney::platform {
 
-/// Draws a frame description's scene passes (the streamed world's sectors, the world objects and the parked cars; not
-/// yet the humans) for the GPU renderer (GpuRenderer, gpu_renderer.h) with Coney's own shaders, `scene3d.vert.hlsl`
-/// and `scene3d.frag.hlsl` (docs/engine/gpu-renderer.md#scene): each mesh and texture of the asset store uploaded the
-/// first time a frame draws it and kept by id, then each sub-mesh drawn through its pass's camera in the states,
-/// lights, colours, passes and texture level librw's GL3 device would give it (graphics/scene_batch.h), so the two
-/// renderers draw the same picture.
+/// Draws a frame description's scene passes (the streamed world's sectors, the world objects, the parked cars and the
+/// humans, skinned: docs/engine/gpu-renderer.md#skinning) for the GPU renderer (GpuRenderer, gpu_renderer.h) with
+/// Coney's own shaders, `scene3d.vert.hlsl` and `scene3d.frag.hlsl` (docs/engine/gpu-renderer.md#scene): each mesh and
+/// texture of the asset store uploaded the first time a frame draws it and kept by id, then each sub-mesh drawn through
+/// its pass's camera in the states, lights, colours, passes and texture level librw's GL3 device would give it
+/// (graphics/scene_batch.h), so the two renderers draw the same picture.
 ///
 /// A frame is drawn in steps the renderer interleaves with its own: prepare() reads the frame, layUploads(),
 /// writeUploads() and recordUploads() put what is new on the GPU in the renderer's copy pass, and draw() draws one
@@ -65,8 +65,9 @@ class GpuScene {
     /// Reads `frame`'s scene passes with the meshes and textures of `store` (frame number `frameNumber`, the caches'
     /// clock): what to upload and every sub-mesh's draw. `white` is the texture an untextured material samples. A scene
     /// pass with no camera, a mesh the store does not hold and a sub-mesh SDL cannot make a buffer or pipeline for are
-    /// left out, as a missing part of the picture; so is a posed draw (a human, graphics::needsSkinning()) until the
-    /// renderer skins (#1206).
+    /// left out, as a missing part of the picture; so is a posed draw whose mesh cannot be skinned by its pose
+    /// (graphics::posingOf()). The frame's poses go into the bone palette (graphics::bonePaletteOf()) for the copy
+    /// pass.
     void prepare(const graphics::FrameDescription& frame, const graphics::AssetStore& store, std::uint64_t frameNumber,
                  SDL_GPUTexture* white);
     /// Places prepare()'s uploads in the renderer's upload buffer from `offset` on and returns where they end.
@@ -92,6 +93,7 @@ class GpuScene {
         SDL_GPUBuffer* vertices = nullptr;
         SDL_GPUBuffer* indices = nullptr;
         std::vector<bool> vertexAlpha; // per sub-mesh (graphics::vertexAlphaOf())
+        std::size_t bonesNeeded = 0;   // graphics::bonesNeededBy()
 
         GpuMesh() = default;
         ~GpuMesh();
@@ -144,7 +146,7 @@ class GpuScene {
         friend auto operator<=>(const PipelineKey&, const PipelineKey&) = default;
     };
 
-    /// The vertex shader's uniform buffer (scene3d.vert.hlsl's Draw), 704 bytes.
+    /// The vertex shader's uniform buffer (scene3d.vert.hlsl's Draw), 720 bytes.
     struct VertexUniform {
         graphics::Matrix4 world{};
         graphics::Matrix4 viewProjection{};
@@ -156,6 +158,7 @@ class GpuScene {
         std::array<float, 4> materialColour{};
         std::array<float, 4> surface{};
         std::array<float, 4> fogData{};
+        std::array<std::uint32_t, 4> skin{}; // the draw's first bone, 1 when it is skinned
     };
 
     /// The fragment shader's uniform buffer (scene3d.frag.hlsl's Fragment).
@@ -182,12 +185,23 @@ class GpuScene {
 
     explicit GpuScene(SDL_GPUDevice* device) : m_device(device) {}
 
-    /// Adds the sub-draws of mesh `id` (a draw's mesh, or its dual layer when `layer`) to the list, lit by `lights`,
-    /// coloured by `colours`, its materials' textures `textures`.
-    void prepareMesh(graphics::MeshId id, const graphics::MeshData& mesh, const graphics::Draw3d& draw,
+    /// What one mesh of a draw is drawn with: its colours, its materials' textures, its states, and whether it is a
+    /// dual layer and skinned by the draw's pose.
+    struct MeshLook {
+        const graphics::DrawColours* colours = nullptr;
+        std::span<const graphics::TextureId> textures;
+        const graphics::SceneStates* states = nullptr;
+        bool layer = false;
+        bool skinned = false;
+    };
+
+    /// Adds the sub-draws of `mesh`, uploaded as `uploaded` (a draw's mesh, or its dual layer), to the list, lit by
+    /// `lights` and drawn as `look` says.
+    void prepareMesh(const GpuMesh& uploaded, const graphics::MeshData& mesh, const graphics::Draw3d& draw,
                      const graphics::SceneCamera& camera, std::span<const graphics::SceneLight> lights,
-                     const graphics::DrawColours& colours, std::span<const graphics::TextureId> textures, bool layer,
-                     const graphics::AssetStore& store, SDL_GPUTexture* white);
+                     const MeshLook& look, const graphics::AssetStore& store, SDL_GPUTexture* white);
+    /// Makes the bone palette's buffer hold at least `bones` bones, growing it; false when SDL refused a larger one.
+    bool reserveBones(std::size_t bones);
     /// The uploaded mesh `id`, queuing its upload when it is new; null when SDL refused its buffers.
     const GpuMesh* meshFor(graphics::MeshId id, const graphics::MeshData& mesh);
     /// The uploaded texture `id`, queuing its upload when it is new; null when SDL refused it.
@@ -210,6 +224,10 @@ class GpuScene {
     std::vector<BufferUpload> m_bufferUploads;
     std::vector<LevelUpload> m_levelUploads;
     std::vector<SubDraw> m_draws;
+    SDL_GPUBuffer* m_bones = nullptr;                             // the frame's bone palette, cycled at each upload
+    std::size_t m_boneCapacity = 0;                               // bones it holds
+    std::vector<graphics::Matrix4> m_palette;                     // this frame's, for the copy pass
+    std::uint32_t m_paletteOffset = 0;                            // where it is in the upload buffer
     std::vector<std::pair<std::size_t, std::size_t>> m_passDraws; // per pass: the first sub-draw and how many
 };
 
