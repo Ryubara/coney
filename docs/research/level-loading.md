@@ -993,7 +993,9 @@ every one of their materials finds its `propglow…` texture.
 time (`cloudFrame`), so a fixed-step run draws the same frames. It turns the model by −θ, as the original's turned
 camera shows it ([the cloud turn](#render-order)). The skyline is drawn in place from the smaller of 39 and
 the nearest missing scenery out to 560, with Z write on and fog off. Then only Z is cleared, and the glow world is drawn
-before the `s` world: nothing culled, Z test and write and fog on. `coney --view-world <level>` loads the level file
+before the `s` world: nothing culled, Z test and write and fog on. Each part is a scene draw in the frame description
+through the camera it is drawn with, and the Z-only clear a scene pass that clears the depth first, so both renderers
+draw it ([The background](../engine/gpu-renderer.md#scene)). `coney --view-world <level>` loads the level file
 whenever the level has one.
 
 - **Coney's choices for the background:** it is lit by the world's ambient and directional lights, without point

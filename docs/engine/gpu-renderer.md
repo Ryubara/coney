@@ -2,13 +2,13 @@
 
 Coney's renderer on SDL3's GPU API (Vulkan, Direct3D 12, Metal), which the [renderer design](renderer.md#backend) chose
 to replace librw's GL3 device as it grows ([Migration](renderer.md#migration)). This page says how what is built so far
-works: the start of [Order](renderer.md#order) item 3, which opens the window, the GPU device and the swapchain and opens
-librw for data only, and item 11, which draws the frame description's 2D passes (the front end, the legal screens, the
-movies, the HUD) with Coney's own shaders and reads the frame back for `--screenshot`, item 12, which draws Dear
-ImGui's developer overlay over it, item 13, which draws the scene passes: the streamed world, the world objects and
-the parked cars ([below](#scene)), and item 14, which skins the humans with their held objects and hats among them
-([Skinning](#skinning)). It is Coney's own code with no counterpart in the original, which drew through the
-PS2's GS. GL3 stays the default.
+works: the start of [Order](renderer.md#order) item 3, which opens the window, the GPU device and the swapchain and
+opens librw for data only, and item 11, which draws the frame description's 2D passes (the front end, the legal screens,
+the movies, the HUD) with Coney's own shaders and reads the frame back for `--screenshot`, item 12, which draws Dear
+ImGui's developer overlay over it, item 13, which draws the scene passes: the level's background, the streamed world,
+the world objects and the parked cars ([below](#scene)), and item 14, which skins the humans with their held objects and
+hats among them ([Skinning](#skinning)). It is Coney's own code with no counterpart in the original, which drew through
+the PS2's GS. GL3 stays the default.
 
 ## The choice {#choice}
 
@@ -24,11 +24,10 @@ offscreen. It takes `--screenshot` and `--record` ([The capture](#capture)).
 ## The way back to GL3 {#way-back}
 
 The GPU renderer draws the 2D layers, the pad's debug menus among them, and the developer overlay ([below](#overlay)),
-so the Tunables page that sets `Display/Renderer` is reachable on it and a saved 1 starts it at the next start (a
-guard that started GL3 instead, while it could not, is gone). It draws a level's world, objects and cars
-and humans ([below](#scene)), but not yet its background (the sky, [#1527](issue:1527)) or its effects (item 20 of
-[Order](renderer.md#order)). The release build has no overlay and no overrides file, so there `--renderer
-gpu` is the only way to it.
+so the Tunables page that sets `Display/Renderer` is reachable on it and a saved 1 starts it at the next start (a guard
+that started GL3 instead, while it could not, is gone). It draws a level's background, world, objects, cars and humans
+([below](#scene)), but not yet its effects (item 20 of [Order](renderer.md#order)). The release build has no overlay and
+no overrides file, so there `--renderer gpu` is the only way to it.
 
 To go back to GL3 for good, set *Display / Renderer* to 0 on the Tunables page and *Save overrides*, or delete the
 `Display/Renderer = 1` line from the overrides file (`coney-tunables.ini` in your config folder, or the file
@@ -55,8 +54,8 @@ present.
 
 The GPU backend opens librw exactly as the NULL backend does, so texture dictionaries, streams and PS2 rasters load and
 the game runs; `drawsPixels()` is false, so nothing converts textures for librw's GL3 device, and what still draws
-through librw (the level's background, the effects) is not drawn (item 20 of [Order](renderer.md#order)). The humans
-come through the description and are skinned by the GPU renderer ([Skinning](#skinning)).
+through librw (the effects) is not drawn (item 20 of [Order](renderer.md#order)). The humans come through the
+description and are skinned by the GPU renderer ([Skinning](#skinning)).
 `drawsScene()` is true, as on GL3 (`drawsSceneOn()`), so play loads the world objects and parked cars, their textures
 held as read, for the scene passes ([below](#scene)). What draws the 2D layers runs on either windowed backend; the
 movie player picks its screen with `makeMovieScreen()` by backend.
@@ -91,8 +90,8 @@ the 2D quads is not known). Each texture is sampled with its own filter, nearest
 `MIPNEAREST`, linear for the rest, clamped or repeated as the draw says. No mip levels are uploaded (stand-in: GL3 would
 sample a sheet's own levels for a mip filter; 2D draws are near their textures' sizes, where level 0 is the one taken).
 
-**Not yet:** the screen passes and `--line-blend` (item 20), the 3D scene's effects (item 20; the world, objects, cars
-and humans are [below](#scene)), and the texture viewer's `RenderEngine::drawTexture`, which is not in the
+**Not yet:** the screen passes and `--line-blend` (item 20), the 3D scene's effects (item 20; the background, world,
+objects, cars and humans are [below](#scene)), and the texture viewer's `RenderEngine::drawTexture`, which is not in the
 description. The renderer also has no `gpu.frame` measure: GL3 takes it from OpenGL timer queries
 ([GPU time](../guides/performance.md#gpu-time)), and SDL3's GPU API has no timer or timestamp queries, so a bench of
 `--renderer gpu` reports `gpu.frame none` (its CPU zones are all there). Its GPU time can be read only with a
@@ -101,13 +100,13 @@ fails.
 
 ## Drawing the scene passes {#scene}
 
-Item 13 of [Order](renderer.md#order): the frame description's scene passes, the streamed world's sectors, the world
-objects and the parked cars, drawn from Coney's own meshes and textures ([Mesh and texture formats](asset-formats.md))
-with Coney's own shaders, `scene3d.vert.hlsl` and `scene3d.frag.hlsl`, by `GpuScene` (`src/platform/gpu_scene.*`) inside
-the GPU renderer's frame. What a sub-mesh is drawn with is worked out headless in `graphics/scene_batch.h`, and its
-reference is what librw's GL3 device does with the same atomic, at the pin `cmake/deps.cmake` names, so the two
-pictures can be compared ([How pictures are compared](renderer.md#comparing)); the original's own drawing is the PS2's
-VU1 pipelines and the GS, which GL3 already stands in for.
+Item 13 of [Order](renderer.md#order): the frame description's scene passes, the level's background, the streamed
+world's sectors, the world objects and the parked cars, drawn from Coney's own meshes and textures ([Mesh and texture
+formats](asset-formats.md)) with Coney's own shaders, `scene3d.vert.hlsl` and `scene3d.frag.hlsl`, by `GpuScene`
+(`src/platform/gpu_scene.*`) inside the GPU renderer's frame. What a sub-mesh is drawn with is worked out headless in
+`graphics/scene_batch.h`, and its reference is what librw's GL3 device does with the same atomic, at the pin
+`cmake/deps.cmake` names, so the two pictures can be compared ([How pictures are compared](renderer.md#comparing)); the
+original's own drawing is the PS2's VU1 pipelines and the GS, which GL3 already stands in for.
 
 **What it reads.** With the GPU backend there is no librw camera, so `WorldRenderer::render` places a camera of its own
 (as the headless recording does) and the world pass's draws, objects and cars still go into the frame description; the
@@ -128,7 +127,9 @@ the vertex shader ([Skinning](#skinning)).
    textures' levels, go up through the renderer's one transfer buffer after its own.
 3. **Draw.** One render pass with a depth buffer (24-bit where the device has it, else 32-bit float) cleared to the
    far plane; the passes in their order, each 2D pass's draws (`OverlayBatch::passDraws`) and each scene pass's
-   between them, every sub-mesh one draw per pass it needs (below).
+   between them, every sub-mesh one draw per pass it needs (below). A scene pass that clears the depth first
+   (`ScenePass::clearDepth`, the Z-only clear after the level's skyline) ends the render pass and begins another
+   that keeps the colour drawn so far and clears the depth buffer to the far plane.
 
 **What it matches.** Per draw and sub-mesh, as librw's GL3 device draws an atomic through Coney's level-of-detail step
 (`platform/texture_lod.cpp`):
@@ -157,13 +158,29 @@ test, "at least 10 of 255", which play never sets. Read as 0 ("always"), as it w
 the start of `level99` wrote depth over its clear texels and hid the `d` world drawn after it (the post under the red
 sign, a lit window, the wall behind the fence), and what showed through instead looked brighter than on GL3.
 
-**Not yet:** the level's background, which still draws through librw and so never reaches the GPU renderer (the sky and
-cloud boxes, the skyline and the level world's light glows, which the original draws inside `WorldManager_Render`
-itself): no item of [Order](renderer.md#order) held it when the world was drawn, so it is left for [#1527](issue:1527),
-which item 20's parity needs. The effects drawn through librw
-(the water, the see-through panes, the throw arc, particles, blob shadows, rings and coronas) item 20. A frame on
-`--renderer gpu` misses them; `--scene-only` leaves them out on both renderers, so that the frames can be compared on
-the part both draw ([How pictures are compared](renderer.md#comparing)).
+**The background** ([#1527](issue:1527)): the sky box, the cloud box, the skyline and the level
+world's light glows go into the frame description as scene draws, in the original's order
+([The level in a frame](../research/level-loading.md#render-order): `LevelObject_RenderBackground`, `0x0040d0a8`,
+then the glows first in `WorldManager_Render`, `0x0040e8d8`). `WorldRenderer::renderBackground` moves librw's camera
+and the description's together (`moveCameras()`): the sky and the clouds are a scene pass through a camera at the
+origin with the view's axes (near 0.05, far 5), the skyline one through the view's own position (near 39 or the
+nearest missing scenery, far 560), then `RenderEngine::clearSceneDepth()` starts the world pass's scene pass, which
+clears the depth first, and the glows open it through the world pass's camera. Each part is drawn by
+`drawBackgroundPart()` in the render states in force, with the background's lights (`SceneLighting::backgroundLights`:
+the world's ambient and directional lights) and `Material3d{.colour = Own, .lit = true}`: its colours as loaded, and
+lit though its models carry no light flag, as the original lights them ([Lighting](../research/lighting.md#coneys-implementation));
+GL3 sets the geometry's LIGHT flag for the draw (`MaterialChange`) and the GPU renderer takes the lights though
+`MeshData::lit` is off (`lightsFor(..., alwaysLit)`). The level's models hold their meshes and their materials'
+textures in the scene assets while the level object holds them (`holdLevelMeshes()`, from `loadLevel()` before any
+conversion for drawing); a model with no mesh id, or any while the mesh views are on, draws through the lighting rig
+as before. The GL3 renderer draws the parts and clears the depth at once, through librw's camera as placed, so its
+draw stream is the one it was (the `keeps` hash of a Coney-made scene with a level in
+`tests/platform/world_draw_stream_test.cpp`).
+
+**Not yet:** the effects drawn through librw (the water, the see-through panes, the throw arc, particles, blob shadows,
+rings and coronas), item 20. A frame on `--renderer gpu` misses them; `--scene-only` leaves them out on both renderers,
+and draws the background, so that the frames can be compared on the part both draw ([How pictures are
+compared](renderer.md#comparing)).
 
 **The World page** ([debug menu guide](../guides/debug-menu.md#world)): its fog reaches the GPU renderer as it does GL3,
 through the camera's fog start and the draws' fog colour, and the parts the play mode's passes skip before a draw is
@@ -300,17 +317,17 @@ a GPU device opens, starts the GPU renderer in a hidden window, presents, and dr
 and alpha-tested triangles whose capture it reads back pixel by pixel; and that the GPU backend draws the scene, so
 play loads its objects and cars on it. `tests/graphics/scene_batch_test.cpp` checks headless what each sub-mesh is
 drawn with against librw's GL3 maths, the skinning formula against `characters::skinVertices()` among them,
-`tests/platform/gpu_scene_test.cpp` draws a scene pass on the GPU, a skinned one too, and reads it back,
+`tests/platform/gpu_scene_test.cpp` draws a scene pass on the GPU, a skinned one too, a pass that clears
+the depth and a lit draw of an unlit mesh, and reads it back, `tests/platform/world_draw_stream_test.cpp`
+that a level's background is recorded before the world through its own cameras,
 `tests/platform/human_draw_stream_test.cpp` that a human's meshes carry his bones, weights and texture and his draw his
 posed sphere, and `tests/platform/draw_calls_test.cpp` that the headless draw layer's states start as librw's GL3
 device's do.
 `tests/platform/imgui_overlay_test.cpp` runs the developer overlay on each renderer in a hidden window, stepping every
 frame itself: closed, its frame is the background; opened, a capture shows it; closed again, the frame is byte-identical
-to the first. `tests/graphics/overlay_batch_test.cpp` checks
-the batch, the alpha ranges, the window's clear and the upload cache headless. On CI, every build job builds it, and the
-Linux GCC job starts `coney --renderer gpu --frames 10` under lavapipe (Mesa's software Vulkan) on a virtual X display
-and checks the run log's `renderer: gpu on vulkan` and `renderer: N of 10 frames shown` lines ([What CI
-runs](../guides/building.md#what-ci-runs)). The [software pictures](../guides/testing.md#software-pictures) draw the
-test cards, the 3D `scene` card among them, on both renderers and compare them by the cross-renderer tolerance
-([How pictures are
-compared](renderer.md#comparing)).
+to the first. `tests/graphics/overlay_batch_test.cpp` checks the batch, the alpha ranges, the window's clear and the
+upload cache headless. On CI, every build job builds it, and the Linux GCC job starts `coney --renderer gpu --frames 10`
+under lavapipe (Mesa's software Vulkan) on a virtual X display and checks the run log's `renderer: gpu on vulkan` and
+`renderer: N of 10 frames shown` lines ([What CI runs](../guides/building.md#what-ci-runs)). The [software
+pictures](../guides/testing.md#software-pictures) draw the test cards, the 3D `scene` card among them, on both renderers
+and compare them by the cross-renderer tolerance ([How pictures are compared](renderer.md#comparing)).
