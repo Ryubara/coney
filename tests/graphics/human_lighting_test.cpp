@@ -59,9 +59,52 @@ TEST_CASE("the blob shadow is a near-black sprite at half alpha on RenderWare's 
 }
 
 TEST_CASE("A human fades out from 60 to 70 m from the camera") {
+    // Expected: graphics.md#human-draw, confirmed (runtime) (0x0050cc60, 0x0050cc68)
     CHECK(coney::graphics::humanDistanceFade(10.0F) == Approx(1.0F));
     CHECK(coney::graphics::humanDistanceFade(60.0F) == Approx(1.0F));
     CHECK(coney::graphics::humanDistanceFade(65.0F) == Approx(0.5F));
     CHECK(coney::graphics::humanDistanceFade(70.0F) == Approx(0.0F));
     CHECK(coney::graphics::humanDistanceFade(90.0F) == Approx(0.0F));
+}
+
+TEST_CASE("A human is culled before posing only when no pose of his can be in the picture") {
+    // Expected: graphics.md#human-draw, Coney's choice (the draw distance from there; the sphere and the view test are
+    // Coney's cull before posing, docs/engine/renderer-performance.md#cull-before-posing)
+    using coney::graphics::cullHuman;
+    using coney::graphics::HumanCull;
+    using W = coney::world::Vec3;
+    // A camera at the origin looking down +z (RenderWare's axes, y up), its view window 0.5 × 0.375 at distance 1. The
+    // sphere that holds his poses is 3 m round a point 1 m above his feet (kHumanPoseRadius, kHumanPoseLift).
+    const coney::world::CameraPose camera;
+    const auto cull = [&camera](W feet, float scale = 1.0F) { return cullHuman(camera, 0.5F, 0.375F, feet, scale); };
+    CHECK(cull(W{0.0F, -1.0F, 10.0F}) == HumanCull::MayShow);
+    // Past the draw distance (70 m) by more than the sphere: no body of his can be drawn. Within 3 m of it, one may.
+    CHECK(cull(W{0.0F, -1.0F, 80.0F}) == HumanCull::PastDrawDistance);
+    CHECK(cull(W{0.0F, -1.0F, 72.5F}) == HumanCull::MayShow);
+    // Behind the camera by more than the sphere: out of view; 2 m behind, his arm may still reach into it.
+    CHECK(cull(W{0.0F, -1.0F, -5.0F}) == HumanCull::OutOfView);
+    CHECK(cull(W{0.0F, -1.0F, -2.0F}) == HumanCull::MayShow);
+    // Beside the view: 10 m ahead the side is 5 m across, and the sphere reaches 3 m from the side's slanted plane,
+    // 3 × sqrt(1 + 0.5²) = 3.35 m across: 8 m is in, 8.5 m is out, on either side.
+    CHECK(cull(W{8.0F, -1.0F, 10.0F}) == HumanCull::MayShow);
+    CHECK(cull(W{8.5F, -1.0F, 10.0F}) == HumanCull::OutOfView);
+    CHECK(cull(W{-8.5F, -1.0F, 10.0F}) == HumanCull::OutOfView);
+    CHECK(cull(W{30.0F, -1.0F, 10.0F}) == HumanCull::OutOfView);
+    // Above the view: 10 m ahead the top is 3.75 m up, plus 3 × sqrt(1 + 0.375²) = 3.2 m.
+    CHECK(cull(W{0.0F, 5.5F, 10.0F}) == HumanCull::MayShow);
+    CHECK(cull(W{0.0F, 20.0F, 10.0F}) == HumanCull::OutOfView);
+    // Behind and far: the view is tested first.
+    CHECK(cull(W{0.0F, -1.0F, -100.0F}) == HumanCull::OutOfView);
+    // A body drawn twice as big holds his poses in twice the sphere; a smaller one keeps the 3 m.
+    CHECK(cull(W{0.0F, -1.0F, -5.0F}, 2.0F) == HumanCull::MayShow);
+    CHECK(cull(W{0.0F, -1.0F, -5.0F}, 0.5F) == HumanCull::OutOfView);
+    CHECK(cull(W{0.0F, -1.0F, 75.0F}, 2.0F) == HumanCull::MayShow);
+    // A camera elsewhere, looking down +x.
+    const coney::world::CameraPose turned{.position = W{100.0F, 0.0F, 0.0F},
+                                          .forward = W{1.0F, 0.0F, 0.0F},
+                                          .up = W{0.0F, 1.0F, 0.0F},
+                                          .right = W{0.0F, 0.0F, 1.0F}};
+    CHECK(cullHuman(turned, 0.5F, 0.375F, W{110.0F, -1.0F, 0.0F}, 1.0F) == HumanCull::MayShow);
+    CHECK(cullHuman(turned, 0.5F, 0.375F, W{90.0F, -1.0F, 0.0F}, 1.0F) == HumanCull::OutOfView);
+    CHECK(cullHuman(turned, 0.5F, 0.375F, W{180.0F, -1.0F, 0.0F}, 1.0F) == HumanCull::PastDrawDistance);
 }

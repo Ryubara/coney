@@ -308,6 +308,16 @@ void PlayLevelMode::poseHat(const human::Human& human, const human::PlayerCharac
         world_objects::heldWorldPose(feet, heading, bones.at(world_objects::kHatBone), 1.0F, found->second.local));
 }
 
+// @coney-only render glue: which humans the cull before posing must pose past the draw distance
+bool PlayLevelMode::carriesDraws(const human::Human& human) const {
+    // The three that poseHat(), poseHeldObject() and poseCarriedProp() would queue a draw for.
+    const auto wearer = m_wearers.find(&human);
+    const auto carrier = m_carriers.find(&human);
+    return (wearer != m_wearers.end() && wearer->second.hat != 0.0) ||
+           human.script().heldObject != world_objects::kNoObject ||
+           (carrier != m_carriers.end() && carrier->second.prop != 0.0);
+}
+
 void PlayLevelMode::drawAttachedObjects() {
     for (const auto& [hat, pose] : m_attachedDraws) {
         const world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(hat) : nullptr;

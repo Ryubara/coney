@@ -35,6 +35,10 @@ struct TargetSnapshot {
 
 /// The snapshot `alpha` of the way from `previous` to `current` (as human::interpolate() blends the player's).
 [[nodiscard]] TargetSnapshot interpolate(const TargetSnapshot& previous, const TargetSnapshot& current, float alpha);
+/// Where the feet of interpolate() of the same snapshots are, without blending the poses: what drawing needs to know
+/// of a human it may leave unposed (graphics::cullHuman()).
+/// @coney-only render glue: the feet half of interpolate(), for the cull before posing
+[[nodiscard]] anim::Vec3 interpolateFeet(const TargetSnapshot& previous, const TargetSnapshot& current, float alpha);
 
 /// One hit on a target (the same as any human's, human::IncomingHit).
 using TargetHit = IncomingHit;

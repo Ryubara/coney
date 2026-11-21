@@ -507,6 +507,9 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     // Places this frame's worn hats and carried props among the world objects (before PlacedObjects::draw()).
     void drawAttachedObjects();
 
+    // Whether `human` wears a hat, holds an object or carries a prop: drawn beside him, never faded with him.
+    [[nodiscard]] bool carriesDraws(const human::Human& human) const;
+
     // Notes where `human`'s carried prop is drawn this frame, `character` posed by `pose` at `feet` facing `heading`.
     void poseCarriedProp(const human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
                          anim::Vec3 feet, float heading);
@@ -560,6 +563,7 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     struct FighterMesh {
         std::unique_ptr<CharacterMesh> mesh;
         bool hidden = false; // its human was deleted
+        bool culled = false; // this frame, no pose of his can be in the picture: not posed or drawn (render())
     };
     std::map<const human::Human*, FighterMesh> m_fighterMeshes;
     rw::Texture* m_texture = nullptr; // the character's texture, for new meshes

@@ -99,7 +99,7 @@ the clip recorder that the `no-real-clock` check allows to), and with measuring 
 | `play.ai_capture` | the AI fighters' pose snapshots for drawing |
 | `play.anim_overrides`, `play.scenes`, `play.world` | the scripts' clip overrides, the scenes, the scenery and world objects round the camera |
 | `render` | the frame's render, the present included |
-| `render.skin` | every human posed: its bone matrices (GPU skinning), or every vertex skinned and written (CPU) |
+| `render.skin` | every human who may be in the picture posed: its bone matrices (GPU skinning), or every vertex skinned and written (CPU); the others are culled first ([Culling before posing](../engine/renderer-performance.md#cull-before-posing)) |
 | `render.scene` | the scenery's draw, with the humans, cars and objects among it |
 | `render.humans` | every human's atomics drawn (librw instancing and uploading the skinned vertices, then drawing) |
 | `render.shadows_rings` | the blob shadows and health rings |
@@ -344,9 +344,11 @@ before and after in lockstep (median 3,718, maximum 5,446).
 | Real-time frames over 50 ms a minute (two runs) | 249 / 314 | 25 / 4 |
 
 The same with the follow camera (it ends up facing a wall as the fight turns the player): lockstep frame 44.8 ms
-before, 28.7 ms after, render 11.4 and 10.5 ms. Every human is posed for drawing whether it is on screen or not
-(`render.skin` 7.9 ms in either view), so the view moves the render by under a millisecond here. With 150 enemies and
-150 neutrals the lockstep frame went from 38.9 to 24.3 ms.
+before, 28.7 ms after, render 11.4 and 10.5 ms. Every human was posed for drawing whether it was on screen or not
+(`render.skin` 7.9 ms in either view), so the view moved the render by under a millisecond here; since
+[#1554](issue:1554) only the ones that may be in the picture are
+([Culling before posing](../engine/renderer-performance.md#cull-before-posing)). With 150 enemies and 150 neutrals the
+lockstep frame went from 38.9 to 24.3 ms.
 
 **What is left.** A step of the brawl is now `humans.state` 8.2 ms (3.5 ms of it the strike tests, which test a
 striking human's capsules against every opposed human; the rest the walking bodies' sweeps against every other

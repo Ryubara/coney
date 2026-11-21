@@ -2,6 +2,7 @@
 #include "graphics/human_lighting.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace coney::graphics {
 
@@ -35,8 +36,30 @@ float ShadowDim::factor() const {
     return m_hidden ? 1.0F - t : kDimmest + t;
 }
 
+float humanDrawDistance() { return kHumanDrawDistance; }
+
 float humanDistanceFade(float distance) {
-    return std::clamp((kHumanDrawDistance - distance) / kHumanFadeLength, 0.0F, 1.0F);
+    // A stand-in for the first second's fade-in after a human appears, which is not drawn (#1526): only the distance.
+    return std::clamp((humanDrawDistance() - distance) / kHumanFadeLength, 0.0F, 1.0F);
+}
+
+HumanCull cullHuman(const world::CameraPose& camera, float halfWidth, float halfHeight, world::Vec3 feet, float scale) {
+    const float radius = kHumanPoseRadius * std::max(1.0F, scale);
+    const world::Vec3 to{feet.x - camera.position.x, feet.y + kHumanPoseLift - camera.position.y,
+                         feet.z - camera.position.z};
+    const auto along = [&to](world::Vec3 axis) { return (to.x * axis.x) + (to.y * axis.y) + (to.z * axis.z); };
+    const float ahead = along(camera.forward);
+    // A side plane through the eye has the normal (forward × half, -axis) of length sqrt(1 + half²): the centre is
+    // outside it by more than the radius when its distance across passes the side's by radius × that length.
+    const auto beyondSide = [ahead, radius](float across, float half) {
+        return std::fabs(across) > (ahead * half) + (radius * std::sqrt(1.0F + (half * half)));
+    };
+    if (ahead < -radius || beyondSide(along(camera.right), halfWidth) || beyondSide(along(camera.up), halfHeight)) {
+        return HumanCull::OutOfView;
+    }
+    // humanDistanceFade() is 0 from the draw distance on, for the drawn body's centre, which is inside the sphere.
+    const float distance = std::sqrt(along(to));
+    return distance > humanDrawDistance() + radius ? HumanCull::PastDrawDistance : HumanCull::MayShow;
 }
 
 bool onShadowGround(const raycast::CollisionMesh& mesh, raycast::Vec3 feet) {
