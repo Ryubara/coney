@@ -970,6 +970,90 @@ TEST_CASE("a human with brains in two tables is found in each, and in the one le
     CHECK(scene.brains.find(other) != nullptr);
 }
 
+// Expected: unverified, #1551 review (Coney's own lookup: the table holding a human's slot ending leaves the other's)
+TEST_CASE("a human is still found in the other table once the table holding his slot ends", "[ai]") {
+    coney::test::AiScene scene;
+    Human shared(scene.character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
+                 &scene.character.ranges);
+    Human other(scene.character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
+                &scene.character.ranges);
+    // Declared after the humans, so the tables end before them.
+    coney::ai::Brains rest;
+    rest.add(other, BrainType::Gang, {}, 3);
+    auto holder = std::make_unique<coney::ai::Brains>();
+    Brain& held = holder->add(shared, BrainType::Gang, {}, 4);
+    Brain& theirs = rest.add(shared, BrainType::Gang, {}, 5);
+    CHECK(holder->find(shared) == &held);
+    CHECK(rest.find(shared) == &theirs);
+    holder.reset();
+    CHECK(rest.find(shared) == &theirs);
+    // The slots closing up in the table left still find him.
+    rest.remove(other);
+    CHECK(rest.find(shared) == &theirs);
+    CHECK(theirs.slot() == 0);
+    CHECK(rest.find(other) == nullptr);
+    // A third table is free to take him.
+    coney::ai::Brains third;
+    Brain& again = third.add(shared, BrainType::Gang, {}, 6);
+    CHECK(third.find(shared) == &again);
+    CHECK(rest.find(shared) == &theirs);
+}
+
+// Expected: unverified, #1551 review (Coney's own lookup: removing a brain in the table not holding the slot)
+TEST_CASE("removing the brain of a human another table holds the slot of leaves both tables right", "[ai]") {
+    coney::test::AiScene scene;
+    Human shared(scene.character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
+                 &scene.character.ranges);
+    Human other(scene.character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
+                &scene.character.ranges);
+    coney::ai::Brains holder;
+    Brain& held = holder.add(shared, BrainType::Gang, {}, 3);
+    coney::ai::Brains rest;
+    Brain& theirs = rest.add(shared, BrainType::Gang, {}, 4);
+    Brain& otherBrain = rest.add(other, BrainType::Gang, {}, 5);
+    CHECK(rest.find(shared) == &theirs);
+    rest.remove(shared);
+    CHECK(rest.find(shared) == nullptr);
+    CHECK(holder.find(shared) == &held);
+    CHECK(rest.find(other) == &otherBrain);
+    CHECK(otherBrain.slot() == 0);
+    // Given a brain there again, he is found in both.
+    Brain& again = rest.add(shared, BrainType::Gang, {}, 6);
+    CHECK(rest.find(shared) == &again);
+    CHECK(holder.find(shared) == &held);
+    // The slot holder removing him leaves the other table's brain found.
+    holder.remove(shared);
+    CHECK(holder.find(shared) == nullptr);
+    CHECK(rest.find(shared) == &again);
+}
+
+// Expected: unverified, #1551 review (Coney's own lookup: a table ending takes its slots off its humans)
+TEST_CASE("a table that ends takes its slots off its humans, which another table can then take", "[ai]") {
+    coney::test::AiScene scene;
+    Human first(scene.character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
+                &scene.character.ranges);
+    Human second(scene.character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
+                 &scene.character.ranges);
+    {
+        coney::ai::Brains gone;
+        gone.add(first, BrainType::Gang, {}, 3);
+        gone.add(second, BrainType::Gang, {}, 4);
+        // A second brain for the first human, which takes no slot of its own on him.
+        gone.add(first, BrainType::Gang, {}, 5);
+    }
+    CHECK_FALSE(first.brainSlot().has_value());
+    CHECK_FALSE(second.brainSlot().has_value());
+    // A new table, its slots in the other order, finds both and keeps finding them as its slots close up.
+    coney::ai::Brains next;
+    Brain& secondBrain = next.add(second, BrainType::Gang, {}, 6);
+    Brain& firstBrain = next.add(first, BrainType::Gang, {}, 7);
+    CHECK(next.find(first) == &firstBrain);
+    CHECK(next.find(second) == &secondBrain);
+    next.remove(second);
+    CHECK(next.find(first) == &firstBrain);
+    CHECK(firstBrain.slot() == 0);
+}
+
 TEST_CASE("HuCreate's flag makes a new human a gang member, unless his class makes Warriors", "[ai]") {
     // Expected: human-init.md#brain-type, confirmed (code)
     using coney::ai::BrainType;
