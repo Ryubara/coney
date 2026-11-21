@@ -33,7 +33,7 @@ std::optional<std::string_view> entryOf(std::string_view list, std::size_t index
 
 CastModel castModelOf(std::span<const ScriptedSceneCast> table, std::string_view scene, std::size_t role,
                       std::string_view roleName) {
-    const CastModel byName{.source = CastSource::Name, .model = standInModelOf(roleName)};
+    CastModel byName{.source = CastSource::Name, .model = standInModelOf(roleName)};
     // A scene no script builds a cast for: the name is all there is.
     const ScriptedSceneCast* row = rowOf(table, scene);
     if (row == nullptr || row->cast.empty()) {
