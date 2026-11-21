@@ -781,6 +781,7 @@ TEST_CASE("the disc's level80 intro, skipped, gives the screen and the player ba
 }
 
 TEST_CASE("the disc's level5 plays each checkpoint without a script error", "[disc][story]") {
+    // Expected: scripting.md#level5, inferred
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -809,6 +810,7 @@ TEST_CASE("the disc's level5 plays each checkpoint without a script error", "[di
 
 TEST_CASE("the disc's level87 checkpoint 5: the player hides on the shadow ground behind the first guard",
           "[disc][story][stealth]") {
+    // Expected: ai-gangs.md#tactics, confirmed (runtime)
     // The tutorial's lesson in hiding (#1541; docs/research/stealth.md#level87): the route of the `level87-hide` clips
     // scenario skips the intro scene, walks into the hint volume, and the tutorial warps him to the shadow ground
     // behind the guard S01 at about frame 357. His Warriors' and his own listing of the guard does not make the guard

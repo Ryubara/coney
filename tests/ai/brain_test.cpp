@@ -924,6 +924,7 @@ TEST_CASE("HuCreate's flag makes a new human a gang member, unless his class mak
 }
 
 TEST_CASE("an enemy added is listed by the adder only; the enemy's own list is left alone", "[ai]") {
+    // Expected: ai-gangs.md#tactics, confirmed (code)
     // Brain_AddEnemy (0x0028d538) lists the enemy on its own brain and only counts itself on the enemy's (its hostile
     // count, Brain_CountHostile 0x0028ef20, from 0x0028d5f8): docs/research/ai-gangs.md#gangs.
     coney::test::AiScene scene;

@@ -131,7 +131,9 @@ checkpoint 2 ([the hand-over](characters.md#level99-handover)).
 **`GangBrFlush(id)`** (`0x0016ba18`) only clears the goals and actions of each current member's brain; it removes and
 destroys nothing. Called just before `GangDelete` in the same script step, as in level 99, it has no visible effect.
 
-## Tactics {#tactics}
+### Tactics {#tactics}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 A pool of 30 tactics of 0x90 at `0x006ea1b0` (mask `0x006ea1a0`; alloc `0x00306558`, free `0x003065b0`). Base fields:
 `+0x00` gang, `+0x04` started, `+0x08` time limit (−1 none; Process returns 2 once past it), `+0x0c` Lua callback,
@@ -164,8 +166,8 @@ two readers: Start puts the gang on alert when it is 1, and `Brain_AddEnemy` sen
   class's Start that gives goals (for example `DefendTactic_GiveGoals`) calls `PopToGoalBase` and then
   `MarkGoalBase` before each push. That pops only what is above the mark, nothing at Start, and pushes the tactic's
   goal **on top**. When it ends, the old goals are back on top. Where [AI code](ai-code.md) says a tactic helper
-  "flushes" a member, it means this pop-to-base and mark, not `Brain_ClearGoals`. Confirmed (code, by their callees)
-  for Defend, Info, ManWeaponPile, Pursue, WarriorScatter, Scout, StandGround, Steal, Taunt and Vandalize. Coney
+  "flushes" a member, it means this pop-to-base and mark, not `Brain_ClearGoals`. Confirmed (code), read from their
+  callees, for Defend, Info, ManWeaponPile, Pursue, WarriorScatter, Scout, StandGround, Steal, Taunt and Vandalize. Coney
   must not clear the stack at a tactic's start.
 
   **`Tactic_End`** (`0x00306850`, from `Gang_StopTactic`, `Gang_Destroy` and the old boss tactic) pops every
@@ -192,9 +194,8 @@ two readers: Start puts the gang on alert when it is 1, and `Brain_AddEnemy` sen
   `+0x3c` answers 0 it sends the tactic event `0xb` with the enemy. Confirmed (code); the one-way listing is also
   confirmed (runtime), run r-20261121-level87-cp5-enemy-lists: a minute into level87 checkpoint 5 the player and his
   three Warriors all list the guard S01, whose hostile count is 4 and whose own list is empty, and the player's hostile
-  count is 0. An earlier reading of this page
-  took the call at `0x0028d5f8` for the enemy listing this human back, and Coney listed both ways until #1541: a
-  player's or a Warrior's listing of a guard made the guard hunt the player, who could not hide.
+  count is 0. The call at `0x0028d5f8` is the count, not the enemy listing this human back, as an earlier reading of
+  this page had it: a player's or a Warrior's listing of a guard never makes the guard hunt the player.
 
 **TacticCrowd** (type `0x1b`, vtable `0x005437a0`; `0x00316450`): turns a gang into **onlookers**. Init (`0x0030f4d0`):
 no time limit, `+0x28` the option.

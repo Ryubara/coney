@@ -80,6 +80,7 @@ TEST_CASE("a near hunter keeps the player from hiding; a far one out of sight is
 }
 
 TEST_CASE("a guard the player lists does not hunt him, so he still hides behind him", "[ai][hiding]") {
+    // Expected: stealth.md#shadow-ground, confirmed (code)
     // level87 checkpoint 5 (#1541): the player's (or a Warrior's) listing of the guard puts nothing in the guard's own
     // list (Brain_AddEnemy 0x0028d538 only counts it, Brain_CountHostile 0x0028ef20), so the guard 30 m off with his
     // back turned is no hunter: docs/research/stealth.md#shadow-ground.
