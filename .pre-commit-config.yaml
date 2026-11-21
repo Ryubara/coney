@@ -89,6 +89,16 @@ repos:
         files: ^(src|tests)/.*\.(h|cpp)$
         # The network checks' driver waits on the output of the coney processes it runs, outside any game.
         exclude: ^(src/platform/(frame_pacer|clip_recorder|perf_probes)|tests/support/net_pair_check)\.cpp$
+      # The engine throws nothing and catches only at the standard library's edge (docs/guides/conventions.md#errors):
+      # a code line (no `/` or `"` before the word, so comments and the game's throws pass) with a `throw`, or a `catch`
+      # of anything but `std::system_error` (a `try` compiles only with its catch, so the catch decides). The counting
+      # operator new must throw std::bad_alloc.
+      - id: no-exceptions
+        name: the engine throws nothing and catches only at the standard library's edge
+        language: pygrep
+        entry: '^[^/"]*\b(throw\s*;|throw\s+[\w:]+\s*[({]|catch\s*\((?!const std::system_error&\)))'
+        files: ^src/.*\.(h|cpp)$
+        exclude: ^src/platform/perf_probes\.cpp$
       # The commit message's trailers (`commits.trailers` in .github/conventions.yml): the only trailer is the AI
       # co-author line, no other e-mail address, and when an agent commits through Claude Code (whose hooks write an
       # identity file, coney_tools.identity) the line names that agent's model. Checked before the commit exists, for

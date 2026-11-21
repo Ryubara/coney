@@ -19,7 +19,8 @@ class WorkerPool {
   public:
     /// A pool of `threads` threads counting the caller (at least 1), so `threads - 1` workers; 1 runs every loop on
     /// the calling thread. A worker the system cannot start leaves the pool on those that did (threads() says how
-    /// many), none at worst, never a failure. `mayStart`, for tests, refuses worker `worker` as the system would.
+    /// many), none at worst, never a failure. `mayStart`, for tests, is asked before each worker starts and refuses
+    /// it as the system would: by returning false, or by throwing std::system_error as std::thread does.
     explicit WorkerPool(std::size_t threads, const std::function<bool(std::size_t worker)>& mayStart = {});
     ~WorkerPool();
     WorkerPool(const WorkerPool&) = delete;

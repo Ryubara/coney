@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <mutex>
 #include <set>
+#include <system_error>
 #include <thread>
 #include <vector>
 
@@ -103,6 +104,22 @@ TEST_CASE("a worker pool whose workers cannot all start runs on those that did",
         pool.parallelFor(runs.size(), [&runs](std::size_t index) { ++runs[index]; });
         CHECK(runs == std::vector<int>(runs.size(), 1));
     }
+}
+
+TEST_CASE("a worker pool runs on the workers that started when the system refuses a thread", "[core][workers]") {
+    // Expected: docs/engine/render-threads.md#workers, docs/guides/conventions.md#errors: std::thread reports a thread
+    // the system refuses only by throwing std::system_error; the pool catches it at the call and runs on the workers
+    // that started. The start hook throws it where std::thread would, from the third worker on.
+    WorkerPool pool(4, [](std::size_t worker) {
+        if (worker >= 2) {
+            throw std::system_error(std::make_error_code(std::errc::resource_unavailable_try_again));
+        }
+        return true;
+    });
+    CHECK(pool.threads() == 3);
+    std::vector<int> runs(500, 0);
+    pool.parallelFor(runs.size(), [&runs](std::size_t index) { ++runs[index]; });
+    CHECK(runs == std::vector<int>(runs.size(), 1));
 }
 
 TEST_CASE("the shared pool's size is half the hardware threads, between 1 and 8", "[core][workers]") {
