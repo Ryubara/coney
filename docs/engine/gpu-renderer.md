@@ -141,7 +141,7 @@ the vertex shader ([Skinning](#skinning)).
 | Colours | a sector's fade, an object's tint (with MODULATE while it is not opaque white), a car part's paint, a human's colour times his shadow dimming at his fade (`Shade`), as `MaterialChange` writes them into librw's materials; white for a mesh that does not modulate; a dual layer at its base's first alpha, a human's blood layer in his own colours | `coloursOf()`, `layerColoursOf()`, `dualColoursOf()` |
 | Blending | on only for vertex alpha (prelighting not opaque), a material colour not opaque or a texture with a texel that is not; then the draw's blend (source alpha, or replace) and its alpha test as the render states stand at the draw, against librw's start reference (10 of 255) | `drawPassesOf()`, `vertexAlphaOf()`, `hasAlpha()` |
 | GS alpha test | a first pass (alpha test "at least") of a blended mesh that writes depth is drawn twice, as librw emulates the GS's FB_ONLY: the fragments at or above 128 of 255 with depth written, then the rest without ([shared state](../research/rendering.md#shared-state)); a dual layer with the test off | `drawPassesOf()` |
-| Depth and culling | tested less or equal (always while off but written), written as the pass says; back or front faces dropped, counter-clockwise the front | `GpuScene::pipelineFor()` |
+| Depth and culling | tested less or equal (always while off but written), written as the pass says; back or front faces dropped, counter-clockwise the front; what lies past the far plane or before the near one cut away, as OpenGL clips it (SDL's default clamps the depth instead, which drew the level world's far light glows as fogged disks over the sky) | `GpuScene::pipelineFor()` |
 | Fog | linear in the distance in front of the camera, from the camera's fog start to its far plane, toward the draw's fog colour | `fogAt()`, both shaders |
 | Texture level | a PS2 texture picked by distance (log2 of the depth times 2^L plus K, never below 0) on the sectors and at level 0 elsewhere ([world](../research/rendering.md#world)); one of Coney's own as the GPU chooses; librw's GL3 filters for each RenderWare filter, its addressing per axis | `textureLevelsOf()`, `GpuScene::samplerFor()` |
 
@@ -318,7 +318,7 @@ and alpha-tested triangles whose capture it reads back pixel by pixel; and that 
 play loads its objects and cars on it. `tests/graphics/scene_batch_test.cpp` checks headless what each sub-mesh is
 drawn with against librw's GL3 maths, the skinning formula against `characters::skinVertices()` among them,
 `tests/platform/gpu_scene_test.cpp` draws a scene pass on the GPU, a skinned one too, a pass that clears
-the depth and a lit draw of an unlit mesh, and reads it back, `tests/platform/world_draw_stream_test.cpp`
+the depth, a lit draw of an unlit mesh and a quad past the far clip, and reads it back, `tests/platform/world_draw_stream_test.cpp`
 that a level's background is recorded before the world through its own cameras,
 `tests/platform/human_draw_stream_test.cpp` that a human's meshes carry his bones, weights and texture and his draw his
 posed sphere, and `tests/platform/draw_calls_test.cpp` that the headless draw layer's states start as librw's GL3

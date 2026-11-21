@@ -517,3 +517,102 @@ TEST_CASE("the GPU renderer clears the depth for a scene pass that asks and ligh
     std::error_code ignored;
     std::filesystem::remove(path, ignored);
 }
+
+TEST_CASE("the GPU renderer cuts away what lies past the camera's far clip", "[render][renderer][window][scene]") {
+    // Expected: ../engine/gpu-renderer.md#scene: what lies past the far clip is not drawn, as librw's GL3 device and
+    // OpenGL clip it (the GL3 picture the GPU renderer is compared with); SDL's default clamps its depth onto the far
+    // plane instead, which drew the level world's far light glows as fogged disks over the sky. A red quad at 150 with
+    // a far clip of 100 leaves the black clear (the left half); a green one at 50 shows (the right half). A strip along
+    // the bottom is a linearly filtered 2 x 2 texture stretched over it, so the picture holds more colours than a
+    // palette (the capture's PNG is then one librw reads), as in the case above.
+    if (!gpuHere()) {
+        SKIP("no display or no GPU device here");
+    }
+    WindowDesc desc;
+    desc.activate = false;
+    desc.hidden = true;
+    desc.width = 320;
+    desc.height = 240;
+    auto started = RenderEngine::start(RenderBackend::Gpu, desc);
+    REQUIRE(started.has_value());
+    RenderEngine& engine = **started;
+    coney::platform::SceneAssets& assets = engine.sceneAssets();
+
+    // A prelit quad at distance `z` from `left` to `right` pixels and from `top` to `bottom` pixels.
+    const auto quadAt = [](float z, int left, int right, int top, int bottom, Rgba prelight, rw::Texture* texture) {
+        const float halfWidth = 0.5F * z;
+        const float halfHeight = 0.375F * z;
+        const auto x = [halfWidth](int pixel) { return (static_cast<float>(pixel) / 160.0F - 1.0F) * halfWidth; };
+        const auto y = [halfHeight](int pixel) { return (1.0F - static_cast<float>(pixel) / 120.0F) * halfHeight; };
+        return QuadSpec{.topLeft = {x(left), y(top), z},
+                        .topRight = {x(right), y(top), z},
+                        .bottomLeft = {x(left), y(bottom), z},
+                        .bottomRight = {x(right), y(bottom), z},
+                        .prelit = true,
+                        .prelight = prelight,
+                        .texture = texture};
+    };
+    // A 2 x 2 texture sampled linearly: red, green over blue, white.
+    rw::Texture* texture = rw::Texture::create(nullptr);
+    std::memcpy(texture->name, "blend", 6); // the name and its terminator
+    coney::graphics::TextureData texels;
+    texels.name = "blend";
+    texels.levels.push_back({2, 2, {255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255}});
+    texels.sampler = {coney::graphics::TextureFilter::Linear, coney::graphics::TextureAddress::Clamp,
+                      coney::graphics::TextureAddress::Clamp};
+    auto textureId = assets.addTexture(*texture, texels);
+    REQUIRE(textureId.has_value());
+    std::vector<rw::Atomic*> quads;
+    std::vector<coney::graphics::MeshId> meshes;
+    const std::array<QuadSpec, 3> specs{quadAt(150.0F, 0, 160, 0, 200, Rgba{255, 0, 0, 255}, nullptr),
+                                        quadAt(50.0F, 160, 320, 0, 200, Rgba{0, 255, 0, 255}, nullptr),
+                                        quadAt(10.0F, 0, 320, 200, 240, Rgba{255, 255, 255, 255}, texture)};
+    for (const QuadSpec& spec : specs) {
+        quads.push_back(makeQuad(spec));
+        auto id = assets.addAtomic(*quads.back());
+        REQUIRE(id.has_value());
+        meshes.push_back(*id);
+    }
+
+    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-far-clip.png").string();
+    engine.requestCapture(0, path);
+    engine.beginWindowFrame(Rgba{0, 0, 0, 255});
+    coney::graphics::SceneCamera camera;
+    camera.halfWidth = 0.5F;
+    camera.halfHeight = 0.375F;
+    camera.nearClip = 1.0F;
+    camera.farClip = 100.0F;
+    camera.fogStart = 90.0F;
+    engine.setSceneCamera(camera);
+    coney::graphics::SceneStates states;
+    states.fog = false;
+    for (const coney::graphics::MeshId mesh : meshes) {
+        coney::graphics::Draw3d scene;
+        scene.mesh = mesh;
+        scene.states = states;
+        engine.drawScene(scene, {});
+    }
+    engine.present();
+
+    const auto captured = coney::test::got(engine.capture());
+    REQUIRE(captured.has_value());
+
+    int width = 0;
+    int height = 0;
+    const std::vector<std::uint8_t> rgba = readCapture(path, width, height);
+    REQUIRE(width == 320);
+    REQUIRE(height == 240);
+    CHECK(near(pixelAt(rgba, width, 80, 120), Rgba{0, 0, 0, 255}, 2));
+    CHECK(near(pixelAt(rgba, width, 240, 120), Rgba{0, 255, 0, 255}, 2));
+
+    for (rw::Atomic* atomic : quads) {
+        destroyQuad(atomic);
+    }
+    for (const coney::graphics::MeshId mesh : meshes) {
+        assets.removeMesh(mesh);
+    }
+    assets.removeTexture(*textureId);
+    texture->destroy();
+    std::error_code ignored;
+    std::filesystem::remove(path, ignored);
+}
