@@ -23,7 +23,7 @@ struct TriggerSphere {
     bool armed = false;  ///< `+0x180`.
     std::uint64_t stayPeriodMs = 1000;    ///< `+0x164`: the period of message 5 (TriggerSpheres::kDefaultStayPeriodMs).
     std::uint32_t handlerPeriodMs = 1000; ///< `TriggerSphereCfg`'s last argument, the handler component's `+0x74`.
-    std::vector<double> occupants;        ///< The humans inside, at most VolumeBoxes::kMaxOccupants.
+    std::vector<double> occupants;        ///< The humans inside, at most crowd::humanListCap() (60 up to 60).
     std::uint64_t nextStayMs = 0;         ///< When message 5 may be sent again.
 };
 

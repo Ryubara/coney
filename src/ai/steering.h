@@ -162,8 +162,9 @@ struct SteerRequest {
 /// his brain's aim point, of length min(the distance to it, kStepSeconds × his brain's move speed).
 [[nodiscard]] anim::Vec3 predictedStep(const Brain& brain);
 
-/// The humans within `radius` (in plan) of `owner`'s human, in any direction, the owner and those out of the world
-/// left out, at most kSteerListMax of them in the order given (`Humans_FindAhead`).
+/// The humans within `radius` (in plan; the original measures in 3D, #1594) of `owner`'s human, in any direction, the
+/// owner and those out of the world left out, at most crowd::humanListCap() of them in the order given (the
+/// original's kSteerListMax up to 60 humans; `Humans_FindAhead`).
 /// @orig 0x002274a8 Humans_FindAhead (unknown)
 [[nodiscard]] std::vector<Brain*> humansAround(const Brain& owner, std::span<Brain* const> others, float radius);
 

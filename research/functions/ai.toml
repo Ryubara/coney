@@ -1924,6 +1924,11 @@ level = "confirmed-code"
 coney = "src/ai/brain_events.h:broadcastHelpCall"
 status = "compared"
 
+[[function.gaps]]
+what = "the hearing test on a plan distance, where the original compares the 3D squared distance Humans_FindAhead stored"
+relation = "stand-in"
+issue = 1594
+
 [[function]]
 address = 0x00293640
 name = "Gang_BroadcastHelpCall"
@@ -1933,6 +1938,11 @@ role = "event `0x14` from the caller to every human within min(range, his `+0x13
 level = "confirmed-code"
 coney = "src/ai/brain_events.h:broadcastHelpCall"
 status = "compared"
+
+[[function.gaps]]
+what = "the reach in plan, where the original's (through AI_AlertNearby and Humans_FindAhead) is 3D"
+relation = "stand-in"
+issue = 1594
 
 [[function]]
 address = 0x00293768
@@ -1946,6 +1956,11 @@ status = "compared"
 what = "the list of 60, the table's size: past 60 humans Coney lists every one (crowd::humanListCap, docs/engine/crowd-rules.md#lists)"
 relation = "stand-in"
 issue = 1569
+
+[[function.gaps]]
+what = "the help call's reach in plan, where Humans_FindAhead measures in 3D"
+relation = "stand-in"
+issue = 1594
 
 [[function]]
 address = 0x00293b28

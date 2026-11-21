@@ -276,6 +276,7 @@ void broadcastHelpCall(Brain& caller, float range, Brain* aggressor, int value, 
         if (peer.get() == &caller) {
             continue;
         }
+        // Stand-in: the reach is measured in plan where the original measures in 3D (#1594).
         const float distance = caller.distanceTo(*peer);
         if (distance <= range && distance <= peer->senses().helpHearRange) {
             hearers.push_back(peer.get());

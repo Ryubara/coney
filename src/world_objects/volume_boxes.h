@@ -26,7 +26,7 @@ struct VolumeBox {
     std::array<float, 3> high{};           ///< The opposite corner (`+0x28` holds its z).
     std::array<float, 4> turn{1, 0, 0, 1}; ///< `+0x48`-`+0x54`: m00, m01, m10, m11.
     bool enabled = true;                   ///< `+0x68`.
-    std::vector<double> occupants;         ///< `+0x70`: the humans inside, at most kMaxOccupants.
+    std::vector<double> occupants;         ///< `+0x70`: the humans inside, at most crowd::humanListCap().
     std::uint64_t nextStayMs = 0;          ///< `+0x1e0`: when message 5 may be sent again.
 };
 

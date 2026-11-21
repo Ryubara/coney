@@ -573,8 +573,9 @@ void Gangs::update(std::uint64_t nowMs) {
     // Coney stand-in: the debug build's check that player 1 stands on the path data, with its warning text, is left
     // out.
     m_nowMs = nowMs;
-    // A new update: the brains that follow may scan again. Stand-in (limit): the tokens are crowd::scanTokens(), the
-    // original's five up to 60 scanning brains (docs/engine/crowd-rules.md#scans).
+    // A new update: the brains that follow may scan again. The original refills its tokens in Brains_Update
+    // 0x00293b28, not in Gangs_Update. Stand-in (limit): the tokens are crowd::scanTokens(), the original's five up
+    // to 60 scanning brains (docs/engine/crowd-rules.md#scans).
     m_scans.beginUpdate(crowd::scanTokens(scanningBrains()));
     // The turn moves on: this update's fifth of the gangs updates its bounds.
     m_boundsTurn = m_boundsTurn + 1 >= kBoundsTurns ? 0 : m_boundsTurn + 1;

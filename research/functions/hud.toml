@@ -1381,6 +1381,11 @@ what = "the list of 60, the table's size: past 60 humans Coney lists every one (
 relation = "stand-in"
 issue = 1569
 
+[[function.gaps]]
+what = "the distance in plan, where the original measures in 3D (x, y and z squared, 0x00227518-0x00227530)"
+relation = "stand-in"
+issue = 1594
+
 [[function]]
 address = 0x00227d28
 name = "Human_IsInSceneState"
