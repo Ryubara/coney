@@ -26,11 +26,11 @@ inline constexpr int kVandalizeFightMs = 4000;
 /// **Coney stand-ins**: the cars of `TacticVandalizeCars` (issue #716), the vandal brain byte `+0x28d` (not
 /// identified) and event 23 (an object broken: the waiting members' cheer, `VandalizeTactic_OnObjectBroken`, and code
 /// 16 for an object of the zone) are not built, because Coney sends no event 23 yet.
-/// @orig 0x0031e3b8 VandalizeTactic_Construct (unknown)
 class VandalizeTactic final : public StoryTactic {
   public:
     /// The wreck of `call` (its zone, delay, callback and range) through `services` (its items: none, and the members
     /// get no goals).
+    /// @orig 0x0031e3b8 VandalizeTactic_Construct (unknown)
     VandalizeTactic(const script::TacticCall& call, const TacticServices& services) : StoryTactic(call, services) {}
 
     /// Gives the goals (giveGoals()) and arms the first check.
