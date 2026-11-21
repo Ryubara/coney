@@ -460,11 +460,11 @@ TEST_CASE("the mesh views say which kinds the World page hides and whether they 
     CHECK_FALSE(views.hides(DrawKind::Scenery));
 }
 
-TEST_CASE("the rig's mesh views are on only while a hook with passes is set and the renderer draws them",
-          "[mesh][world-page]") {
-    // Expected: docs/guides/debug-menu.md#world: SceneLighting::meshViewsOn() is true only while a hook is set, the
-    // play mode leaves its passes on (GL3) and the hook has some; a hook that only hides kinds leaves the draws to be
-    // recorded into the frame description.
+TEST_CASE("the rig's mesh views are on while a hook is set and the renderer draws its passes", "[mesh][world-page]") {
+    // Expected: docs/guides/debug-menu.md#world: SceneLighting::meshViewsOn() is true while a hook is set and the play
+    // mode left its passes on (GL3), whether or not the hook has passes of its own, so GL3 draws every model through
+    // the rig for the hook as it always has, a part hidden or not; a renderer that cannot draw the passes (the GPU
+    // renderer) records the draws instead, and the hook's hidden kinds are left out of them (hideKindsOf()).
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     REQUIRE(engine.has_value());
     coney::graphics::LevelLighting level;
@@ -476,12 +476,16 @@ TEST_CASE("the rig's mesh views are on only while a hook with passes is set and 
     coney::platform::MeshViews views(options, &switches);
     switches.parts.humans = false;
     scene.setMeshViews(&views, true);
-    CHECK_FALSE(scene.meshViewsOn()); // a kind hidden, but no pass: the draws may be recorded
+    // A kind hidden and no pass: GL3's rig path, as before.
+    CHECK_FALSE(views.hasPasses());
+    CHECK(scene.meshViewsOn());
 
     options.mesh.wireframe = coney::debug::MeshScope::Everything;
     CHECK(scene.meshViewsOn());
     // The passes left to GL3: a renderer that cannot draw them records the shaded draw.
     scene.setMeshViews(&views, false);
+    CHECK_FALSE(scene.meshViewsOn());
+    options.mesh.wireframe = coney::debug::MeshScope::Off;
     CHECK_FALSE(scene.meshViewsOn());
     scene.setMeshViews(nullptr);
     CHECK_FALSE(scene.meshViewsOn());

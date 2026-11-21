@@ -808,6 +808,24 @@ TEST_CASE("a mesh view's passes do not take the sectors out of a renderer that c
     CHECK(sectorDraws(*engine, true, &viewing, true) == 0);
 }
 
+TEST_CASE("on GL3 a hook that only hides a kind sends the sectors through the rig, recording none",
+          "[platform][world][frame-description][world-page]") {
+    // Expected: docs/guides/debug-menu.md#world: GL3 (the play mode leaves the passes on) keeps the path it had before
+    // the part switches reached the GPU renderer: with any hook set the sectors draw through the lighting rig for
+    // the hook, which hides its kind there, so the frame description holds none of them whichever kind is hidden and
+    // however few passes the hook has; the same frame with no hook records both (the unchanged GL3 draw stream).
+    using coney::platform::DrawKind;
+    using coney::test::HideHook;
+    auto engine = startHeadless();
+    CHECK(sectorDraws(*engine, true, nullptr, true) == 2);
+    HideHook scenery({DrawKind::Scenery});
+    CHECK(sectorDraws(*engine, true, &scenery, true) == 0);
+    HideHook humans({DrawKind::Humans});
+    CHECK(sectorDraws(*engine, true, &humans, true) == 0);
+    HideHook nothing;
+    CHECK(sectorDraws(*engine, true, &nothing, true) == 0);
+}
+
 TEST_CASE("only the GPU backend leaves the mesh views' passes to GL3", "[platform][world-page]") {
     // Expected: docs/engine/gpu-renderer.md#scene: GL3 draws the passes through librw, the NULL backend keeps
     // asking the hook (the tests see it wired), the GPU renderer has no librw camera to draw them with.
