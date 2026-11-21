@@ -40,6 +40,10 @@ the [format on the index page](index.md#finding-format).
   ([The original's fixed limits](../conventions.md#original-limits)), and has its row on [Beyond the
   original](../../engine/beyond-the-original.md) (`docs check` fails a marker with none). A ceiling ported with no reason
   is Important.
+- [ ] **An improvement past the original has its row on [Beyond the original](../../engine/beyond-the-original.md).** A
+  picture or sound option, an Xbox-native option, a multiplayer or mod feature, a debug or player tool added in `src/`
+  or `python/src/` is a row (status `on main`, or `planned` with its issue) in the same commit, whatever the pull
+  request says about `Docs: none`. No program checks this: only a lift has a marker. A missing row is Important.
 - [ ] **Networking.** The change keeps [the networking checklist](../network-architecture.md#checklist): no new
   mutable global in simulation code, no new "the player" or pad 0 assumption, no new pointer kept across steps where
   an id would do, no `GameRandom` draw from presentation code.

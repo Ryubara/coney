@@ -83,7 +83,7 @@ from the page, so there is no second list:
 - **A missing page** fails only when the sources have a marker, so a checkout without the page or any lift passes.
 - **Improvements are checked by review only.** A picture or sound option, a multiplayer or mod feature or a tool has no
   marker for the check to read, so nothing fails when its row is missing; the docs and code review checklists ask the
-  reviewer to look ([Review: docs](review/docs.md)).
+  reviewer to look ([Review: docs](review/docs.md), [Review: code](review/code.md)).
 
 The finding's rule is `beyond`. A change that lands the work of a `planned` entry changes the row to `on main` and gives
 it its Marker cell in the same commit; one that removes a lift takes its row out.
