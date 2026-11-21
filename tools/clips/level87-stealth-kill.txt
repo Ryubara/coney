@@ -1,0 +1,14 @@
+# The stealth kill at the first guard, for the `level87-stealth-kill` clips pair scenario
+# (tools/clips/level87-stealth-kill.toml), played from checkpoint 5 (`--play-level level87 --checkpoint 5
+# --skip-movies`). Frames are 1/30 s from the level's first frame of play. Cross skips the intro scene (70), the walk
+# (90 to 320) takes him into the hint volume (volCh5HB01), and the tutorial warps him to the shadow ground behind the
+# first guard, S01, at about frame 357, where he hides (clip 630). The hint then holds the pad until about frame 626.
+# L1 is down from 380 (it targets S01 without locking on once the pad is free); the hidden walk
+# brings him 1.3 m behind the guard (frame 665), and square at 680 starts the kill (clip 637, S01 plays 638 and falls).
+70 tap cross
+90 steer 50 410,-59
+185 stick left 0 0
+320 steer 100 418.3,-63.6
+380 press l1
+385 steer 100 424.0,-65.5
+680 tap square
