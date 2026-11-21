@@ -877,9 +877,9 @@ void PlayLevelSimulation::stepAiThrows() {
         const double held = std::exchange(script.heldObject, world_objects::kNoObject);
         script.heldObjectName.clear();
         dropHeld(human, held, true);
-        // Coney stand-in (issue #1523): the anim set goes back to 0 here, at the throw, as the player's does; the
-        // original's own reset for an AI (message 7) is not studied. Whether a thrown object hurts the thrower's own
-        // gang is issue #1572; the looters' throws are not checked for it.
+        // The anim set goes back to 0 here, at the throw: Human_ReleaseThrow pops the holding move style (or removes
+        // the held object's set) at its start for any human, as the player's throw does. Whether a thrown object hurts
+        // the thrower's own gang is issue #1572; the looters' throws are not checked for it.
         human.fighter().setAnimSet(0);
         human.fighter().setHoldingObject(false);
     }
