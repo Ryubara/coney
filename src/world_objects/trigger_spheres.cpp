@@ -158,7 +158,7 @@ void TriggerSpheres::check(std::size_t index, std::span<const BoxSubject> subjec
         int message = 0;
         if (accepts(sphere, *centre, subject.position)) {
             if (listed == sphere.occupants.end()) {
-                // Message 3 goes even when every place is taken.
+                // Message 3 goes even when every place is taken. Stand-in (limit): `room` places, as above.
                 addOccupant(sphere, subject.handle, room);
                 message = VolumeBoxes::kEntered;
             } else if (stayDue) {
