@@ -2304,7 +2304,7 @@ kind = "helper"
 role = "`(radius, human, needRay, claim, needReach, centre)`: the panes within the radius (`GlassTaskManager_ListInRange`, 64), nearest first; the first intact one not claimed by the human's gang, **not alarmed** (pane bits `+0xf8` not both 1 and 2), upright (its up axis within 0.65 of vertical) and low enough (bottom at most his z + human `+0x548`); with `needRay`, a clear ray to its centre that crosses glass (result 2); with `needReach`, a navigation point at its spot that he can reach (`Nav_FindPolygonUnder` reads no stand-off); with `claim`, claimed for the gang for 7 s"
 level = "confirmed-code"
 coney = "src/ai/smash_goals.h:claimPane"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0029e250

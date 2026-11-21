@@ -164,6 +164,7 @@ class PursueTactic final : public StoryTactic {
 };
 
 /// The tactic of `call`'s kind (TravelPath walking `path`); null for Attack and Confront, which are made elsewhere.
+/// @coney-only factory: the original's script bindings construct each tactic kind themselves
 [[nodiscard]] std::unique_ptr<Tactic> makeStoryTactic(const script::TacticCall& call, std::vector<double> path,
                                                       const TacticServices& services);
 

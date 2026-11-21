@@ -82,6 +82,7 @@ class DestroyGoal final : public Goal {
     // @orig 0x002cd640 DestroyGoal_ReleaseTarget (unknown)
     void releaseTarget();
     // Draws the wait before the next target.
+    // @coney-only helper: the wait DestroyGoal_Process (0x002cdbc0) draws, compared there
     void armWait(Brain& brain);
 
     float m_leaderRange;             // +0x2c

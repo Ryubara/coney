@@ -5,13 +5,13 @@
 // docs/research/ai-code.md#t2-vandalize). When player 1 enters the box `vStartIntroLooters`, `P1.StartIntroLooters`
 // (level34_riot.lua) wakes the gang and gives it `TacticVandalize(gang, 51, 1000, "P1.DoneLooting", -1)`;
 // `P1.DoneLooting` sends the gang away on code 1, 5 or 6. In the original (PCSX2, run r-20261121-level34-intro-looters)
-// the looters broke seven objects of zone 51 within 15 s and the tactic answered 1, its only own code, once the zone
-// was empty (VandalizeTactic_Process 0x0031ea00). Most of zone 51 is carried objects (garbage bags, trash cans), which
-// the Destroy goal fetches and throws (DestroyGoal_Process 0x002cdbc0), so the looters' throws must let go of what they
-// hold (Human_ReleaseThrow 0x002586d8, for any human). The level plays in the game session as `--play-level level34
-// --checkpoint 1` plays it (support/disc_session.h); player 1 is put in the box (the debug teleport stands for the walk
-// up the stairs) and then stands still. It runs only when the environment variable CONEY_DISC names the disc and skips
-// otherwise; it prints counts only (LEGAL.md).
+// the looters gave seven codes 16 (objects broken; the codes undercount the breaks) within 15 s and the tactic
+// answered 1, its only own code, once the zone was empty (VandalizeTactic_Process 0x0031ea00). Most of zone 51 is
+// carried objects (garbage bags, trash cans), which the Destroy goal fetches and throws (DestroyGoal_Process
+// 0x002cdbc0), so the looters' throws must let go of what they hold (Human_ReleaseThrow 0x002586d8, for any human). The
+// level plays in the game session as `--play-level level34 --checkpoint 1` plays it (support/disc_session.h); player 1
+// is put in the box (the debug teleport stands for the walk up the stairs) and then stands still. It runs only when the
+// environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
 #include <cstddef>
 #include <cstdint>
@@ -135,6 +135,7 @@ struct Looters {
 
 TEST_CASE("the disc's level34 checkpoint 1: the intro looters break zone 51's objects before they leave",
           "[disc][story]") {
+    // Expected: scripting.md#level34-fixes, confirmed (runtime)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -165,6 +166,7 @@ TEST_CASE("the disc's level34 checkpoint 1: the intro looters break zone 51's ob
 }
 
 TEST_CASE("the disc's level34 checkpoint 1: a looter's throw lets go of the object he fetched", "[disc][story]") {
+    // Expected: objects.md#held, confirmed (code)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

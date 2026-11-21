@@ -109,6 +109,7 @@ class LevelItems final : public ai::ItemServices {
     /// Every AI human of `brains` whose pick-up reached its clip's event since the last call takes the object
     /// (LevelPickups::takeByAi()); one that goes into his hand is his held object. Player brains are left to the play
     /// mode, which takes their pick-ups itself.
+    /// @coney-only the play's hand-off of the AI's pick-ups to the level's objects, once an update
     void collectTakes(ai::Brains& brains);
 
   private:
