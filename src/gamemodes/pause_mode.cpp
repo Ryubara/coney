@@ -220,6 +220,8 @@ PauseMode::PauseMode(graphics::RenderDevice& device, PauseSheetLoader loadSheet,
     m_menu.setOptionHooks(std::move(options));
 }
 
+std::uint64_t PauseMode::quits() { return 0; }
+
 void PauseMode::playFrame(GameModeStack& stack, const Pads& pads) {
     // START is checked before the cool-down counts down, so it is ignored for one frame after a close.
     for (std::size_t port = 0; port < 2; ++port) {

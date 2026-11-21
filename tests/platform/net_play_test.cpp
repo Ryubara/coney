@@ -187,8 +187,10 @@ struct FakeLevels final : LevelGame {
     bool loads = true;
     int loadSteps = 5;
     std::vector<LevelAt> jumps;
+    std::vector<std::string> moves; // each jump ("to <level>") and each leave ("leave"), in the order asked
     std::optional<LevelAt> pendingJump;
     int loadingLeft = -1;
+    int leaves = 0; // the leaves the game took
 
     [[nodiscard]] bool inPlay() const override { return playing; }
     [[nodiscard]] std::uint64_t levelStarts() const override { return starts; }
@@ -199,7 +201,22 @@ struct FakeLevels final : LevelGame {
             return false;
         }
         jumps.push_back(LevelAt{.level = std::string(level), .checkpoint = checkpoint});
+        moves.push_back("to " + std::string(level));
         pendingJump = jumps.back();
+        return true;
+    }
+    // The game goes to the front end between two frames: the level and any jump asked for before are gone. Nothing
+    // to leave before a level starts or after a leave.
+    bool leaveLevel() override {
+        if (!at) {
+            return false;
+        }
+        moves.emplace_back("leave");
+        ++leaves;
+        pendingJump.reset();
+        at.reset();
+        playing = false;
+        loadingLeft = -1;
         return true;
     }
     // The game starts loading `where` (gameplay's level load), out of play until it has loaded.
@@ -875,6 +892,91 @@ TEST_CASE("the guest hears each of the host's mission ends, and a guest's own ar
     const std::vector<std::string> log = g.games.guest.log();
     CHECK(std::ranges::count(log, std::string("the host's mission ended: passed")) == 1);
     CHECK(std::ranges::count(log, std::string("the host's mission ended: failed")) == 1);
+}
+
+// Expected: unverified, #1549 (Coney's own; docs/guides/multiplayer.md#levels: MissionEnd, a quit)
+TEST_CASE(
+    "a host's quit from the pause menu reaches the guest as a mission end, and the guest leaves the level with it",
+    "[net][net_play][level]") {
+    LevelGames g;
+    g.hostPlays("level1", 1);
+    g.games.connect();
+    g.run(12);
+    REQUIRE(g.guestGame.inPlay());
+    REQUIRE(g.guestGame.leaves == 0);
+
+    // The host's game counts the quit as it counts a mission-failed screen.
+    g.hostGame.missions.quit = 1;
+    g.run(3);
+    CHECK(logged(g.games.guest.log(), "the host's mission ended: quit"));
+    CHECK(g.guestGame.leaves == 1);
+    CHECK_FALSE(g.guestGame.inPlay());
+
+    // Each quit is told once, and the guest's own quits are not sent.
+    g.run(10);
+    CHECK(std::ranges::count(g.games.guest.log(), std::string("the host's mission ended: quit")) == 1);
+    CHECK(g.guestGame.leaves == 1);
+    g.guestGame.missions.quit = 3;
+    g.run(3);
+    CHECK(std::ranges::count(g.games.guest.log(), std::string("the host's mission ended: quit")) == 1);
+}
+
+// Expected: unverified, #1549 (Coney's own; docs/guides/multiplayer.md#levels: a quit to the hangout is a quit and then
+// a load)
+TEST_CASE("a quit that goes on to another level takes the guest out first, then to that level",
+          "[net][net_play][level]") {
+    LevelGames g;
+    g.hostPlays("level1", 1);
+    g.games.connect();
+    g.run(12);
+    REQUIRE(g.guestGame.moves == std::vector<std::string>{"to level1"});
+
+    // Both in one step of the host: the quit, and the load of the hangout that follows it.
+    g.hostGame.missions.quit = 1;
+    g.hostGame.start(LevelAt{.level = "level80", .checkpoint = 1});
+    g.run(15);
+    CHECK(g.guestGame.moves == std::vector<std::string>{"to level1", "leave", "to level80"});
+    CHECK(g.guestGame.inPlay());
+    CHECK_FALSE(g.hostLevels.holdsStep());
+}
+
+// Expected: unverified, #1549 (Coney's own; docs/guides/multiplayer.md#levels: the load time-out drops a guest that
+// never answers)
+TEST_CASE("a guest that was still loading the host's level when the host quit is not dropped for it",
+          "[net][net_play][level]") {
+    LevelGames g;
+    g.guestGame.loads = false; // its load never plays
+    g.hostPlays("level1", 1);
+    g.games.connect();
+    g.run(12);
+    REQUIRE(g.games.host.status().players.size() == 1);
+    REQUIRE_FALSE(g.guestGame.inPlay());
+
+    g.hostGame.missions.quit = 1;
+    g.run(1900); // past the 1,800-step load time-out
+    CHECK(g.guestGame.leaves == 1);
+    CHECK(g.games.host.status().players.size() == 1);
+}
+
+// Expected: unverified, #1549 (Coney's own; docs/guides/multiplayer.md#levels: a quit ends an order of the level left,
+// taken or not yet taken)
+TEST_CASE("a quit drops the host's order of that level that the guest has not taken yet", "[net][net_play][level]") {
+    LevelGames g;
+    g.hostPlays("level1", 1);
+    g.hostLevels.beforeStep(); // the host's level is told, so a guest that joins is ordered to it
+    g.games.connect();         // network play only: the guest's NetLevels has not taken the order
+    REQUIRE(g.guestGame.moves.empty());
+
+    // The quit reaches the guest's client with the order still there, in the same step of the guest.
+    g.hostGame.missions.quit = 1;
+    g.hostLevels.beforeStep();
+    g.games.run(3);
+    REQUIRE(g.guestGame.moves.empty());
+    g.run(15);
+    CHECK(g.guestGame.moves.empty());
+    CHECK_FALSE(g.guestGame.inPlay());
+    CHECK(logged(g.games.guest.log(), "the host's mission ended: quit"));
+    CHECK(g.games.host.status().players.size() == 1);
 }
 
 // Expected: unverified, #1530 (Coney's own; the LoadLevel name rule, docs/guides/multiplayer.md#levels)

@@ -498,6 +498,32 @@ TEST_CASE("every other start of a level finds the HUD clean: the story's next mi
     }
 }
 
+TEST_CASE("a guest's game leaves its level for the front end, and has nothing to leave at the front end",
+          "[story_start][net]") {
+    // Expected: unverified, #1549 (Coney's own; docs/guides/multiplayer.md#levels: the guest follows the host's quit)
+    // From the story, as a guest's game plays: the menus ran, so the front end can start again.
+    StoryRun run(storyScript(), true);
+    run.frames(420);
+    run.untilTopLeaves(coney::ProfileManagerMode::kId);
+    for (int i = 0; i < 60 && (run.starts.empty() || run.stack.topId() != GameplayMode::kId); ++i) {
+        run.frames(1);
+    }
+    REQUIRE(run.stack.topId() == GameplayMode::kId);
+    REQUIRE(run.starts.size() == 1);
+
+    // Out of the level, as a quit to the menu leaves it; the front end comes back and the level does not start again.
+    CHECK(run.flow->leaveToMenu());
+    CHECK_FALSE(run.stack.contains(run.flow->gameplay()));
+    run.frames(160);
+    CHECK(run.stack.topId() == coney::ProfileManagerMode::kId);
+    CHECK(run.starts.size() == 1);
+    CHECK(run.flow->missionQuits() == 0);
+
+    // At the front end there is no level to leave: nothing changes.
+    CHECK_FALSE(run.flow->leaveToMenu());
+    CHECK(run.stack.topId() == coney::ProfileManagerMode::kId);
+}
+
 TEST_CASE("a level's scripts run alone give player 1's start for the checkpoint asked for", "[story_start]") {
     const auto files = storyScripts(false);
     const coney::script::ScriptSource source =

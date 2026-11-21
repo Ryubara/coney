@@ -184,6 +184,8 @@ bool StartUpFlow::jumpToLevel(std::string_view level, int checkpoint) {
     return true;
 }
 
+bool StartUpFlow::leaveToMenu() { return false; }
+
 void StartUpFlow::playMovie(std::string_view name) {
     m_services.playMovie(name);
     // Movie_Play leaves both screen-effects managers fully black on return: the screen stays black until a fade in.

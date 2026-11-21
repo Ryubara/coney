@@ -242,6 +242,12 @@ class PauseMode final : public GameMode {
     [[nodiscard]] int player() const { return m_player; }
     /// Pauses since start-up.
     [[nodiscard]] std::uint64_t pauses() const { return m_pauses; }
+    /// How many times the menu has chosen one of the four quits (QuitToHangout, QuitToRumbleQuick, QuitToRumbleHangout,
+    /// QuitToMainMenu), each counted once when its outcome is first seen: a network host tells its guests of each
+    /// (docs/guides/multiplayer.md#levels). It watches the menu's outcome, so call it every step, outside the menu's
+    /// update; a restart or a resume is no quit.
+    /// @coney-only the count network play reads; the original keeps none
+    [[nodiscard]] std::uint64_t quits();
 
   private:
     graphics::RenderDevice& m_device;

@@ -69,6 +69,8 @@ bool SessionLevelGame::jumpToLevel(std::string_view level, int checkpoint) {
     return session != nullptr && session->jumpToLevel(level, checkpoint);
 }
 
+bool SessionLevelGame::leaveLevel() { return false; }
+
 void NetLevels::beforeStep() {
     if (m_net.role() == net::NetRole::Client) {
         // The game's own mission ends are not the session's: a guest that hosts later tells only those after.

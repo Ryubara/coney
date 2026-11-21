@@ -305,6 +305,8 @@ bool GameSession::jumpToLevel(std::string_view level, int checkpoint) {
     return true;
 }
 
+bool GameSession::leaveLevel() { return false; }
+
 void GameSession::beginFrame() {
     if (m_pendingLevel) {
         const std::string level = std::exchange(m_pendingLevel, std::nullopt).value_or(std::string{});

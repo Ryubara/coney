@@ -32,6 +32,7 @@ struct LevelAt {
 struct MissionCounts {
     std::uint64_t passed = 0; ///< mission-complete screens launched
     std::uint64_t failed = 0; ///< mission-failed screens launched
+    std::uint64_t quit = 0; ///< levels left through a quit (the pause menu's, the failed screen's, the Rumble result's)
 };
 
 /// What NetLevels needs of the running game: the game session in the run (SessionLevelGame), a fake in tests. Read
@@ -56,6 +57,9 @@ class LevelGame {
     /// Asks the game to load `level` at `checkpoint`, between two frames; false, changing nothing, when it cannot now
     /// (the level table not read yet, or no such level).
     virtual bool jumpToLevel(std::string_view level, int checkpoint) = 0;
+    /// Asks the game to leave its level for the front end, between two frames; false, changing nothing, when no level
+    /// is in play or loading.
+    virtual bool leaveLevel() = 0;
 };
 
 /// The game session as NetLevels sees it: whichever session `session` returns (null: none yet), so a session the debug
@@ -69,6 +73,7 @@ class SessionLevelGame final : public LevelGame {
     [[nodiscard]] std::optional<LevelAt> currentLevel() const override;
     [[nodiscard]] MissionCounts missionEnds() const override;
     bool jumpToLevel(std::string_view level, int checkpoint) override;
+    bool leaveLevel() override;
 
   private:
     std::function<GameSession*()> m_session;
