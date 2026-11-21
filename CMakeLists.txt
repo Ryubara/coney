@@ -8,6 +8,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # for), but nothing here uses modules, and the compiler cache cannot cache the scans, so they were most of what was
 # left of a build whose compiles came from the cache (docs/guides/building.md#module-scanning).
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+# The play-test build's compile and link flags, before any target or dependency is made
+# (docs/guides/building.md#playtest-flags).
+include(coney_inlining)
 include(coney_target)
 include(deps)
 if(CONEY_SHADERS)

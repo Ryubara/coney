@@ -64,8 +64,10 @@ uv run --project python coney-tools perf bench --out ../../scratch/perf --headle
 
 **Measure the right build.** The `dev` preset is a Debug build, several times slower than an optimised one and not
 what a player runs; measure the `playtest` preset (`RelWithDebInfo`: optimised, with debug information and the debug
-tools) and say so. The `release` preset is the player's build: it has no debug tools, so it refuses `--bench`
-([The debug tools and the game](building.md#debug-tools)). The report's `build` field names the build type.
+tools, compiled with `/Ob2` and linked as the release build is: [What `playtest` compiles
+with](building.md#playtest-flags)) and say so. The `release` preset is the player's build: it has no debug tools, so
+it refuses `--bench` ([The debug tools and the game](building.md#debug-tools)). The report's `build` field names the
+build type.
 
 **Measure on a quiet machine.** The times are real time on a shared computer. Numbers taken while other builds run
 are noisy (on the agents' machine a dozen builds may be running): check `coney-tools build status` first, run each

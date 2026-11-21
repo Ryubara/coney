@@ -210,7 +210,7 @@ does not pick up by itself (`coney-tools build --configure` forces it). Each pre
 | Preset | Build type | Debug tools | What it is for |
 | --- | --- | --- | --- |
 | `dev` | Debug | yes | day-to-day work |
-| `playtest` | RelWithDebInfo | yes | an optimised build that can still be debugged, with the debug menus: the one the maintainers play-test |
+| `playtest` | RelWithDebInfo, compiled and linked as Release is on MSVC ([below](#playtest-flags)) | yes | an optimised build that can still be debugged, with the debug menus: the one the maintainers play-test and benches measure |
 | `release` | Release | no | the game as a player gets it, the build the launcher installs ([below](#debug-tools)) |
 | `ci` | Debug, warnings as errors | yes | what CI builds; run it before a pull request, and for the local check of a unit |
 | `ci-release` | Release, warnings as errors | no | what CI builds of the release build |
@@ -359,6 +359,30 @@ measured), and a compiler cache can store the object ([Compiler cache](#compiler
 Debugging works the same; the linker still writes the executable's PDB. The setting lives once, in the hidden
 `embedded-debug-info` preset of `CMakePresets.json`, which the hidden `cacheable` preset inherits, and every preset
 inherits `cacheable`, which also turns precompiled headers off, as a cache cannot use them.
+
+### What `playtest` compiles with {#playtest-flags}
+
+`playtest` is CMake's RelWithDebInfo. On MSVC that configuration compiles with `/O2 /Ob1` (only functions marked
+`inline` are inlined) and links incrementally, while Release compiles with `/O2 /Ob2` (any suitable function) and
+links plainly. A bench or a play test on `playtest` therefore measured a build slower than the player's, because the
+small vector, ray and capsule helpers stayed calls through jump thunks. `cmake/coney_inlining.cmake`, included first
+thing from the top-level `CMakeLists.txt` (so the dependencies get it too), gives RelWithDebInfo on MSVC:
+
+- `/O2 /Ob2 /DNDEBUG` for C and C++, as Release has;
+- `/debug /INCREMENTAL:NO /OPT:REF /OPT:ICF` for every link: debug information stays, the link is not incremental, and
+  unreferenced and identical functions are folded (`/debug` alone switches both foldings off). The executable is about
+  half the size (12.3 MB against 25.2 MB).
+
+Debug, Release and `ci-release` keep CMake's own flags, and GCC and Clang are unchanged (their `-O2` inlines whatever
+the build type). Link-time optimisation is not on: it took 16.7 minutes to build and gave 3 to 15 % more, so it is
+for the `release` preset if it is wanted, not for `playtest`. Gameplay is identical: before and after, the lockstep
+headless runs of the all-humans trace, the event log and the digest hash the same (150 fighters and 150 allies in
+`level95`; for 700 steps: `29f1250db057`, `12f0dccc1c19`, `d4ef45e87823`; for 500 steps: `2129376ea11e`,
+`7a314c25d44a`, `c11d2fc100c4`). The gain, in the main thread's CPU time on brawl 1000 headless (500
+fighters and 500 allies, best of three): the step 94.1 -> 70.6 ms (25 %), where the #1542 sweep measured 113.6 -> 92.3
+ms (19 %). Because the flags are part of every compile command, the first
+`playtest` build after this change compiles everything again; the [compiler cache](#compiler-cache) then serves it.
+`python/tests/test_playtest_flags.py` runs the module under `cmake -P` and checks the flags.
 
 ### Compiler cache {#compiler-cache}
 
