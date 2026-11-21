@@ -2,6 +2,7 @@
 #include "ai/enemy_scan.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -11,6 +12,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/gangs.h"
+#include "ai/sectors.h"
+#include "ai/steering.h"
 #include "core/crowd_limits.h"
 #include "raycast/collision_mesh.h"
 #include "support/ai_fixtures.h"
@@ -20,8 +23,11 @@
 // it scans. Synthetic floors; the player (slot 0) in one gang, the guards in an enemy gang.
 
 using coney::ai::Brain;
+using coney::ai::kScanMaxEnemies;
+using coney::ai::nearestSeen;
 using coney::ai::scanEnemies;
 using coney::ai::scanSees;
+using coney::ai::SightCandidate;
 using coney::anim::Vec3;
 
 namespace {
@@ -283,4 +289,121 @@ TEST_CASE("past 60 brains in gangs an update scans five per 60, at most twenty, 
     coney::test::AiScene big;
     const std::vector<Brain*> crowd = crowdOfGuards(big, 300);
     CHECK(scansOfOneUpdate(big, crowd, 0) == coney::crowd::kCrowdScanTokenCap);
+}
+
+TEST_CASE("the scan casts its lines of sight nearest first and stops once 16 are seen", "[ai][scan]") {
+    // Expected: ai-fights.md#enemy-scan, confirmed (code): step 4 of Brain_ScanEnemies 0x0028b358 keeps the nearest 16
+    // of all it found, so a member farther than 16 found ones leaves the list whatever his line of sight; issue 1555.
+    // 24 candidates 1 m to 24 m away, listed farthest first.
+    std::vector<SightCandidate> candidates;
+    for (int metres = 24; metres >= 1; --metres) {
+        candidates.push_back(SightCandidate{.distance = static_cast<float>(metres), .needsRay = true});
+    }
+    std::vector<float> cast;
+    std::vector<float> blocked;
+    const auto line = [&](std::size_t k) {
+        cast.push_back(candidates[k].distance);
+        return std::ranges::find(blocked, candidates[k].distance) == blocked.end();
+    };
+    // Every line clear: 16 cast, nearest first, and the 16 nearest found.
+    std::vector<bool> found = nearestSeen(candidates, kScanMaxEnemies, line);
+    CHECK(cast == std::vector<float>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+    for (std::size_t k = 0; k < candidates.size(); ++k) {
+        CHECK(found[k] == (candidates[k].distance <= 16.0F));
+    }
+    // A blocked line is not counted: with 2, 5 and 7 m blocked the rays go on to 19 m.
+    cast.clear();
+    blocked = {2.0F, 5.0F, 7.0F};
+    found = nearestSeen(candidates, kScanMaxEnemies, line);
+    CHECK(cast.size() == 19);
+    CHECK(cast.back() == 19.0F);
+    CHECK_FALSE(found[candidates.size() - 2]);  // 2 m
+    CHECK(found[candidates.size() - 19]);       // 19 m
+    CHECK_FALSE(found[candidates.size() - 20]); // 20 m: never cast
+    // A member whose gang is always seen counts without a ray; one the scanner refers to is cast however far, and so
+    // is one as far as the 16th found.
+    cast.clear();
+    blocked.clear();
+    candidates[candidates.size() - 1].needsRay = false; // 1 m
+    candidates[0].referred = true;                      // 24 m
+    candidates.push_back(SightCandidate{.distance = 16.0F, .needsRay = true});
+    found = nearestSeen(candidates, kScanMaxEnemies, line);
+    CHECK(cast == std::vector<float>{2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16, 24});
+    CHECK(found[candidates.size() - 2]); // 1 m, no ray
+    CHECK(found[0]);                     // 24 m, referred to
+    CHECK(found.back());                 // the second at 16 m
+    CHECK_FALSE(found[1]);               // 23 m
+}
+
+TEST_CASE("a brain refers to another through its target, enemy list, attack slots, sectors and detour", "[ai][scan]") {
+    // Expected: Brain::forget()'s fields (src/ai/brain.cpp), each of which the scan must keep testing (issue 1555).
+    coney::test::AiScene scene;
+    Brain& owner = scene.add(Vec3{40.0F, 60.0F, 0.0F}, 180.0F);
+    Brain& other = scene.add(Vec3{40.0F, 61.0F, 0.0F}, 0.0F); // 1 m off: in a sector of owner's
+    Brain& stranger = scene.add(Vec3{60.0F, 60.0F, 0.0F}, 0.0F);
+    CHECK_FALSE(owner.refersTo(stranger));
+    // The sectors: other is the nearest in one, until forgotten.
+    static_cast<void>(owner.sectors(coney::ai::kSectorAgeMs));
+    REQUIRE(owner.sectorRecord().heldBy(other));
+    CHECK(owner.refersTo(other));
+    owner.forget(other);
+    CHECK_FALSE(owner.refersTo(other));
+    // The enemy list.
+    owner.addEnemy(other);
+    CHECK(owner.refersTo(other));
+    owner.forget(other);
+    CHECK_FALSE(owner.refersTo(other));
+    // The target, and the attack slot it takes on the target.
+    owner.setTarget(&other);
+    REQUIRE(owner.target() == &other);
+    CHECK(owner.refersTo(other));
+    REQUIRE(std::ranges::find(other.attackSlots(), &owner) != other.attackSlots().end());
+    CHECK(other.refersTo(owner));
+    owner.forget(other);
+    other.forget(owner);
+    CHECK_FALSE(owner.refersTo(other));
+    CHECK_FALSE(other.refersTo(owner));
+    // The detour.
+    coney::ai::setAvoiding(owner, &other);
+    CHECK(owner.refersTo(other));
+    owner.forget(other);
+    CHECK_FALSE(owner.refersTo(other));
+}
+
+TEST_CASE("with more than 16 enemies in sight a scan lists the nearest 16 and still drops a farther target",
+          "[ai][scan]") {
+    // Expected: ai-fights.md#enemy-scan, confirmed (code): more than 16 found, the 16 nearest are kept and the rest
+    // forgotten (Brain_ScanEnemies 0x0028b358, step 4); a target among them is dropped (Brain::forget()).
+    coney::test::AiScene scene;
+    Brain& guard = scene.add(Vec3{40.0F, 70.0F, 0.0F}, 180.0F);
+    // 20 enemies straight ahead, 2 m to 21 m off, listed farthest first.
+    std::vector<Brain*> enemies;
+    enemies.reserve(20);
+    for (int k = 19; k >= 0; --k) {
+        const float side = (k % 2 == 0) ? 0.3F : -0.3F;
+        enemies.push_back(&scene.add(Vec3{40.0F + side, 68.0F - static_cast<float>(k), 0.0F}, 0.0F));
+    }
+    auto& gangs = scene.brains.gangs();
+    // Two gangs of 10 (a gang's most members), both enemies of the guard's.
+    const int guards = gangs.create(2, "Guards");
+    const int far = gangs.create(3, "Far");
+    const int near = gangs.create(3, "Near");
+    gangs.addMember(guards, guard);
+    for (std::size_t k = 0; k < enemies.size(); ++k) {
+        gangs.addMember(k < 10 ? far : near, *enemies[k]);
+    }
+    scene.run(1);
+    gangs.makeEnemies(guards, far);
+    gangs.makeEnemies(guards, near);
+    Brain& farthest = *enemies.front();
+    guard.setTarget(&farthest);
+    REQUIRE(guard.target() == &farthest);
+    CHECK(scanEnemies(gangs, guard) == static_cast<int>(kScanMaxEnemies));
+    // The nearest 16, nearest first; the farthest, his target, forgotten.
+    REQUIRE(guard.enemies().size() == kScanMaxEnemies);
+    for (std::size_t k = 0; k < kScanMaxEnemies; ++k) {
+        CHECK(guard.enemies()[k] == enemies[enemies.size() - 1 - k]);
+    }
+    CHECK(guard.target() != &farthest);
+    CHECK_FALSE(lists(guard, farthest));
 }

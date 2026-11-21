@@ -933,6 +933,9 @@ void Brain::forget(const Brain& other) {
     }
 }
 
+// Stub for the test commit (issue 1555): refers to nobody.
+bool Brain::refersTo(const Brain& /*other*/) const { return false; }
+
 Sectors& Brain::sectors(std::uint64_t maxAgeMs) {
     // Rebuilt from every brain of the scene when due.
     if (m_peers != nullptr && m_sectors.due(m_nowMs, maxAgeMs)) {

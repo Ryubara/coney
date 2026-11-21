@@ -142,6 +142,16 @@ bool scanSees(const Brain& scanner, const Brain& member) {
     return lineOfSight(scanner.collision(), eye.position(), them.position()).clear;
 }
 
+// Stub for the test commit (issue 1555): every line cast, in the candidates' order, as the scan did.
+std::vector<bool> nearestSeen(std::span<const SightCandidate> candidates, std::size_t /*keep*/,
+                              const std::function<bool(std::size_t)>& clearLine) {
+    std::vector<bool> found(candidates.size(), false);
+    for (std::size_t k = 0; k < candidates.size(); ++k) {
+        found[k] = !candidates[k].needsRay || clearLine(k);
+    }
+    return found;
+}
+
 int scanEnemies(const Gangs& gangs, Brain& scanner) {
     // Down or out: the list goes.
     if (down(scanner)) {
