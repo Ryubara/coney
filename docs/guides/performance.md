@@ -374,3 +374,25 @@ the order of 100 million characters measured a frame (n²/2 for n over 10,000). 
 by a binary search (the same text, about 15 measures), and the page costs 0.78 ms a frame (median; most of it building
 the State line), with the frame at 30.4 ms against 29.2 ms with the menu closed. The developer overlay's windows, which
 draw the same page through Dear ImGui and never call `fitText`, were not slow with the same crowd (the user's report).
+
+### The fighters' targets from a grid (#1550) {#targets-grid-1550}
+
+**The cause.** The actions pass built, for every human every step, the list of every human it may fight, asking the AI
+whether each pair is opposed, and each target search then walked the whole list though it looks a few metres far: with
+1000 humans the pass was 83 % of the step whether anyone fought or not. The searches now ask for the targets within
+their own reach from a grid of where the humans stood as the pass began, in slot order, and test the distance before
+asking whether the two fight ([How the humans are found](../research/combat-targets.md#searches-coney)); the
+performance sweep's experiments 2 and 16 (#1542) made into Coney's only path.
+
+**The gain.** Main-thread CPU time a step (`CONEY_PERF_CPU_CLOCK`), best of interleaved runs, a `playtest` build of
+`main` at `7598fbac9` and of the change in the same build folder, headless lockstep in `level95`, rows of 25:
+
+| Scenario | `humans.actions`, before / after (ms) | `step`, before / after (ms) |
+| --- | --- | --- |
+| Brawl 1000 (500 + 500, 3 runs) | 102.5 / 2.2 | 122.6 / 19.0 |
+| Engaged 1000 (every fighter in a gang, scaled scan tokens, 2 runs) | 74.8 / 3.6 | 139.9 / 63.4 |
+
+The sweep measured experiment 2 alone at 110 -> 6.5 ms (brawl 1000) and 75.7 -> 4.7 ms (engaged); this change also holds
+experiment 16, the distance before the AI's answer, which the sweep's brawl figure did not. **The result is the same**:
+the all-humans trace, the event log and the lockstep digest of brawl 300 for 500 steps (127,015 rows, 6,590 events) and
+engaged 300 for 700 steps (189,815 rows, 8,081 events) hash the same before and after.
