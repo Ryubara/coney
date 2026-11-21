@@ -22,6 +22,7 @@
 #include "human/fighter.h"
 #include "human/human_animator.h"
 #include "human/human_sounds.h"
+#include "human/humans.h"
 #include "human/player.h"
 #include "human/victim.h"
 #include "support/collision_fixtures.h"
@@ -956,6 +957,7 @@ TEST_CASE("switching a human's sounds on a second time keeps the clip sounds it 
 }
 
 TEST_CASE("clip event 0x45 reaches the sounds as a stop of the held sound, once", "[human]") {
+    // Expected: sound-events.md#spray-loop, the event that ends the held sound, reported once per event
     const TestCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
     Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
@@ -972,4 +974,66 @@ TEST_CASE("clip event 0x45 reaches the sounds as a stop of the held sound, once"
         }
     }
     CHECK(stops == 1);
+}
+
+TEST_CASE("the World page's gravity adds its difference from the original's to an airborne human after his update",
+          "[human][world_page]") {
+    // Expected: characters.md#ground, confirmed (code) at Human_StateUpdate 0x0023fea8: vz -= 15.68 × dt from the
+    // second airborne update, capped at -50 m/s; the extra pull is Coney's own debug tooling (debug-menu.md#world)
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::join(coney::test::floorAt(3.0F, 0.0F, 80.0F, 0.0F, 20.0F),
+                                                              coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F)));
+    // The vertical speed after the third update that ends airborne (the human's second airborne update, the first
+    // with gravity) when each update is followed by a pull at `gravity`.
+    const auto fallWith = [&](float gravity) {
+        Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 17.0F, 3.0F});
+        int airborneUpdates = 0;
+        for (int i = 0; i < 120 && airborneUpdates < 3; ++i) {
+            human.step(stick(0.0F, 0.5F), mesh.get());
+            human.addGravityPull(gravity);
+            if (human.airborne()) {
+                ++airborneUpdates;
+                // No gravity yet on the update before: the pull waits for it as the original's gravity does.
+                if (airborneUpdates == 2) {
+                    CHECK(human.velocity().z == 0.0F);
+                }
+            }
+        }
+        REQUIRE(airborneUpdates == 3);
+        return human.velocity().z;
+    };
+    // The original's gravity: no pull at all, the speed exactly the ported update's.
+    CHECK(fallWith(Human::kGravity) == Approx(-15.68F / 30.0F));
+    // Twice it: twice the speed lost an update.
+    CHECK(fallWith(2.0F * Human::kGravity) == Approx(-2.0F * 15.68F / 30.0F));
+    // None: the pull gives back what the update took.
+    CHECK(fallWith(0.0F) == Approx(0.0F).margin(1e-6));
+    // A huge one stops at the fastest fall.
+    CHECK(fallWith(10000.0F) == -Human::kMaxFallSpeed);
+}
+
+TEST_CASE("the World page's gravity pulls every human the step moves, and none it holds", "[human][world_page]") {
+    // Expected: unverified, #216 (Coney's own debug tooling: a held human stays as it is,
+    // debug-menu.md#entity-inspector)
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::join(coney::test::floorAt(3.0F, 0.0F, 80.0F, 0.0F, 20.0F),
+                                                              coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F)));
+    Human falling = spawnHuman(character, mesh.get(), Vec3{40.0F, 17.0F, 3.0F});
+    Human held = spawnHuman(character, mesh.get(), Vec3{30.0F, 17.0F, 3.0F});
+    // Both walk off the ledge; then one is held in the air.
+    for (int i = 0; i < 120 && !(falling.airborne() && falling.airborneUpdates() >= 2); ++i) {
+        falling.step(stick(0.0F, 0.5F), mesh.get());
+        held.step(stick(0.0F, 0.5F), mesh.get());
+    }
+    REQUIRE(falling.airborneUpdates() >= 2);
+    REQUIRE(held.airborneUpdates() >= 2);
+    coney::human::Humans humans;
+    humans.add(falling, false);
+    humans.add(held, false);
+    humans.setHeld(held, true);
+    const float fallingBefore = falling.velocity().z;
+    const float heldBefore = held.velocity().z;
+    humans.pullByGravity(2.0F * Human::kGravity);
+    CHECK(falling.velocity().z == Approx(fallingBefore - (15.68F / 30.0F)));
+    CHECK(held.velocity().z == heldBefore);
 }

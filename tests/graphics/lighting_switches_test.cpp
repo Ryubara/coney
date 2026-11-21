@@ -159,3 +159,41 @@ TEST_CASE("Hold lighting keeps the held moment while no step runs, and a step mo
     // Off again, the camera's moment comes back at once.
     CHECK(hold.choose(at(6.0F, 166), false).view.position.x == 6.0F);
 }
+
+TEST_CASE("the World page's fog draws the level's fog unless overridden, its start below the far clip",
+          "[graphics][world_page]") {
+    // Expected: world.md#fog, confirmed (code): the level's fog is SetFogColor's colour and SetFogDistance's fraction
+    // of the far clip (WorldFog); the overrides and the 0.99 cap are Coney's own debug tooling (debug-menu.md#world),
+    // the cap the sandbox's fog plane's (sandbox_renderer.cpp)
+    coney::graphics::WorldFog level;
+    level.colour = coney::graphics::Rgba{10, 20, 30, 255};
+    level.start = 0.5F;
+    coney::graphics::FogSwitches fog;
+    // No override: the level's fog, as it is.
+    CHECK(coney::graphics::shownFog(level, fog).colour == level.colour);
+    CHECK(coney::graphics::shownFog(level, fog).start == 0.5F);
+    // A colour and a start of the page's own.
+    fog.colour = coney::graphics::Rgba{200, 100, 50, 255};
+    fog.start = 0.25F;
+    CHECK(coney::graphics::shownFog(level, fog).colour == coney::graphics::Rgba{200, 100, 50, 255});
+    CHECK(coney::graphics::shownFog(level, fog).start == 0.25F);
+    // A start at or past the far clip is held just below it, and none below 0.
+    fog.start = 1.0F;
+    CHECK(coney::graphics::shownFog(level, fog).start == coney::graphics::kMaxFogStart);
+    fog.start = -1.0F;
+    CHECK(coney::graphics::shownFog(level, fog).start == 0.0F);
+}
+
+TEST_CASE("the World page's parts and fog count against the faithful picture", "[graphics][world_page]") {
+    // Expected: unverified, #216 (Coney's own debug tooling: the World page, docs/guides/debug-menu.md#world)
+    LightingSwitches switches;
+    REQUIRE(switches.faithfulPicture());
+    CHECK(switches.parts == coney::graphics::WorldParts{});
+    switches.parts.humans = false;
+    CHECK_FALSE(switches.faithfulPicture());
+    switches.parts = {};
+    switches.fog.start = 0.3F;
+    CHECK_FALSE(switches.faithfulPicture());
+    switches.fog = {};
+    CHECK(switches.faithfulPicture());
+}

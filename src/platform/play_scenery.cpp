@@ -153,10 +153,12 @@ void LevelPlayScenery::findVisible(const WorldView& newest) {
 void LevelPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
                             const std::function<void()>& drawObjects, const std::function<void()>& afterWorlds) {
     // The world draws the sectors its own view sees (WorldRenderer::render), with the characters among the objects;
-    // the debug menus' spawned objects go first among those, in the world's camera, states and fog.
+    // the debug menus' spawned objects go first among those, in the world's camera, states and fog. The background
+    // is left out while the World page hides it, or the world edits move sectors away from it.
+    const bool background = m_renderer.lighting().drawsBackground() && (!m_edits || m_edits->drawsBackground());
+    const world::LevelObject* level = background ? m_scenery.level.get() : nullptr;
     if (!m_extras.draw && !m_edits) {
-        m_renderer.render(engine, *m_scenery.set, m_scenery.level.get(), view, m_pending, nowMs, drawObjects, {},
-                          afterWorlds);
+        m_renderer.render(engine, *m_scenery.set, level, view, m_pending, nowMs, drawObjects, {}, afterWorlds);
         return;
     }
     // The debug tools' world edits draw their pieces of each world first after it (WorldEditHook::drawAfterWorld()).
@@ -179,7 +181,6 @@ void LevelPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::ui
             afterWorlds();
         }
     };
-    const world::LevelObject* level = m_edits && !m_edits->drawsBackground() ? nullptr : m_scenery.level.get();
     m_renderer.render(engine, *m_scenery.set, level, view, m_pending, nowMs, withExtras, {}, withEdits);
 }
 

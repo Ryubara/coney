@@ -20,6 +20,19 @@
 
 namespace coney::human {
 
+/// The World page's gravity (docs/guides/debug-menu.md#world): what pulls an airborne human down, in m/s². The game
+/// reads it once a step (Player::update()); the debug tunable `World/Gravity` changes it between steps.
+struct GravityTuning {
+    /// The original's 15.68 m/s² (Human::kGravity, Human_StateUpdate 0x0023fea8), which the ported update applies
+    /// itself: any other value is made up by Humans::pullByGravity() after the update.
+    float gravity = Human::kGravity;
+};
+
+/// The live gravity the game reads (one per program, as the other tunings are). Only the debug tools set it (the
+/// `World/Gravity` tunable), so a networked game's peers can differ only when one of them changes it there.
+/// @coney-only the World page's gravity, a debug tunable
+[[nodiscard]] GravityTuning& gravityTuning();
+
 /// The humans a level steps, and the characters' step over them.
 ///
 /// **Coney choice**: the step runs once per fixed 1/30 s update. The original calls it on every 60 Hz tick of its task
@@ -93,6 +106,11 @@ class Humans {
     /// @orig 0x00249108 Humans_Update (unknown)
     void update(const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {},
                 float stepSeconds = kStepSeconds);
+
+    /// The World page's gravity after a step: every human the step moved (none it holds, setHeld()) gets the pull of
+    /// `gravity` in place of the original's (Human::addGravityPull()). Nothing at the original's gravity.
+    /// @coney-only the World page's gravity (docs/guides/debug-menu.md#world): debug tooling outside the ported step
+    void pullByGravity(float gravity);
 
     /// The humans, in slot order.
     [[nodiscard]] std::span<Human* const> humans() const { return m_humans; }

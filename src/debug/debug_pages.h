@@ -2,6 +2,7 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <string>
 #include <string_view>
 
@@ -91,6 +92,15 @@ void fillTunableCategory(MenuPage& page, TunableRegistry& registry, const std::s
 /// lights in order), Layers and views, Debug draw, and the groups that wait on other work. Over
 /// PlayControls::lightingFrame() and PlayControls::lightManager(); says so when no level draws.
 void addLightingPage(DebugSession& session);
+/// The Lighting page's Layers group, titled `title`: a toggle per layer of graphics::LightingLayers and the view, over
+/// the session's lighting switches. The World page shows the same page as its Lighting group.
+[[nodiscard]] std::shared_ptr<MenuPage> lightingLayersPage(DebugSession& session, std::string title);
+
+/// The World page (src/debug/pages_world.cpp, docs/guides/debug-menu.md#world): the lighting's layers and the
+/// display preset, the fog, the shadows, the humans' gravity and the scene's parts, each with a reset, and which of
+/// them are the original's values and which Coney's. Over the session's lighting switches, the `World/Gravity` and
+/// `Display/Preset` tunables and PlayControls::lightingFrame(); says so when no level draws.
+void addWorldPage(DebugSession& session);
 
 /// The Display page: the overlays of DisplayOptions.
 void addDisplayPage(DebugSession& session);

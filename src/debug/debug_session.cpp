@@ -59,6 +59,7 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     addHudPage(*this);
     addDebugDrawPage(*this);
     addEntityInspectorPage(*this);
+    addWorldPage(*this);
     addLightingPage(*this);
     addDisplayPage(*this);
     addAudioPage(*this);

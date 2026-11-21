@@ -13,6 +13,7 @@
 #include "animation/anim_math.h"
 #include "core/error.h"
 #include "debug/debug_lines.h"
+#include "graphics/lighting_switches.h"
 #include "graphics/render_device.h"
 
 // The Debug draw page's mesh views (docs/guides/debug-menu.md#mesh-views): a model wireframe over the shaded scene,
@@ -66,6 +67,13 @@ struct MeshViewOptions {
 
 /// Whether a model of `kind` (`selected`: it is the Entity inspector's selection) is in `scope`.
 [[nodiscard]] bool inMeshScope(MeshScope scope, MeshKind kind, bool selected);
+
+/// Whether the World page's `parts` hide a model of `kind` (docs/guides/debug-menu.md#world): the scenery, the humans
+/// or the objects switched off. A hidden model gets no pass at all, not even the wireframe.
+[[nodiscard]] bool meshHidden(const graphics::WorldParts& parts, MeshKind kind);
+
+/// Whether `parts` hide any kind of model, so the mesh views' hook must see every model this frame.
+[[nodiscard]] bool hidesMeshes(const graphics::WorldParts& parts);
 
 /// The passes one model is drawn with.
 struct MeshDrawPlan {

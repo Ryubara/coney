@@ -32,6 +32,8 @@ class DebugMenuView {
     static constexpr float kPanelWidth = 380.0F;
     /// Space around the text inside the panel.
     static constexpr float kPadding = 4.0F;
+    /// The share of a row's text width its value may take; a longer value is cut to fit.
+    static constexpr float kValueShare = 0.55F;
     /// The most log lines the footer shows.
     static constexpr std::size_t kLogRows = 6;
     /// The plot's height.

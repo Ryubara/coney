@@ -84,7 +84,7 @@ MeshViews::~MeshViews() {
 
 bool MeshViews::beginFrame(const PlayLevelMode& mode) {
     m_drawIndex = 0;
-    if (!debug::meshPassesOn(m_options.mesh)) {
+    if (!debug::meshPassesOn(m_options.mesh) && !debug::hidesMeshes(parts())) {
         m_selected.clear();
         return false;
     }
@@ -93,6 +93,10 @@ bool MeshViews::beginFrame(const PlayLevelMode& mode) {
 }
 
 void MeshViews::draw(rw::Atomic* atomic, DrawKind kind, bool layer, const std::function<void()>& shaded) {
+    // A kind the World page hides is drawn in no pass at all.
+    if (debug::meshHidden(parts(), meshKindOf(kind))) {
+        return;
+    }
     const bool selected = std::ranges::find(m_selected, atomic) != m_selected.end();
     const debug::MeshDrawPlan plan = debug::meshPlanFor(m_options.mesh, meshKindOf(kind), selected);
     // A second layer (a human's blood) goes with the shaded draw alone.

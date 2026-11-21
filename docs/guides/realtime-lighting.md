@@ -359,7 +359,8 @@ In order: the lab and the faithful comparison tests first, then the sun. Each is
 | 11 | `tools: Add the sun to Coney Studio's level settings` | 8, Studio's Inspector ([#1054](issue:1054)) | M |
 | 12 | `tools: Add Studio's sneak-zone bake from the sun` | 11 | M |
 
-Item 1 also answers the lighting part of [#216](issue:216) (the World page's lights and looks); item 4 sits beside
+Item 1 also answers the lighting part of [#216](issue:216), whose [World page](debug-menu.md#world) shows the lab's
+layers beside the fog, the shadows, the gravity and the scene's parts; item 4 sits beside
 the light manager's other fidelity fixes of [#654](issue:654), and item 3's replay is how both are proved.
 
 ## Risks {#risks}

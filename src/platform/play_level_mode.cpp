@@ -656,9 +656,18 @@ void PlayLevelMode::render(const RenderTime& time) {
                                      pass);
         }
     };
+    // The World page's parts (Coney's own debug tooling, docs/guides/debug-menu.md#world): all on without the debug
+    // tools' switches, so the frame below draws as the original's order has it.
+    const graphics::WorldParts parts =
+        m_lightingSwitches != nullptr ? m_lightingSwitches->parts : graphics::WorldParts{};
     // Between the `s` and the `d` world (step 7): the humans, the cars' opaque parts, the world objects.
-    const auto drawObjects = [this, &drawCars, alpha] {
-        drawCharacter();
+    const auto drawObjects = [this, &drawCars, &parts, alpha] {
+        if (parts.humans) {
+            drawCharacter();
+        }
+        if (!parts.objects) {
+            return;
+        }
         const DrawKindScope kind(DrawKind::Objects);
         drawCars(graphics::CarPass::Opaque);
         drawWorldObjects(alpha);
@@ -667,26 +676,34 @@ void PlayLevelMode::render(const RenderTime& time) {
     // the see-through panes and the cars' glass, then the effects; then, as the sprite batches after the whole world
     // (graphics.md#a-frame), the blob shadows, and the health rings over them. **Coney's choice**: the coronas, which
     // the original batches between the shadows and the rings, follow the rings (WorldRenderer::render draws them).
-    const auto afterWorlds = [this, &drawCars, &snapshot, &blended, &ringFeet, alpha] {
+    const auto afterWorlds = [this, &drawCars, &snapshot, &blended, &ringFeet, &parts, alpha] {
         std::optional<DrawKindScope> kind(std::in_place, DrawKind::Effects);
-        if (m_levelEffects) {
+        if (m_levelEffects && parts.water) {
             m_levelEffects->drawWater();
         }
         kind.emplace(DrawKind::Objects);
-        drawGlass();
-        drawCars(graphics::CarPass::Glass);
+        if (parts.glass) {
+            drawGlass();
+        }
+        if (parts.objects) {
+            drawCars(graphics::CarPass::Glass);
+        }
         kind.emplace(DrawKind::Effects);
         // The throw-aim arc, blended by its vertices' alpha among the see-through things (**Coney's stand-in** for its
         // place in WorldManager_Render's order, not traced).
-        drawThrowArc(alpha);
-        if (m_levelEffects) {
-            m_levelEffects->drawInScene(blended.pose);
-            m_levelEffects->drawGlints(m_glints.sprites(), blended.pose);
+        if (parts.effects) {
+            drawThrowArc(alpha);
+            if (m_levelEffects) {
+                m_levelEffects->drawInScene(blended.pose);
+                m_levelEffects->drawGlints(m_glints.sprites(), blended.pose);
+            }
         }
         {
             CONEY_PERF_ZONE("render.shadows_rings");
             m_lights->drawShadows();
-            drawRings(ringFeet);
+            if (parts.rings) {
+                drawRings(ringFeet);
+            }
         }
         kind.emplace(DrawKind::Other);
         drawSceneLines(snapshot, alpha);

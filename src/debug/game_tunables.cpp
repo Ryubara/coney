@@ -6,6 +6,7 @@
 #include "core/vrr_pacing.h"
 #include "human/body.h"
 #include "human/climb.h"
+#include "human/humans.h"
 #include "human/jump.h"
 #include "human/locomotion.h"
 #include "human/stamina.h"
@@ -111,6 +112,14 @@ void registerGameTunables(TunableRegistry& registry) {
     registry.add("Climb", "Wall window high", &climb.tallWindowHigh).range(0, 6, 0.01).units("m");
     registry.add("Climb", "Short wall window low", &climb.shortWindowLow).range(0, 6, 0.01).units("m");
     registry.add("Climb", "Short wall window high", &climb.shortWindowHigh).range(0, 6, 0.01).units("m");
+
+    // The world: the humans' gravity (the World page's, docs/guides/debug-menu.md#world), read once a step.
+    human::GravityTuning& gravity = human::gravityTuning();
+    registry.add("World", "Gravity", &gravity.gravity)
+        .range(0, 100, 0.1)
+        .units("m/s2")
+        .describe("What pulls an airborne human down: the original's 15.68 (1.6 g, Human_StateUpdate 0x0023fea8). "
+                  "Humans only; flying objects, hats and particles keep their own");
 
     // The follow camera: the lag and collision are read every update; the band and pitch when a camera is placed.
     camera::FollowTuning& follow = camera::followTuning();

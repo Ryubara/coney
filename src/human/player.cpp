@@ -438,6 +438,8 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     }
     // The characters' step: 1/30 s, or slow motion's share of it while a slow-motion event holds it.
     m_humans.update(mesh, targets, m_cameras != nullptr ? m_cameras->slowMotion().stepSeconds() : kStepSeconds);
+    // The World page's gravity, where a debug tunable changed it (nothing at the original's).
+    m_humans.pullByGravity(gravityTuning().gravity);
     // The step's shakes on player 1's camera (docs/research/camera.md#shake): a reaction to his hit, a reaction of his
     // own from strength 2, and his rage starting (level 1).
     if (m_cameras != nullptr) {

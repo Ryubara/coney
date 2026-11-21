@@ -24,6 +24,7 @@
 #include "debug/play_controls.h"
 #include "debug/tunables.h"
 #include "graphics/level_lighting.h"
+#include "graphics/lighting_switches.h"
 #include "platform/character_mesh.h"
 #include "platform/draw_calls.h"
 #include "platform/mesh_view_hook.h"
@@ -204,6 +205,39 @@ TEST_CASE("a wire pass on the NULL backend switches no polygon mode though OpenG
     // The wireframe switches are the stream's frame operations; a wire pass would record two.
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
     CHECK(stream->counts().frameOps == 0);
+}
+
+TEST_CASE("the mesh views leave out a model of a kind the World page hides, every pass of it", "[mesh][world_page]") {
+    // Expected: unverified, #216 (Coney's own debug tooling: the World page's parts, docs/guides/debug-menu.md#world)
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    const coney::characters::CharacterModel model = fixtureModel();
+    {
+        coney::platform::CharacterMesh mesh(model, nullptr);
+        coney::debug::DebugDrawOptions options;
+        coney::graphics::LightingSwitches switches;
+        coney::platform::MeshViews views(options, &switches);
+        int shadedDraws = 0;
+        const auto shaded = [&shadedDraws] { ++shadedDraws; };
+        // Every part on: the game's draw.
+        views.draw(mesh.atomic(), coney::platform::DrawKind::Humans, false, shaded);
+        CHECK(shadedDraws == 1);
+        // The scenery hidden: a human is still drawn, a sector is not, not even under the wireframe.
+        switches.parts.scenery = false;
+        options.mesh.wireframe = coney::debug::MeshScope::Everything;
+        views.draw(mesh.atomic(), coney::platform::DrawKind::Humans, false, shaded);
+        CHECK(shadedDraws == 2);
+        const std::size_t passes = views.passDraws();
+        views.draw(mesh.atomic(), coney::platform::DrawKind::Scenery, false, shaded);
+        CHECK(shadedDraws == 2);
+        CHECK(views.passDraws() == passes);
+        // The humans hidden: neither the body nor its second layer.
+        switches.parts = {};
+        switches.parts.humans = false;
+        views.draw(mesh.atomic(), coney::platform::DrawKind::Humans, false, shaded);
+        views.draw(mesh.bloodAtomic(), coney::platform::DrawKind::Humans, true, shaded);
+        CHECK(shadedDraws == 2);
+    }
 }
 
 TEST_CASE("the scene counters count each draw as the kind its scope names", "[mesh][perf]") {
