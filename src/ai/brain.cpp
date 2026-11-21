@@ -674,8 +674,8 @@ void Brain::addEnemy(Brain& enemy) {
         return;
     }
     // Listed on this side only: the original raises the enemy's hostile count (Brain_CountHostile, unless both are
-    // players) and leaves his own list alone. Coney keeps no count; ai::huntersOf() reads the listers' lists for it
-    // (docs/research/ai-gangs.md#tactics).
+    // players) and leaves his own list alone (docs/research/ai-gangs.md#tactics). **Coney stand-in** (#649): no count
+    // is kept; ai::huntersOf() reads the listers' lists for it.
     m_enemies.push_back(&enemy);
     // A tactic that runs its members hears of the new enemy.
     if (m_gang != nullptr && m_gang->tactic() != nullptr && !m_gang->tactic()->alertsGang()) {
