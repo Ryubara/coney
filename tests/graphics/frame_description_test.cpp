@@ -365,11 +365,11 @@ TEST_CASE("a scene camera starts a scene pass that later scene passes of the fra
 
 TEST_CASE("a depth clear starts a scene pass that clears the depth first and keeps the camera",
           "[graphics][frame-description]") {
-    // Expected: FrameDescription::clearSceneDepth's contract (src/graphics/frame_description.h), for the Z-only clear
-    // after the level's background (LevelObject_RenderBackground 0x0040d0a8 step 4, docs/research/level-loading.md
-    // #render-order): the draws after it start a scene pass that clears the depth first, seen through the camera set
-    // last; a camera set before any draw goes to that pass and keeps its clear; the next scene draw after a 2D draw
-    // starts a pass that does not clear.
+    // Expected: docs/engine/renderer.md#frame-description; FrameDescription::clearSceneDepth's contract, for the
+    // Z-only clear after the level's background (LevelObject_RenderBackground 0x0040d0a8 step 4,
+    // docs/research/level-loading.md#render-order): the draws after it start a scene pass that clears the depth first,
+    // seen through the camera set last; a camera set before any draw goes to that pass and keeps its clear; the next
+    // scene draw after a 2D draw starts a pass that does not clear.
     FrameDescription frame;
     frame.begin(FrameStart{});
     coney::graphics::SceneCamera skyline;

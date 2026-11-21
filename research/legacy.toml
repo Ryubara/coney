@@ -313,7 +313,6 @@ verified = 1
 evidence = 63
 address-resolve = 6
 history = 3
-stale-wording = 1
 
 ["docs/research/lighting.md"]
 evidence = 12

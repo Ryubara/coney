@@ -953,7 +953,7 @@ the flag `0x0050f5b8`: only the first front-end load uses it; any later return t
 
 - **The worlds in `LoadLevel`'s order**: `<level>s_sec.wld` decides between two worlds (`<level>s`, `<level>d`) and one
   (`<level>`); each is constructed, its manifest read and its world stream loaded, and no part is loaded
-  (`src/platform/world_set.h`). The world name is the level name (the level table does not exist yet).
+  (`src/platform/world_set.h`). The world name is the level name (**Coney's stand-in**: no level table is read here).
 - **Memory**: one `SectorBudget`, charged first with the `Global Data Pool` and the `World Level Pool` (sized from
   `warriors.glr` and `<level>.lev`, though neither file is loaded yet), then the worlds and parts
   ([Memory](memory.md#coneys-implementation)).
