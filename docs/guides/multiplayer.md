@@ -571,8 +571,9 @@ network play's receive and before the step gate.
   has ended the mode stays, on black with the game clock still, until `movieMayEnd()`. A guest's own copy of a movie,
   when it ends, is reported with `movieDone()`, naming the host's movie by the step its MovieStart came in
   (`NetClient::hostMovie()`, the newest MovieStart the guest received); a copy that ends before the host's MovieStart
-  arrives is reported when it does, and one the host never plays is never reported, so the host waits for it only
-  until the movie time-out. The debug menu's movies are the game's own and wait for nobody.
+  arrives is reported when it does. A guest's copy of a movie the host never plays is never reported, and nothing
+  waits for it. The other way round, a host movie the guest's game never plays is never reported, so the host waits
+  for it only until the movie time-out. The debug menu's movies are the game's own and wait for nobody.
 
 A guest still runs its own whole game until the client game mode that draws the snapshots is built: its level is the
 host's, but what happens in it is its own, including the movies its own scripts play.
