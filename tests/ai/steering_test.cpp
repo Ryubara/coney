@@ -400,6 +400,7 @@ TEST_CASE("the ground probe refuses a detour point whose first ground below is m
 
 TEST_CASE("a move's start seeds the slow counter with the human's index; a new detour keeps the old count",
           "[ai][steering]") {
+    // Expected: ai-moving.md#steering, confirmed (code): Steering_ResetAvoidance 0x002890a8
     Scene scene;
     scene.add(30.0F, 30.0F, 0.0F);
     Brain& walker = scene.add(40.0F, 40.0F, 0.0F);
@@ -423,6 +424,7 @@ TEST_CASE("a move's start seeds the slow counter with the human's index; a new d
 
 TEST_CASE("at a shared route node only the human farther from it is held and follows; the nearer one steers",
           "[ai][steering]") {
+    // Expected: ai-pathing.md#route-claims, confirmed (code)
     const auto request = [](Vec3 node) {
         return ai::SteerRequest{
             .moveSpeed = 2.0F, .aim = node, .destination = Vec3{40.0F, 60.0F, 0.0F}, .arrivalRadius = 0.0F};
@@ -478,7 +480,8 @@ std::vector<Brain*> crowdAround(Scene& scene, int others) {
 } // namespace
 
 TEST_CASE("with the original's 60 humans the list round a walker holds all 59 others", "[ai][steering][crowd]") {
-    // Expected: ai-brain-types.md (Humans_FindAhead 0x002274a8 lists at most 60, one per slot), confirmed (code)
+    // Expected: ai-brain-types.md#help-calls, confirmed (code): Humans_FindAhead 0x002274a8 lists at most 60, one per
+    // slot
     Scene scene;
     const std::vector<Brain*> all = crowdAround(scene, 59);
     const std::vector<Brain*> list = ai::humansAround(*all.front(), all, 2.0F);

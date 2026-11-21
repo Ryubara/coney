@@ -693,6 +693,11 @@ level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::update"
 status = "compared"
 
+[[function.gaps]]
+what = "Coney refills the enemy-scan tokens here (the original in Brains_Update 0x00293b28): 5, and past 60 brains in gangs 5 per 60, at most 20 (crowd::scanTokens, docs/engine/crowd-rules.md#scans)"
+relation = "stand-in"
+issue = 1569
+
 [[function]]
 address = 0x0016d5c0
 name = "KillHumans_Stub"
@@ -1917,7 +1922,7 @@ kind = "helper"
 role = "whether an event's distance is within the hearing radius (`+0x134`; `+0x138` for event 20)"
 level = "confirmed-code"
 coney = "src/ai/brain_events.h:broadcastHelpCall"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00293640
@@ -1927,7 +1932,7 @@ kind = "helper"
 role = "event `0x14` from the caller to every human within min(range, his `+0x138`), not only the gang; record `+0x00` aggressor, `+0x0c` the new-enemy flag, `+0x24` the caller ([Help calls](ai-brain-types.md#help-calls))"
 level = "confirmed-code"
 coney = "src/ai/brain_events.h:broadcastHelpCall"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00293768
@@ -1935,7 +1940,12 @@ name = "AI_AlertNearby"
 page = "ai-brain-types.md#help-calls"
 level = "confirmed-code"
 coney = "src/ai/brain_events.h:broadcastHelpCall"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the list of 60, the table's size: past 60 humans Coney lists every one (crowd::humanListCap, docs/engine/crowd-rules.md#lists)"
+relation = "stand-in"
+issue = 1569
 
 [[function]]
 address = 0x00293b28

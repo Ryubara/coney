@@ -38,8 +38,8 @@ TEST_CASE("past 60 brains an update has five tokens per 60 brains, at most twent
 }
 
 TEST_CASE("a list of humans holds 60 up to 60 humans and every human past them", "[crowd]") {
-    // Expected: ai-brain-types.md (Humans_FindAhead 0x002274a8 lists up to 60, one per slot), confirmed (code); past
-    // 60 humans unverified, #1569 (Coney's own rule: docs/engine/crowd-rules.md)
+    // Expected: ai-brain-types.md#help-calls, confirmed (code): Humans_FindAhead 0x002274a8 lists up to 60, one per
+    // slot; past 60 humans Coney's own rule (docs/engine/crowd-rules.md#lists)
     CHECK(humanListCap(0) == kOrigMaxHumans);
     CHECK(humanListCap(59) == kOrigMaxHumans);
     CHECK(humanListCap(60) == kOrigMaxHumans);

@@ -1374,7 +1374,12 @@ name = "Humans_FindAhead"
 page = "hud-messages.md#action-prompts"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/steering.h:humansAround"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the list of 60, the table's size: past 60 humans Coney lists every one (crowd::humanListCap, docs/engine/crowd-rules.md#lists)"
+relation = "stand-in"
+issue = 1569
 
 [[function]]
 address = 0x00227d28

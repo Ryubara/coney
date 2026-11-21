@@ -162,6 +162,7 @@ TEST_CASE("a knocked-out soldier whose death chain holds no flag takes no side i
 
 TEST_CASE("Warriors who see two strange gangs fight take no side, and the strangers list them only once made enemies",
           "[ai][events]") {
+    // Expected: ai-brain-types.md#help-calls, confirmed (code): Brain_PickSideInFight 0x002912b0
     // level34 checkpoint 5 (docs/research/scripting.md#level34-fixes, item 14): the Furies (kind 8) fight the hurt
     // Rogues (kind 4) the script made their enemies, next to the Warriors (kind 0), who are friends of neither. The
     // Warriors stay out of it (Brain_PickSideInFight: neither a friend hit nor a threat), and the Furies leave them be
