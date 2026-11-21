@@ -141,6 +141,10 @@ and square at frame 680 plays the kill (clips 637 and 638). Its before for the s
 that change's commit, or `--before` a hand-made commit where later commits edit its lines. `level87-hide` is the same
 route without the kill.
 
+`level99-world-parts` is the scenario for the World page's part switches: it opens the pad menu in the level99 street
+and hides the streamed world, then shows it and hides the objects, for a change to the mesh views' hook or to what a
+renderer records for a hidden kind; record it on `--renderer gpu`.
+
 **The encodes** port the ideas of GD Studio's capture tools to Coney's clips. `clips encode` re-encodes any clip the
 same way: a GIF for an `--out` ending in `.gif`, else a silent MP4. A bare `--out` name goes beside the clip, never
 in the current folder (usually the checkout, where clips may not be written); a path with a folder is used as given.

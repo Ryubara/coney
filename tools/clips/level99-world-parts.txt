@@ -3,7 +3,8 @@
 # scene at frame 70. L3 + R3 opens the debug menu (root: Favourites, Time, ... World is the 18th item); World, then
 # Parts, then the first switch, Streamed world, off (frame 228). The menu is closed (circle three times) and the
 # street shows with no scenery; at 360 it is opened again (the root's cursor is on World and each page keeps its
-# cursor), the scenery switched on and the third switch, Objects, off. The recording never draws the menu.
+# cursor), the scenery switched on and the third switch, Objects, off. The clips start at frame 240, so the first menu
+# session is before them and the second is in them: the menu is open from about 4 s to 5.4 s of the clip.
 70 tap cross
 150 tap l3 r3
 156 tap down
