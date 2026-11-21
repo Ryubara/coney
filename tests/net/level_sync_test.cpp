@@ -177,8 +177,9 @@ TEST_CASE("the level messages' bytes are pinned", "[net][level]") {
     CHECK(encode(MovieDone{.movieStep = 5, .skipped = true}) == bytes({0x10, 0x05, 0x01}));
     // Bye's new reason.
     CHECK(encode(Bye{.reason = ByeReason::LoadTimedOut}) == bytes({0x04, 0x04}));
-    // Version 8 added the level messages and the Bye for a load that timed out (#557).
-    CHECK(kProtocolVersion == 8);
+    // Version 8 added the level messages and the Bye for a load that timed out (#557); the version itself is pinned
+    // in protocol_test.cpp.
+    CHECK(kProtocolVersion >= 8);
 }
 
 // Expected: unverified, #557 (Coney's own protocol; decoding is strict, docs/guides/multiplayer.md#protocol). The
