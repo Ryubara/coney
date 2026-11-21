@@ -453,6 +453,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // @orig 0x00391d48 Obj_CreatePhysicsBody (unknown)
     void stepObjectBodies();
     // Player 1's pick-up that reached its clip's event this step: the object is taken.
+    // @coney-only the play step's hand-off of player 1's pick-ups, throws and drops to the level's objects
     void stepPickups();
     // Each AI human's throw whose release event passed this step lets go of his held object, thrown, as player 1's
     // does (Human_ReleaseThrow runs for any human on event 10); his anim set follows his empty hand.

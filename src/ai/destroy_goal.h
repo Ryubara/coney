@@ -45,7 +45,8 @@ inline constexpr std::int16_t kDestroySwingDelayMs = 0x7d;
 /// the pick-up of a breaking object within 8 m while it waits (`DestroyGoal_TryPickUp`: Coney's objects carry no
 /// breaking flag `0x10000`, as LevelItems::heldUse() says), dropping what he holds (ItemServices has no drop), the
 /// turn to the crowd ahead before a swing (`Gang_CountAhead`), the 30/70 % taunt `0x8e` / `0x8f` every 8 s, and
-/// the brain byte `+0x265` saved at the start and put back at the end (not identified) are not built.
+/// the brain byte `+0x265` saved at the start and put back at the end (not identified) are not built. Nor is
+/// `DestroyGoal_IsWaiting` (`0x002cda28`), whose one caller is the event-23 cheer (issue #1571), which ports it.
 class DestroyGoal final : public Goal {
   public:
     /// Wrecks zone `zone` through `items` (which must outlive it), waiting `waitMs` between targets; with
@@ -69,10 +70,6 @@ class DestroyGoal final : public Goal {
 
     /// The object or pane it goes for; nothing between targets.
     [[nodiscard]] std::optional<double> target() const { return m_target; }
-    /// Whether it waits for its next target: no actions queued, a wait armed and his human free (event 23's cheer
-    /// asks it, VandalizeTactic).
-    /// @orig 0x002cda28 DestroyGoal_IsWaiting (unknown)
-    [[nodiscard]] bool waiting(const Brain& brain) const;
 
   private:
     // The next target: the zone's nearest object, or every other pick a pane (above all near that object).

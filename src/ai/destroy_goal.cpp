@@ -57,10 +57,6 @@ void DestroyGoal::end(Brain& brain) {
     dropTarget(brain);
 }
 
-bool DestroyGoal::waiting(const Brain& brain) const {
-    return brain.actionCount() == 0 && m_waitUntilMs != 0 && !actionsBlocked(brain.human());
-}
-
 void DestroyGoal::releaseTarget() {
     if (m_target) {
         m_items->unclaim(*m_target);
