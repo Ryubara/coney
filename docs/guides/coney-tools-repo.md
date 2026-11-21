@@ -677,7 +677,8 @@ coney-tools task start [TASK] [--base REF] [--remote REMOTE] [--no-fetch] [--dry
 ### `task slots` {#task-slots-usage}
 
 Show the engineer tracks (reimplementation, fix, Studio, networking, renderer) and the machine's places, or check that
-an agent may start (the coordinator's Agent guard).
+an agent may start (the coordinator's Agent guard). The rules are in `task_tracks.py`; the table, the report and the
+admission flow in `task_slots.py`.
 
 ```text
 coney-tools task slots [--json] [--fill-check] [--session ID] [--waive N] [--reason CODE] [--hours H] [--note TEXT]
