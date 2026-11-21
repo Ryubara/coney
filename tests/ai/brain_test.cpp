@@ -914,6 +914,62 @@ TEST_CASE("each human's brain is found after brains are added and removed", "[ai
     CHECK(scene.brains.find(stranger) == nullptr);
 }
 
+// Expected: unverified, #1551 (Coney's own lookup, as above: the first brain in slot order is the one found)
+TEST_CASE("a human with two brains is found with his first, then with the next once the first is removed", "[ai]") {
+    coney::test::AiScene scene;
+    Brain& before = scene.add({40.0F, 42.0F, 0.0F}, 180.0F);
+    Brain& first = scene.add({40.0F, 44.0F, 0.0F}, 180.0F);
+    Human& twice = first.human();
+    Brain& between = scene.add({40.0F, 46.0F, 0.0F}, 180.0F);
+    Brain& second = scene.brains.add(twice, BrainType::Gang, {}, 11);
+    Brain& after = scene.add({40.0F, 48.0F, 0.0F}, 180.0F);
+    Human& beforeHuman = before.human();
+    CHECK(scene.brains.find(twice) == &first);
+    // remove() takes his first brain; the slots after it close up and his second is found in its new slot.
+    scene.brains.remove(twice);
+    CHECK(scene.brains.find(twice) == &second);
+    CHECK(second.slot() == 3);
+    CHECK(scene.brains.find(beforeHuman) == &before);
+    CHECK(scene.brains.find(between.human()) == &between);
+    CHECK(scene.brains.find(after.human()) == &after);
+    CHECK(after.slot() == 4);
+    // An earlier slot removed moves both later ones down, and each is still found.
+    scene.brains.remove(beforeHuman);
+    CHECK(scene.brains.find(twice) == &second);
+    CHECK(scene.brains.find(after.human()) == &after);
+    CHECK(scene.brains.find(beforeHuman) == nullptr);
+    scene.brains.remove(twice);
+    CHECK(scene.brains.find(twice) == nullptr);
+    CHECK(scene.brains.find(between.human()) == &between);
+}
+
+// Expected: unverified, #1551 (Coney's own lookup: each table of brains finds only its own)
+TEST_CASE("a human with brains in two tables is found in each, and in the one left after the other ends", "[ai]") {
+    coney::test::AiScene scene;
+    Brain& mine = scene.add({40.0F, 42.0F, 0.0F}, 180.0F);
+    Human& shared = mine.human();
+    Human& other = scene.add({40.0F, 44.0F, 0.0F}, 180.0F).human();
+    {
+        coney::ai::Brains elsewhere;
+        Brain& theirs = elsewhere.add(shared, BrainType::Gang, {}, 5);
+        CHECK(elsewhere.find(shared) == &theirs);
+        CHECK(scene.brains.find(shared) == &mine);
+        // A human only the scene's table has a brain for is not found in the other.
+        CHECK(elsewhere.find(other) == nullptr);
+        // Removed from the scene's table, he is still found in the other.
+        scene.brains.remove(shared);
+        CHECK(scene.brains.find(shared) == nullptr);
+        CHECK(elsewhere.find(shared) == &theirs);
+        Brain& again = scene.brains.add(shared, BrainType::Gang, {}, 6);
+        CHECK(scene.brains.find(shared) == &again);
+        CHECK(elsewhere.find(shared) == &theirs);
+    }
+    // The other table gone, the scene's still finds its brains.
+    REQUIRE(scene.brains.find(shared) != nullptr);
+    CHECK(&scene.brains.find(shared)->human() == &shared);
+    CHECK(scene.brains.find(other) != nullptr);
+}
+
 TEST_CASE("HuCreate's flag makes a new human a gang member, unless his class makes Warriors", "[ai]") {
     // Expected: human-init.md#brain-type, confirmed (code)
     using coney::ai::BrainType;
