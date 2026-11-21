@@ -44,11 +44,15 @@ std::uint64_t SessionLevelGame::levelStarts() const {
 
 std::optional<LevelAt> SessionLevelGame::currentLevel() const {
     const GameSession* session = m_session();
-    if (session == nullptr || !session->lastLevelStart()) {
+    if (session == nullptr) {
         return std::nullopt;
     }
-    const std::pair<std::string, int>& start = *session->lastLevelStart();
-    return LevelAt{.level = start.first, .checkpoint = start.second};
+    // Check the optional where it is dereferenced, which is what the analysis follows.
+    const std::optional<std::pair<std::string, int>>& start = session->lastLevelStart();
+    if (!start.has_value()) {
+        return std::nullopt;
+    }
+    return LevelAt{.level = start->first, .checkpoint = start->second};
 }
 
 MissionCounts SessionLevelGame::missionEnds() const {
