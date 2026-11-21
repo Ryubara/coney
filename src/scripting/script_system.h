@@ -36,6 +36,14 @@ inline constexpr std::array<std::string_view, 3> kConfigPreloadScripts{"config_p
 /// The script every level runs before its own (`<level>.lua`).
 inline constexpr std::string_view kGlobalScript = "global.lua";
 
+/// Where a level entry (ScriptSystem::enterLevel()) has got to when its hook runs.
+enum class LevelEntryStage : std::uint8_t {
+    AfterGlobal, ///< `global.lua`'s main chunk has run; the level's own script has not.
+    AfterLevel,  ///< The level's own script (`<level>.lua`) has run too.
+};
+/// What Coney does at each stage of a level entry: the level's name (`level95`) and the stage.
+using LevelEntryHook = std::function<void(std::string_view level, LevelEntryStage stage)>;
+
 /// The game's script system: the one Lua 4.0 state, the scripts it runs, the calls C++ makes into it by name, and the
 /// schedule of delayed calls. The original's object (`g_ScriptSystem`, 0x28 bytes) is made at start-up and destroyed
 /// and made again by every level unload, so a level starts from the bindings alone; create() and destroy() are that
@@ -130,9 +138,14 @@ class ScriptSystem {
     /// @orig 0x00356c58 ScriptSystem::RunFiles (ScriptLua.cpp)
     void runFiles(std::span<const std::string_view> names);
 
-    /// The level entry: runs `global.lua`, then `<level>.lua`.
+    /// The level entry: runs `global.lua`, then `<level>.lua`, calling the level entry hook (setLevelEntryHook()) after
+    /// each.
     /// @orig 0x003569d8 ScriptSystem::EnterLevel (ScriptLua.cpp)
     void enterLevel(std::string_view level);
+    /// Sets what runs after `global.lua`'s main chunk and after the level's own script at every level entry (empty for
+    /// nothing): the story graph's natives and the hub's offer (script::StoryHooks).
+    /// @coney-only Coney's natives over the story graph (docs/guides/studio/mission-mods.md#graph-natives)
+    void setLevelEntryHook(LevelEntryHook hook) { m_levelEntryHook = std::move(hook); }
 
     /// Calls the function named `name` (`Menu.onStart`, `Obj:method`) with `args`. Returns false when no state exists,
     /// the name does not resolve to a function (logged) or the call fails (logged and counted).
@@ -246,6 +259,7 @@ class ScriptSystem {
     ScriptSource m_source;
     BindingInstaller m_install;
     std::function<double()> m_objectHandles; // the bindings' world object handle counter (setObjectHandles())
+    LevelEntryHook m_levelEntryHook;         // setLevelEntryHook()
     Log m_log;
     std::unique_ptr<LuaVm> m_vm;
     std::vector<ScheduledCall> m_schedule;                       // kept sorted by (due time, sequence)

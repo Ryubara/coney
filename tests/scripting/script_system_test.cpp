@@ -160,6 +160,21 @@ TEST_CASE("the level entry runs global.lua, then the level's script, in one stat
     CHECK(h.scripts.errors() == 0);
 }
 
+TEST_CASE("the level entry's hook runs after global.lua's main chunk and after the level's own", "[script_system]") {
+    // Expected: mission-mods.md#graph-natives (the natives are set after global.lua's main chunk; the hub's offer after
+    // level95.lua's)
+    Harness h;
+    h.add("global.lua", noteScript("global"));
+    h.add("level95.lua", noteScript("level"));
+    h.scripts.setLevelEntryHook([&h](std::string_view level, coney::script::LevelEntryStage stage) {
+        const bool afterGlobal = stage == coney::script::LevelEntryStage::AfterGlobal;
+        h.notes.push_back(std::string(afterGlobal ? "after global " : "after level ") + std::string(level));
+    });
+    h.scripts.create();
+    h.scripts.enterLevel("level95");
+    CHECK(h.notes == std::vector<std::string>{"global", "after global level95", "level", "after level level95"});
+}
+
 TEST_CASE("a missing or failing script is logged and counted, and the next one still runs", "[script_system]") {
     Harness h;
     LuaAsm broken; // indexes nil: a runtime error
