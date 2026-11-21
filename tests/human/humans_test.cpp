@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "human/humans.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -209,4 +210,92 @@ TEST_CASE("a held human stays held when an earlier slot is removed, and a remove
     // Holding a human that is not in the step does nothing.
     pair.humans.setHeld(pair.other, true);
     CHECK_FALSE(pair.humans.held(pair.other));
+}
+
+namespace {
+
+// A crowd of the synthetic fighting character on a 400 m floor: slot 0 the pad's player, the rest driven only by the
+// brains' hook, each placed where `at` says (issue 1550).
+struct Crowd {
+    coney::test::FightCharacter character;
+    std::unique_ptr<coney::raycast::CollisionMesh> mesh =
+        coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 400.0F, 0.0F, 400.0F));
+    std::vector<std::unique_ptr<Human>> people;
+    Humans humans;
+
+    explicit Crowd(const std::vector<coney::anim::Vec3>& at) {
+        for (std::size_t slot = 0; slot < at.size(); ++slot) {
+            people.push_back(std::make_unique<Human>(character.anims, coney::human::AnimSlots::player(),
+                                                     coney::test::identityBind(), 1.0F, &character.ranges));
+            people.back()->spawn(mesh.get(), at[slot], 0.0F);
+            humans.add(*people.back(), slot == 0);
+        }
+    }
+};
+
+// Which of two enemies the player's square takes.
+enum class Picked : std::uint8_t { None, Left, Right };
+
+// The square's target the player at (40, 40), facing +y, picks from two enemies 1 m ahead and half a metre to either
+// side, at the same distance and angle: the left one in slot `leftSlot` and the right one in the other of slots 1 and
+// 2, with a third enemy far off at (`farX`, `farY`). With `odd` the pick is on an odd step (actions last to first).
+Picked tiedPick(std::size_t leftSlot, float farX, float farY, bool odd) {
+    const coney::anim::Vec3 left{39.5F, 41.0F, 0.0F};
+    const coney::anim::Vec3 right{40.5F, 41.0F, 0.0F};
+    Crowd crowd({coney::anim::Vec3{40.0F, 40.0F, 0.0F}, leftSlot == 1 ? left : right, leftSlot == 1 ? right : left,
+                 coney::anim::Vec3{farX, farY, 0.0F}});
+    if (odd) {
+        crowd.humans.update(crowd.mesh.get());
+    }
+    crowd.people[0]->record().command = command::kSquarePressed;
+    crowd.humans.update(crowd.mesh.get());
+    const coney::human::Combatant* target = crowd.people[0]->fighter().target();
+    const std::size_t rightSlot = leftSlot == 1 ? 2 : 1;
+    if (target == crowd.people[leftSlot].get()) {
+        return Picked::Left;
+    }
+    return target == crowd.people[rightSlot].get() ? Picked::Right : Picked::None;
+}
+
+} // namespace
+
+TEST_CASE("the actions pass asks whether two humans are opposed only about the humans near the one acting",
+          "[human][humans]") {
+    // Forty humans 20 m apart, every one opposed to every other: none is within any search's reach of another, so the
+    // searches need not ask about any pair. A list of every opposed human for every human every step asked about
+    // each of the 40 x 39 pairs (issue 1550).
+    std::vector<coney::anim::Vec3> at;
+    for (int row = 0; row < 5; ++row) {
+        for (int column = 0; column < 8; ++column) {
+            at.push_back(coney::anim::Vec3{20.0F + (20.0F * static_cast<float>(column)),
+                                           20.0F + (20.0F * static_cast<float>(row)), 0.0F});
+        }
+    }
+    Crowd crowd(at);
+    std::size_t asked = 0;
+    crowd.humans.setOpposition([&asked](const Human& attacker, const Human& victim) {
+        ++asked;
+        return &attacker != &victim;
+    });
+    constexpr int kSteps = 3;
+    for (int k = 0; k < kSteps; ++k) {
+        crowd.people[0]->record().command = command::kSquarePressed;
+        crowd.humans.update(crowd.mesh.get());
+    }
+    CHECK(asked < static_cast<std::size_t>(kSteps) * 40U * 39U / 20U);
+}
+
+TEST_CASE("of two enemies the same distance and angle away, square takes the one in the later slot",
+          "[human][humans][targeting]") {
+    // The searches visit the targets in slot order and the nearest-wins test keeps the last of equals
+    // (nearestFightable(), `distance <= best`), so a tie falls to the later slot whichever side it stands on and
+    // whichever way the actions pass runs. The third enemy, 30 m off at x 37.5, puts the left and the right one in
+    // different cells of the targets' grid (2.5 m cells from the lowest x and y), the later slot's first or last; at
+    // (70, 39) both are in one cell.
+    for (const bool odd : {false, true}) {
+        CHECK(tiedPick(1, 37.5F, 70.0F, odd) == Picked::Right);
+        CHECK(tiedPick(2, 37.5F, 70.0F, odd) == Picked::Left);
+        CHECK(tiedPick(1, 70.0F, 39.0F, odd) == Picked::Right);
+        CHECK(tiedPick(2, 70.0F, 39.0F, odd) == Picked::Left);
+    }
 }
