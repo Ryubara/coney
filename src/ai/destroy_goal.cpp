@@ -71,8 +71,8 @@ void DestroyGoal::releaseTarget() {
 
 void DestroyGoal::armWait(Brain& brain) {
     const auto low = static_cast<int>(m_waitMs);
-    m_waitUntilMs =
-        brain.nowMs() + static_cast<std::uint64_t>(rollRange(brain.random(), low, low + kDestroyWaitSpreadMs));
+    const auto high = low + static_cast<int>(kDestroyWaitSpreadMs);
+    m_waitUntilMs = brain.nowMs() + static_cast<std::uint64_t>(rollRange(brain.random(), low, high));
 }
 
 void DestroyGoal::pickTarget(Brain& brain) {
