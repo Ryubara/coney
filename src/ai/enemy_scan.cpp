@@ -103,51 +103,95 @@ bool enemyGang(const Brain& scanner, const Brain& member) {
     return mine != nullptr && theirs != nullptr && theirs->inUse() && Gangs::enemies(mine, theirs);
 }
 
-} // namespace
+// What scanSees()' tests before its line of sight say of a member.
+enum class BeforeRay : std::uint8_t {
+    NotSeen,    // a test refused him
+    Seen,       // his gang is always seen: no ray
+    RayDecides, // only the line of sight is left
+};
 
+// scanSees() up to its line of sight: the range, the shadow, the spectate test, the filter, the near radius and the
+// cone. The scan casts the rays itself, nearest first (nearestSeen()).
 // @orig 0x0028b358 Brain_ScanEnemies (unknown)
-bool scanSees(const Brain& scanner, const Brain& member) {
+BeforeRay scanSeesBeforeRay(const Brain& scanner, const Brain& member) {
     const human::Human& eye = scanner.human();
     const human::Human& them = member.human();
     if (&scanner == &member || scanner.distanceTo(member) > sightRangeOf(scanner)) {
-        return false;
+        return BeforeRay::NotSeen;
     }
     // 1. Hidden in shadow: beyond 2 m never, within it only from shadow ground.
     if (!shadowAllowsSight(eye, them)) {
-        return false;
+        return BeforeRay::NotSeen;
     }
     // 2. Unless his gang is always seen, the spectate test (the height limit).
     const bool alwaysSeen = member.gang() != nullptr && member.gang()->alwaysSeen();
     if (!alwaysSeen && !maySpectate(scanner, member)) {
-        return false;
+        return BeforeRay::NotSeen;
     }
     // 3. The filter.
     if (scanner.type() == BrainType::Warrior && !warriorThreat(scanner, member)) {
-        return false;
+        return BeforeRay::NotSeen;
     }
     if (!validEnemy(scanner, member)) {
-        return false;
+        return BeforeRay::NotSeen;
     }
     // 4. Sight, unless his gang is always seen: the near radius all round, unless he hides off shadow ground (the
     // grace); else the cone too; then the line of sight.
     if (alwaysSeen) {
-        return true;
+        return BeforeRay::Seen;
     }
     const bool sneaking = them.hidden() && !them.onShadowGround();
     if (scanner.distanceTo(member) > nearRadius(scanner, member) || sneaking) {
         if (!inFieldOfView(scanner.fieldOfView(), eye, them.position())) {
-            return false;
+            return BeforeRay::NotSeen;
         }
     }
-    return lineOfSight(scanner.collision(), eye.position(), them.position()).clear;
+    return BeforeRay::RayDecides;
 }
 
-// Stub for the test commit (issue 1555): every line cast, in the candidates' order, as the scan did.
-std::vector<bool> nearestSeen(std::span<const SightCandidate> candidates, std::size_t /*keep*/,
+// The line of sight from `scanner`'s human to `member`'s (scanSees()' last test).
+// @orig 0x0028b358 Brain_ScanEnemies (unknown)
+bool scanLineClear(const Brain& scanner, const Brain& member) {
+    return lineOfSight(scanner.collision(), scanner.human().position(), member.human().position()).clear;
+}
+
+} // namespace
+
+// @orig 0x0028b358 Brain_ScanEnemies (unknown)
+bool scanSees(const Brain& scanner, const Brain& member) {
+    switch (scanSeesBeforeRay(scanner, member)) {
+    case BeforeRay::NotSeen:
+        return false;
+    case BeforeRay::Seen:
+        return true;
+    case BeforeRay::RayDecides:
+        break;
+    }
+    return scanLineClear(scanner, member);
+}
+
+std::vector<bool> nearestSeen(std::span<const SightCandidate> candidates, std::size_t keep,
                               const std::function<bool(std::size_t)>& clearLine) {
+    // The candidates nearest first; equal distances in their own order.
+    std::vector<std::size_t> order(candidates.size());
+    for (std::size_t k = 0; k < order.size(); ++k) {
+        order[k] = k;
+    }
+    std::ranges::stable_sort(
+        order, [candidates](std::size_t a, std::size_t b) { return candidates[a].distance < candidates[b].distance; });
+    // Cast until `keep` are found; past them only the referred-to, and any as near as the last of the `keep`.
     std::vector<bool> found(candidates.size(), false);
-    for (std::size_t k = 0; k < candidates.size(); ++k) {
-        found[k] = !candidates[k].needsRay || clearLine(k);
+    std::size_t seen = 0;
+    float last = 0.0F;
+    for (const std::size_t k : order) {
+        const SightCandidate& candidate = candidates[k];
+        if (seen >= keep && candidate.distance > last && !candidate.referred) {
+            continue;
+        }
+        found[k] = !candidate.needsRay || clearLine(k);
+        if (found[k] && ++seen == keep) {
+            last = candidate.distance;
+        }
     }
     return found;
 }
@@ -161,17 +205,35 @@ int scanEnemies(const Gangs& gangs, Brain& scanner) {
         }
         return 0;
     }
-    // 1. The enemy gangs' members it sees, gang by gang.
-    std::vector<Brain*> found;
+    // 1. The enemy gangs' members it sees, gang by gang: each member's tests before the line of sight, then the lines
+    // nearest first (nearestSeen()), leaving out the ones that cannot change the list.
+    std::vector<Brain*> members;
+    std::vector<SightCandidate> candidates;
     for (int id = 0; id < static_cast<int>(kGangSlots); ++id) {
         const Gang* gang = gangs.find(id);
         if (gang == nullptr) {
             continue;
         }
         for (Brain* member : gang->members()) {
-            if (enemyGang(scanner, *member) && scanSees(scanner, *member)) {
-                found.push_back(member);
+            if (!enemyGang(scanner, *member)) {
+                continue;
             }
+            const BeforeRay before = scanSeesBeforeRay(scanner, *member);
+            if (before != BeforeRay::NotSeen) {
+                members.push_back(member);
+                candidates.push_back(SightCandidate{.distance = scanner.distanceTo(*member),
+                                                    .needsRay = before == BeforeRay::RayDecides,
+                                                    .referred = scanner.refersTo(*member)});
+            }
+        }
+    }
+    const std::vector<bool> seen = nearestSeen(candidates, kScanMaxEnemies, [&scanner, &members](std::size_t k) {
+        return scanLineClear(scanner, *members[k]);
+    });
+    std::vector<Brain*> found;
+    for (std::size_t k = 0; k < members.size(); ++k) {
+        if (seen[k]) {
+            found.push_back(members[k]);
         }
     }
     // 2. The gang's shared target, when valid.
