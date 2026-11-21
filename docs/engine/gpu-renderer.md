@@ -165,10 +165,10 @@ the part both draw ([How pictures are compared](renderer.md#comparing)).
 
 **The World page** ([debug menu guide](../guides/debug-menu.md#world)): its fog reaches the GPU renderer as it does GL3,
 through the camera's fog start and the draws' fog colour, and the parts the play mode's passes skip before a draw is
-recorded (the glass) or hands to the world renderer (the Background) hide there too; the effects it hides are
-not drawn there yet anyway (above). The Scenery, Humans and Objects parts do not: they hide through the mesh views'
-hook, and while it is set (any of the three hidden, or any mesh view on) the sectors, the objects and the humans are
-drawn through librw instead of being recorded (`SceneLighting::meshViewsOn()`), so on `--renderer gpu` hiding one of
+recorded (the glass) or hands to the world renderer (the Background) hide there too; the effects it hides are not drawn
+there yet anyway (above). The Scenery, Humans and Objects parts do not ([#1545](issue:1545)): they hide through the mesh
+views' hook, and while it is set (any of the three hidden, or any mesh view on) the sectors, the objects and the humans
+are drawn through librw instead of being recorded (`SceneLighting::meshViewsOn()`), so on `--renderer gpu` hiding one of
 them leaves the others out too. The mesh views themselves are GL3's.
 
 ## Textures {#textures}
