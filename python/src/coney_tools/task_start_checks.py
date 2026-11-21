@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from coney_tools import task_slots
+from coney_tools import task_slots, task_tracks
 from coney_tools.issue_claim_engine import Engine
 from coney_tools.issue_claim_model import Card
 from coney_tools.issue_claim_remote import Remote
@@ -23,21 +23,21 @@ if TYPE_CHECKING:
 def slot_check(task: TaskFile, env: StartEnv, engine: Engine) -> tuple[str, str | None]:
     """(the tracks line for the report, the refusal when the limit is enforced and exceeded). Whether a unit is a
     workflow, Studio, networking or renderer unit comes from the held claim cards `engine` read (their `workflow`,
-    `studio`, `networking` and `renderer`), not from any file here; the room is `task_slots.room`, the rule the Agent
+    `studio`, `networking` and `renderer`), not from any file here; the room is `task_tracks.room`, the rule the Agent
     guard applies."""
     conventions = env.conventions
     slots = conventions.tasks.start.slots
     held_cards = engine.held_cards()
     cards = task_slots.Cards(held_cards.get)
-    told = task_slots.unit_labels(task.issues, cards, conventions)
+    told = task_tracks.unit_labels(task.issues, cards, conventions)
     if told is not None and told.workflow:
         return "slots: a workflow task (its issue has the workflow label) holds no place until the cutover", None
 
-    def labels(record: UnitRecord) -> task_slots.Labels | None:
+    def labels(record: UnitRecord) -> task_tracks.Labels | None:
         """Another unit's labels, from the same cards."""
-        return task_slots.unit_labels(record.issues, cards, conventions)
+        return task_tracks.unit_labels(record.issues, cards, conventions)
 
-    track = task_slots.track_of(
+    track = task_tracks.track_of(
         task.kind,
         told.studio if told is not None else False,
         told.networking if told is not None else False,
@@ -46,7 +46,7 @@ def slot_check(task: TaskFile, env: StartEnv, engine: Engine) -> tuple[str, str 
     current = task_slots.scan(env.scratch, conventions, env.now(), labels=labels)
     # A kept place whose track had nothing to start when the fill check last looked is open (tasks.start.slots.lapse).
     lapsed = task_slots.read_lapses(env.scratch, conventions, env.now())
-    fit = task_slots.room(current, track, task.task, conventions, env.build_slots, task.kind, lapsed)
+    fit = task_tracks.room(current, track, task.task, conventions, env.build_slots, task.kind, lapsed)
     line = f"slots: {fit.note(task.task)}"
     if fit.fits:
         return line, None

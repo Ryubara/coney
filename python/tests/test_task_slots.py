@@ -23,7 +23,7 @@ from audit_support import CONVENTIONS
 from claim_support import Clock, FakeGitHub, plant_claim
 from conventions_support import with_networking_place, with_renderer_place
 
-from coney_tools import stamps, task_cli, task_slots
+from coney_tools import stamps, task_cli, task_slots, task_tracks
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
 from coney_tools.issue_claim_model import Card, render_card
@@ -214,7 +214,7 @@ class Scene:
             self.scratch,
             self.conventions,
             self.now(),
-            labels=lambda record: task_slots.unit_labels(record.issues, cards, self.conventions),
+            labels=lambda record: task_tracks.unit_labels(record.issues, cards, self.conventions),
         )
 
     def holders(self, track: str = "reimplementation") -> list[str]:
@@ -262,7 +262,7 @@ def test_the_committed_tracks_and_machine_limit() -> None:
 
 @pytest.mark.parametrize(("build_slots", "places"), [(1, 2), (2, 4), (5, 10), (0, 2)])
 def test_the_machine_limit_follows_the_build_slots(build_slots: int, places: int) -> None:
-    assert task_slots.machine_limit(CONVENTIONS, build_slots) == places
+    assert task_tracks.machine_limit(CONVENTIONS, build_slots) == places
 
 
 # --- what holds a slot ----------------------------------------------------------------------------------------------
@@ -965,7 +965,7 @@ def test_the_place_kept_for_networking_is_not_taken_by_studio(scene: Scene) -> N
 def test_a_running_networking_unit_keeps_no_place_back(scene: Scene) -> None:
     committed_networking(scene)
     scene.unit("n-ids", networking=True)
-    room = task_slots.room(scene.scan(), "studio", "s-one", scene.conventions, scene.build_slots, "tooling")
+    room = task_tracks.room(scene.scan(), "studio", "s-one", scene.conventions, scene.build_slots, "tooling")
     assert set(room.kept) == {"reimplementation", "fix"}
 
 
@@ -986,7 +986,7 @@ def test_a_networking_fix_is_a_fix(scene: Scene) -> None:
 def test_an_issue_labelled_networking_and_studio_is_a_networking_unit(scene: Scene) -> None:
     scene.unit("n-both", kind="tooling", networking=True, studio=True)
     assert scene.holders("networking") == ["n-both"] and scene.holders("studio") == []
-    assert task_slots.track_of("feature", True, True) == "networking"
+    assert task_tracks.track_of("feature", True, True) == "networking"
 
 
 def test_the_studio_model_rule_does_not_bind_a_networking_unit(scene: Scene) -> None:
@@ -1103,7 +1103,7 @@ def test_the_place_kept_for_the_renderer_is_not_taken_by_studio(scene: Scene) ->
 def test_a_running_renderer_unit_keeps_no_place_back(scene: Scene) -> None:
     committed_renderer(scene)
     scene.unit("r-gpu", renderer=True)
-    room = task_slots.room(scene.scan(), "studio", "s-one", scene.conventions, scene.build_slots, "tooling")
+    room = task_tracks.room(scene.scan(), "studio", "s-one", scene.conventions, scene.build_slots, "tooling")
     assert set(room.kept) == {"reimplementation", "fix"}
 
 
@@ -1124,14 +1124,14 @@ def test_a_renderer_fix_is_a_fix(scene: Scene) -> None:
 def test_an_issue_labelled_renderer_and_studio_is_a_renderer_unit(scene: Scene) -> None:
     scene.unit("r-both", kind="tooling", renderer=True, studio=True)
     assert scene.holders("renderer") == ["r-both"] and scene.holders("studio") == []
-    assert task_slots.track_of("feature", True, renderer=True) == "renderer"
+    assert task_tracks.track_of("feature", True, renderer=True) == "renderer"
 
 
 def test_an_issue_labelled_renderer_and_networking_is_a_networking_unit(scene: Scene) -> None:
     # An issue is in one track: the networking one is named first, as it was added first.
     scene.unit("r-both", kind="tooling", renderer=True, networking=True)
     assert scene.holders("networking") == ["r-both"] and scene.holders("renderer") == []
-    assert task_slots.track_of("feature", False, True, True) == "networking"
+    assert task_tracks.track_of("feature", False, True, True) == "networking"
 
 
 def test_the_studio_model_rule_does_not_bind_a_renderer_unit(scene: Scene) -> None:
