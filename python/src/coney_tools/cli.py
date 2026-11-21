@@ -1004,6 +1004,12 @@ def _add_clips_pair_commands(commands: Any) -> None:
         metavar="COMMIT",
         help="take this commit (a change already merged) out of the before, for the clips its pull request lacked",
     )
+    pair.add_argument(
+        "--before",
+        metavar="REF",
+        help="record the before on this commit, built on the merge base, instead of --without's: the change taken "
+        "out by hand where --without cannot (a later commit edits its lines)",
+    )
     pair.add_argument("--task", help="the task whose clips folder takes the clips (default: the checkout's)")
     pair.add_argument(
         "--renderer", choices=("gl3", "gpu"), help="the renderer both sides draw with (default: Coney's own, GL3)"
@@ -1051,6 +1057,7 @@ def _run_clips_pair(args: argparse.Namespace) -> int:
         task=args.task,
         renderers=(args.before_renderer or args.renderer, args.renderer),
         without=args.without,
+        before_ref=args.before,
     )
 
 

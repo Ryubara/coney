@@ -2,7 +2,7 @@
 # kill. The input script skips the intro scene, takes the player into the hint volume (the tutorial then warps him
 # behind the first guard, S01, where he hides), holds L1 to target the guard, creeps up behind him and presses square
 # (frame 680): the player plays the stealth kill and the guard falls. The clip starts at frame 600, a second before the
-# hint lets the pad go, and shows the creep and the kill. For a change to hiding, the stealth kill or its clips, and
+# tutorial lets the pad go, and shows the creep and the kill. For a change to hiding, the stealth kill or its clips, and
 # with `--without COMMIT` for a fix that merged since (the sneak attack, a93ff9146).
 description = "level87 checkpoint 5: the hidden player creeps up behind the first guard and stealth kills him"
 level = "level87"

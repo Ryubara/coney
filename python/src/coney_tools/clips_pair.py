@@ -478,7 +478,10 @@ def base_without(
     try:
         tree = git(main, ["merge-tree", "--write-tree", "--merge-base", commit, base, f"{commit}^"]).split()[0]
     except ClipError as error:
-        raise ClipError(f"{commit[:12]} cannot be taken out of {base[:12]} cleanly: {error}") from error
+        raise ClipError(
+            f"{commit[:12]} cannot be taken out of {base[:12]} cleanly: {error}\n"
+            "take it out by hand on a branch of the merge base, resolve the conflict and pass the branch as --before"
+        ) from error
     if path.is_dir():
         head = git(path, ["rev-parse", "HEAD"]).strip()
         if git(path, ["rev-parse", "HEAD^{tree}"]).strip() != tree or git(path, ["rev-parse", "HEAD^"]).strip() != base:
@@ -504,6 +507,23 @@ def base_without(
     ).strip()
     ensure_base_checkout(main, path, made, git)
     return path, made
+
+
+def before_commit(git: Callable[[Path, Sequence[str]], str], main: Path, merge_base: str, ref: str) -> str:
+    """The commit `ref` names, for a before made by hand (`clips pair --before`): a change that `--without` cannot take
+    out cleanly is taken out on a branch of the merge base, its conflict resolved by hand. ClipError when `ref` does
+    not hold the merge base (it would show other changes than the task's own) or holds nothing else."""
+    commit = git(main, ["rev-parse", "--verify", f"{ref}^{{commit}}"]).strip()
+    try:
+        git(main, ["merge-base", "--is-ancestor", merge_base, commit])
+    except ClipError as error:
+        raise ClipError(
+            f"{ref} ({commit[:12]}) is not built on the merge base {merge_base[:12]}: "
+            "its before would differ from the after by more than the change"
+        ) from error
+    if commit == merge_base:
+        raise ClipError(f"{ref} is the merge base itself: it takes nothing out")
+    return commit
 
 
 @contextlib.contextmanager
@@ -635,9 +655,11 @@ def run_pair(
     base_ref: str = "origin/main",
     renderers: tuple[str | None, str | None] = (None, None),
     without: str | None = None,
+    before_ref: str | None = None,
 ) -> int:
     """`clips pair`: build the task's checkout and its merge base with `base_ref` (with the commit `without` taken out
-    when given, for the before of a change already merged), record `run` on both into the task's
+    when given, for the before of a change already merged; or, with `before_ref`, that commit made by hand instead, on
+    top of the merge base, when `without` cannot take the change out cleanly), record `run` on both into the task's
     clips folder, check they are the same run, and stack them (with the original first when `original` names a PCSX2
     state) into `compare.mp4` and, with `gif`, `compare.gif`. `renderers` names the renderer each side (before, after)
     draws with (none: Coney's own choice), so a change to the GPU renderer can show its picture after against GL3's
@@ -647,6 +669,8 @@ def run_pair(
     env = env or PairEnv()
     rules = settings.rules
     check_run(run, rules)
+    if before_ref is not None and without is not None:
+        raise ClipError("--before and --without name the before twice: give one")
     if slow <= 0:
         raise ClipError(f"--slow must be more than 0, not {slow:g}")
     folder = clips.clip_folder(task, settings.scratch, rules)
@@ -668,7 +692,12 @@ def run_pair(
         env.say(f"the task's build failed (exit {code})")
         return code
     commit = env.git(checkout, ["merge-base", "HEAD", base_ref]).strip()
-    if without is None:
+    if before_ref is not None:
+        commit = before_commit(env.git, settings.main, commit, before_ref)
+        base = base_checkout_path(settings.main, settings.worktrees, rules.pair, commit)
+        env.say(f"before: {before_ref}, {commit[:12]}, on the merge base with {base_ref}, in {base}")
+        ensure_base_checkout(settings.main, base, commit, env.git)
+    elif without is None:
         base = base_checkout_path(settings.main, settings.worktrees, rules.pair, commit)
         env.say(f"before: the merge base with {base_ref}, {commit[:12]}, in {base}")
         ensure_base_checkout(settings.main, base, commit, env.git)
@@ -713,6 +742,7 @@ def run_pair(
             "frames_hash": before.frames_hash,
             "renderer": renderers[0],
             "without": without,
+            "ref": before_ref,
         },
         "after": {
             "commit": tip,
@@ -825,6 +855,7 @@ def run_pair_command(
     cwd: Path | None = None,
     renderers: tuple[str | None, str | None] = (None, None),
     without: str | None = None,
+    before_ref: str | None = None,
 ) -> int:
     """`clips pair` from the command line: the checkout around `cwd`, its task's clips folder, the conventions."""
     from coney_tools import unit
@@ -854,6 +885,7 @@ def run_pair_command(
         base_ref=base,
         renderers=renderers,
         without=without,
+        before_ref=before_ref,
     )
 
 

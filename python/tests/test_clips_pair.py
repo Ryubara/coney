@@ -772,3 +772,45 @@ def test_clip_names_may_be_gifs() -> None:
     assert clips.CLIP_NAME.match("compare.gif")
     assert clips.CLIP_NAME.match("compare.mp4")
     assert not clips.CLIP_NAME.match("compare.png")
+
+
+class FakeMachineBefore(FakeMachine):
+    """The fakes, with the git commands that name a before made by hand (`--before`): the ref is the commit `d...`,
+    which holds the merge base unless `holds_base` is false."""
+
+    def __init__(self, *args: object, holds_base: bool = True, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+        self.holds_base = holds_base
+
+    def git(self, folder: Path, args: Sequence[str]) -> str:
+        if args[:2] == ["rev-parse", "--verify"]:
+            return "d" * 40 + "\n"
+        if args[:2] == ["merge-base", "--is-ancestor"]:
+            if not self.holds_base:
+                raise clips.ClipError("git merge-base: failed")
+            return ""
+        if args[:2] == ["rev-parse", "HEAD"] and folder.name.startswith("clips-base-"):
+            return "d" * 40 + "\n"
+        return super().git(folder, args)
+
+
+def test_a_pair_before_a_commit_made_by_hand_records_the_before_on_it(space: dict[str, Path]) -> None:
+    machine = FakeMachineBefore("c" * 40, {"before": "0x01", "after": "0x02"})
+    assert _pair(space, machine, before_ref="clips-before") == 0
+    assert (space["task"].parent / f"clips-base-{'d' * 12}").is_dir()
+    assert "record before in base" in machine.events
+    record = json.loads((space["scratch"] / "my-task" / "clips" / "pair.json").read_text(encoding="utf-8"))
+    assert record["before"]["commit"] == "d" * 40
+    assert record["before"]["ref"] == "clips-before"
+
+
+def test_a_before_that_does_not_hold_the_merge_base_is_refused(space: dict[str, Path]) -> None:
+    machine = FakeMachineBefore("c" * 40, {"before": "0x01", "after": "0x02"}, holds_base=False)
+    with pytest.raises(clips.ClipError, match="not built on the merge base"):
+        _pair(space, machine, before_ref="elsewhere")
+
+
+def test_a_before_and_a_without_together_are_refused(space: dict[str, Path]) -> None:
+    machine = FakeMachineBefore("c" * 40, {"before": "0x01", "after": "0x02"})
+    with pytest.raises(clips.ClipError, match="name the before twice"):
+        _pair(space, machine, before_ref="x", without="y")
