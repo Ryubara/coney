@@ -72,6 +72,28 @@ the GPU time and the comparison are built ([Scenes](../guides/performance.md#sce
 `--compare` has no folder to read and refuses. The items that draw through GL3 (1 to 10 and 15 to 19) must keep these
 numbers (the *PS2* budget below); the GPU renderer's items are measured against them.
 
+## Culling before posing {#cull-before-posing}
+
+Posing a human (his bone transforms, skinning matrices and posed bounding sphere, `render.skin`) costs about 25-30
+µs of the main thread. `PlayLevelMode::render` used to pose every AI human and only then let the 70 m distance fade
+(`PlayLighting::drawHumanPasses`, [Drawing a human](../research/graphics.md#human-draw)) or the camera's clipping drop
+him. Since [#1554](issue:1554) it first tests a sphere that holds any pose of his (`graphics::cullHuman()`: 3 m round a
+point 1 m above his feet, times his scale when it is over 1) against the view window's four sides and the camera's
+back, then against the draw distance plus the radius:
+
+- **Out of view or past the draw distance:** he is not posed and not drawn (his mesh's `culled` flag; the Mesh group
+  reads 0 passes for him). His blob shadow and health ring are still queued at his blended feet, as before: each is
+  its own draw, clipped by the camera.
+- **Wearing, holding or carrying something** (a hat, a held object, a carried prop): the distance test is skipped and
+  only the view test applies, since what he carries is placed among the world objects and is not faded with him.
+- **The picture is the same.** The test is conservative: any human whose body could reach the picture or come nearer
+  than 70 m is posed as before. Only the AI fighters are culled; player 1, the sandbox's targets and a scene's
+  puppets are few and are always posed.
+
+**Code**: `cullHuman()` in [human_lighting.h](repo:src/graphics/human_lighting.h), the fighters' loop in
+[play_level_mode.cpp](repo:src/platform/play_level_mode.cpp). It came from the performance sweep's experiment 8
+([#1542](issue:1542)).
+
 ## Budget {#budget}
 
 Frame-time budgets on this machine, each scene's median of three runs, checked by `perf bench --compare` (built; it

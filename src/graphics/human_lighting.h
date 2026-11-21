@@ -47,11 +47,16 @@ inline constexpr std::uint16_t kTriangleShadow = raycast::kTriangleShadow;
 /// The humans' draw distance, metres (`0x0050cc60`, read at runtime in `level99`; `HumanRender_SetDrawDistance` keeps
 /// it within 30-70 m).
 inline constexpr float kHumanDrawDistance = 70.0F;
+/// The humans' draw distance this frame, metres: the one source that the distance fade and the cull before posing
+/// read, so a later render-side draw distance moves both. Always kHumanDrawDistance for now; the original clamps the
+/// frame's value to 30-70 m (`HumanRender_SetDrawDistance` `0x00174200`), which is not ported yet.
+/// @coney-only the single reader of the humans' draw distance; the original reads `0x0050cc60` where it needs it
+[[nodiscard]] float humanDrawDistance();
 /// Over how many metres before the draw distance a human fades out (`0x0050cc68`).
 inline constexpr float kHumanFadeLength = 10.0F;
 
 /// What a human's alpha is multiplied by at `distance` metres from the camera: 1 up to the draw distance less the fade
-/// length (60 m), falling linearly to 0 at the draw distance (70 m) and beyond.
+/// length (60 m), falling linearly to 0 at the draw distance (humanDrawDistance(), 70 m) and beyond.
 ///
 /// Research: docs/research/graphics.md#human-draw
 /// @orig 0x00174320 HumanRender_Draw (HumanRender.cpp)
@@ -73,7 +78,7 @@ enum class HumanCull : std::uint8_t {
 
 /// Whether a human standing at `feet` (RenderWare's axes, y up) and drawn at `scale` may show in a picture taken by
 /// `camera` with a view window `halfWidth` × `halfHeight` at distance 1: his kHumanPoseRadius sphere (times the scale
-/// when it is over 1) tested against the view's four sides, then against the draw distance. Conservative: it never
+/// when it is over 1) tested against the view's four sides, then against humanDrawDistance(). Conservative: it never
 /// culls a human any pose of whom could be drawn, so the picture is the same as posing everyone; it saves posing the
 /// ones that cannot (docs/engine/renderer-performance.md#cull-before-posing).
 /// @coney-only the render's cull before posing; the original's visibility callback queues the humans its own camera

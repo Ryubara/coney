@@ -30,18 +30,21 @@ TargetSnapshot interpolate(const TargetSnapshot& previous, const TargetSnapshot&
     if (alpha <= 0.0F) {
         return previous;
     }
-    return TargetSnapshot{.feet = anim::lerp(previous.feet, current.feet, alpha),
+    return TargetSnapshot{.feet = interpolateFeet(previous, current, alpha),
                           .heading =
                               wrapAngle(previous.heading + (wrapAngle(current.heading - previous.heading) * alpha)),
                           .pose = anim::blendPoses(previous.pose, current.pose, alpha)};
 }
 
 anim::Vec3 interpolateFeet(const TargetSnapshot& previous, const TargetSnapshot& current, float alpha) {
-    // A stub for the test commit (issue 1554).
-    static_cast<void>(previous);
-    static_cast<void>(current);
-    static_cast<void>(alpha);
-    return {};
+    // The same ends and the same arithmetic as interpolate()'s, which takes its feet from here.
+    if (alpha >= 1.0F) {
+        return current.feet;
+    }
+    if (alpha <= 0.0F) {
+        return previous.feet;
+    }
+    return anim::lerp(previous.feet, current.feet, alpha);
 }
 
 TargetHuman::TargetHuman(const characters::AnimSet& anims, const AnimSlots& slots,
