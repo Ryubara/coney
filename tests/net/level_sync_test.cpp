@@ -468,6 +468,97 @@ TEST_CASE("a movie a client never ends lets the host go on after the movie time-
     CHECK(session.server.joinedCount() == 1); // waited for, not dropped
 }
 
+// Expected: unverified, #1548 (Coney's own protocol; the original has no network play): MovieBegan, id 17, is the
+// movie's step (varint), sent reliably from a client, since version 10
+TEST_CASE("MovieBegan's bytes are pinned, and it round-trips and goes reliably", "[net][level][movie]") {
+    CHECK(encode(MovieBegan{.movieStep = 5}) == bytes({0x11, 0x05}));
+    CHECK(encode(MovieBegan{.movieStep = 300}) == bytes({0x11, 0xac, 0x02}));
+    CHECK(std::get<MovieBegan>(roundTrip(MovieBegan{.movieStep = 1200})).movieStep == 1200);
+    CHECK(deliveryOf(MovieBegan{}) == Delivery::ReliableOrdered);
+    // Short of its step, or with a byte after it, it does not decode.
+    CHECK(decode(bytes({0x11})).error().code == ErrorCode::Truncated);
+    CHECK_FALSE(decode(bytes({0x11, 0x05, 0x00})).has_value());
+}
+
+// Expected: unverified, #1548 (Coney's own; the host's movie waits for every guest that is watching its own copy until
+// it ends, and gives up after the time-out only on a guest whose copy never began, network-architecture.md#story)
+TEST_CASE("a client whose own copy of the movie plays is waited for past the movie time-out", "[net][level][movie]") {
+    Session session; // the movie time-out is 45 steps
+    NetClient& a = session.join("Swan");
+    NetClient& b = session.join("Mercy");
+    const std::uint32_t load = session.server.loadLevel("level1", 1);
+    session.run(2);
+    a.levelLoaded(load);
+    b.levelLoaded(load);
+    session.run(2);
+    REQUIRE(session.server.levelReady());
+
+    // a's own copy plays long after the host's ended; b's game never plays the movie.
+    session.server.startMovie(400);
+    a.movieBegan(400);
+    session.run(2);
+    session.server.endHostMovie();
+    session.run(200);
+    CHECK_FALSE(session.server.movieMayEnd()); // well past the time-out, a is still watching
+    a.movieDone(400, false);
+    session.run(2);
+    CHECK(session.server.movieMayEnd()); // b never began: given up on after the time-out
+    CHECK(session.server.joinedCount() == 2);
+
+    // A copy that began, whose guest then goes silent and is dropped, no longer holds the host.
+    session.server.startMovie(900);
+    b.movieBegan(900);
+    session.run(2);
+    session.server.endHostMovie();
+    session.run(50);
+    CHECK_FALSE(session.server.movieMayEnd()); // b's copy plays; a's never began, and its time-out has passed
+    session.guests[1]->stepping = false;       // b's machine goes silent: the keep-alive drops it
+    session.run(70);
+    CHECK(session.server.joinedCount() == 1);
+    CHECK(session.server.movieMayEnd());
+}
+
+// Expected: unverified, #1548 (Coney's own; the barrier's bookkeeping for a copy that began)
+TEST_CASE("a player whose copy began is waited for to its end, one whose copy never began only to the time-out",
+          "[net][level][movie]") {
+    LevelBarrier barrier(LevelBarrierConfig{.loadTimeoutSteps = 50, .movieTimeoutSteps = 3});
+    barrier.playerJoined(1);
+    barrier.playerJoined(2);
+    barrier.load("level7", 1);
+    REQUIRE(barrier.loaded(1, 1) == LoadReply::Accepted);
+    REQUIRE(barrier.loaded(2, 1) == LoadReply::Accepted);
+
+    barrier.startMovie(10);
+    barrier.movieBegan(1, 9);  // another movie's begin: nothing changes
+    barrier.movieBegan(3, 10); // a player who is not watching: nothing changes
+    barrier.endHostMovie();
+    for (int i = 0; i < 10; ++i) {
+        CHECK(barrier.step().empty());
+    }
+    CHECK(barrier.movieMayEnd()); // neither began: both given up on at the time-out
+
+    barrier.startMovie(20);
+    barrier.movieBegan(1, 20);
+    barrier.endHostMovie();
+    for (int i = 0; i < 10; ++i) {
+        CHECK(barrier.step().empty());
+    }
+    CHECK_FALSE(barrier.movieMayEnd()); // slot 1's copy plays: waited for, whatever the time-out
+    barrier.movieDone(1, 20, false);
+    CHECK(barrier.movieMayEnd()); // slot 2's never began
+
+    // A player who leaves with its copy playing is no longer waited for.
+    barrier.startMovie(30);
+    barrier.movieBegan(2, 30);
+    barrier.endHostMovie();
+    for (int i = 0; i < 10; ++i) {
+        CHECK(barrier.step().empty());
+    }
+    CHECK_FALSE(barrier.movieMayEnd());
+    barrier.playerLeft(2);
+    CHECK(barrier.movieMayEnd());
+}
+
 // Expected: unverified, #557 (Coney's own; the barrier's bookkeeping alone)
 TEST_CASE("the barrier counts only joined players, and one that leaves is no longer waited for", "[net][level]") {
     LevelBarrier barrier(LevelBarrierConfig{.loadTimeoutSteps = 5, .movieTimeoutSteps = 3});

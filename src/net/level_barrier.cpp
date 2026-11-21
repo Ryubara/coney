@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "net/level_barrier.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -116,6 +117,13 @@ void LevelBarrier::movieDone(std::uint8_t slot, std::uint32_t movieStep, bool sk
     m_movie->skipped = m_movie->skipped || skipped;
 }
 
+void LevelBarrier::movieBegan(std::uint8_t slot, std::uint32_t movieStep) {
+    if (!m_movie || m_movie->step != movieStep || !m_movie->watching.contains(slot)) {
+        return; // another movie's, or a player not watching this one
+    }
+    m_movie->began.insert(slot);
+}
+
 bool LevelBarrier::movieMayEnd() const {
     if (!m_movie) {
         return true;
@@ -123,7 +131,16 @@ bool LevelBarrier::movieMayEnd() const {
     if (!m_movie->hostEnded) {
         return false;
     }
-    return m_movie->watching.empty() || m_movie->stepsSinceHostEnded >= m_config.movieTimeoutSteps;
+    if (m_movie->watching.empty()) {
+        return true;
+    }
+    if (m_movie->stepsSinceHostEnded < m_config.movieTimeoutSteps) {
+        return false;
+    }
+    // After the time-out the host gives up on a player whose copy never began (its game does not play this movie), but
+    // not on one whose copy plays on: that one is waited for until it ends or the player leaves.
+    const Movie& movie = *m_movie;
+    return std::ranges::none_of(movie.watching, [&movie](std::uint8_t slot) { return movie.began.contains(slot); });
 }
 
 } // namespace coney::net

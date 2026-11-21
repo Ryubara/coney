@@ -90,11 +90,12 @@ void NetLevels::beforeStep() {
             }
         }
         followHost();
-        reportMovieEnd();
+        reportMovie();
         return;
     }
     // Hosting, or offline (network play keeps the level for a host started later).
     m_order.reset();
+    m_movieBegan.reset();
     m_movieEnd.reset();
     reportHostGame();
 }
@@ -111,6 +112,8 @@ void NetLevels::followHostQuit(const net::MissionEnd& end) {
         m_net.levelLoaded(m_order->load);
         m_order.reset();
     }
+    // A movie of the level left is not answered, begun or ended.
+    m_movieBegan.reset();
     m_movieEnd.reset();
     if (m_game != nullptr && m_game->leaveLevel()) {
         m_net.report("leaving the level with the host");
@@ -152,6 +155,7 @@ void NetLevels::adoptPendingOrder() {
         m_order = std::move(order);
         m_jumpAsked = false;
         m_refusalNoted = false;
+        m_movieBegan.reset();
         m_movieEnd.reset();
     }
 }
@@ -187,30 +191,47 @@ void NetLevels::followHost() {
     }
 }
 
-void NetLevels::reportMovieEnd() {
-    if (!m_movieEnd) {
+void NetLevels::reportMovie() {
+    if (!m_movieBegan && !m_movieEnd) {
         return;
     }
-    // The host's MovieStart names the movie; this game's copy may end before it arrives.
+    // The host's MovieStart names the movie; this game's copy may begin or end before it arrives.
     const std::optional<net::HostMovie> movie = m_net.hostMovie();
-    if (!movie || movie->name != m_movieEnd->first || movie->step == m_movieDone) {
+    if (!movie) {
         return;
     }
-    m_net.movieDone(movie->step, m_movieEnd->second);
-    m_movieDone = movie->step;
-    m_movieEnd.reset();
+    // The begin first, so the host waits for the end of a copy that plays on past its own movie time-out.
+    if (m_movieBegan && *m_movieBegan == movie->name && movie->step != m_movieBeganAt) {
+        m_net.movieBegan(movie->step);
+        m_movieBeganAt = movie->step;
+        m_movieBegan.reset();
+    }
+    if (m_movieEnd && m_movieEnd->first == movie->name && movie->step != m_movieDone) {
+        m_net.movieDone(movie->step, m_movieEnd->second);
+        m_movieDone = movie->step;
+        m_movieEnd.reset();
+    }
 }
 
 movies::MovieSync NetLevels::movieSync() {
     return movies::MovieSync{
-        .started = [this](std::string_view /*name*/) { (void)m_net.startMovie(); },
+        .started =
+            [this](std::string_view name) {
+                if (m_net.role() == net::NetRole::Client) {
+                    // This game plays the movie too: the host waits for its end.
+                    m_movieBegan.emplace(name);
+                    reportMovie();
+                } else {
+                    (void)m_net.startMovie();
+                }
+            },
         .ended =
             [this](std::string_view name, bool skipped) {
                 if (m_net.role() == net::NetRole::Host) {
                     m_net.endHostMovie();
                 } else if (m_net.role() == net::NetRole::Client) {
                     m_movieEnd.emplace(std::string(name), skipped);
-                    reportMovieEnd();
+                    reportMovie();
                 }
             },
         .skippedElsewhere = [this] { return m_net.movieSkipped(); },

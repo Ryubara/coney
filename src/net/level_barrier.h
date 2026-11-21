@@ -79,17 +79,24 @@ class LevelBarrier {
     /// The player in `slot` says their copy of the movie of `movieStep` ended, or was skipped. A movie that is not the
     /// current one's (late, or before it) changes nothing.
     void movieDone(std::uint8_t slot, std::uint32_t movieStep, bool skipped);
+    /// The player in `slot` says their own copy of the movie of `movieStep` has begun: the host then waits for its end
+    /// however long it plays, and the movie time-out gives up only on a player whose copy never began. A movie that is
+    /// not the current one's, or a player not watching it, changes nothing.
+    void movieBegan(std::uint8_t slot, std::uint32_t movieStep);
     /// Whether a player skipped the current movie: the host then ends its own copy, as any pad's skip does.
     [[nodiscard]] bool movieSkipped() const { return m_movie.has_value() && m_movie->skipped; }
     /// Whether the host may go on from its movie: no movie, or its own copy has ended and every player watching has
-    /// ended theirs, or LevelBarrierConfig::movieTimeoutSteps have passed since its own ended.
+    /// ended theirs, or LevelBarrierConfig::movieTimeoutSteps have passed since its own ended and none of those still
+    /// watching has begun its own copy (a player who leaves is no longer waited for).
     [[nodiscard]] bool movieMayEnd() const;
 
   private:
-    // The movie being waited for: its step, who is still watching, whether one skipped and the host's own end.
+    // The movie being waited for: its step, who is still watching and which of them began their own copy, whether one
+    // skipped and the host's own end.
     struct Movie {
         std::uint32_t step = 0;
         std::set<std::uint8_t> watching;
+        std::set<std::uint8_t> began;
         bool skipped = false;
         bool hostEnded = false;
         std::uint32_t stepsSinceHostEnded = 0;

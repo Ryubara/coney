@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The level messages' encoding (docs/guides/multiplayer.md#levels): LoadLevel, LevelLoaded, MissionEnd and MovieDone,
-// as protocol.h lays each out. Coney's own; the original has no network play.
+// The level messages' encoding (docs/guides/multiplayer.md#levels): LoadLevel, LevelLoaded, MissionEnd, MovieDone and
+// MovieBegan, as protocol.h lays each out. Coney's own; the original has no network play.
 #include <cstdint>
 #include <expected>
 #include <string>
@@ -57,6 +57,11 @@ void writeLevelMessage(BitWriter& out, const MovieDone& message) {
     out.writeU8(static_cast<std::uint8_t>(MessageId::MovieDone));
     out.writeVarUint(message.movieStep);
     out.writeBool(message.skipped);
+}
+
+void writeLevelMessage(BitWriter& out, const MovieBegan& message) {
+    out.writeU8(static_cast<std::uint8_t>(MessageId::MovieBegan));
+    out.writeVarUint(message.movieStep);
 }
 
 std::expected<Message, Error> readLoadLevelBody(BitReader& in) {
@@ -128,6 +133,14 @@ std::expected<Message, Error> readMovieDoneBody(BitReader& in) {
         return std::unexpected(skipped.error());
     }
     return MovieDone{.movieStep = *step, .skipped = *skipped};
+}
+
+std::expected<Message, Error> readMovieBeganBody(BitReader& in) {
+    auto step = readSequence(in);
+    if (!step) {
+        return std::unexpected(step.error());
+    }
+    return MovieBegan{.movieStep = *step};
 }
 
 } // namespace coney::net

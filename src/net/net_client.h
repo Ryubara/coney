@@ -142,6 +142,10 @@ class NetClient {
     /// This client's copy of the host's movie of `movieStep` (the host's step its MovieStart came in) has ended, or its
     /// player skipped it: tells the server at once (MovieDone). Nothing happens when not Connected.
     void movieDone(std::uint32_t movieStep, bool skipped);
+    /// This client's own copy of the host's movie of `movieStep` (the host's step its MovieStart came in) has begun:
+    /// tells the server at once (MovieBegan), so the host waits for its end past the movie time-out. Nothing happens
+    /// when not Connected.
+    void movieBegan(std::uint32_t movieStep);
     /// The round trip and loss to the server.
     [[nodiscard]] const LinkQuality& quality() const { return m_quality; }
     /// One line for the Network page and the log: the state, and for an ended session why.

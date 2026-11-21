@@ -128,7 +128,7 @@ the loopback; the Network page will put it in front of ENet.
 
 ## Protocol {#protocol}
 
-Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 9)
+Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 10)
 changes with any change to a layout or a meaning; a test pins the encoding byte for byte so a change cannot slip in
 unnoticed.
 
@@ -150,6 +150,7 @@ unnoticed.
 | 14 | LevelLoaded | client to server | the load it has loaded (varint, not 0); since version 8 | reliable |
 | 15 | MissionEnd | server to client | the load (varint, not 0), the outcome (8: passed, failed, quit); since version 8 | reliable |
 | 16 | MovieDone | client to server | the step of the movie's MovieStart (varint), skipped (1 bit); since version 8 | reliable |
+| 17 | MovieBegan | client to server | the step of the movie's MovieStart (varint); since version 10 ([Levels](#levels)) | reliable |
 
 **A pad** is connected (1 bit) and, only when connected, the button word (16 bits, the PS2 layout of `core/pad.h`),
 the four raw stick bytes (right x, right y, left x, left y) and, for each of the 12 pressure bytes, a bit saying
@@ -527,8 +528,8 @@ player loads:
   **dropped** with Bye (did not load the level in time), so the host never waits for ever.
 
 A LevelLoaded for an earlier load (overtaken by a newer order) is ignored; one for a load never ordered, or from a
-connection that has not joined, is a protocol error. A LoadLevel or MissionEnd sent to the server, or a LevelLoaded or
-MovieDone sent to a client, is one too.
+connection that has not joined, is a protocol error. A LoadLevel or MissionEnd sent to the server, or a LevelLoaded,
+MovieDone or MovieBegan sent to a client, is one too.
 
 **The end of a mission.** `NetServer::endMission(outcome)` sends each joined player a **MissionEnd** with the current
 load and the outcome (passed, failed, quit); the client keeps them for its game (`takeMissionEnds()`). What follows (the
@@ -539,12 +540,16 @@ yet (issue #1583).
 
 **A movie waits for every client.** A movie starts on the host as a MovieStart game event ([Game events](#events)); the
 host's game calls `NetPlay::startMovie()`, which names the movie by the step it starts in, and every player who has
-loaded the level is then **watching** it. Each client says when its own copy ended or was skipped
+loaded the level is then **watching** it. Each client says when its own copy began (`NetClient::movieBegan(movieStep)`,
+**MovieBegan**, sent only by a client whose game plays the movie too) and when it ended or was skipped
 (`NetClient::movieDone(movieStep, skipped)`, **MovieDone**). The host goes on (`movieMayEnd()`) once its own copy has
-ended (`endHostMovie()`) and every player watching has ended theirs, or `ServerConfig::movieTimeoutSteps` (300 steps,
-10 s; Coney's choice) after its own ended; a player who is slower is waited for, not dropped. A client's skip shows as
-`movieSkipped()`: the host then ends its own copy, as any pad's skip does in the original
-([Story](network-architecture.md#story)), and the MovieEnd event tells the others.
+ended (`endHostMovie()`) and every player watching has ended theirs. A player whose copy began is waited for to its
+end, however long it plays, until it leaves or is dropped (the keep-alive's silence drops a machine that has gone, and
+a player who leaves is no longer waited for). `ServerConfig::movieTimeoutSteps` (300 steps, 10 s; Coney's choice) is
+the fallback for a player whose copy never began, because its game does not play the movie: the host gives up on that
+player that long after its own copy ended, without dropping it. A client's skip shows as `movieSkipped()`: the host
+then ends its own copy, as any pad's skip does in the original ([Story](network-architecture.md#story)), and the
+MovieEnd event tells the others.
 
 <span id="levels-in-the-game"></span>**In the running game.** `NetLevels` (`src/platform/net_levels.h`) joins network play
 to the game session, which it sees through `LevelGame` (`SessionLevelGame` over whichever `GameSession` runs, a fake in
@@ -574,18 +579,21 @@ network play's receive and before the step gate.
   host's quit to the menu leaves its own, and a LoadLevel that follows (a quit to the hangout) takes it on from there;
   each step the guest handles the mission ends before the host's level order, so the leave never overrides the load that
   follows it. An order of the level the host quit, taken or still held by the client, is dropped, and a load of that
-  level still going is answered as loaded (the load is over), so the host's load time-out does not drop the guest. A
+  level still going is answered as loaded (the load is over), so the host's load time-out does not drop the guest, and a
+movie of that level the guest began or ended but has not yet told is dropped with it. A
   guest already at its front end has no level to leave, and nothing changes. The quits of the mission-failed and Rumble
   result screens are told the same way once counted (issue #1583).
 - **Movies.** `MovieMode` tells network play of each of the game's own movies and asks it (`movies::MovieSync`,
   `NetLevels::movieSync()`). On the host a movie's start is `startMovie()` and its end or skip `endHostMovie()`; a
   guest's skip (`movieSkipped()`) ends a skippable movie as a pad's skip does, before its next frame; and once a movie
   has ended the mode stays, on black with the game clock still, until `movieMayEnd()`. A guest's own copy of a movie,
-  when it ends, is reported with `movieDone()`, naming the host's movie by the step its MovieStart came in
-  (`NetClient::hostMovie()`, the newest MovieStart the guest received); a copy that ends before the host's MovieStart
-  arrives is reported when it does. A guest's copy of a movie the host never plays is never reported, and nothing
-  waits for it. The other way round, a host movie the guest's game never plays is never reported, so the host waits
-  for it only until the movie time-out. The debug menu's movies are the game's own and wait for nobody.
+  when it starts and when it ends, is reported with `movieBegan()` and `movieDone()` (the begin first), naming the
+  host's movie by the step its MovieStart came in (`NetClient::hostMovie()`, the newest MovieStart the guest
+  received); a copy that begins or ends before the host's MovieStart arrives is reported when it does. A guest's copy
+  of a movie the host never plays is never reported, and nothing waits for it. The other way round, a host movie the
+  guest's game never plays is never reported as begun, so the host waits for it only until the movie time-out; one
+  the guest's game plays is waited for to its end, past the time-out, so a guest still watching its copy never falls
+  behind the host's next step. The debug menu's movies are the game's own and wait for nobody.
 
 A guest still runs its own whole game until the client game mode that draws the snapshots is built: its level is the
 host's, but what happens in it is its own, including the movies its own scripts play.
@@ -744,7 +752,8 @@ guest's own sound does each once, at the host's step; the [two-process checks](#
 `tests/gamemodes/game_mode_stack_test.cpp` checks that `beforeStep` comes before the pads are read;
 `tests/net/level_sync_test.cpp` pins the level messages' bytes and refusals and runs a level change, a checkpoint
 restart, a mid-level join with its full snapshot, a client that never loads dropped after the time-out, and a movie's
-wait, skip and time-out between a `NetServer` and its clients on the loopback, and `net_play_test.cpp` the host's held
+wait, skip and time-out (and the wait past the time-out for a copy that began) between a `NetServer` and its
+clients on the loopback, and `net_play_test.cpp` the host's held
 steps, the order a guest gets on joining and the movie's wait through `NetPlay`, and through `NetLevels` over two fake
 games a level change, a checkpoint restart, a guest joining from the menus or already in the level, a guest that never
 loads dropped, the mission ends, a host's quit and the guest leaving with it, a mod's level path and the movies' wait
