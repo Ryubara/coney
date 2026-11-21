@@ -979,6 +979,9 @@ std::string PlayLevelSimulation::heldObjectLogText(double handle) const {
 }
 
 void PlayLevelSimulation::dropHeld(human::Human& human, double held, bool thrown) {
+    // Coney stand-in (Human_DropHeld): a drop does not cancel the throw aim, name its holder (+0x11c), set kind 10's
+    // hit counter for a brain of type 1, set the state flag 0x20000000 or update the hidden loop sound; no drop sets a
+    // respawn timer.
     if (!thrown) {
         m_print(std::format("pickup: dropped object {:.0f}{}\n", held, heldObjectLogText(held)));
     }
@@ -1051,6 +1054,8 @@ void PlayLevelSimulation::dropHeld(human::Human& human, double held, bool thrown
             spin = anim::Vec3{0.0F, 0.0F, -k * std::numbers::pi_v<float>};
         }
     }
+    // Coney stand-in: a knife let go with no speed (a drop) still tumbles; MeleeWeapon_Detach skips the spin when the
+    // speed is 0 (inferred from the decompile).
     if (knife) {
         start.rotation = headingRotation(human.heading());
         spin = anim::Vec3{kKnifeTumble, 0.0F, 0.0F};
@@ -1067,6 +1072,8 @@ void PlayLevelSimulation::dropHeld(human::Human& human, double held, bool thrown
             kind.secondCounter = kept->second;
         }
     }
+    // Coney stand-in: the warning to the thrower's target (Human_WarnOfAttack), the respawn timer some models set
+    // and the hidden loop sound (Player_UpdateHiddenLoopSound) are not built.
     m_looseObjects.start(held, start.position, start.rotation, kind, velocity, spin, thrown ? handleOf(human) : 0.0);
 }
 
