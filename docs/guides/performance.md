@@ -398,3 +398,33 @@ change holds experiment 16 as well (the distance before the AI's answer), which 
 runs do not measure the two apart. **The result is the same**:
 the all-humans trace, the event log and the lockstep digest of brawl 300 for 500 steps (127,015 rows, 6,590 events) and
 engaged 300 for 700 steps (189,815 rows, 8,081 events) hash the same before and after.
+
+### The enemy scan's rays nearest first (#1555) {#scan-rays-1555}
+
+**The cause.** One brain's scan keeps the nearest 16 enemies it sees, yet cast a line of sight through the level's
+collision mesh to every member of every enemy gang that passed the cheap tests (range, shadow, height, filter, cone):
+up to 500 rays a scan in a crowd of 1000, against the original's at most 59 candidates. The cheap tests still run for
+every member; then the lines are cast nearest first and no further once 16 are found, except to a member the scanner
+still refers to, whose finding decides how the scan forgets him ([The enemy scan](../research/ai-fights.md#coney));
+the performance sweep's experiment 12 (#1542) made into Coney's only path.
+
+**The gain.** Main-thread CPU time (`CONEY_PERF_CPU_CLOCK`), best / median of three interleaved runs, a `playtest`
+build of `main` at `9a6660a8f` and of the change in the same build folder, headless lockstep in `level95`, rows of 25,
+engaged 1000 (every fighter in a gang, scaled scan tokens), 300 steps; the processor's load read 97 to 100 %:
+
+| Zone | Before (ms) | After (ms) |
+| --- | --- | --- |
+| `humans.brains`, mean | 17.0 / 20.2 | 10.3 / 10.3 |
+| `step`, 95th percentile | 119.1 / 137.7 | 65.7 / 68.7 |
+| `step`, mean | 43.2 / 50.7 | 42.5 / 43.8 |
+| `step`, median | 37.8 / 38.2 | 39.1 / 40.8 |
+| Sight rays of step 1, median (mean) a step | 65 (2,988) | 16 (713) |
+
+The scans come in bursts (every brain is spawned in one step, so they fall due together): the median step holds few
+and gains nothing, within the machine's noise, while the bursts that make the 95th percentile halve. The sweep
+measured 31.7 -> 17.1 ms for the brains' mean and 174 -> 97 ms for the 95th percentile, on top of its experiments 0
+to 9 on the `/Ob1` build; the same proportions hold here on today's `main`, which has some of those experiments and the
+`/Ob2` build. Its ray counts (459 -> 53 in a median step) came from another window of the run; the means here fall by
+the same three quarters. **The result is the same**: the all-humans trace, the event log and the lockstep digest of
+brawl 300 for 500 steps (127,015 rows, 6,590 events) and engaged 300 for 700 steps (189,815 rows, 8,081 events) hash
+the same before and after.

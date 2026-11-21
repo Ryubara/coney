@@ -1073,8 +1073,8 @@ chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#pow
   first (`nearestSeen`), and once 16 are found none is cast to a member farther than the 16th, unless the scanner
   still refers to him (`Brain::refersTo`: his target, enemy list, attack slots, sectors or detour), because whether
   he is found decides how step 3 or 4 forgets him. The list, the `forget` calls and the events are those of casting
-  every line, which the original does (up to 512 a scan; a crowd of 1000 cast 459 a step). The Scout tactic (below)
-  scans its members at their posts.
+  every line, which the original does (up to 512 a scan; an engaged crowd of 1000 cast 2,988 a step on average, 713
+  nearest first). The Scout tactic (below) scans its members at their posts.
 - **Blocking**: `BlockGoal` never produces a block: Coney's block starts only on R1 held in the record's buttons,
   which only a pad writes, so its command 4 does nothing. It turns the human's hit reactions off
   (`Fighter::setHitReactionsOff`, bit `0x800`) from its start until its sixth update with the human free; rolls the
