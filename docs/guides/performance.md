@@ -392,7 +392,9 @@ performance sweep's experiments 2 and 16 (#1542) made into Coney's only path.
 | Brawl 1000 (500 + 500, 3 runs) | 102.5 / 2.2 | 122.6 / 19.0 |
 | Engaged 1000 (every fighter in a gang, scaled scan tokens, 2 runs) | 74.8 / 3.6 | 139.9 / 63.4 |
 
-The sweep measured experiment 2 alone at 110 -> 6.5 ms (brawl 1000) and 75.7 -> 4.7 ms (engaged); this change also holds
-experiment 16, the distance before the AI's answer, which the sweep's brawl figure did not. **The result is the same**:
+The sweep measured experiment 2 alone only in the brawl, at 110.1 -> 6.5 ms (brawl 1000, bit 2); its engaged figure,
+75.7 -> 4.7 ms, ran with every experiment on (bits 0x3ff), so neither engaged figure is a baseline for the other. This
+change holds experiment 16 as well (the distance before the AI's answer), which the sweep's bit-2 run did not; these
+runs do not measure the two apart. **The result is the same**:
 the all-humans trace, the event log and the lockstep digest of brawl 300 for 500 steps (127,015 rows, 6,590 events) and
 engaged 300 for 700 steps (189,815 rows, 8,081 events) hash the same before and after.

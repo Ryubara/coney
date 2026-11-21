@@ -202,10 +202,10 @@ bool Humans::markNear(const anim::Vec3& at, float reach) {
     const auto highX = static_cast<int>(std::floor((at.x + r - grid.minX) / grid.cell));
     const auto lowY = static_cast<int>(std::floor((at.y - r - grid.minY) / grid.cell));
     const auto highY = static_cast<int>(std::floor((at.y + r - grid.minY) / grid.cell));
-    const int x0 = std::max(lowX, 0);
-    const int x1 = std::min(highX, grid.nx - 1);
-    const int y0 = std::max(lowY, 0);
-    const int y1 = std::min(highY, grid.ny - 1);
+    const int x0 = std::clamp(lowX, 0, grid.nx); // x0 == x1 + 1 when the window misses the grid: no cell
+    const int x1 = std::clamp(highX, -1, grid.nx - 1);
+    const int y0 = std::clamp(lowY, 0, grid.ny);
+    const int y1 = std::clamp(highY, -1, grid.ny - 1);
     for (int y = y0; y <= y1; ++y) {
         const std::size_t row = static_cast<std::size_t>(y) * static_cast<std::size_t>(grid.nx);
         const std::uint32_t begin = grid.start[row + static_cast<std::size_t>(x0)];

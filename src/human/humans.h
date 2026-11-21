@@ -156,12 +156,13 @@ class Humans {
     // Builds the grid from where the humans stand now.
     // @coney-only Coney's broad phase for the target searches
     void buildTargetGrid();
-    // Builds the grid again when a human of slot `slot` or one it placed (Human::place()) moved further than the grid's
-    // margin since it was built, so the grid never leaves out a human within a search's reach.
+    // Builds the grid again when the human of slot `slot`, or the one he holds after his actions, moved further than
+    // the grid's margin since it was built: the actions pass moves no other, so no search misses one within reach.
     // @coney-only Coney's broad phase for the target searches
     void keepTargetGrid(std::size_t slot);
     // Marks every slot the grid holds within `reach` of `at` (and some beyond) in m_marks; false when the grid cannot
-    // answer (not built, or no finite place or reach), so every slot is to be looked at.
+    // answer (not built, or no finite place or reach), so every slot is to be looked at. `at` is the acting human's
+    // place, so near the grid; a window past its edges is clamped to it and marks nothing there.
     // @coney-only Coney's broad phase for the target searches
     [[nodiscard]] bool markNear(const anim::Vec3& at, float reach);
     // Calls `visit(slot)` for every marked slot in ascending order, then for the slots added since the grid was
@@ -182,7 +183,6 @@ class Humans {
     std::vector<std::uint64_t> m_marks; // a bit per slot, for visitMarked()
     SlotTargets m_slotTargets;
     std::unordered_map<const Combatant*, std::size_t> m_slotOf; // each human's slot, kept by add() and remove()
-    std::vector<Human*> m_placed;                               // the humans Human::place() moved, for keepTargetGrid()
     BrainsHook m_brains;
     Human::BodyContact m_bodyContact;
     Human::ObjectPush m_objectPush;

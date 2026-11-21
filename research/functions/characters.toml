@@ -2118,9 +2118,9 @@ relation = "not-ported"
 issue = 635
 
 [[function.gaps]]
-what = "a hurt human made dying when his timer passes is not ported"
+what = "a hurt human made dying when his timer passes is not ported (the state 0x80000000 chain of #685; #301 asks what it protects)"
 relation = "not-ported"
-issue = 301
+issue = 685
 
 [[function]]
 address = 0x0024bfc0
