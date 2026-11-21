@@ -170,6 +170,9 @@ class MovieMode final : public GameMode, public MoviePlayer {
     [[nodiscard]] std::uint32_t id() const override { return kId; }
     /// The game clock stands still while a movie plays: nothing else runs while `Movie_Play` blocks.
     [[nodiscard]] bool stopsGameClock() const override { return true; }
+    /// Starts the next queued movie and steps the one playing (step()); in a network session ends it on another
+    /// player's skip and, once it has ended, waits for the others (MovieSync). Leaves when the queue is done.
+    /// @coney-only the movie player as a game mode; the original's Movie_Play blocks its caller instead
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
     /// Draws the due frame unscaled, centred on the screen over black, then the caption.
     /// @orig 0x00429b18 Movie_BuildUploadPacket (BinkMovie.cpp)
