@@ -533,10 +533,12 @@ MovieDone or MovieBegan sent to a client, is one too.
 
 **The end of a mission.** `NetServer::endMission(outcome)` sends each joined player a **MissionEnd** with the current
 load and the outcome (passed, failed, quit); the client keeps them for its game (`takeMissionEnds()`). What follows (the
-restart or the next level) comes as its own LoadLevel. A **quit** is the host leaving the level through the pause menu's
-Quit (to the menu, the hangout or the Rumble menu): `PauseMode::quits()` counts each quit the menu chooses, and the
-host's game tells network play like any other end. A quit from the mission-failed or Rumble result screen is not counted
-yet (issue #1583).
+restart or the next level) comes as its own LoadLevel. A **quit** is the host leaving the level by its own choice, on
+any of the four screens the original leaves a level from ([Pause](../research/pause.md#leaving)): the pause menu's Quit
+(to the menu, the hangout or the Rumble menu), the mission-failed screen's Quit and its To Hangout in `level95`, the
+Rumble result screen's Rumble menu and Quit, and the Armies of the Night game-over screen's Quit. Each screen's mode
+counts the quits it chooses (`quits()`, through `QuitCount`), `StartUpFlow::missionQuits()` adds them up, and the host's
+game tells network play like any other end. A restart, a replay or a continue is no quit.
 
 **A movie waits for every client.** A movie starts on the host as a MovieStart game event ([Game events](#events)); the
 host's game calls `NetPlay::startMovie()`, which names the movie by the step it starts in, and every player who has
@@ -559,9 +561,9 @@ network play's receive and before the step gate.
 - **The host** (and an offline game, so that hosting later in the level tells the guests who join) reports each level
   load gameplay starts (`GameSession::levelStarts()`, a level change and a checkpoint restart alike) as
   `NetPlay::loadLevel()`, and each mission-complete and mission-failed screen as `endMission()` (passed or failed), and
-  each quit the pause menu chooses (Quit, to the menu, the hangout or the Rumble menu) as `endMission()` with the
-  outcome quit. A step's mission ends are reported before its level load, so a quit to the hangout reaches the guest
-  as the quit, for the load it ends, and then the hangout's LoadLevel. The level goes on the wire as its name,
+  each quit (from the pause menu or one of the three result screens, above) as `endMission()` with the outcome quit.
+  A step's mission ends are reported before its level load, so a quit to the hangout reaches the guest as the quit,
+  for the load it ends, and then the hangout's LoadLevel. The level goes on the wire as its name,
   `net::levelNameOf()`: an original level's name as it is, a path such as a story mod's mission level
   (`levels/alley.clevel`, [Story manifest](studio/mission-mods.md#story-manifest)) as its file name up to the first dot
   (`alley`); a level with no such name is not sent, and the log says so. A guest cannot load a mod's level by that name
@@ -580,9 +582,9 @@ network play's receive and before the step gate.
   each step the guest handles the mission ends before the host's level order, so the leave never overrides the load that
   follows it. An order of the level the host quit, taken or still held by the client, is dropped, and a load of that
   level still going is answered as loaded (the load is over), so the host's load time-out does not drop the guest, and a
-movie of that level the guest began or ended but has not yet told is dropped with it. A
-  guest already at its front end has no level to leave, and nothing changes. The quits of the mission-failed and Rumble
-  result screens are told the same way once counted (issue #1583).
+  movie of that level the guest began or ended but has not yet told is dropped with it. A guest already at its front
+  end has no level to leave, and nothing changes. A quit from any of the four screens is told and followed the same
+  way.
 - **Movies.** `MovieMode` tells network play of each of the game's own movies and asks it (`movies::MovieSync`,
   `NetLevels::movieSync()`). On the host a movie's start is `startMovie()` and its end or skip `endHostMovie()`; a
   guest's skip (`movieSkipped()`) ends a skippable movie as a pad's skip does, before its next frame; and once a movie
@@ -756,8 +758,10 @@ wait, skip and time-out (and the wait past the time-out for a copy that began) b
 clients on the loopback, and `net_play_test.cpp` the host's held
 steps, the order a guest gets on joining and the movie's wait through `NetPlay`, and through `NetLevels` over two fake
 games a level change, a checkpoint restart, a guest joining from the menus or already in the level, a guest that never
-loads dropped, the mission ends, a host's quit and the guest leaving with it, a mod's level path and the movies' wait
-and skip; `tests/gamemodes/pause_mode_test.cpp` counts the pause menu's quits and `story_start_test.cpp` leaves a level
+loads dropped, the mission ends, a host's quit and the guest leaving with it (from each screen, the host a real
+start-up flow played from a pad script, `tests/support/flow_run.h`), a mod's level path and the movies' wait and skip;
+`tests/gamemodes/pause_mode_test.cpp` counts the quits of the pause menu and the three result screens, and
+`story_start_test.cpp` leaves a level
 for the front end; `tests/movies/movie_mode_test.cpp` covers the movie player's side of the wait, and
 `net_game_test.cpp` and `session_record_test.cpp` the held steps in the record and the replay;
 `tests/debug/net_page_test.cpp` drives the Network page over a fake `NetControls`; and the `coney.hosts_headless` smoke

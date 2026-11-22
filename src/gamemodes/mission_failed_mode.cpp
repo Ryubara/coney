@@ -70,6 +70,12 @@ ModeResult MissionFailedMode::update(GameModeStack& stack, const FrameTime& fram
     return ModeResult::Stay;
 }
 
+// The menu keeps its outcome until it opens again, so QuitCount counts each quit once.
+std::uint64_t MissionFailedMode::quits() {
+    const std::optional<gui::PauseOutcome> outcome = m_menu.outcome();
+    return m_quits.see(outcome && isQuit(*outcome));
+}
+
 void MissionFailedMode::render(const RenderTime& time) {
     const float level = lerp(m_fadeLevel.previous(), m_fadeLevel.current(), time.alpha);
     const std::function<void(graphics::RenderDevice&)> overlay = [this, level](graphics::RenderDevice& device) {

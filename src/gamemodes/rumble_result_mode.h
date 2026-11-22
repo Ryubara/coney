@@ -10,6 +10,7 @@
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/pause_mode.h"
+#include "gamemodes/quit_count.h"
 #include "graphics/render_device.h"
 #include "gui/global_strings.h"
 #include "gui/pause_menu/pause_menu.h"
@@ -76,6 +77,11 @@ class RumbleResultMode final : public GameMode {
     /// The texts of the last launch.
     [[nodiscard]] const std::string& winner() const { return m_winner; }
     [[nodiscard]] const std::string& reason() const { return m_reason; }
+    /// How many times the screen has ended with a quit (Rumble menu or Quit: RumbleResult_Toggle's `+0x7a8` and
+    /// `+0x7ac`), each counted once: a network host tells its guests of each (docs/guides/multiplayer.md#levels). It
+    /// watches the screen's choice, so call it every step, outside the mode's update; Replay is no quit.
+    /// @coney-only the count network play reads; the original keeps none
+    [[nodiscard]] std::uint64_t quits();
 
   private:
     graphics::RenderDevice& m_device;
@@ -92,6 +98,7 @@ class RumbleResultMode final : public GameMode {
     MenuLayer m_layer;
     std::string m_winner;
     std::string m_reason;
+    QuitCount m_quits; // quits()
     bool m_openPending = false;
 };
 

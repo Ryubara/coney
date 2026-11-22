@@ -192,10 +192,13 @@ class StartUpFlow final : public script::BindingHost {
     /// Whether a level is in play or loading: gameplay (mode 1) is on the stack.
     /// @coney-only a network guest following the host's quit
     [[nodiscard]] bool inLevel() const { return m_stack.contains(m_gameplay); }
-    /// How many times the pause menu chose a quit (PauseMode::quits()): a network host tells its guests of each
-    /// (docs/guides/multiplayer.md#levels). Poll it between steps.
+    /// How many times a level was quit: the pause menu's quits, the mission-failed screen's, the Rumble result screen's
+    /// and the Armies game-over screen's (each mode's quits()), every way the original leaves a level by a player's
+    /// choice. A network host tells its guests of each (docs/guides/multiplayer.md#levels). Poll it between steps.
     /// @coney-only the count network play reads; the original keeps none
-    [[nodiscard]] std::uint64_t missionQuits() { return m_pause.quits(); }
+    [[nodiscard]] std::uint64_t missionQuits() {
+        return m_pause.quits() + m_missionFailed.quits() + m_rumbleResult.quits() + m_armiesGameOver.quits();
+    }
     /// A movie, through FrontEndServices.
     /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void playMovie(std::string_view name) override;

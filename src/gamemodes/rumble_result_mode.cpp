@@ -73,6 +73,12 @@ ModeResult RumbleResultMode::update(GameModeStack& stack, const FrameTime& frame
     return ModeResult::Stay;
 }
 
+// The screen keeps its choice until it opens again, so QuitCount counts each quit once.
+std::uint64_t RumbleResultMode::quits() {
+    const std::optional<gui::RumbleResultChoice> choice = m_menu.choice();
+    return m_quits.see(choice && isQuit(rumbleResultOutcome(*choice, m_fromFrontEnd && m_fromFrontEnd())));
+}
+
 void RumbleResultMode::render(const RenderTime& time) {
     const std::function<void(graphics::RenderDevice&)> overlay = [this](graphics::RenderDevice& device) {
         m_layer.draw(device);

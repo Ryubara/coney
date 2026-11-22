@@ -136,6 +136,9 @@ ModeResult ArmiesGameOverMode::update(GameModeStack& stack, const FrameTime& fra
     return ModeResult::Stay;
 }
 
+// The screen keeps its choice until it opens again, so QuitCount counts each quit once.
+std::uint64_t ArmiesGameOverMode::quits() { return m_quits.see(m_menu.choice() == gui::ArmiesGameOverChoice::Quit); }
+
 void ArmiesGameOverMode::close(GameModeStack& stack, gui::ArmiesGameOverChoice choice) {
     stack.pop();
     // Not ported (#669): the original also writes the game state's level-end request (`+0x14c`): 0 after a continue

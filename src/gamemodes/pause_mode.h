@@ -17,6 +17,7 @@
 #include "core/pads.h"
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode.h"
+#include "gamemodes/quit_count.h"
 #include "graphics/font.h"
 #include "graphics/overlay_camera.h"
 #include "graphics/render_device.h"
@@ -270,8 +271,7 @@ class PauseMode final : public GameMode {
     int m_cooldown = 0;
     int m_player = 0;
     std::uint64_t m_pauses = 0;
-    std::uint64_t m_quits = 0; // quits()
-    bool m_quitSeen = false;   // the menu's outcome was a quit when quits() last looked
+    QuitCount m_quits; // quits()
     bool m_openPending = false;
 };
 

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <functional>
@@ -22,8 +23,10 @@
 #include "core/options.h"
 #include "core/pad.h"
 #include "core/pads.h"
+#include "gamemodes/mission_complete_mode.h"
 #include "gamemodes/sound_event_player.h"
 #include "gamemodes/sound_events.h"
+#include "gamemodes/start_up_flow.h"
 #include "hud/hud.h"
 #include "net/event_channel.h"
 #include "net/loopback_transport.h"
@@ -36,6 +39,8 @@
 #include "platform/net_game.h"
 #include "platform/net_levels.h"
 #include "scripting/sound_bindings.h"
+#include "support/flow_run.h"
+#include "warriors/level_table.h"
 
 using coney::InputSource;
 using coney::PadSample;
@@ -195,7 +200,8 @@ struct FakeLevels final : LevelGame {
     [[nodiscard]] bool inPlay() const override { return playing; }
     [[nodiscard]] std::uint64_t levelStarts() const override { return starts; }
     [[nodiscard]] std::optional<LevelAt> currentLevel() const override { return at; }
-    [[nodiscard]] MissionCounts missionEnds() const override { return missions; }
+    std::function<MissionCounts()> counts; // when set, the mission ends instead of `missions` (a real game's)
+    [[nodiscard]] MissionCounts missionEnds() const override { return counts ? counts() : missions; }
     bool jumpToLevel(std::string_view level, int checkpoint) override {
         if (!acceptsJumps) {
             return false;
@@ -919,6 +925,100 @@ TEST_CASE(
     g.guestGame.missions.quit = 3;
     g.run(3);
     CHECK(std::ranges::count(g.games.guest.log(), std::string("the host's mission ended: quit")) == 1);
+}
+
+namespace {
+
+// A scripted host and guest: the host's mission ends are a real start-up flow's (coney::test::FlowRun, its pad
+// played from `script`), over which `launch` opens a screen two frames in; both games step together for `frames`
+// frames. Both games stay for the checks.
+struct ScreenQuit {
+    LevelGames g;
+    coney::test::FlowRun host;
+
+    ScreenQuit(std::string_view script, const std::function<void(coney::StartUpFlow&)>& launch, int frames)
+        : host(script) {
+        g.hostPlays("level99", 1);
+        g.games.connect();
+        g.run(12);
+        REQUIRE(g.guestGame.inPlay());
+        g.hostGame.counts = [this] {
+            return MissionCounts{.passed = host.flow->missionComplete().launches(),
+                                 .failed = host.flow->missionFailures(),
+                                 .quit = host.flow->missionQuits()};
+        };
+        host.frames(2);
+        launch(*host.flow);
+        for (int frame = 0; frame < frames; ++frame) {
+            host.frames(1);
+            g.run(1);
+        }
+    }
+    // How many times the guest heard of the host's mission ending with `outcome`.
+    [[nodiscard]] std::ptrdiff_t heard(std::string_view outcome) const {
+        return std::ranges::count(g.games.guest.log(), std::format("the host's mission ended: {}", outcome));
+    }
+};
+
+} // namespace
+
+// Expected: pause.md#the-mission-failed-screen, confirmed (code): MissionFailed_Toggle (0x00155408) leaves the level
+// for `menu` on quit (+0x7a0), as PauseMenu_Toggle (0x00154f28) does on the pause menu's quit to the main menu
+TEST_CASE("a host's Yes to Quit on the mission-failed screen reaches the guest as a quit, and the guest leaves with it",
+          "[net][net_play][level]") {
+    // Down, right to Quit, cross, left to Yes, cross.
+    ScreenQuit run(
+        "15 tap down\n20 tap right\n25 tap cross\n35 tap left\n40 tap cross\n",
+        [](coney::StartUpFlow& flow) { flow.launchMissionFailed("Busted"); }, 60);
+    CHECK(run.heard("failed") == 1);
+    CHECK(run.heard("quit") == 1);
+    CHECK(run.g.guestGame.leaves == 1);
+    CHECK_FALSE(run.g.guestGame.inPlay());
+}
+
+// Expected: pause.md#the-mission-failed-screen, confirmed (code): in `level95` MissionFailed_Toggle (0x00155408)
+// calls `runNextMission(0)` on To Hangout (+0x7ac), as PauseMenu_Toggle does on the quit to the hangout
+TEST_CASE("a host's To Hangout on the mission-failed screen reaches the guest as a quit", "[net][net_play][level]") {
+    ScreenQuit run(
+        "15 tap cross\n",
+        [](coney::StartUpFlow& flow) {
+            coney::LevelRecord level = *flow.state().levels.at(1);
+            level.number = 95;
+            (void)flow.state().levels.set(level);
+            flow.launchMissionFailed("Busted");
+        },
+        40);
+    CHECK(run.heard("quit") == 1);
+    CHECK(run.g.guestGame.leaves == 1);
+}
+
+// Expected: rumble.md#result-screen, confirmed (code): RumbleResult_Toggle (0x00155648) leaves the arena on Quit
+// (+0x7ac) and on Rumble menu (+0x7a8), and reloads it on Replay (+0x7a4)
+TEST_CASE("a host's Quit or Rumble menu on the Rumble result screen reaches the guest as a quit, and Replay does not",
+          "[net][net_play][level][rumble]") {
+    const auto launch = [](coney::StartUpFlow& flow) { flow.launchRumbleWin("Player 1", ""); };
+    // The choices take input 255 steps after the screen opens; Quit and Rumble menu are behind more.
+    ScreenQuit quit("275 tap right\n285 tap cross\n295 tap right\n305 tap cross\n", launch, 330);
+    CHECK(quit.heard("quit") == 1);
+    CHECK(quit.g.guestGame.leaves == 1);
+    ScreenQuit menu("275 tap right\n285 tap cross\n295 tap cross\n", launch, 330);
+    CHECK(menu.heard("quit") == 1);
+    CHECK(menu.g.guestGame.leaves == 1);
+    ScreenQuit replay("275 tap cross\n", launch, 330);
+    CHECK(replay.heard("quit") == 0);
+    CHECK(replay.g.guestGame.leaves == 0);
+}
+
+// Expected: pause.md#an-game-over, confirmed (code): ANGameOver_Toggle (0x001557f8) calls `runNextMission(0)` on Quit
+// (+0x7a8), as PauseMenu_Toggle does on the quit to the hangout
+TEST_CASE("a host's Quit on the Armies of the Night game-over screen reaches the guest as a quit",
+          "[net][net_play][level][armies]") {
+    // No credit: Start begins the end phase, whose choices take input after a 60-step fade.
+    ScreenQuit run(
+        "12 tap start\n90 tap right\n100 tap cross\n", [](coney::StartUpFlow& flow) { flow.launchArmiesGameOver(); },
+        120);
+    CHECK(run.heard("quit") == 1);
+    CHECK(run.g.guestGame.leaves == 1);
 }
 
 // Expected: unverified, #1549 (Coney's own; docs/guides/multiplayer.md#levels: a quit to the hangout is a quit and then

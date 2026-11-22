@@ -32,8 +32,7 @@ struct LevelAt {
 struct MissionCounts {
     std::uint64_t passed = 0; ///< mission-complete screens launched
     std::uint64_t failed = 0; ///< mission-failed screens launched
-    std::uint64_t quit =
-        0; ///< levels left through the pause menu's four quits (the failed and Rumble result screens' are #1583)
+    std::uint64_t quit = 0;   ///< levels quit (the pause, mission-failed, Rumble result and Armies game-over screens)
 };
 
 /// What NetLevels needs of the running game: the game session in the run (SessionLevelGame), a fake in tests. Read
