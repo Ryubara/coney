@@ -142,6 +142,11 @@ void Gl3Renderer::releaseAll() {
 
 void Gl3Renderer::drawScene(const graphics::FrameDescription& frame, const graphics::Draw3d& draw,
                             const Target& target) {
+    // The mesh views' own passes are the lighting rig's on this renderer (docs/engine/gpu-renderer.md#mesh-views): a
+    // draw recorded for the GPU renderer's views is not drawn here.
+    if (draw.view != graphics::ViewPass::Shaded) {
+        return;
+    }
     if ((target.camera == nullptr && !draw::recording()) || target.assets == nullptr) {
         return;
     }

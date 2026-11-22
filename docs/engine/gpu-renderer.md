@@ -172,7 +172,7 @@ lit though its models carry no light flag, as the original lights them ([Lightin
 GL3 sets the geometry's LIGHT flag for the draw (`MaterialChange`) and the GPU renderer takes the lights though
 `MeshData::lit` is off (`lightsFor(..., alwaysLit)`). The level's models hold their meshes and their materials'
 textures in the scene assets while the level object holds them (`holdLevelMeshes()`, from `loadLevel()` before any
-conversion for drawing); a model with no mesh id, or any while the mesh views are on, draws through the lighting rig
+conversion for drawing); a model with no mesh id, or on GL3 any while a hook is set, draws through the lighting rig
 as before. The GL3 renderer draws the parts and clears the depth at once, through librw's camera as placed, so its
 draw stream is the one it was (the `keeps` hash of a Coney-made scene with a level in
 `tests/platform/world_draw_stream_test.cpp`).
@@ -196,14 +196,73 @@ same scenery scope as the sectors, so *Streamed world* off hides it too, as the 
 *Background* part hides it alone; *Humans* and *Objects* off leave it. GL3 is as it was: with a hook set (a part hidden
 or a view on) the sectors, the background, the objects and the humans go through the lighting rig for it, which hides
 the kind there (`SceneLighting::meshViewsOn()` is true whenever a hook is set and the play mode left its passes on), and
-nothing of them is recorded; the GPU renderer says its passes off, so no hook sends a model through the rig there. The
-tests record the frame description for each kind (`tests/platform/world_draw_stream_test.cpp`,
-`object_draw_stream_test.cpp`, `human_draw_stream_test.cpp`; the sectors also on a real GPU device).
+nothing of them is recorded; the GPU renderer says its passes off, so no hook sends a model through the rig there and
+the mesh views' passes are recorded instead ([below](#mesh-views)). The tests record the frame description for each
+kind (`tests/platform/world_draw_stream_test.cpp`, `object_draw_stream_test.cpp`, `human_draw_stream_test.cpp`; the
+sectors also on a real GPU device).
 
-**The mesh views** (the wireframe and the flat views of the Debug draw page) are GL3's: each is a draw of the model's
-own librw atomic through the lighting rig, which draws nothing on the GPU backend. The play mode therefore leaves their
-passes off there (`drawsMeshViewPassesOn()`, false for `RenderBackend::Gpu`): the models are recorded and drawn shaded
-as without a view, and the page's help says the wireframe and the mesh views are not drawn on `--renderer gpu` yet.
+### The mesh views {#mesh-views}
+
+The wireframe, the flat views and the lines of the Debug draw page ([debug menu
+guide](../guides/debug-menu.md#mesh-views), [#1599](issue:1599)), Coney's own debug tooling. On GL3 each view pass is a
+draw of the model's own librw atomic through the lighting rig, which draws nothing on this backend, so the play mode
+leaves the rig's passes off here (`drawsMeshViewPassesOn()`, false for `RenderBackend::Gpu`) and the views are drawn
+from the frame description instead. The views set the hook when the wireframe or a mesh view other than shaded is on (or
+a part is hidden); the normals and bone axes alone do not, being lines.
+
+- **Recorded passes.** `RenderEngine::drawScene()` asks the hook it was given by `hideKindsOf()` for the passes of each
+  model it records (`MeshViewHook::passesFor()`: the kind the draw scope names, the mesh id, each material's texture
+  name and alpha), then records the shaded draw if the hook gives one, a Flat draw with a colour for each material and a
+  Wire draw with one colour, in that order, each of the same mesh with the same transform, lights, states and pose
+  (`Draw3d::view`; the colours are a range of the frame, `FrameDescription::viewColoursOf()`). No second layer rides
+  with a Flat or Wire draw: a human's blood layer and an object's dual layer are drawn only with the shaded draw. A
+  human's blood layer is the exception to the order: GL3 draws it as a second atomic after the body's passes, so where
+  it blends it covers the wireframe, and with a wire over a shaded human the engine records the body without it, then
+  the wire, then the layer alone (`ViewPass::DualLayer`). The selection is the model whose mesh id the hook holds
+  (`MeshViews::selectMeshes()`, set from the Entity inspector's selection by `beginFrame()`); the draw-call colours
+  count on over every material of every flat draw of the frame in the order recorded, as GL3 counts them in the order
+  drawn; the LOD view reads the alpha the draw gives the material (`coloursOf()`), as GL3 reads the librw material's.
+  The rules and the colours stay the debug tools' (`debug::meshPlanFor()`); the game links nothing of them.
+- **Drawing them.** `GpuScene` draws a Flat or Wire draw like any other with the changes GL3's pass makes
+  (`viewColoursOf()`, `viewLightsOf()` and `viewStatesOf()` of `graphics/scene_batch.h`): every material in the view's
+  colour, opaque, with no texture and the mesh modulated by it; one white ambient light, the material's ambient at 1 and
+  no other light, so a vertex is white before the colour modulates it; no fog; the alpha test passing every fragment; a
+  Wire draw writing no depth. A Wire draw's pipeline fills lines (`SDL_GPU_FILLMODE_LINE`) with a depth bias of -1 and a
+  slope of -1, as OpenGL's polygon offset of (-1, -1) pulls GL3's, so the lines sit on the fill; culling is the draw's,
+  as OpenGL culls polygons drawn as lines too. Stand-in: the two APIs count the bias in their own units (OpenGL in the
+  depth buffer's smallest steps, SDL passes the constant factor on as the API takes it), so how far a line is pulled
+  differs a little between drivers.
+- **Lines.** GL3 draws the normals and the bone axes, Debug draw lines, through librw's immediate mode. Here
+  `PlayLevelMode::drawSceneLines()` hands them to `RenderEngine::drawSceneLines()`, which adds them to the scene pass
+  the frame's draws are in (`ScenePass::lines`, two vertices to a line, `SceneLineVertex`), and `GpuScene` draws them
+  after that pass's meshes with the same shaders as a line list: depth tested, not written, never fogged or culled, in
+  the vertex colour alone. So every other line of the Debug draw page (the collision wireframe, the headings, the
+  places) is drawn on this renderer too.
+
+**Against GL3** (confirmed (runtime), `picture compare` in the task's scratch folder, Direct3D 12 on the agents' Windows
+machine, `level99` at checkpoint 2, frame 100, 640x448, `--freeze-world`). With `--scene-only`, which leaves out what
+the GPU renderer does not draw yet and, with it, the normals and bone axes, seven frames of the views: the four flat
+ones (by material, by draw call, by LOD on the humans, by material on the selection) have 3 or 4 pixels over 4 of 255
+(largest difference 192, 156, 67 and 67, single pixels along a polygon's edge), and the wireframe on everything over the
+shaded scene 4 (largest 187). The wireframe over the shaded fill had 1,772 over until the blood layer was recorded after
+the wire: the GPU drew the human's layer first and left his lines at full colour where GL3's layer dims them, which the
+difference picture showed on the human alone. The two frames of lines alone differ more: wireframe only has 2,300 pixels
+over (0.8 %, largest 203) and the humans' wireframe in a wireframe-only view 3,110 (1.1 %, largest 209), and 95 % of
+those pixels have the other renderer's colour within a pixel of them (checked on both frames), so a line is covered a
+pixel over where Direct3D and OpenGL rasterise a one-pixel line differently. These two are over the cross-renderer
+tolerance of 0.2 % and are listed here with that reason.
+
+The whole frame, without `--scene-only`, differs from GL3 by what the GPU renderer does not draw yet (the blob shadows,
+the health rings, the coronas): the street frame with every view off, 10,583 pixels over 4 (3.7 %, largest 161); with
+the humans' wireframe in a wireframe-only view and the selection's normals and bone axes on 13,862 (4.8 %), and with the
+normals and bone axes alone 10,570 (3.7 %). GL3's own frames, branch against base, are the same in all nine frames (the
+seven above and those two), and the GPU frame with every view off, 0 pixels over 2.
+
+`tests/graphics/mesh_view_draw_test.cpp` checks the passes' colours, lighting and states and the frame description's
+colours and lines without a window; `tests/platform/mesh_view_scene_test.cpp` checks on the NULL backend, which records
+as this one does, what lands in the frame description for each pass, a hidden kind, a posed model and a human's blood
+layer; `tests/platform/mesh_views_passes_test.cpp` checks the debug tools' answers and, on a hidden GPU window, the
+pixels of each view, of the blood layer over the wire and of the lines read back.
 
 ## Skinning {#skinning}
 

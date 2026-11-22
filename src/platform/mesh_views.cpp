@@ -68,6 +68,22 @@ class SavedStates {
 // librw's colour from ours, opaque.
 rw::RGBA rwColour(graphics::Rgba colour) { return rw::makeRGBA(colour.r, colour.g, colour.b, 255); }
 
+// The colour a flat pass gives material `index` (texture named `texture`, drawn at `alpha`) as the plan's view says:
+// the Material view's one colour per texture name and index, the draw-call view's by the draw `drawIndex`, the LOD
+// view's by the fade. The GL3 pass and the recorded one (MeshViews::passesFor()) colour a material the same way.
+graphics::Rgba flatColourOf(const debug::MeshDrawPlan& plan, std::string_view texture, std::size_t index,
+                            std::uint8_t alpha, std::size_t drawIndex) {
+    switch (plan.colouring) {
+    case debug::MeshShading::DrawCall:
+        return debug::meshPaletteColour(static_cast<std::uint32_t>(drawIndex));
+    case debug::MeshShading::Lod:
+        return debug::meshLodColour(static_cast<float>(alpha) / 255.0F);
+    case debug::MeshShading::Material:
+    default:
+        return debug::meshPaletteColour(debug::meshMaterialKey(texture, index));
+    }
+}
+
 } // namespace
 
 MeshViews::~MeshViews() {
@@ -86,9 +102,11 @@ bool MeshViews::beginFrame(const PlayLevelMode& mode) {
     m_drawIndex = 0;
     if (!hasPasses() && !debug::hidesMeshes(parts())) {
         m_selected.clear();
+        m_selectedMeshes.clear();
         return false;
     }
     m_selected = PlayLevelControls::atomicsOf(mode, m_options.inspected);
+    m_selectedMeshes = PlayLevelControls::meshIdsOf(mode, m_options.inspected);
     return true;
 }
 
@@ -123,6 +141,31 @@ void MeshViews::draw(rw::Atomic* atomic, DrawKind kind, bool layer, const std::f
     }
 }
 
+ViewPasses MeshViews::passesFor(DrawKind kind, graphics::MeshId mesh, std::span<const ViewMaterial> materials) {
+    // A kind the World page hides is given no pass at all (the renderer leaves such a draw out before it asks).
+    ViewPasses passes;
+    if (hides(kind)) {
+        passes.shaded = false;
+        return passes;
+    }
+    // The selection is known by mesh id here, as draw() knows it by atomic; the plan is the same one.
+    const bool selected = std::ranges::find(m_selectedMeshes, mesh) != m_selectedMeshes.end();
+    const debug::MeshDrawPlan plan = debug::meshPlanFor(m_options.mesh, meshKindOf(kind), selected);
+    passes.shaded = plan.shaded;
+    if (plan.flat) {
+        // One colour for each material, and one draw call for each, as the GL3 flat pass counts them.
+        passes.flat.reserve(materials.size());
+        for (std::size_t i = 0; i < materials.size(); ++i) {
+            passes.flat.push_back(flatColourOf(plan, materials[i].texture, i, materials[i].alpha, m_drawIndex));
+            ++m_drawIndex;
+        }
+    }
+    if (plan.wire) {
+        passes.wire = plan.wireColour;
+    }
+    return passes;
+}
+
 rw::World* MeshViews::flatWorld() {
     if (m_world == nullptr) {
         m_world = rw::World::create();
@@ -149,20 +192,9 @@ void MeshViews::flatPass(rw::Atomic* atomic, const debug::MeshDrawPlan& plan, bo
             SavedMaterial{.colour = material->color, .texture = material->texture, .surface = material->surfaceProps};
         graphics::Rgba colour = plan.wireColour;
         if (!lines) {
-            switch (plan.colouring) {
-            case debug::MeshShading::DrawCall:
-                colour = debug::meshPaletteColour(static_cast<std::uint32_t>(m_drawIndex));
-                break;
-            case debug::MeshShading::Lod:
-                colour = debug::meshLodColour(static_cast<float>(material->color.alpha) / 255.0F);
-                break;
-            case debug::MeshShading::Material:
-            default:
-                colour = debug::meshPaletteColour(debug::meshMaterialKey(
-                    material->texture != nullptr ? std::string_view(material->texture->name) : std::string_view{},
-                    index));
-                break;
-            }
+            colour = flatColourOf(
+                plan, material->texture != nullptr ? std::string_view(material->texture->name) : std::string_view{},
+                index, material->color.alpha, m_drawIndex);
             ++m_drawIndex;
         }
         material->color = rwColour(colour);

@@ -3,6 +3,8 @@
 
 #include <cstddef>
 #include <functional>
+#include <span>
+#include <utility>
 #include <vector>
 
 #include "debug/debug_session.h"
@@ -50,6 +52,14 @@ class MeshViews final : public MeshViewHook {
     /// Whether the World page's parts hide the models of `kind` (debug::meshHidden()).
     [[nodiscard]] bool hides(DrawKind kind) const override;
     void draw(rw::Atomic* atomic, DrawKind kind, bool layer, const std::function<void()>& shaded) override;
+    /// The passes of a recorded model, as draw() gives its atomic (debug::meshPlanFor()), for a renderer that records
+    /// its draws (the GPU renderer): the colours of the flat view for each of `materials`, the draw-call view's counted
+    /// on from where the frame's flat passes left off, and the wire's one colour; the selection is the models whose
+    /// mesh id is one of selectMeshes().
+    [[nodiscard]] ViewPasses passesFor(DrawKind kind, graphics::MeshId mesh,
+                                       std::span<const ViewMaterial> materials) override;
+    /// The selection's models by mesh id for this frame (beginFrame() sets them from the Entity inspector's selection).
+    void selectMeshes(std::vector<graphics::MeshId> meshes) { m_selectedMeshes = std::move(meshes); }
 
     /// The materials the flat (filled) passes have drawn so far this frame: each is a draw, and the wire passes add
     /// none (for the log of a run, and the tests).
@@ -67,11 +77,12 @@ class MeshViews final : public MeshViewHook {
     }
 
     const debug::DebugDrawOptions& m_options;
-    const graphics::LightingSwitches* m_switches; // the World page's parts; null: none hidden
-    std::vector<const rw::Atomic*> m_selected;    // this frame's selection
-    std::size_t m_drawIndex = 0;                  // the flat passes' draws this frame, for the draw-call colours
-    rw::World* m_world = nullptr;                 // owned, with m_light
-    rw::Light* m_light = nullptr;                 // owned, with its frame
+    const graphics::LightingSwitches* m_switches;   // the World page's parts; null: none hidden
+    std::vector<const rw::Atomic*> m_selected;      // this frame's selection
+    std::vector<graphics::MeshId> m_selectedMeshes; // the same, by mesh id, for the recorded draws
+    std::size_t m_drawIndex = 0;                    // the flat passes' draws this frame, for the draw-call colours
+    rw::World* m_world = nullptr;                   // owned, with m_light
+    rw::Light* m_light = nullptr;                   // owned, with its frame
 };
 
 /// `--mesh-view` (docs/guides/running-options.md): the views of a spec switched on at the first frame the debug menus

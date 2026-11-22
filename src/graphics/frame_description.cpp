@@ -19,6 +19,7 @@ void FrameDescription::begin(const FrameStart& start) {
     m_lights.clear();
     m_sceneTextures.clear();
     m_bones.clear();
+    m_viewColours.clear();
     m_camera.reset();
 }
 
@@ -94,7 +95,7 @@ void FrameDescription::addTriangles(const Material2d& material, std::span<const 
 ScenePass& FrameDescription::scene() {
     // A new scene pass keeps the camera set last this frame.
     if (m_passes.empty() || !std::holds_alternative<ScenePass>(m_passes.back())) {
-        m_passes.emplace_back(ScenePass{m_camera, false, {}});
+        m_passes.emplace_back(ScenePass{m_camera, false, {}, {}});
     }
     return std::get<ScenePass>(m_passes.back());
 }
@@ -105,28 +106,30 @@ void FrameDescription::setSceneCamera(const SceneCamera& camera) {
     m_camera = camera;
     // A scene pass with no draw yet takes it; else the draws after it start a new pass.
     if (!m_passes.empty()) {
-        if (auto* last = std::get_if<ScenePass>(&m_passes.back()); last != nullptr && last->draws.empty()) {
+        if (auto* last = std::get_if<ScenePass>(&m_passes.back());
+            last != nullptr && last->draws.empty() && last->lines.empty()) {
             last->camera = camera;
             return;
         }
     }
-    m_passes.emplace_back(ScenePass{camera, false, {}});
+    m_passes.emplace_back(ScenePass{camera, false, {}, {}});
 }
 
 void FrameDescription::clearSceneDepth() {
     // A scene pass with no draw yet clears instead; else the draws after it start a new pass that clears first.
     if (!m_passes.empty()) {
-        if (auto* last = std::get_if<ScenePass>(&m_passes.back()); last != nullptr && last->draws.empty()) {
+        if (auto* last = std::get_if<ScenePass>(&m_passes.back());
+            last != nullptr && last->draws.empty() && last->lines.empty()) {
             last->clearDepth = true;
             return;
         }
     }
-    m_passes.emplace_back(ScenePass{m_camera, true, {}});
+    m_passes.emplace_back(ScenePass{m_camera, true, {}, {}});
 }
 
 void FrameDescription::addSceneDraw(Draw3d draw, std::span<const SceneLight> lights,
                                     std::span<const TextureId> textures, std::span<const TextureId> dualTextures,
-                                    std::span<const Transform3d> bones) {
+                                    std::span<const Transform3d> bones, std::span<const Rgba> viewColours) {
     // The ranges point into the frame's arrays, after what earlier draws added.
     draw.firstLight = static_cast<std::uint32_t>(m_lights.size());
     draw.lightCount = static_cast<std::uint32_t>(lights.size());
@@ -140,6 +143,9 @@ void FrameDescription::addSceneDraw(Draw3d draw, std::span<const SceneLight> lig
     draw.firstBone = static_cast<std::uint32_t>(m_bones.size());
     draw.boneCount = static_cast<std::uint32_t>(bones.size());
     m_bones.insert(m_bones.end(), bones.begin(), bones.end());
+    draw.firstViewColour = static_cast<std::uint32_t>(m_viewColours.size());
+    draw.viewColourCount = static_cast<std::uint32_t>(viewColours.size());
+    m_viewColours.insert(m_viewColours.end(), viewColours.begin(), viewColours.end());
     scene().draws.push_back(draw);
 }
 
@@ -171,6 +177,21 @@ std::span<const TextureId> FrameDescription::dualTexturesOf(const Draw3d& draw) 
 std::span<const Transform3d> FrameDescription::bonesOf(const Draw3d& draw) const {
     CONEY_ASSERT(draw.firstBone + draw.boneCount <= m_bones.size());
     return std::span<const Transform3d>(m_bones).subspan(draw.firstBone, draw.boneCount);
+}
+
+void FrameDescription::addSceneLines(std::span<const SceneLineVertex> lines) {
+    // A vertex with no partner is no line.
+    const std::size_t count = lines.size() / 2 * 2;
+    if (count == 0) {
+        return;
+    }
+    std::vector<SceneLineVertex>& into = scene().lines;
+    into.insert(into.end(), lines.begin(), lines.begin() + static_cast<std::ptrdiff_t>(count));
+}
+
+std::span<const Rgba> FrameDescription::viewColoursOf(const Draw3d& draw) const {
+    CONEY_ASSERT(draw.firstViewColour + draw.viewColourCount <= m_viewColours.size());
+    return std::span<const Rgba>(m_viewColours).subspan(draw.firstViewColour, draw.viewColourCount);
 }
 
 } // namespace coney::graphics

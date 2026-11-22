@@ -356,4 +356,40 @@ float fogAt(const SceneCamera& camera, bool fog, float depth) {
     return std::clamp((depth - camera.farClip) * range, fog ? 0.0F : 1.0F, 1.0F);
 }
 
+DrawColours viewColoursOf(const MeshData& mesh, std::span<const Rgba> colours) {
+    DrawColours out;
+    out.modulate = true;
+    out.colours.reserve(mesh.materials.size());
+    for (std::size_t i = 0; i < mesh.materials.size(); ++i) {
+        // The colour of the material, the last one given past the end, white for none; opaque, as the GL3 pass writes
+        // it.
+        Rgba colour = kWhite;
+        if (!colours.empty()) {
+            colour = colours[std::min(i, colours.size() - 1)];
+        }
+        colour.a = 255;
+        out.colours.push_back(colour);
+    }
+    return out;
+}
+
+SceneStates viewStatesOf(const SceneStates& states, ViewPass pass) {
+    if (pass == ViewPass::Shaded) {
+        return states;
+    }
+    SceneStates out = states;
+    out.fog = false;
+    out.alphaTest = AlphaTest::Always;
+    if (pass == ViewPass::Wire) {
+        out.depthWrite = false;
+    }
+    return out;
+}
+
+DrawLights viewLightsOf() {
+    DrawLights out;
+    out.ambient = {1.0F, 1.0F, 1.0F};
+    return out;
+}
+
 } // namespace coney::graphics

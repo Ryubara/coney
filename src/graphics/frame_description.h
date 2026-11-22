@@ -213,6 +213,23 @@ struct Transform3d {
     friend bool operator==(const Transform3d&, const Transform3d&) = default;
 };
 
+/// Which pass of the debug tools' mesh views a 3D draw is (docs/guides/debug-menu.md#mesh-views). The play mode records
+/// a model's shaded draw as it always does and, while a view is on, the views' own draws of the same mesh beside it
+/// (RenderEngine::drawScene()); the GL3 renderer draws the views through librw's lighting rig instead and never sees
+/// them.
+enum class ViewPass : std::uint8_t {
+    Shaded, ///< The game's own draw.
+    /// A flat, unlit fill: every material in the colour FrameDescription::viewColoursOf() gives it, no texture and no
+    /// fog, the alpha test off.
+    Flat,
+    /// The triangles' edges in the first of FrameDescription::viewColoursOf(), over what is drawn: the fill off, depth
+    /// not written and the lines pulled a little towards the camera so they sit on it.
+    Wire,
+    /// A shaded draw's dual layer alone, recorded after its Flat and Wire passes so it covers them as the GL3
+    /// renderer's second atomic does (a human's blood layer).
+    DualLayer,
+};
+
 /// How a 3D draw's dual layer is drawn over its mesh.
 enum class DualPass : std::uint8_t {
     /// A world's or an object's dual layer (docs/research/rendering.md#dual): at the alpha of the mesh's first
@@ -249,6 +266,10 @@ struct Draw3d {
     std::uint32_t textureCount = 0;
     std::uint32_t firstDualTexture = 0;
     std::uint32_t dualTextureCount = 0;
+    /// Which of the mesh views' passes this is (ViewPass::Shaded for every draw the game makes).
+    ViewPass view = ViewPass::Shaded;
+    std::uint32_t firstViewColour = 0;
+    std::uint32_t viewColourCount = 0; ///< The colours of a Flat or Wire pass (FrameDescription::viewColoursOf()).
 
     friend bool operator==(const Draw3d&, const Draw3d&) = default;
 };
@@ -270,6 +291,14 @@ struct SceneCamera {
     friend bool operator==(const SceneCamera&, const SceneCamera&) = default;
 };
 
+/// One end of a line a scene pass draws: a point in RenderWare's world and its colour.
+struct SceneLineVertex {
+    std::array<float, 3> position{};
+    Rgba colour = kWhite;
+
+    friend bool operator==(const SceneLineVertex&, const SceneLineVertex&) = default;
+};
+
 /// A pass of 3D draws through its camera, in their order: the streamed world's sectors (item 7 of
 /// docs/engine/renderer.md#order), the world objects and the parked cars (item 8) and the humans (item 9); the
 /// effects join it with item 10.
@@ -282,6 +311,9 @@ struct ScenePass {
     /// (LevelObject_RenderBackground, docs/research/level-loading.md#render-order).
     bool clearDepth = false;
     std::vector<Draw3d> draws;
+    /// Lines drawn after the pass's draws, two vertices to a line: depth tested, not written, never fogged, never
+    /// culled, in their own colours (FrameDescription::addSceneLines()): the Debug draw page's lines.
+    std::vector<SceneLineVertex> lines;
 };
 
 /// One pass of a frame.
@@ -338,7 +370,11 @@ class FrameDescription {
     /// for a skinned mesh, its pose `bones` (the ranges in `draw` are set here) to the scene pass the last pass is, or
     /// to a new one; the next 2D draw starts a new overlay pass.
     void addSceneDraw(Draw3d draw, std::span<const SceneLight> lights, std::span<const TextureId> textures,
-                      std::span<const TextureId> dualTextures, std::span<const Transform3d> bones = {});
+                      std::span<const TextureId> dualTextures, std::span<const Transform3d> bones = {},
+                      std::span<const Rgba> viewColours = {});
+    /// Adds `lines`, two vertices to a line, to the scene pass the last pass is, or to a new one, to be drawn after its
+    /// 3D draws; an odd vertex left over is dropped, and nothing is added for no whole line.
+    void addSceneLines(std::span<const SceneLineVertex> lines);
     /// Sees the 3D draws added after it through `camera`: they start a new scene pass with it (the last pass takes
     /// it instead when it is a scene pass with no draw yet), and any later scene pass of the frame keeps it until the
     /// next call.
@@ -364,6 +400,9 @@ class FrameDescription {
     [[nodiscard]] std::span<const TextureId> texturesOf(const Draw3d& draw) const;
     /// The textures of `draw`'s dual layer's materials, as texturesOf().
     [[nodiscard]] std::span<const TextureId> dualTexturesOf(const Draw3d& draw) const;
+    /// The colours of `draw`, a Flat or Wire pass of this frame: one for each of its mesh's materials in their order
+    /// (Flat), or the one every edge is drawn in (Wire); empty for a Shaded draw.
+    [[nodiscard]] std::span<const Rgba> viewColoursOf(const Draw3d& draw) const;
     /// The pose of `draw`, a 3D draw of this frame: its skinning matrices in skin node order; empty when it is not
     /// skinned.
     [[nodiscard]] std::span<const Transform3d> bonesOf(const Draw3d& draw) const;
@@ -385,6 +424,7 @@ class FrameDescription {
     std::vector<SceneLight> m_lights;
     std::vector<TextureId> m_sceneTextures; // the 3D draws' textures, then each one's dual layer's
     std::vector<Transform3d> m_bones;       // the skinned 3D draws' poses
+    std::vector<Rgba> m_viewColours;        // the mesh views' passes' colours
     std::optional<SceneCamera> m_camera;    // the camera setSceneCamera() last set this frame
 };
 

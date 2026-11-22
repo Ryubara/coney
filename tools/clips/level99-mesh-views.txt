@@ -1,0 +1,53 @@
+# The Debug draw page's mesh views switched from the pad menu in the level99 street, for the `level99-mesh-views` clips
+# pair scenario (tools/clips/level99-mesh-views.toml), played from the level's first frame of play. Cross skips the
+# intro scene at frame 70. L3 + R3 opens the debug menu (root: Debug draw is the 16th item); Debug draw, then its 12th
+# item, Model wireframe, set to all humans (two steps right from off); the menu is closed (circle twice) before the
+# clips start at frame 270, so they open on the green wireframe over the humans. At 320 the menu is opened again (the
+# root's cursor is on Debug draw and the page keeps its cursor), the next item, Mesh view, moved two right (from
+# shaded, through wireframe only, to by material) and the menu closed: the scene shows flat colours. At 410 the same
+# item moves one left, to wireframe only; the clips end at 480.
+70 tap cross
+150 tap l3 r3
+156 tap down
+159 tap down
+162 tap down
+165 tap down
+168 tap down
+171 tap down
+174 tap down
+177 tap down
+180 tap down
+183 tap down
+186 tap down
+189 tap down
+192 tap down
+195 tap down
+198 tap down
+201 tap cross
+204 tap down
+207 tap down
+210 tap down
+213 tap down
+216 tap down
+219 tap down
+222 tap down
+225 tap down
+228 tap down
+231 tap down
+234 tap down
+237 tap right
+240 tap right
+243 tap circle
+246 tap circle
+320 tap l3 r3
+326 tap cross
+329 tap down
+332 tap right
+335 tap right
+338 tap circle
+341 tap circle
+410 tap l3 r3
+416 tap cross
+419 tap left
+422 tap circle
+425 tap circle

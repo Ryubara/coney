@@ -312,15 +312,13 @@ void addMeshViewItems(MenuPage& page, DebugDrawOptions& draw) {
     };
     scopeChoice("Model wireframe", mesh.wireframe, true,
                 "The models' own triangles as lines over the shaded scene, following the animation: the inspector's "
-                "selection (white), every human (green) or everything drawn (objects orange, scenery grey). GL3 only: "
-                "--renderer gpu does not draw it yet.");
+                "selection (white), every human (green) or everything drawn (objects orange, scenery grey).");
     page.add(choiceItem(
                  "Mesh view", {"shaded", "wireframe only", "by material", "by draw call", "by LOD"},
                  [&mesh] { return static_cast<std::size_t>(mesh.view); },
                  [&mesh](std::size_t index) { mesh.view = static_cast<MeshShading>(index); }))
         .withHelp("Shaded draws as the game does; the others draw the models of Mesh view on as their edges alone, or "
-                  "flat and unlit, one colour per material, per draw call, or per level of detail and fade. GL3 only: "
-                  "--renderer gpu draws the models shaded for now.");
+                  "flat and unlit, one colour per material, per draw call, or per level of detail and fade.");
     scopeChoice("Mesh view on", mesh.viewScope, false, "Which models the mesh view applies to.");
     page.add(toggleItem(
                  "Normals", [&mesh] { return mesh.normals; }, [&mesh](bool on) { mesh.normals = on; }))

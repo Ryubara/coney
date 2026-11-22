@@ -22,6 +22,8 @@
 #include "core/log.h"
 #include "core/perf.h"
 #include "core/window_display.h"
+#include "graphics/mesh_data.h"
+#include "graphics/scene_batch.h"
 #include "platform/character_skin.h"
 #include "platform/draw_calls.h"
 #include "platform/gpu_presenter.h"
@@ -648,8 +650,59 @@ void RenderEngine::drawScene(const graphics::Draw3d& draw, std::span<const graph
         given.assign(dualTextures.size(), m_assets.textureOf(dualTexture));
         dualTextures = given;
     }
-    m_frame.addSceneDraw(draw, lights, m_assets.materialTextures(draw.mesh), dualTextures, bones);
+    // The mesh views' passes of this model, when a hook is set (hideKindsOf()): the game's own draw, then a flat fill
+    // and a wireframe of the same mesh (docs/engine/gpu-renderer.md#mesh-views). No hook, or a mesh the assets hold no
+    // data of (GL3's, drawn through the lighting rig for the hook instead), is the game's own draw alone.
+    ViewPasses passes;
+    if (m_viewHook != nullptr) {
+        passes = viewPassesOf(draw);
+    }
+    // GL3 draws a human's blood layer as a second atomic after the body's passes, so it covers the wireframe where it
+    // blends; with a wire over a shaded human the layer is recorded last, alone, to be drawn in that order.
+    const bool layerLast =
+        passes.shaded && passes.wire && draw.dualPass == graphics::DualPass::Blood && draw.dualLayer.valid();
+    if (passes.shaded) {
+        graphics::Draw3d body = draw;
+        if (layerLast) {
+            body.dualLayer = {};
+        }
+        m_frame.addSceneDraw(body, lights, m_assets.materialTextures(draw.mesh),
+                             layerLast ? std::span<const graphics::TextureId>{} : dualTextures, bones);
+    }
+    // A view's draw has no second layer and no texture, but the placement, the lights, the states and the pose.
+    graphics::Draw3d view = draw;
+    view.dualLayer = {};
+    if (!passes.flat.empty()) {
+        view.view = graphics::ViewPass::Flat;
+        m_frame.addSceneDraw(view, lights, {}, {}, bones, passes.flat);
+    }
+    if (passes.wire) {
+        view.view = graphics::ViewPass::Wire;
+        const std::array<graphics::Rgba, 1> wire{*passes.wire};
+        m_frame.addSceneDraw(view, lights, {}, {}, bones, wire);
+    }
+    if (layerLast) {
+        graphics::Draw3d layer = draw;
+        layer.view = graphics::ViewPass::DualLayer;
+        m_frame.addSceneDraw(layer, lights, {}, dualTextures, bones);
+    }
     drawDescribed();
+}
+
+ViewPasses RenderEngine::viewPassesOf(const graphics::Draw3d& draw) {
+    const graphics::MeshData* mesh = m_assets.store().mesh(draw.mesh);
+    if (mesh == nullptr) {
+        return {};
+    }
+    // Each material's texture name, and the alpha this draw gives it (a human's distance fade, a sector's fade-in).
+    const graphics::DrawColours colours = graphics::coloursOf(*mesh, draw.material);
+    std::vector<ViewMaterial> materials;
+    materials.reserve(mesh->materials.size());
+    for (std::size_t i = 0; i < mesh->materials.size(); ++i) {
+        materials.push_back(ViewMaterial{mesh->materials[i].texture,
+                                         i < colours.colours.size() ? colours.colours[i].a : std::uint8_t{255}});
+    }
+    return m_viewHook->passesFor(currentDrawKind(), draw.mesh, materials);
 }
 
 void RenderEngine::setSceneCamera(const graphics::SceneCamera& camera) {
@@ -661,6 +714,11 @@ void RenderEngine::clearSceneDepth() {
     CONEY_ASSERT(m_inFrame);
     m_frame.clearSceneDepth();
     drawDescribed();
+}
+
+void RenderEngine::drawSceneLines(std::span<const graphics::SceneLineVertex> lines) {
+    CONEY_ASSERT(m_inFrame);
+    m_frame.addSceneLines(lines);
 }
 
 void RenderEngine::startFrame(graphics::Rgba clear, const graphics::FrameStart& start) {
