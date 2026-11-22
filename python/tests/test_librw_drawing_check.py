@@ -27,7 +27,8 @@ def hook() -> dict[str, str]:
     config = yaml.safe_load((REPO / ".pre-commit-config.yaml").read_text(encoding="utf-8"))
     found = [h for repo in config["repos"] for h in repo["hooks"] if h["id"] == HOOK_ID]
     assert len(found) == 1, f"the config has {len(found)} hooks called {HOOK_ID}"
-    return found[0]
+    entry: dict[str, str] = found[0]
+    return entry
 
 
 @functools.cache
