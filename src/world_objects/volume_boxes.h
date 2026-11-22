@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "core/crowd_limits.h"
+#include "core/engine_limits.h"
 
 namespace coney::world_objects {
 
@@ -137,6 +138,13 @@ class VolumeBoxes {
     /// alert, the crime score and the lines that follow in the original are not here.
     /// @orig 0x00412dc8 Item_TakeOwned (unknown)
     void sendTheft(const std::array<float, 3>& spot, const std::function<void(double box)>& send) const;
+
+    /// Gives the engine limits preset the boxes' lists of occupants follow (core/engine_limits.h); the game mode that
+    /// owns the level gives its own. Coney's own rule until set.
+    /// @coney-only the engine limits preset, a test-mode switch
+    void setEngineLimits(EngineLimits /*limits*/) {}
+    /// The engine limits preset setEngineLimits() gave.
+    [[nodiscard]] EngineLimits engineLimits() const { return EngineLimits::Coney; }
 
   private:
     // One update of the kind-0 box at `index`: the stay timer (stayDue()); each living human inside enters (3) or, on

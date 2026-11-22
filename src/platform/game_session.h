@@ -14,6 +14,7 @@
 
 #include "core/assert.h"
 #include "core/chunk_system.h"
+#include "core/engine_limits.h"
 #include "core/error.h"
 #include "core/game_events.h"
 #include "core/language.h"
@@ -54,6 +55,8 @@ struct GameSessionSettings {
     std::optional<std::filesystem::path> profiles;
     /// How long the memory-card mode shows its "checking" message (MemoryCardMode::kCheckingMessageMs in the game).
     std::uint64_t cardCheckingMs = 0;
+    /// The engine limits preset the run plays under (StartUpFlow::setEngineLimits(), engineLimitsFor()).
+    EngineLimits engineLimits = EngineLimits::Coney;
 };
 
 /// The one way Coney sets up the game over a disc: the start-up flow (StartUpFlow: the script system, the game state,

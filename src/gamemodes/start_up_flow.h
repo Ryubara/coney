@@ -10,6 +10,7 @@
 #include <string>
 #include <string_view>
 
+#include "core/engine_limits.h"
 #include "core/story_graph.h"
 #include "core/story_merge.h"
 #include "gamemodes/armies_game_over_mode.h"
@@ -142,6 +143,10 @@ class StartUpFlow final : public script::BindingHost {
     /// the same as one with this N. Call it before the first frame.
     /// @coney-only the `--ai-seed` option, a test aid
     void setAiSeed(std::uint32_t seed);
+    /// The engine limits preset the run plays under (GameplayMode::setEngineLimits(), core/engine_limits.h). Call it
+    /// before the first frame.
+    /// @coney-only the engine limits preset, a test-mode switch
+    void setEngineLimits(EngineLimits limits);
     /// Mode 0x14.
     [[nodiscard]] RumbleResultMode& rumbleResult() { return m_rumbleResult; }
     /// Mode 0x13.

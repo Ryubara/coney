@@ -122,7 +122,7 @@ std::vector<Brain*> humansAround(const Brain& owner, std::span<Brain* const> oth
     const float reach = radius * radius;
     // Stand-in (limit): the original's 60 is its table's size; past 60 humans the list holds every one in reach
     // (crowd::humanListCap(), docs/engine/crowd-rules.md#lists).
-    const std::size_t cap = crowd::humanListCap(others.size());
+    const std::size_t cap = crowd::humanListCap(others.size(), owner.engineLimits());
     for (Brain* other : others) {
         if (list.size() >= cap) {
             break;

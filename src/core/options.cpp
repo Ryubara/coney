@@ -981,6 +981,8 @@ bool takesSavedRenderer(const Options& options) {
     return !isTestMode(options) && !options.renderReferences.has_value();
 }
 
+EngineLimits engineLimitsFor(const Options& /*options*/) { return EngineLimits::Coney; }
+
 std::optional<DisplayPreset> pinnedDisplayPreset(const Options& options) {
     // The option is asked for by name, so it is what a test run draws; else PS2, whatever a player saved.
     if (takesSavedRenderer(options)) {

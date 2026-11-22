@@ -23,6 +23,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "animation/anim_math.h"
+#include "core/engine_limits.h"
 #include "core/input_script.h"
 #include "core/pad.h"
 #include "core/pads.h"
@@ -330,8 +331,11 @@ void playChase(std::uint32_t seed) {
         coney::platform::PlayLevelMode* play = session != nullptr ? session->session().play() : nullptr;
         return play != nullptr ? &play->player() : nullptr;
     });
-    const coney::platform::GameSessionSettings settings{
-        .skipMovies = true, .rumble = std::nullopt, .aiSeed = seed, .profiles = std::nullopt};
+    const coney::platform::GameSessionSettings settings{.skipMovies = true,
+                                                        .rumble = std::nullopt,
+                                                        .aiSeed = seed,
+                                                        .profiles = std::nullopt,
+                                                        .engineLimits = coney::EngineLimits::Original};
     coney::test::DiscSession run(*wad, driver, settings);
     session = &run;
     run.session().startAtLevel("level3", 4);

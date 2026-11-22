@@ -12,6 +12,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/engine_limits.h"
+
 using coney::world_objects::BoxSubject;
 using coney::world_objects::TriggerSpheres;
 using coney::world_objects::VolumeBoxes;
@@ -299,4 +301,24 @@ TEST_CASE("past 60 humans a sphere finds every one within its radius and lists t
     // The next check: nobody enters again.
     CHECK(std::ranges::none_of(checkAll(spheres, humans, 100),
                                [](const auto& one) { return std::get<1>(one) == VolumeBoxes::kEntered; }));
+}
+
+TEST_CASE("under the engine limits preset a sphere finds and lists the original's 60 past 60 humans",
+          "[trigger_spheres][crowd][engine-limits]") {
+    // Expected: trigger-updates.md, confirmed (code): TriggerSphere_Update 0x004146e0 finds at most 60, in slot
+    // order; the preset pins the lift at it (docs/guides/running-options.md#engine-limits)
+    TriggerSpheres spheres;
+    spheres.setLocate(locate);
+    spheres.setEngineLimits(coney::EngineLimits::Original);
+    REQUIRE(spheres.configure(7, true, 4.0F, 0, 500));
+    std::vector<BoxSubject> humans;
+    humans.reserve(75);
+    for (int k = 0; k < 75; ++k) {
+        humans.push_back({.handle = 100.0 + k, .position = {3, 0, 0}, .alive = true, .player = false});
+    }
+    const Sent first = checkAll(spheres, humans, 0);
+    REQUIRE(first.size() == 60);
+    // The first 60 in the subjects' order.
+    CHECK(std::get<2>(first.back()) == 159.0);
+    CHECK(spheres.find(7)->occupants.size() == 60);
 }

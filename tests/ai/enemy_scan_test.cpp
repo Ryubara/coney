@@ -15,6 +15,7 @@
 #include "ai/sectors.h"
 #include "ai/steering.h"
 #include "core/crowd_limits.h"
+#include "core/engine_limits.h"
 #include "raycast/collision_mesh.h"
 #include "support/ai_fixtures.h"
 #include "support/collision_fixtures.h"
@@ -407,4 +408,16 @@ TEST_CASE("with more than 16 enemies in sight a scan lists the nearest 16 and st
     }
     CHECK(guard.target() != &farthest);
     CHECK_FALSE(lists(guard, farthest));
+}
+
+TEST_CASE("under the engine limits preset past 60 brains in gangs an update scans the original's five",
+          "[ai][scan][crowd][engine-limits]") {
+    // Expected: ai-fights.md#enemy-scan, confirmed (code): AI_TakeScanToken 0x00293cd0, 5 an update; the preset pins
+    // the lift at it (docs/guides/running-options.md#engine-limits)
+    coney::test::AiScene scene;
+    scene.brains.setEngineLimits(coney::EngineLimits::Original);
+    const std::vector<Brain*> members = crowdOfGuards(scene, 120);
+    REQUIRE(members.size() == 121);
+    CHECK(scansOfOneUpdate(scene, members, 0) == coney::crowd::kOrigScanTokens);
+    CHECK(scansOfOneUpdate(scene, members, 33) == coney::crowd::kOrigScanTokens);
 }

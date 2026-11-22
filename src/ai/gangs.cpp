@@ -569,6 +569,8 @@ void Gangs::setTactic(int id, std::unique_ptr<Tactic> tactic) {
     ++gang->m_tacticsSet;
 }
 
+void Gangs::setEngineLimits(EngineLimits /*limits*/) {}
+
 void Gangs::update(std::uint64_t nowMs) {
     // Coney stand-in: the debug build's check that player 1 stands on the path data, with its warning text, is left
     // out.
@@ -576,7 +578,7 @@ void Gangs::update(std::uint64_t nowMs) {
     // A new update: the brains that follow may scan again. The original refills its tokens in Brains_Update
     // 0x00293b28, not in Gangs_Update. Stand-in (limit): the tokens are crowd::scanTokens(), the original's five up
     // to 60 scanning brains (docs/engine/crowd-rules.md#scans).
-    m_scans.beginUpdate(crowd::scanTokens(scanningBrains()));
+    m_scans.beginUpdate(crowd::scanTokens(scanningBrains(), engineLimits()));
     // The turn moves on: this update's fifth of the gangs updates its bounds.
     m_boundsTurn = m_boundsTurn + 1 >= kBoundsTurns ? 0 : m_boundsTurn + 1;
     for (Gang& gang : m_gangs) {

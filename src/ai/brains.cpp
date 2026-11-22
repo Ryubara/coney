@@ -113,6 +113,8 @@ void Brains::setCollision(const raycast::CollisionMesh* collision) {
     }
 }
 
+void Brains::setEngineLimits(EngineLimits /*limits*/) {}
+
 void Brains::update() {
     ++m_steps;
     const std::uint64_t now = nowMs();

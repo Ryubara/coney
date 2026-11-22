@@ -14,6 +14,7 @@ add_executable(coney_tests
     core/chunk_system_test.cpp
     core/clip_recording_test.cpp
     core/crowd_limits_test.cpp
+    core/engine_limits_option_test.cpp
     core/cpak_archive_test.cpp
     core/cpak_index_test.cpp
     core/cpak_lookup_test.cpp
@@ -91,6 +92,7 @@ add_executable(coney_tests
     gamemodes/disc_lighting_test.cpp
     gamemodes/frame_rate_test.cpp
     gamemodes/ui_screen_mode_test.cpp
+    gamemodes/gameplay_engine_limits_test.cpp
     gamemodes/gameplay_objects_test.cpp
     gamemodes/gameplay_sound_call_test.cpp
     gamemodes/play_level_simulation_test.cpp
@@ -221,6 +223,7 @@ add_executable(coney_tests
     platform/disc_spray_paint_test.cpp
     platform/disc_spawner_money_test.cpp
     platform/disc_credits_test.cpp
+    platform/disc_engine_limits_test.cpp
     platform/disc_pause_controls_test.cpp
     platform/disc_pause_options_test.cpp
     platform/disc_pause_stats_test.cpp

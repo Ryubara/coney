@@ -9,6 +9,7 @@
 #include "ai/brain.h"
 #include "ai/formations.h"
 #include "ai/gangs.h"
+#include "core/engine_limits.h"
 #include "human/human.h"
 #include "human/humans.h"
 
@@ -67,6 +68,12 @@ class Brains {
     void setCollision(const raycast::CollisionMesh* collision);
     /// The collision setCollision() gave (null for none).
     [[nodiscard]] const raycast::CollisionMesh* collision() const { return m_collision; }
+    /// Gives the gangs and every brain, and each added later, the engine limits preset (core/engine_limits.h): the
+    /// rule each lifted limit of the scene follows. Coney's own rule until set.
+    /// @coney-only the engine limits preset, a test-mode switch
+    void setEngineLimits(EngineLimits limits);
+    /// The engine limits preset setEngineLimits() gave.
+    [[nodiscard]] EngineLimits engineLimits() const { return EngineLimits::Coney; }
 
     /// One step: the game time advances by one step; the formations, then the gangs (their tactics) step; each enabled
     /// brain whose human is in the world thinks when `index % 5 == step % 5` and updates; then every player brain's

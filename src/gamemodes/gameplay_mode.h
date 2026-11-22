@@ -17,6 +17,7 @@
 #include "ai/hiding.h"
 #include "ai/scripted_brains.h"
 #include "camera/cameras.h"
+#include "core/engine_limits.h"
 #include "core/error.h"
 #include "core/pads.h"
 #include "effects/level_effects.h"
@@ -350,6 +351,15 @@ class GameplayMode final : public GameMode {
     /// Each level entered from now on makes its brains with `variation` (ai::Brains, `--ai-seed`); 0 (the default) is
     /// the usual run.
     void setAiVariation(std::uint32_t variation) { m_aiVariation = variation; }
+    /// The engine limits preset every lifted limit of the levels follows from now on (core/engine_limits.h): given to
+    /// the trigger spheres and the volume boxes at once, to the loaded level's brains and gangs, and to those of each
+    /// level entered later. Coney's own rule until set; a run sets it once, before the first frame.
+    /// @coney-only the engine limits preset, a test-mode switch
+    void setEngineLimits(EngineLimits limits);
+    /// The engine limits preset setEngineLimits() gave.
+    [[nodiscard]] EngineLimits engineLimits() const { return EngineLimits::Coney; }
+    /// The level's trigger spheres (`TriggerSphereCfg`).
+    [[nodiscard]] const world_objects::TriggerSpheres& spheres() const { return m_spheres; }
     /// Player 1 handed to the AI in the loaded level (ScriptedPlayer::releasePlayerToAi()); false with no level, or
     /// none to hand.
     bool releasePlayerToAi();

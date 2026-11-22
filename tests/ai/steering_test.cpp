@@ -15,6 +15,8 @@
 #include "ai/ai_config.h"
 #include "ai/brain.h"
 #include "ai/brains.h"
+#include "core/crowd_limits.h"
+#include "core/engine_limits.h"
 #include "human/human.h"
 #include "support/collision_fixtures.h"
 #include "support/fight_fixtures.h"
@@ -497,4 +499,18 @@ TEST_CASE("past 60 humans the list round a walker holds every human within its r
     // In table order, the last stander too.
     CHECK(list.front() == all[1]);
     CHECK(list.back() == all.back());
+}
+
+TEST_CASE("under the engine limits preset the list round a walker holds the original's 60 past 60 humans",
+          "[ai][steering][crowd][engine-limits]") {
+    // Expected: ai-brain-types.md#help-calls, confirmed (code): Humans_FindAhead 0x002274a8 lists at most 60, one per
+    // slot; the preset pins the lift at it (docs/guides/running-options.md#engine-limits)
+    Scene scene;
+    scene.brains.setEngineLimits(coney::EngineLimits::Original);
+    const std::vector<Brain*> all = crowdAround(scene, 80);
+    const std::vector<Brain*> list = ai::humansAround(*all.front(), all, 2.0F);
+    REQUIRE(list.size() == coney::crowd::kOrigMaxHumans);
+    // The first 60 in table order, as the original's table walk cuts it.
+    CHECK(list.front() == all[1]);
+    CHECK(list.back() == all[coney::crowd::kOrigMaxHumans]);
 }

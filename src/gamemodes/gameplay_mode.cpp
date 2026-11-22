@@ -328,6 +328,8 @@ void GameplayMode::endLevel() {
     m_systemEmitters.clear();
 }
 
+void GameplayMode::setEngineLimits(EngineLimits /*limits*/) {}
+
 void GameplayMode::enter() {
     // Not ported (#548): entering an Armies of the Night level from another level keeps whether player 2 is in.
     // The level's brains and gangs (InitLevel's AI reset), which its script's bindings drive. The calls on the humans

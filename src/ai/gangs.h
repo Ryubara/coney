@@ -20,6 +20,7 @@
 #include "ai/sub_tactics.h"
 #include "ai/tactic.h"
 #include "combat/stick.h"
+#include "core/engine_limits.h"
 #include "core/game_random.h"
 
 // The gangs: 32 records that group humans, say which gangs are enemies or friends of which, hold a tactic, the
@@ -483,6 +484,12 @@ class Gangs {
     /// How many brains may ask for an enemy scan: the members of every gang in use (a brain with no gang never asks).
     /// Each update's scan tokens are crowd::scanTokens() of it (docs/engine/crowd-rules.md#scans).
     [[nodiscard]] std::size_t scanningBrains() const;
+    /// Gives the engine limits preset the scan tokens of each update() follow (core/engine_limits.h); Brains gives
+    /// its own. Coney's own rule until set.
+    /// @coney-only the engine limits preset, a test-mode switch
+    void setEngineLimits(EngineLimits limits);
+    /// The engine limits preset setEngineLimits() gave.
+    [[nodiscard]] EngineLimits engineLimits() const { return EngineLimits::Coney; }
 
   private:
     std::array<Gang, kGangSlots> m_gangs{};

@@ -28,6 +28,7 @@
 #include "combat/anim_ids.h"
 #include "combat/commands.h"
 #include "combat/reactions.h"
+#include "core/engine_limits.h"
 #include "human/human.h"
 #include "human/human_flags.h"
 #include "human/humans.h"
@@ -1144,4 +1145,22 @@ TEST_CASE("a full enemy list stores no more, but the tactic still hears of the n
     CHECK(member.enemies().size() == coney::ai::kMaxEnemies);
     CHECK(std::ranges::find(member.enemies(), enemies.back()) == member.enemies().end());
     CHECK(heard == static_cast<int>(coney::ai::kMaxEnemies) + 1);
+}
+
+TEST_CASE("the brains give their engine limits to the gangs and to every brain, made before or after", "[ai]") {
+    // Expected: unverified, #1591 (Coney's own wiring of the engine limits preset:
+    // docs/guides/running-options.md#engine-limits)
+    Scene scene;
+    coney::ai::Brains& brains = scene.brains;
+    // Coney's own rule until told otherwise.
+    const Brain& before = brains.at(0);
+    CHECK(brains.engineLimits() == coney::EngineLimits::Coney);
+    CHECK(brains.gangs().engineLimits() == coney::EngineLimits::Coney);
+    CHECK(before.engineLimits() == coney::EngineLimits::Coney);
+    brains.setEngineLimits(coney::EngineLimits::Original);
+    CHECK(brains.engineLimits() == coney::EngineLimits::Original);
+    CHECK(brains.gangs().engineLimits() == coney::EngineLimits::Original);
+    CHECK(before.engineLimits() == coney::EngineLimits::Original);
+    const Brain& after = scene.add(coney::anim::Vec3{42.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);
+    CHECK(after.engineLimits() == coney::EngineLimits::Original);
 }

@@ -13,6 +13,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/engine_limits.h"
+
 using coney::world_objects::BoxSubject;
 using coney::world_objects::VolumeBox;
 using coney::world_objects::VolumeBoxes;
@@ -320,4 +322,19 @@ TEST_CASE("past 60 humans a box lists every one inside, so none enters again on 
     }
     CHECK(countOf(step(boxes, humans, 1600), VolumeBoxes::kLeft) == 75);
     CHECK(boxes.find(40)->occupants.empty());
+}
+
+TEST_CASE("under the engine limits preset a box lists the original's 60 and the rest enter again each update",
+          "[volume_boxes][crowd][engine-limits]") {
+    // Expected: trigger-updates.md#stay-timer, confirmed (code): VolumeBox_Update 0x00415378 keeps 60 handles and
+    // sends message 3 to a human it has no place for; the preset pins the lift at it
+    // (docs/guides/running-options.md#engine-limits)
+    VolumeBoxes boxes;
+    boxes.setEngineLimits(coney::EngineLimits::Original);
+    boxes.add(40, "vCrowd", 0, {0, 0, 0}, {2, 2, 3}, true);
+    std::vector<BoxSubject> humans = crowdInBox(75);
+    CHECK(countOf(step(boxes, humans, 0), VolumeBoxes::kEntered) == 75);
+    CHECK(boxes.find(40)->occupants.size() == 60);
+    CHECK(countOf(step(boxes, humans, 100), VolumeBoxes::kEntered) == 15);
+    CHECK(boxes.find(40)->occupants.size() == 60);
 }
