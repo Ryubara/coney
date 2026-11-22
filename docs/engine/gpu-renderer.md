@@ -205,11 +205,11 @@ also on a real GPU device).
 ### The mesh views {#mesh-views}
 
 The wireframe, the flat views and the lines of the Debug draw page ([debug menu
-guide](../guides/debug-menu.md#mesh-views), #1599), Coney's own debug tooling. On GL3 each view pass is a draw of the
-model's own librw atomic through the lighting rig, which draws nothing on this backend, so the play mode leaves the
-rig's passes off here (`drawsMeshViewPassesOn()`, false for `RenderBackend::Gpu`) and the views are drawn from the
-frame description instead. The views set the hook when the wireframe or a mesh view other than shaded is on (or a part
-is hidden); the normals and bone axes alone do not, being lines.
+guide](../guides/debug-menu.md#mesh-views), [#1599](issue:1599)), Coney's own debug tooling. On GL3 each view pass is
+a draw of the model's own librw atomic through the lighting rig, which draws nothing on this backend, so the play mode
+leaves the rig's passes off here (`drawsMeshViewPassesOn()`, false for `RenderBackend::Gpu`) and the views are drawn
+from the frame description instead. The views set the hook when the wireframe or a mesh view other than shaded is on
+(or a part is hidden); the normals and bone axes alone do not, being lines.
 
 - **Recorded passes.** `RenderEngine::drawScene()` asks the hook it was given by `hideKindsOf()` for the passes of each
   model it records (`MeshViewHook::passesFor()`: the kind the draw scope names, the mesh id, each material's texture name
