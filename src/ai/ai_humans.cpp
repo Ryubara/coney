@@ -168,6 +168,8 @@ void AiHumans::remove(const human::Human& human) {
 
 // @coney-only glue: the brains' knock-out, the scripts' part and Coney's deferred removal of a destroyed human
 void AiHumans::destroy(human::Human& human) {
+    // **Coney's choice**: the pad's human is put back when he falls (human::Player), never destroyed, so the
+    // original's player branch (his record, panel and place on the player list) has nothing to do.
     if (&human == &m_player.human()) {
         return;
     }
@@ -177,6 +179,8 @@ void AiHumans::destroy(human::Human& human) {
             m_destroyed(*brain);
         }
     }
+    // He leaves the world at the step's end (takeOutRemoved()). **Coney's choice**: no dead bit is set, nor the
+    // knock-out cleared, as nothing reads them once he is gone.
     remove(human);
 }
 

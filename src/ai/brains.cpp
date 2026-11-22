@@ -98,7 +98,8 @@ void Brains::destroy(human::Human& human) {
         return;
     }
     // Knocked out unless down or dead already (Human_KnockOut): the bit first, so his gang counts him down when it
-    // hears event 18 about his foe (Brain_OnKnockedOut, his brain cleared first).
+    // hears event 18 about his foe (Brain_OnKnockedOut, his brain cleared first). **Coney's choice**: Coney keeps no
+    // dead bit, so down or dead (Human::downOrDead()) stands for it.
     if (human.downOrDead()) {
         return;
     }
