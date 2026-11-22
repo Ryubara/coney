@@ -100,7 +100,10 @@ class Clubhouse {
     // The cabinet's flag: its handle and where it stands; nothing when the hub has no such flag.
     std::optional<std::pair<double, Vec3>> cabinet() {
         const std::optional<double> handle = flow().flags().findByName(kCabinetFlag);
-        const coney::world_objects::WorldFlag* flag = handle ? flow().flags().find(*handle) : nullptr;
+        if (!handle.has_value()) {
+            return std::nullopt;
+        }
+        const coney::world_objects::WorldFlag* flag = flow().flags().find(*handle);
         if (flag == nullptr) {
             return std::nullopt;
         }
