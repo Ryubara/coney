@@ -256,9 +256,6 @@ double Cameras::setupRail(double handle, double target, const RailSetup& setup) 
     if (!m_rail) {
         m_rail.emplace();
     }
-    if (target != m_railTarget) {
-        m_railBefore.reset();
-    }
     m_railTarget = target;
     // Its target joins the shared target list, as `CameraTargets_Add(human, 1)` puts it there.
     if (std::ranges::find(m_targets, target) == m_targets.end()) {
@@ -331,10 +328,13 @@ void Cameras::stepTracking(CameraRef ref, float seconds) {
             const std::optional<anim::Vec3> feet =
                 placed ? std::optional<anim::Vec3>(placed->first) : std::optional<anim::Vec3>();
             // The keep-in-frame push: where he stood at the start of his update (the last update's feet, pushed or
-            // not), his radius and the level's mesh. **Coney's reading**: the push's fall test (`0x1400000000`) is
-            // taken as the airborne test (`0x1c00000000`), which gameplay does not set yet (#1406).
-            const RailFrameInput frame{.before = m_railBefore.value_or(feet.value_or(anim::Vec3{})),
-                                       .radius = m_radius ? m_radius(m_railTarget).value_or(kRailRadius) : kRailRadius,
+            // not, while the target is the same), his radius and the level's mesh. **Coney's reading**: the push's
+            // fall test (`0x1400000000`) is taken as the airborne test (`0x1c00000000`), which gameplay does not set
+            // yet (#1406). Stand-in: the radius is a player of scale 1's; a scaled player's and a non-player
+            // target's capsule radius are not read.
+            const bool sameTarget = m_railBefore && m_railBefore->first == m_railTarget;
+            const RailFrameInput frame{.before = sameTarget ? m_railBefore->second : feet.value_or(anim::Vec3{}),
+                                       .radius = kRailRadius,
                                        .falling = airborne,
                                        .mesh = m_lastMesh};
             const std::optional<anim::Vec3> pushed = m_rail->update(feet, enabled(kSwitchRailLead), seconds,
@@ -343,7 +343,10 @@ void Cameras::stepTracking(CameraRef ref, float seconds) {
             if (pushed && m_move) {
                 m_move(m_railTarget, *pushed);
             }
-            m_railBefore = pushed ? pushed : feet;
+            m_railBefore.reset();
+            if (const std::optional<anim::Vec3> after = pushed ? pushed : feet) {
+                m_railBefore = std::pair{m_railTarget, *after};
+            }
         }
         break;
     case CameraKind::Fixed:

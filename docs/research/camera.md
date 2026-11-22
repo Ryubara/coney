@@ -3414,7 +3414,8 @@ The world viewer keeps its own free camera with the player camera's lens
   catch-up (`+0x3ec`), the `+0x330` vector, the split-screen halving and extras and the push out of world collision
   are not built. The keep-in-frame push (`0x00140d68`, `repo:src/camera/rail_frame.cpp`) is built for the one target,
   in mode 3 after its start and in a held mode 0; switch 2's push off the segment planes and the landing of a falling
-  target (`Human_Land`) are not, and its fall test is the airborne test above; a rail with no
+  target (`Human_Land`) are not, its fall test is the airborne test above and its radius a player of scale 1's
+  (0.5 m); a rail with no
   points stands 3 m behind and 1 m above the look-at point. The fixed camera always looks at the average (the
   original's single-entry case is not traced). `CamDelete` forgets a fixed camera as it does a locked one and keeps
   third-person cameras.

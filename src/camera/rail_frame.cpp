@@ -44,7 +44,7 @@ float rayReach(const raycast::CollisionMesh* mesh, anim::Vec3 origin, anim::Vec3
 // move from `b` splits into the part along the plane's normal, which becomes the margin + the nudge inside, and the
 // rest, which a ray from `b` as long as the rest + the margin cuts short to stop the margin (+ the nudge) before a
 // wall.
-/// @orig 0x00140d68 CamRail_KeepTargetsInFrame (unknown)
+/// @coney-only a helper of keepTargetInFrame (0x00140d68), which the original writes out for each edge
 anim::Vec3 pushAcross(anim::Vec3 a, anim::Vec3 b, const FramePlane& plane, float inside, float margin,
                       const raycast::CollisionMesh* mesh) {
     const anim::Vec3 move = anim::subtract(a, b);
