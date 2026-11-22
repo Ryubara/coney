@@ -92,7 +92,8 @@ TEST_CASE("on the disc, Rembrandt's stealth kill from hiding knocks out a human 
                 powerBefore, powerAtKill, victimHealthAtKill.value_or(-1));
     CHECK(killUpdates == 52);
     CHECK(victimReacted);
-    CHECK(victimHealthAtKill == 0);
+    // Run out, the death chain leaves him 1 (combat-reactions.md#down-health, Human_PlayDeathReaction 0x00267a00).
+    CHECK(victimHealthAtKill == 1);
     CHECK(victim.fighter().health().depleted());
     CHECK(powerBefore - powerAtKill == powerBefore / 4);
 }
