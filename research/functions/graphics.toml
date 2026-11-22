@@ -289,7 +289,7 @@ page = "graphics.md#code-sheets"
 role = "[World objects](objects.md)"
 level = "confirmed-code"
 coney = "src/platform/scene_lighting.h:SceneLighting::drawGlass"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00184890
@@ -659,7 +659,7 @@ page = "graphics.md#warriors-functions"
 role = "from `WorldManager_Render`: draws each player's throw arc (game state `+0x5740 + 0x30 × p`)"
 level = "confirmed-code"
 coney = "src/platform/play_level_mode.h:PlayLevelMode::drawThrowArc"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0041d728

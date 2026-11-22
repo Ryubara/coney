@@ -15,9 +15,7 @@ name = "GroundRing_DrawQueued"
 page = "hud.md#original-structure"
 role = "the ring queue (`0x005fd330`, `0xc0` bytes each, count `0x0050ccd4`) and its draw"
 level = "confirmed-code"
-note = "confirmed (code), runtime"
-coney = "src/platform/scene_lighting.h:SceneLighting::drawGroundRings"
-status = "legacy"
+note = "confirmed (code), runtime; Coney's arcs and fans are `hud::ringFan` (src/hud/health_rings.cpp), drawn by `SceneLighting::drawGroundRings`, which is Coney's own"
 
 [[function]]
 address = 0x0017b8a8
