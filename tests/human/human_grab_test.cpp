@@ -220,6 +220,40 @@ TEST_CASE("circle held tackles another human: it is mounted and its reaction goa
     CHECK(fight.damageTaken() == 61); // the mount's square, 219 or 221
 }
 
+TEST_CASE("a tackled player keeps all his health and is never down by state, under the tackle or breaking free",
+          "[human][combat]") {
+    // Expected: combat-reactions.md#down-health. A tackled human holds state 0x800, which is not among
+    // Human_IsDownOrDead's (0x00227e60) states 0x180050000, and the tackle writes no health. Confirmed (runtime), run
+    // r-20261122-tackle-escape: tackled from update 30 (state 0x805) to 150, breaking free with circle (246 from 103),
+    // at 900 health and never down by state.
+    const FightCharacter character;
+    HumanFight fight(character, 2.0F);
+    fight.otherFightsPlayer = true;
+    fight.otherCommand = [](std::uint64_t frame) {
+        return frame == 2 ? combat::command::kCircleHeld : combat::command::kNone;
+    };
+    const combat::Health& health = fight.player().fighter().health();
+    const int full = health.value();
+    int mountedUpdates = 0;
+    int downUpdates = 0;
+    // The AI's tackle, then the mount with no input.
+    fight.run("", 80, [&](std::uint64_t /*frame*/) {
+        mountedUpdates += fight.player().state() == TargetState::Mounted ? 1 : 0;
+        downUpdates += fight.player().downOrDead() ? 1 : 0;
+    });
+    REQUIRE(fight.player().state() == TargetState::Mounted);
+    REQUIRE(mountedUpdates > 0);
+    // At a quarter of its power or less the mounter lets circle break the tackle at once (Grab_CanEscape, 0x00225830).
+    combat::PowerMeter& power = fight.other().fighter().combat().power();
+    power.set(power.maximum() / 8);
+    fight.run("0 tap circle\n", 120,
+              [&](std::uint64_t /*frame*/) { downUpdates += fight.player().downOrDead() ? 1 : 0; });
+    CHECK(fight.player().state() == TargetState::Standing);
+    CHECK(downUpdates == 0);
+    CHECK(health.value() == full);
+    CHECK_FALSE(health.depleted());
+}
+
 TEST_CASE("a human with flag 0x40 cannot be grabbed: the grab misses", "[human][combat]") {
     // Expected: combat-reactions.md#busy-target, confirmed (code)
     const FightCharacter character;
