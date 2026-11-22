@@ -282,8 +282,7 @@ TEST_CASE("the disc's Fight Pen Brawl ends with the Furies' win when the Orphan 
     REQUIRE(ended);
     CHECK(game.flow().rumbleResult().winner().find("FURIES") != std::string::npos);
     CHECK(game.flow().scripts().errors() == 0);
-    std::printf("  fall out of the world: result screen at frame %llu
-                ",
+    std::printf("  fall out of the world: result screen at frame %llu\n",
                 static_cast<unsigned long long>(game.frames()));
 }
 
