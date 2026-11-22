@@ -14,7 +14,12 @@ namespace {
 
 // The command's one argument: the line, as the catalog has it (src/debug/console_commands.toml).
 constexpr std::array<console::ArgSpec, 1> kLuaArgs{{
-    {.name = "line", .type = console::ArgType::Text, .help = "A line of Lua 4.0; quote it when it holds spaces"},
+    {.name = "line",
+     .type = console::ArgType::Text,
+     .help = "A line of Lua 4.0; quote it when it holds spaces",
+     .optional = false,
+     .defaultValue = {},
+     .choices = {}},
 }};
 
 // The specification, as src/debug/console_commands.toml gives it.
@@ -23,7 +28,10 @@ constexpr console::CommandSpec kLuaSpec{
     .group = "Scripts",
     .access = console::Access::Developer,
     .scope = console::Scope::Session,
+    .changes = false,
     .summary = "Runs a line of Lua in the game's script state, as the Lua console page does.",
+    .needs = 0,
+    .available = {},
     .args = kLuaArgs,
 };
 
