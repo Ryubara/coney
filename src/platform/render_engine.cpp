@@ -705,6 +705,13 @@ ViewPasses RenderEngine::viewPassesOf(const graphics::Draw3d& draw) {
     return m_viewHook->passesFor(currentDrawKind(), draw.mesh, materials);
 }
 
+void RenderEngine::drawEffect(const graphics::EffectDraw& draw, std::span<const graphics::EffectVertex> vertices,
+                              std::span<const std::uint16_t> indices, const graphics::Texture* texture) {
+    CONEY_ASSERT(m_inFrame);
+    m_frame.addEffectDraw(draw, vertices, indices, texture);
+    drawDescribed();
+}
+
 void RenderEngine::setSceneCamera(const graphics::SceneCamera& camera) {
     CONEY_ASSERT(m_inFrame);
     m_frame.setSceneCamera(camera);

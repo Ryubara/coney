@@ -32,7 +32,8 @@ class RenderEngine;
 /// Draws atomics lit the way the original's LightManager lights them: per atomic, the lights
 /// graphics::LightManager::select() chooses, handed to librw (whose GL3 lighting adds ambient, directional and point
 /// lights to the prelighting and clamps, as the PS2 pipeline does); then the frame's coronas from the `lighting`
-/// sheet and the humans' blob shadows from `part_page1`, as camera-facing and ground-lying quads.
+/// sheet and the humans' blob shadows from `part_page1`, as camera-facing and ground-lying quads, effect draws of the
+/// frame description (RenderEngine::drawEffect()).
 ///
 /// librw lights an atomic from the current world's lights, and its point lights only when the atomic is in that
 /// world. So the rig owns a librw world holding just the selected lights of the atomic being drawn, and puts the

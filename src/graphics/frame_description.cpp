@@ -169,14 +169,31 @@ std::span<const ScreenVertex> FrameDescription::verticesOf(const Draw2d& draw) c
     return std::span<const ScreenVertex>(m_vertices).subspan(draw.first, draw.count);
 }
 
-void FrameDescription::addEffectDraw(EffectDraw /*draw*/, std::span<const EffectVertex> /*vertices*/,
-                                     std::span<const std::uint16_t> /*indices*/, const Texture* /*texture*/) {
-    // A stub: the effects are not in the description yet.
+void FrameDescription::addEffectDraw(EffectDraw draw, std::span<const EffectVertex> vertices,
+                                     std::span<const std::uint16_t> indices, const Texture* texture) {
+    if (vertices.empty()) {
+        return;
+    }
+    // The ranges point into the frame's arrays, after what earlier draws added.
+    draw.texture = this->texture(texture);
+    draw.firstVertex = static_cast<std::uint32_t>(m_effectVertices.size());
+    draw.vertexCount = static_cast<std::uint32_t>(vertices.size());
+    m_effectVertices.insert(m_effectVertices.end(), vertices.begin(), vertices.end());
+    draw.firstIndex = static_cast<std::uint32_t>(m_effectIndices.size());
+    draw.indexCount = static_cast<std::uint32_t>(indices.size());
+    m_effectIndices.insert(m_effectIndices.end(), indices.begin(), indices.end());
+    effects().draws.push_back(draw);
 }
 
-std::span<const EffectVertex> FrameDescription::effectVerticesOf(const EffectDraw& /*draw*/) const { return {}; }
+std::span<const EffectVertex> FrameDescription::effectVerticesOf(const EffectDraw& draw) const {
+    CONEY_ASSERT(draw.firstVertex + draw.vertexCount <= m_effectVertices.size());
+    return std::span<const EffectVertex>(m_effectVertices).subspan(draw.firstVertex, draw.vertexCount);
+}
 
-std::span<const std::uint16_t> FrameDescription::effectIndicesOf(const EffectDraw& /*draw*/) const { return {}; }
+std::span<const std::uint16_t> FrameDescription::effectIndicesOf(const EffectDraw& draw) const {
+    CONEY_ASSERT(draw.firstIndex + draw.indexCount <= m_effectIndices.size());
+    return std::span<const std::uint16_t>(m_effectIndices).subspan(draw.firstIndex, draw.indexCount);
+}
 
 std::span<const SceneLight> FrameDescription::lightsOf(const Draw3d& draw) const {
     CONEY_ASSERT(draw.firstLight + draw.lightCount <= m_lights.size());

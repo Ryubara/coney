@@ -57,6 +57,53 @@ rw::Texture::Addressing rwAddress(graphics::TextureAddress address) {
     return rw::Texture::CLAMP;
 }
 
+// librw's face culling for `faces`.
+rw::uint32 rwCull(graphics::CullFaces faces) {
+    switch (faces) {
+    case graphics::CullFaces::None:
+        return rw::CULLNONE;
+    case graphics::CullFaces::Front:
+        return rw::CULLFRONT;
+    case graphics::CullFaces::Back:
+        break;
+    }
+    return rw::CULLBACK;
+}
+
+// librw's filter for `filter`.
+rw::Texture::FilterMode rwFilter(graphics::TextureFilter filter) {
+    switch (filter) {
+    case graphics::TextureFilter::Nearest:
+        return rw::Texture::NEAREST;
+    case graphics::TextureFilter::Linear:
+        break;
+    case graphics::TextureFilter::MipNearest:
+        return rw::Texture::MIPNEAREST;
+    case graphics::TextureFilter::MipLinear:
+        return rw::Texture::MIPLINEAR;
+    case graphics::TextureFilter::LinearMipNearest:
+        return rw::Texture::LINEARMIPNEAREST;
+    case graphics::TextureFilter::LinearMipLinear:
+        return rw::Texture::LINEARMIPLINEAR;
+    }
+    return rw::Texture::LINEAR;
+}
+
+// The librw texture of a sprite sheet's texture, or a movie's frame (platform/movie_screen.h); null for none.
+rw::Texture* rwTextureOf(const graphics::Texture* texture) {
+    if (texture == nullptr) {
+        return nullptr;
+    }
+    rw::Texture* rwTexture = nullptr;
+    if (const auto* sheetTexture = dynamic_cast<const SheetTexture*>(texture); sheetTexture != nullptr) {
+        rwTexture = sheetTexture->rwTexture();
+    } else if (const auto* movieTexture = dynamic_cast<const MovieTexture*>(texture); movieTexture != nullptr) {
+        rwTexture = movieTexture->rwTexture();
+    }
+    CONEY_ASSERT(rwTexture != nullptr);
+    return rwTexture;
+}
+
 } // namespace
 
 Gl3Renderer::~Gl3Renderer() { releaseAll(); }
@@ -87,6 +134,13 @@ void Gl3Renderer::drawNew(const graphics::FrameDescription& frame, const Target&
             m_passStarted = true;
             for (; m_draw < scene->draws.size(); ++m_draw) {
                 drawScene(frame, scene->draws[m_draw], target);
+            }
+            if (m_pass + 1 == passes.size()) {
+                return;
+            }
+        } else if (const auto* effects = std::get_if<graphics::EffectPass>(&pass); effects != nullptr) {
+            for (; m_draw < effects->draws.size(); ++m_draw) {
+                drawEffect(frame, effects->draws[m_draw], target);
             }
             if (m_pass + 1 == passes.size()) {
                 return;
@@ -228,23 +282,100 @@ Gl3Renderer::KeptCopy* Gl3Renderer::keptCopy(graphics::ScreenCopyId id) {
 }
 
 rw::Raster* Gl3Renderer::bindTexture(const graphics::Texture* texture, graphics::TextureAddress address) {
-    if (texture == nullptr) {
+    rw::Texture* rwTexture = rwTextureOf(texture);
+    if (rwTexture == nullptr) {
         return nullptr;
     }
-    // A sprite sheet's texture, or a movie's frame (platform/movie_screen.h).
-    rw::Texture* rwTexture = nullptr;
-    if (const auto* sheetTexture = dynamic_cast<const SheetTexture*>(texture); sheetTexture != nullptr) {
-        rwTexture = sheetTexture->rwTexture();
-    } else if (const auto* movieTexture = dynamic_cast<const MovieTexture*>(texture); movieTexture != nullptr) {
-        rwTexture = movieTexture->rwTexture();
-    }
-    CONEY_ASSERT(rwTexture != nullptr);
     // The texture's own filtering (most of the game's textures ask for linear), clamped at the edges so a rectangle
     // that reaches the texture's border does not pick up texels from the opposite side, unless the draw repeats the
     // texture.
     draw::setRenderState(rw::TEXTUREFILTER, rwTexture->getFilter());
     draw::setRenderState(rw::TEXTUREADDRESS, rwAddress(address));
     return rwTexture->raster;
+}
+
+void Gl3Renderer::drawEffect(const graphics::FrameDescription& frame, const graphics::EffectDraw& draw,
+                             const Target& target) {
+    if (!drawing2d(target)) {
+        return; // NULL backend, not recording: nothing to draw
+    }
+    const graphics::EffectStates& states = draw.states;
+    // The fog as it stands, for the draw that puts it back.
+    const bool fogged = draw::getRenderState(rw::FOGENABLE) != 0;
+    // Each state the draw sets, set as it always was whatever it already holds (a state set to its own value changes
+    // no draw-stream hash, a state never set does).
+    if (states.fog) {
+        draw::setRenderState(rw::FOGENABLE, *states.fog ? 1 : 0);
+    }
+    if (states.depthTest) {
+        draw::setRenderState(rw::ZTESTENABLE, *states.depthTest ? 1 : 0);
+    }
+    if (states.depthWrite) {
+        draw::setRenderState(rw::ZWRITEENABLE, *states.depthWrite ? 1 : 0);
+    }
+    if (states.vertexAlpha) {
+        draw::setRenderState(rw::VERTEXALPHA, *states.vertexAlpha ? 1 : 0);
+    }
+    if (states.cull) {
+        draw::setRenderState(rw::CULLMODE, rwCull(*states.cull));
+    }
+    if (states.filter) {
+        draw::setRenderState(rw::TEXTUREFILTER, rwFilter(*states.filter));
+    }
+    if (states.address) {
+        draw::setRenderState(rw::TEXTUREADDRESS, rwAddress(*states.address));
+    }
+    // The texture's raster: none for flat colour.
+    const rw::Texture* rwTexture = rwTextureOf(frame.textureOf(draw.texture));
+    draw::setRenderStatePtr(rw::TEXTURERASTER, rwTexture != nullptr ? rwTexture->raster : nullptr);
+    if (states.blend) {
+        draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+        draw::setRenderState(rw::DESTBLEND,
+                             *states.blend == graphics::EffectBlend::Additive ? rw::BLENDONE : rw::BLENDINVSRCALPHA);
+    }
+
+    // The corners in librw's vertex type, with the colour and texture coordinate a lit sprite has and no normal.
+    const std::span<const graphics::EffectVertex> corners = frame.effectVerticesOf(draw);
+    std::vector<rw::gl3::Im3DVertex> vertices(corners.size());
+    for (std::size_t i = 0; i < corners.size(); ++i) {
+        const graphics::EffectVertex& in = corners[i];
+        rw::gl3::Im3DVertex& vertex = vertices[i];
+        vertex.setX(in.x);
+        vertex.setY(in.y);
+        vertex.setZ(in.z);
+        vertex.setColor(in.colour.r, in.colour.g, in.colour.b, in.colour.a);
+        vertex.setU(in.u);
+        vertex.setV(in.v);
+    }
+    const bool lines = draw.shape == graphics::EffectShape::Lines;
+    const std::uint32_t flags = lines ? rw::im3d::VERTEXXYZ | rw::im3d::VERTEXRGBA
+                                      : rw::im3d::VERTEXXYZ | rw::im3d::VERTEXRGBA | rw::im3d::VERTEXUV;
+    draw::im3dTransform(vertices.data(), static_cast<rw::int32>(vertices.size()), nullptr, flags);
+    const int primitive = lines ? rw::PRIMTYPELINELIST : rw::PRIMTYPETRILIST;
+    if (draw.indexCount == 0) {
+        draw::im3dRenderPrimitive(primitive);
+    } else {
+        // librw takes a mutable pointer.
+        std::vector<std::uint16_t> indices(frame.effectIndicesOf(draw).begin(), frame.effectIndicesOf(draw).end());
+        draw::im3dRenderIndexedPrimitive(primitive, indices.data(), static_cast<rw::int32>(indices.size()));
+    }
+    draw::im3dEnd();
+
+    // What the draw puts back for the solid draws after it.
+    const graphics::EffectRestore& restore = draw.restore;
+    if (restore.fog) {
+        draw::setRenderState(rw::FOGENABLE, fogged ? 1 : 0);
+    }
+    if (restore.blend) {
+        draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+        draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    }
+    if (restore.depthWrite) {
+        draw::setRenderState(rw::ZWRITEENABLE, 1);
+    }
+    if (restore.cull) {
+        draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
+    }
 }
 
 void Gl3Renderer::set2dStates(rw::Raster* raster, bool opaque) {

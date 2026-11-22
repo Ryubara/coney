@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "animation/anim_math.h"
+#include "graphics/frame_description.h"
 #include "graphics/render_device.h"
 
 namespace coney::platform {
@@ -12,7 +13,8 @@ namespace coney::platform {
 class RenderEngine;
 
 /// A coloured line list for the 3D scene, in the game's axes: the debug tools' lines (collision, paths, the picked
-/// thing), drawn tested against depth, not writing it, untextured.
+/// thing), drawn as one effect draw of the frame description (RenderEngine::drawEffect()): tested against depth, not
+/// writing it, untextured.
 class LineList {
   public:
     /// Adds a line from `a` to `b` (game axes) in `colour`.
@@ -21,15 +23,7 @@ class LineList {
     void draw(RenderEngine& engine);
 
   private:
-    // One end of a line, in RenderWare's axes, lifted off what it lies on.
-    struct Point {
-        float x = 0.0F;
-        float y = 0.0F;
-        float z = 0.0F;
-        graphics::Rgba colour;
-    };
-
-    std::vector<Point> m_points;
+    std::vector<graphics::EffectVertex> m_vertices;
 };
 
 } // namespace coney::platform

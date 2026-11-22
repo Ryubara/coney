@@ -18,9 +18,9 @@ namespace coney::platform {
 class RenderEngine;
 
 /// Draws a level's particle systems (effects::ParticleSystems) as sprites facing the camera, each a rectangle of its
-/// type's sprite sheet (docs/research/particles.md#sprite-words) tinted by its colour, with librw's 3D immediate mode.
-/// The sheets are loaded from the disc the first time a sprite needs one; one that does not load is reported once
-/// through `print`, and its sprites are drawn as flat-coloured quads.
+/// type's sprite sheet (docs/research/particles.md#sprite-words) tinted by its colour, as effect draws of the frame
+/// description (RenderEngine::drawEffect()). The sheets are loaded from the disc the first time a sprite needs one; one
+/// that does not load is reported once through `print`, and its sprites are drawn as flat-coloured quads.
 ///
 /// **Coney's stand-ins** for the original's sprite batches (`PTank`), whose drawing is not traced: every sprite a
 /// square facing the camera; the glows, flashes, flames and sparks added to what is behind them, the rest blended by

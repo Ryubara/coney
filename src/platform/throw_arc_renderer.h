@@ -2,13 +2,14 @@
 #pragma once
 
 #include <functional>
-#include <optional>
+#include <memory>
 #include <string_view>
 #include <vector>
 
 #include "core/chunk_system.h"
 #include "fileio/wad.h"
 #include "graphics/throw_arc.h"
+#include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
 
 namespace coney::platform {
@@ -31,7 +32,7 @@ class ThrowArcRenderer {
     ThrowArcRenderer(const io::Wad& wad, std::function<void(std::string_view)> print);
 
     /// Draws the ribbon `strip` (graphics::throwArcStrip(), game axes) onto `engine`'s frame through the current
-    /// camera.
+    /// camera, as an effect draw of the frame description (RenderEngine::drawEffect()).
     void draw(RenderEngine& engine, const std::vector<graphics::ThrowArcVertex>& strip);
 
   private:
@@ -41,8 +42,8 @@ class ThrowArcRenderer {
     const io::Wad& m_wad;
     std::function<void(std::string_view)> m_print;
     chunk::ChunkHandlerTable m_table;
-    std::optional<TextureDictionary> m_dictionary;
-    bool m_tried = false; // the texture's load was tried
+    std::unique_ptr<SheetTexture> m_texture; // the dictionary's texture, null until loaded
+    bool m_tried = false;                    // the texture's load was tried
 };
 
 } // namespace coney::platform

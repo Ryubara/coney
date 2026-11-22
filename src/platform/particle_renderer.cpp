@@ -9,10 +9,9 @@
 #include <utility>
 #include <vector>
 
-#include <rw.h>
-
-#include "platform/draw_calls.h"
+#include "graphics/frame_description.h"
 #include "platform/play_scenery.h"
+#include "platform/render_engine.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
 
@@ -49,9 +48,28 @@ bool additive(effects::ParticleBehaviour behaviour) {
 // The byte of `colour` (`0xRRGGBBAA`) `shift` bits up.
 std::uint8_t channel(std::uint32_t colour, unsigned shift) { return static_cast<std::uint8_t>(colour >> shift); }
 
+// How the sprites draw: depth tested but not written, both faces, filtered and clamped, and no distance fog: the
+// original gives every sprite vertex the fixed fog value 254 of 255, so a sprite takes 1/255 of the fog colour wherever
+// it is (docs/research/rendering.md#sprites), which Coney rounds to none. The glows, flashes, flames and sparks add to
+// what is behind them (`add`), the rest blend by alpha. After a draw the states the solid draws expect are put back:
+// the fog as it was, blending by alpha, depth written, back faces dropped.
+graphics::EffectDraw spriteDraw(bool add) {
+    graphics::EffectDraw draw;
+    draw.states.fog = false;
+    draw.states.depthTest = true;
+    draw.states.depthWrite = false;
+    draw.states.vertexAlpha = true;
+    draw.states.cull = graphics::CullFaces::None;
+    draw.states.filter = graphics::TextureFilter::Linear;
+    draw.states.address = graphics::TextureAddress::Clamp;
+    draw.states.blend = add ? graphics::EffectBlend::Additive : graphics::EffectBlend::Alpha;
+    draw.restore = graphics::EffectRestore{.fog = true, .blend = true, .depthWrite = true, .cull = true};
+    return draw;
+}
+
 // The sprites of one draw: one sheet, one blend, two triangles each.
 struct Batch {
-    std::vector<rw::gl3::Im3DVertex> vertices;
+    std::vector<graphics::EffectVertex> vertices;
     std::vector<std::uint16_t> indices;
 
     // Adds the square `particle` makes, `half` its half-size along the camera's `right` and `up`, showing `uv`.
@@ -70,14 +88,14 @@ struct Batch {
                                                            {1.0F, -1.0F, uv.u1, uv.v1},
                                                            {-1.0F, -1.0F, uv.u0, uv.v1}}};
         for (const auto& corner : corners) {
-            rw::gl3::Im3DVertex vertex{};
-            vertex.setX(centre.x + a.x * corner[0] + b.x * corner[1]);
-            vertex.setY(centre.y + a.y * corner[0] + b.y * corner[1]);
-            vertex.setZ(centre.z + a.z * corner[0] + b.z * corner[1]);
-            vertex.setColor(channel(particle.colour, 24), channel(particle.colour, 16), channel(particle.colour, 8),
-                            alpha);
-            vertex.setU(corner[2]);
-            vertex.setV(corner[3]);
+            graphics::EffectVertex vertex;
+            vertex.x = centre.x + a.x * corner[0] + b.x * corner[1];
+            vertex.y = centre.y + a.y * corner[0] + b.y * corner[1];
+            vertex.z = centre.z + a.z * corner[0] + b.z * corner[1];
+            vertex.colour = graphics::Rgba{channel(particle.colour, 24), channel(particle.colour, 16),
+                                           channel(particle.colour, 8), alpha};
+            vertex.u = corner[2];
+            vertex.v = corner[3];
             vertices.push_back(vertex);
         }
         constexpr std::array<std::uint16_t, 6> kCorners{0, 1, 2, 0, 2, 3};
@@ -86,18 +104,12 @@ struct Batch {
         }
     }
 
-    // Draws the batch with `raster` (null: untextured), then empties it.
-    void flush(rw::Raster* raster, bool add) {
+    // Draws the batch with `texture` (null: untextured), then empties it.
+    void flush(RenderEngine& engine, const graphics::Texture* texture, bool add) {
         if (vertices.empty()) {
             return;
         }
-        draw::setRenderStatePtr(rw::TEXTURERASTER, raster);
-        draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-        draw::setRenderState(rw::DESTBLEND, add ? rw::BLENDONE : rw::BLENDINVSRCALPHA);
-        draw::im3dTransform(vertices.data(), static_cast<rw::int32>(vertices.size()), nullptr,
-                            rw::im3d::VERTEXXYZ | rw::im3d::VERTEXRGBA | rw::im3d::VERTEXUV);
-        draw::im3dRenderIndexedPrimitive(rw::PRIMTYPETRILIST, indices.data(), static_cast<rw::int32>(indices.size()));
-        draw::im3dEnd();
+        engine.drawEffect(spriteDraw(add), vertices, indices, texture);
         vertices.clear();
         indices.clear();
     }
@@ -105,31 +117,6 @@ struct Batch {
 
 // The most sprites one batch holds: its indices are 16-bit.
 constexpr std::size_t kBatchSprites = 16000;
-
-// Sets the render states the sprites draw with: depth tested but not written, both faces, filtered and clamped, and
-// no distance fog: the original gives every sprite vertex the fixed fog value 254 of 255, so a sprite takes 1/255 of
-// the fog colour wherever it is (docs/research/rendering.md#sprites), which Coney rounds to none. Returns whether fog
-// was on, for endSprites().
-bool beginSprites() {
-    const bool fogged = draw::getRenderState(rw::FOGENABLE) != 0;
-    draw::setRenderState(rw::FOGENABLE, 0);
-    draw::setRenderState(rw::ZTESTENABLE, 1);
-    draw::setRenderState(rw::ZWRITEENABLE, 0);
-    draw::setRenderState(rw::VERTEXALPHA, 1);
-    draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
-    draw::setRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
-    draw::setRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
-    return fogged;
-}
-
-// Puts back the states the solid draws expect, and the fog as it was.
-void endSprites(bool fogged) {
-    draw::setRenderState(rw::FOGENABLE, fogged ? 1 : 0);
-    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
-    draw::setRenderState(rw::ZWRITEENABLE, 1);
-    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
-}
 
 } // namespace
 
@@ -166,13 +153,12 @@ void ParticleRenderer::useSheet(effects::ParticleSheet which, graphics::SpriteSh
     m_sheets[which] = std::make_unique<graphics::SpriteSheet>(std::move(sheet));
 }
 
-void ParticleRenderer::draw(RenderEngine& /*engine*/, const effects::ParticleSystems& systems,
+void ParticleRenderer::draw(RenderEngine& engine, const effects::ParticleSystems& systems,
                             const world::CameraPose& view) {
     if (systems.particleCount() == 0) {
         return;
     }
-    const bool fogged = beginSprites();
-    // The screen's right and up in the world: the camera pose's (its right is forward × up).
+    // The screen's right and up in the world: the camera pose's (its right is forward x up).
     const world::Vec3 right = view.right;
     const world::Vec3 up = view.up;
     Batch batch;
@@ -181,8 +167,7 @@ void ParticleRenderer::draw(RenderEngine& /*engine*/, const effects::ParticleSys
             continue;
         }
         const graphics::SpriteSheet* spriteSheet = sheet(system.type->sheet);
-        const auto* texture =
-            spriteSheet != nullptr ? dynamic_cast<const SheetTexture*>(spriteSheet->texture.get()) : nullptr;
+        const graphics::Texture* texture = spriteSheet != nullptr ? spriteSheet->texture.get() : nullptr;
         for (const effects::Particle& particle : system.particles) {
             // A sprite fades out over its life when its type says so.
             float alpha = static_cast<float>(channel(particle.colour, 0));
@@ -194,26 +179,21 @@ void ParticleRenderer::draw(RenderEngine& /*engine*/, const effects::ParticleSys
                                             : graphics::UvRect{};
             batch.add(particle, right, up, uv, static_cast<std::uint8_t>(alpha));
             if (batch.indices.size() >= kBatchSprites * 6) {
-                batch.flush(texture != nullptr ? texture->rwTexture()->raster : nullptr,
-                            additive(system.type->behaviour));
+                batch.flush(engine, texture, additive(system.type->behaviour));
             }
         }
         // One system's sprites share a sheet and a blend: draw them together.
-        batch.flush(texture != nullptr ? texture->rwTexture()->raster : nullptr, additive(system.type->behaviour));
+        batch.flush(engine, texture, additive(system.type->behaviour));
     }
-    endSprites(fogged);
 }
 
-void ParticleRenderer::drawSprites(RenderEngine& /*engine*/, std::span<const effects::Particle> sprites,
+void ParticleRenderer::drawSprites(RenderEngine& engine, std::span<const effects::Particle> sprites,
                                    effects::ParticleSheet sheetOf, bool add, const world::CameraPose& view) {
     if (sprites.empty()) {
         return;
     }
-    const bool fogged = beginSprites();
     const graphics::SpriteSheet* spriteSheet = sheet(sheetOf);
-    const auto* texture =
-        spriteSheet != nullptr ? dynamic_cast<const SheetTexture*>(spriteSheet->texture.get()) : nullptr;
-    rw::Raster* raster = texture != nullptr ? texture->rwTexture()->raster : nullptr;
+    const graphics::Texture* texture = spriteSheet != nullptr ? spriteSheet->texture.get() : nullptr;
     Batch batch;
     for (const effects::Particle& sprite : sprites) {
         const graphics::UvRect uv = spriteSheet != nullptr && sprite.rect < spriteSheet->page.rects.size()
@@ -221,11 +201,10 @@ void ParticleRenderer::drawSprites(RenderEngine& /*engine*/, std::span<const eff
                                         : graphics::UvRect{};
         batch.add(sprite, view.right, view.up, uv, channel(sprite.colour, 0));
         if (batch.indices.size() >= kBatchSprites * 6) {
-            batch.flush(raster, add);
+            batch.flush(engine, texture, add);
         }
     }
-    batch.flush(raster, add);
-    endSprites(fogged);
+    batch.flush(engine, texture, add);
 }
 
 } // namespace coney::platform
