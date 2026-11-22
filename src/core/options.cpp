@@ -516,6 +516,14 @@ std::expected<void, Error> checkNetFiles(const Options& options) {
     if (options.netView && !options.netJoin) {
         return invalidArgument("--net-view needs --join: it draws the game of the host joined");
     }
+    // The client game is the guest's one mode, so no other mode (a level, a sandbox, a viewer, a test card, a loaded
+    // file) goes with it.
+    if (options.netView &&
+        (options.playLevel || options.sandbox || options.testCard || !options.loads.empty() || options.viewTxd ||
+         options.viewSheet || options.viewText || options.viewWorld || options.viewCharacter)) {
+        return invalidArgument("--net-view is the guest's whole game, so it cannot be combined with --play-level, "
+                               "--sandbox, --load, --test-card or a viewer");
+    }
     if (options.netRecordFile && !options.netHost) {
         return invalidArgument("--net-record needs --host: it records the remote player's pad the host played");
     }

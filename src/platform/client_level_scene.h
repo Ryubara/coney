@@ -35,10 +35,10 @@ namespace coney::platform {
 /// clips) at its feet and heading, as ClientWorld::drawn() blends them for the frame. Presentation only.
 ///
 /// **Stand-ins**, until the snapshots carry them: every human is drawn as Rembrandt (`human::kPlayerModel`), since a
-/// snapshot does not say which character a human is; and the camera follows the human with the lowest network id (the
-/// host's player 1, whose brain comes first) from 4 m behind and 2 m above his feet, looking at his chest, since the
-/// guest's own player and its follow camera are not in the snapshots either. With no human, the camera stands at the
-/// level's start the same way.
+/// snapshot does not say which character a human is (#1612); and the camera follows the human with the lowest network
+/// id (the host's player 1, whose brain comes first) from 4 m behind and 2 m above his feet, looking at his chest,
+/// since the guest's own player and its follow camera are not in the snapshots either (#1333). With no human, the
+/// camera stands at the level's start the same way.
 /// @coney-only network play; the original has none
 class ClientLevelScene final : public ClientScene {
   public:

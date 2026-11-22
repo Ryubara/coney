@@ -22,7 +22,8 @@ namespace coney::net {
 /// jog, run, sprint and sprint slots, and the hidden style's, whose walk is 633 `STEALTH_WALK`
 /// (human::kAnimStealthWalk). A clip one gait blend names is in that blend; the jog, run and sprint are in both, and
 /// are answered with the normal style's (**Coney's choice**: the snapshot does not say the style, so a sneaking
-/// human's blend led by the jog late in its walk-to-jog pair is drawn with the normal walk under it).
+/// human's blend led by the jog late in its walk-to-jog pair is drawn with the normal walk under it, until #1613 puts
+/// the style in the snapshot).
 /// @coney-only network play; the original has none
 class CharacterClips final : public ClipSource {
   public:

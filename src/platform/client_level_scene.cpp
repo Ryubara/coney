@@ -15,6 +15,7 @@
 #include "animation/anim_math.h"
 #include "animation/anim_pose.h"
 #include "animation/skeleton.h"
+#include "camera/camera_lens.h"
 #include "camera/camera_view.h"
 #include "characters/character_data.h"
 #include "characters/character_rig.h"
@@ -27,13 +28,10 @@ namespace coney::platform {
 namespace {
 
 // The stand-in camera (Coney's choice, docs/guides/client-world.md#client-game): this far behind the followed human's
-// feet and above them, looking at his chest, through the play camera's default lens.
+// feet and above them, looking at his chest, through the player camera's lens (camera::kPlayerCameraLens).
 constexpr float kCameraBackMetres = 4.0F;
 constexpr float kCameraUpMetres = 2.0F;
 constexpr float kCameraLookUpMetres = 1.2F;
-constexpr float kCameraFieldOfView = 65.0F;
-constexpr float kCameraNearClip = 0.1F;
-constexpr float kCameraFarClip = 115.0F;
 
 // The game time a frame shows, in milliseconds.
 std::uint64_t millisecondsOf(std::uint64_t ticks) { return ticks / (GameTimer::kTicksPerSecond / 1000); }
@@ -123,10 +121,11 @@ WorldView ClientLevelScene::viewOn(anim::Vec3 feet, float heading) const {
     const camera::CameraView view{.position = eye,
                                   .orientation = camera::lookRotation(anim::subtract(target, eye)),
                                   .lookAt = target,
-                                  .fieldOfView = kCameraFieldOfView,
-                                  .nearClip = kCameraNearClip,
-                                  .farClip = kCameraFarClip};
-    return worldViewOf(view, m_engine.viewAspect(), std::min(m_scenery->drawDistance(), kCameraFarClip));
+                                  .fieldOfView = camera::kPlayerCameraLens.fieldOfView,
+                                  .nearClip = camera::kPlayerCameraLens.nearClip,
+                                  .farClip = camera::kPlayerCameraLens.farClip};
+    return worldViewOf(view, m_engine.viewAspect(),
+                       std::min(m_scenery->drawDistance(), camera::kPlayerCameraLens.farClip));
 }
 
 WorldView ClientLevelScene::startView() const {

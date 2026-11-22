@@ -13,9 +13,10 @@ character's clips as a `ClipSource`), platform-neutral in `coney_net`; and the g
 game](#client-game) (`--join ADDR --net-view`): `src/platform/client_game.h` (`ClientGame`), which follows the host's
 levels and steps a `ClientWorld` from the snapshots the session decodes, and `src/platform/client_level_scene.h`
 (`ClientLevelScene`), which draws the level and the world's humans through the renderer. The host fills its snapshots
-from its own humans every step ([The game's humans](multiplayer.md#game-humans)). **Planned:** each human's own
-character and the guest's own player's view, which the snapshots do not carry yet (drawn with stand-ins until then,
-[The client game](#client-game)); the host's game events and HUD on the client game.
+from its own humans every step ([The game's humans](multiplayer.md#game-humans)). **Planned**, each with its
+issue: each human's own character (#1612) and move style (#1613) in the snapshot, and the guest's own player's camera
+(#1333), which the snapshots do not carry yet (drawn with stand-ins until then, [The client game](#client-game)); the
+host's game events and HUD on the client game (#1614).
 
 ## The model {#model}
 
@@ -137,7 +138,7 @@ the hidden style's blend, whose walk is 633 `STEALTH_WALK`. A blend is answered 
 
 The jog, run and sprint are in both styles' blends, and a snapshot does not say the style, so they are answered with
 the normal style's (Coney's choice): a sneaking human whose blend is led by the jog, late in its walk-to-jog pair, is
-drawn with the normal walk under it.
+drawn with the normal walk under it, until the style is in the snapshot (#1613).
 
 ## The client game {#client-game}
 
@@ -163,13 +164,14 @@ the play mode's stand-in lights, and draws each human of the world as a characte
 [`humanPose()`](#pose) over its [clips](#clips), at its feet and heading. Two **stand-ins** wait for the snapshots to
 carry more:
 
-- **Every human is drawn as Rembrandt** (`human::kPlayerModel`): a snapshot does not say which character a human is.
+- **Every human is drawn as Rembrandt** (`human::kPlayerModel`): a snapshot does not say which character a human is
+  (#1612).
 - **The camera follows the human with the lowest network id**, the host's player 1, whose brain comes first, from 4 m
   behind and 2 m above his feet, looking at his chest: the guest's own player and its follow camera are not in the
-  snapshots. With no human, it stands at the level's start the same way.
+  snapshots (#1333). With no human, it stands at the level's start the same way.
 
 The host's game events and HUD (sounds, particles, messages, the panels, [HUD state](snapshots.md#hud-state)) arrive
-on the guest but the client game neither plays nor draws them yet.
+on the guest but the client game neither plays nor draws them yet (#1614).
 
 ## Testing {#testing}
 
@@ -201,9 +203,10 @@ jumps, and at every step draws 1 to 5 steps behind the newest (1 to 3, measured)
 `tests/platform/client_game_test.cpp` runs [the client game](#client-game) against a host, two `NetPlay`s on the
 loopback in fixed steps with no display (a fake scene stands for the drawing): the host's level loads once and the
 host stops holding; settled, for 200 steps, every step the client draws, its humans are the host's of that step, every
-field's word equal, and it draws no more than the buffer's delay and one step behind the newest the host sent (exactly
-that, measured). It also covers a new level's world starting with none of the last level's humans, a host's movie that
-waits for no copy on the guest, a quit leaving the level, and a level the disc lacks refused.
+field's word equal, and it never draws more than the buffer's delay and one step behind the newest the host sent, and
+at its most behind draws at least the delay behind it (the test bounds both, not an exact lag). It also covers a new
+level's world starting with none of the last level's humans, a host's movie that waits for no copy on the guest, a quit
+leaving the level, and a level the disc lacks refused.
 `tests/platform/disc_client_level_test.cpp`, with the disc, loads the scene of `level99` headless and draws two humans a
 client's world was sent, both posed with every layer's clip found, the camera behind player 1, and a human gone from
 the snapshots losing his mesh.

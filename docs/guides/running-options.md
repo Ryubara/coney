@@ -161,7 +161,8 @@ debug menus' Network page. The guest's pad plays the host's pad port 2, as a sec
 host's machine would ([Player two](multiplayer.md#player-two)). A guest's own screen shows its own game, unless
 `--net-view` (with `--join`) makes it [the client game](client-world.md#client-game): no game of its own, the host's
 level and humans drawn from the snapshots, every human as Rembrandt and the camera behind the host's player 1 until the
-snapshots say more.
+snapshots say more. It is the guest's whole game, so it is refused with `--play-level`, `--sandbox`, `--load`,
+`--test-card` or a viewer.
 `--host` hosts from the start, on UDP
 port 27615 of every interface unless told otherwise: `--host 30000` picks the port, `--host 127.0.0.1:0` listens on
 this machine only on any free port (the tests do), and the run prints the port it got. `--join ADDR[:PORT]` joins the
