@@ -543,6 +543,7 @@ def check_checked(subject: Subject) -> list[Refusal]:
             found.append(Refusal("checked", f"checked: Check did not run: {check}", "task check"))
     builds = bool(set(subject.checks) & set(proof.build.checks))
     tested: Sequence[str] = subject.paths
+    fixed = check_fix.DETAIL in stamp.detail
     needed_cpp: ctest_scope.CtestScope | None = None
     if check_fix.DETAIL in stamp.detail:  # a fix: its tests are those of the files changed since the Check it stands on
         plan, not_fix = _fix_scope(subject, stamp, builds)
@@ -550,7 +551,7 @@ def check_checked(subject: Subject) -> list[Refusal]:
             return found + not_fix
         tested, needed_cpp = plan.paths, plan.ctest
     if "pytest" in subject.checks:
-        found += _pytest_scope(subject, stamp, tested)
+        found += _pytest_scope(subject, stamp, tested, fixed)
     # A profile with the build checks has a build record behind them (`proof.build`), as `task check` writes it.
     if builds:
         found += _build_record(subject, stamp, needed_cpp)
@@ -633,11 +634,16 @@ def resumed_notes(subject: Subject) -> list[str]:
     return [f"Check resumed: {', '.join(names)} taken from an earlier run{when}, not run again"]
 
 
-def _pytest_scope(subject: Subject, stamp: stamps.Stamp, paths: Sequence[str]) -> list[Refusal]:
+def _pytest_scope(subject: Subject, stamp: stamps.Stamp, paths: Sequence[str], fixed: bool = False) -> list[Refusal]:
     """The Python tests the Check ran (`detail.pytest_scope`; none recorded is the whole suite, as before the scope
     was) hold every test the change needs (`proof_profiles.pytest_scope` of `paths`, the base's rules): the change's
-    paths, or a fix's files changed since the Check it stands on."""
-    needed = proof_profiles.pytest_scope(subject.conventions, paths)
+    paths, or for a fix (`fixed`) its files changed since the Check it stands on and the classes the whole change
+    touches (`proof_profiles.fix_pytest_scope`)."""
+    needed = (
+        proof_profiles.fix_pytest_scope(subject.conventions, paths, subject.paths)
+        if fixed
+        else proof_profiles.pytest_scope(subject.conventions, paths)
+    )
     try:
         ran = proof_profiles.scope_from_record(stamp.detail.get("pytest_scope"))
     except ConventionsError as error:

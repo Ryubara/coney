@@ -14,9 +14,10 @@ import pytest
 from git_support import git
 from test_task_check import TASK, TESTS, World, _main_edits, make_world, start_fix
 
-from coney_tools import check_fix, ctest_scope, pr_diff, pr_proof, stamps, unit
+from coney_tools import check_fix, ctest_scope, pr_diff, pr_proof, proof_profiles, stamps, unit
 from coney_tools.config import ConfigError
 from coney_tools.conventions import load_conventions
+from coney_tools.proof_profiles import pytest_scope
 
 BRAIN = '#include "ai/brain.h"\nint think() { return %d; }\n'
 
@@ -128,8 +129,28 @@ def test_a_fix_that_touches_no_cpp_file_runs_the_branchs_own_test_files(world: W
     assert check(world) == 0
     world.edit("docs/guides/widget.md", "# Widget\n\nFixed.\n", "the fix")
     assert check(world) == 0
-    assert world.labels[-1] == "^#(brain_test)$" and world.stamp.detail["pytest_scope"] == ["docs_only"]
+    assert world.labels[-1] == "^#(brain_test)$"
+    # The branch edited C++ test files, so the tests that read them run too although the fix edited only a page: the
+    # guard test that scans every C++ test file was skipped this way (task 1588, review round 8).
+    assert world.stamp.detail["pytest_scope"] == ["docs_only", "engine"]
     assert verify(world) == []
+
+
+def test_pr_verify_refuses_a_fix_that_left_out_the_tests_that_read_what_the_branch_touched(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    world.edit("tests/ai/brain_test.cpp", '#include "ai/brain.h"\nint more;\n')
+    world.edit("src/CMakeLists.txt", "add_library(ai)\nadd_library(more)\n")
+    assert check(world) == 0
+    world.edit("docs/guides/widget.md", "# Widget\n\nFixed.\n", "the fix")
+    with monkeypatch.context() as older:  # a Check by a tool that scoped a fix to the files changed since only
+        older.setattr(
+            proof_profiles, "fix_pytest_scope", lambda conventions, since, branch: pytest_scope(conventions, since)
+        )
+        assert check(world) == 0
+    assert world.stamp.detail["pytest_scope"] == ["docs_only"]
+    refusals = verify(world)
+    assert len(refusals) == 1 and "this change needs only the tests marked as reading docs_only, engine" in refusals[0]
 
 
 @pytest.mark.parametrize("name", ["tests/pictures/scenes.toml", "src/console/commands.toml", "assets/ui/font.txt"])

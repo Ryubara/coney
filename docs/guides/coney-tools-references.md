@@ -42,8 +42,10 @@ page without its `<!-- progress:history -->` marker. `--base REF` (default `orig
 measured from: a tag the branch adds that spells a name differently from the database fails, the ones already there
 are a warning with their count. When git cannot read the base (a copy of the files, a shallow clone) the rule is
 skipped with a warning, unless `--require-base` makes that a failure; CI passes `--base HEAD^1 --require-base`, the
-commit its checkout (depth 2) holds. `mkdocs build --strict` shows the tables on the page locally too, and fails on the
-same problems.
+commit its checkout (depth 2) holds. `task check` runs it the same way as part of its `docs-check` check, in its
+worktree against its own base ([task check](coney-tools-repo.md#task-check)), so a tag with prose after its `(File.cpp)`
+(`@orig 0x... Name (File.cpp) wrecks the zone`, which reads as a longer name) fails there, not only in CI (PR #1582).
+`mkdocs build --strict` shows the tables on the page locally too, and fails on the same problems.
 
 The pictures come from `progress_grid.py` (one square per function, from the Ghidra listing, the tracker's measures
 and the file ranges of `research/source-files.toml`), `progress_picture.py` (layout and SVG), `progress_history.py`

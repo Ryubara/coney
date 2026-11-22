@@ -96,6 +96,25 @@ def pytest_scope(conventions: Conventions, paths: Iterable[str]) -> PytestScope:
     return PytestScope(False, tuple(name for name in rules.scoped if name in found))
 
 
+def fix_pytest_scope(conventions: Conventions, since: Iterable[str], branch: Iterable[str]) -> PytestScope:
+    """The Python tests a fix needs: those of the files changed `since` the Check it stands on (`pytest_scope`), and
+    also those that read a scoped class the whole `branch` touched. A test marked `reads(<class>)` scans that class's
+    files as a whole (a guard test over every C++ test file), so a fix that edits only a page must still run the
+    tests of `engine` when the branch edited a C++ test file: the guard of task 1588 was skipped that way. The
+    whole suite stays the whole suite; a `branch` path under `whole_when` or of an unscoped class adds nothing,
+    because the anchor ran the whole suite for it."""
+    scope = pytest_scope(conventions, since)
+    if scope.whole:
+        return scope
+    rules = conventions.proof.pytest
+    found = set(scope.classes)
+    for path in branch:
+        kind = conventions.paths.ci_class(path)
+        if kind in rules.scoped and not path.startswith(rules.whole_when):
+            found.add(kind)
+    return PytestScope(False, tuple(name for name in rules.scoped if name in found))
+
+
 def covers(ran: PytestScope, needed: PytestScope) -> bool:
     """Whether a run of the scope `ran` holds every test the scope `needed` asks for."""
     return ran.whole or (not needed.whole and set(needed.classes) <= set(ran.classes))

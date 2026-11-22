@@ -8,8 +8,19 @@ from pathlib import Path
 
 import pytest
 from conventions_support import REPO
+from test_progress import ONE_FUNCTION, ONE_LISTING, make_checkout
+from test_progress_names import OLD_SPELLING, OTHER_TAG, branch_repo
 
-from coney_tools import check_cli, ci_tidy, docs_check, docs_cli, local_tidy, task_check_steps, uv_environment
+from coney_tools import (
+    check_cli,
+    ci_tidy,
+    docs_check,
+    docs_cli,
+    local_tidy,
+    progress_cli,
+    task_check_steps,
+    uv_environment,
+)
 from coney_tools.conventions import load_conventions
 from coney_tools.task_check_steps import CheckUnavailable, StepContext
 
@@ -183,10 +194,71 @@ def test_docs_check_fails_when_a_page_fails_the_standards(monkeypatch: pytest.Mo
     monkeypatch.setattr(docs_check, "context_for", lambda root: object())
     monkeypatch.setattr(docs_check, "check_changed", lambda root, base, ctx: Fake())
     monkeypatch.setattr(docs_cli, "page_lines", lambda result, page: [f"{page}: finding"])
+    monkeypatch.setattr(progress_cli, "check_as_ci", lambda root, base: (0, ["progress: inputs are consistent"]))
     result = task_check_steps.docs_check_step(context(Commands()))
     assert not result.ok and result.output == ("docs/guides/b.md: finding",) and "1 pages fail" in result.detail
     Fake.failed = {}
     assert task_check_steps.docs_check_step(context(Commands())).ok
+
+
+class NoPages:
+    """`docs check` finding nothing wrong: the standards are not what these tests are about."""
+
+    pages: tuple[str, ...] = ()
+    failed: dict[str, list[str]] = {}  # noqa: RUF012
+
+
+@pytest.fixture
+def pages_pass(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every page meets the standards, so only the progress check decides `docs-check`."""
+    monkeypatch.setattr(docs_check, "context_for", lambda root: object())
+    monkeypatch.setattr(docs_check, "check_changed", lambda root, base, ctx: NoPages())
+
+
+def progress_context(root: Path) -> StepContext:
+    """The context of a change in the repository `root`, measured from its `main`."""
+    return StepContext(root, "main", ("src/core/other.h",), load_conventions(REPO), Commands())
+
+
+@pytest.mark.usefixtures("pages_pass")
+def test_docs_check_refuses_a_tag_with_prose_after_its_file_the_way_ci_does(tmp_path: Path) -> None:
+    # PR #1582: `@orig 0x... Name (File.cpp) prose on the same line` reads as a differently spelled name. CI's
+    # `progress check --base HEAD^1 --require-base` failed it; `task check` never ran that check, so it passed here.
+    repo = branch_repo(tmp_path)
+    (repo / "src" / "core" / "other.h").write_text(
+        OTHER_TAG.replace("(Other.cpp)", "(Other.cpp) wrecks the zone"), encoding="utf-8"
+    )
+    result = task_check_steps.docs_check_step(progress_context(repo))
+    assert not result.ok and "progress inputs fail" in result.detail
+    text = "\n".join(result.output)
+    assert "progress check: problem: src/core/other.h:1: @orig 0x00001020 names 'Other::Do (Other.cpp) wrecks" in text
+    assert "1 new since main" in text
+    assert not any(line.startswith("progress check: problem:") and "thing.h" in line for line in result.output)
+
+
+@pytest.mark.usefixtures("pages_pass")
+def test_docs_check_passes_the_inputs_when_the_branch_adds_no_misspelt_tag(tmp_path: Path) -> None:
+    repo = branch_repo(tmp_path)  # the base's own misspelt tag is a warning, not a failure
+    result = task_check_steps.docs_check_step(progress_context(repo))
+    assert result.ok and result.output == () and "progress inputs agree" in result.detail
+
+
+@pytest.mark.usefixtures("pages_pass")
+def test_docs_check_insists_on_a_base_it_can_read_as_ci_does(tmp_path: Path) -> None:
+    # CI passes --require-base: a checkout that cannot name the base must fail, never skip the name rule and pass.
+    root = make_checkout(tmp_path / "plain", ONE_FUNCTION, OLD_SPELLING, ONE_LISTING)
+    result = task_check_steps.docs_check_step(progress_context(root))
+    assert not result.ok and any("cannot compare with main" in line for line in result.output)
+    assert not any("not enforced" in line for line in result.output)
+
+
+@pytest.mark.reads("docs_only")
+def test_the_gate_and_the_ci_workflow_run_progress_check_with_the_same_words() -> None:
+    """CI's python job names HEAD^1 and insists on it; the gate gets both from the same two constants."""
+    workflow = (REPO / ".github" / "workflows" / "python.yml").read_text(encoding="utf-8").replace("\r\n", "\n")
+    assert f"run: uv run --project python coney-tools {progress_cli.ci_command()}\n" in workflow
+    assert (progress_cli.CI_BASE, progress_cli.CI_REQUIRE_BASE) == ("HEAD^1", True)
+    assert progress_cli.ci_command() == "progress check --base HEAD^1 --require-base"
 
 
 def test_the_clang_tidy_check_is_one_of_the_full_profiles_and_only_for_cpp_folders() -> None:

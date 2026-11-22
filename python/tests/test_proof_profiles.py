@@ -154,6 +154,35 @@ def test_the_tools_the_rules_and_unmapped_files_run_the_whole_suite(paths: list[
     assert scope.text == f"the whole suite ({culprit} runs everything)"
 
 
+def fix_scope_of(since: list[str], branch: list[str]) -> proof_profiles.PytestScope:
+    """The pytest scope of a fix the real conventions give: `since` changed after the anchor, `branch` is the change."""
+    return proof_profiles.fix_pytest_scope(CONVENTIONS, since, branch)
+
+
+def test_a_fix_also_runs_the_tests_that_read_a_class_the_branch_touched() -> None:
+    # Task 1588: a fix that edited only pages ran only the docs tests, and the guard test that scans every C++ test
+    # file (marked `engine`) was skipped although the branch had edited C++ test files it scans.
+    scope = fix_scope_of(["docs/guides/testing.md"], ["docs/guides/testing.md", "tests/platform/overlay_test.cpp"])
+    assert not scope.whole and scope.classes == ("docs_only", "engine")
+    assert scope == scope_of("docs/guides/testing.md", "tests/platform/overlay_test.cpp")
+
+
+def test_a_fix_whose_files_since_need_the_whole_suite_runs_it() -> None:
+    scope = fix_scope_of(["python/src/coney_tools/cli.py"], ["docs/a.md", "python/src/coney_tools/cli.py"])
+    assert scope.whole and scope.culprit == "python/src/coney_tools/cli.py"
+
+
+def test_a_fix_adds_no_class_for_branch_paths_that_run_everything_or_are_not_scoped() -> None:
+    # The anchor ran the whole suite for a path under `python/` and the tools; only the scoped classes are added.
+    branch = ["docs/a.md", "python/src/coney_tools/cli.py", "tools/run.ps1", "a-file-nobody-classified.xyz"]
+    scope = fix_scope_of(["docs/a.md"], branch)
+    assert not scope.whole and scope.classes == ("docs_only",)
+
+
+def test_a_fix_scope_with_nothing_changed_since_is_the_whole_suite() -> None:
+    assert fix_scope_of([], ["src/a.cpp"]).whole
+
+
 def test_no_changed_path_runs_the_whole_suite() -> None:
     scope = scope_of()
     assert scope.whole and scope.text == "the whole suite"

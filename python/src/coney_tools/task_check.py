@@ -273,7 +273,13 @@ def _run(request: Request, env: Env) -> int:
         env.say(f"  fix: {fix.text}")
     used = fix if fix is not None and fix.used else None
     tested = used.paths if used else change.paths  # the paths the test scopes are read from
-    scope = proof_profiles.pytest_scope(conventions, tested) if "pytest" in checks else None
+    scope = None
+    if "pytest" in checks:
+        scope = (
+            proof_profiles.fix_pytest_scope(conventions, tested, change.paths)
+            if used
+            else proof_profiles.pytest_scope(conventions, tested)
+        )
     if scope is not None:
         env.say(f"  pytest: {scope.text}")
     tests = None

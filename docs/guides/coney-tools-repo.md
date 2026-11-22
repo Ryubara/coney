@@ -425,7 +425,7 @@ cannot be read ends the run with exit 2.
 
 | Profile | For | Checks (in this order) |
 | --- | --- | --- |
-| `docs` | only documentation paths | `docs-check` (`coney-tools docs check --base`), `mkdocs` (`mkdocs build --strict`), `pre-commit` (all files), `pytest` ([the tests that read the docs](#task-check-pytest)), `actionlint` |
+| `docs` | only documentation paths | `docs-check` (`coney-tools docs check --base`, and `progress check` as CI runs it, below), `mkdocs` (`mkdocs build --strict`), `pre-commit` (all files), `pytest` ([the tests that read the docs](#task-check-pytest)), `actionlint` |
 | `tooling` | documentation and tooling paths (`python/`, `.claude/`, `.github/ISSUE_TEMPLATE/`, `python.yml`, ...; `paths.tools_only`) | the above and `ruff` (check and format), `mypy` (strict); `pytest` is the whole suite |
 | `full` | anything else, including a path in no class (`.github/scripts/`) | the above and `msvc-ci-build` and `ctest-full-disc` ([the C++ tests the change reaches](#task-check-ctest), with the disc) |
 
@@ -453,6 +453,17 @@ the floor is read from the base branch, so a branch cannot lower it; a machine t
 `coney.local.toml` (`min_available_memory_gb`, `-1` keeps the repository's, `0` never refuses; [Local
 config](workspace.md#local-config)), which only its owner can edit. The Studio's own language server is capped at its
 source ([A cap on the language server's memory](studio/lua-tools.md#stubs), a design: the editor is not built yet).
+
+**`docs-check` also runs the progress check, as CI does** {#task-check-progress-check}. CI's python job runs `progress
+check --base HEAD^1 --require-base` ([progress check](coney-tools-references.md#progress-check-usage)): the progress
+inputs agree, and an `@orig` tag the branch adds spells the function database's name (a tag with prose after its
+`(File.cpp)` reads as a longer name and fails: PR #1582 passed `task check`, which ran no such check, and failed CI).
+The `docs-check` check now runs the same check in the worktree (`progress_cli.check_as_ci`), against the base of the
+run, with `--require-base`'s rule: a base git cannot read fails it instead of skipping the name rule. Both halves run,
+so one run shows every problem, and a failure prints the check's own lines after `progress check:`. The words CI uses
+(`HEAD^1`, `--require-base`) are two constants of `progress_cli.py` that a test holds the workflow to, like the ruff
+and mypy commands. It is part of `docs-check`, not a check of its own, so a stamp written before it existed still
+names every check its profile lists and `pr verify` accepts it.
 
 **It never syncs the shared environment.** `uv run --project python <tool>` syncs `python/.venv` before it starts the
 tool, and on Windows that fails ("Access is denied") while another session has `coney-tools.exe` or `coney-agent.exe`
@@ -553,6 +564,14 @@ The rule is `proof.pytest`, read from the base like the profiles:
   the tests marked `@pytest.mark.reads("docs_only")` or `reads("engine")`. These are the tests that read the
   checkout's own docs, research data and engine sources (the docs and repository checks, the progress inputs, the
   natives scan). The run takes no check slot.
+
+A [fix](task-check-fix.md#fix) adds to that: its files changed since the Check it stands on choose the scope as above,
+and it also runs the tests that read **a scoped class the whole branch touched**, not only those of the files it
+changed since (`proof_profiles.fix_pytest_scope`). A test marked `reads("engine")` scans a whole tree, such as the
+guard that no C++ test saves a capture to a fixed name, so a fix that only edited a page must still run it when the
+branch edited a C++ test file: the fix of task 1588 ran only the `docs_only` tests and the guard was skipped, and a
+review found the two captures it would have caught. A branch path under `whole_when` or of a class that is not scoped
+adds nothing (the anchor ran the whole suite for it).
 
 The output says which (`pytest: only the tests marked as reading docs_only`, or `pytest: the whole suite
 (python/src/coney_tools/cli.py runs everything)`) and the stamp records it as `detail.pytest_scope`: `whole`, or the

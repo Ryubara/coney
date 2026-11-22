@@ -21,6 +21,15 @@ scene list, a reference picture, a shader, the console's command list) runs the 
 Only a fix whose every changed file is of a class no C++ test reads (`proof.ctest.skip`: documentation and tools) runs
 the C++ tests of the branch's own test files, so the build is still run against the tests it wrote.
 
+The Python tests of a fix are scoped the same way with one addition: they also include the tests that read **a scoped
+class the whole branch touched** (`proof.pytest.scoped`: `docs_only`, `engine`), not only those of the files changed
+since the anchor (`proof_profiles.fix_pytest_scope`). A test marked `reads("engine")` scans a whole tree (the guard that
+no C++ test saves a capture to a fixed name reads every file under `tests/`), so a fix that edited only a page, after a
+branch that edited C++ test files, still runs it; with the files since alone it ran only the `docs_only` tests and the
+guard was skipped (task 1588, review round 8: two captures it would have caught). These are the cheap tests (about 540,
+no check slot); a branch path under `whole_when` or of an unscoped class adds nothing, since the anchor ran the whole
+suite for it, and `pr verify` holds the stamp to the same scope.
+
 ## When the full Check runs instead {#fallback}
 
 The rule is `proof.fix` in [.github/conventions.yml](repo:.github/conventions.yml), read from the base like the rest of

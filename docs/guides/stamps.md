@@ -409,11 +409,19 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
   cut at a width, even in the middle of a name. When the log cannot be read, or its list holds fewer names than ctest
   counted, the run does not say which tests failed: each name is then run alone, and a name that did not pass alone
   failed. A test that passes on the test commit detects nothing, and one that still fails on the fix does not
-  prove it: both write a `fail` stamp. A build that does not compile, a build left queued for a slot, or names
-  that match no test are errors with no stamp.
+  prove it: both write a `fail` stamp. A build that does not compile, a build left queued for a slot, names
+  that match no test and **a build that never started** are errors with no stamp. A build that never started
+  printed no `result:` line: the cap on worktrees that hold a build folder refused it ([The
+  cap](agents.md#build-cap)), it had no `--agent`, or a program it needs is missing. Nothing ran, so there is no
+  verdict about the test (task 1549 wrote `fail` stamps #17 to #23 for runs the cap had refused); the error names the
+  build's first line (`the red build at <commit> never started: build refused: 7 worktrees already hold ...`) and the
+  run goes on once that is fixed.
 * One stamp per test name (`--test` is repeatable; they are written together or not at all), covering both commits,
-  the test itself (`test_sha256`: [What a stamp binds](#fails-first-binds)) and the hashes of both runs' logs (kept in
-  scratch as `red-` and `green-<test commit>-<fix commit>.log`).
+  the test itself (`test_sha256`: [What a stamp binds](#fails-first-binds)) and the hashes of both runs' logs, kept in
+  scratch as `red-` and `green-<test commit>-<fix commit>-<log hash>.log` (the first 12 hex digits of each commit and
+  of the log's SHA-256). The hash is in the name so that two runs on one pair of commits, a `pass` and then a `keeps`,
+  each keep their own logs: they once shared one file name and the later run overwrote the earlier stamp's log, whose
+  hash then matched nothing (task 1545, stamps #37 and #38).
 * **A test added later**, in a review round, gets its own `orig fails-first` run with its own test commit (and the
   stubs it needs); the stamps of the earlier tests stay valid, also when the new test is in the same file.
 * **`--keeps`** is the other mode, for a test that cannot fail first ([Keeps](#keeps)).

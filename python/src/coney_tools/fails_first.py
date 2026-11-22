@@ -8,10 +8,11 @@ out each in the unit's worktree and puts the branch back, and appends one `fails
 
 The verdict is a pass when the build succeeded at both commits, the test failed on the first and passed on the second. A
 test that passes on the first (it detects nothing) or still fails on the second is a `fail` stamp. A build that does not
-compile, a queued build or a test that does not exist is an error with no stamp: the log records verdicts, not
-infrastructure faults. The test commit may carry the minimal stubs a new feature's test needs to compile, and the stamp
-lists them; a stub must not implement the new behaviour: it returns a default or an empty result, or for a `keeps`
-test does what the code did before. The test commit is never the fix commit. The test files must be the
+compile, a queued build, a build that never started (the cap on build folders refused it: it printed no `result:`
+line) or a test that does not exist is an error with no stamp: the log records verdicts, not infrastructure faults.
+The test commit may carry the minimal stubs a new feature's test needs to compile, and the stamp lists them; a stub
+must not implement the new behaviour: it returns a default or an empty result, or for a `keeps` test does what the code
+did before. The test commit is never the fix commit. The test files must be the
 same in both commits as the compiler reads them (`orig_review.code_text`: comments and layout aside): a test that had
 to change to pass is a question for the coordinator, who records the answer with `record_decision` (`orig fails-first
 --accept-change`).
@@ -64,6 +65,7 @@ class FailsFirstError(ConfigError):
 class BuildOutcome:
     """What one `coney-tools build --test -R` run said."""
 
+    started: bool  # the build printed a verdict (`result: ...`): it ran, so a failure of the tests is the tests'
     built: bool  # configure and build succeeded
     ok: bool  # the whole run succeeded: every selected test passed
     failed: tuple[str, ...]  # names of the failed tests, as ctest's own list in the build's log gives them
@@ -75,7 +77,7 @@ class BuildOutcome:
     @property
     def tests_ran(self) -> bool:
         """Whether tests were run at all."""
-        return self.built and not self.no_tests and not self.queued
+        return self.started and self.built and not self.no_tests and not self.queued
 
 
 #: Runs the named tests in a checkout: (root, preset, names) -> outcome.
@@ -103,11 +105,13 @@ def _ctest_failures(text: str) -> tuple[str, ...] | None:
 def parse_build_output(text: str, exit_code: int) -> BuildOutcome:
     """Read the summary lines `coney-tools build` prints (`result: ok`, `result: FAILED at test: a`, ...). Which tests
     failed is read from the log the summary names (`_ctest_failures`), never from its comma-joined `failed:` line."""
-    failed_at = re.search(r"^result: FAILED at (\w+)", text, re.MULTILINE)
+    verdict = re.search(r"^result: (?:ok|FAILED at (\w+)|QUEUED)", text, re.MULTILINE)
     names = _ctest_failures(text)
     ok = exit_code == 0 and bool(re.search(r"^result: ok", text, re.MULTILINE))
     return BuildOutcome(
-        built=exit_code != EXIT_QUEUED and (failed_at is None or failed_at.group(1) == "test"),
+        # A refusal (the cap on build folders, a missing --agent or program) prints no verdict at all: nothing ran.
+        started=verdict is not None,
+        built=verdict is not None and exit_code != EXIT_QUEUED and (verdict.group(1) in (None, "test")),
         ok=ok,
         failed=names or (),
         failed_known=ok or names is not None,
@@ -656,8 +660,10 @@ def run(
     digests = {}
     for label, (_, _, logs) in runs.items():
         data = "".join(logs).encode("utf-8")
-        (folder / f"{label}-{test[:12]}-{fix[:12]}.log").write_bytes(data)
         digests[label] = stamps.sha256_hex(data)
+        # The hash is in the name: two stamps on one pair of commits (one `pass`, one `keeps`) each keep their own log,
+        # and a log hashes to what its stamp covers by its name (task 1545: stamp #38 overwrote #37's log).
+        (folder / f"{label}-{test[:12]}-{fix[:12]}-{digests[label][:12]}.log").write_bytes(data)
     entries = []
     for name in names:
         red, green = runs["red"][1][name], runs["green"][1][name]
@@ -694,9 +700,23 @@ DETACH_ADVICE = (
 )
 
 
+def _first_line(output: str, width: int = 200) -> str:
+    """The first line of a build's output that says something, cut at `width` characters: why a build never started."""
+    for line in output.splitlines():
+        if line.strip():
+            text = line.strip()
+            return text if len(text) <= width else text[: width - 3] + "..."
+    return "it printed nothing"
+
+
 def _need_a_run(label: str, commit: str, outcome: BuildOutcome, detached: bool = False) -> None:
     """Raise unless the build at `commit` ran the tests (a verdict needs a run). A build that stayed queued advises
     `--detach` (DETACH_ADVICE), unless this run is detached already."""
+    if not outcome.started and not outcome.queued:
+        raise FailsFirstError(
+            f"the {label} build at {commit[:12]} never started: {_first_line(outcome.output)}; nothing ran, so no "
+            "stamp was written (a refused or broken build says nothing about the test); fix that and run it again"
+        )
     if outcome.queued:
         advice = "run it again later" if detached else DETACH_ADVICE
         # The build says which: its wait or step would pass the call's time budget, or the slot did not come in time.

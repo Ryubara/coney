@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import bisect
+import contextlib
+import io
 import json
 from pathlib import Path
 
@@ -127,14 +129,42 @@ def _template(root: Path, page: Path) -> str:
         raise ConfigError(f"{path}: cannot be read ({error})") from error
 
 
-def run_check(base: str = "origin/main", require_base: bool = False) -> int:
+#: How CI runs the check (`.github/workflows/python.yml`: `progress check --base HEAD^1 --require-base`): against
+#: the branch a pull request's merge commit joins, and failing when that base cannot be read, so a checkout that
+#: cannot say what is new never passes by skipping the name rule. `check_as_ci` runs the check with these (the local
+#: gate's `docs-check` calls it with its own base), and a test holds the workflow to them.
+CI_BASE = "HEAD^1"
+CI_REQUIRE_BASE = True
+
+
+def ci_command() -> str:
+    """The words CI's python job runs after `coney-tools`, from the constants above."""
+    return f"progress check --base {CI_BASE}" + (" --require-base" if CI_REQUIRE_BASE else "")
+
+
+def check_as_ci(root: Path, base: str) -> tuple[int, list[str]]:
+    """`progress check` in the checkout `root` the way CI runs it (`CI_REQUIRE_BASE`), with `base` for the branch the
+    change is measured from (CI's is HEAD^1): the exit code and what it printed, one line each. A problem the inputs
+    cannot be read for is a failure with its message, not an exception."""
+    printed = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(printed):
+            code = run_check(base, CI_REQUIRE_BASE, root)
+    except ConfigError as error:
+        return 1, [*printed.getvalue().splitlines(), f"progress: {error}"]
+    return code, printed.getvalue().splitlines()
+
+
+def run_check(base: str = "origin/main", require_base: bool = False, root: Path | None = None) -> int:
     """Validate the inputs and that the docs build can render them; 1 when they disagree.
 
     Nothing generated is committed (the docs build writes the tables and the badge data), so this is what CI runs:
     the function database's `coney` entries against the @orig tags in src/ and the source map's ranges, the roadmap's
-    status table, and the page's marker. A tag that spells a name differently from the database is a warning only.
+    status table, and the page's marker. A tag that spells a name differently from the database fails when the
+    branch adds it (it is a warning when `base` already had it). `root` is the checkout, the one holding the current
+    folder by default.
     """
-    root = find_repo_root(Path.cwd())
+    root = root or find_repo_root(Path.cwd())
     state = _load_checked(root)
     if state is None:
         print("progress: fix the problems above")
