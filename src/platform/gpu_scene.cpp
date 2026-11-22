@@ -403,7 +403,7 @@ void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::
             }
             // A mesh views' pass (Draw3d::view) is the mesh again in the view's colours, lit by white alone, with no
             // texture, fog or second layer (docs/engine/gpu-renderer.md#mesh-views).
-            if (draw.view != graphics::ViewPass::Shaded) {
+            if (draw.view == graphics::ViewPass::Flat || draw.view == graphics::ViewPass::Wire) {
                 const graphics::DrawColours viewColours = graphics::viewColoursOf(*mesh, frame.viewColoursOf(draw));
                 const graphics::SceneStates viewStates = graphics::viewStatesOf(draw.states, draw.view);
                 prepareMesh(*body, *mesh, draw, camera, {},
@@ -416,14 +416,17 @@ void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::
                 continue;
             }
             // The base mesh, then its dual layer right after it: a world's or object's at the base's first alpha, a
-            // human's blood layer in his colours and the blood pass's states.
+            // human's blood layer in his colours and the blood pass's states. A DualLayer draw is the layer alone,
+            // which the engine records after the body's view passes so it covers them as GL3's second atomic does.
             const graphics::DrawColours colours = graphics::coloursOf(*mesh, draw.material);
-            prepareMesh(*body, *mesh, draw, camera, frame.lightsOf(draw),
-                        MeshLook{.colours = &colours,
-                                 .textures = frame.texturesOf(draw),
-                                 .states = &draw.states,
-                                 .skinned = posing == graphics::Posing::Skinned},
-                        store, white);
+            if (draw.view != graphics::ViewPass::DualLayer) {
+                prepareMesh(*body, *mesh, draw, camera, frame.lightsOf(draw),
+                            MeshLook{.colours = &colours,
+                                     .textures = frame.texturesOf(draw),
+                                     .states = &draw.states,
+                                     .skinned = posing == graphics::Posing::Skinned},
+                            store, white);
+            }
             const graphics::MeshData* layer = store.mesh(draw.dualLayer);
             const GpuMesh* uploadedLayer = layer != nullptr ? meshFor(draw.dualLayer, *layer) : nullptr;
             if (uploadedLayer == nullptr) {

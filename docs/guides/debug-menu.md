@@ -409,47 +409,44 @@ while off: the scene then draws every model exactly as without them (below).
 
 The wireframe and the flat views follow the animation because they are **draws of the model's own librw atomic**, the
 one the shaded pass just drew, through its own pipeline: whatever skinned the shaded pass (the vertices written on the
-CPU, or the vertex shader that skins a human on the GPU) skins these passes the same way. A flat pass swaps the
-atomic's material colours for the view's and its textures for none, lights it with one white ambient light and no fog,
-draws it and puts everything back; the wire pass does the same in OpenGL's line polygon mode, pulled a little towards
-the camera so the lines sit on the fill. A human's blood layer, and an object's second layer, are drawn only with the
-shaded draw. The normals and bone axes are Debug draw lines, from the selection's pose skinned on the CPU for it
-alone. *Everything* means every model drawn through the scene's lighting rig: a level's sectors and skyline, the
-humans, world objects, doors and cars. A sandbox's own blocks are drawn by its renderer and get no wireframe; there is
-no wire under OpenGL ES, which has no line mode. **On `--renderer gpu`** the same views are drawn from the frame
-description, since librw draws nothing there: the play mode records each model's shaded draw and, beside it, the flat
-and wire draws of the same mesh in the same colours and scope (the hook's `passesFor()`), the flat one unlit in opaque
-colours with no texture and no fog, the wire in line fill mode pulled towards the camera, and the normals and bone
-axes go into the frame as a line list ([the GPU renderer](../engine/gpu-renderer.md#mesh-views)). The *selection*
-choices (the wireframe's, the mesh view's) and the normals and bone axes are for a selected human: an object selected
-has no model to draw them for, though *everything* draws it like any other.
+CPU, or the vertex shader that skins a human on the GPU) skins these passes the same way. A flat pass swaps the atomic's
+material colours for the view's and its textures for none, lights it with one white ambient light and no fog, draws it
+and puts everything back; the wire pass does the same in OpenGL's line polygon mode, pulled a little towards the camera
+so the lines sit on the fill. A human's blood layer, and an object's second layer, are drawn only with the shaded draw.
+The normals and bone axes are Debug draw lines, from the selection's pose skinned on the CPU for it alone. *Everything*
+means every model drawn through the scene's lighting rig: a level's sectors and skyline, the humans, world objects,
+doors and cars. A sandbox's own blocks are drawn by its renderer and get no wireframe; there is no wire under OpenGL ES,
+which has no line mode. **On `--renderer gpu`** the same views are drawn from the frame description, since librw draws
+nothing there: the play mode records each model's shaded draw and, beside it, the flat and wire draws of the same mesh
+in the same colours and scope (the hook's `passesFor()`), the flat one unlit in opaque colours with no texture and no
+fog, the wire in line fill mode pulled towards the camera. A human's blood layer, which GL3 draws after his wire as a
+second atomic, is recorded last, so it covers the lines there too, and the normals and bone axes go into the frame as a
+line list ([the GPU renderer](../engine/gpu-renderer.md#mesh-views)). The
+*selection* choices (the wireframe's, the mesh view's) and the normals and bone axes are for a selected human: an object
+selected has no model to draw them for, though *everything* draws it like any other.
 
 The level of detail: the original draws every sector, human, car part and object as one model, whole or not at all
 ([Distance: fades and level of detail](../research/graphics.md#lod)), and so does Coney, so *by LOD* tells only the
 humans' distance fade apart.
 
-**Off means untouched.** The play mode hands its models to the views only while one of the wireframe or the mesh view
-is on, or a World page part is hidden (`MeshViewHook`, `src/platform/mesh_view_hook.h`, which the game offers and the
-debug tools implement in `src/platform/mesh_views.h`); with the wireframe and the mesh view off and every part shown
-the lighting rig draws each atomic as it always has and never calls them. The normals and bone axes alone do not set
-the hook: they are lines, not passes. On GL3 the hook sits in the rig's last step, under the ported draw functions,
-which stay as the original has them: each model's kind is the one the play mode's scene-counter scope names around its
-draw ([counters](performance.md#counters)), and the play mode marks a human's blood layer, and counts the passes the
-Mesh group shows, around each human's draw. On the GPU renderer `RenderEngine::drawScene()` asks the hook for each
-model it records (`passesFor()`: the kind the draw scope names, the mesh id, each material's texture name and alpha)
-and records the passes it gives; `tests/graphics/mesh_view_draw_test.cpp` checks the passes' colours, lighting and
-states without a window, `tests/platform/mesh_view_scene_test.cpp` what lands in the frame description, and
-`tests/platform/mesh_views_passes_test.cpp` the hook's answers and, on a hidden GPU window, each view's pixels. The
-rules (which model gets which passes and colours) are `src/debug/mesh_views.h`, tested without a window in
+**Off means untouched.** The play mode hands its models to the views only while one of the wireframe or the mesh
+view is on (`MeshViewHook`, `src/platform/mesh_view_hook.h`, which the game offers and the debug tools implement in
+`src/platform/mesh_views.h`); with both off the lighting rig draws each atomic as it always has and never calls them.
+The hook sits in the rig's last step, under the ported draw functions, which stay as the original has them: each
+model's kind is the one the play mode's scene-counter scope names around its draw
+([counters](performance.md#counters)), and the play mode marks a human's blood layer, and counts the passes the Mesh
+group shows, around each human's draw. On the GPU renderer `RenderEngine::drawScene()` asks the hook for each model it
+records (`passesFor()`) and records the passes it gives; `tests/platform/mesh_view_scene_test.cpp` checks what lands in
+the frame description and `tests/platform/mesh_views_passes_test.cpp`, on a hidden GPU window, each view's pixels.
+The rules (which model gets which passes and colours) are `src/debug/mesh_views.h`, tested without a window in
 `tests/debug/mesh_views_test.cpp`, and `tests/platform/mesh_views_test.cpp` checks on librw's NULL device that a model
 gets the game's draw alone while the views are off and its materials back after a pass, and that no pass draws there
-after an OpenGL renderer ran. On a disc, `tests/platform/disc_mesh_views_test.cpp` plays a level and the sandbox's
-fight yard with a hook of its own and checks what the play mode hands the hook;
-`tests/platform/disc_mesh_views_draw_test.cpp` checks that the passes the game draws are the same with the views off,
-with a hook that is off and with a flat view on, and, on a hidden OpenGL window, that every frame is the same pixel
-for pixel with the views off, and again after `--mesh-view`'s frames. By hand, `--mesh-view
-wire=all,view=material,frames=30 --frames 90 --screenshot a.png` gives the same last frame, byte for byte, as the run
-without `--mesh-view` ([options](running-options.md#the-debug-menus)).
+after an OpenGL renderer ran. On a disc, `tests/platform/disc_mesh_views_test.cpp` plays a level and the sandbox's fight
+yard with a hook of its own and checks what the play mode hands the hook; `tests/platform/disc_mesh_views_draw_test.cpp`
+checks that the passes the game draws are the same with the views off, with a hook that is off and with a flat view on,
+and, on a hidden OpenGL window, that every frame is the same pixel for pixel with the views off, and again after
+`--mesh-view`'s frames. By hand, `--mesh-view wire=all,view=material,frames=30 --frames 90 --screenshot a.png` gives the
+same last frame, byte for byte, as the run without `--mesh-view` ([options](running-options.md#the-debug-menus)).
 
 ### Entity inspector {#entity-inspector}
 

@@ -657,8 +657,17 @@ void RenderEngine::drawScene(const graphics::Draw3d& draw, std::span<const graph
     if (m_viewHook != nullptr) {
         passes = viewPassesOf(draw);
     }
+    // GL3 draws a human's blood layer as a second atomic after the body's passes, so it covers the wireframe where it
+    // blends; with a wire over a shaded human the layer is recorded last, alone, to be drawn in that order.
+    const bool layerLast =
+        passes.shaded && passes.wire && draw.dualPass == graphics::DualPass::Blood && draw.dualLayer.valid();
     if (passes.shaded) {
-        m_frame.addSceneDraw(draw, lights, m_assets.materialTextures(draw.mesh), dualTextures, bones);
+        graphics::Draw3d body = draw;
+        if (layerLast) {
+            body.dualLayer = {};
+        }
+        m_frame.addSceneDraw(body, lights, m_assets.materialTextures(draw.mesh),
+                             layerLast ? std::span<const graphics::TextureId>{} : dualTextures, bones);
     }
     // A view's draw has no second layer and no texture, but the placement, the lights, the states and the pose.
     graphics::Draw3d view = draw;
@@ -671,6 +680,11 @@ void RenderEngine::drawScene(const graphics::Draw3d& draw, std::span<const graph
         view.view = graphics::ViewPass::Wire;
         const std::array<graphics::Rgba, 1> wire{*passes.wire};
         m_frame.addSceneDraw(view, lights, {}, {}, bones, wire);
+    }
+    if (layerLast) {
+        graphics::Draw3d layer = draw;
+        layer.view = graphics::ViewPass::DualLayer;
+        m_frame.addSceneDraw(layer, lights, {}, dualTextures, bones);
     }
     drawDescribed();
 }
