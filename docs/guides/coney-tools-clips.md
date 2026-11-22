@@ -142,10 +142,11 @@ and square at frame 680 plays the kill (clips 637 and 638). Its before for the s
 that change's commit, or `--before` a hand-made commit where later commits edit its lines. `level87-hide` is the same
 route without the kill.
 
-`level5-boss-rings` is the scenario for the health rings: at level5's boss fight (checkpoint 4) cross skips the
-opening scene, the player walks toward the fight and holds L1 on Diego at full health. Only a human whose power class
-byte is 100, a boss, has a ring that fills the whole circle (Rembrandt's stops at 35 %), so this is the run for a change
-to a full ring (#1630).
+`level5-full-ring` is the scenario for a full health ring: at level5's boss fight (checkpoint 4) cross skips the
+opening scene, the debug menu's Player page makes the player Diego's character type (120) and SELECT shows his rings.
+Only a power class whose ring byte is 100 fills the whole circle (Rembrandt's stops at 35 %), and type 120's class 6
+is one; a player is never drawn with a boss's colour bands, so his outer ring is green with the black lost colour, and a
+lost wedge on a full ring shows (#1630).
 
 `level99-world-parts` is the scenario for the World page's part switches: it opens the pad menu in the level99 street
 and hides the streamed world, then shows it and hides the objects, for a change to the mesh views' hook or to what a

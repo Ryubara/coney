@@ -1,8 +1,0 @@
-# Level5 checkpoint 4 (Diego and Vargas, the boss fight), for the `level5-boss-rings` clips pair scenario
-# (tools/clips/level5-boss-rings.toml). The opening scene, l5_c6, starts at frame 99 and takes a skip after 60 of its
-# updates, so cross skips it; the player walks two seconds toward the fight and holds L1 on Diego, whose ring (a
-# boss's, class byte 100) is full at full health. Frames are 1/30 s from the level's first frame of play.
-170 tap cross
-260 stick left 0 100
-320 stick left 0 0
-320 press l1
