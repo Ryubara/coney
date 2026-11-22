@@ -6,11 +6,10 @@
 #include <utility>
 #include <vector>
 
-#include <rw.h>
-
 #include "core/name_hash.h"
-#include "platform/draw_calls.h"
+#include "graphics/frame_description.h"
 #include "platform/play_scenery.h"
+#include "platform/render_engine.h"
 
 namespace coney::platform {
 
@@ -42,10 +41,15 @@ void WaterRenderer::loadTexture() {
         report(converted.error().message);
         return;
     }
-    m_dictionary = std::move(dictionaries->front());
+    auto texture = SheetTexture::create(std::move(dictionaries->front()));
+    if (!texture) {
+        report(texture.error().message);
+        return;
+    }
+    m_texture = std::move(*texture);
 }
 
-void WaterRenderer::draw(const effects::Water& water) {
+void WaterRenderer::draw(RenderEngine& engine, const effects::Water& water) {
     if (!water.placed()) {
         return;
     }
@@ -53,35 +57,25 @@ void WaterRenderer::draw(const effects::Water& water) {
         loadTexture();
     }
     // The grid in the world, in RenderWare's axes.
-    std::vector<rw::gl3::Im3DVertex> vertices;
+    std::vector<graphics::EffectVertex> vertices;
     vertices.reserve(water.vertices().size());
     for (const effects::WaterVertex& source : water.vertices()) {
         const world::Vec3 p = toRenderWare(water.toWorld(source.position));
-        rw::gl3::Im3DVertex vertex{};
-        vertex.setX(p.x);
-        vertex.setY(p.y);
-        vertex.setZ(p.z);
-        vertex.setColor(source.colour[0], source.colour[1], source.colour[2], source.colour[3]);
-        vertex.setU(source.u);
-        vertex.setV(source.v);
-        vertices.push_back(vertex);
+        vertices.push_back(graphics::EffectVertex{
+            p.x, p.y, p.z, graphics::Rgba{source.colour[0], source.colour[1], source.colour[2], source.colour[3]},
+            source.u, source.v});
     }
-    std::vector<rw::uint16> indices(effects::Water::indices().begin(), effects::Water::indices().end());
 
-    // Culling off and the texture repeating; Z test, Z write and fog stay as the world pass left them.
-    rw::Raster* raster = m_dictionary ? m_dictionary->textures().front()->raster : nullptr;
-    draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
-    draw::setRenderState(rw::VERTEXALPHA, 1);
-    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
-    draw::setRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
-    draw::setRenderState(rw::TEXTUREADDRESS, rw::Texture::WRAP);
-    draw::setRenderStatePtr(rw::TEXTURERASTER, raster);
-    draw::im3dTransform(vertices.data(), static_cast<rw::int32>(vertices.size()), nullptr,
-                        rw::im3d::VERTEXXYZ | rw::im3d::VERTEXRGBA | rw::im3d::VERTEXUV);
-    draw::im3dRenderIndexedPrimitive(rw::PRIMTYPETRILIST, indices.data(), static_cast<rw::int32>(indices.size()));
-    draw::im3dEnd();
-    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
+    // Culling off and the texture repeating, blended by the vertices' alpha; Z test, Z write and fog stay as the world
+    // pass left them, and the back faces are dropped again after it.
+    graphics::EffectDraw draw;
+    draw.states.cull = graphics::CullFaces::None;
+    draw.states.vertexAlpha = true;
+    draw.states.blend = graphics::EffectBlend::Alpha;
+    draw.states.filter = graphics::TextureFilter::Linear;
+    draw.states.address = graphics::TextureAddress::Wrap;
+    draw.restore.cull = true;
+    engine.drawEffect(draw, vertices, effects::Water::indices(), m_texture.get());
 }
 
 } // namespace coney::platform

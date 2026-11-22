@@ -30,12 +30,14 @@ namespace coney::platform {
 ///
 /// The 3D draws (the streamed world's sectors, item 7; the objects and cars, item 8; the humans, item 9) are drawn as
 /// they were drawn before: each mesh's librw atomic, found in the scene assets, with the draw's states, colours and
-/// lights, through drawLitAtomic(); a human with his pose (the skinned pipeline's palette) and his blood pass.
+/// lights, through drawLitAtomic(); a human with his pose (the skinned pipeline's palette) and his blood pass. The
+/// effects (item 10) are librw's 3D immediate mode: each draw's vertices and indices with the states it sets, then
+/// the ones it puts back, as the sprite, ribbon and surface drawing set them before the description held them.
 ///
-/// While the rest of the 3D scene still goes to librw directly (until item 10 of docs/engine/renderer.md#order),
-/// the RenderEngine calls drawNew() after each part it adds, so the parts draw in their place among the 3D drawing.
-/// The 2D and 3D draws are made with a camera or while the draw layer records (the NULL backend records what it would
-/// draw); the screen passes, which copy the frame, only with a camera.
+/// While the camera and the level's background still go to librw directly, the RenderEngine calls drawNew() after
+/// each part it adds, so the parts draw in their place among the 3D drawing. The 2D, 3D and effect draws are made with
+/// a camera or while the draw layer records (the NULL backend records what it would draw); the screen passes, which
+/// copy the frame, only with a camera.
 class Gl3Renderer {
   public:
     /// What a frame is drawn into: the RenderEngine's camera (null with the NULL and GPU backends: the GPU
@@ -87,6 +89,10 @@ class Gl3Renderer {
     void drawOverlay(const graphics::FrameDescription& frame, const graphics::Draw2d& draw, const Target& target);
     // Clears librw's camera's depth buffer for a scene pass that clears it first (graphics::ScenePass::clearDepth).
     static void clearDepth(const graphics::FrameDescription& frame, const Target& target);
+    // One effect draw of `frame`: its states set, its corners and indices drawn through librw's 3D immediate mode with
+    // its texture's raster, then the states it puts back.
+    static void drawEffect(const graphics::FrameDescription& frame, const graphics::EffectDraw& draw,
+                           const Target& target);
     // One screen pass.
     void drawScreenPass(const graphics::ScreenPass& pass, const Target& target);
     // One 3D draw of `frame`: a sector's, an object's, a car part's or a human's atomic as its draw function records
@@ -108,6 +114,10 @@ class Gl3Renderer {
 
     // Binds `texture`'s filter and addressing and returns its raster; null for no texture.
     static rw::Raster* bindTexture(const graphics::Texture* texture, graphics::TextureAddress address);
+    // The near plane 2D vertices take their depth from: the camera's, or a new camera's while the NULL backend records.
+    static float nearPlaneOf(const Target& target);
+    // Drops `raster` if there is one and leaves it null (the renderer's own rasters and the screen passes' copies).
+    static void destroyRaster(rw::Raster*& raster);
     // Sets the 2D pass's render states with `raster` (null: flat colour); `opaque` replaces what is below (ONE / ZERO)
     // instead of blending by alpha.
     static void set2dStates(rw::Raster* raster, bool opaque);

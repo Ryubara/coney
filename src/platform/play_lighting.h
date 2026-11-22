@@ -73,10 +73,10 @@ class PlayLighting {
     /// Draws and forgets this frame's blob shadows.
     void drawShadows();
     /// Draws the glass panes (SceneLighting::drawGlass()).
-    void drawGlass(std::span<const world_objects::GlassQuad> panes) const { m_scene->drawGlass(panes); }
+    void drawGlass(std::span<const world_objects::GlassQuad> panes) const { m_scene->drawGlass(m_engine, panes); }
     /// Draws the health rings and L1 markers, after the shadows (SceneLighting::drawGroundRings()).
     void drawRings(std::span<const hud::GroundRing> rings, std::span<const hud::TargetMarker> markers) const {
-        m_scene->drawGroundRings(rings, markers);
+        m_scene->drawGroundRings(m_engine, rings, markers);
     }
 
     /// The rig, for the scenery's renderer.

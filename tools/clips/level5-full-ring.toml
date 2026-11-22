@@ -1,0 +1,11 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level5 checkpoint 4, the boss fight. The input
+# script skips the opening scene, makes the player Diego's character type (120) from the debug menu's Player page and
+# shows his rings with SELECT. Type 120's power class (6) has the ring byte 100, so his rings fill the whole circle, and
+# a player is never drawn with a boss's colour bands, so the outer ring is green with the black lost colour: the run
+# for a change to a full ring (#1630), whose lost wedge would show black against the green.
+description = "level5 checkpoint 4: the player made type 120, his full rings shown with SELECT"
+level = "level5"
+input = "tools/clips/level5-full-ring.txt"
+checkpoint = 4
+start_frame = 640
+seconds = 6

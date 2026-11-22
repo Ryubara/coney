@@ -232,7 +232,10 @@ otherwise `(158, 24 + int(h × 1.1571), 24)` with `h` the health % (`h × 0.0133
 over `(134, 26, 0)`, below that `(134, 26, 0)` over black, each band filling over its range (× 3.33, or × 2.5 for the
 last); the value is the band's fill, not the health. Not seen at runtime.
 
-**Shape and placement** (confirmed (code); the numbers confirmed (runtime) from the queued records):
+### The rings' shape, colours and draw {#ring-colours-and-draw}
+
+**Shape and placement** (confirmed (code) where a line does not say otherwise; the numbers were also read from the
+queued records at runtime, with no run record kept):
 
 - Both rings are fans of 64 triangles from the centre, radius 0.6 × `s` in the ring's own units, then scaled by **0.6
   (inner) and 0.9 (outer)**: 0.36 × `s` and 0.54 × `s` metres to the rim. The visible band is the texture's.
@@ -245,21 +248,29 @@ last); the value is the band's fill, not the health. Not seen at runtime.
   rings do not fight in depth); the inner and outer of one human share that height. Runtime: player at z 0.2231, rings
   at 0.2791.
 - **Start angle** = the player camera's heading + 2.5 rad (`0x00510520`); the heading is `atan2(x, y)` of the camera's
-  orientation quaternion turned on +y (`0x00335f48`). Segment `k` (0-64) is at start + `k` × 2π / 64, at
-  (r cos, r sin) on the game's x and y. So the arcs **turn with the camera, not the human**: on screen the fill starts
-  at the front right of the feet (about half past four on a clock face) and grows clockwise, through the front, then
-  the left; the same place after the camera turned half round (confirmed (runtime)).
+  orientation quaternion turned on +y (`0x00335f48`). Segment `k` (0-64) is at the angle start + `k` × 2π / 64; the
+  draw puts it at ring-local x = r sin and y = r cos (`0x0017b6c4` and `0x0017b6cc`, after the sine `0x004b8c40` and
+  the cosine `0x004b8a70`) and then draws the fan through the ring's own matrix, a fixed turn the queue's builder
+  (`0x0024a230`) makes from `0x00511720` (confirmed (code)). In the game's axes that comes to (r cos, r sin) on x and
+  y, the form Coney draws (inferred: the matrix's use by the device is not settled from the code, and the form rests
+  on the watch below). So the arcs **turn with the camera, not the human**: on screen the fill starts at the front
+  right of the feet (about half past four on a clock face) and grows clockwise, through the front, then the left; the
+  same place after the camera turned half round (inferred from a watch at runtime of which no run record was kept).
 - **Texture**: `part_page1` (resource instance 9, or 10 in the second view, the blob shadow's sheet), centred on the
-  middle of rectangle 1; each rim vertex takes u = centre u + 0.062 cos, v = centre v − 0.124 sin (whole-sheet units),
-  the centre vertex the middle. Runtime: the middle is (0.6973, 0.3789).
+  middle of rectangle 1; each rim vertex takes u = centre u + 0.062 sin and v = centre v − 0.124 cos (whole-sheet
+  units, the same sine and cosine as its local x and y, `0x0017b6dc` and `0x0017b6d4`), the centre vertex the middle.
+  Runtime: the middle is (0.6973, 0.3789).
 - **Colours per vertex**: the centre has colour A; each rim vertex k has C when 64 − k ≤ floor(64 × (100 − capacity) /
-  100) (and that is above 0), else B when 64 − k ≤ floor(64 × (100 − value) / 100), else A (or black when blinking).
+  100) (and that is above 0), else B when 64 − k ≤ floor(64 × (100 − value) / 100) (and that is above 0, the test at
+  `0x0017b758`, so a full ring has no B vertex), else A (or black when blinking) (confirmed (code)). A player's ring
+  made full (health at its maximum, his class byte set to 100) is green all round (confirmed (runtime), run
+  r-20261122-full-ring-no-lost-segment).
   Drawn with **flat shading**, so each segment takes one vertex's colour and the arcs end on hard edges.
 - **Drawing** (`GroundRing_DrawQueued`, `0x0017b2e0`, from the viewport pass `0x00156408` after the world and the
   sprite batches, so after the blob shadows, [Boot](boot.md#one-frame)): the queue is drawn and emptied once a frame,
   each ring as an `RwIm3D` triangle fan (`0x00196b58`) in every viewport, with the shade mode flat, the ring's raster,
-  fog off, and the blend and Z states as the world pass left them; the legs hid the ring behind them at runtime (Z
-  test on).
+  fog off, and the blend and Z states as the world pass left them (confirmed (code)); the legs hid the ring behind
+  them at runtime (Z test on).
 
 **Markers on targets** (confirmed (code)): while a player holds L1 (record `+0x00` `0x8`, [Combat](combat-targets.md#targets))
 at a non-player target, a sprite of `part_page1` rectangle 0 lies under the target at 0.041 m, size 0.9 × `s`, white

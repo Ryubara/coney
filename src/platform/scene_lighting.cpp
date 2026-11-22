@@ -7,9 +7,9 @@
 
 #include <rw.h>
 
-#include "platform/draw_calls.h"
 #include "platform/lit_atomic.h"
 #include "platform/perf_probes.h"
+#include "platform/render_engine.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_lod.h"
 #include "platform/world_atomic.h"
@@ -21,60 +21,44 @@ namespace {
 // librw's vector from ours.
 rw::V3d toRw(world::Vec3 v) { return rw::V3d{v.x, v.y, v.z}; }
 
-// The librw texture of a sheet (a SheetTexture), or null.
-rw::Texture* rwTextureOf(const std::optional<graphics::SpriteSheet>& sheet) {
-    if (!sheet || !sheet->texture) {
-        return nullptr;
-    }
-    const auto* texture = dynamic_cast<const SheetTexture*>(sheet->texture.get());
-    return texture != nullptr ? texture->rwTexture() : nullptr;
+// The texture of a sheet, or null.
+const graphics::Texture* textureOf(const std::optional<graphics::SpriteSheet>& sheet) {
+    return sheet ? sheet->texture.get() : nullptr;
 }
 
-// One textured, coloured vertex for librw's immediate mode. A sprite's colour is RenderWare's 0-255 as given (255 full
-// and opaque, docs/research/gui.md#sprite-colours), not the GS's 0x80 scale: a corona's is its light's colour × 255,
-// and the blob shadow's alpha 128 is half transparent (docs/research/lighting.md#humans).
-rw::gl3::Im3DVertex vertex(rw::V3d p, float u, float v, const std::array<std::uint8_t, 4>& rgba) {
-    rw::gl3::Im3DVertex out{};
-    out.setX(p.x);
-    out.setY(p.y);
-    out.setZ(p.z);
-    out.setColor(rgba[0], rgba[1], rgba[2], rgba[3]);
-    out.setU(u);
-    out.setV(v);
-    return out;
+// One textured, coloured vertex of an effect draw. A sprite's colour is RenderWare's 0-255 as given (255 full and
+// opaque, docs/research/gui.md#sprite-colours), not the GS's 0x80 scale: a corona's is its light's colour × 255, and
+// the blob shadow's alpha 128 is half transparent (docs/research/lighting.md#humans).
+graphics::EffectVertex vertex(rw::V3d p, float u, float v, const std::array<std::uint8_t, 4>& rgba) {
+    return graphics::EffectVertex{p.x, p.y, p.z, graphics::Rgba{rgba[0], rgba[1], rgba[2], rgba[3]}, u, v};
 }
 
 // Appends the two triangles of a quad centred on `centre`, spanned by the half-axes `x` and `y`, showing `uv`.
-void addQuad(std::vector<rw::gl3::Im3DVertex>& out, rw::V3d centre, rw::V3d x, rw::V3d y, const graphics::UvRect& uv,
+void addQuad(std::vector<graphics::EffectVertex>& out, rw::V3d centre, rw::V3d x, rw::V3d y, const graphics::UvRect& uv,
              const std::array<std::uint8_t, 4>& rgba) {
     const auto corner = [&](float sx, float sy) {
         return rw::V3d{centre.x + x.x * sx + y.x * sy, centre.y + x.y * sx + y.y * sy, centre.z + x.z * sx + y.z * sy};
     };
-    const rw::gl3::Im3DVertex a = vertex(corner(-1, 1), uv.u0, uv.v0, rgba);
-    const rw::gl3::Im3DVertex b = vertex(corner(1, 1), uv.u1, uv.v0, rgba);
-    const rw::gl3::Im3DVertex c = vertex(corner(1, -1), uv.u1, uv.v1, rgba);
-    const rw::gl3::Im3DVertex d = vertex(corner(-1, -1), uv.u0, uv.v1, rgba);
+    const graphics::EffectVertex a = vertex(corner(-1, 1), uv.u0, uv.v0, rgba);
+    const graphics::EffectVertex b = vertex(corner(1, 1), uv.u1, uv.v0, rgba);
+    const graphics::EffectVertex c = vertex(corner(1, -1), uv.u1, uv.v1, rgba);
+    const graphics::EffectVertex d = vertex(corner(-1, -1), uv.u0, uv.v1, rgba);
     out.insert(out.end(), {a, b, c, a, c, d});
 }
 
-// Draws `vertices` as triangles with `texture`: Z tested, not written, no fog, no culling, blended by alpha.
-void drawQuads(std::vector<rw::gl3::Im3DVertex>& vertices, rw::Texture* texture) {
-    if (vertices.empty()) {
-        return;
-    }
-    draw::setRenderState(rw::ZTESTENABLE, 1);
-    draw::setRenderState(rw::ZWRITEENABLE, 0);
-    draw::setRenderState(rw::FOGENABLE, 0);
-    draw::setRenderState(rw::CULLMODE, rw::CULLNONE);
-    draw::setRenderState(rw::VERTEXALPHA, 1);
-    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
-    draw::setRenderStatePtr(rw::TEXTURERASTER, texture != nullptr ? texture->raster : nullptr);
-    draw::im3dTransform(vertices.data(), static_cast<rw::int32>(vertices.size()), nullptr,
-                        rw::im3d::VERTEXXYZ | rw::im3d::VERTEXRGBA | rw::im3d::VERTEXUV);
-    draw::im3dRenderPrimitive(rw::PRIMTYPETRILIST);
-    draw::im3dEnd();
-    draw::setRenderState(rw::ZWRITEENABLE, 1);
+// Draws `vertices` as triangles with `texture` onto `engine`'s frame: Z tested, not written, no fog, no culling,
+// blended by alpha, the depth write put back after.
+void drawQuads(RenderEngine& engine, const std::vector<graphics::EffectVertex>& vertices,
+               const graphics::Texture* texture) {
+    graphics::EffectDraw draw;
+    draw.states.depthTest = true;
+    draw.states.depthWrite = false;
+    draw.states.fog = false;
+    draw.states.cull = graphics::CullFaces::None;
+    draw.states.vertexAlpha = true;
+    draw.states.blend = graphics::EffectBlend::Alpha;
+    draw.restore.depthWrite = true;
+    engine.drawEffect(draw, vertices, {}, texture);
 }
 
 // The squared distance between two points.
@@ -347,10 +331,10 @@ void SceneLighting::drawCarAtomic(rw::Atomic* atomic) {
     m_routed = false;
 }
 
-void SceneLighting::drawGroundRings(std::span<const hud::GroundRing> rings,
+void SceneLighting::drawGroundRings(RenderEngine& engine, std::span<const hud::GroundRing> rings,
                                     std::span<const hud::TargetMarker> markers) const {
-    rw::Texture* texture = rwTextureOf(m_shadowSheet);
-    if (texture == nullptr || !m_shadowSheet) {
+    const graphics::Texture* texture = textureOf(m_shadowSheet);
+    if (texture == nullptr) {
         return;
     }
     const graphics::ParticlePage& page = m_shadowSheet->page;
@@ -359,7 +343,7 @@ void SceneLighting::drawGroundRings(std::span<const hud::GroundRing> rings,
     }
     // Game axes into RenderWare's, (x, y, z) to (x, z, -y).
     const auto toRwPoint = [](anim::Vec3 p) { return rw::V3d{p.x, p.z, -p.y}; };
-    std::vector<rw::gl3::Im3DVertex> vertices;
+    std::vector<graphics::EffectVertex> vertices;
     // The rings: centred on the middle of rectangle 1, each rim vertex offset in whole-sheet units.
     const graphics::UvRect& band = page.rect(static_cast<std::size_t>(hud::kRingRect));
     const float midU = (band.u0 + band.u1) * 0.5F;
@@ -379,17 +363,19 @@ void SceneLighting::drawGroundRings(std::span<const hud::GroundRing> rings,
                     {shade, shade, shade, marker.alpha});
         }
     }
-    drawQuads(vertices, texture);
+    // **Coney's stand-in** for the blend and Z write the world pass leaves the original's fans: drawQuads' alpha blend
+    // with no Z write.
+    drawQuads(engine, vertices, texture);
 }
 
-void SceneLighting::drawCoronas() const {
-    rw::Texture* texture = rwTextureOf(m_coronaSheet);
-    if (texture == nullptr || !m_coronaSheet) {
+void SceneLighting::drawCoronas(RenderEngine& engine) const {
+    const graphics::Texture* texture = textureOf(m_coronaSheet);
+    if (texture == nullptr) {
         return;
     }
     const graphics::ParticlePage& page = m_coronaSheet->page;
     // Camera-facing squares: spanned by the camera's right and up axes.
-    std::vector<rw::gl3::Im3DVertex> vertices;
+    std::vector<graphics::EffectVertex> vertices;
     for (const graphics::CoronaSprite& sprite : m_lighting.lights.coronas()) {
         if (sprite.rect < 0 || static_cast<std::size_t>(sprite.rect) >= page.rects.size()) {
             continue;
@@ -399,12 +385,12 @@ void SceneLighting::drawCoronas() const {
         const rw::V3d y{m_pose.up.x * half, m_pose.up.y * half, m_pose.up.z * half};
         addQuad(vertices, toRw(sprite.position), x, y, page.rect(static_cast<std::size_t>(sprite.rect)), sprite.rgba);
     }
-    drawQuads(vertices, texture);
+    drawQuads(engine, vertices, texture);
 }
 
-void SceneLighting::drawBlobShadows(std::span<const graphics::BlobShadow> shadows) const {
-    rw::Texture* texture = rwTextureOf(m_shadowSheet);
-    if (texture == nullptr || !m_shadowSheet) {
+void SceneLighting::drawBlobShadows(RenderEngine& engine, std::span<const graphics::BlobShadow> shadows) const {
+    const graphics::Texture* texture = textureOf(m_shadowSheet);
+    if (texture == nullptr) {
         return;
     }
     const graphics::ParticlePage& page = m_shadowSheet->page;
@@ -412,7 +398,7 @@ void SceneLighting::drawBlobShadows(std::span<const graphics::BlobShadow> shadow
         return;
     }
     const graphics::UvRect& uv = page.rect(graphics::kBlobShadowRect);
-    std::vector<rw::gl3::Im3DVertex> vertices;
+    std::vector<graphics::EffectVertex> vertices;
     for (const graphics::BlobShadow& shadow : shadows) {
         // Game axes (z up) into RenderWare's (x, z, -y); the square lies across the ground's normal.
         const rw::V3d centre{shadow.centre.x, shadow.centre.z, -shadow.centre.y};
@@ -424,16 +410,16 @@ void SceneLighting::drawBlobShadows(std::span<const graphics::BlobShadow> shadow
         addQuad(vertices, centre, rw::V3d{along.x * half, along.y * half, along.z * half},
                 rw::V3d{across.x * half, across.y * half, across.z * half}, uv, graphics::kBlobShadowColour);
     }
-    drawQuads(vertices, texture);
+    drawQuads(engine, vertices, texture);
 }
 
-void SceneLighting::drawGlass(std::span<const world_objects::GlassQuad> panes) const {
-    rw::Texture* texture = rwTextureOf(m_shadowSheet);
-    if (texture == nullptr || !m_shadowSheet) {
+void SceneLighting::drawGlass(RenderEngine& engine, std::span<const world_objects::GlassQuad> panes) const {
+    const graphics::Texture* texture = textureOf(m_shadowSheet);
+    if (texture == nullptr) {
         return;
     }
     const graphics::ParticlePage& page = m_shadowSheet->page;
-    std::vector<rw::gl3::Im3DVertex> vertices;
+    std::vector<graphics::EffectVertex> vertices;
     for (const world_objects::GlassQuad& pane : panes) {
         if (pane.rect >= page.rects.size()) {
             continue;
@@ -447,13 +433,13 @@ void SceneLighting::drawGlass(std::span<const world_objects::GlassQuad> panes) c
             const anim::Vec3& p = pane.corners.at(i);
             return rw::V3d{p.x, p.z, -p.y};
         };
-        const rw::gl3::Im3DVertex a = vertex(at(0), uv.u1, uv.v1, rgba);
-        const rw::gl3::Im3DVertex b = vertex(at(1), uv.u0, uv.v1, rgba);
-        const rw::gl3::Im3DVertex c = vertex(at(2), uv.u1, uv.v0, rgba);
-        const rw::gl3::Im3DVertex d = vertex(at(3), uv.u0, uv.v0, rgba);
+        const graphics::EffectVertex a = vertex(at(0), uv.u1, uv.v1, rgba);
+        const graphics::EffectVertex b = vertex(at(1), uv.u0, uv.v1, rgba);
+        const graphics::EffectVertex c = vertex(at(2), uv.u1, uv.v0, rgba);
+        const graphics::EffectVertex d = vertex(at(3), uv.u0, uv.v0, rgba);
         vertices.insert(vertices.end(), {a, b, c, c, b, d});
     }
-    drawQuads(vertices, texture);
+    drawQuads(engine, vertices, texture);
 }
 
 } // namespace coney::platform

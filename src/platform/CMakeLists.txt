@@ -2,8 +2,8 @@
 # Two libraries live here (docs/guides/building.md#debug-tools): coney_platform, the game's side of SDL3 and librw,
 # as a library so the tests can use it too (with the headless renderer); and coney_devtools, the debug tools'
 # platform half, at the end of this file.
-add_library(coney_platform STATIC asset_convert.cpp draw_calls.cpp draw_stream.cpp gl3_renderer.cpp render_engine.cpp
-                                   sprite_sheets.cpp texture_dictionary.cpp texture_lod.cpp window.cpp world_atomic.cpp)
+add_library(coney_platform STATIC asset_convert.cpp draw_calls.cpp draw_stream.cpp gl3_renderer.cpp gl3_screen_passes.cpp
+                                   render_engine.cpp sprite_sheets.cpp texture_dictionary.cpp texture_lod.cpp window.cpp world_atomic.cpp)
 # The streamed-world viewer (docs/research/world.md#coneys-implementation).
 target_sources(coney_platform PRIVATE level_file.cpp lit_atomic.cpp scene_assets.cpp texture_lookup.cpp world_renderer.cpp world_set.cpp world_viewer_mode.cpp front_end_scene.cpp)
 # Dynamic objects' models, drawn where the scripts and scenes put them (docs/research/objects.md#coneys-implementation).
@@ -24,8 +24,9 @@ target_sources(coney_platform PRIVATE sdl_input.cpp)
 # (docs/guides/running-play-level.md#pad-pipe).
 target_sources(coney_platform PRIVATE pad_pipe.cpp)
 # A level's particle systems and motion blur, drawn in play (docs/research/particles.md#coneys-implementation).
-target_sources(coney_platform PRIVATE motion_blur_pass.cpp parked_cars.cpp particle_renderer.cpp play_level_effects.cpp
-                                      room_smoke_overlay.cpp throw_arc_renderer.cpp water_renderer.cpp)
+target_sources(coney_platform PRIVATE line_list.cpp motion_blur_pass.cpp parked_cars.cpp particle_renderer.cpp
+                                      play_level_effects.cpp room_smoke_overlay.cpp throw_arc_renderer.cpp
+                                      water_renderer.cpp)
 # Real-time frame pacing: the one place that reads the clock (docs/guides/conventions.md#update-and-render).
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
 # The GPU renderer's start on SDL3's GPU API: its window, device, swapchain and present modes

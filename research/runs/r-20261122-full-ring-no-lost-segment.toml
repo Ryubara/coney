@@ -1,0 +1,36 @@
+version = 1
+id = "r-20261122-full-ring-no-lost-segment"
+date = "2026-11-22"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "1d42713a6105bf62441d158859d5a84cc2747d0def7f40659caac1ea7c8e1979"
+
+[who]
+agent = "a2d7296798fdc6ace"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = []
+
+[run]
+name = ""
+method = "level99 street from the state: HuForceEnableReticule's flag (0x005104f8) written 1 so the rings stay drawn; the player's health (record +0x144) written to its maximum 900; the ring byte (+0x40) of his power class 64 (0x006619a0 + 64 x 0x44) written from 35 to 100, so the outer ring's value and capacity are both 100. Screenshots and a PCSX2 capture of the rings: the outer ring is green all round, with no black (lost) segment at the end of the fill"
+
+[values]
+health = 900
+health_max = 900
+class = 64
+ring_byte_before = 35
+ring_byte_after = 100
+
+[addresses]
+force_reticule = 0x005104f8
+power_classes = 0x006619a0
+ring_draw = 0x0017b2e0

@@ -333,6 +333,15 @@ class RenderEngine final : public graphics::RenderDevice {
     /// beginFrame() and present() (checked by CONEY_ASSERT).
     void clearSceneDepth();
 
+    /// Adds the effect draw `draw` (a sprite batch, a ribbon, a surface or lines in RenderWare's world axes) with its
+    /// corners `vertices`, its `indices` into them (none: drawn in the order of the corners) and its `texture` (null:
+    /// flat colour; it must outlive the frame) to the frame description (graphics::FrameDescription::addEffectDraw()),
+    /// and has the GL3 renderer draw it at once, in its place among the 3D drawing; the GPU renderer does not draw it
+    /// yet (item 20 of docs/engine/renderer.md#order). Only between beginFrame() and present() (checked by
+    /// CONEY_ASSERT).
+    void drawEffect(const graphics::EffectDraw& draw, std::span<const graphics::EffectVertex> vertices,
+                    std::span<const std::uint16_t> indices, const graphics::Texture* texture);
+
     /// Leaves out, from now until the next call, the 3D draws drawScene() is given for models of the kinds `hook` hides
     /// (MeshViewHook::hides(): the World page's scenery, humans and objects; null: none), a draw's kind being the
     /// draw scope's it is made in (DrawKindScope). The play mode says it at each frame's start and clears it at its

@@ -223,8 +223,9 @@ struct EmptyWad {
     }
 };
 
-// The throw arc's ribbon over a Coney-made arc of points, drawn by Coney's own ThrowArcRenderer.
-DrawStream drawThrowArcScene(const coney::io::Wad& wad) {
+// The throw arc's ribbon over a Coney-made arc of points, drawn by Coney's own ThrowArcRenderer as an effect draw of
+// the frame description (item 10 of docs/engine/renderer.md#order).
+DrawStream drawThrowArcScene(RenderEngine& engine, const coney::io::Wad& wad) {
     std::vector<coney::anim::Vec3> points;
     for (int i = 0; i < 10; ++i) {
         const auto t = static_cast<float>(i) * 0.25F;
@@ -233,9 +234,12 @@ DrawStream drawThrowArcScene(const coney::io::Wad& wad) {
     const std::vector<coney::graphics::ThrowArcVertex> strip =
         coney::graphics::throwArcStrip(points, coney::anim::Vec3{1.0F, 0.0F, 0.0F}, false, false);
     coney::platform::ThrowArcRenderer renderer(wad, {});
+    // In a frame that clears to black, which draws nothing of its own; the recording holds the ribbon's draw alone.
+    engine.beginFrame(Rgba{0, 0, 0, 255});
     draw::startRecording();
-    renderer.draw(strip);
+    renderer.draw(engine, strip);
     std::optional<DrawStream> stream = draw::stopRecording();
+    engine.present();
     REQUIRE(stream.has_value());
     return coney::test::got(stream);
 }
@@ -269,7 +273,7 @@ TEST_CASE("the throw arc scene's draw stream has its expected hash", "[platform]
     // Expected: recorded from this scene when the layer was written (docs/engine/renderer.md#comparing).
     auto engine = startHeadless();
     const EmptyWad archive;
-    const DrawStream stream = drawThrowArcScene(*archive.wad);
+    const DrawStream stream = drawThrowArcScene(*engine, *archive.wad);
     CHECK(stream.counts().im3dDraws == 1);
     CHECK(stream.counts().vertices == coney::graphics::kThrowArcPairs * 2);
     CHECK(stream.hash() == 0x288a1770ecad4060ULL);

@@ -96,7 +96,8 @@ enum class RingArc : std::uint8_t { Fill, Lost, Rest };
 
 /// The arc of rim vertex `k` (0-64) of a ring filled to `value` and lost to `capacity` (both 0-100): Rest when
 /// 64 − k ≤ floor(64 × (100 − capacity) / 100) and that is above 0, else Lost when 64 − k ≤ floor(64 × (100 − value) /
-/// 100), else Fill.
+/// 100) and that is above 0, else Fill, so a full ring has no Lost vertex. The arc step of the original's ring draw.
+/// @orig 0x0017b2e0 GroundRing_DrawQueued (unknown)
 [[nodiscard]] RingArc ringArcOf(int k, float value, float capacity);
 
 /// One ring to draw.
@@ -134,7 +135,9 @@ struct RingVertex {
 
 /// A ring's 64 triangles from its centre (192 vertices), each in one colour: flat shading gives a triangle its last
 /// vertex's, the rim vertex k + 1 (**Coney's reading** of which vertex leads; the arcs end on hard edges either way).
-/// The centre vertex has the fill's colour.
+/// The centre vertex has the fill's colour. The fan part of the original's ring draw; SceneLighting::drawGroundRings
+/// draws the fans.
+/// @orig 0x0017b2e0 GroundRing_DrawQueued (unknown)
 [[nodiscard]] std::vector<RingVertex> ringFan(const GroundRing& ring);
 
 /// A human as the rings see it on one update.

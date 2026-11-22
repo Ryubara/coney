@@ -345,6 +345,8 @@ void PlayLevelMode::poseCarriedProp(const human::Human& human, const human::Play
         world_objects::heldWorldPose(feet, heading, bones.at(found->second.local.bone), 1.0F, found->second.local));
 }
 
+// The original walks every player's arc (ThrowArcs_RenderAll's loop over the players' throw states); this draws the one
+// arc there is, stand-in: the local player's aim, until the game mode holds an aim for each player slot.
 void PlayLevelMode::drawThrowArc(float alpha) {
     if (!m_engine.drawsPixels()) {
         return;
@@ -356,7 +358,7 @@ void PlayLevelMode::drawThrowArc(float alpha) {
     if (!m_throwArc) {
         m_throwArc = std::make_unique<ThrowArcRenderer>(m_wad, m_print);
     }
-    m_throwArc->draw(ribbon);
+    m_throwArc->draw(m_engine, ribbon);
 }
 
 } // namespace coney::platform

@@ -20,6 +20,8 @@ void FrameDescription::begin(const FrameStart& start) {
     m_sceneTextures.clear();
     m_bones.clear();
     m_viewColours.clear();
+    m_effectVertices.clear();
+    m_effectIndices.clear();
     m_camera.reset();
 }
 
@@ -100,6 +102,14 @@ ScenePass& FrameDescription::scene() {
     return std::get<ScenePass>(m_passes.back());
 }
 
+EffectPass& FrameDescription::effects() {
+    // A new effect pass keeps the camera set last this frame.
+    if (m_passes.empty() || !std::holds_alternative<EffectPass>(m_passes.back())) {
+        m_passes.emplace_back(EffectPass{m_camera, {}});
+    }
+    return std::get<EffectPass>(m_passes.back());
+}
+
 void FrameDescription::addScreenPass(const ScreenPass& pass) { m_passes.emplace_back(pass); }
 
 void FrameDescription::setSceneCamera(const SceneCamera& camera) {
@@ -157,6 +167,32 @@ std::span<const LogicalQuad> FrameDescription::quadsOf(const Draw2d& draw) const
 std::span<const ScreenVertex> FrameDescription::verticesOf(const Draw2d& draw) const {
     CONEY_ASSERT(draw.shape == Shape2d::Triangles && draw.first + draw.count <= m_vertices.size());
     return std::span<const ScreenVertex>(m_vertices).subspan(draw.first, draw.count);
+}
+
+void FrameDescription::addEffectDraw(EffectDraw draw, std::span<const EffectVertex> vertices,
+                                     std::span<const std::uint16_t> indices, const Texture* texture) {
+    if (vertices.empty()) {
+        return;
+    }
+    // The ranges point into the frame's arrays, after what earlier draws added.
+    draw.texture = this->texture(texture);
+    draw.firstVertex = static_cast<std::uint32_t>(m_effectVertices.size());
+    draw.vertexCount = static_cast<std::uint32_t>(vertices.size());
+    m_effectVertices.insert(m_effectVertices.end(), vertices.begin(), vertices.end());
+    draw.firstIndex = static_cast<std::uint32_t>(m_effectIndices.size());
+    draw.indexCount = static_cast<std::uint32_t>(indices.size());
+    m_effectIndices.insert(m_effectIndices.end(), indices.begin(), indices.end());
+    effects().draws.push_back(draw);
+}
+
+std::span<const EffectVertex> FrameDescription::effectVerticesOf(const EffectDraw& draw) const {
+    CONEY_ASSERT(draw.firstVertex + draw.vertexCount <= m_effectVertices.size());
+    return std::span<const EffectVertex>(m_effectVertices).subspan(draw.firstVertex, draw.vertexCount);
+}
+
+std::span<const std::uint16_t> FrameDescription::effectIndicesOf(const EffectDraw& draw) const {
+    CONEY_ASSERT(draw.firstIndex + draw.indexCount <= m_effectIndices.size());
+    return std::span<const std::uint16_t>(m_effectIndices).subspan(draw.firstIndex, draw.indexCount);
 }
 
 std::span<const SceneLight> FrameDescription::lightsOf(const Draw3d& draw) const {

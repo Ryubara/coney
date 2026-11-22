@@ -189,7 +189,7 @@ void PlayLighting::addShadow(const raycast::CollisionMesh& mesh, anim::Vec3 feet
 
 void PlayLighting::drawShadows() {
     if (m_scene->drawsBlobShadows()) {
-        m_scene->drawBlobShadows(m_shadows);
+        m_scene->drawBlobShadows(m_engine, m_shadows);
     }
     m_shadows.clear();
 }

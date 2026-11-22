@@ -259,6 +259,7 @@ add_executable(coney_tests
     platform/clip_recorder_test.cpp
     platform/draw_calls_test.cpp
     platform/draw_stream_test.cpp
+    platform/effect_draw_stream_test.cpp
     platform/frame_recording_test.cpp
     platform/ffmpeg_info_test.cpp
     platform/gpu_renderer_test.cpp
