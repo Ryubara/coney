@@ -101,8 +101,8 @@ TEST_CASE("a human's replicated state is read from the game") {
 }
 
 TEST_CASE("a human's replicated state carries its move style: normal, hidden while it hides, normal again") {
-    // Expected: Human::enterHiding() puts the hidden move style on (HumanAnimator::stealthStyle(), the original's
-    // style 0x14, docs/research/stealth.md#sneaking); the field is Coney's own (snapshots.md#human-state)
+    // Expected: stealth.md#sneaking, confirmed (code). Hiding puts the hidden move style (0x14) on and leaving it takes
+    // it off; the field that carries it is Coney's own (snapshots.md#human-state)
     Scene scene;
     Human& human = scene.add(3.0F, -4.0F, 90.0F);
     scene.run(2);
