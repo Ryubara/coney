@@ -182,7 +182,7 @@ TEST_CASE("a loop started from inside a body hits the assert whatever its size, 
     INFO(control.output);
     CHECK(control.exitCode == 0);
     CHECK(control.output.find("done") != std::string::npos);
-    for (const std::string& nested : {"0", "3", "16", "17", "40"}) {
+    for (const char* nested : {"0", "3", "16", "17", "40"}) {
         INFO("nested loop of " << nested);
         const ChildRun run = runNestedCheck(nested);
         REQUIRE(run.started);
