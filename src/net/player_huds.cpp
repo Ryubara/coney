@@ -5,6 +5,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <span>
 #include <string>
 #include <variant>
@@ -379,6 +380,26 @@ hud::HudStanding hudStanding(const SnapshotHudElements& elements, const Snapshot
         shared.radarZoomScale = in.exact(HudSettingsField::RadarZoomScale);
     }
     return standing;
+}
+
+// @coney-only network play; the original has none
+hud::HudStanding standingForSlot(const hud::HudStanding& host, std::size_t slot) {
+    hud::HudStanding own;
+    own.shared = host.shared;
+    if (slot < host.players.size()) {
+        own.players.at(0) = host.players.at(slot);
+    }
+    return own;
+}
+
+// @coney-only network play; the original has none
+hud::PlayerHudState playerHudForSlot(const SnapshotHuds& huds, std::size_t slot) {
+    // A slot is a byte on the wire; no player has one past 255.
+    if (slot > std::numeric_limits<std::uint8_t>::max()) {
+        return {};
+    }
+    const auto found = huds.find(static_cast<std::uint8_t>(slot));
+    return found != huds.end() ? playerHudState(found->second) : hud::PlayerHudState{};
 }
 
 } // namespace coney::net

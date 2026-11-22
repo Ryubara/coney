@@ -10,6 +10,7 @@
 #include "net/event_channel.h"
 #include "net/jitter_buffer.h"
 #include "net/net_status.h"
+#include "net/player_huds.h"
 #include "platform/net_play.h"
 
 namespace coney::platform {
@@ -128,9 +129,38 @@ bool ClientGame::leaveLevel() {
     return true;
 }
 
-void ClientGame::presentEvents() {}
+void ClientGame::presentEvents() {
+    // Only once the buffer's clock runs: the host step the playback has reached, and every event up to it.
+    const std::optional<std::uint64_t> shown = m_world->shownTime();
+    if (!shown) {
+        return;
+    }
+    const auto step = static_cast<std::uint32_t>(*shown / net::kTimeUnitsPerStep);
+    for (const net::ArrivedEvent& arrived : m_net.takeArrivedEvents(step)) {
+        m_events.apply(net::toGameEvent(arrived.event));
+    }
+}
 
-void ClientGame::stepHud(const FrameTime& /*frame*/) {}
+void ClientGame::stepHud(const FrameTime& frame) {
+    // Nothing to show until the first snapshot has said what the host's HUD holds.
+    const net::SnapshotReceiver* snapshots = m_net.clientSnapshots();
+    if (snapshots == nullptr || snapshots->newest() == 0) {
+        return;
+    }
+    // The guest's own player is the HUD's one player: its slot's panel state is panel 0's, and its slot's standing
+    // state the HUD's player 0's. The newest snapshot's, not the playback's: the HUD has no history to blend
+    // (**Coney's choice**).
+    const std::size_t slot = m_net.playerSlot();
+    hud::Hud& hud = m_hud->hud();
+    hud.applyStanding(net::standingForSlot(m_net.arrivedHudStanding(), slot));
+    hud::HudFrame hudFrame;
+    m_hudMs += static_cast<std::uint64_t>(std::lround(frame.seconds * 1000.0));
+    hudFrame.nowMs = m_hudMs;
+    hudFrame.levelNumber = m_levelNumber;
+    hud::applyPlayerHud(hudFrame, 0, net::playerHudForSlot(m_net.arrivedHuds(), slot));
+    hud.update(hudFrame);
+    hud.updateHints(m_hudMs);
+}
 
 void ClientGame::dropLevel() {
     // The scene draws the HUD, so it goes first; the sounds the host started in the level end with it.

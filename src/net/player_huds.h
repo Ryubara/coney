@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
 #include <span>
 #include <vector>
 
@@ -47,5 +48,17 @@ struct SnapshotHudStanding {
 /// their start, and the counter panels have no hide time.
 /// @coney-only network play; the original has none
 [[nodiscard]] hud::HudStanding hudStanding(const SnapshotHudElements& elements, const SnapshotHudTexts& texts);
+
+/// The HUD a guest in player slot `slot` draws, from the host's: the guest has one player, so his slot's standing state
+/// is the one HUD player's (player 0's, the panel and radar that draw with one player) and every other player's is
+/// the HUD's defaults; the state shared by all players is the host's as it is. A slot beyond the HUD's players (a
+/// third or fourth remote player: the standing state carries two) has the defaults for his player.
+/// @coney-only network play; the original has none
+[[nodiscard]] hud::HudStanding standingForSlot(const hud::HudStanding& host, std::size_t slot);
+
+/// The state the guest in player slot `slot` is given for his HUD's player 0, from the snapshot's HUDs: what the host
+/// had for that slot, or an empty state when the snapshot holds none for it (a slot not playing in the level).
+/// @coney-only network play; the original has none
+[[nodiscard]] hud::PlayerHudState playerHudForSlot(const SnapshotHuds& huds, std::size_t slot);
 
 } // namespace coney::net

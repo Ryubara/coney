@@ -30,6 +30,7 @@ class ClientEventPlayer {
     /// Presents one of the host's events; whether it was presented is counted.
     void apply(const GameEvent& event);
     /// Stops every sound the host started that still plays here, as the session or the level ends.
+    /// @coney-only the guest's end of the host's sounds; the original has no network play
     void stopAll() {
         if (m_sound != nullptr) {
             m_sounds.stopAll();
