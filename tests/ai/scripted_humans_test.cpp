@@ -688,7 +688,8 @@ TEST_CASE("an AI human who falls out of the world is knocked out once faded: his
     const double handle = faller.handle();
     REQUIRE(level.call("HuIsAlive", {Value(handle)}).number() == 1.0);
 
-    faller.human().place(level.scene.mesh.get(), {44.0F, 40.0F, -30.0F}, 0.0F);
+    // More than 20 m below the mesh's lowest point (the synthetic header's -50).
+    faller.human().place(level.scene.mesh.get(), {44.0F, 40.0F, -100.0F}, 0.0F);
     level.scene.run(25);
     // Fading: alive to the scripts, no message yet.
     CHECK(faller.human().outOfWorld());

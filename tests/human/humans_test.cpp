@@ -318,8 +318,9 @@ TEST_CASE("a human more than 20 m below the mesh's lowest point fades by 10 an u
         destroyedAt.push_back(step);
     });
     CHECK(pair.other.fade() == 255);
-    // Below the floor's lowest point (z 0) by more than 20 m: the state pass flags him, the actions pass fades him.
-    pair.other.place(pair.mesh.get(), coney::anim::Vec3{45.0F, 40.0F, -30.0F}, 0.0F);
+    // More than 20 m below the mesh's lowest point (the synthetic header's -50): the state pass flags him, the actions
+    // pass fades him.
+    pair.other.place(pair.mesh.get(), coney::anim::Vec3{45.0F, 40.0F, -100.0F}, 0.0F);
     for (step = 1; step <= 25; ++step) {
         pair.humans.update(pair.mesh.get());
         REQUIRE(pair.other.outOfWorld());
