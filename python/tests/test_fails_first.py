@@ -211,6 +211,62 @@ def test_a_queued_build_is_an_error(repo: Repo) -> None:
         repo.run(runner=queued)
 
 
+#: What `coney-tools build` prints when the cap on worktrees holding a build folder refuses it (build_cap.refusal):
+#: no `log:` line, no `result:` line, and an exit code of 2. Nothing was built or run.
+CAP_REFUSAL = (
+    "build refused: 7 worktrees already hold a build folder (the cap is 7, build_worktree_cap in coney.local.toml) "
+    "and C:/x/build/ci would be a new one. Each build is about 7 GB and the drive must keep 30 GB free; "
+    "existing build folders keep building.\n  1587-a  6.1 GB  idle  3 h  in progress\n"
+)
+
+
+def test_a_build_the_cap_refused_is_an_error_and_writes_no_stamp(repo: Repo) -> None:
+    # Task 1549 stamps #17-#23: the cap refused every build, nothing ran, and each run still wrote a `fail` stamp
+    # ("test commit failed, fix commit failed"): a fault of the machine is no verdict about the test.
+    def refused(root: Path, preset: str, names: tuple[str, ...]) -> BuildOutcome:
+        return fails_first.parse_build_output(CAP_REFUSAL, 2)
+
+    with pytest.raises(FailsFirstError, match=r"never started.*build refused: 7 worktrees.*no stamp") as error:
+        repo.run(runner=refused)
+    assert "1587-a" not in str(error.value)  # the first line says why; the rest of the output is not copied in
+    assert not repo.unit.stamps.exists()
+    assert git(repo.root, "rev-parse", "--abbrev-ref", "HEAD").strip() == "work"
+
+
+@pytest.mark.parametrize(
+    ("text", "code"),
+    [
+        (CAP_REFUSAL, 2),
+        ("coney-tools build: pass --agent <your id>\n", 2),
+        ("cmake is not installed\n", 127),
+        ("result: ended unexpectedly\n", 1),
+        ("result: interrupted\n", 130),
+        ("result: stopped by a signal\n", 1),
+        ("", 1),
+    ],
+    ids=["cap", "no-agent", "no-program", "unexpected-end", "interrupted", "signal", "silent"],
+)
+def test_a_build_that_printed_no_result_never_ran_the_tests(text: str, code: int) -> None:
+    outcome = fails_first.parse_build_output(text, code)
+    assert not outcome.started and not outcome.tests_ran
+
+
+def test_a_build_with_a_verdict_started(repo: Repo) -> None:
+    for text, code in ((repo.red, 1), (repo.green, 0), ("build: FAILED\nresult: FAILED at build\n", 1)):
+        assert fails_first.parse_build_output(text, code).started
+
+
+def test_a_refusal_in_the_second_build_leaves_no_stamp_either(repo: Repo) -> None:
+    def second_refused(root: Path, preset: str, names: tuple[str, ...]) -> BuildOutcome:
+        if git(root, "rev-parse", "HEAD").strip() == repo.test:
+            return repo.runner(root, preset, names)
+        return fails_first.parse_build_output(CAP_REFUSAL, 2)
+
+    with pytest.raises(FailsFirstError, match="never started"):
+        repo.run(runner=second_refused)
+    assert not repo.unit.stamps.exists()
+
+
 def test_a_dirty_tree_is_refused_before_anything_is_checked_out(repo: Repo) -> None:
     (repo.root / "src" / "widget.cpp").write_text("changed\n", encoding="utf-8")
     with pytest.raises(FailsFirstError, match="uncommitted"):
@@ -536,11 +592,44 @@ def test_a_restore_that_fails_is_reported_loudly_and_keeps_the_marker(
     assert (repo.unit.dir / "fails-first" / "restore.json").is_file()
 
 
-def test_logs_are_named_for_the_pair_of_commits(repo: Repo) -> None:
-    repo.run()
+def log_of(repo: Repo, label: str, digest: object) -> Path:
+    """The kept `label` log whose bytes hash to `digest`: the one a stamp's `<label>_log_sha256` names."""
+    found = [
+        path
+        for path in sorted((repo.unit.dir / "fails-first").glob(f"{label}-*.log"))
+        if stamps.sha256_hex(path.read_bytes()) == digest
+    ]
+    assert len(found) == 1, f"no single {label} log hashes to {digest}: {found}"
+    return found[0]
+
+
+def test_logs_are_named_for_the_pair_of_commits_and_the_hash_of_their_bytes(repo: Repo) -> None:
+    [stamp] = repo.run()
     folder = repo.unit.dir / "fails-first"
-    assert (folder / f"red-{repo.test[:12]}-{repo.fix[:12]}.log").is_file()
-    assert (folder / f"green-{repo.test[:12]}-{repo.fix[:12]}.log").is_file()
+    for label in ("red", "green"):
+        path = log_of(repo, label, stamp.covers[f"{label}_log_sha256"])
+        assert path.name == f"{label}-{repo.test[:12]}-{repo.fix[:12]}-{stamp.covers[f'{label}_log_sha256'][:12]}.log"
+        assert path.parent == folder
+
+
+def test_two_stamps_on_one_pair_of_commits_keep_a_log_each(repo: Repo) -> None:
+    # Task 1545 stamps #37 and #38: one fails-first and one keeps run on the same two commits wrote the same
+    # `red-<test>-<fix>.log`, so the first stamp's log hash stopped matching any file.
+    [first] = repo.run()
+    repo.red = repo.out(ONE, ())  # a second run on the same pair, which keeps the behaviour: its output differs
+    [second] = repo.run(keeps=True)
+    assert (first.result, second.result) == ("pass", "keeps")
+    for stamp in (first, second):
+        for label in ("red", "green"):
+            log_of(repo, label, stamp.covers[f"{label}_log_sha256"])  # each stamp's own log is still there
+    assert first.covers["red_log_sha256"] != second.covers["red_log_sha256"]
+
+
+def test_a_rerun_with_the_same_output_names_the_same_log_and_loses_nothing(repo: Repo) -> None:
+    repo.run()
+    repo.run()
+    names = [path.name for path in (repo.unit.dir / "fails-first").glob("red-*.log")]
+    assert len(names) == len(set(names)) and 1 <= len(names) <= 2
 
 
 def test_a_name_that_is_in_no_test_file_of_the_test_commit_is_refused_before_any_build(repo: Repo) -> None:

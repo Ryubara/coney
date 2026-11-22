@@ -5,7 +5,8 @@ One function per check, taking a `StepContext` and returning a `local_gate.StepR
 machine (a program is missing) raises `CheckUnavailable` instead of failing, because nothing is wrong with the change.
 The two checks of the build, `msvc-ci-build` and `ctest-full-disc` (`proof.build.checks`), are one run of `coney-tools
 build` and are answered by `task_check` from the build record, not here. The commands are the ones CI runs: the ruff
-and mypy words are those of `check_cli` (which a test compares with CI's python job), so a pass here and in CI agree.
+and mypy words are those of `check_cli` and the progress check's are `progress_cli`'s (a test compares each with CI's
+python job), so a pass here and in CI agree.
 The `clang-tidy` check is CI's pull-request pass run here (local_tidy.py), after the build has written the compile
 database it reads.
 """
@@ -21,7 +22,7 @@ from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 
-from coney_tools import docs_check, docs_cli, local_tidy, proof_profiles, uv_environment
+from coney_tools import docs_check, docs_cli, local_tidy, progress_cli, proof_profiles, uv_environment
 from coney_tools.check_cli import MYPY_COMMAND, RUFF_COMMANDS
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
@@ -70,8 +71,11 @@ class StepContext:
 
     @property
     def pytest_scope(self) -> proof_profiles.PytestScope:
-        """Which Python tests the change needs (`proof.pytest`), from `tested`."""
-        return proof_profiles.pytest_scope(self.conventions, self.paths if self.tested is None else self.tested)
+        """Which Python tests the change needs (`proof.pytest`): from the paths, or for a fix (`tested`) from the files
+        changed since its Check and the classes the whole change touches (`proof_profiles.fix_pytest_scope`)."""
+        if self.tested is None:
+            return proof_profiles.pytest_scope(self.conventions, self.paths)
+        return proof_profiles.fix_pytest_scope(self.conventions, self.tested, self.paths)
 
 
 Step = Callable[[StepContext], StepResult]
@@ -128,12 +132,19 @@ def _commands(
 
 
 def docs_check_step(context: StepContext) -> StepResult:
-    """`coney-tools docs check`: the pages the change touched meet the standards (writing-docs.md#touch-it)."""
+    """`coney-tools docs check` (the pages the change touched meet the standards: writing-docs.md#touch-it) and
+    `progress check` as CI runs it (`progress_cli.check_as_ci`: the progress inputs agree, and an `@orig` tag the
+    branch adds spells the database's name, measured from this check's base; CI's python job compares with HEAD^1 and
+    insists on a readable base). Both run, so one run shows every problem; a pass of this check says both held."""
     result = docs_check.check_changed(context.root, context.base, docs_check.context_for(context.root))
     failed = result.failed
     lines = [line for page in result.pages if page in failed for line in docs_cli.page_lines(result, page)]
-    detail = f"{len(result.pages)} pages meet the standards" if not failed else f"{len(failed)} pages fail"
-    return StepResult("docs-check", not failed, detail, output=tuple(lines))
+    code, printed = progress_cli.check_as_ci(context.root, context.base)
+    if code != 0:
+        lines += [f"progress check: {line}" for line in printed if line.strip()]
+    pages = f"{len(result.pages)} pages meet the standards" if not failed else f"{len(failed)} pages fail"
+    detail = f"{pages}; progress inputs {'agree' if code == 0 else 'fail'}"
+    return StepResult("docs-check", not failed and code == 0, detail, output=tuple(lines))
 
 
 def mkdocs_step(context: StepContext) -> StepResult:

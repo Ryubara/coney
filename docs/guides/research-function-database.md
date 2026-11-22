@@ -148,8 +148,9 @@ for want of it, which `progress summary` says.
 
 The name is Ghidra's. A tag that spells it differently fails `progress check` when the branch adds the tag, and is a
 warning with a count when it was already there when the branch left `origin/main` (the way `orig check-tags` holds only
-what the branch changed; CI names the base and insists on it, `progress check --base HEAD^1 --require-base`). Write
-new tags with the name the entry has.
+what the branch changed; CI names the base and insists on it, `progress check --base HEAD^1 --require-base`, and `task
+check` runs the same check against its own base). A tag followed by prose on its line, after the `(File.cpp)`, reads as
+a longer name and fails the same way. Write new tags with the name the entry has.
 
 The reimplemented list used to be `docs/progress/functions.toml` (address, name, subsystem, size). The move into this
 database is `coney-tools progress import-functions`, kept for a branch that still adds rows to the old file
