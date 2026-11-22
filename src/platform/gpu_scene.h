@@ -37,7 +37,9 @@ namespace coney::platform {
 /// Coney's own shaders, `scene3d.vert.hlsl` and `scene3d.frag.hlsl` (docs/engine/gpu-renderer.md#scene): each mesh and
 /// texture of the asset store uploaded the first time a frame draws it and kept by id, then each sub-mesh drawn through
 /// its pass's camera in the states, lights, colours, passes and texture level librw's GL3 device would give it
-/// (graphics/scene_batch.h), so the two renderers draw the same picture.
+/// (graphics/scene_batch.h), so the two renderers draw the same picture. The debug tools' mesh views reach it as extra
+/// draws of the same meshes (Draw3d::view: flat unlit colours, or a wireframe) and as the scene passes' lines, a line
+/// list (docs/engine/gpu-renderer.md#mesh-views).
 ///
 /// A frame is drawn in steps the renderer interleaves with its own: prepare() reads the frame, layUploads(),
 /// writeUploads() and recordUploads() put what is new on the GPU in the renderer's copy pass, and draw() draws one
@@ -124,7 +126,9 @@ class GpuScene {
         const void* bytes = nullptr; // held by the asset store until the frame is recorded
         std::uint32_t size = 0;
         std::uint32_t offset = 0;
-        std::uint64_t mesh = 0; // the cache's key, forgotten when the upload fails
+        std::uint64_t mesh = 0; // the cache's key, forgotten when the upload fails (0 for none: the lines')
+        bool cycle =
+            false; // the buffer is rewritten every frame: SDL gives the copy a fresh one while the GPU reads it
     };
 
     /// One level of a texture this frame.
@@ -143,6 +147,8 @@ class GpuScene {
         bool depthTest = true;
         bool depthWrite = true;
         graphics::CullFaces cull = graphics::CullFaces::Back;
+        bool wire = false;  // the mesh views' wireframe: lines filled, pulled towards the camera
+        bool lines = false; // the scene lines: a line list
 
         friend auto operator<=>(const PipelineKey&, const PipelineKey&) = default;
     };
@@ -194,6 +200,15 @@ class GpuScene {
         const graphics::SceneStates* states = nullptr;
         bool layer = false;
         bool skinned = false;
+        graphics::ViewPass view = graphics::ViewPass::Shaded; // a mesh views' pass: lit by white, its ambient 1
+    };
+
+    /// One scene pass's lines: their vertices in m_lineVertices and what the vertex shader needs to place them.
+    struct LinePass {
+        std::size_t first = 0;
+        std::size_t count = 0;
+        SDL_GPUGraphicsPipeline* pipeline = nullptr;
+        VertexUniform vertex;
     };
 
     /// Adds the sub-draws of `mesh`, uploaded as `uploaded` (a draw's mesh, or its dual layer), to the list, lit by
@@ -209,6 +224,11 @@ class GpuScene {
     SDL_GPUGraphicsPipeline* pipelineFor(const PipelineKey& key);
     /// The sampler for `sampler`, made the first time; null when SDL refuses it.
     SDL_GPUSampler* samplerFor(const graphics::TextureSampler& sampler);
+    /// Collects the lines of the frame's scene pass `scene` (seen through `camera`) into m_lineVertices for pass
+    /// `pass`.
+    void prepareLines(std::size_t pass, const graphics::ScenePass& scene, const graphics::SceneCamera& camera);
+    /// Makes the line buffer big enough for m_lineVertices and queues their upload; drops the lines when SDL refuses.
+    void uploadLines();
 
     SDL_GPUDevice* m_device;
     SDL_GPUShader* m_vertexShader = nullptr; // kept for the pipelines made later
@@ -225,6 +245,12 @@ class GpuScene {
     std::vector<SubDraw> m_draws;
     GpuBonePalette m_bones;                                       // the frame's bone palette, cycled at each upload
     std::vector<std::pair<std::size_t, std::size_t>> m_passDraws; // per pass: the first sub-draw and how many
+    std::vector<graphics::MeshVertex> m_lineVertices;             // the frame's scene lines, two vertices to a line
+    std::vector<LinePass> m_passLines;                            // per pass: its lines
+    SDL_GPUBuffer* m_lineBuffer = nullptr;                        // m_lineVertices on the GPU, kept and grown
+    std::uint32_t m_lineCapacity = 0;                             // its size in bytes
+    SDL_GPUTexture* m_white = nullptr;                            // the texture an untextured draw samples
+    SDL_GPUSampler* m_lineSampler = nullptr;                      // its sampler
 };
 
 } // namespace coney::platform

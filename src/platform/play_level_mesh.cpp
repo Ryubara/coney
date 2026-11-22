@@ -105,6 +105,20 @@ std::vector<const rw::Atomic*> PlayLevelControls::atomicsOf(const PlayLevelMode&
     return {human->mesh->atomic(), human->mesh->bloodAtomic()};
 }
 
+std::vector<graphics::MeshId> PlayLevelControls::meshIdsOf(const PlayLevelMode& mode, debug::EntityId id) {
+    const std::optional<HumanDraw> human = humanDrawOf(mode, id, 1.0F, nullptr);
+    if (!human || human->mesh == nullptr) {
+        return {};
+    }
+    std::vector<graphics::MeshId> ids;
+    for (const graphics::MeshId mesh : {human->mesh->meshId(), human->mesh->bloodMeshId()}) {
+        if (mesh.valid()) {
+            ids.push_back(mesh);
+        }
+    }
+    return ids;
+}
+
 std::optional<debug::WatchGroup> PlayLevelControls::meshGroupOf(const PlayLevelMode& mode, debug::EntityId id) {
     const std::optional<HumanDraw> human = humanDrawOf(mode, id, 1.0F, nullptr);
     if (!human || human->mesh == nullptr || human->character == nullptr) {

@@ -53,6 +53,10 @@ class PlayLevelControls final : public debug::PlayControls, public debug::Entity
     /// The librw atomics `mode` draws entity `id` with (a human's body and its blood layer); empty for an object or
     /// an unknown id (play_level_mesh.cpp). The mesh views' selection.
     [[nodiscard]] static std::vector<const rw::Atomic*> atomicsOf(const PlayLevelMode& mode, debug::EntityId id);
+    /// The scene-asset mesh ids of the same models (the body and the blood layer), for a renderer that records its
+    /// draws and so knows a model by its mesh id (MeshViews::selectMeshes()); empty for none, or where the assets hold
+    /// none.
+    [[nodiscard]] static std::vector<graphics::MeshId> meshIdsOf(const PlayLevelMode& mode, debug::EntityId id);
 
     /// Controls of `mode` (none: setMode() before use).
     explicit PlayLevelControls(PlayLevelMode* mode = nullptr) : m_mode(mode) {}

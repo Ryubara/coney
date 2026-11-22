@@ -359,6 +359,8 @@ class RenderEngine final : public graphics::RenderDevice {
     void drawSceneLines(std::span<const graphics::SceneLineVertex> lines);
 
   private:
+    // The passes the mesh views' hook gives the recorded model `draw` (drawScene()).
+    [[nodiscard]] ViewPasses viewPassesOf(const graphics::Draw3d& draw);
     // Only start() makes one, which then fills it in as librw comes up.
     RenderEngine(RenderBackend backend, const WindowDesc& desc);
 

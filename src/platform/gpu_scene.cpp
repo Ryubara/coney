@@ -19,6 +19,9 @@ constexpr std::uint32_t kTextureAlignment = 512;
 // Where a buffer's bytes start: a multiple of 16, enough for every API's copies.
 constexpr std::uint32_t kBufferAlignment = 16;
 
+// The least size of the buffer the scene lines go in, in bytes: 1024 vertices.
+constexpr std::uint32_t kMinLineBuffer = 1024 * sizeof(graphics::MeshVertex);
+
 // `value` rounded up to a multiple of `step`.
 std::uint32_t alignUp(std::uint32_t value, std::uint32_t step) { return (value + step - 1) / step * step; }
 
@@ -170,6 +173,9 @@ GpuScene::~GpuScene() {
     for (const auto& [key, sampler] : m_samplers) {
         SDL_ReleaseGPUSampler(m_device, sampler);
     }
+    if (m_lineBuffer != nullptr) {
+        SDL_ReleaseGPUBuffer(m_device, m_lineBuffer);
+    }
     if (m_vertexShader != nullptr) {
         SDL_ReleaseGPUShader(m_device, m_vertexShader);
     }
@@ -211,8 +217,20 @@ SDL_GPUGraphicsPipeline* GpuScene::pipelineFor(const PipelineKey& key) {
     info.vertex_input_state.num_vertex_buffers = 1;
     info.vertex_input_state.vertex_attributes = attributes.data();
     info.vertex_input_state.num_vertex_attributes = static_cast<Uint32>(attributes.size());
-    info.primitive_type = key.strip ? SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP : SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
-    info.rasterizer_state.fill_mode = SDL_GPU_FILLMODE_FILL;
+    if (key.lines) {
+        info.primitive_type = SDL_GPU_PRIMITIVETYPE_LINELIST;
+    } else {
+        info.primitive_type = key.strip ? SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP : SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+    }
+    // The mesh views' wireframe: the triangles' edges, pulled towards the camera by a depth bias of -1 and a slope of
+    // -1 as OpenGL's polygon offset (-1, -1) pulls GL3's lines (platform/draw_calls.cpp's setWireframe()), so they sit
+    // on the fill they are drawn over.
+    info.rasterizer_state.fill_mode = key.wire ? SDL_GPU_FILLMODE_LINE : SDL_GPU_FILLMODE_FILL;
+    if (key.wire) {
+        info.rasterizer_state.enable_depth_bias = true;
+        info.rasterizer_state.depth_bias_constant_factor = -1.0F;
+        info.rasterizer_state.depth_bias_slope_factor = -1.0F;
+    }
     info.rasterizer_state.cull_mode = sdlCull(key.cull);
     // OpenGL's default: counter-clockwise on a screen whose y is up is the front, which SDL's clip space shares.
     info.rasterizer_state.front_face = SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE;
@@ -357,10 +375,13 @@ void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::
     m_bufferUploads.clear();
     m_levelUploads.clear();
     m_draws.clear();
+    m_lineVertices.clear();
+    m_white = white;
     // The frame's poses, in one palette for the copy pass; posed draws are left out when it finds no room.
     const bool posesHeld = m_bones.set(graphics::bonePaletteOf(frame.bones()));
     const std::span<const graphics::FramePass> passes = frame.passes();
     m_passDraws.assign(passes.size(), {0, 0});
+    m_passLines.assign(passes.size(), LinePass{});
     for (std::size_t p = 0; p < passes.size(); ++p) {
         const auto* scene = std::get_if<graphics::ScenePass>(&passes[p]);
         if (scene == nullptr || !scene->camera) {
@@ -378,6 +399,20 @@ void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::
             // his bind pose.
             const graphics::Posing posing = graphics::posingOf(frame, draw, *mesh, body->bonesNeeded);
             if (posing == graphics::Posing::LeftOut || (posing == graphics::Posing::Skinned && !posesHeld)) {
+                continue;
+            }
+            // A mesh views' pass (Draw3d::view) is the mesh again in the view's colours, lit by white alone, with no
+            // texture, fog or second layer (docs/engine/gpu-renderer.md#mesh-views).
+            if (draw.view != graphics::ViewPass::Shaded) {
+                const graphics::DrawColours viewColours = graphics::viewColoursOf(*mesh, frame.viewColoursOf(draw));
+                const graphics::SceneStates viewStates = graphics::viewStatesOf(draw.states, draw.view);
+                prepareMesh(*body, *mesh, draw, camera, {},
+                            MeshLook{.colours = &viewColours,
+                                     .textures = {},
+                                     .states = &viewStates,
+                                     .skinned = posing == graphics::Posing::Skinned,
+                                     .view = draw.view},
+                            store, white);
                 continue;
             }
             // The base mesh, then its dual layer right after it: a world's or object's at the base's first alpha, a
@@ -409,7 +444,9 @@ void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::
                         store, white);
         }
         m_passDraws[p] = {first, m_draws.size() - first};
+        prepareLines(p, *scene, camera);
     }
+    uploadLines();
 }
 
 void GpuScene::prepareMesh(const GpuMesh& uploaded, const graphics::MeshData& mesh, const graphics::Draw3d& draw,
@@ -425,7 +462,9 @@ void GpuScene::prepareMesh(const GpuMesh& uploaded, const graphics::MeshData& me
     shared.viewProjection = graphics::multiply(graphics::projectionOf(camera), graphics::viewMatrixOf(camera));
     shared.skin = {draw.firstBone, look.skinned ? 1U : 0U, 0U, 0U};
     const graphics::DrawLights lit =
-        graphics::lightsFor(lights, mesh, draw.transform, graphics::boundsOf(draw, mesh), draw.material.lit);
+        look.view != graphics::ViewPass::Shaded
+            ? graphics::viewLightsOf()
+            : graphics::lightsFor(lights, mesh, draw.transform, graphics::boundsOf(draw, mesh), draw.material.lit);
     shared.ambient = four(lit.ambient, 1.0F);
     for (std::size_t i = 0; i < lit.count; ++i) {
         const graphics::DrawLight& light = lit.lights[i];
@@ -454,7 +493,9 @@ void GpuScene::prepareMesh(const GpuMesh& uploaded, const graphics::MeshData& me
         const GpuTexture* texture = data != nullptr ? textureFor(textureId, *data) : nullptr;
         VertexUniform vertex = shared;
         vertex.materialColour = channels(colours.modulate ? colour : graphics::kWhite);
-        vertex.surface = {material.ambient, 0.0F, material.diffuse, mesh.attributes.prelit ? 1.0F : 0.0F};
+        // A mesh views' pass takes the white ambient light whole, as the GL3 pass sets the material's ambient to 1.
+        const float ambient = look.view != graphics::ViewPass::Shaded ? 1.0F : material.ambient;
+        vertex.surface = {ambient, 0.0F, material.diffuse, mesh.attributes.prelit ? 1.0F : 0.0F};
         const graphics::TextureLevels levels = graphics::textureLevelsOf(data, draw.material.distanceLevels);
         FragmentUniform fragment;
         fragment.levels = {levels.k, levels.scale, levels.byDistance ? 1.0F : 0.0F, levels.gpuChooses ? 1.0F : 0.0F};
@@ -475,7 +516,8 @@ void GpuScene::prepareMesh(const GpuMesh& uploaded, const graphics::MeshData& me
                                         .blend = pass.blend,
                                         .depthTest = states.depthTest,
                                         .depthWrite = pass.depthWrite,
-                                        .cull = states.cull});
+                                        .cull = states.cull,
+                                        .wire = look.view == graphics::ViewPass::Wire});
             if (pipeline == nullptr) {
                 continue;
             }
@@ -485,6 +527,65 @@ void GpuScene::prepareMesh(const GpuMesh& uploaded, const graphics::MeshData& me
                                       texture != nullptr ? texture->texture : white, sampler, vertex, fragment});
         }
     }
+}
+
+void GpuScene::prepareLines(std::size_t pass, const graphics::ScenePass& scene, const graphics::SceneCamera& camera) {
+    if (scene.lines.empty()) {
+        return;
+    }
+    // Tested against the depth, never written, never culled or blended: librw's im3d lines in the play mode's debug
+    // line list (PlayLevelMode::drawSceneLines() on GL3).
+    SDL_GPUGraphicsPipeline* pipeline = pipelineFor(
+        PipelineKey{.depthTest = true, .depthWrite = false, .cull = graphics::CullFaces::None, .lines = true});
+    if (pipeline == nullptr) {
+        return;
+    }
+    if (m_lineSampler == nullptr) {
+        m_lineSampler = samplerFor(graphics::TextureSampler{
+            graphics::TextureFilter::Linear, graphics::TextureAddress::Clamp, graphics::TextureAddress::Clamp});
+    }
+    LinePass& out = m_passLines[pass];
+    out.first = m_lineVertices.size();
+    out.count = scene.lines.size();
+    out.pipeline = pipeline;
+    for (const graphics::SceneLineVertex& line : scene.lines) {
+        graphics::MeshVertex vertex;
+        vertex.position = line.position;
+        vertex.prelit = line.colour;
+        m_lineVertices.push_back(vertex);
+    }
+    // The vertex shader takes the prelit colour as it is: no light, a white material, no fog, no pose.
+    out.vertex.world = graphics::worldMatrixOf(graphics::Transform3d{});
+    out.vertex.viewProjection = graphics::multiply(graphics::projectionOf(camera), graphics::viewMatrixOf(camera));
+    out.vertex.materialColour = channels(graphics::kWhite);
+    out.vertex.surface = {1.0F, 0.0F, 1.0F, 1.0F};
+    out.vertex.fogData = {camera.fogStart, camera.farClip, 1.0F / (camera.fogStart - camera.farClip), 1.0F};
+}
+
+void GpuScene::uploadLines() {
+    if (m_lineVertices.empty()) {
+        return;
+    }
+    const auto bytes = static_cast<std::uint32_t>(m_lineVertices.size() * sizeof(graphics::MeshVertex));
+    if (m_lineBuffer == nullptr || bytes > m_lineCapacity) {
+        // Grown by doubling, so a frame with more lines does not make a buffer every frame.
+        if (m_lineBuffer != nullptr) {
+            SDL_ReleaseGPUBuffer(m_device, m_lineBuffer);
+            m_lineBuffer = nullptr;
+        }
+        SDL_GPUBufferCreateInfo info{};
+        info.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
+        info.size = std::max({bytes, m_lineCapacity * 2, kMinLineBuffer});
+        m_lineBuffer = SDL_CreateGPUBuffer(m_device, &info);
+        m_lineCapacity = m_lineBuffer != nullptr ? info.size : 0;
+    }
+    if (m_lineBuffer == nullptr) {
+        // A missing part of the picture, as for a mesh SDL cannot make a buffer for.
+        m_lineVertices.clear();
+        std::fill(m_passLines.begin(), m_passLines.end(), LinePass{});
+        return;
+    }
+    m_bufferUploads.push_back(BufferUpload{m_lineBuffer, m_lineVertices.data(), bytes, 0, 0, true});
 }
 
 std::uint32_t GpuScene::layUploads(std::uint32_t offset) {
@@ -517,7 +618,7 @@ void GpuScene::recordUploads(SDL_GPUCopyPass* copy, SDL_GPUTransferBuffer* uploa
     for (const BufferUpload& bytes : m_bufferUploads) {
         const SDL_GPUTransferBufferLocation from{upload, bytes.offset};
         const SDL_GPUBufferRegion to{bytes.buffer, 0, alignUp(bytes.size, 4)};
-        SDL_UploadToGPUBuffer(copy, &from, &to, false);
+        SDL_UploadToGPUBuffer(copy, &from, &to, bytes.cycle);
     }
     m_bones.record(copy, upload);
     for (const LevelUpload& level : m_levelUploads) {
@@ -543,6 +644,8 @@ void GpuScene::forgetUploads() {
     m_levelUploads.clear();
     m_bones.forget();
     m_draws.clear();
+    m_lineVertices.clear();
+    std::fill(m_passLines.begin(), m_passLines.end(), LinePass{});
     std::fill(m_passDraws.begin(), m_passDraws.end(), std::pair<std::size_t, std::size_t>{0, 0});
 }
 
@@ -570,6 +673,22 @@ void GpuScene::draw(SDL_GPUCommandBuffer* commands, SDL_GPURenderPass* target, s
         SDL_PushGPUVertexUniformData(commands, 0, &sub.vertex, sizeof(sub.vertex));
         SDL_PushGPUFragmentUniformData(commands, 0, &sub.fragment, sizeof(sub.fragment));
         SDL_DrawGPUIndexedPrimitives(target, sub.indexCount, 1, sub.firstIndex, 0, 0);
+    }
+    // Then the pass's lines, as a line list from the shared buffer.
+    if (pass < m_passLines.size() && m_passLines[pass].count != 0 && m_lineBuffer != nullptr &&
+        m_lineSampler != nullptr) {
+        const LinePass& lines = m_passLines[pass];
+        SDL_BindGPUGraphicsPipeline(target, lines.pipeline);
+        SDL_GPUBuffer* palette = m_bones.buffer();
+        SDL_BindGPUVertexStorageBuffers(target, 0, &palette, 1);
+        const SDL_GPUBufferBinding vertices{m_lineBuffer, 0};
+        SDL_BindGPUVertexBuffers(target, 0, &vertices, 1);
+        const SDL_GPUTextureSamplerBinding binding{m_white, m_lineSampler};
+        SDL_BindGPUFragmentSamplers(target, 0, &binding, 1);
+        const FragmentUniform fragment;
+        SDL_PushGPUVertexUniformData(commands, 0, &lines.vertex, sizeof(lines.vertex));
+        SDL_PushGPUFragmentUniformData(commands, 0, &fragment, sizeof(fragment));
+        SDL_DrawGPUPrimitives(target, static_cast<Uint32>(lines.count), 1, static_cast<Uint32>(lines.first), 0);
     }
 }
 

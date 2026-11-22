@@ -57,6 +57,9 @@ constexpr float kFreeCameraSpeed = 8.0F;
 // How far debug lines are lifted off what they lie on, in metres.
 constexpr float kLineLift = 0.02F;
 
+// A debug line's end (game axes) in RenderWare's axes, lifted a little so a line on a surface is not hidden in it.
+world::Vec3 lineEndOf(anim::Vec3 game) { return toRenderWare(anim::Vec3{game.x, game.y, game.z + kLineLift}); }
+
 // A coloured line list for librw's 3D immediate mode, in RenderWare's axes.
 class LineList {
   public:
@@ -84,7 +87,7 @@ class LineList {
   private:
     // One vertex, lifted a little so a line on a surface is not hidden in it, turned into RenderWare's axes.
     void push(anim::Vec3 game, graphics::Rgba colour) {
-        const world::Vec3 p = toRenderWare(anim::Vec3{game.x, game.y, game.z + kLineLift});
+        const world::Vec3 p = lineEndOf(game);
         rw::gl3::Im3DVertex vertex{};
         vertex.setX(p.x);
         vertex.setY(p.y);
@@ -826,7 +829,20 @@ world::DebugCamera PlayLevelMode::blendedFreeCamera(const Interpolated<world::De
 }
 
 void PlayLevelMode::drawSceneLines(const human::PlayerSnapshot& snapshot, float alpha) const {
-    if (!m_sceneLines || !m_engine.drawsPixels()) {
+    if (!m_sceneLines) {
+        return;
+    }
+    // GL3 draws them through librw at once; a renderer that draws the frame description (the GPU renderer, and the NULL
+    // backend that records as it does) takes them in the frame (docs/engine/gpu-renderer.md#mesh-views).
+    if (!m_engine.drawsPixels()) {
+        std::vector<graphics::SceneLineVertex> vertices;
+        for (const SceneLine& line : m_sceneLines(*this, snapshot, alpha)) {
+            for (const anim::Vec3 end : {line.a, line.b}) {
+                const world::Vec3 p = lineEndOf(end);
+                vertices.push_back(graphics::SceneLineVertex{{p.x, p.y, p.z}, line.colour});
+            }
+        }
+        m_engine.drawSceneLines(vertices);
         return;
     }
     LineList lines;
