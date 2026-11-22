@@ -221,6 +221,8 @@ TEST_CASE("BLOCKHUMANS comes back from a heal or the release from an arrest, nev
 }
 
 TEST_CASE("a grab links the pair: they pass through each other and neither can be pushed", "[human][contacts]") {
+    // A linked pair skips each other's capsules and both weigh 1e9 (Human_GetAttribute's link weight).
+    // Expected: physics.md#human-contacts, confirmed (code)
     const coney::test::FightCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
     Human player(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,

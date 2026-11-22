@@ -835,7 +835,7 @@ move, as `Human_PushOutInAir` does. What differs, each marked in the code:
   writes back (which of the two the original writes back is not on this page).
 - **Coney stand-in**: a capsule body's query box is its walking sphere's bounds, not the capsule shape's (Unit 6);
   the visited bits live beside the mesh, not in it.
-- **Not yet**: the airborne body falls and lands by Coney's own landing segment (`Human::moveInAir`), not by
+- **Not ported** (#369): the airborne body falls and lands by Coney's own landing segment (`Human::moveInAir`), not by
   `Human_LandingTest`'s contact in the sweep (#369; `physics::landingContact` is written and tested).
 
 The shape-pair code of [Unit 4](physics-kernels.md#unit-4) and [Unit 5](physics-kernels.md#unit-5) is in
@@ -891,8 +891,8 @@ What differs, each marked in the code:
 - **Coney's stand-in** (#1607): the humans are tried in slot order, and a strike's victims too, where the original's
   box query gives its bodies in x order (`Contact_InsertSorted` keeps the earlier of equal fractions), so at equal
   fractions the first contact can differ.
-- **Not yet**: an airborne body meets no human (a jump's strike and code 1 against a human); a scene's shared group;
-  the pushed human's reaction (`Human_OnPushContact`'s timers and damage).
+- **Not ported** (#102): an airborne body meets no human (a jump's strike and code 1 against a human); a scene's shared
+  group; the pushed human's reaction (`Human_OnPushContact`'s timers and damage).
 
 ## Open questions
 
