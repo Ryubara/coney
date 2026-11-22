@@ -563,6 +563,7 @@ class Human final : public Holdable {
     /// health, the held-back death and the script's flags (docs/research/combat-reactions.md#q-lethal-state).
     /// @orig 0x00227e60 Human_IsDownOrDead (unknown)
     [[nodiscard]] bool downOrDead() const {
+        // Coney stand-in for the state word, as above.
         return (m_fighter.health().depleted() && !m_fighter.deathPending()) || m_script.knockedOut || m_script.wounded;
     }
     /// Knocked out, state `0x40000`: its health run out and its dying reaction over (`Human_OnHealthOut` 0x002674c0,
