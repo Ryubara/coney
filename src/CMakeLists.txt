@@ -35,6 +35,7 @@ add_library(coney_core STATIC
     core/parse_number.cpp
     core/clip_recording.cpp
     core/crowd_limits.cpp
+    core/engine_limits.cpp
     core/cpak_archive.cpp
     core/cpak_index.cpp
     core/cpak_lookup.cpp

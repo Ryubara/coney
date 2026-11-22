@@ -6,8 +6,9 @@ gangs of 10, 32 routes. It defines nothing above them. Coney is not bound by tho
 ([The original's fixed limits](../guides/conventions.md#original-limits)): **up to 60 humans every rule below gives
 the original's value**, so a level plays as on the PS2 with the same hashes, and **past them each rule is Coney's own**,
 chosen by measurement for the best and evenest frames. Each rule is read through one function of
-`repo:src/core/crowd_limits.h`, marked `@coney-only limit:`, so the engine-limits test preset the conventions plan can
-pin it at the original's number.
+`repo:src/core/crowd_limits.h`, marked `@coney-only limit:`, which takes the [engine limits
+preset](../guides/running-options.md#engine-limits) and gives the original's number under it: test mode and the disc
+tests play every crowd under the original's 5 scans and lists of 60, whatever its size, unless they name Coney's rule.
 
 ## The rules {#rules}
 

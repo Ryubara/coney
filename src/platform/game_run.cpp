@@ -156,6 +156,9 @@ GameSessionSettings gameSessionSettings(const Options& options) {
     // The saved profiles: the player's folder, or none in test mode (docs/research/save.md#coney).
     settings.profiles = profileFolder(options);
     settings.cardCheckingMs = MemoryCardMode::kCheckingMessageMs;
+    // Test mode at the original's limits, a run a person plays at Coney's
+    // (docs/guides/running-options.md#engine-limits).
+    settings.engineLimits = engineLimitsFor(options);
     return settings;
 }
 

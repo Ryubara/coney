@@ -139,7 +139,7 @@ void VolumeBoxes::updateBox(std::size_t index, std::span<const BoxSubject> subje
             if (listed == box.occupants.end()) {
                 // Message 3 goes even when every place is taken. Stand-in (limit): the original's 60 places, and one
                 // for every human past 60 (crowd::humanListCap(), docs/engine/crowd-rules.md#lists).
-                addOccupant(box, subject.handle, crowd::humanListCap(subjects.size()));
+                addOccupant(box, subject.handle, crowd::humanListCap(subjects.size(), engineLimits()));
                 message = kEntered;
             } else if (due) {
                 message = kInside;

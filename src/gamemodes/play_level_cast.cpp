@@ -21,6 +21,7 @@
 #include "ai/scripted_brains.h"
 #include "characters/character_choice.h"
 #include "characters/character_types.h"
+#include "core/engine_limits.h"
 #include "gamemodes/play_level_simulation.h"
 #include "human/human.h"
 #include "human/player.h"
@@ -45,8 +46,11 @@ void PlayLevelSimulation::makePlanner() {
     }
 }
 
-void PlayLevelSimulation::makeLayoutFighters(const ai::AiConfig& fighters) {
+void PlayLevelSimulation::makeLayoutFighters(const ai::AiConfig& fighters, EngineLimits limits) {
     m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, fighters);
+    // Their brains are their own, not a level's, so the run's preset reaches them here (a level's cast plays on the
+    // gameplay mode's brains, which it set).
+    m_ai->brains().setEngineLimits(limits);
     m_ai->brains().setPlanner(m_planner.get());
     m_ai->brains().setCollision(&m_scenery->collision());
     for (const human::Place& point : m_scenery->fighters()) {

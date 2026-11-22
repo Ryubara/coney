@@ -228,7 +228,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     if (cast != nullptr && cast->brains != nullptr && cast->scripted != nullptr) {
         makeCast(*cast, setup.ai);
     } else {
-        makeLayoutFighters(setup.ai);
+        makeLayoutFighters(setup.ai, setup.engineLimits);
     }
     // The HUD, with the player on panel 0 (docs/research/hud.md#the-player-panel).
     m_hudLayer = HudLayer::create(*m_hud, wad, engine.drawsPixels(), m_print);

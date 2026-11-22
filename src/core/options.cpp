@@ -58,7 +58,7 @@ constexpr std::string_view kUsage =
     "             [--sandbox [NAME]] [--test-card NAME]\n"
     "             [--assets DIR]\n"
     "             [--event-log FILE] [--pad-pipe] [--trace-humans FILE]\n"
-    "             [--ai-player] [--ai-seed N]\n"
+    "             [--ai-player] [--ai-seed N] [--engine-limits coney|original]\n"
     "             [--bench FILE [--bench-fighters N] [--bench-allies N] [--bench-god]\n"
     "                           [--bench-warmup N] [--bench-frames FILE] [--bench-real-time]\n"
     "                           [--bench-spawn-step N] [--bench-measure N]\n"
@@ -118,6 +118,10 @@ constexpr std::string_view kUsage =
     "                     fighter is AI-driven (a test aid for comparing gang fights)\n"
     "  --ai-seed N        with --play-level or --rumble: vary the AI's random draws (0 to\n"
     "                     2147483647, default 0); the same N plays the same run\n"
+    "  --engine-limits coney|original\n"
+    "                     original: every lift of the original's fixed limits pinned at its\n"
+    "                     number; coney: lifted (default: original in test mode, except with\n"
+    "                     --bench, else coney)\n"
     "  --bench FILE       with --play-level and --frames: measure the run with the profiler and\n"
     "                     write its summary (frame times, zones, counters) to FILE as JSON\n"
     "  --bench-fighters N with --bench: spawn N AI fighters (0 to 1000) in front of the player on\n"
@@ -981,6 +985,15 @@ bool takesSavedRenderer(const Options& options) {
     return !isTestMode(options) && !options.renderReferences.has_value();
 }
 
+EngineLimits engineLimitsFor(const Options& options) {
+    // Named, the option wins; else a run that can be compared with the PS2 one plays under its ceilings, and a bench,
+    // which measures Coney's own crowd rules, and a run a person plays lift them.
+    if (options.engineLimits.has_value()) {
+        return *options.engineLimits;
+    }
+    return isTestMode(options) && !options.benchFile.has_value() ? EngineLimits::Original : EngineLimits::Coney;
+}
+
 std::optional<DisplayPreset> pinnedDisplayPreset(const Options& options) {
     // The option is asked for by name, so it is what a test run draws; else PS2, whatever a player saved.
     if (takesSavedRenderer(options)) {
@@ -1001,6 +1014,7 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     std::optional<std::string> lineBlendArg;     // as typed, likewise
     std::optional<std::string> rendererArg;      // as typed, likewise
     std::optional<std::string> presetArg;        // as typed, likewise
+    std::optional<std::string> engineLimitsArg;  // as typed, likewise
     std::optional<std::string> checkpointArg;    // as typed, likewise
     std::optional<std::string> startArg;         // as typed, likewise
     std::optional<std::string> rumbleArg;        // as typed, likewise
@@ -1322,6 +1336,16 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument(std::format("--preset needs ps2, xbox, enhanced or high, got \"{}\"", name));
             }
             options.displayPreset = preset;
+        } else if (arg == "--engine-limits") {
+            if (auto value = takeValue(args, i, engineLimitsArg, "--engine-limits", "coney or original"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            const std::string name = engineLimitsArg.value_or(std::string{});
+            const std::optional<EngineLimits> limits = parseEngineLimitsName(name);
+            if (!limits) {
+                return invalidArgument(std::format("--engine-limits needs coney or original, got \"{}\"", name));
+            }
+            options.engineLimits = limits;
         } else if (arg == "--line-blend") {
             if (auto value = takeValue(args, i, lineBlendArg, "--line-blend", "on or off"); !value) {
                 return std::unexpected(std::move(value.error()));

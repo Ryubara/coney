@@ -5,7 +5,11 @@
 
 namespace coney::crowd {
 
-int scanTokens(std::size_t scanningBrains) {
+int scanTokens(std::size_t scanningBrains, EngineLimits limits) {
+    // The engine limits preset: the original's five, however many ask.
+    if (limits == EngineLimits::Original) {
+        return kOrigScanTokens;
+    }
     // The original's five for its sixty, then five per sixty rounded up, capped so a crowd's burst waits a step.
     const std::size_t perSixty =
         ((scanningBrains * static_cast<std::size_t>(kOrigScanTokens)) + kOrigMaxHumans - 1) / kOrigMaxHumans;
@@ -14,6 +18,9 @@ int scanTokens(std::size_t scanningBrains) {
     return static_cast<int>(tokens);
 }
 
-std::size_t humanListCap(std::size_t humans) { return std::max(humans, kOrigMaxHumans); }
+std::size_t humanListCap(std::size_t humans, EngineLimits limits) {
+    // The engine limits preset: the original's 60, however many humans there are.
+    return limits == EngineLimits::Original ? kOrigMaxHumans : std::max(humans, kOrigMaxHumans);
+}
 
 } // namespace coney::crowd

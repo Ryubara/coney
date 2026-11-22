@@ -138,6 +138,53 @@ benchmark and what the numbers say: [Performance](performance.md#bench).
 `--cpu-skinning` skins the humans on the CPU instead of the GPU, to compare the two
 ([GPU skinning](performance.md#gpu-skinning)).
 
+## Engine limits {#engine-limits}
+
+The original's fixed sizes (60 humans, five enemy scans an update, lists of 60) do not bind Coney past their range:
+each lift is marked `@coney-only limit:` and follows Coney's own rule above the original's number
+([The original's fixed limits](conventions.md#original-limits)). The *engine limits* preset puts every lift back at the
+original's number, so a run plays under the PS2's ceilings and compares with the original one to one: a crowd of 1000
+gets the original's five scans an update and lists of 60. Inside the range the two rules give the same numbers, so a
+level of 60 humans or fewer plays the same either way; the preset is what shows it, and what keeps a lift from
+changing what a test sees unnoticed.
+
+| Option | Does |
+| --- | --- |
+| `--engine-limits original` | every lift pinned at the original's number |
+| `--engine-limits coney` | every lift on: Coney's own rule past the original's range |
+
+Unset, **test mode plays at the original's limits** and a run a person plays at Coney's, as test mode pins the display
+preset to *PS2* ([The PS2 preset](../engine/renderer.md#ps2-preset)). A `--bench` is the exception: it measures Coney's
+engine, crowd rules included ([Performance](performance.md#bench)), so it lifts them unless `--engine-limits original`
+is given. The disc tests pin the preset in their harnesses (`DiscSession`'s default settings and `DiscGame`, in
+`repo:tests/support/`), so the playthrough tests compare with the PS2 under its own ceilings, as do the runs the tools
+start in test mode (the event diffs of `coney-tools mission`, the trace scenarios). A test of a crowd past the
+original's range names Coney's rule (`GameSessionSettings::engineLimits`, or `setEngineLimits()` on the part it tests).
+
+How it is wired, so that a run stays deterministic and every peer plays the same rule:
+
+- **Chosen once for a run.** `engineLimitsFor()` (`repo:src/core/options.h`) reads the options; the game session hands
+  the choice to the start-up flow, the flow to the gameplay mode, and the gameplay mode to the parts of a level that
+  apply a lifted limit: the brains and their gangs, the trigger spheres and the volume boxes. A sandbox layout's
+  fighters (`--play-level sandbox:NAME`), whose brains are their own and not a level's, get it through their player
+  setup (`PlayerSetup::engineLimits`), so a sandbox run in test mode is pinned too. Nothing in play changes
+  it, and it is not a setting a player saves.
+- **Read in one place per limit.** Each function that carries a `@coney-only limit:` marker takes the preset
+  (`EngineLimits`, `repo:src/core/engine_limits.h`) and gives the original's number under it, so the code that applies
+  a limit asks that function and never decides on its own. A new lift does the same, and its tests show it obeying the
+  preset past the range ([How a limit is lifted](conventions.md#original-limits)).
+- **The host's rule in a network game.** The host simulates the game and the guest is sent its humans
+  ([Network multiplayer](multiplayer.md)), so the host's preset is the session's. A guest that simulates too, once
+  one does, takes the host's when it joins, like any rule every peer must agree on.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --headless --frames 600
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level95 --frames 600 --bench out.json --bench-fighters 500 --engine-limits original
+```
+
+The first plays at the original's limits, being in test mode; the second measures a crowd of 500 under the PS2's
+ceilings instead of Coney's crowd rules.
+
 ## Sound {#sound}
 
 Coney plays through the system's default playback device at 48 kHz stereo and prints the device's name at start-up;

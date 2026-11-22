@@ -269,7 +269,7 @@ void broadcastHelpCall(Brain& caller, float range, Brain* aggressor, int value, 
     std::vector<Brain*> hearers;
     // Stand-in (limit): the original's list holds 60, its table's size; past 60 humans every one in reach hears
     // (crowd::humanListCap(), docs/engine/crowd-rules.md#lists).
-    const std::size_t mostHearers = crowd::humanListCap(peers->size());
+    const std::size_t mostHearers = crowd::humanListCap(peers->size(), caller.engineLimits());
     for (const std::unique_ptr<Brain>& peer : *peers) {
         // Stand-in: every brain is looked at, where the original's search also leaves out a slot whose flag word
         // lacks bit 0 (Humans_FindAhead's mask 1).

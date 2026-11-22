@@ -17,6 +17,7 @@
 #include "ai/gangs.h"
 #include "ai/goal.h"
 #include "core/crowd_limits.h"
+#include "core/engine_limits.h"
 #include "support/ai_fixtures.h"
 
 using coney::ai::Brain;
@@ -221,4 +222,34 @@ TEST_CASE("past 60 humans a help call reaches more than 60 friends in range", "[
     // More take his side than a list of the original's 60 could reach (a mate busy with his own reaction may not).
     const auto sided = std::ranges::count_if(mates, [&](const Brain* mate) { return mate->target() == &aggressor; });
     CHECK(sided > static_cast<std::ptrdiff_t>(coney::crowd::kOrigMaxHumans));
+}
+
+TEST_CASE("under the engine limits preset a help call past 60 humans reaches at most the original's 60",
+          "[ai][events][crowd][engine-limits]") {
+    // Expected: ai-brain-types.md#help-calls, confirmed (code): Gang_BroadcastHelpCall 0x00293640 lists at most 60
+    // hearers, in table order; the preset pins the lift at it (docs/guides/running-options.md#engine-limits)
+    AiScene scene;
+    scene.brains.setEngineLimits(coney::EngineLimits::Original);
+    Brain& victim = member(scene, 19, "Punks", {44.0F, 40.0F, 0.0F});
+    auto& gangs = scene.brains.gangs();
+    std::vector<Brain*> mates;
+    for (int g = 0; g < 8; ++g) {
+        const int gang = gangs.create(19, "Mates " + std::to_string(g));
+        gangs.makeFriends(gang, victim.gang()->id());
+        for (int k = 0; k < 9; ++k) {
+            mates.push_back(
+                &scene.add({50.0F + static_cast<float>(k) * 0.5F, 42.0F + static_cast<float>(g), 0.0F}, 0.0F));
+            gangs.addMember(gang, *mates.back());
+        }
+    }
+    Brain& aggressor = member(scene, 21, "Others", {45.0F, 40.0F, 0.0F});
+    REQUIRE(mates.size() > coney::crowd::kOrigMaxHumans);
+    scene.run(1);
+
+    coney::ai::broadcastHelpCall(victim, coney::ai::kHelpCallShared, &aggressor);
+    const auto sided = std::ranges::count_if(mates, [&](const Brain* mate) { return mate->target() == &aggressor; });
+    CHECK(sided <= static_cast<std::ptrdiff_t>(coney::crowd::kOrigMaxHumans));
+    // The mates past the first 60 in table order are never listed, so none of them takes his side.
+    CHECK(std::none_of(mates.begin() + static_cast<std::ptrdiff_t>(coney::crowd::kOrigMaxHumans), mates.end(),
+                       [&](const Brain* mate) { return mate->target() == &aggressor; }));
 }

@@ -32,6 +32,7 @@ Brain& Brains::add(human::Human& human, BrainType type, const FightSettings& set
     m_brains.back()->setPlanner(m_planner);
     m_brains.back()->setCollision(m_collision);
     m_brains.back()->setPeers(&m_brains);
+    m_brains.back()->setEngineLimits(m_limits);
     m_humanOf.push_back(&human);
     if (first && !human.brainSlot().has_value()) {
         human.setBrainSlot(static_cast<std::uint32_t>(m_brains.size() - 1));
@@ -110,6 +111,14 @@ void Brains::setCollision(const raycast::CollisionMesh* collision) {
     m_collision = collision;
     for (const std::unique_ptr<Brain>& brain : m_brains) {
         brain->setCollision(collision);
+    }
+}
+
+void Brains::setEngineLimits(EngineLimits limits) {
+    m_limits = limits;
+    m_gangs.setEngineLimits(limits);
+    for (const std::unique_ptr<Brain>& brain : m_brains) {
+        brain->setEngineLimits(limits);
     }
 }
 

@@ -14,6 +14,7 @@
 
 #include "characters/character_assets.h"
 #include "characters/character_model.h"
+#include "core/engine_limits.h"
 #include "core/error.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
@@ -89,14 +90,15 @@ std::unique_ptr<coney::sandbox::SandboxGround> yardGround() {
 // presentation hooks the step calls, in order.
 class Headless final : public PlayLevelSimulation {
   public:
-    Headless(const coney::io::Wad& wad, bool frozen = false)
+    Headless(const coney::io::Wad& wad, bool frozen = false, coney::EngineLimits limits = coney::EngineLimits::Coney)
         : PlayLevelSimulation(
               wad, yardGround(), syntheticCharacter(), [](std::string_view) {}, "synthetic", {},
               coney::human::kPlayerType, true),
           m_frozen(frozen) {
-        // The AI as the platform's mode makes it for a level without scripts: the layout's fighters (none here).
+        // The AI as the platform's mode makes it for a level without scripts: the layout's fighters (none here), under
+        // the engine limits preset the run plays at.
         makePlanner();
-        makeLayoutFighters({});
+        makeLayoutFighters({}, limits);
     }
 
     // A mode id from Coney's own range.
@@ -216,4 +218,16 @@ TEST_CASE("a step the presentation froze advances nothing of the simulation") {
     CHECK(mode.player().human().position().x == start.x);
     CHECK(mode.player().human().position().y == start.y);
     CHECK(mode.hud()->nowMs() == 0);
+}
+
+// Expected: docs/guides/running-options.md#engine-limits (Coney's own preset: a sandbox's fighters play under the
+// run's preset, as a level's brains do)
+TEST_CASE("a sandbox's layout fighters play under the run's engine limits preset") {
+    const coney::test::TempDir dir;
+    const coney::io::Wad wad = openEmptyWad(dir);
+    const Headless pinned(wad, false, coney::EngineLimits::Original);
+    CHECK(pinned.fighters().brains().engineLimits() == coney::EngineLimits::Original);
+    CHECK(pinned.fighters().brains().gangs().engineLimits() == coney::EngineLimits::Original);
+    const Headless lifted(wad, false, coney::EngineLimits::Coney);
+    CHECK(lifted.fighters().brains().engineLimits() == coney::EngineLimits::Coney);
 }

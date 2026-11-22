@@ -19,6 +19,7 @@
 #include "ai/steering.h"
 #include "ai/targeting.h"
 #include "combat/stick.h"
+#include "core/engine_limits.h"
 #include "human/human.h"
 
 // A human's brain: what decides, for a human no pad drives, what it writes into its per-player record. It has a type
@@ -632,6 +633,12 @@ class Brain {
     void setPeers(const std::vector<std::unique_ptr<Brain>>* peers) { m_peers = peers; }
     /// The scene's brains as given (null for none).
     [[nodiscard]] const std::vector<std::unique_ptr<Brain>>* peers() const { return m_peers; }
+    /// Gives the engine limits preset the lists of humans round this brain follow (core/engine_limits.h): the
+    /// steering list and the hearers of its help calls. Brains gives its own; Coney's own rule until set.
+    /// @coney-only the engine limits preset, a test-mode switch
+    void setEngineLimits(EngineLimits limits) { m_limits = limits; }
+    /// The engine limits preset setEngineLimits() gave.
+    [[nodiscard]] EngineLimits engineLimits() const { return m_limits; }
     /// The steering round humans' state (brain `+0xa0`, docs/research/ai-moving.md#steering).
     [[nodiscard]] SteeringState& steering() { return m_steering; }
     [[nodiscard]] const SteeringState& steering() const { return m_steering; }
@@ -738,6 +745,8 @@ class Brain {
     std::vector<Brain*> m_enemies;                                     // +0x164
     Sectors m_sectors;                                                 // 0x006e8318 + slot × 0x48
     const std::vector<std::unique_ptr<Brain>>* m_peers = nullptr;
+    // The rule of its lists of humans (setEngineLimits()).
+    EngineLimits m_limits = EngineLimits::Coney;
     std::vector<Brain*> m_slots;                   // +0x1a4
     std::size_t m_slotCount = kDefaultAttackSlots; // +0x1e4
     std::uint64_t m_nextAttackMs = 0;              // +0x1e8

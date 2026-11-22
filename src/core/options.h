@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "core/display_preset.h"
+#include "core/engine_limits.h"
 #include "core/error.h"
 #include "core/language.h"
 #include "core/log_record.h"
@@ -436,6 +437,9 @@ struct Options {
     /// `--cpu-skinning`: skin every human by CharacterMesh's CPU path, to compare it with the GPU's
     /// (docs/guides/performance.md#gpu-skinning). Coney's own debug tooling.
     bool cpuSkinning = false;
+    /// `--engine-limits coney|original`: the engine limits preset the run plays under, whatever engineLimitsFor()
+    /// would choose (docs/guides/running-options.md#engine-limits). Unset: engineLimitsFor()'s choice.
+    std::optional<EngineLimits> engineLimits;
 };
 
 /// The largest `--fps-cap`.
@@ -471,6 +475,11 @@ inline constexpr int kDefaultBenchWarmup = 60;
 /// and for `--render-references`, the preset `--preset` names, else *PS2*, so a test run draws the PS2 picture
 /// whatever a player saved (docs/engine/renderer.md#ps2-preset); nothing in a run a person plays.
 [[nodiscard]] std::optional<DisplayPreset> pinnedDisplayPreset(const Options& options);
+
+/// The engine limits preset a run plays under (core/engine_limits.h, docs/guides/running-options.md#engine-limits): the
+/// one `--engine-limits` names; else, in test mode, the original's limits, so a run compares with the PS2 one to one,
+/// except for a `--bench`, which measures Coney's own crowd rules; else Coney's own rule.
+[[nodiscard]] EngineLimits engineLimitsFor(const Options& options);
 
 /// The character `--view-character` shows without a name: Rembrandt, the player of level99 (warr_re_cv).
 inline constexpr std::string_view kDefaultViewCharacter = "warr_re_cv";

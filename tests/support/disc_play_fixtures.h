@@ -21,6 +21,7 @@
 #include "ai/ai_config.h"
 #include "characters/character_types.h"
 #include "core/chunk_system.h"
+#include "core/engine_limits.h"
 #include "core/error.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
@@ -150,6 +151,9 @@ class DiscGame {
                 *m_engine, m_wad, m_budget, [this](std::string_view line) { m_log.emplace_back(line); },
                 [this] { return &m_flow->hud(); }));
         m_flow->rumbleMenu().setLaunchOverride(launch);
+        // The engine limits preset, so a disc test compares with the PS2 one to one
+        // (docs/guides/running-options.md#engine-limits).
+        m_flow->setEngineLimits(EngineLimits::Original);
         m_flow->start();
         m_timer.setFixedStep(true);
     }

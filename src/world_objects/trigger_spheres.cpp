@@ -143,7 +143,7 @@ void TriggerSpheres::check(std::size_t index, std::span<const BoxSubject> subjec
     // Stand-in: a dead human is never found (what the original's search mask 1 leaves out is not traced).
     // Stand-in (limit): the original's lists hold 60; past 60 humans every one is found and listed
     // (crowd::humanListCap(), docs/engine/crowd-rules.md#lists).
-    const std::size_t room = crowd::humanListCap(subjects.size());
+    const std::size_t room = crowd::humanListCap(subjects.size(), engineLimits());
     std::size_t found = 0;
     for (const BoxSubject& subject : subjects) {
         if (found >= room) {

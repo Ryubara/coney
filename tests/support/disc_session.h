@@ -28,6 +28,7 @@
 #include "core/chunk_system.h"
 #include "core/deferred_input.h"
 #include "core/display_preset.h"
+#include "core/engine_limits.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
 #include "fileio/wad.h"
@@ -127,9 +128,13 @@ class DiscSession {
     static constexpr std::uint64_t kPlayLimit = 3600;
 
   private:
-    // The settings a run uses unless given others: the movies skipped.
+    // The settings a run uses unless given others: the movies skipped, and the engine limits preset, so a disc test
+    // compares with the PS2 one to one (docs/guides/running-options.md#engine-limits).
     static platform::GameSessionSettings defaultSettings() {
-        return platform::GameSessionSettings{.skipMovies = true, .rumble = std::nullopt, .profiles = std::nullopt};
+        return platform::GameSessionSettings{.skipMovies = true,
+                                             .rumble = std::nullopt,
+                                             .profiles = std::nullopt,
+                                             .engineLimits = EngineLimits::Original};
     }
 
     // The pad script `text`, parsed; it must parse.

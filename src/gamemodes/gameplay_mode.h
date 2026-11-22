@@ -17,6 +17,7 @@
 #include "ai/hiding.h"
 #include "ai/scripted_brains.h"
 #include "camera/cameras.h"
+#include "core/engine_limits.h"
 #include "core/error.h"
 #include "core/pads.h"
 #include "effects/level_effects.h"
@@ -350,6 +351,15 @@ class GameplayMode final : public GameMode {
     /// Each level entered from now on makes its brains with `variation` (ai::Brains, `--ai-seed`); 0 (the default) is
     /// the usual run.
     void setAiVariation(std::uint32_t variation) { m_aiVariation = variation; }
+    /// The engine limits preset every lifted limit of the levels follows from now on (core/engine_limits.h): given to
+    /// the trigger spheres and the volume boxes at once, to the loaded level's brains and gangs, and to those of each
+    /// level entered later. Coney's own rule until set; a run sets it once, before the first frame.
+    /// @coney-only the engine limits preset, a test-mode switch
+    void setEngineLimits(EngineLimits limits);
+    /// The engine limits preset setEngineLimits() gave.
+    [[nodiscard]] EngineLimits engineLimits() const { return m_limits; }
+    /// The level's trigger spheres (`TriggerSphereCfg`).
+    [[nodiscard]] const world_objects::TriggerSpheres& spheres() const { return m_spheres; }
     /// Player 1 handed to the AI in the loaded level (ScriptedPlayer::releasePlayerToAi()); false with no level, or
     /// none to hand.
     bool releasePlayerToAi();
@@ -588,6 +598,8 @@ class GameplayMode final : public GameMode {
     ai::CrewOrders m_crewOrders;     // player 1's automatic commands
     double m_crewChief = 0.0;        // player 1's handle when his crew was last given the follow
     std::uint64_t m_crewUpdates = 0;
+    // The engine limits preset (setEngineLimits()), given to each level's brains.
+    EngineLimits m_limits = EngineLimits::Coney;
     std::unique_ptr<camera::Cameras> m_cameras;    // player 1's; declared before the level, whose player holds them
     SceneCrewHooks m_sceneCrew{*this};             // player 1's gang as the level's cinematics change it
     std::unique_ptr<scenes::SceneSystem> m_scenes; // the level's scenes, which outlive the level that hosts them

@@ -439,10 +439,13 @@ humans above it.
 
 - The original's number stays in the code as a named constant (`kOrigMaxHumans = 60`) beside the lifted value, and a
   comment says what the original does at it.
-- The lifted value is read through one named function or constant, so that the engine-limits preset below can pin it
-  to the original's number.
-- Its tests come first, in two groups: inside the range, a scenario at or under the original's number reaches the same
-  state with the limit lifted as with it pinned, and past the range Coney's rule holds and the run is deterministic.
+- The lifted value is read through one named function, which takes the
+  [engine limits preset](running-options.md#engine-limits) (`EngineLimits`) and gives the original's number under it;
+  the code that applies the limit asks that function and gets the preset from the object that owns it (the gameplay
+  mode hands it down), never from a global.
+- Its tests come first, in three groups: inside the range, a scenario at or under the original's number reaches the
+  same state with the limit lifted as with it pinned; past the range Coney's rule holds and the run is deterministic;
+  and past the range under the preset the original's number holds.
 - An `@orig` function keeps its original lines: the lifted value comes from a helper or constant of its own (marked
   as below), the `@orig` function reads it, and the line's pair in `orig compare` is a `stand-in` whose note names the
   limit, with a comment saying `stand-in` on or just above the line ([Pairs](stamps.md#pairs)). Never put the marker on
@@ -477,10 +480,10 @@ fails a `@coney-only limit:` marker with no row and a row that names a marker th
 the same commit. The page's tables are the one list of lifts; this section and its research pages say why, the table
 says where.
 
-**The engine limits preset.** Test mode gets a preset, *engine limits*, that pins every lifted limit at the original's
-number, so a run can show Coney under the PS2's ceilings (a comparison with the original, a hash that must not move).
-It is the rule now and is not built yet: a follow-up issue ([#1591](issue:1591)) builds the preset, and which runs use it
-is decided then. Until it exists a lift follows the list above, so the preset has one place per limit to pin.
+**The engine limits preset.** Test mode plays under a preset, *engine limits*, that pins every lifted limit at the
+original's number, so a run shows Coney under the PS2's ceilings (a comparison with the original, a hash that must not
+move). Test mode and the disc tests use it unless they name Coney's rule; a run a person plays and a `--bench` lift the
+limits. The option, which runs use it and how it is wired: [Engine limits](running-options.md#engine-limits).
 
 A reviewer asks of every change whether it ports a fixed limit of the original without need, and whether a lift is
 marked, documented and tested on both sides of the original's number ([Code review](review/code.md#correctness),
