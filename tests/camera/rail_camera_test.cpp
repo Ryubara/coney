@@ -607,7 +607,7 @@ TEST_CASE("CamLockRail's lock reaches player 1's rail camera for player 0 or any
     CHECK(cameras.rail() == nullptr);
     RailSetup setup;
     setup.fieldOfView = 60.0F;
-    cameras.setupRail(20.0, 3.0, setup);
+    (void)cameras.setupRail(20.0, 3.0, setup);
     REQUIRE(cameras.rail() != nullptr);
     CHECK_FALSE(cameras.rail()->held());
     cameras.lockRail(-1, true);
