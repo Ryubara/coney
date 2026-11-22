@@ -70,14 +70,14 @@ class ClientLevelScene final : public ClientScene {
     [[nodiscard]] const WorldView& lastView() const { return m_lastView; }
 
   private:
-    ClientLevelScene(RenderEngine& engine, std::unique_ptr<LevelPlayScenery> scenery,
+    ClientLevelScene(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<LevelPlayScenery> scenery,
                      std::unique_ptr<human::PlayerCharacter> character, std::vector<TextureDictionary> dictionaries,
                      std::function<void(std::string_view)> print);
 
     // The stand-in camera's view on `feet` and `heading` (game axes), at the scenery's draw distance.
     [[nodiscard]] WorldView viewOn(anim::Vec3 feet, float heading) const;
-    // The stand-in camera's view of `humans`: on the lowest id, else on the level's start.
-    template <typename Humans> [[nodiscard]] WorldView viewOf(const Humans& humans) const;
+    // The stand-in camera's view on the level's start, for a world with no human.
+    [[nodiscard]] WorldView startView() const;
 
     RenderEngine& m_engine;
     std::unique_ptr<LevelPlayScenery> m_scenery;

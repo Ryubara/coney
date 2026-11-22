@@ -75,6 +75,8 @@
 #include "platform/audio_output_controls.h"
 #include "platform/character_skin.h"
 #include "platform/character_viewer_mode.h"
+#include "platform/client_game.h"
+#include "platform/client_level_scene.h"
 #include "platform/clip_recorder.h"
 #include "platform/console_ui.h"
 #include "platform/debug_menus.h"
@@ -531,6 +533,9 @@ int main(int argc, char** argv) {
     // (docs/guides/testing.md#test-through-the-players-path). Made below when the run plays the game, or by the debug
     // menus' first level jump.
     std::optional<coney::platform::GameSession> session;
+    // `--join ADDR --net-view`: the client game, the guest's one mode in place of a game session; made once network
+    // play exists (docs/guides/client-world.md#client-game).
+    std::optional<coney::platform::ClientGame> clientGame;
     coney::platform::GameSessionSettings sessionSettings = coney::platform::gameSessionSettings(*options);
     sessionSettings.rumble = options->rumble;
     sessionSettings.aiSeed = options->aiSeed.value_or(0);
@@ -699,6 +704,12 @@ int main(int argc, char** argv) {
         }
         testCard = std::move(*card);
         modes.push(*testCard);
+    } else if (options->netView) {
+        // `--join ADDR --net-view`: the client game, pushed below once network play exists; no game session.
+        if (!wad) {
+            logError("--net-view needs the disc: it draws the host's level from it");
+            return 1;
+        }
     } else if (wad) {
         // The game from boot (GameSession::startStory(), once the sound exists): the start-up flow as the original's
         // main pushes it (docs/research/boot.md#main).
@@ -806,6 +817,21 @@ int main(int argc, char** argv) {
     debugServices.net = [&netControls]() -> coney::debug::NetControls* { return &netControls; };
     if (!coney::platform::startNetPlay(netPlay, *options)) {
         return 1;
+    }
+    // The client game follows the host's levels in place of a game session, and draws each level and its humans.
+    if (options->netView && wad) {
+        clientGame.emplace(
+            netPlay,
+            [&renderer, &wad, &sectorBudget](const coney::platform::LevelAt& level) {
+                auto scene = coney::platform::ClientLevelScene::load(renderer, *wad, level, sectorBudget, logText);
+                return scene ? std::expected<std::unique_ptr<coney::platform::ClientScene>, coney::Error>(
+                                   std::move(*scene))
+                             : std::unexpected(std::move(scene.error()));
+            },
+            [&wad](std::string_view level) { return wad->lookup(std::format("{}.lev", level)).has_value(); }, logText,
+            &renderer);
+        netLevels.setGame(&*clientGame);
+        modes.push(*clientGame);
     }
     // The console (docs/guides/console.md), taking the developer set as well; its lines come from the F8 bar below and
     // from the input script.

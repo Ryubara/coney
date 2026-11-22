@@ -8,10 +8,14 @@ architecture, and what it draws comes from [snapshots](snapshots.md). The origin
 this code carries an `@orig` tag.
 
 **Built:** `src/net/jitter_buffer.h` (`JitterBuffer`) and `src/net/client_world.h` (`ClientWorld`, the blend
-`blendHumans()`, the pose `humanPose()` over a `ClipSource`), platform-neutral in `coney_net`. **Planned:** the game's
-side, a client game mode that loads the host's level ([#557](issue:557)) and draws a `ClientWorld` through the
-renderer, with the host filling its snapshots from its own humans; and the client's own player's view, whose camera the
-snapshots do not carry.
+`blendHumans()`, the pose `humanPose()` over a `ClipSource`) and `src/net/character_clips.h` (`CharacterClips`, a
+character's clips as a `ClipSource`), platform-neutral in `coney_net`; and the game's side, [the client
+game](#client-game) (`--join ADDR --net-view`): `src/platform/client_game.h` (`ClientGame`), which follows the host's
+levels and steps a `ClientWorld` from the snapshots the session decodes, and `src/platform/client_level_scene.h`
+(`ClientLevelScene`), which draws the level and the world's humans through the renderer. The host fills its snapshots
+from its own humans every step ([The game's humans](multiplayer.md#game-humans)). **Planned:** each human's own
+character and the guest's own player's view, which the snapshots do not carry yet (drawn with stand-ins until then,
+[The client game](#client-game)); the host's game events and HUD on the client game.
 
 ## The model {#model}
 
@@ -124,6 +128,49 @@ the server's (the client is given positions), so the task flags that only change
 `ClipSource` is how a client finds the clips the snapshots name, the same disc clips as the server's, by anim id:
 `clip(animId)` and the gait set a clip is in.
 
+## A character's clips {#clips}
+
+`CharacterClips` is the `ClipSource` of one character: its `AnimSet` (its own character data, then the generic
+defaults) by anim id, and the gait blends its locomotion plays, built from the anim slots as `HumanAnimator::gaitBlend()`
+builds them: the walk, jog, run, sprint and sprint slots (408 to 411 for the player's slots, `AnimSlots::player()`), and
+the hidden style's blend, whose walk is 633 `STEALTH_WALK`. A blend is answered only when the set has all five clips.
+
+The jog, run and sprint are in both styles' blends, and a snapshot does not say the style, so they are answered with
+the normal style's (Coney's choice): a sneaking human whose blend is led by the jog, late in its walk-to-jog pair, is
+drawn with the normal walk under it.
+
+## The client game {#client-game}
+
+`--join ADDR --net-view` starts a guest that runs **no game of its own**: no front end, no scripts, no simulation. Its
+one mode is `ClientGame`, and what it shows is the host's game as the snapshots carry it. The guest's pad still plays the
+host's port 2 ([Player two](multiplayer.md#player-two)), and the client game sends nothing else, so the host's game reads
+what it reads with any guest.
+
+| When | What the client game does |
+| --- | --- |
+| The host's level order arrives | `NetLevels` follows it as for any guest's game ([Levels](multiplayer.md#levels)), with `ClientGame` as its `LevelGame`. The level loads at the next step (`ClientLevelScene::load()`), counts as in play at once, and the host is told the step after |
+| A level loads | A fresh `ClientWorld`, which skips what the receiver still keeps of the last level (`skipDecoded()`), so no human of the last level is drawn in the new one |
+| Each step, in a level | The world takes every snapshot decoded and steps ([The model](#model)), then the scene streams round its camera |
+| Each frame | The scene draws the world, `drawn(alpha)` of its last two steps |
+| A host's movie starts | It plays none, and answers each one as ended at once (`NetPlay::movieDone()`, not skipped), so the host waits only for its own copy |
+| The host quits, or the session ends | It leaves the level and clears the screen, as it does before the host's first order |
+
+A level the guest's disc has no `.lev` file for is refused; NetLevels asks again each step and notes the refusal once
+in the log.
+
+**The scene.** `ClientLevelScene` loads the level's scenery as the play mode does (`LevelPlayScenery`), lights it with
+the play mode's stand-in lights, and draws each human of the world as a character mesh posed by
+[`humanPose()`](#pose) over its [clips](#clips), at its feet and heading. Two **stand-ins** wait for the snapshots to
+carry more:
+
+- **Every human is drawn as Rembrandt** (`human::kPlayerModel`): a snapshot does not say which character a human is.
+- **The camera follows the human with the lowest network id**, the host's player 1, whose brain comes first, from 4 m
+  behind and 2 m above his feet, looking at his chest: the guest's own player and its follow camera are not in the
+  snapshots. With no human, it stands at the level's start the same way.
+
+The host's game events and HUD (sounds, particles, messages, the panels, [HUD state](snapshots.md#hud-state)) arrive
+on the guest but the client game neither plays nor draws them yet.
+
 ## Testing {#testing}
 
 `tests/net/jitter_buffer_test.cpp` covers the clock: its start the delay behind the newest and a whole step each client
@@ -135,7 +182,10 @@ clip, the exact ends), jumps, cuts and a layer pushed down by a new one, the wor
 the buffer with a new human and the blend between two steps through `DrawnPoses`, and a pose evaluated from layers
 against `AnimTaskStack::sample()` itself: two layers in a fade, a gait blend between two clips, a gait clip played as a
 plain loop, and a clip that is not loaded. It also covers a gait blend crossing from the walk's pair into the jog's
-and back, and two snapshots decoded in one step both reaching the buffer.
+and back, two snapshots decoded in one step both reaching the buffer, and a world told to skip what was decoded taking
+only the snapshots after. `tests/net/character_clips_test.cpp` covers [a character's clips](#clips) on synthetic ones:
+a clip by its id, each style's gait blend, a set missing one of a blend's clips, and a jog-to-run layer posed as the
+server's gait blend samples it.
 
 Its last case is the architecture's **What a client sees** test ([Testing](network-architecture.md#testing)): a
 `NetServer` and a `NetClient` on the loopback, each behind a link conditioner with 20 ms latency, 15 ms jitter, 5 %
@@ -147,3 +197,13 @@ decoded must reach the buffer: each such step is blended to or from, and drawn f
 on it. Every step drawn is compared but those whose snapshot the client never decoded (lost, or stale after
 reordering): 287 of the 310 on its seeded link, measured. The buffer is settled at least 90 % of the steps, never
 jumps, and at every step draws 1 to 5 steps behind the newest (1 to 3, measured).
+
+`tests/platform/client_game_test.cpp` runs [the client game](#client-game) against a host, two `NetPlay`s on the
+loopback in fixed steps with no display (a fake scene stands for the drawing): the host's level loads once and the
+host stops holding; settled, for 200 steps, every step the client draws, its humans are the host's of that step, every
+field's word equal, and it draws no more than the buffer's delay and one step behind the newest the host sent (exactly
+that, measured). It also covers a new level's world starting with none of the last level's humans, a host's movie that
+waits for no copy on the guest, a quit leaving the level, and a level the disc lacks refused.
+`tests/platform/disc_client_level_test.cpp`, with the disc, loads the scene of `level99` headless and draws two humans a
+client's world was sent, both posed with every layer's clip found, the camera behind player 1, and a human gone from
+the snapshots losing his mesh.

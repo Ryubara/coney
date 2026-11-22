@@ -71,7 +71,7 @@ constexpr std::string_view kUsage =
     "             [--no-activate] [--window-display DISPLAY]\n"
     "             [--no-audio | --audio-test] [--skip-movies] [--cpu-skinning]\n"
     "             [--record FILE [--record-seconds N] [--record-from-frame N] [--record-debug-draw]]\n"
-    "             [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME]\n"
+    "             [--host [[ADDR:]PORT] | --join ADDR[:PORT] [--net-view]] [--net-name NAME]\n"
     "             [--digest FILE] [--digest-net FILE] [--net-record FILE | --net-replay FILE]\n"
     "\n"
     "  --install DISC     install the PS2 disc (a mounted disc, a folder of its files or an ISO image)\n"
@@ -211,6 +211,7 @@ constexpr std::string_view kUsage =
     "  --join ADDR[:PORT] join the network game at ADDR (a host name or IPv4 address), port 27615 unless\n"
     "                     given\n"
     "  --net-name NAME    the player name a network game shows (1 to 32 printable ASCII characters)\n"
+    "  --net-view         with --join: run no game of its own and draw the host's from its snapshots\n"
     "  --digest FILE      write each step's state digest (the humans and the pads played) to FILE\n"
     "  --digest-net FILE  with --host or --join: write the digest of each snapshot sent or decoded\n"
     "  --net-record FILE  with --host: record each step's pad on port 2 and the session's events\n"
@@ -511,6 +512,9 @@ std::expected<void, Error> checkPacing(const Options& options) {
 std::expected<void, Error> checkNetFiles(const Options& options) {
     if (options.netDigestFile && !options.netHost && !options.netJoin) {
         return invalidArgument("--digest-net needs --host or --join: it writes the digest of each snapshot");
+    }
+    if (options.netView && !options.netJoin) {
+        return invalidArgument("--net-view needs --join: it draws the game of the host joined");
     }
     if (options.netRecordFile && !options.netHost) {
         return invalidArgument("--net-record needs --host: it records the remote player's pad the host played");
@@ -1379,6 +1383,8 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 !value) {
                 return std::unexpected(std::move(value.error()));
             }
+        } else if (arg == "--net-view") {
+            options.netView = true;
         } else if (arg == "--no-audio") {
             options.noAudio = true;
         } else if (arg == "--skip-movies") {

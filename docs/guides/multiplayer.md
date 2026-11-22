@@ -21,8 +21,9 @@ draw a client's humans from them; the host's game's humans in those snapshots, s
 a scene or a movie) sent to the guest at its step; [level loads, checkpoints and the loading barrier](#levels), the
 session's side of a level change, a checkpoint restart, a mid-level join and a movie's wait; and the proof of it
 without a person: the [state digest](#digest),
-[two processes](#two-processes) over ENet in CI and [replays](#replays). The guest does not see the host's game yet:
-no client game mode draws the snapshots it decodes or plays the events.
+[two processes](#two-processes) over ENet in CI and [replays](#replays); and [the client
+game](client-world.md#client-game) (`--net-view`), a guest that runs no game of its own and draws the host's level and
+humans from the snapshots it decodes. It plays no game event and draws no HUD yet.
 **Next:** the layers under [The plan](#plan).
 
 ## The model {#model}
@@ -251,8 +252,8 @@ as `Network/Ping (ms)`; a host shows its slowest player's), the loss, bytes and 
 players with their ping and loss; a **Simulate network** submenu (latency, jitter, loss, duplicates, reordering on
 what this game sends, live); and a log of what happened, also printed as `net:` lines.
 
-**The command line:** `--host [[ADDR:]PORT]`, `--join ADDR[:PORT]` and `--net-name NAME`
-([Running Coney](running-options.md#network-play)).
+**The command line:** `--host [[ADDR:]PORT]`, `--join ADDR[:PORT]` (with `--net-view` for [the client
+game](client-world.md#client-game)) and `--net-name NAME` ([Running Coney](running-options.md#network-play)).
 
 ## Player two {#player-two}
 
@@ -597,8 +598,10 @@ network play's receive and before the step gate.
   the guest's game plays is waited for to its end, past the time-out, so a guest still watching its copy never falls
   behind the host's next step. The debug menu's movies are the game's own and wait for nobody.
 
-A guest still runs its own whole game until the client game mode that draws the snapshots is built: its level is the
-host's, but what happens in it is its own, including the movies its own scripts play.
+A guest started without `--net-view` still runs its own whole game: its level is the host's, but what happens in it
+is its own, including the movies its own scripts play. With `--net-view` it runs [the client
+game](client-world.md#client-game) instead, the `LevelGame` NetLevels follows the host with: it loads the level's scene
+in one step, plays no movie and answers each of the host's at once.
 
 ## Game events {#events}
 
@@ -780,7 +783,8 @@ Each step is a pull request that builds and is tested on its own.
 5. **Replicated players:** network ids and the field tables (built: [Network ids](#net-ids)), snapshots (built:
    quantized, delta-compressed against acknowledged baselines, [Snapshots](snapshots.md)), the client's jitter buffer
    and interpolation (built: [The client's world](client-world.md)), the game's humans in them (built: [The game's
-   humans](#game-humans)), a client game mode that draws them, and its own follow camera. The state digest,
+   humans](#game-humans)), a client game mode that draws them (built: [The client game](client-world.md#client-game),
+with stand-ins for each human's character and the camera), and its own follow camera. The state digest,
    two-process tests and replays (built: [Proof without a person](#proof)).
 6. **AI humans, events, mission state:** the rest of what a client must see and hear: the game events (built: [Game
    events](#events)), each player's panel state and the HUD's standing state in the snapshot (built: [HUD

@@ -10,9 +10,10 @@ SnapshotAck messages of [the protocol](multiplayer.md#protocol) (the Snapshot's 
 apart from `protocol.cpp`), and the sessions' side: `NetServer::sendSnapshots()` and `NetClient::snapshots()`. A
 client plays what it decodes through [the client's world](client-world.md). Each player slot's HUD state and the HUD's
 standing state travel in the same snapshots ([HUD state](#hud-state), [The HUD's standing state](#hud-standing)), and a
-guest's HUD can take them; nothing on a guest draws them yet. **Planned:** the game's side (filling the
-humans from the host's game and drawing them on the guest), interest (which humans a client needs, and how fast each
-one's priority grows), and releasing a removed human's id once its removal is acknowledged.
+guest's HUD can take them; nothing on a guest draws them yet. The host's game fills the humans every step
+([The game's humans](multiplayer.md#game-humans)), and a guest running [the client game](client-world.md#client-game)
+draws them. **Planned:** interest (which humans a client needs, and how fast each one's priority grows), and releasing
+a removed human's id once its removal is acknowledged.
 
 ## The model {#model}
 
