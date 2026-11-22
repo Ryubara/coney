@@ -124,7 +124,7 @@ void LevelFlowMode::chooseLevel(std::string_view name) {
     const std::optional<std::size_t> index = m_state.levels.find(name);
     m_levelRequests.emplace_back(name);
     if (!index) {
-        m_log(std::format("level flow: MenuLoadLevel({}): no such level in the level table; ignored\n", name));
+        m_log(std::format("level flow: MenuLoadLevel({}): no such level in the level table; no level chosen\n", name));
         m_chosenLevel = kNoLevel;
         return;
     }

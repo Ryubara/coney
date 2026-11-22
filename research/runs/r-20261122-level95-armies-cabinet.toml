@@ -1,0 +1,38 @@
+version = 1
+id = "r-20261122-level95-armies-cabinet"
+date = "2026-11-22"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "1c2a80f4f27732452abdfc0ec4bca237ec5618a577ec311785b9964e631121e9"
+
+[who]
+agent = "acd846f352e5e9507"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "Two runs from street-end-run: the lua recipe ran UM_Unlock(level, 0, 0) for the 18 story missions and the flashbacks, then load-checkpoint level95 11; TeleportToFlag(player, fMenu[4], -1) put the player at the arcade cabinet; triangle pressed with pcsx2_controller; the where recipe read level index and checkpoint before and after. Run 1, flashbacks 82 92 83 20 11 complete: title and play hint shown, triangle loaded level60 at checkpoint 1. Run 2, level11 not unlocked: title and a generic hint to complete every flashback mission, naming none; triangle changed nothing."
+
+[values]
+run1_hub_level_index = 29
+run1_hub_checkpoint = 11
+run1_after_level_index = 24
+run1_after_checkpoint = 1
+run2_hub_level_index = 29
+run2_hub_checkpoint = 11
+run2_after_level_index = 29
+run2_after_checkpoint = 11
+
+[addresses]
+game_state_ptr = 0x0051489c
+ScriptSystem_DoString = 0x00356a78

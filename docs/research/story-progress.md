@@ -191,8 +191,9 @@ Confirmed (code) at the cited script functions unless a line says otherwise.
   story is finished: with its five flashbacks complete it gets the `bonus` marker and the play handler, with one
   missing the marker and `flashback.NoAction`. In the original, a save with the 18 story missions complete at hub
   checkpoint 11 gave `UM_IsDataUnlocked(9, 60)` = 1; with the five flashbacks complete, triangle at the cabinet loaded
-  `level60` at checkpoint 1, and with `level11` incomplete it loaded nothing (confirmed (runtime), run
-  r-20261122-level95-armies-trophy).
+  `level60` at checkpoint 1, and with `level11` incomplete it loaded nothing and showed a generic hint to finish every
+  flashback mission (confirmed (runtime), run r-20261122-level95-armies-trophy and run
+  r-20261122-level95-armies-cabinet).
 - **Armies of the Night.** Each stage's last checkpoint script loads the next, `level60` to `level64`
   ([Armies of the Night](armies.md#stages)); `level64` complete makes the hub's chapter 12 the story's place from then
   on ([The four functions](#global-functions)).

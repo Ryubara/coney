@@ -127,7 +127,9 @@ struct GameState {
     GameOverCheck gameOver;
     /// `+0x14c` = 3: `MenuLoadLevel` asked for another level (`LevelFlow_LoadLevelByName`), so gameplay's next update
     /// leaves play for the level flow, which starts it; the level's unload clears it (`UnloadLevel`, at `0x00160cc0`).
-    /// The values 1 (a failure) and 2 (a level completed) are gameOver's or not ported (#670).
+    /// `ANGameOver_Toggle` (`0x001557f8`) also writes 3 on its quit branch, so the Armies game over's quit asks for the
+    /// same leave once it is ported. The values 1 (a failure) and 2 (a level completed) are gameOver's or not ported
+    /// (#670).
     bool levelChangeAsked = false;
     /// The world manager's precache queue (`+0x0c`, `QueueFileToPrecache`): the files the next `PrecacheWorld` loads.
     std::vector<std::string> precacheQueue;
