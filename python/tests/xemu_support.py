@@ -17,9 +17,16 @@ from pathlib import Path
 I386 = ("eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi", "eip", "eflags", "cs", "ss", "ds", "es", "fs", "gs")
 
 
-def eventually(condition: Callable[[], bool], seconds: float = 2.0) -> bool:
+#: How long `eventually` waits at most: a guard against a hang, never a speed limit (docs/guides/testing.md, "No
+#: wall-clock limits"): a loaded machine takes the stub's thread longer, and the wait ends as soon as the condition
+#: holds.
+HANG_GUARD_SECONDS = 30.0
+
+
+def eventually(condition: Callable[[], bool], seconds: float = HANG_GUARD_SECONDS) -> bool:
     """Whether `condition` holds within `seconds`: the fake stub runs in its own thread, so a `c` the client sent is
-    seen there a moment later (the client does not wait for it, as with QEMU, which answers `c` only when it stops)."""
+    seen there a moment later (the client does not wait for it, as with QEMU, which answers `c` only when it stops).
+    Every check of the stub's `running` after a tool resumed the guest goes through it, never a bare `assert`."""
     deadline = time.monotonic() + seconds
     while not condition():
         if time.monotonic() > deadline:

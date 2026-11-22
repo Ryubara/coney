@@ -119,6 +119,11 @@ needs no translation. The stub is all-stop, which shapes every tool:
 - **A running guest reads nothing.** QEMU takes any byte it is sent then as a request to stop, so each read, write,
   register or breakpoint request stops the guest for as long as it takes and lets it run again: a read of a running
   game is a pause of milliseconds.
+- **A resume is not answered.** QEMU replies to `c` only when the guest next stops, so a tool that lets the guest run
+  again (a read, a screenshot of the front buffer, `xemu_continue`) returns without the stub having taken the `c`:
+  there is nothing to wait for. A test over the fake stub, which takes it in its own thread, therefore checks the
+  stub's `running` with `eventually` (`repo:python/tests/xemu_support.py`) and never with a bare `assert`; a bare one
+  failed now and then in CI ([#1610](issue:1610)).
 - **One debugger at a time.** A second connection to a copy's stub waits or is refused; `xemu_disconnect` and
   `release` free it.
 
