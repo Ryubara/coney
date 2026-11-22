@@ -307,7 +307,8 @@ void addPanelAndArrowBindings(LuaVm& vm, const BindingContext& context) {
 
 // The Armies of the Night credits, GO sign and join messages (docs/research/hud-functions-panels.md#fn-anhud).
 void addArmiesBindings(LuaVm& vm, const BindingContext& context) {
-    // `HUDANSetCredit(credits)`: the credits left, kept as an unsigned integer.
+    // `HUDANSetCredit(credits)`: the credits left, kept as an unsigned integer. **Coney's stand-in**: the file's reader
+    // truncates, where tolua's conversion reads a negative number as 0 (binding::unsignedArg).
     // @orig 0x00370258 lua_HUDANSetCredit (unknown)
     vm.registerFunction("HUDANSetCredit", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
                             hud.armies().setCredits(unsignedArg(args, 0));
@@ -317,13 +318,14 @@ void addArmiesBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("HUDANGetCredit", [hud = context.hud](std::span<const Value> /*args*/) {
         return binding::number(hud != nullptr ? static_cast<double>(hud->armies().credits()) : 0.0);
     });
-    // `HUDANSetGOSignMode(mode)`: the byte the GO sign's update reads.
+    // `HUDANSetGOSignMode(mode)`: the byte the GO sign's update reads. **Coney's stand-in**: the file's reader
+    // truncates, where tolua's conversion reads a negative number as 0 (binding::unsignedArg).
     // @orig 0x00370c00 lua_HUDANSetGOSignMode (unknown)
     vm.registerFunction("HUDANSetGOSignMode", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
                             hud.armies().setGoSignMode(static_cast<std::uint8_t>(unsignedArg(args, 0)));
                         }));
-    // `HUDANEnableJoinMsg(player, on)`: panel `player`'s join message. **Coney's guard**: a player other than 0 or 1
-    // is ignored (the original indexes its panel table unchecked).
+    // `HUDANEnableJoinMsg(player, on)`: panel `player`'s join message. **Coney's choice**: a player other than 0 or 1
+    // is ignored (the original reads it unsigned, a negative one as 0, and indexes its panel table unchecked).
     // @orig 0x003701c8 lua_HUDANEnableJoinMsg (unknown)
     vm.registerFunction("HUDANEnableJoinMsg", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
                             const int player = intArg(args, 0);
