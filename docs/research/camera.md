@@ -2208,7 +2208,9 @@ height set negative eases back to the present height before it switches off. Set
 - **`CamLockRail(on, player)`** (`Camera_LockRail`, `0x0011d180`) writes `on` into the hold of player `player`'s rail
   camera, a negative player read as player 0; only -1 (the default) then writes the other players' too, up to the
   player count (game state `+0x224`), and only when player 0 has a rail camera. A player with none is skipped.
-  Confirmed (code) at `0x0011d180`. In level60's play the hold read 1 after `CamLockRail(1)` and after
+  Confirmed (code) at `0x0011d180`. `CamSetupRail`, `CamAddRailPoint`, `CamLeadRail` and `CamModifyRail` read their
+  player the same way, a negative one as player 0: confirmed (code) at `0x0011cce8`, `0x0011d098`, `0x0011cf70` and
+  `0x0011d228`. In level60's play the hold read 1 after `CamLockRail(1)` and after
   `CamLockRail(1, -5)`, 0 after `CamLockRail(nil)`, and stayed 1 through `Rail1()` (`CamSetupRail` and its points)
   and `CameraMakeActive`: confirmed (runtime), run r-20261122-level60-570-bindings. Coney: `Cameras::lockRail`
   (`repo:src/camera/cameras.cpp`) on its one rail camera, player 0's; its `RailCamera::setup` no longer clears the

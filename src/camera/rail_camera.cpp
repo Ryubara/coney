@@ -67,6 +67,9 @@ void EasedValue::step(float seconds) {
 }
 
 void RailCamera::setup(const RailSetup& setup) {
+    // **Coney's stand-in** (#1017): the original's reset leaves setting 8's pitch and setting 9's ease time as they
+    // were, where Coney's switches the pitch off; and it zeroes the lead's and mode 3's ease times, turns mode 3's
+    // angle off and switches 2 off and 7 and 8 on (`0x0013b2b8`), which Coney's does not.
     m_setup = setup;
     m_setup.farClip = std::min(setup.farClip, kMaxFarClip);
     m_count = 0;
