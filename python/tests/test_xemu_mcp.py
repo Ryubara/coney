@@ -198,7 +198,8 @@ def test_a_screenshot_falls_back_to_the_guests_front_buffer(
     with Image.open(out) as image:
         rgb = image.convert("RGB")
         assert [rgb.getpixel((0, 0)), rgb.getpixel((1, 0))] == [(3, 2, 1), (60, 50, 40)]
-    assert stub.running  # the guest ran on afterwards
+    # The tool's `c` is not answered (as with QEMU), so it returns before the stub's thread has taken it.
+    assert eventually(lambda: stub.running)  # the guest ran on afterwards
     text, failed = call(server, "xemu_screenshot", agent="alice", out=str(out), width=5000)
     assert failed and "width" in text
 
