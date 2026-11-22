@@ -52,8 +52,16 @@ class Brains {
     /// has none.
     /// @coney-only Coney's table of brains; the original frees a fixed slot, in code not traced here
     void remove(const human::Human& human);
-    /// The brains' part of destroying `human` (`Human_Destroy`).
-    void destroy(human::Human& human) { static_cast<void>(human); }
+    /// The brains' part of destroying `human` (`Human_Destroy(human, 0)`, once a human taken away has faded out): one
+    /// not already down or dead is knocked out (`Human_KnockOut`): state `0x40000` (his script knock-out), BLOCKHUMANS
+    /// and a player's slow motion gone, his brain's goals, actions, target and enemies dropped (Brain::knockOut()),
+    /// and event 18 about his foe sent to him (`Brain_OnKnockedOut`): his own message-18 handler, his gang's (which no
+    /// longer counts him standing) and his brain. His leaving the scripts, his gang and the world is the caller's
+    /// (ai::AiHumans::destroy()). Nothing for a human with no brain. **Not ported** (#1640): the rest of
+    /// `Human_Destroy` (`Human_CreditDefeat`'s statistics and event 2, the held object, sounds, icons, the spawner).
+    /// Research: docs/research/characters.md#out-of-world
+    /// @orig 0x0021c7c8 Human_Destroy (unknown)
+    void destroy(human::Human& human);
     /// `human`'s brain (his first in slot order, when he has two); null when he has none. Constant time: the slot is
     /// kept on the human (human::Human::brainSlot()), as the opposition test between every two humans asks it for both,
     /// many times a step (docs/guides/performance.md#brain-lookup). A human with brains in two tables at once (only

@@ -822,7 +822,7 @@ the scan matched `ld`/`sd` pairs, not every store).
 | --- | --- |
 | `Human_OnHealthOut` (`0x002674c0`, confirmed (code)) | health out, a human without flag `0x8` or already wounded ([above](#defeat)) |
 | `Human_SetConscious` (`0x00237778`, confirmed (code)) | `HuSetConscious(h, false)` |
-| `Human_Destroy` (`0x0021c7c8`, confirmed (code)) | a human deleted while not dead: knocked out (his brain drops its goals and target), then made dead (`0x100000000`) and the bit cleared, in the same call |
+| `Human_Destroy` (`0x0021c7c8`, confirmed (code)) | a human deleted while not dead: knocked out (his brain drops its goals and target and he is sent event 18), then made dead (`0x100000000`) and the bit cleared, in the same call. `Humans_Update` calls it once a human taken away (record state `0x200000000`: `HuDelete`, [a fall out of the world](characters.md#out-of-world), a dead human no camera sees) has faded out; `0x200000000` is that take-away, not dead |
 | `Human_ReleaseInstance` (`0x00217dd8`, confirmed (code)) | from `Human_Destroy` only, with argument 1; the state word is zeroed a few instructions later |
 
 **Cleared** by:

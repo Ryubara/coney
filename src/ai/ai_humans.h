@@ -2,7 +2,9 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "ai/ai_config.h"
@@ -78,6 +80,16 @@ class AiHumans {
     /// books), kept as removed so the humans keep their indexes. Nothing for another human.
     /// @orig 0x00233ef0 Human_Delete (unknown)
     void remove(const human::Human& human);
+    /// What is told of an AI human the characters' step destroys, while his brain still exists (the play mode: the
+    /// scripts forget his handle, ai::ScriptedBrains::humanDestroyed()).
+    using Destroyed = std::function<void(Brain& brain)>;
+    /// Sets what is told of a destroyed human (destroy()); empty: no one.
+    void setDestroyed(Destroyed destroyed) { m_destroyed = std::move(destroyed); }
+    /// Destroys `human` (one of these), which the characters' step calls once a human taken away has faded out
+    /// (human::Humans::setDestroy()): the brains knock him out (Brains::destroy(), event 18 to his scripts), the
+    /// setDestroyed() callback hears of him, and he leaves the world at the end of the step (remove()). **Coney's
+    /// choice**: the human the pad drives is never destroyed (a fallen player is put back, human::Player).
+    void destroy(human::Human& human);
     /// Removes every AI human.
     void clear();
     /// Marks `human` (one of these) as made by the debug menus' AI fighters page, for removeDebugSpawned(). Nothing for
@@ -166,6 +178,7 @@ class AiHumans {
     Brain* m_playerBrain = nullptr;
     std::vector<AiHuman> m_humans;
     std::vector<const human::Human*> m_removing; // deleted, to leave at the next step
+    Destroyed m_destroyed;                       // told of a destroyed human: setDestroyed()
     bool m_engaging = true;
     bool m_playerReleased = false; // releasePlayer() ran
     FighterSides m_sides;

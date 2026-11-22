@@ -156,7 +156,9 @@ plays no part. Confirmed (code) at `0x00229c40`.
 ### Falling out of the world {#out-of-world}
 
 The original puts no one back: a player more than 20 m below the collision mesh's lowest point fails the mission
-([Characters](characters.md#ground), [Camera](camera.md#death-camera)). Confirmed (code) at `0x002403ec`.
+([Characters](characters.md#ground), [Camera](camera.md#death-camera)). Confirmed (code) at `0x002403ec`. Any human
+there, the player included, is then faded out and destroyed, an AI human's knock-out reaching his scripts as event 18
+([Falling out of the world](characters.md#out-of-world)). Confirmed (code) at `0x00249108` and `0x0021c7c8`.
 
 ### The level99 flash lesson {#flash-lesson}
 

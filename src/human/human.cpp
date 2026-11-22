@@ -381,6 +381,7 @@ void Human::standAfresh(bool keepMeters) {
     m_velocity = anim::Vec3{};
     m_airborne = false;
     m_outOfWorld = false;
+    m_fade = kWholeFade;
     m_airborneUpdates = 0;
     m_blockedUpdates = 0;
     m_landingPending = false;
@@ -491,6 +492,7 @@ void Human::resetMotion() {
 void Human::putBack(const raycast::CollisionMesh* ground, anim::Vec3 position, float headingDegrees) {
     // Out of the fall: standing and still, then placed as a teleport places, so the health, meters and stamina stay.
     m_outOfWorld = false;
+    m_fade = kWholeFade;
     m_airborne = false;
     m_jumping = false;
     m_landingPending = false;

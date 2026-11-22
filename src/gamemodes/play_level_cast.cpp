@@ -76,6 +76,8 @@ void PlayLevelSimulation::makeCast(const ScriptedCast& cast, const ai::AiConfig&
     const std::size_t held = cast.scripted->held();
     // A human the scripts delete leaves the world (its brain unbound by then).
     cast.scripted->setRemover([this](ai::Brain& brain) { m_ai->remove(brain.human()); });
+    // A human the characters' step destroys (a fall out of the world) is forgotten by the scripts too.
+    m_ai->setDestroyed([scripted = cast.scripted](ai::Brain& brain) { scripted->humanDestroyed(brain); });
     // HuSwitchPlayer hands the pad to a team-mate; the human left behind fights as its class's brain. Outside level99
     // a kind-0 gang's human may take over too.
     cast.scripted->setSwitcher(

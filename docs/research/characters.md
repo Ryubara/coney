@@ -189,7 +189,8 @@ State flag bits used on this page:
 | --- | --- |
 | `0x1000000` | sprint asked for (L2 held, [Sprint](#sprint)) |
 | `0x1`-`0x8000`, `0x4000000` | fight stance, grabs, mugging, tackles, throwing, blocking, theft ([Combat](combat/index.md#state-flags)) |
-| `0x200000000` | dead |
+| `0x100000000` | dead (`Human_IsUp` and `Human_IsDownOrDead` read it) |
+| `0x200000000` | being taken away: faded out and destroyed by `Humans_Update` ([Falling out of the world](#out-of-world)); not dead |
 | `0x400000000` | jumping (set at launch) |
 | `0x800000000` | falling (a drop) |
 | `0x1000000000` | a long fall |
@@ -1600,9 +1601,11 @@ gait for that speed (`0x0022aeb0`) at `+0x1a8`. So `+0x1ac` (used by the lean) i
    updates), `vz -= 15.68 × dt` (0.5227 m/s per 1/30 s update; 15.68 m/s² is 1.6 g), clamped at **−50 m/s**. The
    result is written back with the velocity. On the ground `+0x384` is reset to 0.
 4. **Fell out of the world:** if the position is more than **20 m below the collision mesh's lowest vertex** (mesh
-   header `+0x98`, [Collision](collision.md#header)), the human is flagged dead (`0x200000000`), its velocity zeroed,
-   and for a player in a mission whose game-state flags `+0x150` have bit 1, `W_GameState + 0x14c` is set to 1 and
-   `+0x152` to 2 (a mission failure, [Level loading](level-loading.md#a-frame-of-play)).
+   header `+0x98`, [Collision](collision.md#header)), the human gets record state **`0x200000000`**, the bit that
+   has him taken away (not dead, which is `0x100000000`), its velocity zeroed, and for a player in a mission whose
+   game-state flags `+0x150` have bit 1, `W_GameState + 0x14c` is set to 1 and `+0x152` to 2 (a mission failure,
+   [Level loading](level-loading.md#a-frame-of-play)). The test is in the airborne branch only, at `0x002403ec`.
+   What follows: [Falling out of the world](#out-of-world).
 5. **Stuck in the air:** after 60 airborne updates, if the physics body's "could not move" counter (body `+0x70`) is
    also above 59, the human is put back at its last ground position (`+0x390`) and landed (`Human_Land`, `0x0023e090`).
    Confirmed (code).
@@ -1635,6 +1638,46 @@ gait for that speed (`0x0022aeb0`) at `+0x1a8`. So `+0x1ac` (used by the lean) i
   So a step or kerb up to **1.0 m** high is climbed in one update when the sweep lets the body over it, and a drop of
   up to **0.5 m** is followed without falling; anything deeper is a fall. The sweep lets the body over a step only
   when the step's wall triangles are under 0.25 m tall ([Walls and steps](#walls)).
+
+#### Falling out of the world {#out-of-world}
+
+A human more than 20 m below the collision mesh's lowest vertex is taken away, not killed outright, and his scripts
+hear of it as of any knock-out. In order:
+
+1. **The bit.** `Human_StateUpdate` (`0x0023fea8`, step 4 above) sets record state `0x200000000` with
+   `Human_SetStateFlag` (`0x002265d0`, the record's word `+0x00`) and zeroes the velocity. It is the bit `Human_Delete`
+   (`0x00233ef0`, `HuDelete`) sets too, and the one `Humans_Update` sets on a dead human no camera sees
+   ([Combat reactions](combat-reactions.md#knocked-out-bit)). Confirmed (code); at runtime the record's high word
+   read 2 a few updates after a pedestrian was moved to z = -300 (confirmed (runtime), run
+   r-20261122-fall-out-of-world). Dead is `0x100000000`, a different bit. A player in a mission also fails it (step 4).
+2. **Still alive to the scripts.** `HuIsAlive` (`Human_IsAlive`, `0x00235628`) is false only for a human down or dead
+   (`Human_IsDownOrDead`, `0x00227e60`, mask `0x180050000`) or not up (`Human_IsUp`, `0x0029ce40`, `0x100000000`):
+   neither mask holds `0x200000000`, so while he fades the scripts see him alive. Confirmed (code).
+3. **The fade.** In the actions loop of `Humans_Update` (`0x00249108`), a human with `0x200000000` and no down latch
+   (`0x40000000`, [Combat reactions](combat-reactions.md#scripted-knockdowns)) skips his actions; while his character
+   instance's colour alpha (instance `+0x2b`, human `+0xd8`) is 11 or more it drops by 10 an update and the down update
+   runs, else `Human_Destroy(human, 0)` (`0x0021c7c8`) is called. The state update runs before the actions loop in the
+   same `Humans_Update`, so the first drop is in the update that sets the bit. Confirmed (code). The alpha was 255
+   before the fall and 5 at the call to `Human_Destroy` (return address `0x002495ac`, second argument 0): 25 drops,
+   the destroy on the 26th update (confirmed (runtime), run r-20261122-fall-out-of-world).
+4. **The knock-out.** `Human_Destroy` knocks out a human not yet dead (`Human_KnockOut`, `0x00230328`, [Destroying a
+   human](#destroy) step 5). `Human_KnockOut` sets `0x40000` and calls `Brain_OnKnockedOut` (`0x0028c3b0`), which,
+   the human being knocked out and not wounded, sends him **event 18** (`0x12`) about his foe: his own message-18
+   handler, then his gang's, then his brain (`Gang_OnEvent`, `0x00164c20`, passes the gang handler the count still
+   standing, `Gang_CountStanding` `0x00166220`, which leaves him out as knocked out). Then `Human_CreditDefeat`
+   (`0x00230740`) and `Brain_TearDown` (`0x0028c4f8`) take him out of his gang and send event 2, he is made dead
+   (`0x100000000`) and his handle is freed. Confirmed (code). At runtime a message-18 handler set on the human
+   (`SetMsgHandler`) and one on his gang (`GangSetMsgHandler`) each ran once, the gang's with 0 standing (he was its
+   only member), `HuIsAlive` was already false inside the handler and stayed false after (confirmed (runtime), run
+   r-20261122-fall-out-of-world).
+
+So the fall ends a fight the scripts wait on as a knock-out would: a Brawl fighter's `StandardGang1Dead` /
+`StandardGang2Dead` ([Rumble](rumble.md#behaviour)) runs about a second after he passes the limit (inferred from the
+code above; the Brawl itself was not run with a fall).
+
+**A player outside a mission** gets the same bit and the same fade, and nothing in the path tests for a player, so he
+is destroyed as well (`Human_Destroy`'s player branch takes him off the player list, [Destroying a human](#destroy)
+step 9); inferred from the code, not run. Coney keeps its put-back for the player ([In Coney](#coneys-implementation)).
 
 #### Walls and steps {#walls}
 
@@ -2494,7 +2537,7 @@ on or off; a `Cfg*` setter writes one global the human code reads.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
-| `0x00233ef0` | `Human_Delete` | Marks the human dead (0x200000000), clears its foe and its script handlers. | confirmed (code) |
+| `0x00233ef0` | `Human_Delete` | Marks the human to be taken away (record state 0x200000000: faded out and destroyed by `Humans_Update`, [Falling out of the world](#out-of-world)), clears its foe and its script handlers. | confirmed (code) |
 | `0x00233f60` | `Human_SwapPlayerControl` | Moves player control from one human to another, swapping their camera targets. | confirmed (code) |
 | `0x00234038` | `Human_SetNoTarget` | Human flag 0x100000000000 on or off: the human cannot be targeted. | confirmed (code) |
 | `0x002340a8` | `Human_SetNoAutoLock` | Human flag 0x8000000000 on or off: no automatic lock-on. | confirmed (code) |
@@ -3123,8 +3166,14 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   goes on from a refused climb to the jump.
 - **Camera through a fence**: the follow camera's ray passes through material 30 ([Camera](camera.md#coneys-implementation)),
   so it keeps its distance through a fence climb as the original's does.
-- **Out of the world** (20 m below the mesh's lowest point): the human is put back at the start instead of failing
-  the mission.
+- **Out of the world** (20 m below the mesh's lowest point, [Falling out of the world](#out-of-world)): an AI human
+  fades by 10 an update from 255 (`Human::fade()`, kept but not drawn: he is far below the level) and is destroyed on
+  the 26th update through `Humans::setDestroy()`: `ai::Brains::destroy()` knocks him out with event 18 about his foe,
+  so his message-18 handlers and his gang's run (the gang's count still standing leaves him out), the scripts forget
+  his handle (`ai::ScriptedBrains::humanDestroyed()`, so `HuIsAlive` is false) and he leaves the world at the step's
+  end (`ai::AiHumans::destroy()`). **Coney's choice**: the player is put back at the start instead of failing the
+  mission or, outside one, being destroyed. **Not ported** ([#1640](issue:1640)): the rest of `Human_Destroy` (the
+  statistics, event 2, the held object, sounds, icons and spawner).
 - **The gait blend's leading clip** uses a tolerance of 0.001 when it compares the value with its target.
 - **Level starts**: the start comes from the level's own script at run time: its `HuCreate` for player 1 at the
   checkpoint (`GetCheckPoint`), kept by Coney's `HuCreate` binding ([Level

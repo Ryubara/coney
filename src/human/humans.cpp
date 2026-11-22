@@ -427,6 +427,18 @@ void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* con
             continue;
         }
         Human& human = *m_humans[slot];
+        // A human taken away (record state 0x200000000) fades out instead of acting, and is destroyed once faded.
+        // **Coney stand-in**: the down latch that keeps one from it (`Human_HasDownLatch`) is never set in Coney, and
+        // the down update the original runs while he fades is left out, as a fallen human is not down.
+        if (human.outOfWorld()) {
+            if (human.fade() >= kFadeFloor) {
+                human.setFade(human.fade() - kFadeStep);
+            } else if (m_destroy) {
+                m_destroy(human);
+            }
+            keepTargetGrid(slot);
+            continue;
+        }
         m_slotTargets.begin(*this, slot, targets);
         human.setTargetSource(&m_slotTargets);
         human.updateActions({}, mesh);

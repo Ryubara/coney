@@ -132,7 +132,7 @@ page = "ai-code.md#gang-functions"
 role = "Members not knocked out, wounded or in flagged state `0x100000000`"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gang::standing"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00166308

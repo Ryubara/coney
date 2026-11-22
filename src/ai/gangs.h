@@ -167,9 +167,11 @@ class Gang {
     [[nodiscard]] int countLiving(bool standingOnly) const;
     /// The living members (`Gang_CountLiving(gang, 0)`, countLiving(false)): every member, the dead included.
     [[nodiscard]] int living() const { return countLiving(false); }
-    /// The members still on their feet (`Gang_CountStanding`, the scripts' `GangGetStandingCount`): health left and
-    /// not on the ground. **Coney choice** for the original's three state tests (`0x00227dd8`, `0x00227eb0`,
-    /// `0x00227d98`: knocked out, a dead state and wounded), which are not mapped yet; downOrDead() stands in.
+    /// The members still on their feet (`Gang_CountStanding`, the scripts' `GangGetStandingCount`): health left, not
+    /// on the ground and not knocked out (human::Human::knockedOut(), `0x00227dd8`, so a member knocked out with health
+    /// left, by a script or a fall out of the world, is not standing). **Coney choice** for the original's other two
+    /// state tests (`0x00227eb0`, `0x00227d98`: a dead state and wounded), which are not mapped yet; downOrDead()
+    /// stands in.
     /// @orig 0x00166220 Gang_StandingCount (unknown)
     [[nodiscard]] int standing() const;
     /// The gangs it belongs to.

@@ -65,7 +65,10 @@ int Gang::countLiving(bool standingOnly) const {
 }
 
 int Gang::standing() const {
-    return static_cast<int>(std::ranges::count_if(m_members, [](const Brain* member) { return !downOrDead(*member); }));
+    // Not down or dead in Coney's reading, and not knocked out (Human_IsKnockedOut: a script's or a destroy's
+    // knock-out, which leaves the health).
+    return static_cast<int>(std::ranges::count_if(
+        m_members, [](const Brain* member) { return !downOrDead(*member) && !member->human().knockedOut(); }));
 }
 
 void Gang::setAlertState(int state) {
