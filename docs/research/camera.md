@@ -2296,7 +2296,7 @@ a player's scale × 0.5, or for a non-player (`+0x1b0` = −1) his capsule radiu
   player at x −123.44, y 24.37; with the stick held toward −x the player walked on to x −126.18 and stayed there, at
   the right edge of the held view, while the fight went on: confirmed (runtime), run
   r-20261122-level60-570-frame. Coney: `keepTargetInFrame` (`repo:src/camera/rail_frame.cpp`) for its one target, run
-  by `RailCamera::update` in mode 3 after the start and in a held mode 0.
+  by `RailCamera::update` in mode 3 after the start and in a held mode 0 (held at the start or by the ends test).
 
   So on a two-target rail every target, **non-players included** (`level5`'s Diego), is pushed back inside the left,
   right and bottom edges of the view and kept out of walls between him and the camera; the camera only stops.
@@ -3413,9 +3413,9 @@ The world viewer keeps its own free camera with the player camera's lens
   between two nearest rail points (with the segment choice's other differences, [#956](issue:956)), the 40% look-at
   catch-up (`+0x3ec`), the `+0x330` vector, the split-screen halving and extras and the push out of world collision
   are not built. The keep-in-frame push (`0x00140d68`, `repo:src/camera/rail_frame.cpp`) is built for the one target,
-  in mode 3 after its start and in a held mode 0; switch 2's push off the segment planes and the landing of a falling
-  target (`Human_Land`) are not, its fall test is the airborne test above and its radius a player of scale 1's
-  (0.5 m); a rail with no
+  in mode 3 after its start and in a held mode 0 (at the start or at a rail's end); switch 2's push off the segment
+  planes and the landing of a falling target (`Human_Land`) are not, its fall test is the airborne test above and its
+  radius a player of scale 1's (0.5 m); a rail with no
   points stands 3 m behind and 1 m above the look-at point. The fixed camera always looks at the average (the
   original's single-entry case is not traced). `CamDelete` forgets a fixed camera as it does a locked one and keeps
   third-person cameras.

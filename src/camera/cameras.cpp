@@ -328,8 +328,8 @@ void Cameras::stepTracking(CameraRef ref, float seconds) {
             const std::optional<anim::Vec3> feet =
                 placed ? std::optional<anim::Vec3>(placed->first) : std::optional<anim::Vec3>();
             // The keep-in-frame push: where he stood at the start of his update (the last update's feet, pushed or
-            // not, while the target is the same), his radius and the level's mesh. **Coney's reading**: the push's
-            // fall test (`0x1400000000`) is taken as the airborne test (`0x1c00000000`), which gameplay does not set
+            // not, while the target is the same), his radius and the level's mesh. Stand-in: the push's fall
+            // test (`0x1400000000`) is taken as the airborne test (`0x1c00000000`), which gameplay does not set
             // yet (#1406). Stand-in: the radius is a player of scale 1's; a scaled player's and a non-player
             // target's capsule radius are not read.
             const bool sameTarget = m_railBefore && m_railBefore->first == m_railTarget;

@@ -65,7 +65,7 @@ struct RailFrameDistances {
 /// moved him (or in mode 3 on the update he joined), a line of sight from 2 m in front of the camera that puts him his
 /// radius before a wall in the way; and when anything moved him, his height from a ray down from over the highest
 /// feet. Returns his new feet, or nothing when he stays. `mesh` may be null (no rays: the moves are not cut short, the
-/// line of sight never hits and the height is kept). **Coney's reading**: one target, Coney's rail has one.
+/// line of sight never hits and the height is kept). Stand-in: one target, Coney's rail has one.
 /// @orig 0x00140d68 CamRail_KeepTargetsInFrame (unknown)
 [[nodiscard]] std::optional<anim::Vec3> keepTargetInFrame(const CameraView& view, const RailFrameTarget& target,
                                                           const RailFrameRules& rules,

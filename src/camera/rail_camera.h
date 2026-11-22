@@ -198,7 +198,8 @@ class RailCamera {
     /// @orig 0x0013dcc8 CamRail_PlaceMode3 (unknown)
     [[nodiscard]] anim::Vec3 projectTrailing(anim::Vec3 p) const;
     // This update's keep-in-frame push of the target at `feet` (`trailing`: mode 3's margin and line of sight), when
-    // update() was handed the frame input: his new feet, kept for update() to return, or `feet` when he stays.
+    // update() was handed the frame input: his new feet, kept for update() to return, or `feet` when he stays. It
+    // ports only the held part of CamRail_CollideTwoTargets (the push); its other paths wait on #1017.
     /// @orig 0x00140708 CamRail_CollideTwoTargets (unknown)
     [[nodiscard]] anim::Vec3 keepInFrame(anim::Vec3 feet, bool trailing);
     // Picks the segment the target point is on (CamRail_ChooseSegment).
