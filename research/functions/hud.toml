@@ -17,7 +17,7 @@ role = "the ring queue (`0x005fd330`, `0xc0` bytes each, count `0x0050ccd4`) and
 level = "confirmed-code"
 note = "confirmed (code), runtime; Coney ports the draw part in `SceneLighting::drawGroundRings` and the arcs and fan in `hud::ringArcOf` and `hud::ringFan` (src/hud/health_rings.cpp)"
 coney = "src/platform/scene_lighting.h:SceneLighting::drawGroundRings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0017b8a8
