@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <span>
 #include <variant>
 
@@ -19,6 +20,11 @@ using Catch::Approx;
 using coney::graphics::BlurPulse;
 using coney::graphics::Draw2d;
 using coney::graphics::Draw3d;
+using coney::graphics::EffectBlend;
+using coney::graphics::EffectDraw;
+using coney::graphics::EffectPass;
+using coney::graphics::EffectShape;
+using coney::graphics::EffectVertex;
 using coney::graphics::FrameDescription;
 using coney::graphics::FramePass;
 using coney::graphics::FrameStart;
@@ -33,6 +39,7 @@ using coney::graphics::MeshId;
 using coney::graphics::MotionBlurOverlay;
 using coney::graphics::Overlay2dPass;
 using coney::graphics::Rgba;
+using coney::graphics::SceneCamera;
 using coney::graphics::SceneLight;
 using coney::graphics::ScenePass;
 using coney::graphics::ScreenPass;
@@ -408,4 +415,73 @@ TEST_CASE("a depth clear starts a scene pass that clears the depth first and kee
     frame.addSceneDraw(draw, {}, {}, {});
     REQUIRE(frame.passes().size() == 1);
     CHECK(sceneAt(0).clearDepth);
+}
+
+TEST_CASE("effect draws join one effect pass, which scene and 2D draws end", "[graphics][frame-description]") {
+    // Expected: ../engine/renderer.md#frame-description; FrameDescription::addEffectDraw's contract
+    // (src/graphics/frame_description.h): a draw after an effect draw joins its pass, a 3D or 2D draw in between starts
+    // a new one, each keeps the camera set last, and its vertices, indices and texture are ranges and ids of the frame.
+    SceneCamera camera;
+    camera.frame.position = {0.0F, 2.0F, -6.0F};
+    FrameDescription frame;
+    frame.begin(FrameStart{});
+    frame.setSceneCamera(camera);
+    const FakeTexture sheet;
+    const std::array<EffectVertex, 4> square{{
+        {0.0F, 0.0F, 0.0F, Rgba{255, 0, 0, 255}, 0.0F, 0.0F},
+        {1.0F, 0.0F, 0.0F, Rgba{0, 255, 0, 255}, 1.0F, 0.0F},
+        {1.0F, 1.0F, 0.0F, Rgba{0, 0, 255, 255}, 1.0F, 1.0F},
+        {0.0F, 1.0F, 0.0F, Rgba{255, 255, 255, 255}, 0.0F, 1.0F},
+    }};
+    const std::array<std::uint16_t, 6> corners{0, 1, 2, 0, 2, 3};
+    EffectDraw sprite;
+    sprite.states.depthWrite = false;
+    sprite.states.blend = EffectBlend::Additive;
+    sprite.restore.depthWrite = true;
+    frame.addEffectDraw(sprite, square, corners, &sheet);
+    // A second draw: flat colour, no indices, lines.
+    EffectDraw line;
+    line.shape = EffectShape::Lines;
+    frame.addEffectDraw(line, std::span<const EffectVertex>(square).first(2), {}, nullptr);
+    // Nothing for no corners.
+    frame.addEffectDraw(sprite, {}, {}, &sheet);
+    Draw3d mesh;
+    mesh.mesh = MeshId{1};
+    frame.addSceneDraw(mesh, {}, {}, {});
+    frame.addEffectDraw(sprite, std::span<const EffectVertex>(square).last(3), {}, &sheet);
+
+    REQUIRE(frame.passes().size() == 4); // the camera's empty scene pass, the effects, the mesh, the effects
+    REQUIRE(std::holds_alternative<EffectPass>(frame.passes()[1]));
+    const EffectPass& first = std::get<EffectPass>(frame.passes()[1]);
+    CHECK(first.camera == camera);
+    REQUIRE(first.draws.size() == 2);
+    CHECK(first.draws[0].states.blend == EffectBlend::Additive);
+    CHECK(first.draws[0].states.depthWrite == false);
+    CHECK_FALSE(first.draws[0].states.fog.has_value());
+    CHECK(first.draws[0].restore.depthWrite);
+    CHECK(frame.textureOf(first.draws[0].texture) == &sheet);
+    CHECK(frame.effectVerticesOf(first.draws[0]).size() == 4);
+    CHECK(frame.effectVerticesOf(first.draws[0])[2] == square[2]);
+    CHECK(frame.effectIndicesOf(first.draws[0]).size() == 6);
+    CHECK(first.draws[1].shape == EffectShape::Lines);
+    CHECK(first.draws[1].texture == kNoFrameTexture);
+    CHECK(frame.effectVerticesOf(first.draws[1]).size() == 2);
+    CHECK(frame.effectIndicesOf(first.draws[1]).empty());
+    REQUIRE(std::holds_alternative<ScenePass>(frame.passes()[2]));
+    REQUIRE(std::holds_alternative<EffectPass>(frame.passes()[3]));
+    const EffectPass& second = std::get<EffectPass>(frame.passes()[3]);
+    CHECK(second.camera == camera);
+    REQUIRE(second.draws.size() == 1);
+    // Its corners follow the first pass's in the frame's array, and the sheet keeps its place in the table.
+    CHECK(frame.effectVerticesOf(second.draws[0])[0] == square[1]);
+    CHECK(second.draws[0].firstVertex == 6);
+    CHECK(second.draws[0].texture == first.draws[0].texture);
+    CHECK(frame.textureCount() == 1);
+
+    frame.begin(FrameStart{});
+    CHECK(frame.passes().empty());
+    frame.addEffectDraw(line, std::span<const EffectVertex>(square).first(2), {}, nullptr);
+    REQUIRE(frame.passes().size() == 1);
+    CHECK_FALSE(std::get<EffectPass>(frame.passes()[0]).camera.has_value());
+    CHECK(std::get<EffectPass>(frame.passes()[0]).draws[0].firstVertex == 0);
 }

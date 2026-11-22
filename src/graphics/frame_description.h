@@ -301,7 +301,7 @@ struct SceneLineVertex {
 
 /// A pass of 3D draws through its camera, in their order: the streamed world's sectors (item 7 of
 /// docs/engine/renderer.md#order), the world objects and the parked cars (item 8) and the humans (item 9); the
-/// effects join it with item 10.
+/// effects are the draws of EffectPass.
 struct ScenePass {
     /// The camera its draws are seen through (FrameDescription::setSceneCamera()); none when the frame set none before
     /// them, and a renderer that needs one draws nothing of the pass.
@@ -316,8 +316,89 @@ struct ScenePass {
     std::vector<SceneLineVertex> lines;
 };
 
+/// How an effect's colour joins what is below it.
+enum class EffectBlend : std::uint8_t {
+    Alpha,    ///< Source alpha over inverse source alpha: the sprite's alpha says how much of it shows.
+    Additive, ///< Source alpha added to what is below: a light (a glow, a flash, a flame, a spark).
+};
+
+/// The states an effect draw sets before it draws; a state left unset stays as the draws before it left it (as the 2D
+/// side's Material2d::alphaRef is optional). Which states a draw sets is part of what the draw-stream hashes pin, so
+/// each kind of effect sets the ones it always did.
+struct EffectStates {
+    std::optional<bool> depthTest;
+    std::optional<bool> depthWrite;
+    std::optional<bool> fog; ///< Distance fog on, in the fog colour and planes the scene pass has.
+    std::optional<CullFaces> cull;
+    std::optional<bool> vertexAlpha; ///< The vertices' alpha used (RenderWare's VERTEXALPHA), not only the texture's.
+    std::optional<EffectBlend> blend;
+    std::optional<TextureFilter> filter;
+    std::optional<TextureAddress> address;
+
+    friend bool operator==(const EffectStates&, const EffectStates&) = default;
+};
+
+/// What an effect draw puts back after it, for the solid draws that follow (the opaque passes expect them): a set flag
+/// says its state returns to the scene pass's own value.
+struct EffectRestore {
+    bool fog = false;        ///< The fog as it was before the draw.
+    bool blend = false;      ///< Blended by alpha, whatever the draw added.
+    bool depthWrite = false; ///< Depth written.
+    bool cull = false;       ///< Back faces dropped.
+
+    friend bool operator==(const EffectRestore&, const EffectRestore&) = default;
+};
+
+/// One corner of an effect's triangle or line: a place in RenderWare's world axes, a colour and a texture coordinate
+/// (RenderWare's 0-255 colour, as the original's sprite vertices give it: docs/research/gui.md#sprite-colours).
+struct EffectVertex {
+    float x = 0.0F;
+    float y = 0.0F;
+    float z = 0.0F;
+    Rgba colour;
+    float u = 0.0F;
+    float v = 0.0F;
+
+    friend bool operator==(const EffectVertex&, const EffectVertex&) = default;
+};
+
+/// What an effect draw's primitives are.
+enum class EffectShape : std::uint8_t {
+    Triangles, ///< a list of triangles, three corners each (or, with indices, three indices each), textured
+    Lines,     ///< a list of lines, two corners each, untextured: the debug tools' lines
+};
+
+/// One draw of an effect pass: a sprite batch, a ribbon, a surface or a set of lines in the world, in the scene pass's
+/// depth and fog, lit by nothing (the vertex colours are what it shows). `vertexCount` corners of the frame's effect
+/// vertices from `firstVertex` on, and when `indexCount` is not 0 that many of its effect indices from `firstIndex`,
+/// each naming a corner of the draw's own (counted from `firstVertex`). The ranges are set when the draw is added.
+struct EffectDraw {
+    EffectShape shape = EffectShape::Triangles;
+    /// The texture, by the frame's table (FrameDescription::texture()); kNoFrameTexture for none.
+    FrameTextureId texture = kNoFrameTexture;
+    EffectStates states;
+    EffectRestore restore;
+    std::uint32_t firstVertex = 0;
+    std::uint32_t vertexCount = 0;
+    std::uint32_t firstIndex = 0;
+    std::uint32_t indexCount = 0; ///< 0: drawn in the order of the corners
+
+    friend bool operator==(const EffectDraw&, const EffectDraw&) = default;
+};
+
+/// A pass of effect draws through the camera of the scene before it, in their order: the particles, the glints, the
+/// ground fog, the water, the throw arc, the see-through panes, the blob shadows, the health rings, the coronas and
+/// the debug tools' lines (item 10 of docs/engine/renderer.md#order). A pass of its own, not part of a ScenePass: an
+/// effect is not a mesh of the asset store, and a frame alternates between the draws of the scene and of the effects,
+/// each pass holding one run of a kind.
+struct EffectPass {
+    /// The camera its draws are seen through, as ScenePass::camera.
+    std::optional<SceneCamera> camera;
+    std::vector<EffectDraw> draws;
+};
+
 /// One pass of a frame.
-using FramePass = std::variant<Overlay2dPass, ScreenPass, ScenePass>;
+using FramePass = std::variant<Overlay2dPass, ScreenPass, ScenePass, EffectPass>;
 
 /// How a frame starts: the colour it is cleared to, and over what.
 struct FrameStart {
@@ -336,11 +417,11 @@ struct FrameStart {
 /// (platform/gl3_renderer.h) and the SDL3 GPU renderer will draw the same description.
 ///
 /// It holds the 2D side, the screen passes, the streamed world's sectors, the world objects, the parked cars and the
-/// humans with their poses (scene passes of 3D draws, each a mesh and its textures by AssetStore id). The rest of the
-/// 3D scene (the camera, the level's background and the effects) still goes to librw directly between them (item 10
-/// of docs/engine/renderer.md#order moves the effects here), so the GL3 renderer draws each part as it is added rather
-/// than the whole frame at its end. Draws are given in logical pixels with the window rectangle they are mapped onto,
-/// or in window pixels, and are kept in window pixels.
+/// humans with their poses (scene passes of 3D draws, each a mesh and its textures by AssetStore id), and the effects
+/// (effect passes of sprite batches, ribbons, surfaces and lines, each with its vertices and its texture by the frame's
+/// table: item 10 of docs/engine/renderer.md#order). The camera still goes to librw directly, and the GL3 renderer
+/// draws each part as it is added rather than the whole frame at its end. Draws are given in logical pixels with the
+/// window rectangle they are mapped onto, or in window pixels, and are kept in window pixels.
 class FrameDescription {
   public:
     /// Forgets the last frame's passes, textures and primitives and starts a new frame as `start` says.
@@ -375,6 +456,12 @@ class FrameDescription {
     /// Adds `lines`, two vertices to a line, to the scene pass the last pass is, or to a new one, to be drawn after its
     /// 3D draws; an odd vertex left over is dropped, and nothing is added for no whole line.
     void addSceneLines(std::span<const SceneLineVertex> lines);
+    /// Adds the effect draw `draw` with its corners `vertices`, its `indices` into them (none: drawn in the order of
+    /// the corners) and its `texture` (null: none; it must outlive the frame) to the effect pass the last pass is, or
+    /// to a new one seen through the camera set last; the next 2D or 3D draw starts a new pass. The ranges in `draw`
+    /// and its texture are set here. Nothing is added for no vertex.
+    void addEffectDraw(EffectDraw draw, std::span<const EffectVertex> vertices, std::span<const std::uint16_t> indices,
+                       const Texture* texture);
     /// Sees the 3D draws added after it through `camera`: they start a new scene pass with it (the last pass takes
     /// it instead when it is a scene pass with no draw yet), and any later scene pass of the frame keeps it until the
     /// next call.
@@ -403,6 +490,10 @@ class FrameDescription {
     /// The colours of `draw`, a Flat or Wire pass of this frame: one for each of its mesh's materials in their order
     /// (Flat), or the one every edge is drawn in (Wire); empty for a Shaded draw.
     [[nodiscard]] std::span<const Rgba> viewColoursOf(const Draw3d& draw) const;
+    /// The corners of `draw`, an effect draw of this frame.
+    [[nodiscard]] std::span<const EffectVertex> effectVerticesOf(const EffectDraw& draw) const;
+    /// The indices of `draw`, an effect draw of this frame; empty when it has none.
+    [[nodiscard]] std::span<const std::uint16_t> effectIndicesOf(const EffectDraw& draw) const;
     /// The pose of `draw`, a 3D draw of this frame: its skinning matrices in skin node order; empty when it is not
     /// skinned.
     [[nodiscard]] std::span<const Transform3d> bonesOf(const Draw3d& draw) const;
@@ -415,6 +506,8 @@ class FrameDescription {
     Overlay2dPass& overlay();
     // The scene pass the next 3D draw joins, as overlay() for 2D draws.
     ScenePass& scene();
+    // The effect pass the next effect draw joins, as scene() for 3D draws.
+    EffectPass& effects();
 
     FrameStart m_start;
     std::vector<FramePass> m_passes;
@@ -425,6 +518,8 @@ class FrameDescription {
     std::vector<TextureId> m_sceneTextures; // the 3D draws' textures, then each one's dual layer's
     std::vector<Transform3d> m_bones;       // the skinned 3D draws' poses
     std::vector<Rgba> m_viewColours;        // the mesh views' passes' colours
+    std::vector<EffectVertex> m_effectVertices;
+    std::vector<std::uint16_t> m_effectIndices;
     std::optional<SceneCamera> m_camera;    // the camera setSceneCamera() last set this frame
 };
 

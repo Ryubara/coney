@@ -20,6 +20,8 @@ void FrameDescription::begin(const FrameStart& start) {
     m_sceneTextures.clear();
     m_bones.clear();
     m_viewColours.clear();
+    m_effectVertices.clear();
+    m_effectIndices.clear();
     m_camera.reset();
 }
 
@@ -100,6 +102,14 @@ ScenePass& FrameDescription::scene() {
     return std::get<ScenePass>(m_passes.back());
 }
 
+EffectPass& FrameDescription::effects() {
+    // A new effect pass keeps the camera set last this frame.
+    if (m_passes.empty() || !std::holds_alternative<EffectPass>(m_passes.back())) {
+        m_passes.emplace_back(EffectPass{m_camera, {}});
+    }
+    return std::get<EffectPass>(m_passes.back());
+}
+
 void FrameDescription::addScreenPass(const ScreenPass& pass) { m_passes.emplace_back(pass); }
 
 void FrameDescription::setSceneCamera(const SceneCamera& camera) {
@@ -158,6 +168,15 @@ std::span<const ScreenVertex> FrameDescription::verticesOf(const Draw2d& draw) c
     CONEY_ASSERT(draw.shape == Shape2d::Triangles && draw.first + draw.count <= m_vertices.size());
     return std::span<const ScreenVertex>(m_vertices).subspan(draw.first, draw.count);
 }
+
+void FrameDescription::addEffectDraw(EffectDraw /*draw*/, std::span<const EffectVertex> /*vertices*/,
+                                     std::span<const std::uint16_t> /*indices*/, const Texture* /*texture*/) {
+    // A stub: the effects are not in the description yet.
+}
+
+std::span<const EffectVertex> FrameDescription::effectVerticesOf(const EffectDraw& /*draw*/) const { return {}; }
+
+std::span<const std::uint16_t> FrameDescription::effectIndicesOf(const EffectDraw& /*draw*/) const { return {}; }
 
 std::span<const SceneLight> FrameDescription::lightsOf(const Draw3d& draw) const {
     CONEY_ASSERT(draw.firstLight + draw.lightCount <= m_lights.size());
