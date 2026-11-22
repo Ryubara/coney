@@ -56,7 +56,9 @@ TEST_CASE("character clips: a clip by its anim id, and the gait blend of each mo
     for (const std::int32_t id : {408, 409, 410, 411}) {
         const auto blend = clips.gaitClips(id);
         REQUIRE(blend.has_value());
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
         CHECK(idsOf(*blend) == kNormal);
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
         for (const coney::anim::GaitClip& clip : *blend) {
             CHECK(clip.clip == anims.clip(clip.animId));
         }
@@ -64,6 +66,7 @@ TEST_CASE("character clips: a clip by its anim id, and the gait blend of each mo
     // The hidden style's walk leads its own blend, whose jog, run and sprint are the normal style's.
     const auto hidden = clips.gaitClips(633);
     REQUIRE(hidden.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
     CHECK(idsOf(*hidden) == std::array<std::uint32_t, 5>{633, 409, 410, 411, 411});
     // The idle, the sneak and a combat clip are in no blend.
     CHECK_FALSE(clips.gaitClips(388).has_value());
@@ -92,6 +95,7 @@ TEST_CASE("character clips: a human's jog-to-run layer is drawn as the server's 
     REQUIRE(blendClips.has_value());
 
     // The server's blend between the jog and the run, a third of the way through their shared phase.
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
     const coney::anim::GaitBlendTask blend(*blendClips, 1.4F, 0.0F, 1.0F, coney::anim::kGaitBlendFlags, 0.3F);
     coney::net::HumanState human;
     human.layers[0] = coney::net::HumanAnimLayer{

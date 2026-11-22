@@ -174,9 +174,11 @@ TEST_CASE("client game: the guest loads the host's level and draws the host's hu
         const ClientWorld& world = *g.client.world();
         const std::optional<std::uint64_t> time = world.shownTime();
         REQUIRE(time.has_value());
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
         const std::uint32_t shown = static_cast<std::uint32_t>(*time / coney::net::kTimeUnitsPerStep);
         mostBehind = std::max(mostBehind, newestSent(g) - shown);
         CHECK(newestSent(g) - shown <= delay + 1);
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
         if (*time % coney::net::kTimeUnitsPerStep != 0) {
             continue;
         }
