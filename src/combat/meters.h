@@ -63,7 +63,9 @@ class Health {
     /// (keepOneWhileOut()).
     [[nodiscard]] bool depleted() const { return m_out; }
     /// Sets health to `value`, clamped to 0..maximum (a script's `HuSetHealthPercent`, `HuRevive`): 0 runs it out, any
-    /// more gives it back.
+    /// more gives it back. **Differs**: above 0 this gets a downed human up again, where the original's
+    /// `Human_SetHealthPercent` (0x002378a8) writes only the health (`+0x144`) and leaves a knocked-out man down
+    /// (docs/research/combat-reactions.md#down-health-coney).
     /// @coney-only a script's or a heal's write of the health, the down state kept beside the value
     void set(int value);
     /// Health that has run out reads 1 and stays out: the write `Human_PlayDeathReaction` (0x00267a00) makes as it

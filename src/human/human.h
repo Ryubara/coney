@@ -545,9 +545,8 @@ class Human final : public Holdable {
     /// `Human_IsDownOrDead`'s states `0x180050000` as Coney models them: its health run out (dying, knocked out in a
     /// fight: combat::Health::depleted(), which a downed human's 1 health does not undo), a script's knock-out or
     /// wounded (`0x10000`); never the health's value (docs/research/combat-reactions.md#down-health). Knocked down
-    /// alive
-    /// (`0x80000`), tackled (`0x800`) and cuffed (`0x20000`) are not among them. The narrow reading: ai::downOrDead()
-    /// (src/ai/gangs.h) is Coney's wider one, which also counts a human knocked down alive.
+    /// alive (`0x80000`), tackled (`0x800`) and cuffed (`0x20000`) are not among them. The narrow reading:
+    /// ai::downOrDead() (src/ai/gangs.h) is Coney's wider one, which also counts a human knocked down alive.
     /// @orig 0x00227e60 Human_IsDownOrDead (unknown)
     [[nodiscard]] bool downOrDead() const {
         return m_fighter.health().depleted() || m_script.knockedOut || m_script.wounded;
