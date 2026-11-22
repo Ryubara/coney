@@ -147,6 +147,7 @@ enum class HumanField : std::uint8_t {
     Fade3,      ///< How far layer 2 has faded in over layer 3, 0 to 1; 1 with no layer 3.
     Grounded,   ///< On the ground (not jumping or falling).
     KnockedOut, ///< Knocked out or wounded.
+    MoveStyle,  ///< In the hidden move style (`HumanAnimator::stealthStyle()`): its gait blends' walk is 633.
     Count,
 };
 

@@ -10,7 +10,7 @@ namespace coney::net {
 
 CharacterClips::CharacterClips(const characters::AnimSet& anims, const human::AnimSlots& slots) : m_anims(anims) {
     // As HumanAnimator::gaitBlend() builds its blend: walk, jog, run, sprint and the sprint again; the hidden style
-    // changes only the walk (HumanAnimator::setStealthStyle()).
+    // changes only the walk (HumanAnimator::setStealthStyle(), whose slots gaitBlend() reads).
     const std::uint32_t sprint = slots.ids[human::kSlotSprint];
     m_normal = {slots.ids[human::kSlotWalk], slots.ids[human::kSlotJog], slots.ids[human::kSlotRun], sprint, sprint};
     m_hidden = m_normal;
@@ -24,17 +24,22 @@ const anim::AnimClip* CharacterClips::clip(std::int32_t animId) const {
     return m_anims.clip(static_cast<std::size_t>(animId));
 }
 
-std::optional<std::array<anim::GaitClip, 5>> CharacterClips::gaitClips(std::int32_t animId, MoveStyle /*style*/) const {
+std::optional<std::array<anim::GaitClip, 5>> CharacterClips::gaitClips(std::int32_t animId, MoveStyle style) const {
     if (animId < 0) {
         return std::nullopt;
     }
     const auto id = static_cast<std::uint32_t>(animId);
-    // The normal style first: its jog, run and sprint are the hidden style's too.
-    if (std::ranges::find(m_normal, id) != m_normal.end()) {
-        return blendOf(m_normal);
+    const std::array<std::uint32_t, 5>& own = style == MoveStyle::Hidden ? m_hidden : m_normal;
+    // A style's own walk leads that style's blend, whichever style is asked: the layer a style change fades out is
+    // still the old style's blend. Where both styles share the walk, the style asked for decides.
+    const bool normalWalk = id == m_normal[0];
+    const bool hiddenWalk = id == m_hidden[0];
+    if (normalWalk != hiddenWalk) {
+        return blendOf(normalWalk ? m_normal : m_hidden);
     }
-    if (id == m_hidden[0]) {
-        return blendOf(m_hidden);
+    // The jog, run and sprint, and a shared walk, are in both styles' blends: the asked style's.
+    if (std::ranges::find(m_normal, id) != m_normal.end()) {
+        return blendOf(own);
     }
     return std::nullopt;
 }

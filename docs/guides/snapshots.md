@@ -37,7 +37,7 @@ not only the newest ([The client's world](client-world.md#model)).
 
 ## A human's state {#human-state}
 
-A human travels as its [field table](multiplayer.md#field-tables)'s 23 fields, each as its **word**: the bits
+A human travels as its [field table](multiplayer.md#field-tables)'s 24 fields, each as its **word**: the bits
 `fieldWord()` writes for it, so a delta compares quantized values and a change too small to reach the next step costs
 nothing. The game hands the server a `SnapshotHuman` per human: its `NetId`, its words (`humanWords()` of its values)
 and its priority rate. What a snapshot leaves a client holding is a map from id to words, walked in id order on every
@@ -46,15 +46,21 @@ machine.
 The fields: position (3 × 18 bits), heading (10), health and its maximum (16 each, the original's s16), and four
 animation layers: the newest's clip (12), playhead (10) and gait value (10), then for each of three older layers the
 same three and how far the layer above it has faded in over it (10 bits; 1 with no such layer, whose clip, playhead
-and gait value are then 0). Then grounded and knocked out, a bit each: 256 bits in all.
+and gait value are then 0). Then grounded, knocked out and the hidden move style, a bit each: 257 bits in all.
 
 The **gait value** is for a layer that is the locomotion's walk or run, a `GaitBlendTask`: five clips (walk, jog, run,
 sprint, sprint) on a value from 0 to 4, of which the two either side of the value play in step and blend by its
 fraction. The clip field names only the leading one of the two, so without the value a guest could not tell a walk
-from a walk easing into a jog. With it and the human's own gait clips (the style's slots, which the leading clip's id
-shows), the guest rebuilds the blend. It is 0 for any other task. To 10 bits it arrives within 0.002, so the sampler's
+from a walk easing into a jog. With it and the human's own gait clips (the style's slots, picked by the **move style**
+below), the guest rebuilds the blend. It is 0 for any other task. To 10 bits it arrives within 0.002, so the sampler's
 thresholds on the fraction (the lower clip alone below 0.01, the upper above 0.995) fall on the same side as on the
 host.
+
+The **move style** is one bit: set while the human is in the hidden style (`HumanAnimator::stealthStyle()`, the
+original's style `0x14`, [Sneaking](../research/stealth.md#sneaking)), which swaps the walk of its gait blend for 633
+`STEALTH_WALK`. The jog, run and sprint are in both styles' blends, so the clip field cannot say which blend a layer led
+by one of them is; the style does ([A character's clips](client-world.md#clips)). The field is Coney's own and was
+added in protocol 11 (#1613).
 
 Four layers is the most `AnimTaskStack` shows at once. It holds up to 12 tasks (`kMaxTasks`), a fade
 counting as one, but `change()` finishes the newest fade early once more than six are held (`kEarlyFinishTasks`), so

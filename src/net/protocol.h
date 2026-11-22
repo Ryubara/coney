@@ -28,7 +28,7 @@ namespace coney::net {
 
 /// The protocol's version. Bump it with any change to a message's layout or meaning: a client and a server of
 /// different versions refuse each other in the handshake rather than misread each other.
-inline constexpr std::uint16_t kProtocolVersion = 10;
+inline constexpr std::uint16_t kProtocolVersion = 11;
 /// The first field of Hello, "CONY" read as a little-endian number: a packet from another program is refused.
 inline constexpr std::uint32_t kProtocolMagic = 0x594e4f43U;
 /// The UDP port a server listens on unless told otherwise.

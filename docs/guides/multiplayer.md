@@ -129,7 +129,7 @@ the loopback; the Network page will put it in front of ENet.
 
 ## Protocol {#protocol}
 
-Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 10)
+Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 11)
 changes with any change to a layout or a meaning; a test pins the encoding byte for byte so a change cannot slip in
 unnoticed.
 
@@ -381,7 +381,7 @@ one definition, as Quake 3's `netField_t` tables do. `writeField()` and `readFie
 
 | Kind | Fields | Bits in full |
 | --- | --- | --- |
-| Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (16 bits each, -32,768 to 32,767: the original's s16 numbers, which a lethal hit takes below 0, [Characters](../research/characters.md)), four animation layers, as many as `AnimTaskStack` shows at once ([A human's state](snapshots.md#human-state)): each one's clip (12 bits), playhead (10 bits, a share of the clip) and gait value (10 bits, 0 to 4, for a walk or run blend), and each older layer's fade under the one above it (10 bits), then grounded, knocked out | 256 |
+| Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (16 bits each, -32,768 to 32,767: the original's s16 numbers, which a lethal hit takes below 0, [Characters](../research/characters.md)), four animation layers, as many as `AnimTaskStack` shows at once ([A human's state](snapshots.md#human-state)): each one's clip (12 bits), playhead (10 bits, a share of the clip) and gait value (10 bits, 0 to 4, for a walk or run blend), and each older layer's fade under the one above it (10 bits), then grounded, knocked out, the hidden move style | 257 |
 | World object | position, heading, door opening (10 bits), state (a byte), broken, hidden | 84 |
 | Car | position, heading, speed (12 bits, -64 to 64 m/s) | 76 |
 | Player HUD (by slot, not id) | rage and its maximum (16 bits each, the s16 range), raging, the banner's blue-grey, the score (25 bits), the money (16 bits), the four item counts (8 bits each), SELECT shows the panel, knocked out, the camera ignores the stick ([HUD state](snapshots.md#hud-state)) | 110 |
@@ -434,7 +434,7 @@ captures into it.
 The **state digest** (`src/net/state_digest.h`) is a 64-bit FNV-1a hash, fed a byte at a time least significant
 first so every machine gets the same value:
 
-- of the **humans**: their count, then each in id order, its id and its 23 field words. Words, not values, so a
+- of the **humans**: their count, then each in id order, its id and its 24 field words. Words, not values, so a
   guest's decoded state and the host's compare exactly, quantization included;
 - of the **pads** a step played, port 1 then port 2: plugged in, and only when it is, the buttons, sticks and
   pressures.

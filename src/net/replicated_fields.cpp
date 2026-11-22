@@ -105,6 +105,9 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(HumanField::Count)> kHu
     {.name = "fade3", .encoding = FieldEncoding::Float, .bits = 10, .min = 0.0F, .max = 1.0F},
     {.name = "grounded", .encoding = FieldEncoding::Bool, .bits = 1},
     {.name = "knockedOut", .encoding = FieldEncoding::Bool, .bits = 1},
+    // The move style: the jog, run and sprint are in the gait blends of both styles, so the clip field cannot say
+    // which one a layer is (docs/guides/snapshots.md#human-state). A bit, as there are two styles.
+    {.name = "moveStyle", .encoding = FieldEncoding::Bool, .bits = 1},
 }};
 
 constexpr std::array<FieldSpec, static_cast<std::size_t>(WorldObjectField::Count)> kWorldObjectFields{{

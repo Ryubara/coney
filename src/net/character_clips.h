@@ -18,12 +18,12 @@
 namespace coney::net {
 
 /// A ClipSource over one character's clips (characters::AnimSet: its own data, then the generic defaults), with the
-/// gait blends of the locomotion's two move styles built from `slots` as human::HumanAnimator builds them: the walk,
-/// jog, run, sprint and sprint slots, and the hidden style's, whose walk is 633 `STEALTH_WALK`
+/// gait blends of the locomotion's two move styles built from `slots` as human::HumanAnimator::gaitBlend() builds them:
+/// the walk, jog, run, sprint and sprint slots, and the hidden style's, whose walk is 633 `STEALTH_WALK`
 /// (human::kAnimStealthWalk). A clip one gait blend names is in that blend; the jog, run and sprint are in both, and
-/// are answered with the normal style's (**Coney's choice**: the snapshot does not say the style, so a sneaking
-/// human's blend led by the jog late in its walk-to-jog pair is drawn with the normal walk under it, until #1613 puts
-/// the style in the snapshot).
+/// are answered with the blend of the move style asked for, which a snapshot carries for each human
+/// (HumanState::moveStyle). A style's own walk answers its own blend whichever style is asked, so a layer a style
+/// change is fading out keeps its blend.
 /// @coney-only network play; the original has none
 class CharacterClips final : public ClipSource {
   public:
@@ -33,8 +33,10 @@ class CharacterClips final : public ClipSource {
 
     /// The clip of anim id `animId` in the set; null for an id it has no clip for, or one out of range.
     [[nodiscard]] const anim::AnimClip* clip(std::int32_t animId) const override;
-    /// The five clips of the gait blend `animId` is one of: the normal style's for its walk, jog, run or sprint, the
-    /// hidden style's for its walk; nothing for any other id, or when the set lacks one of the blend's clips.
+    /// The five clips of the gait blend `animId` is one of in `style`: that style's blend for the jog, run or sprint
+    /// (the normal style's walk, jog, run, sprint and sprint; the hidden style's with 633 for the walk), and for a
+    /// style's own walk (408 or 633) its blend whichever style is asked; nothing for any other id, or when the set
+    /// lacks one of the blend's clips.
     [[nodiscard]] std::optional<std::array<anim::GaitClip, 5>> gaitClips(std::int32_t animId,
                                                                          MoveStyle style) const override;
 

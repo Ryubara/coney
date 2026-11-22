@@ -14,7 +14,7 @@ game](#client-game) (`--join ADDR --net-view`): `src/platform/client_game.h` (`C
 levels and steps a `ClientWorld` from the snapshots the session decodes, and `src/platform/client_level_scene.h`
 (`ClientLevelScene`), which draws the level and the world's humans through the renderer. The host fills its snapshots
 from its own humans every step ([The game's humans](multiplayer.md#game-humans)). **Planned**, each with its
-issue: each human's own character (#1612) and move style (#1613) in the snapshot, and the guest's own player's camera
+issue: each human's own character (#1612) in the snapshot, and the guest's own player's camera
 (#1333), which the snapshots do not carry yet (drawn with stand-ins until then, [The client game](#client-game)); the
 host's game events and HUD on the client game (#1614).
 
@@ -136,9 +136,12 @@ defaults) by anim id, and the gait blends its locomotion plays, built from the a
 builds them: the walk, jog, run, sprint and sprint slots (408 to 411 for the player's slots, `AnimSlots::player()`), and
 the hidden style's blend, whose walk is 633 `STEALTH_WALK`. A blend is answered only when the set has all five clips.
 
-The jog, run and sprint are in both styles' blends, and a snapshot does not say the style, so they are answered with
-the normal style's (Coney's choice): a sneaking human whose blend is led by the jog, late in its walk-to-jog pair, is
-drawn with the normal walk under it, until the style is in the snapshot (#1613).
+The jog, run and sprint are in both styles' blends, so `gaitClips(animId, style)` answers them with the blend of the
+**move style** the human's snapshot carries (`HumanState::moveStyle`, [a human's state](snapshots.md#human-state)),
+as `HumanAnimator::gaitBlend()` builds it from the human's current slots. A style's own walk leads that style's blend
+whichever style is asked: when a human changes style, the layer of its old style's blend fades out under the new one's,
+and its walk (408 or 633) still names the blend it belongs to. A fading layer led by the jog, run or sprint cannot say
+which style built it, so it takes the new style's blend for the length of the fade.
 
 ## The client game {#client-game}
 
