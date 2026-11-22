@@ -20,6 +20,9 @@ Where it differs from CI, and why (docs/guides/clang-tidy.md#local has the measu
   filter is applied here, after clang-tidy, instead of by clang-tidy's `--line-filter` (`RunOptions.line_filter`).
 * **A build-setup change** (`ci.tidy.whole_when`) makes CI check every file; here only the change's own sources are
   checked, and CI's whole-codebase pass covers the rest.
+* **Warnings MSVC lacks.** The warnings `ci.tidy.local_warnings` names (a member left out of an aggregate or designated
+  initializer) are on in CI's GCC and Clang builds and not in MSVC's, so they are turned on here
+  (`warning_arguments`) and reported on the changed lines like any finding.
 * **Advice.** On Windows the findings of the checks `ci.tidy.local_advisory` names (they follow the standard library's
   own code: `bugprone-exception-escape`) are printed as advice and fail nothing, as they differ from CI's both ways.
 
@@ -93,6 +96,17 @@ def header_filter(config_text: str, windows: bool) -> str | None:
     if match is None:
         return None
     return match.group("regex").replace("/", r"[/\\]")
+
+
+def warning_arguments(warnings: tuple[str, ...]) -> tuple[str, ...]:
+    """The clang-tidy arguments that turn on the clang warnings `ci.tidy.local_warnings` names and report them: each
+    one's `-W` flag for the compiler, and its `clang-diagnostic-` check (a diagnostic is shown only when its check is
+    enabled, and `.clang-tidy`'s own list names none: the `--checks` here is added to it). The compile database of
+    Windows is MSVC's, whose /W4 gives neither warning that CI's -Wextra does."""
+    if not warnings:
+        return ()
+    checks = ",".join(f"clang-diagnostic-{name}" for name in warnings)
+    return (f"--checks={checks}", *(f"--extra-arg=-W{name}" for name in warnings))
 
 
 def _version_of(program: str) -> str | None:
@@ -207,7 +221,8 @@ def run_local(
     except OSError as error:
         raise ConfigError(f"{config_file}: cannot be read ({error})") from error
     regex = header_filter(config, windows)
-    extra = (f"--header-filter={regex}",) if regex else ()
+    header_arguments = (f"--header-filter={regex}",) if regex else ()
+    extra = (*header_arguments, *warning_arguments(settings.local_warnings))
     options = ci_tidy.RunOptions(extra_args=extra, line_filter=not windows)
     # A source the database does not know (the build is older than the branch) would be read with a guessed command,
     # which is not the build's: clang-tidy then reports compile errors that are not there, so it is not run.

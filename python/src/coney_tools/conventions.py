@@ -1650,6 +1650,10 @@ class CiTidy:
     #: Checks whose findings depend on the standard library's own code, so a local run against another library (MSVC's
     #: on Windows) reports them as advice, never as a failure: they differ from CI's both ways.
     local_advisory: tuple[str, ...]
+    #: Clang warnings (`missing-field-initializers`, without the `-W`) the local run turns on beyond the compile
+    #: database's own flags: CI's GCC and Clang builds have them from -Wextra with -Werror, MSVC's /W4 and so the
+    #: Windows database do not, so a change that passes there would fail every Linux build.
+    local_warnings: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -3247,6 +3251,7 @@ def _read_ci(
             "whole_when",
             "llvm_major",
             "local_advisory",
+            "local_warnings",
         ),
     )
     folders = _texts(tidy["folders"], _at(tidy_where, "folders"))
@@ -3264,6 +3269,10 @@ def _read_ci(
     for entry in whole_when:
         if entry.startswith("/") or ".." in entry or "*" in entry:
             raise _fail(_at(tidy_where, "whole_when"), f"'{entry}' must be a path inside the checkout, no pattern")
+    local_warnings = _texts(tidy["local_warnings"], _at(tidy_where, "local_warnings"))
+    for warning in local_warnings:
+        if not re.fullmatch(r"[a-z][a-z0-9-]*", warning):
+            raise _fail(_at(tidy_where, "local_warnings"), f"'{warning}' must be a warning name without -W")
     failure_where = _at(where, "failure")
     failure = _table(
         table["failure"],
@@ -3323,6 +3332,7 @@ def _read_ci(
             whole_when=whole_when,
             llvm_major=_count(tidy["llvm_major"], _at(tidy_where, "llvm_major")),
             local_advisory=_texts(tidy["local_advisory"], _at(tidy_where, "local_advisory")),
+            local_warnings=local_warnings,
         ),
         failure=CiFailure(
             workflows=_texts(failure["workflows"], _at(failure_where, "workflows")),

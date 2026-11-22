@@ -3,12 +3,13 @@
 clang-tidy runs."""
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
 from conventions_support import REPO
 
-from coney_tools import local_tidy
+from coney_tools import ci_tidy, local_tidy
 from coney_tools.conventions import load_conventions
 from coney_tools.local_tidy import TidyUnavailable, find_program, header_filter, run_local
 
@@ -196,3 +197,73 @@ def test_on_windows_a_check_that_follows_the_standard_library_is_advice_not_a_fa
     assert here.lines() == [f"advice, not a failure (may differ from CI): src/a.cpp:1:1 [{advisory}] may throw"]
     # on Linux the library is CI's, so the same finding fails
     assert not run(windows=False).ok
+
+
+def test_the_local_run_turns_on_the_warnings_only_clang_and_gcc_give(tree: Path) -> None:
+    # MSVC's compile database does not carry -Wextra, so the run names the warnings itself, on every platform
+    warnings = CONVENTIONS.ci.tidy.local_warnings
+    assert "missing-field-initializers" in warnings and "missing-designated-field-initializers" in warnings
+    for windows in (True, False):
+        tidy = Tidy({})
+        run_local(
+            tree, "main", CONVENTIONS, tidy, program="t", build_dir=tree / "build", jobs=1, diff=DIFF, windows=windows
+        )
+        command = tidy.commands[0]
+        assert f"--checks={','.join(f'clang-diagnostic-{name}' for name in warnings)}" in command
+        for name in warnings:
+            assert f"--extra-arg=-W{name}" in command
+
+
+#: An aggregate with no default member initializers, as `HudFrame` of #1639 was: GCC and Clang refuse a member left out.
+AGGREGATE = """\
+struct HudFrame {
+    int radar;
+    int gangLiving;
+    int health;
+};
+
+HudFrame make() {
+    return HudFrame{INIT};
+}
+"""
+
+#: The one changed line of the probe: its `return`, line 8.
+PROBE_DIFF = "--- a/src/probe.cpp\n+++ b/src/probe.cpp\n@@ -8 +8 @@\n-x\n+    return HudFrame{{{init}}};\n"
+
+
+def probe(tmp_path: Path, init: str) -> list[str]:
+    """Run the real clang-tidy over a synthetic probe whose `return` has `init` as its initializer; the lines it
+    reports. Skips when this machine has no clang-tidy of CI's major version."""
+    try:
+        program = find_program(REPO, MAJOR)
+    except TidyUnavailable as error:
+        pytest.skip(str(error))
+    write(tmp_path, ".clang-tidy", (REPO / ".clang-tidy").read_text(encoding="utf-8"))
+    write(tmp_path, "src/probe.cpp", AGGREGATE.replace("INIT", init))
+    # MSVC's way of calling clang: no -Wextra, as the compile database of the Windows build
+    command = "clang-cl.exe /c /std:c++latest /W4 src/probe.cpp"
+    entry = {"directory": str(tmp_path), "command": command, "file": str(tmp_path / "src/probe.cpp")}
+    write(tmp_path, "build/compile_commands.json", json.dumps([entry]))
+    result = run_local(
+        tmp_path,
+        "main",
+        CONVENTIONS,
+        ci_tidy.run_tool,
+        program=program,
+        build_dir=tmp_path / "build",
+        jobs=1,
+        diff=PROBE_DIFF.replace("INIT", init),
+        windows=sys.platform == "win32",
+    )
+    return result.lines()
+
+
+@pytest.mark.parametrize("init", ["1", "1, 2", ".radar = 1", ".radar = 1, .gangLiving = 2"])
+def test_an_initializer_that_leaves_a_member_out_is_refused(tmp_path: Path, init: str) -> None:
+    lines = probe(tmp_path, init)
+    assert len(lines) == 1 and "missing" in lines[0] and "initializer" in lines[0], lines
+
+
+@pytest.mark.parametrize("init", ["1, 2, 3", ".radar = 1, .gangLiving = 2, .health = 3", ""])
+def test_an_initializer_that_names_every_member_is_accepted(tmp_path: Path, init: str) -> None:
+    assert probe(tmp_path, init) == []
