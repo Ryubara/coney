@@ -682,14 +682,12 @@ build the check has just made; a finding fails the check and names its file, lin
 worktree before review ([clang-tidy here](clang-tidy.md#local); [#1496](issue:1496): six pull requests in one day failed
 CI's clang-tidy after their reviews had passed). CI's required `clang-tidy` check still runs the same pass on the pull
 request, and every file on `main` and nightly ([clang-tidy](clang-tidy.md)). It catches what MSVC lets through, such as
-an unchecked `std::optional` access (`bugprone-unchecked-optional-access`, `*` too: the local run reads a copy of
-Microsoft's `<optional>` that the check can model, [how](clang-tidy.md#differences); a `REQUIRE(opt.has_value())` before
-a `*opt` is not a guard to it, so that line carries a `NOLINTNEXTLINE` with its reason) or a use after a move. The local
-run reads the code through MSVC's headers, so a few findings come only from CI's Linux run ([the
-differences](clang-tidy.md#differences)); one of those is an annotation on the pull request, fixed as a fix task on the
-branch ([Tracks](how-we-work.md#slots)). An aggregate or designated initializer that leaves a member out is refused by
-GCC and Clang (`-Wall -Wextra` as errors in the `ci`, `ci-release` and `asan` presets) and passed by MSVC; `clang-tidy`
-turns those warnings on here ([the warnings MSVC lacks](clang-tidy.md#local-warnings)).
+an unchecked `std::optional` access (`bugprone-unchecked-optional-access`, `*` too: [how](clang-tidy.md#differences)) or
+a use after a move. The local run reads the code through MSVC's headers, so a few findings come only from CI's Linux run
+([the differences](clang-tidy.md#differences)); one of those is an annotation on the pull request, fixed as a fix task
+on the branch ([Tracks](how-we-work.md#slots)). An aggregate or designated initializer that leaves a member out is
+refused by GCC and Clang (`-Wall -Wextra` as errors in the `ci`, `ci-release` and `asan` presets) and passed by MSVC;
+`clang-tidy` turns those warnings on here ([the warnings MSVC lacks](clang-tidy.md#local-warnings)).
 
 `ci run` runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
 runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's

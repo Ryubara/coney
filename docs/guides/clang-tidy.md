@@ -57,8 +57,8 @@ the finding is one of any other: `path:line:column [clang-diagnostic-missing-fie
 closing brace, so a multi-line initializer to which a member was added but whose closing line is untouched is not
 caught. A member with a default member initializer may be left out, as in GCC and Clang, and so may all of them (`T{}`).
 To add a warning of this kind, put its name in the list: no more is needed.
-This is the clang-diagnostic case only: [#1628](issue:1628)'s unchecked optional `*` is a check's finding, not a
-warning, and stays [a difference](#differences).
+This is the clang-diagnostic case only: an unchecked optional `*` is a check's finding, not a warning, and is
+found through [a copy of Microsoft's header](#differences).
 
 **Measured** on 2026-11-22 with the pinned clang-tidy. A probe of an aggregate of three `int`s against a clang-cl
 compile command with `/W4`: `HudFrame{1}`, `{1, 2}`, `{.radar = 1}` and `{.radar = 1, .gangLiving = 2}` each reported
