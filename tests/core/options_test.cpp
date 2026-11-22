@@ -983,7 +983,7 @@ TEST_CASE("the network test files: the state digest, the snapshot digests and a 
 }
 
 // Expected: unverified, #1603 (Coney's own option, docs/guides/client-world.md#client-game)
-TEST_CASE("--net-view makes a guest the client game, and needs --join", "[options]") {
+TEST_CASE("the net-view option makes a guest the client game, and needs --join", "[options]") {
     const auto view = parse(std::array<std::string_view, 3>{"--join", "127.0.0.1:1", "--net-view"});
     REQUIRE(view.has_value());
     CHECK(view->netView);
