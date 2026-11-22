@@ -275,10 +275,8 @@ crew fought.
 Why not a frame-locked script: it replays inputs by step number, so any change to the camera or the AI moves the
 characters a little, the recorded presses then land in the wrong place, and the test fails (or passes by luck) for
 reasons that have nothing to do with the mission. A driver that reads the state and steers toward the marker
-survives those changes, and a failure means the mission really cannot be finished. Like every disc test, it skips
-without a disc and prints only aggregates, and it plays under the engine limits preset, every lift of the original's
-fixed limits pinned at the original's number, so it compares with the PS2 one to one
-([Engine limits](running-options.md#engine-limits)).
+survives those changes, and a failure means the mission really cannot be finished. Like every disc test it skips
+without a disc, prints only aggregates and plays at the [original's limits](running-options.md#engine-limits).
 
 A fight is chaotic: a change of 0.1 mm in one update can send it down another course, so the commit a bisect of a
 failing fight names may only have nudged it. Before blaming that commit, print the positions, health and goal states
