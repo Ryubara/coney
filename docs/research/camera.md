@@ -2276,16 +2276,27 @@ a player's scale × 0.5, or for a non-player (`+0x1b0` = −1) his capsule radiu
        from `B` is split into the part along the plane's normal and the rest; the normal part becomes the margin
        (+ 10⁻⁵) inside the plane, and the rest is cut short by a ray from `B` (mask `0x200`, as long as the rest + the
        margin) so it stops the margin before a wall. The margin is `r`, or setting 7 (`+0x3d4`) in mode 3.
-    3. **Bottom** (both callers pass this on): when `A` is within `r` of the bottom plane it is moved across it by the
-       shortfall, keeping its distance from the camera (inferred from the vector steps), again cut short by a ray.
+    3. **Bottom** (both callers pass this on): when `A` is within `r` of the bottom plane it is moved as the sides
+       move it, with the bottom plane's normal and `r` as the margin: the part of the move along the normal becomes
+       `r` (+ 10⁻⁵) inside, the rest is cut short by a ray from `B` as long as the rest + `r`. The function also builds
+       a point the camera's distance along the normal and its plane, but overwrites both before reading them (the ray's
+       origin is written over that plane's slot): confirmed (code) at `0x00140d68`.
     4. **Line of sight**, when any step moved him (or in mode 3 on player 0's current camera while `+0x3e5` is
        set): a ray (mask `0x200`, plus bit 0 in mode 3) from the point 2 m in front of the camera, at `A`'s height
        (the camera's in mode 3), toward `A`, as long as min(that distance, 0.7 × the far plane) + 3`r`; on a hit `A`
-       is put `r` (along the face's normal) before the face.
+       is put `r` (along the face's normal) before the face. Hit or not, `A`'s height becomes that ray's starting
+       height (its own height before the steps, or in mode 3 the camera's 2 m point's): the hit writes only x and y,
+       and the height is written after it. Confirmed (code) at `0x00140d68`.
     5. When a step moved him or the ray hit: `A` − offset is his new place; his height is found by a ray straight down
        from `zmax`, `zmax − zmin + 1` m long, and set to the hit + 0.01 m (kept when nothing is hit). If he is jumping
        or in a long fall (state flags `0x1400000000`) he is landed (`Human_Land(1, 1)`) and his height moves only 30%
        of the way. He is placed there with his current rotation (`Human_SetTransform`, vtable `+0x6c`).
+
+  In level60's first fight (`P1.CamLock01`) the original held the rail camera at x −122.95 (y 39.5, z 3.7) with the
+  player at x −123.44, y 24.37; with the stick held toward −x the player walked on to x −126.18 and stayed there, at
+  the right edge of the held view, while the fight went on: confirmed (runtime), run
+  r-20261122-level60-570-frame. Coney: `keepTargetInFrame` (`repo:src/camera/rail_frame.cpp`) for its one target, run
+  by `RailCamera::update` in mode 3 after the start and in a held mode 0.
 
   So on a two-target rail every target, **non-players included** (`level5`'s Diego), is pushed back inside the left,
   right and bottom edges of the view and kept out of walls between him and the camera; the camera only stops.
@@ -3400,8 +3411,10 @@ The world viewer keeps its own free camera with the player camera's lens
   while he jumps or falls; switch 7's world rays and sphere push are not built, so a leading camera beside its target
   can stand inside a wall; the tie
   between two nearest rail points (with the segment choice's other differences, [#956](issue:956)), the 40% look-at
-  catch-up (`+0x3ec`), the `+0x330` vector, the split-screen halving and extras, mode 3's keep-in-frame step
-  (setting 7 is kept, `0x00140d68` not built) and the push out of world collision are not built; a rail with no
+  catch-up (`+0x3ec`), the `+0x330` vector, the split-screen halving and extras and the push out of world collision
+  are not built. The keep-in-frame push (`0x00140d68`, `repo:src/camera/rail_frame.cpp`) is built for the one target,
+  in mode 3 after its start and in a held mode 0; switch 2's push off the segment planes and the landing of a falling
+  target (`Human_Land`) are not, and its fall test is the airborne test above; a rail with no
   points stands 3 m behind and 1 m above the look-at point. The fixed camera always looks at the average (the
   original's single-entry case is not traced). `CamDelete` forgets a fixed camera as it does a locked one and keeps
   third-person cameras.

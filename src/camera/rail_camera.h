@@ -197,6 +197,10 @@ class RailCamera {
     // Mode 3's projection of `p` on the current segment, in plan, clamped only at the rail's two ends.
     /// @orig 0x0013dcc8 CamRail_PlaceMode3 (unknown)
     [[nodiscard]] anim::Vec3 projectTrailing(anim::Vec3 p) const;
+    // This update's keep-in-frame push of the target at `feet` (`trailing`: mode 3's margin and line of sight), when
+    // update() was handed the frame input: his new feet, kept for update() to return, or `feet` when he stays.
+    /// @orig 0x00140708 CamRail_CollideTwoTargets (unknown)
+    [[nodiscard]] anim::Vec3 keepInFrame(anim::Vec3 feet, bool trailing);
     // Picks the segment the target point is on (CamRail_ChooseSegment).
     void chooseSegment() { chooseSegmentFor(m_target); }
     // Picks the segment point `p` is on; a change sets the hand-over blend.
@@ -245,6 +249,15 @@ class RailCamera {
     anim::Vec3 m_lookAt;
     anim::Vec3 m_feet; // the target's feet at the last update
     bool m_placed = false;
+    // The keep-in-frame push's input for the update running, with the frame the camera had at its start.
+    struct FrameCall {
+        RailFrameInput input;
+        CameraView view;
+    };
+    std::optional<FrameCall> m_frameCall;
+    std::optional<anim::Vec3> m_pushed; // where this update's push put the target
+    bool m_hadTarget = false;           // the last update had a target (the gathered count, `+0x348`)
+    bool m_joined = false;              // +0x3e5: the target count grew this update
 };
 
 } // namespace coney::camera

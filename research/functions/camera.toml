@@ -905,6 +905,29 @@ coney = "src/camera/rail_camera.h:RailCamera::placeLevel"
 status = "compared"
 
 [[function]]
+address = 0x00140d68
+name = "CamRail_KeepTargetsInFrame"
+page = "camera.md#rail-frame"
+role = "Moves each rail target back inside the view's left or right and bottom planes, out of walls toward the camera and onto the ground below; the camera does not move. [frame](camera.md#rail-frame)."
+level = "confirmed-code"
+coney = "src/camera/rail_frame.h:keepTargetInFrame"
+status = "compared"
+
+[[function.gaps]]
+what = "switch 2's push off the rail's segment planes or beyond the plane 2 m in front of the camera: Coney's rail keeps no switch 2"
+relation = "not-ported"
+issue = 1017
+
+[[function.gaps]]
+what = "a falling target is not landed (Human_Land) before his height is eased"
+relation = "not-ported"
+issue = 1017
+
+[[function.gaps]]
+what = "one target: Coney's rail has one, so the loop over the targets is a single push"
+relation = "stand-in"
+
+[[function]]
 address = 0x00142578
 name = "PoizoCam_Reverse"
 page = "camera.md#fn-spline"

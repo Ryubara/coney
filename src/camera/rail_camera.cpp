@@ -314,10 +314,12 @@ void RailCamera::chooseSegmentFor(anim::Vec3 p) {
 }
 
 void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 madeLook, anim::Vec3 oldTarget, anim::Vec3 oldLook) {
-    // Held at the start (mode 3 reached an end, and the hold stays): not placed at all; P and the look-at point go back
-    // to the update's start, and the camera keeps its place. Not ported (#1017): CamRail_CollideTwoTargets then keeps
-    // the targets in frame.
+    // Held at the start (CamLockRail, or mode 3 reached an end, and the hold stays): not placed at all; P and the
+    // look-at point go back to the update's start, and the camera keeps its place. CamRail_CollideTwoTargets then
+    // pushes the target back into the frame: its in-frame test (0x00140ad0) fails exactly when the push would move
+    // him, so the push runs alone.
     if (m_held) {
+        (void)keepInFrame(feet, false);
         m_target = oldTarget;
         m_lookAt = oldLook;
         return;
@@ -486,18 +488,53 @@ void RailCamera::placeLeading(anim::Vec3 feet, bool beside) {
 }
 
 std::optional<anim::Vec3> RailCamera::update(std::optional<anim::Vec3> feet, bool beside, float seconds,
-                                             anim::Vec3 velocity, bool airborne, const RailFrameInput* /*frame*/) {
+                                             anim::Vec3 velocity, bool airborne, const RailFrameInput* frame) {
     if (seconds <= 0.0F && m_placed) {
         return std::nullopt;
     }
+    // The push reads the frame the camera had at the update's start (built at the last update's end).
+    m_pushed.reset();
+    m_frameCall.reset();
+    if (frame != nullptr && m_placed) {
+        m_frameCall = FrameCall{.input = *frame, .view = view()};
+    }
+    // `+0x3e5`: the target count grew this update (CamRail_GatherTargets).
+    if (feet && !m_hadTarget) {
+        m_joined = true;
+    }
+    m_hadTarget = feet.has_value();
     placeFor(feet, beside, seconds, velocity, airborne);
+    m_frameCall.reset();
+    // The update's end clears `+0x3e5`; an update with no target stops before it.
+    if (feet) {
+        m_joined = false;
+    }
     // Not ported (#549): the split-screen extras (CamRail_UpdateSplitScreen) and the co-op flash's fade.
     // An update with time ends the activation's start and its undamped step, in any mode.
     if (seconds > 0.0F) {
         m_starting = false;
         m_undamped = false;
     }
-    return std::nullopt;
+    return m_pushed;
+}
+
+anim::Vec3 RailCamera::keepInFrame(anim::Vec3 feet, bool trailing) {
+    if (!m_frameCall) {
+        return feet;
+    }
+    const RailFrameInput& input = m_frameCall->input;
+    // The margin inside the sides is mode 3's setting 7, else his radius; the line of sight on a join is mode 3's.
+    const RailFrameRules rules{.offset = anim::Vec3{m_setup.offset.x, m_setup.offset.y, m_lookHeight.current},
+                               .sideMargin = trailing ? m_mode3Margin.current : input.radius,
+                               .trailing = trailing,
+                               .joined = trailing && m_joined};
+    const RailFrameTarget target{
+        .feet = feet, .before = input.before, .radius = input.radius, .falling = input.falling};
+    if (const std::optional<anim::Vec3> placed = keepTargetInFrame(m_frameCall->view, target, rules, input.mesh)) {
+        m_pushed = placed;
+        return *placed;
+    }
+    return feet;
 }
 
 void RailCamera::placeFor(std::optional<anim::Vec3> feet, bool beside, float seconds, anim::Vec3 velocity,
@@ -605,10 +642,11 @@ void RailCamera::placeTrailing(std::optional<anim::Vec3> feet, anim::Vec3 veloci
     if (!feet) {
         return;
     }
+    // 2. The keep-in-frame push (0x00140d68) moves him back inside the view's sides by setting 7, over its bottom by
+    // his radius and out of walls; the rest of the placement goes on from where he is put. Coney's rail has one
+    // target, so the hindmost is he.
+    feet = keepInFrame(*feet, true);
     m_feet = *feet;
-    // 2. **Coney stand-in**: the keep-in-frame step (0x00140d68), which pushes the targets back inside the view's
-    // sides by the margin (setting 7) and out of walls, is not built; Coney's rail has one target, so the hindmost is
-    // he.
     // 3. The target point: his feet raised by the offset's height only.
     m_target = anim::Vec3{feet->x, feet->y, feet->z + offset.z};
     // 4. The goal: the target point's foot on the rail and 2 m toward him at the pitch, taken only when ahead of the

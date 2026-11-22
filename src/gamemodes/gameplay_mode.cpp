@@ -542,7 +542,18 @@ void GameplayMode::enter() {
         }
         return std::nullopt;
     });
-    // A locked camera's kept-in-view push moves a human the scripts made, keeping his heading.
+    // The rail's keep-in-frame push reads its target's radius: player 1's scale x 0.5, another human's capsule radius
+    // (docs/research/camera.md#rail-frame).
+    m_cameras->setRadiusLocator([this, scripted = m_scripted.get()](double handle) -> std::optional<float> {
+        const ai::Brain* brain = scripted->brain(handle);
+        if (brain == nullptr) {
+            return std::nullopt;
+        }
+        const HumanCreation* player = m_humans.player(1);
+        const bool isPlayer = player != nullptr && player->handle == handle;
+        return isPlayer ? brain->human().scale() * 0.5F : brain->human().capsuleRadius();
+    });
+    // A locked camera's kept-in-view push (and the rail's) moves a human the scripts made, keeping his heading.
     m_cameras->setMover([scripted = m_scripted.get()](double handle, anim::Vec3 feet) {
         if (ai::Brain* brain = scripted->brain(handle); brain != nullptr) {
             brain->human().place(feet, brain->human().heading());

@@ -333,10 +333,11 @@ against 17 to 23), and the timer runs 6 ticks shorter (3031 steps of 33 ms count
   `HUDSetANBossTexture` keeps each panel's six boss pictures (`repo:src/hud/armies_hud.cpp`); a disc test plays
   `level60` through all three, to the rail camera's lock at the first fight. Marked stand-ins: the target panel that
   shows a boss's picture is not drawn (#662), so the pictures are kept but not shown; `HuEnableController` on a
-  human no pad can drive (an AI human) does nothing, as Coney's pad flag exists only for the player's human; and the
-  keep-in-frame push a held rail camera makes (`0x00140d68`) is not built (#1017).
-- **The rail.** Setting 5 switches mode 3 on with its pitch and setting 7 keeps its margin; the keep-in-frame step
-  that uses the margin is a marked stand-in, as Coney's rail has one target. The segment choice's differences are
+  human no pad can drive (an AI human) does nothing, as Coney's pad flag exists only for the player's human. The
+  held rail camera pushes the player back into its frame (`0x00140d68`, `repo:src/camera/rail_frame.cpp`), so he stays
+  in view through the fight as in the original ([Keeping the targets in frame](camera.md#rail-frame)).
+- **The rail.** Setting 5 switches mode 3 on with its pitch and setting 7 is the keep-in-frame push's side margin
+  (`repo:src/camera/rail_frame.cpp`), for Coney's one target. The segment choice's differences are
   issue #956.
 - **The join messages.** Both start on at the set-up and a panel's first attach clears its own (`ArmiesHud::levelSetUp`,
   `ArmiesHud::panelAttached`), so player 2's message shows in play as in the original, centred on the panel's place

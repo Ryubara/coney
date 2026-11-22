@@ -256,6 +256,9 @@ double Cameras::setupRail(double handle, double target, const RailSetup& setup) 
     if (!m_rail) {
         m_rail.emplace();
     }
+    if (target != m_railTarget) {
+        m_railBefore.reset();
+    }
     m_railTarget = target;
     // Its target joins the shared target list, as `CameraTargets_Add(human, 1)` puts it there.
     if (std::ranges::find(m_targets, target) == m_targets.end()) {
@@ -325,8 +328,22 @@ void Cameras::stepTracking(CameraRef ref, float seconds) {
             const std::optional<anim::Vec3> velocity = m_velocity ? m_velocity(m_railTarget) : std::nullopt;
             // Stand-in (#1406): gameplay sets no airborne test yet, so the damping never skips an airborne target.
             const bool airborne = m_airborne && m_airborne(m_railTarget);
-            m_rail->update(placed ? std::optional<anim::Vec3>(placed->first) : std::nullopt, enabled(kSwitchRailLead),
-                           seconds, velocity.value_or(anim::Vec3{}), airborne);
+            const std::optional<anim::Vec3> feet =
+                placed ? std::optional<anim::Vec3>(placed->first) : std::optional<anim::Vec3>();
+            // The keep-in-frame push: where he stood at the start of his update (the last update's feet, pushed or
+            // not), his radius and the level's mesh. **Coney's reading**: the push's fall test (`0x1400000000`) is
+            // taken as the airborne test (`0x1c00000000`), which gameplay does not set yet (#1406).
+            const RailFrameInput frame{.before = m_railBefore.value_or(feet.value_or(anim::Vec3{})),
+                                       .radius = m_radius ? m_radius(m_railTarget).value_or(kRailRadius) : kRailRadius,
+                                       .falling = airborne,
+                                       .mesh = m_lastMesh};
+            const std::optional<anim::Vec3> pushed = m_rail->update(feet, enabled(kSwitchRailLead), seconds,
+                                                                    velocity.value_or(anim::Vec3{}), airborne, &frame);
+            // The push places him with his rotation (Human_SetTransform).
+            if (pushed && m_move) {
+                m_move(m_railTarget, *pushed);
+            }
+            m_railBefore = pushed ? pushed : feet;
         }
         break;
     case CameraKind::Fixed:

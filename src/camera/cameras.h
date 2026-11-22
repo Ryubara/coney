@@ -108,7 +108,9 @@ class Cameras {
     /// A human's radius by handle, metres, for the rail's keep-in-frame push: a player's scale x 0.5, another
     /// human's capsule radius (docs/research/camera.md#rail-frame); nothing for a handle that names none.
     using RadiusLocator = std::function<std::optional<float>(double handle)>;
-    /// Sets how the manager finds a human's radius (null: 0.5 m, a player of scale 1).
+    /// The radius taken without a radius locator, or for a handle it does not find: a player of scale 1, metres.
+    static constexpr float kRailRadius = 0.5F;
+    /// Sets how the manager finds a human's radius (null: kRailRadius).
     void setRadiusLocator(RadiusLocator locator) { m_radius = std::move(locator); }
 
     /// `CamCanSee(object, range)`: whether the current camera sees the point just above the human (1 m up) or object
@@ -399,6 +401,7 @@ class Cameras {
     std::optional<RailCamera> m_rail;
     double m_railHandle = 0.0;
     double m_railTarget = 0.0;
+    std::optional<anim::Vec3> m_railBefore; // the rail target's feet after the last update, for the push
     std::map<double, FixedCamera> m_fixed;
     std::map<double, std::pair<double, ThirdCamera>> m_third; // each one's target and camera
     std::vector<std::string> m_fired;                         // the path camera's functions reached, for takeFired()
