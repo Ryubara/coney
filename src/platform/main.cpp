@@ -822,21 +822,6 @@ int main(int argc, char** argv) {
     if (!coney::platform::startNetPlay(netPlay, *options)) {
         return 1;
     }
-    // The client game follows the host's levels in place of a game session, and draws each level and its humans.
-    if (options->netView && wad) {
-        clientGame.emplace(
-            netPlay,
-            [&renderer, &wad, &sectorBudget](const coney::platform::LevelAt& level) {
-                auto scene = coney::platform::ClientLevelScene::load(renderer, *wad, level, sectorBudget, logText);
-                return scene ? std::expected<std::unique_ptr<coney::platform::ClientScene>, coney::Error>(
-                                   std::move(*scene))
-                             : std::unexpected(std::move(scene.error()));
-            },
-            [&wad](std::string_view level) { return wad->lookup(std::format("{}.lev", level)).has_value(); }, logText,
-            &renderer);
-        netLevels.setGame(&*clientGame);
-        modes.push(*clientGame);
-    }
     // The console (docs/guides/console.md), taking the developer set as well; its lines come from the F8 bar below and
     // from the input script.
     coney::platform::GameConsole gameConsole(*options, netPlay, coney::console::Access::Developer);
@@ -914,6 +899,57 @@ int main(int argc, char** argv) {
             audio->setTestTone(true);
         }
         debugServices.audio = [&audio, &audioControls] { return audioControls.controlsOf(audio.get()); };
+    }
+    // The client game follows the host's levels in place of a game session, draws each level, its humans and the HUD
+    // of this guest's own player slot, and plays the host's sounds and music on this machine's sound
+    // (docs/guides/client-world.md#client-game). Made once the sound exists.
+    if (options->netView && wad) {
+        coney::platform::ClientPresentation presentation;
+        if (audio) {
+            presentation.sound = &audio->game();
+        }
+        // The HUD's strings from the disc, as the scripts' bindings give them, and its sound through the game-facing
+        // player. The interface cues the level's scripts name (`SoundCfgInterfaceSound`) are not known here, so a
+        // cue plays nothing yet (a stand-in: docs/guides/client-world.md#client-game).
+        if (auto loaded =
+                coney::script::loadGlobalStrings(coney::script::wadScriptSource(*wad), options->language, strings);
+            !loaded) {
+            logText(std::format("client game: the HUD's strings did not load: {}\n", loaded.error().message));
+        }
+        presentation.hud.hudString = [&strings](std::uint32_t id) { return std::string(strings.get(id)); };
+        presentation.hud.tutorialString = [&strings](std::uint32_t id) {
+            return std::string(strings.get(coney::gui::StringTable::Tutorial, id));
+        };
+        presentation.hud.announceString = [&strings](std::uint32_t id) {
+            return std::string(strings.get(coney::gui::StringTable::Announce, id));
+        };
+        presentation.hud.commandString = [&strings](std::size_t entry) {
+            return std::string(strings.get(coney::gui::StringTable::Command, static_cast<std::uint32_t>(entry)));
+        };
+        presentation.hud.language = [language = options->language] { return language; };
+        presentation.hud.sound.play = [&audio](std::string_view name) -> coney::hud::HudSoundHandle {
+            return audio ? audio->sounds().play(name).id : 0;
+        };
+        presentation.hud.sound.stop = [&audio](coney::hud::HudSoundHandle sound) {
+            if (audio) {
+                audio->sounds().stop(coney::audio::VoiceHandle{sound});
+            }
+        };
+        presentation.hud.sound.playing = [&audio](coney::hud::HudSoundHandle sound) {
+            return audio && audio->sounds().isPlaying(coney::audio::VoiceHandle{sound});
+        };
+        clientGame.emplace(
+            netPlay,
+            [&renderer, &wad, &sectorBudget](const coney::platform::LevelAt& level, coney::hud::HudOwner& hud) {
+                auto scene = coney::platform::ClientLevelScene::load(renderer, *wad, level, sectorBudget, hud, logText);
+                return scene ? std::expected<std::unique_ptr<coney::platform::ClientScene>, coney::Error>(
+                                   std::move(*scene))
+                             : std::unexpected(std::move(scene.error()));
+            },
+            [&wad](std::string_view level) { return wad->lookup(std::format("{}.lev", level)).has_value(); }, logText,
+            &renderer, std::move(presentation));
+        netLevels.setGame(&*clientGame);
+        modes.push(*clientGame);
     }
     // The game session gets the sound before its first frame, then starts: from boot, or directly at the command
     // line's level, where the run's own options (`--start`, `--camera`, `--freeze-world`, `--trace`, `--scene`,

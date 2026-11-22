@@ -11,12 +11,13 @@ this code carries an `@orig` tag.
 `blendHumans()`, the pose `humanPose()` over a `ClipSource`) and `src/net/character_clips.h` (`CharacterClips`, a
 character's clips as a `ClipSource`), platform-neutral in `coney_net`; and the game's side, [the client
 game](#client-game) (`--join ADDR --net-view`): `src/platform/client_game.h` (`ClientGame`), which follows the host's
-levels and steps a `ClientWorld` from the snapshots the session decodes, and `src/platform/client_level_scene.h`
-(`ClientLevelScene`), which draws the level and the world's humans through the renderer. The host fills its snapshots
-from its own humans every step ([The game's humans](multiplayer.md#game-humans)). **Planned**, each with its
-issue: each human's own character (#1612) in the snapshot, and the guest's own player's camera
-(#1333), which the snapshots do not carry yet (drawn with stand-ins until then, [The client game](#client-game)); the
-host's game events and HUD on the client game (#1614).
+levels, steps a `ClientWorld` from the snapshots the session decodes, presents the host's game events and steps the
+guest's HUD, `src/gamemodes/client_event_player.h` (`ClientEventPlayer`), which applies an event to the guest's sound
+and HUD, and `src/platform/client_level_scene.h` (`ClientLevelScene`), which draws the level, the world's humans and
+the HUD through the renderer. The host fills its snapshots from its own humans every step ([The game's
+humans](multiplayer.md#game-humans)). **Planned**, each with its issue: each human's own character (#1612) in the
+snapshot, and the guest's own player's camera (#1333), which the snapshots do not carry yet (drawn with stand-ins
+until then, [The client game](#client-game)).
 
 ## The model {#model}
 
@@ -154,11 +155,11 @@ any guest.
 | When | What the client game does |
 | --- | --- |
 | The host's level order arrives | `NetLevels` follows it as for any guest's game ([Levels](multiplayer.md#levels)), with `ClientGame` as its `LevelGame`. The level loads at the next step (`ClientLevelScene::load()`), counts as in play at once, and the host is told the step after |
-| A level loads | A fresh `ClientWorld`, which skips what the receiver still keeps of the last level (`skipDecoded()`), so no human of the last level is drawn in the new one |
-| Each step, in a level | The world takes every snapshot decoded and steps ([The model](#model)), then the scene streams round its camera |
-| Each frame | The scene draws the world, `drawn(alpha)` of its last two steps |
+| A level loads | A fresh `ClientWorld`, which skips what the receiver still keeps of the last level (`skipDecoded()`), so no human of the last level is drawn in the new one, and a fresh HUD, so none of the last level's messages show; the host's events its playback had not reached are dropped with the old level (and any that arrive while there is no level), so none of them is presented in the new one |
+| Each step, in a level | The world takes every snapshot decoded and steps ([The model](#model)); the host's events its playback has reached are presented ([Events](#client-events)); the HUD steps ([The HUD](#client-hud)); then the scene streams round its camera |
+| Each frame | The scene draws the world, `drawn(alpha)` of its last two steps, with the HUD over it |
 | A host's movie starts | It plays none, and answers each one as ended at once (`NetPlay::movieDone()`, not skipped), so the host waits only for its own copy |
-| The host quits, or the session ends | It leaves the level and clears the screen, as it does before the host's first order |
+| The host quits, or the session ends | It leaves the level, stops the sounds the host started in it and clears the screen, as it does before the host's first order |
 
 A level the guest's disc has no `.lev` file for is refused; NetLevels asks again each step and notes the refusal once
 in the log.
@@ -174,8 +175,51 @@ carry more:
   behind and 2 m above his feet, looking at his chest: the guest's own player and its follow camera are not in the
   snapshots (#1333). With no human, it stands at the level's start the same way.
 
-The host's game events and HUD (sounds, particles, messages, the panels, [HUD state](snapshots.md#hud-state)) arrive
-on the guest but the client game neither plays nor draws them yet (#1614).
+### The host's events {#client-events}
+
+Each step, once the world's playback has reached a host step (`ClientWorld::shownTime()`, the newest snapshot's step
+less the jitter buffer's delay), the client game takes the events of the host's steps up to it from the session
+(`NetPlay::takeArrivedEvents()`: each once, in step order and within a step in the order the host raised them, whichever
+delivery brought it, [Game events](multiplayer.md#events)) and hands each to `ClientEventPlayer`, so an event is
+presented when the world it belongs to is drawn, never before and never twice; the events of a level that has ended and
+the playback had not reached are dropped with it (`NetPlay::discardArrivedEvents()`). The player applies what a guest can
+show or play on this machine, to its sound and its HUD:
+
+| Events | Presented as |
+| --- | --- |
+| Sound2D, Sound3D, SoundStop, SoundMove | The guest's own sound plays, stops and moves each sound by the host's instance (`SoundEventPlayer`) |
+| MusicStart, MusicStop, LoopStart, LoopStop | The track (looped, or the system music fading in over its bars) and the ambient loop on the guest's sound |
+| HudMessage, Objective, Hint | `Hud::setAnnouncement()`, `setObjective()` and the hint box's queue, clear and flush, and the game's own hints on or off, as the HUD's bindings do on the host |
+| Cue (2D) | The HUD's interface cue |
+
+The kinds it cannot present yet are counted (`ClientGame::eventsUnpresented()`) and nothing else: a human's sound, line
+or command (HumanSound, Hit, Speech, Command, SpeechStop: the human is named by a network id and the snapshots do not
+say which character he is, #1612), a particle start and an object breaking (the scene has no particle systems or
+world-object effects yet), a material pair, a cue a world object raises at a place, and a scene or a movie (the client
+game plays none). Presentation only: the host's own events were taken and sent as before.
+
+**Stand-in: no sound set-up.** The host's sounds name banks, interface cues and material tables that the level's
+scripts load, and the client game runs no script, so on the guest a sound whose bank is not loaded plays nothing and
+the HUD's interface cues have no names (`HudSound::cueName` is empty). The events and the code that plays them are
+there; hearing them waits for the guest to load the level's sound set-up (the banks, the interface table and the
+sound matrix), which the host would have to send or the guest read from the level's scripts.
+
+### The HUD {#client-hud}
+
+Each level has its own `hud::HudOwner`, made when the level loads with the services the run gives (the strings from
+the disc and the sound output), so a level's messages are gone with it. Each step the client game gives it, from the
+newest decoded snapshot, what the host's HUD held for the guest's own player slot (`NetPlay::playerSlot()`: 1 for the
+first guest, the host being 0): the slot's panel state (`net::playerHudForSlot()`, [HUD state](snapshots.md#hud-state))
+and the HUD's standing state with that slot's part as the HUD's one player (`net::standingForSlot()`,
+[Standing state](snapshots.md#hud-standing)), and steps it (`Hud::applyStanding()`, `Hud::update()`). The guest is one
+player, so his panel is panel 0 and the host's other players' panels are not drawn; what the host's HUD holds for
+everyone (its counters and bars, the scoreboard, the radar's settings, whether the HUD shows) is the host's as it is.
+`ClientLevelScene` draws the HUD over the frame through a `HudLayer`, as the play mode does.
+
+Two things the HUD does not have yet, by choice: the HUD takes the newest snapshot's state, not the playback's
+(**Coney's choice**: it keeps no history to blend, so it is up to the jitter buffer's delay ahead of the humans, while
+its messages and sounds arrive with the humans), and the radar shows no blips, since its view (where the guest's player
+stands and which way the camera looks) is not in the snapshots (#1333), nor are its blips (#1537).
 
 ## Testing {#testing}
 
@@ -206,13 +250,20 @@ on it. Every step drawn is compared but those whose snapshot the client never de
 reordering): 287 of the 310 on its seeded link, measured. The buffer is settled at least 90 % of the steps, never
 jumps, and at every step draws 1 to 5 steps behind the newest (1 to 3, measured).
 
+`tests/gamemodes/client_event_player_test.cpp` covers [the host's events](#client-events) on a recording sound and a HUD:
+the music and the loop, a sound's start and stop by instance, the messages, objectives and hints, a cue, and the kinds
+it counts and does not play.
 `tests/platform/client_game_test.cpp` runs [the client game](#client-game) against a host, two `NetPlay`s on the
 loopback in fixed steps with no display (a fake scene stands for the drawing): the host's level loads once and the
 host stops holding; settled, for 200 steps, every step the client draws, its humans are the host's of that step, every
 field's word equal, and it never draws more than the buffer's delay and one step behind the newest the host sent, and
 at its most behind draws at least the delay behind it (the test bounds both, not an exact lag). It also covers a new
 level's world starting with none of the last level's humans, a host's movie that waits for no copy on the guest, a quit
-leaving the level, and a level the disc lacks refused.
+leaving the level, and a level the disc lacks refused. Two peers also pin the events: a sound, a hint, a message and a
+track the host raises in one step are presented on the guest once, none before its playback has reached that step and
+all in the step it does, in the order raised, on the guest's own sound and HUD; and the HUD: the guest's own slot's
+panel is panel 0 with its rage and money and its standing flags, the host's player's values are on no panel, what the
+host's HUD holds for everyone follows it, and a new level has a new HUD.
 `tests/platform/disc_client_level_test.cpp`, with the disc, loads the scene of `level99` headless and draws two humans a
 client's world was sent, both posed with every layer's clip found, the camera behind player 1, and a human gone from
 the snapshots losing his mesh.

@@ -85,6 +85,7 @@ add_library(coney_core STATIC
     gamemodes/gameplay_revive.cpp
     gamemodes/gameplay_uncuff.cpp
     gamemodes/gameplay_war_commands.cpp
+    gamemodes/client_event_player.cpp
     gamemodes/sound_event_player.cpp
     gamemodes/sound_events.cpp
     gamemodes/system_music.cpp

@@ -175,4 +175,18 @@ std::vector<ArrivedEvent> EventReceiver::take(std::uint32_t step) {
     return out;
 }
 
+void EventReceiver::discardHeld() {
+    if (m_held.empty()) {
+        return;
+    }
+    // The newest held step counts as handed over, so a one-shot of it that comes late is not shown after all.
+    const std::uint32_t newest = m_held.rbegin()->first.first;
+    if (!m_handedAny || newest > m_handedStep) {
+        m_handedStep = newest;
+    }
+    m_handedAny = true;
+    m_stats.discarded += m_held.size();
+    m_held.clear();
+}
+
 } // namespace coney::net

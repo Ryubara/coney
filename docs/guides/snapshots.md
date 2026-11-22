@@ -10,10 +10,10 @@ SnapshotAck messages of [the protocol](multiplayer.md#protocol) (the Snapshot's 
 apart from `protocol.cpp`), and the sessions' side: `NetServer::sendSnapshots()` and `NetClient::snapshots()`. A
 client plays what it decodes through [the client's world](client-world.md). Each player slot's HUD state and the HUD's
 standing state travel in the same snapshots ([HUD state](#hud-state), [The HUD's standing state](#hud-standing)), and a
-guest's HUD can take them; nothing on a guest draws them yet. The host's game fills the humans every step
-([The game's humans](multiplayer.md#game-humans)), and a guest running [the client game](client-world.md#client-game)
-draws them. **Planned:** interest (which humans a client needs, and how fast each one's priority grows), and releasing
-a removed human's id once its removal is acknowledged.
+guest's HUD takes them (the client game's, [The HUD](client-world.md#client-hud)). The host's game fills the humans
+every step ([The game's humans](multiplayer.md#game-humans)), and a guest running [the client
+game](client-world.md#client-game) draws them. **Planned:** interest (which humans a client needs, and how fast each
+one's priority grows), and releasing a removed human's id once its removal is acknowledged.
 
 ## The model {#model}
 
@@ -83,9 +83,10 @@ HUD's frame (`hud::applyPlayerHud()`), so panel 0 is driven from slot 0's state 
 afresh each step for player 1's slot; slot 1 stays empty until a second player plays in a level. After the HUD's step
 the play mode hands them to network play (`GameHumans::captureHuds()`, `NetPlay::setGameHuds()`), and the server sends
 every slot's in each snapshot (`SnapshotSender::build(step, humans, huds)`). A guest holds the newest decoded
-(`NetPlay::arrivedHuds()`, `net::playerHudState()` of the words) and can step its own HUD from it, so its panels count,
-fade and play their cues as the host's do: the panel's own step is deterministic from these inputs, and a loopback
-test steps a client's HUD from what it decodes and finds its panels the server's at every step.
+(`NetPlay::arrivedHuds()`, `net::playerHudState()` of the words) and steps its own HUD from it, the one slot that is its
+own as the HUD's panel 0 (`net::playerHudForSlot()`, [The client's HUD](client-world.md#client-hud)), so its panel
+counts, fades and plays its cues as the host's does: the panel's own step is deterministic from these inputs, and a
+loopback test steps a client's HUD from what it decodes and finds its panels the server's at every step.
 
 **The fields** ([field table](multiplayer.md#field-tables), `HudField`): rage and its maximum (16 bits each, the s16
 range of the original's meter and class), raging and the blue-grey banner (a bit each), the score (25 bits, past the
