@@ -615,6 +615,8 @@ So the worlds' textures and layout are loaded **before** the level file, and bot
 
 ### A frame of play {#a-frame-of-play}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 Mode 1's `Update` (`0x00158728`) is the [in-game frame](boot.md#one-frame) with the streaming in it. Confirmed (code)
 for the order; the roles of callees not named elsewhere are inferred from what they touch. While
 `W_GameState + 0x14c` is 0 (playing):
