@@ -89,8 +89,9 @@ class Brains {
     /// brain whose human is in the world thinks when `index % 5 == step % 5` and updates; then every player brain's
     /// books (its enemies: the brains that target it); last, each human whose health has just run out tells its gang
     /// (event 18, the attacker unknown). **Coney choices**: the books are kept every step (the original counts
-    /// attackers every 300 updates); event 18 is sent at the brains' next step after the health runs out (who sends it
-    /// in the original is not traced) and gives no attacker.
+    /// attackers every 300 updates); event 18 is sent at the brains' next step after the health runs out (in the
+    /// original `Brain_OnKnockedOut`, `0x0028c3b0`, sends it from `Human_KnockOut` with the foe, as destroy() does;
+    /// docs/research/characters.md#out-of-world) and gives no attacker.
     /// @orig 0x00293b28 Brains_Update (unknown)
     void update();
     /// What human::Humans runs at the brains' place: update().
@@ -139,7 +140,7 @@ class Brains {
     void keepBooks(Brain& player);
 
     // Event 18 for each human whose health has run out since the last step.
-    // @coney-only stand-in for the event's sender, which is not traced (update() says so)
+    // @coney-only stand-in for the event's sender, Brain_OnKnockedOut from Human_KnockOut (update() says so)
     void reportDowns();
     // Event kEventPutDown for each human who has come to lie on the ground since the last step: a knockdown's
     // reaction over (`HitReact_OnSpecialEnd`) or a throw, grab or mount letting go of him (`Throw_ClearVictimLink`),
