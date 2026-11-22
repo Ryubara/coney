@@ -102,6 +102,40 @@ too, so a render-side draw distance moves both together.
 [play_level_mode.cpp](repo:src/platform/play_level_mode.cpp). It came from the performance sweep's experiment 8
 ([#1542](issue:1542)).
 
+## Posing on workers {#posing-on-workers}
+
+After the cull, posing the fighters left in the picture still cost the main thread about 15 ms at a brawl of 1000.
+Each fighter's posing is independent of the others', so since [#1553](issue:1553) `PlayLevelMode::render` poses
+them in three passes:
+
+1. **On the main thread, in the fighters' order:** each is culled ([above](#cull-before-posing)) or given a job: his
+   mesh, his character's skeleton and model, his scale, and his pose, a scene's or his two steps' snapshots to blend.
+2. **On the worker threads** ([Worker threads](render-threads.md#workers)): each job's arithmetic,
+   `prepareHumanPoses()`: his blend, bone transforms and skinning matrices, then `CharacterMesh::preparePose()`, which
+   on GL3's skinned pipeline fills his bone palette and works out his posed box, and on the CPU blends his vertices
+   into the mesh's own buffers. Nothing here calls librw or writes what another job reads.
+3. **On the main thread, in the fighters' order again:** `commitHumanPose()` places his librw atomics and gives them
+   the sphere (or the CPU's vertices), then what he wears, holds and carries is posed and his blob shadow and ring are
+   queued, as when one thread did everything.
+
+`CharacterMesh::pose()`, which player 1, the sandbox's targets and a scene's puppets still use, is `preparePose()`
+then `commitPose()`, so the arithmetic is the same on either path, and the results do not depend on how many threads
+ran it. **What the simulation reads is unchanged:** the hats, held objects and carried props that read the drawing
+pose ([#1557](issue:1557)) are posed in pass 3, in the same order and from the same pose as before.
+
+**What it saves.** The same brawl of 1000 as the cull's (500 enemies, 500 allies, rows of 25, lockstep, 960 × 720,
+`level95`), a `playtest` build of `main` at `a1368987d` and of the change in the same build folder, the main thread's
+CPU time, the median of three interleaved runs, on a 16-thread machine (a pool of 8): with the view pinned on the
+crowd `render.skin` goes from 15.3 to 4.0 ms (the sweep measured 3.9 ms with the cull, [#1542](issue:1542)) and the
+render from 21.1 to 9.5 ms; with the follow camera `render.skin` from 13.0 to 3.6 ms and the render from 18.0 to
+8.5 ms. The draws are the same (1158 and 931), and the last frame's screenshot hashes the same before and after with
+either camera. The all-humans trace, the event log and the lockstep digest hash the same too (a brawl of 300 for 500
+steps, an engaged 300 for 700 steps, headless and in a window).
+
+**Code**: [human_posing.h](repo:src/platform/human_posing.h), `CharacterMesh::preparePose()` and `commitPose()` in
+[character_mesh.h](repo:src/platform/character_mesh.h), the fighters' loop in
+[play_level_mode.cpp](repo:src/platform/play_level_mode.cpp). It came from the performance sweep's experiment 9.
+
 ## Budget {#budget}
 
 Frame-time budgets on this machine, each scene's median of three runs, checked by `perf bench --compare` (built; it

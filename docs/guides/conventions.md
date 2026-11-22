@@ -487,6 +487,13 @@ the boundary with C libraries such as SDL3 and librw. Instead:
   do.
 - **Programmer errors** (a broken invariant, an index out of range, a call in the wrong state) use `CONEY_ASSERT`.
   These are bugs, not situations to recover from, so the program stops and reports where.
+- **The one catch: the standard library's edge.** Coney never throws. Code may catch an exception that the standard
+  library uses as its only error report, right at the call, converting it at once to a `std::expected` or a
+  documented fallback, with a comment naming the call. Nothing else catches: no `catch (...)`, no catch further up
+  the stack, no exception of Coney's own. Today that is `std::thread`'s `std::system_error` when the system refuses a
+  thread: the [worker pool](../engine/render-threads.md#workers) then runs on the threads that started. The
+  pre-commit hook `no-exceptions` refuses a `throw` or any other `catch` in `src/`; a new edge adds its
+  exception type there, as a change to these conventions.
 
 The API, from `src/core/error.h` and `src/core/assert.h` (abridged: the enum has two more codes, and
 `CONEY_ASSERT` is a macro with a failure function behind it):

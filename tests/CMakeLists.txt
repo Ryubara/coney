@@ -63,6 +63,7 @@ add_executable(coney_tests
     core/vrr_pacing_test.cpp
     core/player_options_test.cpp
     core/window_display_test.cpp
+    core/worker_pool_test.cpp
     effects/effect_culling_test.cpp
     effects/glints_test.cpp
     effects/ground_fog_test.cpp
@@ -281,6 +282,7 @@ add_executable(coney_tests
     platform/world_draw_stream_test.cpp
     platform/object_draw_stream_test.cpp
     platform/human_draw_stream_test.cpp
+    platform/human_posing_test.cpp
     platform/material_change_test.cpp
     physics/overlaps_test.cpp
     physics/sphere_box_sweep_test.cpp

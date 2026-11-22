@@ -254,28 +254,43 @@ void CharacterMesh::update(std::span<const anim::Vec3> positions, std::span<cons
 }
 
 void CharacterMesh::pose(std::span<const anim::Mat34> skinning, const anim::Mat34& placement) {
+    preparePose(skinning);
+    commitPose(placement);
+}
+
+void CharacterMesh::preparePose(std::span<const anim::Mat34> skinning) {
+    m_skinning.assign(skinning.begin(), skinning.end());
+    if (m_gpu) {
+        fillBonePalette(skinning, *m_palette);
+        // The character's box round every bone's box as its matrix moves it; commitOnGpu() makes the sphere of it.
+        m_posedBox = posedBox(m_boxes, skinning);
+        return;
+    }
+    // Each vertex by its bones' matrices, in the character's space; the normal blended, then normalised.
+    m_positions.resize(m_vertices.size());
+    m_normals.resize(m_vertices.size());
+    characters::skinVertices(m_vertices, skinning, m_positions, m_normals);
+}
+
+void CharacterMesh::commitPose(const anim::Mat34& placement) {
     // The blend stays in the character's space and the frame places its result, as the per-vertex placement did:
     // folded into each bone's matrix, the placement would move a vertex by its weights' sum, which the stored weights
     // keep a hair below 1 (characters.md#character-geometry).
     placeFrame(m_atomic, placement);
     placeFrame(m_blood, placement);
-    m_skinning.assign(skinning.begin(), skinning.end());
     if (m_gpu) {
-        poseOnGpu(skinning);
+        commitOnGpu();
     } else {
-        poseOnCpu(skinning);
+        commitOnCpu();
     }
 }
 
-void CharacterMesh::poseOnCpu(std::span<const anim::Mat34> skinning) {
+void CharacterMesh::commitOnCpu() {
     rw::Geometry* geometry = m_atomic->geometry;
     CONEY_ASSERT(m_vertices.size() == static_cast<std::size_t>(geometry->numVertices));
+    CONEY_ASSERT(m_positions.size() == m_vertices.size());
     geometry->lock(rw::Geometry::LOCKVERTICES | rw::Geometry::LOCKNORMALS);
     rw::MorphTarget& target = geometry->morphTargets[0];
-    // Each vertex by its bones' matrices, in the character's space; the normal blended, then normalised.
-    m_positions.resize(m_vertices.size());
-    m_normals.resize(m_vertices.size());
-    characters::skinVertices(m_vertices, skinning, m_positions, m_normals);
     for (std::size_t i = 0; i < m_vertices.size(); ++i) {
         target.vertices[i] = toRw(m_positions[i]);
         target.normals[i] = toRw(m_normals[i]);
@@ -296,14 +311,11 @@ void CharacterMesh::poseOnCpu(std::span<const anim::Mat34> skinning) {
     m_blood->object.object.privateFlags |= rw::Atomic::WORLDBOUNDDIRTY;
 }
 
-void CharacterMesh::poseOnGpu(std::span<const anim::Mat34> skinning) {
-    fillBonePalette(skinning, *m_palette);
-    // The character's box round every bone's box as its matrix moves it (posedBox()); librw moves the sphere by the
-    // frame. The sphere is the box's, as librw makes a sphere from the vertices' box: **Coney's choice**, a box a
-    // little larger than the vertices' own.
-    const BoneBox box = posedBox(m_boxes, skinning);
-    const anim::Vec3 low = box.min;
-    const anim::Vec3 high = box.max;
+void CharacterMesh::commitOnGpu() {
+    // The sphere of the prepared box (posedBox()); librw moves the sphere by the frame. The sphere is the box's, as
+    // librw makes a sphere from the vertices' box: **Coney's choice**, a box a little larger than the vertices' own.
+    const anim::Vec3 low = m_posedBox.min;
+    const anim::Vec3 high = m_posedBox.max;
     rw::Sphere sphere{};
     sphere.center = rw::V3d{(low.x + high.x) * 0.5F, (low.y + high.y) * 0.5F, (low.z + high.z) * 0.5F};
     const anim::Vec3 half{(high.x - low.x) * 0.5F, (high.y - low.y) * 0.5F, (high.z - low.z) * 0.5F};

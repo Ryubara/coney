@@ -49,6 +49,7 @@ add_library(coney_core STATIC
     core/pad_handlers.cpp
     core/pads.cpp
     core/sha1.cpp
+    core/worker_pool.cpp
     core/script_patch.cpp
     core/script_patch_apply.cpp
     core/script_patch_make.cpp
@@ -534,6 +535,9 @@ target_sources(coney_core PRIVATE
     hud/spinner.cpp)
 coney_target_defaults(coney_core)
 target_include_directories(coney_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+# The engine's worker threads (core/worker_pool.cpp, docs/engine/render-threads.md#workers).
+find_package(Threads REQUIRED)
+target_link_libraries(coney_core PUBLIC Threads::Threads)
 # Audio: the game's sound engine and data, Coney's mixer, the game-facing sound calls and the offline device; no OS or
 # SDL code here, the device is in platform/ (docs/research/sound.md).
 add_library(

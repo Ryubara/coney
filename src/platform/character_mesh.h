@@ -103,10 +103,22 @@ class CharacterMesh {
     /// with weights that sum a hair below 1. On the GPU only the bone matrices change, and the bounding sphere is the
     /// box round each bone's vertices as the bone moved them (posedBox()); on the CPU every vertex is blended by its
     /// bones (as characters::skinVertices()) straight into librw's geometry, and the sphere is the vertices' own.
+    /// The same as preparePose() then commitPose().
     void pose(std::span<const anim::Mat34> skinning, const anim::Mat34& placement);
+
+    /// The half of pose() that calls no librw and touches only this mesh, so a worker thread may run it while the main
+    /// thread waits (docs/engine/renderer-performance.md#posing-on-workers): keeps the skinning matrices, and on the
+    /// GPU fills the shader's palette and works out the posed box (posedBox()), on the CPU blends every vertex into the
+    /// mesh's own buffers. Each mesh on one thread at a time; commitPose() follows on the main thread.
+    void preparePose(std::span<const anim::Mat34> skinning);
+    /// The librw half of pose(), on the main thread after preparePose(): places both atomics' frames by `placement`
+    /// and gives them the prepared pose's bounding sphere and, on the CPU, its vertices.
+    void commitPose(const anim::Mat34& placement);
 
     /// Whether the vertex shader skins this mesh.
     [[nodiscard]] bool gpuSkinned() const { return m_gpu; }
+    /// The shader's bone palette the last pose filled; null for a mesh skinned on the CPU.
+    [[nodiscard]] const BonePalette* bonePalette() const { return m_gpu ? m_palette.get() : nullptr; }
     /// The skinning matrices of the last pose(), one per skin node in the character's space: the pose a frame
     /// description's draw of the mesh carries. Empty before the first pose() and for a mesh posed by update().
     [[nodiscard]] std::span<const anim::Mat34> skinning() const { return m_skinning; }
@@ -131,10 +143,10 @@ class CharacterMesh {
     void setDrawnPasses(std::size_t passes) { m_drawnPasses = passes; }
 
   private:
-    // The CPU pose: blends each vertex into both atomics' geometry, in the character's space.
-    void poseOnCpu(std::span<const anim::Mat34> skinning);
-    // The GPU pose: the palette and the sphere from the bone boxes, in the character's space.
-    void poseOnGpu(std::span<const anim::Mat34> skinning);
+    // The CPU pose's librw half: the prepared vertices into both atomics' geometry, in the character's space.
+    void commitOnCpu();
+    // The GPU pose's librw half: the sphere from the prepared box, in the character's space.
+    void commitOnGpu();
 
     rw::Atomic* m_atomic = nullptr;                 // owned, with its geometry and frame
     rw::Atomic* m_blood = nullptr;                  // owned, with its geometry and frame
@@ -147,6 +159,7 @@ class CharacterMesh {
     SkinVertexData m_skin;                  // the shader's weights and bones (GPU)
     std::unique_ptr<BonePalette> m_palette; // this frame's bone matrices (GPU)
     std::vector<BoneBox> m_boxes;           // per skin node (GPU)
+    BoneBox m_posedBox;                     // the prepared pose's box (GPU)
     std::size_t m_drawnPasses = 0;          // setDrawnPasses()
     std::vector<anim::Mat34> m_skinning;    // skinning()
     SceneAssets* m_assets = nullptr;        // where meshId() and bloodMeshId() are held; null: nowhere
