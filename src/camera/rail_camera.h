@@ -10,6 +10,7 @@
 
 #include "animation/anim_math.h"
 #include "camera/camera_view.h"
+#include "camera/rail_frame.h"
 
 // The rail camera (`Cam_Rail`, type 9, `CamSetupRail`): a camera that slides along a line of points the scripts lay
 // (`CamAddRailPoint`) while it frames its target, the chases' camera. In mode 0 it stands at the target point's foot on
@@ -26,6 +27,15 @@ struct RailSetup {
     anim::Vec3 offset;      ///< The look-at offset from the target, metres (`+0x320`); its z starts setting 9.
     float nearClip = 0.1F;  ///< Metres.
     float farClip = 150.0F; ///< Metres, at most RailCamera::kMaxFarClip.
+};
+
+/// What the keep-in-frame push (keepTargetInFrame()) needs of the rail's target beyond his feet, and the level's
+/// collision mesh (null: no rays).
+struct RailFrameInput {
+    anim::Vec3 before;   ///< His feet at the start of his update.
+    float radius = 0.5F; ///< A player's scale x 0.5, another human's capsule radius.
+    bool falling = false;
+    const raycast::CollisionMesh* mesh = nullptr;
 };
 
 /// How the rail camera places itself (`+0x3ed`).
@@ -113,10 +123,14 @@ class RailCamera {
     /// easing), his locomotion's velocity `velocity` (mode 3 reads it) and whether he is `airborne` (jumping or
     /// falling: the points are not damped): the settings eased, the target and look-at points made and damped, then
     /// the camera placed by its mode; with `beside` (switch 7) a leading mode stands the camera off the rail, the lead
-    /// from the target, and looks at the target point (docs/research/camera.md#rail-leading).
+    /// from the target, and looks at the target point (docs/research/camera.md#rail-leading). With `frame`, a held mode
+    /// 0 rail and a mode 3 rail past its start push the target back into the frame the camera had at the update's
+    /// start (keepTargetInFrame()) and go on from where he is put; returns his new feet then, nothing otherwise (the
+    /// caller moves him, docs/research/camera.md#rail-frame).
     /// @orig 0x0013d010 CamRail_Update (unknown)
-    void update(std::optional<anim::Vec3> feet, bool beside, float seconds, anim::Vec3 velocity = {},
-                bool airborne = false);
+    std::optional<anim::Vec3> update(std::optional<anim::Vec3> feet, bool beside, float seconds,
+                                     anim::Vec3 velocity = {}, bool airborne = false,
+                                     const RailFrameInput* frame = nullptr);
 
     /// What it shows: the view the update's end builds from the position and look-at point, in every mode.
     /// @orig 0x0013d010 CamRail_Update (unknown)
@@ -139,8 +153,13 @@ class RailCamera {
     [[nodiscard]] anim::Vec3 targetPoint() const { return m_target; }
     /// The rail segment it is on (its first point's index).
     [[nodiscard]] std::size_t segment() const { return m_segment; }
-    /// Whether it is held at an end of the rail (`+0x3e4`).
+    /// Whether it is held (`+0x3e4`): locked by `CamLockRail(true)`, or at an end of the rail in mode 3.
     [[nodiscard]] bool held() const { return m_held; }
+    /// `CamLockRail(on)` on this camera: the hold (`+0x3e4`) set to `on`. Held, mode 0 no longer moves along the rail
+    /// after the target and mode 3 no longer trails him; modes 1 and 2 never read it. Only `CamLockRail(false)` lets
+    /// it go: neither setup() nor activate() writes it (docs/research/camera.md#rail).
+    /// @coney-only the store of the byte Camera_LockRail (0x0011d180, Cameras::lockRail()) writes in place
+    void setHeld(bool on);
 
   private:
     // update()'s body: the easing and the placement by mode.
@@ -178,6 +197,11 @@ class RailCamera {
     // Mode 3's projection of `p` on the current segment, in plan, clamped only at the rail's two ends.
     /// @orig 0x0013dcc8 CamRail_PlaceMode3 (unknown)
     [[nodiscard]] anim::Vec3 projectTrailing(anim::Vec3 p) const;
+    // This update's keep-in-frame push of the target at `feet` (`trailing`: mode 3's margin and line of sight), when
+    // update() was handed the frame input: his new feet, kept for update() to return, or `feet` when he stays. It
+    // ports only the held part of CamRail_CollideTwoTargets (the push); its other paths wait on #1017.
+    /// @orig 0x00140708 CamRail_CollideTwoTargets (unknown)
+    [[nodiscard]] anim::Vec3 keepInFrame(anim::Vec3 feet, bool trailing);
     // Picks the segment the target point is on (CamRail_ChooseSegment).
     void chooseSegment() { chooseSegmentFor(m_target); }
     // Picks the segment point `p` is on; a change sets the hand-over blend.
@@ -226,6 +250,15 @@ class RailCamera {
     anim::Vec3 m_lookAt;
     anim::Vec3 m_feet; // the target's feet at the last update
     bool m_placed = false;
+    // The keep-in-frame push's input for the update running, with the frame the camera had at its start.
+    struct FrameCall {
+        RailFrameInput input;
+        CameraView view;
+    };
+    std::optional<FrameCall> m_frameCall;
+    std::optional<anim::Vec3> m_pushed; // where this update's push put the target
+    bool m_hadTarget = false;           // the last update had a target (the gathered count, `+0x348`)
+    bool m_joined = false;              // +0x3e5: the target count grew this update
 };
 
 } // namespace coney::camera

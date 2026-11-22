@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261122-level60-570-frame"
+date = "2026-11-22"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "6fd4c062afc016e911a633406916240b43f3b56916e9b27122cf7e5db709d001"
+
+[who]
+agent = "a9cb1a5f94b05a5bb"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level60 cp 1 by load-checkpoint; after the intro the left stick held at x 230 (toward -x along Rail1); a breakpoint at Camera_LockRail 0x0011d180 with a0 == 1 (P1.CamLock01's CamLockRail(true)) stopped the game; read there player 1's rail camera position (0x005d9160[0] + 0x10) and its first target's start-of-update position (rail +0x340 -> human +0x10); then, the stick still held, the target read about every 2 s for 13 s and the camera again. Done twice; values from the second, the first gave camera x -123.0, player x -123.2 at the lock and the player held at x -126.2"
+
+[values]
+camera_x_at_lock = -122.95
+camera_y_at_lock = 39.5
+camera_z_at_lock = 3.7
+player_x_at_lock = -123.44
+player_y_at_lock = 24.37
+player_x_held_at_edge = -126.18
+player_y_held_at_edge = 20.71
+camera_x_after_13s = -122.95
+
+[addresses]
+player_rails = 0x005d9160
+Camera_LockRail = 0x0011d180
+CamRail_KeepTargetsInFrame = 0x00140d68

@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hud/armies_hud.h"
 
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <format>
+#include <limits>
+#include <optional>
 #include <string>
 
 #include "graphics/render_device.h"
@@ -71,6 +77,39 @@ void ArmiesHud::levelSetUp(Language language) {
     m_in = {};
     m_dropped = {};
     m_dropping = {};
+    // The level's panels are built afresh (TargetPanel_Construct, 0x0020e170): six free pairs, no boss pictures.
+    for (std::vector<BossPicture>& pairs : m_bosses) {
+        pairs.assign(kOrigBossPictures, BossPicture{});
+    }
+}
+
+// **Coney's stand-in**: the pairs are kept in every level, where the original's story panels have an empty slot `+0x74`
+// and keep none; only the Armies target panel reads them (not drawn yet, #662).
+void ArmiesHud::setBossTexture(std::uint32_t human, std::uint32_t texture, bool on) {
+    for (std::vector<BossPicture>& pairs : m_bosses) {
+        // On: the first free pair takes him; off: the first pair holding him is freed.
+        const std::uint32_t wanted = on ? BossPicture::kFree : human;
+        const auto found = std::ranges::find(pairs, wanted, &BossPicture::human);
+        if (found != pairs.end()) {
+            *found = on ? BossPicture{.human = human, .texture = texture} : BossPicture{};
+        } else if (on && pairs.size() < bossPictureCap(m_limits)) {
+            // Stand-in for the original's full table, which keeps no more: the lifted limit adds a pair.
+            pairs.push_back(BossPicture{.human = human, .texture = texture});
+        }
+    }
+}
+
+std::size_t bossPictureCap(EngineLimits limits) {
+    return limits == EngineLimits::Original ? ArmiesHud::kOrigBossPictures : std::numeric_limits<std::size_t>::max();
+}
+
+std::optional<std::uint32_t> ArmiesHud::bossTexture(std::size_t player, std::uint32_t human) const {
+    const std::vector<BossPicture>& pairs = m_bosses.at(player);
+    const auto found = std::ranges::find(pairs, human, &BossPicture::human);
+    if (found == pairs.end()) {
+        return std::nullopt;
+    }
+    return found->texture;
 }
 
 void ArmiesHud::setJoinMessage(std::size_t player, bool on) {

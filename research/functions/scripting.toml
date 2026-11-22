@@ -289,6 +289,14 @@ coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
 status = "legacy"
 
 [[function]]
+address = 0x0035c120
+name = "lua_HuEnableController"
+page = "../references/bindings/character.md#huenablecontroller"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeEnableController"
+status = "compared"
+
+[[function]]
 address = 0x0035c278
 name = "lua_HuSetHearRange"
 page = "../references/bindings/character.md#husethearrange"
@@ -721,6 +729,14 @@ coney = "src/scripting/camera_bindings.cpp:makeCamAddRailPoint"
 status = "legacy"
 
 [[function]]
+address = 0x00366880
+name = "lua_CamLockRail"
+page = "../references/bindings/camera.md#camlockrail"
+level = "confirmed-code"
+coney = "src/scripting/camera_bindings.cpp:makeCamLockRail"
+status = "compared"
+
+[[function]]
 address = 0x003668e8
 name = "lua_CamModifyRail"
 page = "../references/bindings/camera.md#cammodifyrail"
@@ -1092,6 +1108,14 @@ status = "compared"
 what = "this file's readers: an explicit nil, a negative number or a non-numeric string read differently from tolua"
 relation = "stand-in"
 question = "script-arguments.md#q-nil-defaults"
+
+[[function]]
+address = 0x0036e8d8
+name = "lua_HUDSetANBossTexture"
+page = "../references/bindings/hud.md#hudsetanbosstexture"
+level = "confirmed-code"
+coney = "src/scripting/hud_bindings.cpp:addArmiesBindings"
+status = "compared"
 
 [[function]]
 address = 0x0036e998

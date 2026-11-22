@@ -5,9 +5,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
+#include <vector>
 
 #include "characters/character_class.h"
+#include "core/engine_limits.h"
 #include "core/language.h"
 #include "hud/hud_canvas.h"
 #include "hud/hud_layout.h"
@@ -33,9 +36,37 @@ enum class GoSignMode : std::uint8_t {
     Off = 2,    ///< Hidden (the set-up's mode).
 };
 
+/// One of a target panel's boss pictures (`TargetPanel_SetBossTexture`, `+0x44` + i × 8): the boss human's handle and
+/// the sprite word of his picture.
+struct BossPicture {
+    /// The boss's handle; kFree for a free pair (the null handle `0x006ebd30`, Coney's NilHandle 0).
+    std::uint32_t human = 0;
+    /// The picture's sprite word (scripts pass `0x1e0000` + n); kNoTexture in a free pair.
+    std::uint32_t texture = 0xffffffffU;
+
+    /// A free pair's handle.
+    static constexpr std::uint32_t kFree = 0;
+    /// A free pair's sprite word.
+    static constexpr std::uint32_t kNoTexture = 0xffffffffU;
+    /// Two pairs are the same when both their handle and their word are.
+    friend bool operator==(const BossPicture&, const BossPicture&) = default;
+};
+
+/// How many boss pictures a panel keeps under `limits`: ArmiesHud::kOrigBossPictures under the engine limits preset
+/// (EngineLimits::Original), no cap under Coney's rule.
+/// @coney-only limit: the original's target panel keeps 6 boss pictures and drops a seventh boss; past 6 Coney keeps
+/// every boss, a freed pair still taken first (docs/research/hud-functions-panels.md#fn-anhud)
+[[nodiscard]] std::size_t bossPictureCap(EngineLimits limits);
+
 /// The Armies of the Night credits line, GO sign and join messages.
 class ArmiesHud {
   public:
+    /// How many boss pictures the original's target panel keeps (`TargetPanel_SetBossTexture`'s six pairs); each
+    /// panel starts a level with this many free pairs.
+    static constexpr std::size_t kOrigBossPictures = 6;
+    /// The engine limits preset the panels keep their boss pictures under (bossPictureCap()); Coney's rule unless
+    /// told.
+    void setEngineLimits(EngineLimits limits) { m_limits = limits; }
     /// The global strings they show: the credits label, "GO" and the join message.
     static constexpr std::uint32_t kCreditsString = 0xd5;
     static constexpr std::uint32_t kGoString = 0xd3;
@@ -54,9 +85,11 @@ class ArmiesHud {
     /// The level's set-up (`HUD_InitLevel`), before the level's script, in the game's `language`: the credits 0 (the
     /// HUD's word `+0x190d0`, `0x00619910`, which the Armies stages carry from one stage to the next in their Lua save
     /// data), the GO sign Off and placed for the language, both join messages on (the original allocates its `ANHud`
-    /// panels afresh and its slot `+0x80` sets each one's flag; a panel's first attach clears it again).
+    /// panels afresh and its slot `+0x80` sets each one's flag; a panel's first attach clears it again), and no boss
+    /// pictures (each new panel's target panel starts with its six pairs free).
     /// @orig 0x0019e030 GoSign_Setup (unknown)
     /// @orig 0x004ec650 ANHud_SetPlayer (unknown)
+    /// @orig 0x0020e170 TargetPanel_Construct (unknown)
     void levelSetUp(Language language = Language::English);
     /// How far left of its English place the GO sign sits in the set-up's language, in GUI units (`0x0050cf98`).
     [[nodiscard]] float goSignShift() const { return m_goShift; }
@@ -96,6 +129,23 @@ class ArmiesHud {
     /// @coney-only a query for the join message and the tests; the original reads `+0x40f8` in place
     [[nodiscard]] bool panelWanted(std::size_t player) const;
 
+    /// `HUDSetANBossTexture(human, texture, on)` on both panels (`HUD_SetANBossTexture` calls each player panel's
+    /// slot `+0x74`): with `on` the pair (human, texture) goes into the first free pair of each panel's (a new pair
+    /// past the original's six while bossPictureCap() allows, none past it; the same human may be in twice); without,
+    /// the first pair holding `human` is freed.
+    /// @orig 0x001b5b80 HUD_SetANBossTexture (unknown)
+    /// @orig 0x00210dc0 ANHud_SetBossTexture (unknown)
+    /// @orig 0x0020fc98 TargetPanel_SetBossTexture (unknown)
+    void setBossTexture(std::uint32_t human, std::uint32_t texture, bool on);
+    /// Panel `player`'s boss pictures, in their order: the original's six, and any past them.
+    [[nodiscard]] const std::vector<BossPicture>& bossPictures(std::size_t player) const { return m_bosses.at(player); }
+    /// The picture panel `player`'s target panel shows for the boss `human`: the word of the first pair holding him,
+    /// none when no pair does (the plain panel). The search the target panel makes for a class-13 target
+    /// (`TargetPanel_Update`, `0x0020e6f8`), whose drawing is not built (#662).
+    /// @coney-only the lookup for the target panel and the tests; TargetPanel_Update (not ported, #662) searches in
+    /// place
+    [[nodiscard]] std::optional<std::uint32_t> bossTexture(std::size_t player, std::uint32_t human) const;
+
     /// One HUD step at game time `nowMs` in level number `level`, with which players are in the game (their panel
     /// attached) and which are knocked out (`Human_IsKnockedOut`); nothing outside an Armies level. The GO sign's blink
     /// and the join messages' blink, which share one timer. **Coney's choice**: both are timed by the game time, where
@@ -125,6 +175,9 @@ class ArmiesHud {
     // A panel dropped by its player's knock-out (`+0x40f8` cleared), and one that drops at the next step.
     std::array<bool, kPlayers> m_dropped{};
     std::array<bool, kPlayers> m_dropping{};
+    // Each panel's target panel's boss pictures (`+0x4590` + `0x44`): six in the original.
+    std::array<std::vector<BossPicture>, kPlayers> m_bosses{};
+    EngineLimits m_limits = EngineLimits::Coney;
     bool m_joinTimed = false; // `0x0063f1f4`
     std::uint64_t m_joinLastMs = 0;
 };

@@ -358,6 +358,7 @@ target_sources(coney_core PRIVATE
     camera/slow_motion.cpp
     camera/fixed_camera.cpp
     camera/rail_camera.cpp
+    camera/rail_frame.cpp
     camera/third_camera.cpp
     camera/win_camera.cpp
     camera/failed_camera.cpp

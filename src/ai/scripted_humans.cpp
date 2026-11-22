@@ -245,6 +245,16 @@ void ScriptedHumans::lockPad(double human, bool locked) {
     onBrain(human, [locked](Brain& brain) { brain.human().script().padLocked = locked; });
 }
 
+void ScriptedHumans::enableController(double human, bool enable) {
+    onBrain(human, [enable](Brain& brain) {
+        // The record's pad flag, written through the pad call. **Coney's stand-in**: an AI brain has none, so its human
+        // is left as it is (Coney keeps the flag only for the player's human).
+        if (const Brain::PadControl& pad = brain.padControl(); pad) {
+            pad(enable);
+        }
+    });
+}
+
 void ScriptedHumans::enableCommand(double human, int command, bool enabled) {
     onBrain(human, [command, enabled](Brain& brain) {
         // Only a pad-controlled human's pad has the mask (per-player +0x1b).

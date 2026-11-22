@@ -25,7 +25,7 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addHumanBindings().
-inline constexpr std::array<std::string_view, 65> kHumanBindings{"BrClearBackoff",
+inline constexpr std::array<std::string_view, 66> kHumanBindings{"BrClearBackoff",
                                                                  "BrSetThugWantsWeapon",
                                                                  "CfgPlayerMugging",
                                                                  "CfgRageHandlers",
@@ -55,6 +55,7 @@ inline constexpr std::array<std::string_view, 65> kHumanBindings{"BrClearBackoff
                                                                  "HuIsAlive",
                                                                  "HuIsArrested",
                                                                  "HuLockPad",
+                                                                 "HuEnableController",
                                                                  "HuPlaceHatOnHead",
                                                                  "HuPlaceItemInHand",
                                                                  "HuRemoveSpinningIcon",
@@ -234,6 +235,8 @@ class HumanBindingHost {
     virtual void teleportNear(double /*human*/, double /*near*/) {}
     /// `HuLockPad`.
     virtual void lockPad(double /*human*/, bool /*locked*/) {}
+    /// `HuEnableController`: the human given to its pad (`enable`) or to its brain.
+    virtual void enableController(double /*human*/, bool /*enable*/) {}
     /// `EnableCommand` (`command` 1-57) and `EnableCommands` (every command: `command` 0).
     virtual void enableCommand(double /*human*/, int /*command*/, bool /*enabled*/) {}
     /// `HuAttachSpinningIcon` and `HuRemoveSpinningIcon` (an empty `object`).

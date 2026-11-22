@@ -87,6 +87,12 @@ class ScriptedHumans final : public script::HumanBindingHost {
     /// are the level's, gamemodes/gameplay_mode.h).
     void teleportNear(double human, double near) override;
     void lockPad(double human, bool locked) override;
+    /// `HuEnableController`: the human's per-player record `+0x1b` set to `enable`, through what his brain calls to
+    /// give up or take back the pad (Brain::setPadControl(); a player's brain's hands it to human::Player). **Coney's
+    /// stand-in**: a human no pad drives (an AI brain's, which has no such call) is left as it is, as Coney keeps the
+    /// pad flag only for the player's human (docs/research/armies.md#coney).
+    /// @orig 0x002384f8 Human_EnableController (unknown)
+    void enableController(double human, bool enable) override;
     /// Only for a human a pad drives (player 1's brain, not dead): a command's bit, or every one with `command` 0.
     void enableCommand(double human, int command, bool enabled) override;
     void setIcon(double human, std::string_view object, int param) override;

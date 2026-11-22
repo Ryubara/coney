@@ -1,0 +1,53 @@
+version = 1
+id = "r-20261122-level60-570-bindings"
+date = "2026-11-22"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "f626ae6e95b5951ac2128a82719eda771291dc14226a51a28d4a8a9ac0197668"
+
+[who]
+agent = "a1af8e44a1dd4cb29"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level60 cp 1 by load-checkpoint, pad idle; in play the lua recipe called the bindings and the bytes were read over the debug server after each call: player 1's per-player record +0x1b, his rail camera's hold +0x3e4 (rail 0x005d9160[0]), both Armies panels' six target-panel pairs (*0x00600848 or *0x0060084c + 0x45d4). Calls: HuEnableController(player, nil), CamLockRail(1); then HuEnableController(player, 1), CamLockRail(nil), HUDSetANBossTexture(Lemmy, 1966095, nil); after a reload CamLockRail(1, -5), HuEnableController(player); then Rail1() and CameraMakeActive(RailCam, 0)"
+
+[values]
+pad_flag_in_play = 1
+pad_flag_after_enable_nil = 0
+pad_flag_after_enable_1 = 1
+pad_flag_after_enable_no_arg = 0
+hold_before = 0
+hold_after_lock_1 = 1
+hold_after_lock_nil = 0
+hold_after_lock_player_minus5 = 1
+hold_after_setup_and_activate = 1
+rail_mode = 3
+panel0_pair0_word = 1966095
+panel0_pair1_word = 1966110
+panel1_pair0_word = 1966095
+panel1_pair1_word = 1966110
+free_pair_handle = 4294967295
+free_pair_word = 4294967295
+pairs_used_at_start = 2
+panel0_pair0_word_after_removal = 4294967295
+panel0_pair1_word_after_removal = 1966110
+
+[addresses]
+per_player_record = 0x00660f50
+player_rails = 0x005d9160
+player_huds = 0x00600848
+lua_CamLockRail = 0x00366880
+lua_HuEnableController = 0x0035c120
+lua_HUDSetANBossTexture = 0x0036e8d8

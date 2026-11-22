@@ -20,16 +20,16 @@ Stage 1 of the Armies of the Night bonus game, which the hub offers once the fiv
 
 ## What it needs {#needs}
 
-Its scripts can call 150 script bindings. 15 of them are new, which no earlier level of the story calls: 9 are
+Its scripts can call 150 script bindings. 15 of them are new, which no earlier level of the story calls: 12 are
 implemented in Coney and 15 are traced. The full list is on [the coverage
 page](../references/bindings/story.md#level60).
 
 | Family | New bindings | In Coney |
 | --- | --- | --- |
-| [Characters](../references/bindings/character.md) | 3 | 1 |
+| [Characters](../references/bindings/character.md) | 3 | 2 |
 | [Gangs](../references/bindings/gang.md) | 1 | 0 |
-| [Cameras](../references/bindings/camera.md) | 1 | 0 |
-| [HUD and menus](../references/bindings/hud.md) | 7 | 6 |
+| [Cameras](../references/bindings/camera.md) | 1 | 1 |
+| [HUD and menus](../references/bindings/hud.md) | 7 | 7 |
 | [Script flow](../references/bindings/script.md) | 1 | 1 |
 | [Configuration (Cfg)](../references/bindings/config.md) | 2 | 1 |
 

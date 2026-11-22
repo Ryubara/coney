@@ -1012,14 +1012,18 @@ a player fights a registered human, the enemy health panel the HUD shows for its
 
 **Notes.** Only Armies of the Night HUDs (built by `ANHud_Construct` 0x0020fd80 when the level index is 60-69) implement
 the call; on a normal player HUD the method is an empty stub (vtable 0x0053edf8 `+0x74`). A full table (6 entries)
-silently ignores further adds, and the same human can be added twice. Free slots hold the null handle (0x006ebd30).
+silently ignores further adds, and the same human can be added twice. Free slots hold the null handle (0x006ebd30,
+0xffffffff) and the word -1; a removal frees only the first pair holding the human, and the target panel takes the first
+match (0x0020fc98, 0x0020e6f8). In level60 both panels hold Lemmy's (1966095) and Virgil's (1966110) pairs from the
+start of play, the other four free, and a removal of Lemmy's frees its pair: confirmed (runtime), run
+r-20261122-level60-570-bindings.
 
 - **Evidence:** confirmed (code) at `0x001b5b80`, `0x00210dc0`, `0x0020fc98`; detail: traced
 - **Wrapper** `0x0036e8d8` (registered by `RegisterBindings`); **calls** `0x001b5b80` `HUD_SetANBossTexture`,
   `0x00210dc0` `ANHud_SetBossTexture`, `0x0020fc98` `TargetPanel_SetBossTexture`
 - **Used by** 15 of 467 script chunks (38 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDSetAnnounceMsg {#hudsetannouncemsg}
 

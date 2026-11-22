@@ -105,6 +105,9 @@ class Cameras {
     using AirborneTest = std::function<bool(double handle)>;
     /// Sets how the manager tells an airborne human (null: never).
     void setAirborneTest(AirborneTest test) { m_airborne = std::move(test); }
+    /// The radius the rail's keep-in-frame push gives its target, metres: a player of scale 1's (his scale x 0.5,
+    /// docs/research/camera.md#rail-frame).
+    static constexpr float kRailRadius = 0.5F;
 
     /// `CamCanSee(object, range)`: whether the current camera sees the point just above the human (1 m up) or object
     /// (0.3 m up) `handle` names: within `range` of the camera (at most its far clip; 0 or less: the far clip), inside
@@ -225,6 +228,11 @@ class Cameras {
     /// `CamModifyRail`: one of the rail camera's settings eased (RailCamera::modify()); nothing without one.
     /// @coney-only a forwarder to RailCamera::modify(), which ports 0x0011d228
     void modifyRail(std::uint32_t param, float value, float seconds);
+    /// `CamLockRail(on, player)`: player `player`'s rail camera held or let go (RailCamera::setHeld()); a negative
+    /// player is player 0, and -1 also sets every other player's. Coney has player 1's rail only (player 0), so
+    /// another player's finds no rail and does nothing, as the original's does for a player with none.
+    /// @orig 0x0011d180 Camera_LockRail (unknown)
+    void lockRail(int player, bool on);
     /// The rail camera, once made.
     [[nodiscard]] const RailCamera* rail() const { return m_rail ? &*m_rail : nullptr; }
 
@@ -389,6 +397,8 @@ class Cameras {
     std::optional<RailCamera> m_rail;
     double m_railHandle = 0.0;
     double m_railTarget = 0.0;
+    // The rail target (handle) and his feet after the last update, for the push.
+    std::optional<std::pair<double, anim::Vec3>> m_railBefore;
     std::map<double, FixedCamera> m_fixed;
     std::map<double, std::pair<double, ThirdCamera>> m_third; // each one's target and camera
     std::vector<std::string> m_fired;                         // the path camera's functions reached, for takeFired()

@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The Armies of the Night HUD parts (docs/research/armies.md, docs/research/hud-functions-parts.md#fn-pre-basewidget):
 // the levels that have them, the credits, the GO sign's frames by mode, the join messages' blink and a knocked-out
-// player's panel, with a synthetic fighter beaten to 0 health.
+// player's panel, with a synthetic fighter beaten to 0 health, and the bosses' pictures on the target panels.
 #include "hud/armies_hud.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/engine_limits.h"
 #include "graphics/font.h"
 #include "graphics/overlay_camera.h"
 #include "graphics/sprite_batch.h"
@@ -220,4 +223,74 @@ TEST_CASE("a join message is centred on its panel's place, as Font_Draw's flag 2
     }
     const float centre = coney::graphics::OverlayCamera::guiToOverlay(0.76F, 0.08F).x;
     CHECK((left + right) / 2.0F == Catch::Approx(centre).margin(0.01));
+}
+
+TEST_CASE("a boss's picture goes into the first free of each panel's six pairs and leaves with the first pair holding "
+          "him",
+          "[hud][armies]") {
+    // Expected: hud-functions-panels.md#fn-anhud, confirmed (code): HUD_SetANBossTexture (0x001b5b80) calls both
+    // panels; TargetPanel_SetBossTexture (0x0020fc98) fills the first free pair (the null handle), ignores a seventh
+    // and frees the first pair holding the human (word -1); TargetPanel_Update (0x0020e6f8) takes the first match.
+    ArmiesHud armies;
+    armies.levelSetUp();
+    CHECK_FALSE(armies.bossTexture(0, 40).has_value());
+    // level60_destroyers' two bosses: both panels get both, in order.
+    armies.setBossTexture(40, 0x1e000f, true);
+    armies.setBossTexture(41, 0x1e001e, true);
+    for (std::size_t player = 0; player < 2; ++player) {
+        CHECK(armies.bossTexture(player, 40) == std::optional<std::uint32_t>{0x1e000f});
+        CHECK(armies.bossTexture(player, 41) == std::optional<std::uint32_t>{0x1e001e});
+        CHECK(armies.bossPictures(player)[1] == coney::hud::BossPicture{41, 0x1e001e});
+        CHECK(armies.bossPictures(player)[2] == coney::hud::BossPicture{});
+    }
+    // The first leaves; the next boss takes his freed pair, ahead of the second.
+    armies.setBossTexture(40, 0, false);
+    CHECK_FALSE(armies.bossTexture(0, 40).has_value());
+    CHECK(armies.bossPictures(0)[0] == coney::hud::BossPicture{});
+    armies.setBossTexture(42, 0x1e0010, true);
+    CHECK(armies.bossPictures(1)[0] == coney::hud::BossPicture{42, 0x1e0010});
+    // The same human twice: the search finds his first pair, a removal frees only that one.
+    armies.setBossTexture(41, 0x1e0020, true);
+    CHECK(armies.bossTexture(0, 41) == std::optional<std::uint32_t>{0x1e001e});
+    armies.setBossTexture(41, 0, false);
+    CHECK(armies.bossTexture(0, 41) == std::optional<std::uint32_t>{0x1e0020});
+    // Six pairs at most under the engine limits preset: a seventh boss is not kept.
+    armies.setEngineLimits(coney::EngineLimits::Original);
+    for (std::uint32_t human = 50; human < 56; ++human) {
+        armies.setBossTexture(human, 0x1e0000 + human, true);
+    }
+    CHECK(armies.bossTexture(0, 53).has_value());
+    CHECK_FALSE(armies.bossTexture(0, 55).has_value());
+    // The next level's panels start empty (TargetPanel_Construct clears the pairs).
+    armies.levelSetUp();
+    CHECK_FALSE(armies.bossTexture(1, 42).has_value());
+}
+
+TEST_CASE("past the original's six boss pictures a panel keeps every boss; the engine limits preset drops the seventh",
+          "[hud][armies]") {
+    // Expected: hud-functions-panels.md#fn-anhud, confirmed (code): TargetPanel_SetBossTexture (0x0020fc98) has six
+    // pairs and ignores a seventh boss. Coney lifts that table's size (conventions.md#original-limits) and keeps the
+    // original's order inside it; the engine limits preset pins it at six.
+    ArmiesHud lifted;
+    lifted.levelSetUp();
+    ArmiesHud pinned;
+    pinned.setEngineLimits(coney::EngineLimits::Original);
+    pinned.levelSetUp();
+    for (std::uint32_t boss = 40; boss < 47; ++boss) {
+        lifted.setBossTexture(boss, 0x1e0000 + boss, true);
+        pinned.setBossTexture(boss, 0x1e0000 + boss, true);
+    }
+    // Inside the range both keep the same six pairs in the same order.
+    for (std::size_t pair = 0; pair < ArmiesHud::kOrigBossPictures; ++pair) {
+        CHECK(lifted.bossPictures(0)[pair] == pinned.bossPictures(0)[pair]);
+    }
+    CHECK(lifted.bossTexture(1, 46) == std::optional<std::uint32_t>{0x1e0000 + 46});
+    CHECK_FALSE(pinned.bossTexture(1, 46).has_value());
+    // A freed pair is taken first, past the range too.
+    lifted.setBossTexture(41, 0, false);
+    lifted.setBossTexture(47, 0x1e002f, true);
+    CHECK(lifted.bossPictures(1)[1] == coney::hud::BossPicture{47, 0x1e002f});
+    // A new level's panels start with the original's six free pairs.
+    lifted.levelSetUp();
+    CHECK(lifted.bossPictures(0).size() == ArmiesHud::kOrigBossPictures);
 }

@@ -211,6 +211,7 @@ TEST_CASE("CamLockLocked lists a human on a locked camera and takes him off agai
 
 TEST_CASE("a chase's rail camera calls: set-up, points, lead and settings; fixed and third-person cameras",
           "[camera_bindings]") {
+    // Expected: camera.md#rail, confirmed (code)
     Harness h;
     // A point before any rail camera is not added; a NilHandle target makes none.
     CHECK(h.call("CamAddRailPoint", {triple(0, 0, 2)}).isNil());
@@ -246,4 +247,45 @@ TEST_CASE("a chase's rail camera calls: set-up, points, lead and settings; fixed
                              .value_or(0.0);
     CHECK(h.cameras.third(third) != nullptr);
     CHECK(h.call("CameraCreateThird", {str("third"), Value(0.0)}).number() == 0.0);
+}
+
+TEST_CASE("CamLockRail(on, player) holds player 1's rail camera for -1 (the default), 0 or any negative player",
+          "[camera_bindings]") {
+    // Expected: camera.md#rail, confirmed (code): lua_CamLockRail (0x00366880) reads `on` as a boolean (nil false) and
+    // `player` truncated, -1 when left out; Camera_LockRail (0x0011d180) reads a negative player as player 0.
+    Harness h;
+    h.call("CamLockRail", {Value(1.0)}); // no rail camera yet: nothing
+    CHECK(h.call("CamSetupRail", {str("rail"), Value(5.0), Value(60.0), triple(0, 0, 1.5), Value(0.1), Value(90.0)})
+              .number()
+              .value_or(0.0) >= 1.0);
+    REQUIRE(h.cameras.rail() != nullptr);
+    CHECK_FALSE(h.cameras.rail()->held());
+    h.call("CamLockRail", {Value(1.0)});
+    CHECK(h.cameras.rail()->held());
+    h.call("CamLockRail", {Value()});
+    CHECK_FALSE(h.cameras.rail()->held());
+    h.call("CamLockRail", {Value(1.0), Value(0.0)});
+    CHECK(h.cameras.rail()->held());
+    h.call("CamLockRail", {Value(), Value(-2.0)}); // nil is false
+    CHECK_FALSE(h.cameras.rail()->held());
+    h.call("CamLockRail", {Value(1.0), Value(1.0)}); // player 2 has no rail camera
+    CHECK_FALSE(h.cameras.rail()->held());
+}
+
+TEST_CASE("the rail camera's set-up, point, lead and setting calls read any negative player as player 1's",
+          "[camera_bindings]") {
+    // Expected: camera.md#rail, confirmed (code): Camera_SetupRail (0x0011cce8), Camera_AddRailPoint (0x0011d098),
+    // Camera_SetRailLead (0x0011cf70) and Camera_ModifyRail (0x0011d228) read a negative player as player 0.
+    Harness h;
+    CHECK(h.call("CamSetupRail",
+                 {str("rail"), Value(5.0), Value(60.0), triple(0, 0, 1.5), Value(0.1), Value(90.0), Value(-3.0)})
+              .number()
+              .value_or(0.0) >= 1.0);
+    REQUIRE(h.cameras.rail() != nullptr);
+    CHECK(h.call("CamAddRailPoint", {triple(0, 0, 2), Value(-2.0)}).number() == 1.0);
+    h.call("CamLeadRail", {Value(3.0), Value(0.0), Value(1.0), Value(-4.0)});
+    h.call("CamModifyRail", {Value(2.0), Value(40.0), Value(0.0), Value(-9.0)});
+    CHECK(h.cameras.rail()->pointCount() == 1);
+    CHECK(h.cameras.rail()->mode() == coney::camera::RailMode::Ahead);
+    CHECK(h.cameras.rail()->fieldOfView() == Approx(40.0F));
 }

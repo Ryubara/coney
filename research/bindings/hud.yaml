@@ -105,8 +105,12 @@
     Only Armies of the Night HUDs (built by `ANHud_Construct` 0x0020fd80 when the level index is 60-69) implement
     the call; on a normal player HUD the method is an empty stub (vtable 0x0053edf8 `+0x74`). A full table (6
     entries) silently ignores further adds, and the same human can be added twice. Free slots hold the null
-    handle (0x006ebd30).
+    handle (0x006ebd30, 0xffffffff) and the word -1; a removal frees only the first pair holding the human, and the
+    target panel takes the first match (0x0020fc98, 0x0020e6f8). In level60 both panels hold Lemmy's (1966095) and
+    Virgil's (1966110) pairs from the start of play, the other four free, and a removal of Lemmy's frees its pair:
+    confirmed (runtime), run r-20261122-level60-570-bindings.
   usage: {chunks: 15, calls: 38, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HUDEnableClubActionText
   wrapper: 0x0036e968

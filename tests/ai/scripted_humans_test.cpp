@@ -614,6 +614,8 @@ TEST_CASE("HuChangePlayerGang hands player 1 to the new gang's lowest priority; 
 }
 
 TEST_CASE("an anim a human starts twice in one step calls its animation callback once", "[ai][scripted]") {
+    // Expected: characters.md#anim-callbacks, confirmed (code): the callback runs when the human starts the anim;
+    // one call for two starts in one step is Coney's step, which runs the callbacks after the characters' step.
     // Declared before the level: the level's destructor detaches itself from the callbacks, so they must outlive it.
     coney::script::AnimCallbacks callbacks;
     Level level;
@@ -632,4 +634,24 @@ TEST_CASE("an anim a human starts twice in one step calls its animation callback
     extra.human().playScripted(clip, 665, 1.0F, 0.0F, coney::human::HeldFlags{});
     level.scripted->runAnimCallbacks();
     CHECK(level.rageCalls.size() == 2);
+}
+
+TEST_CASE("HuEnableController hands a player's human to its pad or its brain; an AI human or a bad handle is untouched",
+          "[ai][scripted]") {
+    // Expected: characters.md#code-script, confirmed (code): lua_HuEnableController (0x0035c120) reads the human as a
+    // handle and `enable` as a boolean (nil false); Human_EnableController (0x002384f8) writes the per-player record's
+    // `+0x1b` of the human the handle names, nothing for a bad handle.
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    std::vector<bool> pad;
+    level.scene.player().setPadControl([&pad](bool on) { pad.push_back(on); });
+    level.call("HuEnableController", {Value(1.0), Value()});
+    level.call("HuEnableController", {Value(1.0), Value(1.0)});
+    level.call("HuEnableController", {Value(1.0), Value(0.0)});
+    CHECK(pad == std::vector<bool>{false, true, false});
+    // An AI human has no pad to hand over; a handle that names no one does nothing.
+    level.call("HuEnableController", {Value(2.0), Value(1.0)});
+    level.call("HuEnableController", {Value(99.0), Value(1.0)});
+    CHECK(pad.size() == 3);
+    CHECK_FALSE(thug.dead());
 }
