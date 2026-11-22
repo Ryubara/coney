@@ -119,8 +119,9 @@ class Humans {
     [[nodiscard]] std::uint64_t steps() const { return m_steps; }
 
   private:
-    // Where the humans stood across the ground when the actions pass started: a uniform grid whose cells hold their
-    // slots in ascending order, so the slots near a point are found in slot order (issue 1550).
+    // Where the humans stood across the ground when the state pass or the actions pass started: a uniform grid whose
+    // cells hold their slots in ascending order, so the slots near a point are found in slot order (issues 1550,
+    // 1556).
     struct TargetGrid {
         float cell = 2.5F;
         float minX = 0.0F;
@@ -131,6 +132,7 @@ class Humans {
         std::vector<std::uint32_t> items; // the slots, ascending within a cell
         std::vector<anim::Vec3> places;   // each slot's place as built
         std::size_t count = 0;            // how many slots it holds (those added later are not in it)
+        float widest = 0.0F;              // the largest capsule radius of the humans it holds
         bool valid = false;
     };
     // One slot's targets on demand (Fighter's TargetSource), from the grid: the passive targets for a human added
@@ -153,11 +155,25 @@ class Humans {
         mutable float m_radius = -1.0F;         // what m_near covers; below 0: nothing
         mutable anim::Vec3 m_from{};
     };
+    // The humans a walking body may meet (Human's ContactSource), from the grid: those of the step's contact list near
+    // the move, in the list's order (slots), the nulls left out; the whole list when the grid cannot answer.
+    // @coney-only Coney's broad phase for the contacts
+    class SlotContacts final : public ContactSource {
+      public:
+        // Starts the state pass of `owner`.
+        void begin(Humans& owner) { m_owner = &owner; }
+        [[nodiscard]] std::span<Human* const> near(const anim::Vec3& at, float reach) const override;
+
+      private:
+        Humans* m_owner = nullptr;          // set by begin(): a moved Humans stays its own
+        mutable std::vector<Human*> m_near; // the last near()'s answer
+    };
     // Builds the grid from where the humans stand now.
     // @coney-only Coney's broad phase for the target searches
     void buildTargetGrid();
-    // Builds the grid again when the human of slot `slot`, or the one he holds after his actions, moved further than
-    // the grid's margin since it was built: the actions pass moves no other, so no search misses one within reach.
+    // Builds the grid again when the human of slot `slot`, or the one he holds, moved further than the grid's margin
+    // since it was built, after his state update or his actions: neither pass moves any other (a contact only adds to
+    // the other's pending push, which his own update takes), so no search misses one within reach.
     // @coney-only Coney's broad phase for the target searches
     void keepTargetGrid(std::size_t slot);
     // Marks every slot the grid holds within `reach` of `at` (and some beyond) in m_marks; false when the grid cannot
@@ -169,6 +185,11 @@ class Humans {
     // built, and clears the marks.
     // @coney-only Coney's broad phase for the target searches
     template <class Visit> void visitMarked(const Visit& visit);
+    // Puts in m_victims the humans slot `slot`'s strike may meet: those it fights within the strike test's broad reach
+    // of where it stands, from the grid, in slot order (stand-in (#1607): the original's strike test takes the bodies
+    // of its box query in x order); the distance is tested before the AI is asked.
+    // @coney-only Coney's broad phase for the strikes
+    void gatherVictims(std::size_t slot);
     // Whether slot `slot` fights slot `other`.
     // @coney-only Coney's per-slot target list, the dispatcher's input
     [[nodiscard]] bool opposed(std::size_t slot, std::size_t other) const;
@@ -182,6 +203,7 @@ class Humans {
     TargetGrid m_grid;
     std::vector<std::uint64_t> m_marks; // a bit per slot, for visitMarked()
     SlotTargets m_slotTargets;
+    SlotContacts m_slotContacts;
     std::unordered_map<const Combatant*, std::size_t> m_slotOf; // each human's slot, kept by add() and remove()
     BrainsHook m_brains;
     Human::BodyContact m_bodyContact;

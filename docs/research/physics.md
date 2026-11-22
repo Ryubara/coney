@@ -868,13 +868,29 @@ Skipped: a human without `BLOCKHUMANS` (`Human::blocksHumans`), out of health or
 one holds or is held by (a grab, tackle, mount or mugging), so a linked pair passes through each other. The flag goes
 with a knock-out (`HuSetConscious(false)` or the health running out), a wound and an arrest, and comes back only with
 a heal (`HuRevive`, a flash, a freed cuffed human's revive) or the release from an arrest; a knockdown keeps it, as
-in the original ([Human contacts](#human-contacts), "Who loses `BLOCKHUMANS`"). What differs, each marked in the
-code:
+in the original ([Human contacts](#human-contacts), "Who loses `BLOCKHUMANS`").
+
+**Which humans are tried.** The original's body pass asks its world only for the bodies whose boxes overlap the move's
+box (`IPhysics_QueryBox` in `PhysicsBody_SweepHumanMask`, `0x0033d498`, [The body pass](physics-bodies.md#u11-body-pass);
+confirmed (code)). Coney tries only the humans whose axis lies, across the ground, within the move's length plus both
+radii (and 1 cm) of the start: the passes never go further than the move, since each goes part of what is left and a
+slide only takes away the part into the one met (the contact normals lie flat), so no human beyond that can be met
+(inferred, from `human::sweepCapsules`). The state pass gives them from a grid of where the humans stood as it began
+(`Humans::SlotContacts`, 2.5 m cells and margin, rebuilt when the human just updated, or the one he holds, strays
+further), and a strike's victims the same way: the humans the striker fights within the strike test's 3 m broad reach
+(`human::kStrikeBroadReach`, Coney's own: beyond it no strike shape can reach another body, and `Human::testStrikes`
+leaves the victim out unposed), the distance tested before the AI is asked whether the two fight (issue #1556). Both
+lists keep the slots' order, as the whole lists did.
+
+What differs, each marked in the code:
 
 - **Coney's choice**: the humans take their part of the move before the walls take theirs, where the original sorts
   both kinds of contact of a pass by fraction together; a capsule already within reach is met at fraction 0 by a move
   that goes further in, which matches the original's start case across the ground ([Unit
   11](physics-bodies.md#u11-start-case)).
+- **Coney's stand-in** (#1607): the humans are tried in slot order, and a strike's victims too, where the original's
+  box query gives its bodies in x order (`Contact_InsertSorted` keeps the earlier of equal fractions), so at equal
+  fractions the first contact can differ.
 - **Not yet**: an airborne body meets no human (a jump's strike and code 1 against a human); a scene's shared group;
   the pushed human's reaction (`Human_OnPushContact`'s timers and damage).
 

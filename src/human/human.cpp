@@ -43,9 +43,6 @@ constexpr float kStrikeCapsuleHeight = 2.0F;
 constexpr float kCapsuleAboveHead = 0.2F;
 /// The bone the led steer aims at: the head, which human +0x500 holds (docs/research/combat-targets.md#led-steer).
 constexpr int kLedPointBone = 6;
-// Beyond this between the feet no strike shape can meet another body's (each reaches well under 1.5 m from its feet),
-// so the victim is not posed.
-constexpr float kStrikeBroadReach = 3.0F;
 // **Coney's reading** of a charge stopping dead at a wall (docs/research/combat/index.md#moving-strikes):
 // `Human_OnContact` answers the slide response, which takes the move into the wall away, so a charge whose sweep kept
 // less than this share of its move met the wall head-on; it then does not move again before its clip ends, as seen at
@@ -60,6 +57,9 @@ constexpr float kUncuffFade = 0.01F;
 constexpr int kSweepPasses = 3;
 // A push smaller than this means the body is clear of the wall.
 constexpr float kClear = 1e-4F;
+// Room the contacts' reach test leaves beyond the move and both radii, so that no rounding drops a human the capsule
+// sweep would meet.
+constexpr float kContactHair = 0.01F;
 // Updates the move to a climb's start point takes: 1/15 s from a run (two updates, as seen at runtime), 1/60 s
 // standing (less than one update, so one; **Coney's choice** of the update counts on the fixed step).
 constexpr int kRunningClimbMove = 2;
@@ -815,14 +815,35 @@ anim::Vec3 Human::meetHumans(anim::Vec3 from, anim::Vec3 move) {
     const bool striking = m_strikes.capsuleOn();
     UprightCapsule self = uprightCapsule();
     self.feet = from;
+    // The candidates, as the original's body pass asks its world only for the bodies in the move's box
+    // (`IPhysics_QueryBox`): a human whose axis is further from the start, across the ground, than the move's length
+    // and both radii cannot be met in any pass, since each pass goes part of what is left and a slide only takes away
+    // the part into the one met (the normals lie flat), so the passes never go further than the move. The source (the
+    // step's grid) gives the humans near; the test drops the rest, the others keeping their order. stand-in (#1607):
+    // the contact list's order (slots), where the original's box query gives its bodies in x order.
+    const float moved = std::hypot(move.x, move.y);
+    const std::span<Human* const> listed =
+        m_contactSource != nullptr ? m_contactSource->near(from, moved + self.radius + kContactHair) : m_otherHumans;
+    m_reachable.clear();
+    for (Human* other : listed) {
+        if (other == nullptr || other == this) {
+            continue;
+        }
+        const float reach = moved + self.radius + other->capsuleRadius() + kContactHair;
+        const float dx = other->m_position.x - from.x;
+        const float dy = other->m_position.y - from.y;
+        if ((dx * dx) + (dy * dy) <= reach * reach) {
+            m_reachable.push_back(other);
+        }
+    }
     anim::Vec3 at = from;
     anim::Vec3 left = move;
     for (int pass = 0; pass < kSweepPasses && anim::length(left) > kClear; ++pass) {
         // The nearest contact along what is left of the move.
         Human* met = nullptr;
         std::optional<CapsuleContact> first;
-        for (Human* other : m_otherHumans) {
-            if (other == nullptr || other == this || !other->blocksHumans() || linkedWith(*other)) {
+        for (Human* other : m_reachable) {
+            if (!other->blocksHumans() || linkedWith(*other)) {
                 continue;
             }
             const auto contact = sweepCapsules(self, left, other->uprightCapsule());
