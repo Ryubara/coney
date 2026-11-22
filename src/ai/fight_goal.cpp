@@ -265,8 +265,8 @@ GoalStatus FightGoal::process(Brain& brain) {
             return GoalStatus::Stop;
         }
     }
-    // 6. The block try: the block goal is then the top, processed at once. **Coney stand-in**: the original returns 0
-    // here, as after the tackle try; whether its goal stack runs the new top in the same update is not traced.
+    // 6. The block try: the block goal is then the top, processed at once. The original returns 0 here, as after the
+    // tackle try (**Coney stand-in**: whether its goal stack runs the new top in the same update is not traced).
     if (tryBlock(brain)) {
         releasePlace(brain);
         return GoalStatus::Again;
