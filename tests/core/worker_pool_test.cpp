@@ -6,12 +6,15 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <mutex>
 #include <set>
+#include <string>
 #include <system_error>
 #include <thread>
 #include <vector>
 
+#include <SDL3/SDL.h>
 #include <catch2/catch_test_macros.hpp>
 
 using coney::WorkerPool;
@@ -37,6 +40,48 @@ LoopResult runLoop(std::size_t threads, std::size_t count) {
         ++result.runs[index];
     });
     return result;
+}
+
+// How a run of the nested-loop helper ended.
+struct ChildRun {
+    bool started = false; // the process started
+    int exitCode = -1;    // 0 when it ended by itself; a signal or a failure code when it was aborted
+    std::string output;   // what it printed, its errors included
+};
+
+// Runs tests/support/worker_pool_nested_check (built beside this test binary, with `.exe` on Windows) with `argument`
+// and waits for it to end: a broken invariant ends a process, so the loop that must trip one runs apart.
+ChildRun runNestedCheck(const std::string& argument) {
+    ChildRun run;
+    const char* base = SDL_GetBasePath(); // owned by SDL; null when the platform cannot tell
+    REQUIRE(base != nullptr);
+    std::filesystem::path exe = std::filesystem::path(base) / "worker_pool_nested_check";
+    if (!std::filesystem::exists(exe)) {
+        exe += ".exe";
+    }
+    REQUIRE(std::filesystem::exists(exe));
+    const std::string exeText = exe.string();
+    const char* args[] = {exeText.c_str(), argument.c_str(), nullptr};
+    const SDL_PropertiesID props = SDL_CreateProperties();
+    SDL_SetPointerProperty(props, SDL_PROP_PROCESS_CREATE_ARGS_POINTER, static_cast<void*>(args));
+    SDL_SetNumberProperty(props, SDL_PROP_PROCESS_CREATE_STDIN_NUMBER, SDL_PROCESS_STDIO_NULL);
+    SDL_SetNumberProperty(props, SDL_PROP_PROCESS_CREATE_STDOUT_NUMBER, SDL_PROCESS_STDIO_APP);
+    SDL_SetBooleanProperty(props, SDL_PROP_PROCESS_CREATE_STDERR_TO_STDOUT_BOOLEAN, true);
+    SDL_Process* process = SDL_CreateProcessWithProperties(props);
+    SDL_DestroyProperties(props);
+    if (process == nullptr) {
+        return run;
+    }
+    run.started = true;
+    // Reads the output to its end, which is the process ending, and takes its exit code.
+    std::size_t size = 0;
+    void* output = SDL_ReadProcess(process, &size, &run.exitCode);
+    if (output != nullptr) {
+        run.output.assign(static_cast<const char*>(output), size);
+        SDL_free(output);
+    }
+    SDL_DestroyProcess(process);
+    return run;
 }
 
 } // namespace
@@ -120,6 +165,32 @@ TEST_CASE("a worker pool runs on the workers that started when the system refuse
     std::vector<int> runs(500, 0);
     pool.parallelFor(runs.size(), [&runs](std::size_t index) { ++runs[index]; });
     CHECK(runs == std::vector<int>(runs.size(), 1));
+}
+
+TEST_CASE("a loop started from inside a body hits the assert whatever its size, before it takes any lock",
+          "[core][workers]") {
+    // Expected: docs/engine/render-threads.md#workers: a body that starts a loop is a broken invariant
+    // (CONEY_ASSERT), for a nested loop of any size. Of more than 16 items it used to reach the caller's mutex first
+    // (the caller locked its own mutex twice, a worker waited on it for ever) and never the assert. A broken
+    // invariant ends the process, so each run is a child process (tests/support/worker_pool_nested_check.cpp): an
+    // outer loop of 40 on a pool of four whose bodies start a loop of the size asked. It must end by the assert's
+    // abort with the assert's message, whichever thread started the loop, for sizes below, at and above the 16 the
+    // pool runs on the caller alone.
+    // The control: with no nested loop the same child ends by itself, so the helper itself works.
+    const ChildRun control = runNestedCheck("none");
+    REQUIRE(control.started);
+    INFO(control.output);
+    CHECK(control.exitCode == 0);
+    CHECK(control.output.find("done") != std::string::npos);
+    for (const char* nested : {"0", "3", "16", "17", "40"}) {
+        INFO("nested loop of " << nested);
+        const ChildRun run = runNestedCheck(nested);
+        REQUIRE(run.started);
+        INFO(run.output);
+        CHECK(run.exitCode != 0);
+        CHECK(run.output.find("Assertion failed: !tInBody") != std::string::npos);
+        CHECK(run.output.find("done") == std::string::npos);
+    }
 }
 
 TEST_CASE("the shared pool's size is half the hardware threads, between 1 and 8", "[core][workers]") {

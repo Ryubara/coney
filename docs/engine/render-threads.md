@@ -79,9 +79,10 @@ built (unlike the rest of this page) since [#1553](issue:1553). Its first user i
 performance sweep's item 7 ([#1542](issue:1542)), is meant to take the same pool rather than start its own.
 
 - **One loop at a time.** `parallelFor(count, body)` runs `body(index)` once for every index, on the calling thread and
-  the workers in chunks of 8, and returns when all have run; a second caller waits, and a body that starts a loop is a
-  broken invariant (`CONEY_ASSERT`). A loop of 16 or fewer runs on the caller alone, where waking the workers would
-  cost more than it saves.
+  the workers in chunks of 8, and returns when all have run; a second caller waits, and a body that starts a loop, of
+  any size, is a broken invariant (`CONEY_ASSERT`), checked first in `parallelFor()`, before it takes the caller's
+  lock (the caller locking it twice is undefined, and a worker would wait for it for ever). A loop
+  of 16 or fewer runs on the caller alone, where waking the workers would cost more than it saves.
 - **Its size.** Half the machine's hardware threads, about its physical cores, at least 1 and at most 8, the
   performance sweep's choice (`defaultWorkerThreads()`); the caller counts as one. The threads start at the pool's
   first use, so a process that never runs a loop (a headless test, a server) starts none, and stop when the process
@@ -94,7 +95,9 @@ performance sweep's item 7 ([#1542](issue:1542)), is meant to take the same pool
   eight give the same bits: test mode, lockstep and networked play do not depend on the pool's size. The simulation
   never runs on it; drawing only reads the step's state. The tests run loops with one thread and with four and compare
   ([worker_pool_test.cpp](repo:tests/core/worker_pool_test.cpp),
-  [human_posing_test.cpp](repo:tests/platform/human_posing_test.cpp)).
+  [human_posing_test.cpp](repo:tests/platform/human_posing_test.cpp)). The test of the nested-loop guard runs each
+  nested loop in a child process ([worker_pool_nested_check.cpp](repo:tests/support/worker_pool_nested_check.cpp)), as
+  an assertion ends the process, and reads its abort and its message.
 
 ## Input {#threads-input}
 

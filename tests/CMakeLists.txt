@@ -570,6 +570,12 @@ target_sources(coney_tests PRIVATE platform/net_game_test.cpp)
 target_sources(coney_tests PRIVATE support/each_case_test.cpp)
 # A failed runtime check fails the run on stderr instead of opening a dialog (platform/error_dialogs.h).
 target_sources(coney_tests PRIVATE support/error_dialogs_off.cpp)
+# The child process of the worker pool's nested-loop test (core/worker_pool_test.cpp): a broken invariant ends a
+# process, so the test runs the helper apart and reads how it ended. It sits beside coney_tests, which finds it there.
+add_executable(worker_pool_nested_check support/worker_pool_nested_check.cpp)
+coney_target_defaults(worker_pool_nested_check)
+target_link_libraries(worker_pool_nested_check PRIVATE coney_platform)
+add_dependencies(coney_tests worker_pool_nested_check)
 coney_target_defaults(coney_tests)
 # tests/ on the include path for the shared synthetic fixtures (support/fixtures.h).
 target_include_directories(coney_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
