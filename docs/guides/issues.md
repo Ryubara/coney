@@ -657,7 +657,8 @@ PR guard refuses every hand-typed push, so it is updated only through a unit; re
    **on that branch**, not renamed, moved, rebased or pushed: it takes the worktree the branch has (else a new one), its
    base commit is where the branch left the default branch, and it counts in its track. A fix task adopts nothing.
 3. A stamp log the task already has is **moved aside**, never deleted, to `<scratch>/<task>/stamps.legacy-<time>/`; a log
-   that starts with `assigned` (damaged or not) or cannot be read is refused, since that task is started, not adopted.
+   that starts with `assigned` (damaged or not) or cannot be read is refused, since that task is started, not adopted
+   (a unit started from another unit's branch, whose base has merged, is [restarted](#restarting), not adopted).
    The new log gets `assigned` and `claimed` (it says `adopted`); the stages are redone: `orig study` and `orig
    compare` for each `@orig` function, `orig fails-first`, `task check`, `task review`.
 4. The engineer confirms the branch holds every commit of the pull request (`git cherry -v <branch> origin/<branch>`: a
@@ -698,6 +699,11 @@ checkout:
 It takes no `--base`, `--adopt` or `--adopt-branch`, refuses a task that was never started (`task start` makes the unit)
 and a unit that is on `origin/main` already, and for a fix task refuses, as it works in its parent's unit. Running it
 again changes nothing but the refusal. `--dry-run` runs every check and prints what it would do.
+
+The old log is moved first, then the new one stamped, then the record written, so a restart that stops half way (the
+stamping failed) left the record on the old base and a rerun runs the restart again, moving aside whatever the new log
+holds. A base the default branch has edited since it merged is refused with the conflict (the refusal asks for the
+coordinator): there is no override yet.
 
 ### Tracks {#slots}
 

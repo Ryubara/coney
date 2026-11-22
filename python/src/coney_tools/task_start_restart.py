@@ -102,7 +102,9 @@ def unmerged_problem(main: Path, onto: str, tip: str, base_ref: str) -> str | No
 def _patch_ids(main: Path, revs: list[str]) -> dict[str, str]:
     """The `git patch-id` of each non-merge commit `revs` selects (`<patch id>` to the commit), so a commit can be
     recognised by its change under another hash."""
-    log = _run_bytes(main, ["log", "-p", "--no-merges", "--reverse", *revs])
+    # No external diff or colour from the user's config, and binary files' content in the patch: the id must depend on
+    # the change alone.
+    log = _run_bytes(main, ["log", "-p", "--no-ext-diff", "--no-color", "--binary", "--no-merges", "--reverse", *revs])
     if log.returncode != 0:
         raise ConfigError(f"git log failed: {log.stderr.decode('utf-8', 'replace').strip() or 'no output'}")
     ids = _run_bytes(main, ["patch-id", "--stable"], log.stdout)
@@ -116,12 +118,21 @@ def _patch_ids(main: Path, revs: list[str]) -> dict[str, str]:
     return found
 
 
+def _rev_list(main: Path, *revs: str) -> list[str]:
+    """The commits `git rev-list` selects; ConfigError when git fails, so a failure never reads as "none"."""
+    done = _git(main, "rev-list", *revs)
+    if done.returncode != 0:
+        raise ConfigError(f"git rev-list {' '.join(revs)} failed: {done.stderr.strip() or 'no output'}")
+    return done.stdout.split()
+
+
 def foreign_problem(main: Path, onto: str, branch: str, tips: list[str], base_ref: str) -> str | None:
     """Why the branch holds commits of the old base that are not in `onto`, or None when what it holds beyond `onto` is
     the unit's own: no commit of the base's tips by hash, and none with the same change under another hash."""
-    held = _git(main, "rev-list", f"refs/heads/{branch}", f"^{onto}").stdout.split()
-    base = _git(main, "rev-list", *tips, f"^{onto}").stdout.split()
-    same = [commit for commit in held if commit in set(base)]
+    held = _rev_list(main, f"refs/heads/{branch}", f"^{onto}")
+    base = _rev_list(main, *tips, f"^{onto}")
+    base_set = set(base)
+    same = [commit for commit in held if commit in base_set]
     if same:
         return (
             f"the branch '{branch}' still holds {len(same)} commit{'s' if len(same) != 1 else ''} of the old base "
@@ -219,10 +230,11 @@ def restart_unit(
         out(f"dry run: would write {record_path}, then stamp assigned and claimed")
         out(f"dry run: {line}")
         return 0
+    # The old log moves first, then the new one is stamped, and the record is written last: a failure in between leaves
+    # the record on the old base, so a rerun restarts again (docs/guides/issues.md#restarting).
     target = task_adopt.archive_log(log_folder, env.now()) if old_log else None
     if target is not None:
         out(f"  old stamp log moved to {target} (kept; no check reads it)")
-    write_record(record_path, fresh)
     who = env.who()
     steps = _missing_steps(fresh, _log_report(record.log_task, env)[0])
     _warn_unverified(who, env)
@@ -232,6 +244,7 @@ def restart_unit(
         "log": target.name if target else "",
     }
     _stamp_start(fresh, task, who, env, steps, tip, fork_point, restarted=note)
+    write_record(record_path, fresh)
     if not record.progress_posted:
         _post_progress(fresh, record_path, env)
     extra = pending_lines(env, task, fresh, True)

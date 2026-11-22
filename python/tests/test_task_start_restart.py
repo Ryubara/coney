@@ -9,6 +9,7 @@ none of its commits, as GitHub's squash merge does. The last test goes on throug
 """
 
 import dataclasses
+import shutil
 from pathlib import Path
 
 import pytest
@@ -17,7 +18,8 @@ from pr_open_support import OPENER, make_open
 from pr_support import make
 from test_task_start import TASK, WHO, World, parse
 
-from coney_tools import stamps, task_adopt, task_cli
+from coney_tools import stamps, task_adopt, task_cli, task_start_restart
+from coney_tools.config import ConfigError
 from coney_tools.task_file import parse_task_file, render_task_file
 from coney_tools.task_start import StartEnv, StartRequest, start_task
 from coney_tools.unit_record import read_record, write_record
@@ -216,6 +218,128 @@ def test_a_copy_of_a_base_commit_under_another_hash_is_refused(world: World) -> 
     assert world.run(restart=True) == 1
     assert "same change as a commit of the old base" in world.said()
     assert archives(world) == []
+
+
+def test_a_base_the_default_branch_changed_since_it_merged_is_refused_with_the_files(world: World) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world)
+    rebase_onto_main(tree)
+    # `main` edits a file the base added, after the squash: merging the base into it conflicts.
+    world.push_to_origin("base-one.txt")
+    before = snapshot(world)
+    assert world.run(restart=True) == 1
+    assert "has not merged" in world.said() and "conflicts in base-one.txt" in world.said()
+    assert "ask the coordinator" in world.said()
+    assert snapshot(world) == before and archives(world) == []
+
+
+def test_a_base_branch_deleted_after_the_merge_is_judged_from_the_commit_the_unit_recorded(world: World) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world)
+    rebase_onto_main(tree)
+    git(world.main, "branch", "-q", "-D", STACK)
+    assert world.run(restart=True) == 0, world.said()
+    assert world.record().base_ref == "origin/main"
+
+
+def test_a_base_that_is_not_in_the_repository_is_refused(world: World) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world)
+    rebase_onto_main(tree)
+    git(world.main, "branch", "-q", "-D", STACK)
+    record_path = world.scratch / TASK / "unit.json"
+    write_record(record_path, dataclasses.replace(read_record(record_path), base_commit="1" * 40))
+    before = snapshot(world)
+    assert world.run(restart=True) == 1
+    assert "is not in this repository" in world.said()
+    assert snapshot(world) == before and archives(world) == []
+
+
+def test_no_fetch_judges_by_the_refs_as_they_are(world: World) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world)
+    rebase_onto_main(tree)
+    # The remote cannot be reached, so any fetch would fail.
+    git(world.main, "remote", "set-url", "origin", str(world.tmp / "gone.git"))
+    with pytest.raises(ConfigError, match="fetch"):
+        world.run(restart=True)
+    assert world.record().base_ref == STACK
+    assert world.run(restart=True, fetch=False) == 0, world.said()
+    assert world.record().base_ref == "origin/main"
+
+
+def test_a_branch_with_no_commit_in_common_with_the_default_branch_is_refused(world: World) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world)
+    rebase_onto_main(tree)
+    # The branch is rebuilt as a root commit with the same files.
+    root = git(tree, "commit-tree", "HEAD^{tree}", "-m", "core: Add everything at once").strip()
+    git(tree, "reset", "-q", "--hard", root)
+    before = snapshot(world)
+    assert world.run(restart=True) == 1
+    assert "no common commit" in world.said()
+    assert snapshot(world) == before and archives(world) == []
+
+
+def test_a_worktree_that_is_gone_is_refused(world: World) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world)
+    rebase_onto_main(tree)
+    shutil.rmtree(tree)
+    assert world.run(restart=True) == 1
+    assert "worktree is gone" in world.said() and archives(world) == []
+
+
+def test_a_branch_that_is_gone_is_refused(world: World) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world)
+    rebase_onto_main(tree)
+    git(tree, "checkout", "-q", "--detach")
+    git(world.main, "branch", "-q", "-D", TASK)
+    assert world.run(restart=True) == 1
+    assert "does not exist here" in world.said() and archives(world) == []
+
+
+def test_a_damaged_log_is_refused_before_anything_is_moved(world: World) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world)
+    rebase_onto_main(tree)
+    file = log_folder(world) / "0001.jsonl"
+    file.write_text(file.read_text(encoding="utf-8") + "not a stamp" + chr(10), encoding="utf-8")
+    before = snapshot(world)
+    assert world.run(restart=True) == 1
+    assert "stamp log cannot be used" in world.said()
+    assert snapshot(world) == before and archives(world) == []
+    assert world.record().base_ref == STACK
+
+
+def test_a_restart_whose_stamping_failed_is_run_again(world: World, monkeypatch: pytest.MonkeyPatch) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world)
+    rebase_onto_main(tree)
+    real = task_start_restart._stamp_start
+
+    def fail(*args: object, **kwargs: object) -> None:
+        raise ConfigError("the disk is full")
+
+    monkeypatch.setattr(task_start_restart, "_stamp_start", fail)
+    with pytest.raises(ConfigError, match="disk is full"):
+        world.run(restart=True)
+    # The old log was moved, the record was not touched: the unit is still the stacked one and can restart.
+    assert len(archives(world)) == 1 and world.record().base_ref == STACK
+    monkeypatch.setattr(task_start_restart, "_stamp_start", real)
+    world.output.clear()
+    assert world.run(restart=True) == 0, world.said()
+    assert world.record().base_ref == "origin/main"
+    assert [s.step for s in world.log().stamps] == ["assigned", "claimed"]
+    assert world.log().stamps[1].detail["restarted"]["from_base_ref"] == STACK
+
+
+def test_a_failing_git_is_an_error_and_not_an_empty_answer(world: World) -> None:
+    stacked(world)
+    merge_base_by_squash(world)
+    with pytest.raises(ConfigError, match="rev-list"):
+        task_start_restart.foreign_problem(world.main, "origin/main", TASK, ["1" * 40], STACK)
 
 
 def test_a_unit_that_was_not_stacked_has_nothing_to_restart(world: World) -> None:

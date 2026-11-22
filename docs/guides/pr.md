@@ -413,7 +413,7 @@ What it refuses, besides the proof's refusals above (each message starts with "p
 | 2 | `<task>: no unit worktree (run task start)`; `a rebase or merge is in progress`; `the worktree is on 'x', the unit's branch is 'y'` | `task start`, or the engineer |
 | 2 | `the worktree has uncommitted changes: <first 5 paths>; the engineer commits or removes them` | the engineer |
 | 2 | `another pr open of <task> is running`; `cannot fetch <remote> <default>: ...` | wait; none |
-| 2 | `<task>: the unit was started from <ref>, not from <remote>/<default>; ...` (a stacked unit) | the work starts again as a unit from the default branch once the branch it builds on has merged |
+| 2 | `<task>: the unit was started from <ref>, not from <remote>/<default>; ...` (a stacked unit) | the engineer rebases the unit off the merged base and runs `task start <task> --restart` once the branch it builds on has merged ([Restarting a stacked unit](issues.md#restarting)) |
 | 2 | `--adopt: the pull request's branch has N commit(s) whose change the unit's branch lacks (...)` | the engineer cherry-picks them into the unit, or the coordinator adds `--adopt-rewrite` when dropping them is intended |
 | 2 | `origin/HEAD is not set here, so the default branch is unknown; run git remote set-head origin --auto` | the coordinator runs the command named |
 | 1 | `refused: the claim is not yours to release in <task>`, with the claim's state under it | the coordinator re-claims |
