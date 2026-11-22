@@ -133,8 +133,9 @@ class SceneLighting {
     /// Draws the health rings and the L1 markers (game axes) from `part_page1` onto `engine`'s frame: triangle fans in
     /// their per-vertex colours, Z tested, fog off. **Coney's stand-in** for the state the world pass leaves (not
     /// traced): alpha blended, no Z write.
-    /// @coney-only draws the fans hud::ringFan makes; the original's ring draw (0x0017b2e0 GroundRing_DrawQueued) makes
-    /// the arcs and the fans and draws them in one function, and Coney's arcs and fans are src/hud/health_rings.cpp
+    /// The draw part of the original's ring draw: its states and the one fan per ring; the fans themselves are
+    /// hud::ringFan's (src/hud/health_rings.cpp), which does the rest of that function.
+    /// @orig 0x0017b2e0 GroundRing_DrawQueued (unknown)
     void drawGroundRings(RenderEngine& engine, std::span<const hud::GroundRing> rings,
                          std::span<const hud::TargetMarker> markers) const;
 
