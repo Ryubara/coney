@@ -356,9 +356,9 @@ the two blends and the two shapes, the depth shared with the scene passes) and t
 **What still sets render states beside the description.** After item 10, [one check](#librw-check) keeps librw's drawing
 in the GL3 renderer. What it still excludes, each to leave when its code moves onto the description: the states the
 streamed world, the objects, the cars and the humans set for their described draws (`WorldRenderer`, `PlacedObjects`,
-`ParkedCars`, `PlayLighting` and the play mode's human draw: items 7 to 9 kept them in librw for the hashes;
-[#1622](issue:1622)), and the debug tools' own viewers (the character viewer, the sandbox, the studio's level renderer,
-the reference renderer and the mesh views; [#1623](issue:1623)).
+`ParkedCars`, `PlayLighting` and the human draws of the play mode and the client's scene: items 7 to 9 kept them in
+librw for the hashes; [#1622](issue:1622)), and the debug tools' own viewers (the character viewer, the sandbox, the
+studio's level renderer, the reference renderer and the mesh views; [#1623](issue:1623)).
 
 #### Texture lifetime {#texture-lifetime}
 

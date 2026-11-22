@@ -38,6 +38,7 @@ GL3_RENDERER = frozenset(
 # only to lose names; a name added here is a decision review sees.
 WAITING = frozenset(
     {
+        "client_level_scene",
         "parked_cars",
         "placed_objects",
         "play_level_mode",
