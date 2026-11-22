@@ -1001,6 +1001,21 @@ TEST_CASE("the net-view option makes a guest the client game, and needs --join",
     refused(std::array<std::string_view, 3>{"--host", "0", "--net-view"});
 }
 
+// Expected: unverified, #1603 (Coney's own option, docs/guides/client-world.md#client-game)
+TEST_CASE("the net-view option refuses every other mode beside it", "[options]") {
+    const auto refused = [](auto args) {
+        const auto result = parse(args);
+        REQUIRE_FALSE(result.has_value());
+        CHECK(result.error().code == ErrorCode::InvalidArgument);
+        CHECK(result.error().message.find("--net-view is the guest's whole game") != std::string::npos);
+    };
+    refused(std::array<std::string_view, 4>{"--join", "127.0.0.1:1", "--net-view", "--sandbox"});
+    refused(std::array<std::string_view, 5>{"--join", "127.0.0.1:1", "--net-view", "--play-level", "level99"});
+    refused(std::array<std::string_view, 5>{"--join", "127.0.0.1:1", "--net-view", "--load", "x"});
+    refused(std::array<std::string_view, 5>{"--join", "127.0.0.1:1", "--net-view", "--view-txd", "x"});
+    refused(std::array<std::string_view, 5>{"--join", "127.0.0.1:1", "--net-view", "--test-card", "x"});
+}
+
 TEST_CASE("the bench options measure a played level with fighters spawned", "[options]") {
     auto bench =
         parse(std::array<std::string_view, 12>{"--disc", "x", "--play-level", "level99", "--frames", "300", "--bench",
