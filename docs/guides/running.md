@@ -83,9 +83,12 @@ build/dev/src/platform/coney --headless --frames 3
 Without `--headless`, a machine with no display or no OpenGL fails at start-up with SDL's reason and exit code 1.
 
 `--screenshot PATH` saves the last frame (the one `--frames N` stops at) as a PNG and prints how many of its pixels
-differ from the background and a hash of the frame, so a script can check that something was drawn without keeping
-the image. Keep screenshots of game data out of the repository (`../../scratch/` is the place); they go on a pull
-request as attachments, uploaded with `gh --attach` ([Capturing and attaching](testing.md#pr-media)).
+differ from the background and a hash of the frame, so a script can check that something was drawn without keeping the
+image. It needs no disc: without one the frame is the idle screen, or what the debug menus, a sandbox or a test card
+draw over it. If OpenGL refuses the read-back the run exits 1 and the message names the OpenGL error
+(`GL_INVALID_VALUE (0x0501)`); an error an earlier draw left is logged as a warning and not blamed on the read. Keep
+screenshots of game data out of the repository (`../../scratch/` is the place); they go on a pull request as
+attachments, uploaded with `gh --attach` ([Capturing and attaching](testing.md#pr-media)).
 
 `--draw-hash` records what the last frame (the one `--frames N` stops at, counted from the first frame of play with
 `--play-level`) asks librw and OpenGL to draw and prints its counts and a hash of it, rounded to a fixed grid, in a

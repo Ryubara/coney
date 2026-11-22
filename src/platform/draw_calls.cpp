@@ -5,15 +5,19 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <initializer_list>
 #include <optional>
 #include <span>
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include <rw.h>
 
+#include "core/assert.h"
+#include "core/log.h"
 #include "platform/character_skin.h"
 #include "platform/draw_stream.h"
 #include "platform/texture_lod.h"
@@ -509,6 +513,7 @@ float im2dNearZ() { return rw::im2d::GetNearZ(); }
 void im2dRenderPrimitive(int type, void* vertices, rw::int32 numVertices) {
     recordIm2D(type, vertices, numVertices, nullptr, 0);
     if (forwarding()) {
+        CONEY_ASSERT(numVertices <= kIm2dMaxVertices);
         rw::im2d::RenderPrimitive(static_cast<rw::PrimitiveType>(type), vertices, numVertices);
     }
 }
@@ -516,6 +521,7 @@ void im2dRenderPrimitive(int type, void* vertices, rw::int32 numVertices) {
 void im2dRenderIndexedPrimitive(int type, void* vertices, rw::int32 numVertices, void* indices, rw::int32 numIndices) {
     recordIm2D(type, vertices, numVertices, indices, numIndices);
     if (forwarding()) {
+        CONEY_ASSERT(numVertices <= kIm2dMaxVertices && numIndices <= kIm2dMaxIndices);
         rw::im2d::RenderIndexedPrimitive(static_cast<rw::PrimitiveType>(type), vertices, numVertices, indices,
                                          numIndices);
     }
@@ -715,16 +721,59 @@ void copyFrameToRaster(rw::Raster* raster, int x, int y, int width, int height, 
     glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, x, frameHeight - (y + height), width, height);
 }
 
+namespace {
+
+// OpenGL's name for an error code, with the code: "GL_INVALID_VALUE (0x0501)".
+std::string glErrorText(unsigned code) {
+    const char* name = "an unknown error";
+    switch (code) {
+    case GL_INVALID_ENUM:
+        name = "GL_INVALID_ENUM";
+        break;
+    case GL_INVALID_VALUE:
+        name = "GL_INVALID_VALUE";
+        break;
+    case GL_INVALID_OPERATION:
+        name = "GL_INVALID_OPERATION";
+        break;
+    case GL_OUT_OF_MEMORY:
+        name = "GL_OUT_OF_MEMORY";
+        break;
+    case GL_INVALID_FRAMEBUFFER_OPERATION:
+        name = "GL_INVALID_FRAMEBUFFER_OPERATION";
+        break;
+    default:
+        break;
+    }
+    return std::format("{} ({:#06x})", name, code);
+}
+
+} // namespace
+
 std::expected<void, Error> readFrame(int x, int y, int width, int height, std::uint8_t* rgba) {
     recordWords(DrawRecord::FrameRead, {static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y),
                                         static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height)});
     if (!forwarding()) {
-        return fail(ErrorCode::PlatformFailure, "glReadPixels could not read the frame");
+        return fail(ErrorCode::PlatformFailure,
+                    "glReadPixels could not read the frame: no drawing call reaches OpenGL");
+    }
+    // OpenGL keeps the first error any call raised until it is read, so one an earlier draw left would be taken for
+    // this read's. Take them off first, and say so: the read's own verdict follows, and the error is not lost.
+    // (A lost context answers with an error for ever, so the list is taken a few at a time.)
+    constexpr int kMostStale = 8;
+    for (int i = 0; i < kMostStale; ++i) {
+        const unsigned stale = glGetError();
+        if (stale == GL_NO_ERROR) {
+            break;
+        }
+        logging::warn(logging::Category::Engine,
+                      std::format("an earlier OpenGL call left {} before the frame was read", glErrorText(stale)));
     }
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
     glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, rgba);
-    if (glGetError() != GL_NO_ERROR) {
-        return fail(ErrorCode::PlatformFailure, "glReadPixels could not read the frame");
+    if (const unsigned error = glGetError(); error != GL_NO_ERROR) {
+        return fail(ErrorCode::PlatformFailure,
+                    std::format("glReadPixels could not read the frame: {}", glErrorText(error)));
     }
     return {};
 }

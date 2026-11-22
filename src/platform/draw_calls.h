@@ -80,14 +80,24 @@ void setRenderStatePtr(std::int32_t state, void* value);
 /// rw::GetRenderState: librw's own while forwarding, else the layer's.
 [[nodiscard]] std::uint32_t getRenderState(std::int32_t state);
 
+/// What one im2dRenderPrimitive or im2dRenderIndexedPrimitive call may carry: the size of librw's GL3 2D vertex and
+/// index buffers (STARTVERTICES and STARTINDICES in the pinned librw's gl3immed.cpp, 10,000 each). A call with more
+/// raises GL_INVALID_VALUE in glBufferSubData, draws nothing right and leaves the error for whatever checks next (a
+/// screenshot's read-back reported it as its own, #593), so a caller splits its draw into calls of at most this many.
+/// Coney's own, not the original's: it is the limit of the library Coney draws with.
+inline constexpr std::int32_t kIm2dMaxVertices = 10000;
+/// The index limit of the same buffers (see kIm2dMaxVertices).
+inline constexpr std::int32_t kIm2dMaxIndices = 10000;
 /// rw::im2d::GetNearZ: the device's near depth for 2D vertices. The one librw call here that reaches librw whether or
 /// not calls are forwarded, and the one that is not recorded: it is a read of the installed device's constant (-1 on
 /// the GL3 device, 0 on the NULL device, and the NULL device is installed headless too), not a drawing call, so there
 /// is nothing to forward or to put in the stream; the vertices built from it are what the stream records.
 [[nodiscard]] float im2dNearZ();
-/// rw::im2d::RenderPrimitive over rw::gl3::Im2DVertex `vertices`.
+/// rw::im2d::RenderPrimitive over rw::gl3::Im2DVertex `vertices`; at most kIm2dMaxVertices of them (checked by
+/// CONEY_ASSERT when forwarding).
 void im2dRenderPrimitive(int type, void* vertices, std::int32_t numVertices);
-/// rw::im2d::RenderIndexedPrimitive over rw::gl3::Im2DVertex `vertices` and 16-bit `indices`.
+/// rw::im2d::RenderIndexedPrimitive over rw::gl3::Im2DVertex `vertices` and 16-bit `indices`; at most kIm2dMaxVertices
+/// and kIm2dMaxIndices of them (checked by CONEY_ASSERT when forwarding).
 void im2dRenderIndexedPrimitive(int type, void* vertices, std::int32_t numVertices, void* indices,
                                 std::int32_t numIndices);
 
@@ -140,8 +150,9 @@ void setRasterFromImage(rw::Raster* raster, rw::Image* image);
 /// into level 0 of `raster` (glCopyTexSubImage2D): the screen passes' copies of the back buffer.
 void copyFrameToRaster(rw::Raster* raster, int x, int y, int width, int height, int frameHeight);
 /// Reads the frame buffer's rectangle `x`, `y`, `width`, `height` (OpenGL's: from the bottom left) as RGBA rows from
-/// the bottom into `rgba`, which holds width * height * 4 bytes (glReadPixels); an error when OpenGL reports one or
-/// nothing is forwarded.
+/// the bottom into `rgba`, which holds width * height * 4 bytes (glReadPixels); an error when OpenGL reports one
+/// (named, GL_INVALID_VALUE for one) or nothing is forwarded. An error an earlier call left in OpenGL's list is not the
+/// read's: it is taken off the list first and logged as a warning, naming it.
 [[nodiscard]] std::expected<void, Error> readFrame(int x, int y, int width, int height, std::uint8_t* rgba);
 /// Draws polygons as lines, pulled a little towards the camera, or filled again (glPolygonMode and glPolygonOffset):
 /// the mesh views' wireframe.

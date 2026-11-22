@@ -137,6 +137,19 @@ Two things a person who sees such a test stall will want, measured in the same r
   quits, and its runs were the same with and without the hint), so it is left alone; a test that restarts the renderer
   hundreds of times could set the hint before the video starts.
 
+### The screenshot without a disc {#screenshot-without-disc}
+
+`coney --frames N --screenshot out.png` with no disc failed with "glReadPixels could not read the frame" when the debug
+menu was open (#593), and `tests/platform/window_screenshot_test.cpp` holds the case. It runs the screenshot path of
+`RenderEngine` (`requestCapture`, then the read-back that `--screenshot` makes) on a hidden window with no disc: it draws
+6,000 flat quads, as the pad menu's bitmap text does, and checks that the capture succeeds and holds all 24,000 pixels
+of them; it failed with the issue's own message before the fix. Two more cases check that a refused read names the
+OpenGL error and that an error an earlier call left is not blamed on the read. Like the other window tests it skips
+without a display and OpenGL 3.3, so CI's engine jobs skip it (they have no display, as for the [frame
+copy check](#ci)) and it runs on a machine with one: the local gate, and the whole suite `ci disc-suite` runs on `main`
+after a merge. The windowed run of the real command (`coney --frames 30 --input-script tests/support/debug_menu.txt
+--screenshot menu.png`, no disc) is reported in the pull request's Testing section.
+
 ### A test that saves a file gives it a path of its own {#capture-paths}
 
 Tests run several at once: `build --test` runs them `-j` at a time, and other agents' checks use the same machine and

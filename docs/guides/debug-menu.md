@@ -857,6 +857,11 @@ build/dev/src/platform/coney --frames 30 --input-script tests/support/debug_menu
 The overlay is checked the same way: its renderer runs over a bare Dear ImGui context in the unit tests, and
 `--dev-overlay` with `--screenshot` checks that it leaves the frame as it found it ([above](#the-developer-overlay)).
 
+The same command works with no disc, and it did not once: the pad menu then draws in Coney's bitmap font, one flat quad
+per lit pixel, and the frame's read-back failed with "glReadPixels could not read the frame" because the draw was
+longer than librw's 2D buffers ([the limit](../engine/renderer.md#today); #593). The window test
+`tests/platform/window_screenshot_test.cpp` draws that many quads and reads the frame back.
+
 ## Still to come {#still-to-come}
 
 - Spawning characters, once other characters move in a level; god mode, once the player has health.

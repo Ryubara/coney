@@ -53,6 +53,17 @@ The first, second, third and fifth rows are exact `git grep` counts; the others 
 take several forms. The GPU skinning pipeline (`character_skin.cpp`, 39 of the `rw::gl3::` sites) is the largest
 single file among them.
 
+**librw's 2D buffers are small.** One `rw::im2d::RenderPrimitive` or `RenderIndexedPrimitive` call carries at most 10,000
+vertices and 10,000 indices (`STARTVERTICES` and `STARTINDICES` in the pinned librw's `gl3immed.cpp`;
+`draw::kIm2dMaxVertices` and `kIm2dMaxIndices`), and a longer one raises `GL_INVALID_VALUE` in `glBufferSubData`, draws
+nothing right and leaves the error in OpenGL's list. `Gl3Renderer` therefore splits a quad draw into runs of 1,666 quads
+and a triangle draw into runs of 9,999 vertices, and the draw layer asserts the limit on every call it forwards. This
+is Coney's own limit, the library's, not the original's. It was found by a screenshot: a run with no disc draws the debug
+menu's text in Coney's bitmap font, one flat quad per lit pixel and several thousand a frame, in one call, and the
+read-back after it reported the leftover error as "glReadPixels could not read the frame" (#593). The Im3D buffers have
+the same sizes, and `particle_renderer.cpp` batches up to 16,000 sprites (64,000 vertices) per call: that draw is not
+split yet.
+
 About 40 other files use librw only for data: streams, geometry, frames, matrices, texture dictionaries. That side is
 not in question in any option below; librw stays Coney's reader of RenderWare data.
 
