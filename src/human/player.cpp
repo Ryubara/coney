@@ -110,6 +110,8 @@ std::optional<PlayerStart> researchedPlayerStart(std::string_view level) {
     return std::nullopt;
 }
 
+// Loads a character by model name through the Character List.
+// @coney-only Coney's loader of a player's resources
 std::expected<std::unique_ptr<PlayerCharacter>, Error>
 PlayerCharacter::load(const io::Wad& wad, const chunk::ChunkHandlerTable& table, std::string_view name) {
     // The character's own resources, through the Character List.
@@ -121,6 +123,27 @@ PlayerCharacter::load(const io::Wad& wad, const chunk::ChunkHandlerTable& table,
     if (!assets) {
         return std::unexpected(std::move(assets.error()));
     }
+    return finishLoad(wad, table, std::move(*assets), name);
+}
+
+// Loads the character at a list index, as a snapshot names it.
+// @coney-only network play; the original has none
+std::expected<std::unique_ptr<PlayerCharacter>, Error> PlayerCharacter::loadAt(const io::Wad& wad,
+                                                                               const chunk::ChunkHandlerTable& table,
+                                                                               const characters::CharacterList& list,
+                                                                               std::size_t index) {
+    auto assets = characters::loadCharacterAssetsAt(wad, list, table, index);
+    if (!assets) {
+        return std::unexpected(std::move(assets.error()));
+    }
+    return finishLoad(wad, table, std::move(*assets), std::format("character {}", index));
+}
+
+// The part of a load both ways share, once the character's resources are found.
+// @coney-only Coney's loader of a player's resources
+std::expected<std::unique_ptr<PlayerCharacter>, Error>
+PlayerCharacter::finishLoad(const io::Wad& wad, const chunk::ChunkHandlerTable& table,
+                            characters::CharacterAssets assets, std::string_view label) {
     // The generic clips that stand in for the default anim table.
     const std::string genericName = std::format("{}", characters::kGenericAnimDataHash);
     auto genericEntry = wad.lookup(genericName);
@@ -132,28 +155,17 @@ PlayerCharacter::load(const io::Wad& wad, const chunk::ChunkHandlerTable& table,
         return std::unexpected(std::move(generic.error()));
     }
     // The Anim Range List the character's moves take their damage and reach from.
-    auto ranges = combat::AnimRangeList::parse(assets->data.rangeList());
+    auto ranges = combat::AnimRangeList::parse(assets.data.rangeList());
     if (!ranges) {
         return std::unexpected(std::move(ranges.error()));
     }
     std::unique_ptr<PlayerCharacter> character(
-        new PlayerCharacter(std::move(*assets), std::move(*generic), std::move(*ranges)));
+        new PlayerCharacter(std::move(assets), std::move(*generic), std::move(*ranges)));
     if (const std::size_t missing = HumanAnimator::clipsMissing(character->m_anims, AnimSlots::player());
         missing != 0) {
-        return fail(ErrorCode::NotFound, std::format("{}: {} locomotion clips missing", name, missing));
+        return fail(ErrorCode::NotFound, std::format("{}: {} locomotion clips missing", label, missing));
     }
     return character;
-}
-
-std::expected<std::unique_ptr<PlayerCharacter>, Error> PlayerCharacter::loadAt(const io::Wad& wad,
-                                                                               const chunk::ChunkHandlerTable& table,
-                                                                               const characters::CharacterList& list,
-                                                                               std::size_t index) {
-    (void)wad;
-    (void)table;
-    (void)list;
-    (void)index; // stub: the change is not made yet
-    return fail(ErrorCode::NotFound, "not made yet");
 }
 
 std::unique_ptr<PlayerCharacter> PlayerCharacter::fromParts(characters::CharacterAssets assets,

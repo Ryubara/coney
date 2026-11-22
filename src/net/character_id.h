@@ -26,15 +26,17 @@ inline constexpr std::int32_t kMostCharacterId = 1023;
 /// an index past kMostCharacterId.
 /// @coney-only network play; the original has none
 [[nodiscard]] constexpr std::int32_t characterIdOf(std::size_t listIndex) {
-    (void)listIndex; // stub: the change is not made yet
-    return kNoCharacter;
+    return listIndex < static_cast<std::size_t>(kMostCharacterId) ? static_cast<std::int32_t>(listIndex) + 1
+                                                                  : kNoCharacter;
 }
 
 /// The Character List index a human's character `id` names; nothing for kNoCharacter or an id past kMostCharacterId.
 /// @coney-only network play; the original has none
 [[nodiscard]] constexpr std::optional<std::size_t> characterListIndexOf(std::int32_t id) {
-    (void)id; // stub: the change is not made yet
-    return std::nullopt;
+    if (id < 1 || id > kMostCharacterId) {
+        return std::nullopt;
+    }
+    return static_cast<std::size_t>(id) - 1;
 }
 
 } // namespace coney::net

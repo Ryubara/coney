@@ -12,6 +12,7 @@
 #include "animation/anim_task.h"
 #include "core/assert.h"
 #include "human/human.h"
+#include "net/character_id.h"
 #include "net/player_huds.h"
 
 namespace coney::net {
@@ -46,7 +47,7 @@ HumanState replicatedState(const human::Human& human, std::int32_t character) {
     state.grounded = !human.airborne();
     state.knockedOut = human.knockedOut() || human.script().wounded;
     state.moveStyle = human.animator().stealthStyle() ? MoveStyle::Hidden : MoveStyle::Normal;
-    (void)character; // stub: the change is not made yet
+    state.character = character;
     // The layers, newest first; each older layer's fade is how far the one over it has faded in.
     const anim::AnimTaskStack& tasks = human.animator().tasks();
     const std::size_t layers = std::min(tasks.layerCount(), state.layers.size());
@@ -58,7 +59,6 @@ HumanState replicatedState(const human::Human& human, std::int32_t character) {
 }
 
 void GameHumans::capture(const ai::Brains& brains, const CharacterOf& characterOf) {
-    (void)characterOf; // stub: the change is not made yet
     m_humans.clear();
     if (!m_capturing) {
         return;
@@ -74,7 +74,10 @@ void GameHumans::capture(const ai::Brains& brains, const CharacterOf& characterO
         if (!id) {
             continue;
         }
-        m_humans.push_back(SnapshotHuman{.id = *id, .words = humanWords(replicatedState(human)), .priority = 1});
+        // The character he is drawn as, from the game that draws him; none when nobody says.
+        const std::int32_t character = characterOf ? characterOf(human) : kNoCharacter;
+        m_humans.push_back(
+            SnapshotHuman{.id = *id, .words = humanWords(replicatedState(human, character)), .priority = 1});
     }
     // The humans gone since the last step lose their ids.
     std::vector<const human::Human*> gone;

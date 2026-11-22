@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
@@ -8,6 +9,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <utility>
 
@@ -38,16 +40,34 @@ template <typename Character> class CharacterRoster {
     CharacterRoster(std::unique_ptr<Character> fallback, Loader load, Print print)
         : m_fallback(std::move(fallback)), m_load(std::move(load)), m_print(std::move(print)) {}
 
-    /// The character to draw a human whose snapshot field is `id` with: stub, always the fallback.
+    /// The character to draw a human whose snapshot field is `id` with: his own, loaded now when no human of it has
+    /// been drawn yet; the fallback for kNoCharacter, an id outside the field's range, or a character that did not
+    /// load.
     [[nodiscard]] const Character& of(std::int32_t id) {
-        (void)id;
-        return *m_fallback;
+        const std::optional<std::size_t> index = characterListIndexOf(id);
+        if (!index) {
+            return *m_fallback;
+        }
+        auto found = m_loaded.find(*index);
+        if (found == m_loaded.end()) {
+            // The first human of this character: load it, and keep the answer, a failure too, so it is said once.
+            auto loaded = m_load(*index);
+            if (!loaded) {
+                m_print(std::format("client: character {} did not load ({}); its humans are drawn as the fallback\n",
+                                    *index, loaded.error().message));
+            }
+            found = m_loaded.emplace(*index, loaded ? std::move(*loaded) : nullptr).first;
+        }
+        return found->second != nullptr ? *found->second : *m_fallback;
     }
 
     /// The fallback character.
     [[nodiscard]] const Character& fallback() const { return *m_fallback; }
     /// How many characters besides the fallback are loaded.
-    [[nodiscard]] std::size_t loaded() const { return 0; }
+    [[nodiscard]] std::size_t loaded() const {
+        return static_cast<std::size_t>(
+            std::ranges::count_if(m_loaded, [](const auto& entry) { return entry.second != nullptr; }));
+    }
 
   private:
     std::unique_ptr<Character> m_fallback;

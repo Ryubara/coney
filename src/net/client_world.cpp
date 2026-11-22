@@ -126,6 +126,7 @@ HumanState humanState(const HumanWords& words) {
     human.grounded = std::get<bool>(values.at(at(HumanField::Grounded)));
     human.knockedOut = std::get<bool>(values.at(at(HumanField::KnockedOut)));
     human.moveStyle = std::get<bool>(values.at(at(HumanField::MoveStyle))) ? MoveStyle::Hidden : MoveStyle::Normal;
+    human.character = whole(at(HumanField::Character));
     return human;
 }
 
@@ -149,6 +150,7 @@ HumanWords humanWords(const HumanState& human) {
     values.at(at(HumanField::Grounded)) = human.grounded;
     values.at(at(HumanField::KnockedOut)) = human.knockedOut;
     values.at(at(HumanField::MoveStyle)) = human.moveStyle == MoveStyle::Hidden;
+    values.at(at(HumanField::Character)) = human.character;
     return humanWords(std::span<const FieldValue, kHumanFieldCount>(values));
 }
 

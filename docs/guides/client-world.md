@@ -13,11 +13,11 @@ character's clips as a `ClipSource`), platform-neutral in `coney_net`; and the g
 game](#client-game) (`--join ADDR --net-view`): `src/platform/client_game.h` (`ClientGame`), which follows the host's
 levels, steps a `ClientWorld` from the snapshots the session decodes, presents the host's game events and steps the
 guest's HUD, `src/gamemodes/client_event_player.h` (`ClientEventPlayer`), which applies an event to the guest's sound
-and HUD, and `src/platform/client_level_scene.h` (`ClientLevelScene`), which draws the level, the world's humans and
-the HUD through the renderer. The host fills its snapshots from its own humans every step ([The game's
-humans](multiplayer.md#game-humans)). **Planned**, each with its issue: each human's own character (#1612) in the
-snapshot, and the guest's own player's camera (#1333), which the snapshots do not carry yet (drawn with stand-ins
-until then, [The client game](#client-game)).
+and HUD, and `src/platform/client_level_scene.h` (`ClientLevelScene`), which draws the level, the world's humans (each
+as the character his snapshot names) and the HUD through the renderer. The host fills its snapshots from its own humans
+every step ([The game's humans](multiplayer.md#game-humans)). **Planned**, with its issue: the guest's own player's
+camera (#1333), which the snapshots do not carry yet (drawn with a stand-in until then, [The client
+game](#client-game)).
 
 ## The model {#model}
 
@@ -80,7 +80,7 @@ All of `JitterConfig`'s numbers are Coney's choices.
 | A layer's playhead | forward round the clip (`lerpLooping()`, a period of 1), when the layer is the same task at both ends |
 | A layer's gait value and fade | lerped, under the same condition |
 | A gait blend's clip | the clip of the pair the blended value plays: `to`'s if in `to`'s pair, else `from`'s |
-| Health, its maximum, the other clips, grounded, knocked out | `to`'s |
+| Health, its maximum, the other clips, grounded, knocked out, the move style, the character | `to`'s |
 
 The same task is the same clip, or one gait blend. What moves continuously is blended, the newer end's discrete state is
 drawn as it is, and a jump is drawn where it lands.
@@ -144,6 +144,21 @@ whichever style is asked: when a human changes style, the layer of its old style
 and its walk (408 or 633) still names the blend it belongs to. A fading layer led by the jog, run or sprint cannot say
 which style built it, so it takes the new style's blend for the length of the fade.
 
+## A guest's characters {#characters}
+
+A snapshot names each human's character as an id, a Character List index plus one ([A human's
+character](snapshots.md#character)). The client game keeps a `net::CharacterRoster` of the characters it draws with: a
+human whose id names a character gets his own model, textures and clips (`DrawnCharacter`: a `PlayerCharacter` loaded
+by index from the guest's own disc with `PlayerCharacter::loadAt()`, its textures and its [clips](#clips)), loaded the
+first time a human of it is drawn and kept, so a crowd of one character loads it once. A human who becomes another
+character (his id changes in a snapshot) has his mesh made afresh from that snapshot on.
+
+**Coney's choice:** a human whose snapshot names no character (id 0), or whose character does not load on the guest's
+disc, is drawn as Rembrandt (`human::kPlayerModel`), as the play mode draws a cast human whose model fails to load;
+the failure is logged once and remembered, not tried again each frame. The roster is a template over what a client
+draws with, in `src/net/character_roster.h`, so its choice is tested without a disc; `ClientLevelScene` instantiates it
+with `DrawnCharacter`.
+
 ## The client game {#client-game}
 
 `--join ADDR --net-view` starts a guest that runs **no game of its own**: no front end, no scripts, no simulation. Its
@@ -166,11 +181,9 @@ in the log.
 
 **The scene.** `ClientLevelScene` loads the level's scenery as the play mode does (`LevelPlayScenery`), lights it with
 the play mode's stand-in lights, and draws each human of the world as a character mesh posed by
-[`humanPose()`](#pose) over its [clips](#clips), at its feet and heading. Two **stand-ins** wait for the snapshots to
-carry more:
+[`humanPose()`](#pose) over its character's [clips](#clips), at its feet and heading, each human as [his own
+character](#characters). One **stand-in** waits for the snapshots to carry more:
 
-- **Every human is drawn as Rembrandt** (`human::kPlayerModel`): a snapshot does not say which character a human is
-  (#1612).
 - **The camera follows the human with the lowest network id**, the host's player 1, whose brain comes first, from 4 m
   behind and 2 m above his feet, looking at his chest: the guest's own player and its follow camera are not in the
   snapshots (#1333). With no human, it stands at the level's start the same way.
@@ -193,10 +206,11 @@ show or play on this machine, to its sound and its HUD:
 | Cue (2D) | The HUD's interface cue |
 
 The kinds it cannot present yet are counted (`ClientGame::eventsUnpresented()`) and nothing else: a human's sound, line
-or command (HumanSound, Hit, Speech, Command, SpeechStop: the human is named by a network id and the snapshots do not
-say which character he is, #1612), a particle start and an object breaking (the scene has no particle systems or
-world-object effects yet), a material pair, a cue a world object raises at a place, and a scene or a movie (the client
-game plays none). Presentation only: the host's own events were taken and sent as before.
+or command (HumanSound, Hit, Speech, Command, SpeechStop: the human is named by a network id, and his character,
+now in the snapshots (#1612), is not yet turned into his sounds on the guest), a particle start and an object breaking
+(the scene has no particle systems or world-object effects yet), a material pair, a cue a world object raises at a
+place, and a scene or a movie (the client game plays none).
+Presentation only: the host's own events were taken and sent as before.
 
 **Stand-in: no sound set-up.** The host's sounds name banks, interface cues and material tables that the level's
 scripts load, and the client game runs no script, so on the guest a sound whose bank is not loaded plays nothing and
@@ -233,11 +247,14 @@ the buffer with a new human and the blend between two steps through `DrawnPoses`
 against `AnimTaskStack::sample()` itself: two layers in a fade, a gait blend between two clips, a gait clip played as a
 plain loop, and a clip that is not loaded. It also covers a gait blend crossing from the walk's pair into the jog's
 and back, two snapshots decoded in one step both reaching the buffer, and a world told to skip what was decoded taking
-only the snapshots after. `tests/net/character_clips_test.cpp` covers [a character's clips](#clips) on synthetic ones:
-a clip by its id, each style's gait blend and the blend each style answers for the jog, run and sprint, a set missing
-one of a blend's clips, and a jog-to-run layer posed as the server's gait blend samples it. The move style is pinned
-where it is carried: in the words' round trip and the pose of a hidden human's gait blend (`client_world_test.cpp`), in
-`replicatedState()` for a human that hides (`game_humans_test.cpp`), and in the human field table's 257 bits.
+only the snapshots after, and a human's character reaching the drawn human. `tests/net/character_id_test.cpp` covers
+the id's mapping to a list index and [the roster](#characters): none and out-of-range ids the fallback, a character
+loaded once and shared, a failed load said once. `tests/net/character_clips_test.cpp` covers [a character's
+clips](#clips) on synthetic ones: a clip by its id, each style's gait blend and the blend each style answers for the
+jog, run and sprint, a set missing one of a blend's clips, and a jog-to-run layer posed as the server's gait blend
+samples it. The move style is pinned where it is carried: in the words' round trip and the pose of a hidden human's
+gait blend (`client_world_test.cpp`), in `replicatedState()` for a human that hides (`game_humans_test.cpp`), and in
+the human field table's 267 bits.
 
 Its last case is the architecture's **What a client sees** test ([Testing](network-architecture.md#testing)): a
 `NetServer` and a `NetClient` on the loopback, each behind a link conditioner with 20 ms latency, 15 ms jitter, 5 %

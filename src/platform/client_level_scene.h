@@ -9,11 +9,13 @@
 #include <string_view>
 #include <vector>
 
+#include "characters/character_list.h"
 #include "core/error.h"
 #include "fileio/wad.h"
 #include "hud/hud_owner.h"
 #include "human/player.h"
 #include "net/character_clips.h"
+#include "net/character_roster.h"
 #include "net/client_world.h"
 #include "net/net_id.h"
 #include "platform/character_mesh.h"
@@ -31,23 +33,35 @@
 
 namespace coney::platform {
 
+/// One character the client game draws humans with: his model and textures, his clips by anim id, ready to pose and
+/// draw. What net::CharacterRoster keeps for each character a snapshot names.
+/// @coney-only network play; the original has none
+struct DrawnCharacter {
+    std::unique_ptr<human::PlayerCharacter> character; ///< the model, its own clips and the skeleton
+    std::vector<TextureDictionary> dictionaries;       ///< its textures
+    std::unique_ptr<net::CharacterClips> clips;        ///< its clips, by anim id
+};
+
 /// What the client game draws of a level (ClientScene): the level's scenery as the play mode loads and streams it
-/// (LevelPlayScenery), lit with the play mode's stand-in lights (PlayLighting without a level's), and each human of
-/// the net::ClientWorld as a character mesh posed from its replicated layers (net::humanPose() over the character's
-/// clips) at its feet and heading, as ClientWorld::drawn() blends them for the frame, with the HUD the client game
-/// steps (platform::HudLayer over its hud::HudOwner) drawn over the frame. Presentation only.
+/// (LevelPlayScenery), lit with the play mode's stand-in lights (PlayLighting without a level's), and each human of the
+/// net::ClientWorld as the character his snapshot names (his Character List index, net::characterListIndexOf(), loaded
+/// from the guest's own disc the first time a human of it is drawn) posed from its replicated layers (net::humanPose()
+/// over that character's clips) at its feet and heading, as ClientWorld::drawn() blends them for the frame, with the
+/// HUD the client game steps (platform::HudLayer over its hud::HudOwner) drawn over the frame. A human whose snapshot
+/// names no character, or one that does not load, is drawn as Rembrandt (`human::kPlayerModel`), **Coney's choice** as
+/// the play mode draws a cast human whose model fails to load. Presentation only.
 ///
-/// **Stand-ins**, until the snapshots carry them: every human is drawn as Rembrandt (`human::kPlayerModel`), since a
-/// snapshot does not say which character a human is (#1612); and the camera follows the human with the lowest network
-/// id (the host's player 1, whose brain comes first) from 4 m behind and 2 m above his feet, looking at his chest,
-/// since the guest's own player and its follow camera are not in the snapshots either (#1333). With no human, the
-/// camera stands at the level's start the same way.
+/// **Stand-in**, until the snapshots carry it: the camera follows the human with the lowest network id (the host's
+/// player 1, whose brain comes first) from 4 m behind and 2 m above his feet, looking at his chest, since the guest's
+/// own player and its follow camera are not in the snapshots (#1333). With no human, the camera stands at the level's
+/// start the same way.
 /// @coney-only network play; the original has none
 class ClientLevelScene final : public ClientScene {
   public:
-    /// Loads level `level` from `wad` (LevelPlayScenery::load(), charging `budget`, which must outlive the scene) and
-    /// the stand-in character, drawing through `engine`, and the HUD's sheets for the HUD `hud` holds (which must
-    /// outlive the scene); `print` takes what was loaded (counts only). Fails as the loaders do.
+    /// Loads level `level` from `wad` (LevelPlayScenery::load(), charging `budget`, which must outlive the scene, as
+    /// must `wad`) and the fallback character, drawing through `engine`, and the HUD's sheets for the HUD `hud` holds
+    /// (which must outlive the scene); `print` takes what was loaded (counts only). The humans' own characters load
+    /// from `wad` as they are first drawn. Fails as the loaders do.
     [[nodiscard]] static std::expected<std::unique_ptr<ClientLevelScene>, Error>
     load(RenderEngine& engine, const io::Wad& wad, const LevelAt& level, world::SectorBudget& budget,
          hud::HudOwner& hud, std::function<void(std::string_view)> print);
@@ -72,20 +86,23 @@ class ClientLevelScene final : public ClientScene {
     [[nodiscard]] std::size_t meshes() const { return m_meshes.size(); }
     /// How many sprites the HUD's newest step queued (HudLayer::spritesQueued()).
     [[nodiscard]] std::size_t hudSpritesQueued() const { return m_hudLayer->spritesQueued(); }
-    /// The character the last frame drew human `id` with; null for a human it did not draw. Stub.
-    [[nodiscard]] const human::PlayerCharacter* characterOf(net::NetId id) const {
-        (void)id;
-        return nullptr;
-    }
-    /// How many characters the scene holds: the one it falls back to and each one a human it drew was. Stub.
-    [[nodiscard]] std::size_t charactersLoaded() const { return 0; }
+    /// The character the last frame drew human `id` with; null for a human it did not draw.
+    [[nodiscard]] const human::PlayerCharacter* characterOf(net::NetId id) const;
+    /// How many characters the scene holds: the one it falls back to and each one a human it drew was.
+    [[nodiscard]] std::size_t charactersLoaded() const { return m_characters->loaded() + 1; }
     /// The view the last frame was drawn through (RenderWare's axes).
     [[nodiscard]] const WorldView& lastView() const { return m_lastView; }
 
   private:
     ClientLevelScene(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<LevelPlayScenery> scenery,
-                     std::unique_ptr<human::PlayerCharacter> character, std::vector<TextureDictionary> dictionaries,
+                     characters::CharacterList list, std::unique_ptr<DrawnCharacter> fallback,
                      std::unique_ptr<HudLayer> hudLayer, std::function<void(std::string_view)> print);
+
+    // One human's mesh, and the character it was made for: it is made afresh when his snapshot names another.
+    struct HumanMesh {
+        const DrawnCharacter* character = nullptr;
+        std::unique_ptr<CharacterMesh> mesh;
+    };
 
     // The stand-in camera's view on `feet` and `heading` (game axes), at the scenery's draw distance.
     [[nodiscard]] WorldView viewOn(anim::Vec3 feet, float heading) const;
@@ -93,14 +110,14 @@ class ClientLevelScene final : public ClientScene {
     [[nodiscard]] WorldView startView() const;
 
     RenderEngine& m_engine;
+    const io::Wad& m_wad;
     std::unique_ptr<LevelPlayScenery> m_scenery;
-    std::unique_ptr<human::PlayerCharacter> m_character; // the stand-in model every human is drawn as
-    std::vector<TextureDictionary> m_dictionaries;       // its textures
-    std::unique_ptr<net::CharacterClips> m_clips;        // its clips, by anim id
+    characters::CharacterList m_list; // the disc's Character List, which names the characters by index
+    std::unique_ptr<net::CharacterRoster<DrawnCharacter>> m_characters; // the characters, by id
     std::unique_ptr<PlayLighting> m_lights;
     std::unique_ptr<HudLayer> m_hudLayer; // the HUD's sheets and sprites; draws the HUD the client game steps
     std::function<void(std::string_view)> m_print;
-    std::map<net::NetId, std::unique_ptr<CharacterMesh>> m_meshes; // by human
+    std::map<net::NetId, HumanMesh> m_meshes; // by human
     std::size_t m_posed = 0;
     std::size_t m_layersMissing = 0;
     WorldView m_lastView;

@@ -96,6 +96,11 @@ class PlayerCharacter {
   private:
     PlayerCharacter(characters::CharacterAssets assets, characters::CharacterData generic,
                     combat::AnimRangeList ranges);
+    // The rest of a load once `assets` are found: the generic character data, the ranges and the locomotion check;
+    // `label` names the character in a failure.
+    [[nodiscard]] static std::expected<std::unique_ptr<PlayerCharacter>, Error>
+    finishLoad(const io::Wad& wad, const chunk::ChunkHandlerTable& table, characters::CharacterAssets assets,
+               std::string_view label);
 
     characters::CharacterAssets m_assets;
     characters::CharacterData m_generic;

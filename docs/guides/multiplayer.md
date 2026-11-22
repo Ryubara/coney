@@ -381,7 +381,7 @@ one definition, as Quake 3's `netField_t` tables do. `writeField()` and `readFie
 
 | Kind | Fields | Bits in full |
 | --- | --- | --- |
-| Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (16 bits each, -32,768 to 32,767: the original's s16 numbers, which a lethal hit takes below 0, [Characters](../research/characters.md)), four animation layers, as many as `AnimTaskStack` shows at once ([A human's state](snapshots.md#human-state)): each one's clip (12 bits), playhead (10 bits, a share of the clip) and gait value (10 bits, 0 to 4, for a walk or run blend), and each older layer's fade under the one above it (10 bits), then grounded, knocked out, the hidden move style | 257 |
+| Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (16 bits each, -32,768 to 32,767: the original's s16 numbers, which a lethal hit takes below 0, [Characters](../research/characters.md)), four animation layers, as many as `AnimTaskStack` shows at once ([A human's state](snapshots.md#human-state)): each one's clip (12 bits), playhead (10 bits, a share of the clip) and gait value (10 bits, 0 to 4, for a walk or run blend), and each older layer's fade under the one above it (10 bits), then grounded, knocked out, the hidden move style and his character (10 bits, a Character List index plus one: [A human's character](snapshots.md#character)) | 267 |
 | World object | position, heading, door opening (10 bits), state (a byte), broken, hidden | 84 |
 | Car | position, heading, speed (12 bits, -64 to 64 m/s) | 76 |
 | Player HUD (by slot, not id) | rage and its maximum (16 bits each, the s16 range), raging, the banner's blue-grey, the score (25 bits), the money (16 bits), the four item counts (8 bits each), SELECT shows the panel, knocked out, the camera ignores the stick ([HUD state](snapshots.md#hud-state)) | 110 |
@@ -396,7 +396,7 @@ one definition, as Quake 3's `netField_t` tables do. `writeField()` and `readFie
 The ranges are Coney's choices. Four are stand-ins, marked in the code, for the game's side of snapshots to settle: the
 positions' fixed bounds around the origin (in place of each level's own), the clip as an anim id under 4,096 (or the
 game's own hash), the world object's state byte and the car's speed range. A snapshot sends a thing's changed fields
-only, so a walking human's delta is 84 bits, under 11 bytes ([What a scene costs](snapshots.md#costs)), under the 15 to
+only, so a walking human's delta is 86 bits, under 11 bytes ([What a scene costs](snapshots.md#costs)), under the 15 to
 25 bytes [the budget](network-architecture.md#snapshots) allows for it. `fieldWord()` and `fieldValue()` give a field's
 bits as a number and back, which is what a snapshot compares and sends. `validateFields()` checks a table (named fields,
 different names, bits 1 to 32, an Exact field's 32, ranges that fit their bits), and the tests check every table with it.
@@ -415,8 +415,9 @@ standing state](snapshots.md#hud-standing)), while something needs them: a sessi
 or joined, from the command line or the Network page, from the step after it opens) or `--digest` or `--net-replay`
 (`NetGame::afterStep()`). Offline play captures nothing and holds no ids. For each brain, in slot order, its human's
 replicated state (`net::replicatedState()`: the feet, heading, health and its maximum, the four animation layers of
-its `AnimTaskStack` with each clip, playhead, gait value and fade, on the ground, knocked out or wounded) as the field
-table's words, and a network id it keeps while it lives. A human gone from the brains has its id retired, and a level
+its `AnimTaskStack` with each clip, playhead, gait value and fade, on the ground, knocked out or wounded, and the
+character the play mode draws him as, [A human's character](snapshots.md#character)) as the field table's words, and a
+network id it keeps while it lives. A human gone from the brains has its id retired, and a level
 that ends clears them all. Hosting, `NetPlay` sends the joined guest a snapshot of them after every step
 (`NetServer::sendSnapshots()`, numbered by the host's step counted from 0).
 
@@ -789,7 +790,8 @@ Each step is a pull request that builds and is tested on its own.
    quantized, delta-compressed against acknowledged baselines, [Snapshots](snapshots.md)), the client's jitter buffer
    and interpolation (built: [The client's world](client-world.md)), the game's humans in them (built: [The game's
    humans](#game-humans)), a client game mode that draws them (built: [The client game](client-world.md#client-game),
-   with stand-ins for each human's character, #1612, and the camera until its own follow camera, #1333). The state
+   each human with his own character, [A guest's characters](client-world.md#characters), and a stand-in camera until
+   its own follow camera, #1333). The state
    digest, two-process tests and replays (built: [Proof without a person](#proof)).
 6. **AI humans, events, mission state:** the rest of what a client must see and hear: the game events (built: [Game
    events](#events)), each player's panel state and the HUD's standing state in the snapshot (built: [HUD
