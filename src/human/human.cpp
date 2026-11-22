@@ -822,7 +822,7 @@ anim::Vec3 Human::meetHumans(anim::Vec3 from, anim::Vec3 move) {
     // step's grid) gives the humans near; the test drops the rest, the others keeping their order. stand-in (#1607):
     // the contact list's order (slots), where the original's box query gives its bodies in x order. stand-in: only the
     // humans' capsules answer here, where the query's mask also takes the world objects' bodies (by the shape's flag,
-    // a sprint's gait and the player's number; Coney's objects push after the walls, Human::sweep()).
+    // a sprint's gait and the player's number; Coney's objects push after the walls, Human::sweep(), #371).
     const float moved = std::hypot(move.x, move.y);
     const std::span<Human* const> listed =
         m_contactSource != nullptr ? m_contactSource->near(from, moved + self.radius + kContactHair) : m_otherHumans;

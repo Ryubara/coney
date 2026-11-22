@@ -52,7 +52,22 @@ page = "physics-bodies.md#u11-body-pass"
 level = "confirmed-code"
 note = "the level is from [physics-kernels.md#u12-callers](physics-kernels.md#u12-callers)"
 coney = "src/human/human.h:Human::meetHumans"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the box query's bodies are taken in slot order (the step's contact list), not the query's x order, so the first of equal fractions can differ"
+relation = "stand-in"
+issue = 1607
+
+[[function.gaps]]
+what = "the query's mask also takes the world objects' bodies (shape flag 2, a sprint's gait, the player's number); Coney's walker meets only the humans' capsules here and the objects push after the walls, not sorted with the humans' and the walls' contacts in one pass"
+relation = "stand-in"
+issue = 371
+
+[[function.gaps]]
+what = "an airborne or holding walker's mask (0x44) and a scene's shared group are not ported: an airborne body meets no human, and groups are not modelled"
+relation = "not-ported"
+issue = 102
 
 [[function]]
 address = 0x0033d718
