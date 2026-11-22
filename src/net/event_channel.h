@@ -89,7 +89,9 @@ class EventReceiver {
     [[nodiscard]] std::expected<EventsApplied, Error> apply(const EventBatch& batch);
     /// The events held whose step is at most `step`, oldest first; each is handed over once.
     [[nodiscard]] std::vector<ArrivedEvent> take(std::uint32_t step);
-    /// Stub for the test commit: drops nothing yet.
+    /// Drops every event held (a reliable one too), as a client does when the level they belong to ends: none is handed
+    /// over later, and a one-shot that comes late for a step held is dropped as late. Counts them in
+    /// EventReceiverStats::discarded.
     void discardHeld();
     /// How many events are held, waiting for their step.
     [[nodiscard]] std::size_t pending() const { return m_held.size(); }

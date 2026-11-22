@@ -670,8 +670,10 @@ game's humans and objects carry ids in a session, none is set and every subject 
 (`NetClient::takeEvents(step)`, `NetPlay::takeArrivedEvents(step)`), then hands it over once, in step order and
 within a step in the order it was raised (its ordinal), whichever delivery brought it. A repeated batch is dropped by
 its sequence (one-shots remember the last 64); a one-shot whose step was already handed over is dropped as late; a
-reliable event is handed over at the next take however late it comes. `net::toGameEvent()` turns an arrived event back
-into the event raised, without its subject (a client has no handle for the server's ids yet). The client game takes
+reliable event is handed over at the next take however late it comes; the events still held when a level ends are
+dropped (`NetClient::discardEvents()`, `NetPlay::discardArrivedEvents()`), so none is handed over in the next level.
+`net::toGameEvent()` turns an arrived event back into the event raised, without its subject (a client has no handle
+for the server's ids yet). The client game takes
 each event once when its playback reaches the event's step and presents it ([The host's
 events](client-world.md#client-events)): the sounds, the music and the loop (`SoundEventPlayer` for the sounds, [A
 playing sound](#sound-instances)), and the messages, objectives, hints and 2D cues on its HUD, which it also steps from

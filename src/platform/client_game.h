@@ -122,7 +122,8 @@ class ClientGame final : public GameMode, public LevelGame {
     [[nodiscard]] std::uint64_t eventsUnpresented() const { return m_events.unpresented(); }
 
   private:
-    // Drops the level: its scene, its HUD and its world, and the sounds the host started in it.
+    // Drops the level: its scene, its HUD and its world, the sounds the host started in it and the events of it the
+    // playback had not reached.
     void dropLevel();
     // Presents the host's events the world's playback has reached (once each, in order).
     void presentEvents();

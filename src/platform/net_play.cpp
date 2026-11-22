@@ -370,6 +370,12 @@ std::vector<net::ArrivedEvent> NetPlay::takeArrivedEvents(std::uint32_t step) {
     return m_client->takeEvents(step);
 }
 
+void NetPlay::discardArrivedEvents() {
+    if (m_client) {
+        m_client->discardEvents();
+    }
+}
+
 PortSamples NetPlay::pads(const PortSamples& local) {
     PortSamples samples = local;
     if (m_server) {

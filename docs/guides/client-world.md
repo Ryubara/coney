@@ -155,7 +155,7 @@ any guest.
 | When | What the client game does |
 | --- | --- |
 | The host's level order arrives | `NetLevels` follows it as for any guest's game ([Levels](multiplayer.md#levels)), with `ClientGame` as its `LevelGame`. The level loads at the next step (`ClientLevelScene::load()`), counts as in play at once, and the host is told the step after |
-| A level loads | A fresh `ClientWorld`, which skips what the receiver still keeps of the last level (`skipDecoded()`), so no human of the last level is drawn in the new one, and a fresh HUD, so none of the last level's messages show |
+| A level loads | A fresh `ClientWorld`, which skips what the receiver still keeps of the last level (`skipDecoded()`), so no human of the last level is drawn in the new one, and a fresh HUD, so none of the last level's messages show; the host's events its playback had not reached are dropped with the old level (and any that arrive while there is no level), so none of them is presented in the new one |
 | Each step, in a level | The world takes every snapshot decoded and steps ([The model](#model)); the host's events its playback has reached are presented ([Events](#client-events)); the HUD steps ([The HUD](#client-hud)); then the scene streams round its camera |
 | Each frame | The scene draws the world, `drawn(alpha)` of its last two steps, with the HUD over it |
 | A host's movie starts | It plays none, and answers each one as ended at once (`NetPlay::movieDone()`, not skipped), so the host waits only for its own copy |
@@ -181,7 +181,8 @@ Each step, once the world's playback has reached a host step (`ClientWorld::show
 less the jitter buffer's delay), the client game takes the events of the host's steps up to it from the session
 (`NetPlay::takeArrivedEvents()`: each once, in step order and within a step in the order the host raised them, whichever
 delivery brought it, [Game events](multiplayer.md#events)) and hands each to `ClientEventPlayer`, so an event is
-presented when the world it belongs to is drawn, never before and never twice. The player applies what a guest can
+presented when the world it belongs to is drawn, never before and never twice; the events of a level that has ended and
+the playback had not reached are dropped with it (`NetPlay::discardArrivedEvents()`). The player applies what a guest can
 show or play on this machine, to its sound and its HUD:
 
 | Events | Presented as |
@@ -218,7 +219,7 @@ everyone (its counters and bars, the scoreboard, the radar's settings, whether t
 Two things the HUD does not have yet, by choice: the HUD takes the newest snapshot's state, not the playback's
 (**Coney's choice**: it keeps no history to blend, so it is up to the jitter buffer's delay ahead of the humans, while
 its messages and sounds arrive with the humans), and the radar shows no blips, since its view (where the guest's player
-stands and which way the camera looks) is not in the snapshots (#1333).
+stands and which way the camera looks) is not in the snapshots (#1333), nor are its blips (#1537).
 
 ## Testing {#testing}
 

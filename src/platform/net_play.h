@@ -119,6 +119,9 @@ class NetPlay final {
     /// Joined: the host's game events whose step is at most `step` (a host's step the guest shows), each once, in
     /// order (net::NetClient::takeEvents()); none when not joined.
     [[nodiscard]] std::vector<net::ArrivedEvent> takeArrivedEvents(std::uint32_t step);
+    /// Joined: drops the host's game events still held, unpresented (net::NetClient::discardEvents()), as a guest does
+    /// when the level they belong to ends; nothing when not joined.
+    void discardArrivedEvents();
     /// The host's game starts loading `level` at `checkpoint` (a level change or a checkpoint restart,
     /// docs/guides/multiplayer.md#levels): hosting, every joined guest is told to load it and holdsStep() holds the
     /// host's steps until they have; a guest who joins later is told on joining. Kept while offline too, so hosting

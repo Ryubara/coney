@@ -78,6 +78,10 @@ ModeResult ClientGame::update(GameModeStack& /*stack*/, const FrameTime& frame) 
                 std::format("client game: the host's level {} did not load: {}\n", at.level, scene.error().message));
         }
     }
+    // With no level the host's events have nothing to be shown on: they are dropped, not kept for the next level.
+    if (!m_world || !m_scene) {
+        m_net.discardArrivedEvents();
+    }
     // The world takes what the session decoded and moves on a step; then the host's events its playback has reached
     // and the HUD's step; the scene streams round the world and queues the HUD's sprites.
     if (m_world && m_scene) {
@@ -170,6 +174,9 @@ void ClientGame::dropLevel() {
     m_hud.reset();
     m_world.reset();
     m_level.reset();
+    // The events the playback had not reached belong to the level that ended: the next level's HUD and sound must not
+    // show or play them (docs/guides/client-world.md#client-game).
+    m_net.discardArrivedEvents();
 }
 
 } // namespace coney::platform

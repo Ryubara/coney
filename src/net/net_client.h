@@ -125,6 +125,8 @@ class NetClient {
     /// The server's game events whose step is at most `step` (the server's step the client now shows), each once, in
     /// order (EventReceiver::take()).
     [[nodiscard]] std::vector<ArrivedEvent> takeEvents(std::uint32_t step) { return m_events.take(step); }
+    /// Drops the server's events held, unhanded (EventReceiver::discardHeld()): those of a level that has ended.
+    void discardEvents() { m_events.discardHeld(); }
     /// The newest level order (LoadLevel) not yet taken, once: the level this client's game should load. A newer order
     /// that comes before this one is taken replaces it. Nothing when there is none.
     [[nodiscard]] std::optional<LoadLevel> takeLevelOrder() { return std::exchange(m_levelOrder, std::nullopt); }
