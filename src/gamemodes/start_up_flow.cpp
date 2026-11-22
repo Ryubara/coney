@@ -168,7 +168,13 @@ void StartUpFlow::showRumbleModeInterface(std::string_view onCancel, std::string
     m_rumbleMenu.show(std::string(onCancel), std::string(onStart), fromFrontEnd != 0.0);
 }
 
-void StartUpFlow::menuLoadLevel(std::string_view level) { m_levelFlow.chooseLevel(level); }
+// The level-end request first (`+0x14c` = 3), which gameplay's next update leaves play on, then the level flow's
+// choice (`LevelFlow_SelectLevelByName` on mode 8). Docs: docs/research/level-loading.md#a-frame-of-play.
+// @orig 0x00160d78 LevelFlow_LoadLevelByName (unknown)
+void StartUpFlow::menuLoadLevel(std::string_view level) {
+    m_state.levelChangeAsked = true;
+    m_levelFlow.chooseLevel(level);
+}
 
 bool StartUpFlow::jumpToLevel(std::string_view level, int checkpoint) {
     if (!m_state.levels.find(level)) {

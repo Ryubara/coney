@@ -125,6 +125,10 @@ struct GameState {
     bool missionInfo = false;
     /// The game-over check and the failure's hand-off (`+0x155`, `+0x14c`, `+0x56e6`; EnableGameOverCheck).
     GameOverCheck gameOver;
+    /// `+0x14c` = 3: `MenuLoadLevel` asked for another level (`LevelFlow_LoadLevelByName`), so gameplay's next update
+    /// leaves play for the level flow, which starts it; the level's unload clears it (`UnloadLevel`, at `0x00160cc0`).
+    /// The values 1 (a failure) and 2 (a level completed) are gameOver's or not ported (#670).
+    bool levelChangeAsked = false;
     /// The world manager's precache queue (`+0x0c`, `QueueFileToPrecache`): the files the next `PrecacheWorld` loads.
     std::vector<std::string> precacheQueue;
 };

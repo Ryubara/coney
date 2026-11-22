@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261122-level95-armies-trophy"
+date = "2026-11-22"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "aaa4542568d47158b0b5340416a21aa55105583238845af9d967261233a6c74f"
+
+[who]
+agent = "a8a906bd8c1fded89"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "Two runs from street-end-run: the lua recipe ran UM_Unlock(level, 0, 0) for the 18 story missions and the flashbacks, then load-checkpoint level95 11; TeleportToFlag(player, fMenu[4], -1) put the player at the arcade cabinet; triangle pressed with pcsx2_controller; level index (game state +0x56dc) and checkpoint (+0x33a) read before and after. Run 1, flashbacks 82 92 83 20 11 complete: title and play hint shown, triangle loaded level60 checkpoint 1, which played. Run 2, level11 incomplete: title and a hint naming the flashbacks left; triangle changed nothing."
+
+[values]
+run1_type9_level60_unlocked = 1
+run1_hub_level_index = 29
+run1_hub_checkpoint = 11
+run1_after_level_index = 24
+run1_after_checkpoint = 1
+run2_type9_level60_unlocked = 1
+run2_level11_complete = 0
+run2_after_level_index = 29
+run2_after_checkpoint = 11
+
+[addresses]
+game_state_ptr = 0x0051489c
+ScriptSystem_DoString = 0x00356a78

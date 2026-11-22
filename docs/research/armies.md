@@ -26,9 +26,16 @@ Inferred from the level table and the scripts unless a line says otherwise.
   next (`level60_mothers` → `level61`, ...), and `level64`'s last returns to the hub
   ([Story order](scripting.md#run-next-mission)).
 - **The way in.** The clubhouse's trophies in the hub (`level95`) start the flashbacks. The sixth entry of
-  `FBMission` is `{level = 60, req = {82, 92, 83, 20, 11}}`: Armies of the Night is offered once the five flashbacks
-  are complete, and `flashback.PlayMission` (action `MA_LOADFBLEVEL`) loads `level60` (inferred from the disassembly
-  of `level95.lua`). Nothing else leads there:
+  `FBMission` is `{level = 60, req = {82, 92, 83, 20, 11}}`, and its flag is not a trophy's but `fMenu[4]`, the
+  clubhouse's arcade cabinet ([The hub's other doors](story-progress.md#hub-doors) has the rule). The cabinet is
+  offered only once `level60`'s type-9 unlock record is open, which `level84`'s completion opens (`{84, 0, 0, 9, 0,
+  60}` in `global.lua`'s `Unlockables`), so the story must be finished as well as the five flashbacks; then triangle
+  at it runs `flashback.PlayMission`, whose `MA_LOADFBLEVEL` loads `level60` at checkpoint 1 (confirmed (code) at
+  `level95.lua:f73`, `f76`, `f42` and `f55`). In the original, from a save with the 18 story missions and the five
+  flashbacks complete and the hub at checkpoint 11, the cabinet shows its title and a play hint, and triangle there
+  loads `level60` at checkpoint 1, which plays; with `level11` left incomplete it shows the title and a hint naming the
+  flashbacks left, and triangle loads nothing (confirmed (runtime), run r-20261122-level95-armies-trophy). Nothing else
+  leads there:
     - the main menu offers STORY, EXTRAS (only the trailer) and QUICK RUMBLE ([The screens](frontend.md#pm-screens));
     - the mission menu leaves levels 60-65 out (`MissionSelect_IsMissionListed`, `0x001bc100`, confirmed (code));
     - a cheat loads the next stage from within one (`CheatArmiesLoadLevel`, [Debug](debug.md)).
@@ -375,18 +382,23 @@ against 17 to 23), and the timer runs 6 ticks shorter (3031 steps of 33 ms count
 
 ### Coney fixes (item 19) {#coney-fixes}
 
-The minimum to show Armies of the Night instead of a black screen, in order. Steps 1, 2, 4, 5 and 6 are done; step 3
-is issue #569:
+The minimum to show Armies of the Night instead of a black screen, in order. All six are done:
 
 1. **Debug Levels page:** do not offer a record that cannot load (done).
 2. **Debug Missions page:** the five Armies stages and the five flashbacks, each starting at a checkpoint (done).
-3. **The way in:** check that the hub's trophies run `flashback.PlayMission` and that the sixth (`level60`) is offered
-   once levels 82, 92, 83, 20 and 11 are complete. That is the player's path, and a playthrough test should take it.
+3. **The way in** (issue #569, done): the hub's arcade cabinet, `FBMission`'s sixth entry, is offered once the story
+   and levels 82, 92, 83, 20 and 11 are complete, and triangle there loads `level60` ([The stages](#stages)). Coney
+   ran the cabinet's scripts already; what stopped it was `MenuLoadLevel` from a level in play, which chose the level
+   and left gameplay running, so nothing loaded (the hub's chapter missions and the mission menu's replays met the
+   same). Now it asks gameplay to leave as the original's `+0x14c` = 3 does (`StartUpFlow::menuLoadLevel`,
+   `GameplayMode::updateWorld`), and `repo:tests/platform/disc_hub_armies_test.cpp` walks to the cabinet with the
+   stick from that story save, presses triangle and reaches `level60`'s first frame of play, and checks the refusal
+   with `level11` incomplete.
 4. **Make the stage recognisable:** mode 3 of the rail and `isArmiesLevel` as 60-69 (done).
 5. **The bindings:** the HUD's credits, GO sign and join messages, then the game over (mode 0xd), so that losing ends
    in the stage's own screen (done).
 6. **Tests:** a disc test that `level60` at checkpoint 1 plays its intro, the walk out, the HUD, the timer and the game
-   over with the pad idle (done); a playthrough from the trophy waits for step 3.
+   over with the pad idle (done), and the way in from the hub's cabinet (step 3).
 
 ## Open questions {#open-questions}
 

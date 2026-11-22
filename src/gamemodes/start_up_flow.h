@@ -173,8 +173,10 @@ class StartUpFlow final : public script::BindingHost {
     /// `ShowRumbleModeInterface(onCancel, onStart, players)`: the Rumble menu (mode 0x11).
     /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
     void showRumbleModeInterface(std::string_view onCancel, std::string_view onStart, double players) override;
-    /// `MenuLoadLevel(level)`: the level flow's chosen level.
-    /// @coney-only the binding's route to its mode in Coney's start-up flow (the binding is ported in scripting)
+    /// `MenuLoadLevel(level)`: asks gameplay to leave play (GameState::levelChangeAsked, `+0x14c` = 3) and makes
+    /// `level` the level flow's chosen level, which it starts once gameplay is gone (the hub's arcade cabinet,
+    /// docs/research/armies.md#stages).
+    /// @orig 0x00160d78 LevelFlow_LoadLevelByName (unknown)
     void menuLoadLevel(std::string_view level) override;
 
     /// The debug menus' jump to `level` at `checkpoint`, from the front end or from a level in play: sets the

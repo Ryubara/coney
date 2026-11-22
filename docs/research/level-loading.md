@@ -653,8 +653,11 @@ for the order; the roles of callees not named elsewhere are inferred from what t
   that 1 means "mission failed" in general is inferred from this one writer. A story mission's normal ending does
   not pass through here: its final scene pushes the mission-complete mode directly
   ([Scripts: how the mission ends](scripting.md#level99)), and messages stop reaching Lua once this state is not 0.
-- **Any other value** (3 is what `MenuLoadLevel` sets): `Update` returns 0, which pops the mode; its `Exit` then
-  unloads the level ([Leaving gameplay](#unload)).
+- **Any other value** (3 is what `MenuLoadLevel` sets, `LevelFlow_LoadLevelByName` `0x00160d78`): `Update` returns
+  0, which pops the mode; its `Exit` then unloads the level ([Leaving gameplay](#unload)), and `UnloadLevel`
+  (`0x001607b8`) puts `+0x14c` back to 0 (at `0x00160cc0`). So a script's `MenuLoadLevel` in play (the hub's mission
+  loads, its arcade cabinet, a mission menu replay) leaves the level on the next frame. Coney ports value 3 alone:
+  `StartUpFlow::menuLoadLevel` sets `GameState::levelChangeAsked` and `GameplayMode::updateWorld` leaves on it.
 
 ### The level in a frame {#render-order}
 

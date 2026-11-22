@@ -184,6 +184,15 @@ Confirmed (code) at the cited script functions unless a line says otherwise.
   requirement is unmet. `flashback.PlayMission` (`level95.lua:f76`) runs an `MA_LOADFBLEVEL` action, which loads the
   level through `story.LoadLevel` after 1,000 ms. `flashback.SetupTrophies` (`level95.lua:f74`) opens zone 11 once
   `level84` is complete and removes the trophy objects whose type-5 records are still locked.
+- **What opens each trophy.** The records `flashback.Setup` asks for are `global.lua`'s `Unlockables` rows of type 7
+  and 9 (the main chunk's `CfgUnlockables` loads them): a story mission's completion opens a flashback's type-7 record
+  (34 → 82, 2 → 92, 5 → 83, 81 → 20, 31 → 11), and `level84`'s opens `level60`'s type-9 record (then 60 → 61 up to
+  63 → 64). So the sixth entry, whose flag is the arcade cabinet `fMenu[4]` rather than a trophy, appears only once the
+  story is finished: with its five flashbacks complete it gets the `bonus` marker and the play handler, with one
+  missing the marker and `flashback.NoAction`. In the original, a save with the 18 story missions complete at hub
+  checkpoint 11 gave `UM_IsDataUnlocked(9, 60)` = 1; with the five flashbacks complete, triangle at the cabinet loaded
+  `level60` at checkpoint 1, and with `level11` incomplete it loaded nothing (confirmed (runtime), run
+  r-20261122-level95-armies-trophy).
 - **Armies of the Night.** Each stage's last checkpoint script loads the next, `level60` to `level64`
   ([Armies of the Night](armies.md#stages)); `level64` complete makes the hub's chapter 12 the story's place from then
   on ([The four functions](#global-functions)).
@@ -315,8 +324,6 @@ its id to `planHubChapter`), and `fRunMission`'s view keeps the original chapter
 
 ## Open questions {#open-questions}
 
-- **What unlocks a flashback's trophy.** `flashback.Setup` needs a record of type 7 or 9 for the trophy's level; which
-  completion unlocks those records (the `Unlockables` table of `global.lua`) is not traced here.
 - **Hub chapters 11 and 12 at runtime.** That every completion after `level64` leads to chapter 12 is read in the code;
   a run with `level64` complete would confirm it.
 - **More mod missions than free level records.** Coney's level table has the original's 128 records, and the disc's
@@ -330,4 +337,5 @@ The scripts were read in the decompiles that `coney-tools lua decompile --all` w
 the callers found with its `index.md`; the script locators are function prototype numbers from that index. The native
 side was read in Ghidra (ghidra-mcp) on `SLUS_212.15`: the mission select's build, filter and sort comparators, the
 completion check, and the instructions that load the names `runNextMission` and `UnlockAndLoad` (searched by their
-low halves, `-0x1868` and `-0xad8`). Nothing was run in PCSX2.
+low halves, `-0x1868` and `-0xad8`). The arcade cabinet's offer and start were run in PCSX2 from the state library's
+`street-end-run`, the story save made with `UM_Unlock` through the `lua` recipe (run r-20261122-level95-armies-trophy).
