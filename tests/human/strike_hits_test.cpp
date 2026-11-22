@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -275,4 +276,33 @@ TEST_CASE("the rage sweep 645 strikes a bum's capsule at shin height: 1.0 m away
         REQUIRE(shapesOn);
         CHECK((strike.attacker.fighter().hitsLanded() > 0) == c.hits);
     }
+}
+
+TEST_CASE("a strike asks whether two humans are opposed only about the humans near the striker", "[human][strikes]") {
+    // The attacker's square switches its strike shapes on with its victim 1 m ahead and 36 more humans 12 m apart,
+    // none within 12 m of the two, every one opposed to every other: none of those is within the strike test's 3 m
+    // broad reach, so none need be asked about as a victim. Gathering every opposed human as a victim asked about each
+    // of them in every step the shapes were on (issue 1556); the target searches ask about none of them either (issue
+    // 1550). Expected: physics.md#coneys-implementation (the strike test's 3 m broad reach, human::kStrikeBroadReach)
+    Strike strike(1.0F, 0.9F);
+    std::vector<std::unique_ptr<Human>> crowd;
+    const std::array<float, 6> lines{4.0F, 16.0F, 28.0F, 52.0F, 64.0F, 76.0F};
+    for (const float x : lines) {
+        for (const float y : lines) {
+            crowd.push_back(std::make_unique<Human>(strike.character.anims, coney::human::AnimSlots::player(),
+                                                    coney::test::identityBind(), 1.0F, &strike.character.ranges));
+            crowd.back()->spawn(strike.mesh.get(), coney::anim::Vec3{x, y, 0.0F}, 0.0F);
+            strike.humans.add(*crowd.back(), false);
+        }
+    }
+    std::size_t farAsked = 0;
+    strike.humans.setOpposition([&farAsked](const Human& attacker, const Human& victim) {
+        const float dx = attacker.position().x - victim.position().x;
+        const float dy = attacker.position().y - victim.position().y;
+        farAsked += (dx * dx) + (dy * dy) > 10.0F * 10.0F ? 1U : 0U;
+        return &attacker != &victim;
+    });
+    strike.run();
+    REQUIRE(strike.shapesOn.has_value());
+    CHECK(farAsked == 0);
 }
