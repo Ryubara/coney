@@ -92,8 +92,8 @@ int Hud::attachPlayer(int slot, int type) {
 
 void Hud::levelSetUp() {
     // Not ported, from HUD_InitLevel: the mission item icons, the status column, the HudLabel widget, the six menus'
-    // level hook and the virtual pads (#662); the crew status list (#515); the split-screen dividers (#549); in an
-    // Armies level the ANHud panels' parts (#662) and the boss picture (#570).
+    // level hook and the virtual pads (#662); the split-screen dividers (#549); in an Armies level the ANHud panels'
+    // parts (#662) and the boss picture (#570). The crew list's CrewStatus_Setup is its default layout (kCrewLayout).
     m_radar.scriptOn = true;
     // The Armies of the Night parts: no credits, the GO sign off and placed for the language, both join messages on
     // until their panel's first attach (docs/research/armies.md#the-join-messages).
