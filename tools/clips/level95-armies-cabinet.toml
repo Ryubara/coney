@@ -1,0 +1,12 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): the hub at the story's end, from a story save
+# with the 18 story missions and the five flashbacks complete (`--complete-levels`), so the clubhouse's arcade cabinet
+# offers Armies of the Night (docs/research/armies.md#stages). The input script walks player 1 to the cabinet and
+# presses triangle at its prompt; Armies of the Night's first stage loads. For a change to the cabinet, MenuLoadLevel
+# from a level in play, or the hub's offers.
+description = "level95 at the story's end: triangle at the arcade cabinet starts Armies of the Night"
+level = "level95"
+checkpoint = 11
+complete_levels = [99, 80, 87, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]
+input = "tools/clips/level95-armies-cabinet.txt"
+start_frame = 880
+seconds = 10

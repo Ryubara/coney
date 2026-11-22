@@ -250,6 +250,7 @@ add_library(coney_core STATIC
     scripting/story_bindings.cpp
     scripting/story_effects_bindings.cpp
     scripting/story_natives.cpp
+    scripting/story_save.cpp
     scripting/trigger_bindings.cpp
     scripting/world_bindings.cpp
     warriors/created_humans.cpp

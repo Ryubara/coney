@@ -127,13 +127,15 @@ removes what is left.
 reruns the same pair; `clips scenarios` lists them. Its keys are `description`, `level` (`--play-level`), `input` (an
 input script, a path in the checkout, played from the level's first frame of play) and `seconds` (how long the clips
 show), and optionally `start_frame` (the frame of play the clips start at), `checkpoint`, `ai_seed`, `skip_movies`
-(default true) and `record_debug_draw` (default false: `--record-debug-draw`, which keeps the Debug draw page's switches
-the run sets, as a clip drops them otherwise); any other key is refused. Without a scenario, `--level` and
-`--input-script` give the same run (`--seconds` defaults to 10). The clips are at most `workspace.clips.max_seconds`
-(10) long, but the run before them is not: Coney plays the script from the level's first frame of play and starts
-recording at `start_frame` through [`--record-from-frame`](running-options.md#record), so a scenario can punch a cabinet
-70 s into the level (`level99-cabinet`) and still show 8 s of it. `start_frame` and the input script's frames count the
-same way, from the level's first frame of play.
+(default true), `record_debug_draw` (default false: `--record-debug-draw`, which keeps the Debug draw page's switches
+the run sets, as a clip drops them otherwise) and `complete_levels` (a list of level numbers, Coney's
+[`--complete-levels`](running-play-level.md#complete-levels): the story save the level starts from); any other key is
+refused. Without a scenario, `--level` and `--input-script` give the same run (`--seconds` defaults to 10). The clips
+are at most `workspace.clips.max_seconds` (10) long, but the run before them is not: Coney plays the script from the
+level's first frame of play and starts recording at `start_frame` through
+[`--record-from-frame`](running-options.md#record), so a scenario can punch a cabinet 70 s into the level
+(`level99-cabinet`) and still show 8 s of it. `start_frame` and the input script's frames count the same way, from the
+level's first frame of play.
 
 `level87-stealth-kill` is the scenario for the stealth kill and for hiding: from level87's checkpoint 5 it takes the
 player into the tutorial's hint volume, which warps him behind the first guard (S01), where he hides. The tutorial
@@ -147,6 +149,11 @@ opening scene, the debug menu's Player page makes the player Diego's character t
 Only a power class whose ring byte is 100 fills the whole circle (Rembrandt's stops at 35 %), and type 120's class 6
 is one; a player is never drawn with a boss's colour bands, so his outer ring is green with the black lost colour, and a
 lost wedge on a full ring shows (#1630).
+
+`level95-armies-cabinet` is the scenario for the hub's arcade cabinet: from a story save with the story and the five
+flashbacks complete it walks Swan to the cabinet and presses triangle, and Armies of the Night's first stage loads. Its
+before for the change that made the cabinet work (#569) is `--before` a commit that takes that fix out, as the base
+has no `--complete-levels`.
 
 `level99-world-parts` is the scenario for the World page's part switches: it opens the pad menu in the level99 street
 and hides the streamed world, then shows it and hides the objects, for a change to the mesh views' hook or to what a

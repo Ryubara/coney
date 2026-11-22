@@ -153,8 +153,10 @@ class MenuLayer {
 /// checkpoint to 1 and chooses the level `"menu"`, which no record is named, so the level flow brings the front end
 /// back. Every choice but Resume then pops gameplay (mode 1) when it is on top of `stack`.
 ///
-/// Coney's stand-in: the original sets `W_GameState + 0x14c` = 3 and mode 1's update leaves on it; Coney pops mode 1
-/// here, as MissionCompleteMode does.
+/// Coney's stand-in: the original sets `W_GameState + 0x14c` = 3 for every choice but Resume and mode 1's update leaves
+/// on it; Coney pops mode 1 here, as MissionCompleteMode does. QuitToHangout's `runNextMission` calls `MenuLoadLevel`,
+/// which sets the flag too (GameState::levelChangeAsked) before the pop; both lead to the one leave, and the level's
+/// unload clears the flag.
 ///
 /// Research: docs/research/pause.md#leaving
 /// @orig 0x00154f28 PauseMenu_Toggle (unknown)

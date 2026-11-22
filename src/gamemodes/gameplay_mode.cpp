@@ -262,6 +262,8 @@ void GameplayMode::endLevel() {
     // whose locator reads the scripts' hold, then the hold, then the brains it holds. Coney's choice: the level file
     // goes every time (UnloadLevel's keep), as each start loads its level whole.
     m_level.reset();
+    // UnloadLevel clears the level-end request (`+0x14c`, at `0x00160cc0`), so the next level plays.
+    m_state.levelChangeAsked = false;
     // UnloadLevel's HUD shut-down: the level's hints, objectives, bars, timers and blips go with it (the radar stops
     // locating its objects), so every start of the next level, however it comes, finds the HUD clean.
     if (m_context.hud != nullptr) {
@@ -818,8 +820,8 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
         return ModeResult::Stay;
     }
     const ModeResult result = updateWorld(stack, frame);
-    // START pauses the game (PauseMenu_Toggle), last in the frame of play.
-    if (m_pause != nullptr) {
+    // START pauses the game (PauseMenu_Toggle), last in the frame of play; a frame that leaves play has none.
+    if (m_pause != nullptr && result == ModeResult::Stay) {
         m_pause->playFrame(stack, stack.pads());
     }
     return result;
@@ -832,6 +834,11 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     // state 2's mission-complete mode (#670); a second player joining and his view's HUD (#549); the flip time limit
     // during a fade, the call at 0x0048d420, the frame-rate statistics, a held player's ear, the debug heal, the file
     // manager's service and the script system's and device's calls (#1008).
+    // A level change asked for (`+0x14c` = 3, MenuLoadLevel) leaves play before anything steps: the stack pops this
+    // mode and the level flow beneath starts the chosen level (docs/research/level-loading.md#a-frame-of-play).
+    if (m_state.levelChangeAsked) {
+        return ModeResult::Leave;
+    }
     // The level's step (the characters, the cameras, the streaming), then the scripts' frame, as a frame of play
     // orders them.
     ModeResult result = ModeResult::Stay;

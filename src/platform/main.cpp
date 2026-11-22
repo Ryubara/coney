@@ -121,6 +121,7 @@
 #include "scripting/config_strings.h"
 #include "scripting/lua_value.h"
 #include "scripting/script_bindings.h"
+#include "scripting/story_save.h"
 #include "world/sector_budget.h"
 
 namespace {
@@ -1009,10 +1010,15 @@ int main(int argc, char** argv) {
                     return 1;
                 }
             }
-            std::function<void()> ready = [&session, scriptTraceFile, eventsRecording] {
+            // `--complete-levels`: the story save the level starts from, made as its Lua state is fresh.
+            std::function<void()> ready = [&session, scriptTraceFile, eventsRecording,
+                                           completeLevels = options->completeLevels] {
                 if (scriptTraceFile) {
                     session->flow().scripts().traceCalls(
                         [file = scriptTraceFile](std::string_view line) { *file << line; });
+                }
+                if (!completeLevels.empty()) {
+                    coney::script::completeLevels(session->flow().scripts(), completeLevels);
                 }
                 coney::events::setStep(0);
                 *eventsRecording = true;

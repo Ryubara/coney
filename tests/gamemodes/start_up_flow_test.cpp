@@ -814,3 +814,19 @@ TEST_CASE("start-up with scripts: level100's scene plays looping on the front en
     run.frames(10);
     CHECK(levelFlow.scenes()->state(1) == coney::scenes::SceneState::Playing);
 }
+
+TEST_CASE("start-up: MenuLoadLevel asks gameplay to leave, and a name the level table lacks chooses no level",
+          "[start_up]") {
+    // Expected: level-loading.md#a-frame-of-play and frontend.md#mode-8-fields, confirmed (code) at 0x00160d78 (the
+    // game state's +0x14c = 3) and 0x0015c7b0 (no record of the name: Gm_LevelFlow_SetLevel(-1))
+    Run run("");
+    coney::LevelRecord record;
+    record.id = 3;
+    record.name = "level34";
+    REQUIRE(run.flow->state().levels.set(record));
+    run.flow->menuLoadLevel("level34");
+    CHECK(run.flow->levelFlow().chosenLevel() == 3);
+    CHECK(run.flow->state().levelChangeAsked);
+    run.flow->menuLoadLevel("menu");
+    CHECK(run.flow->levelFlow().chosenLevel() == LevelFlowMode::kNoLevel);
+}

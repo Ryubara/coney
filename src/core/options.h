@@ -183,6 +183,9 @@ struct Options {
     /// `--give ITEM,COUNT`, repeatable: the counts player 1 holds from the first step of play (ItemGift). Requires
     /// playLevel.
     std::vector<ItemGift> gives;
+    /// `--complete-levels N,N...`: the levels the played level's story save has complete, marked as its Lua state is
+    /// fresh (script::completeLevels()), so the hub offers what they unlock. Requires playLevel; a developer's option.
+    std::vector<int> completeLevels;
     /// `--trace`: write the player's and the follow camera's state after every step of `--play-level` to this file,
     /// one CSV line per step (human::traceLine()), so feel comparisons can be repeated
     /// (docs/guides/running-play-level.md#tracing). Requires playLevel.

@@ -1,0 +1,8 @@
+# The clubhouse's arcade cabinet at the story's end, for the `level95-armies-cabinet` clips pair scenario
+# (tools/clips/level95-armies-cabinet.toml), played from checkpoint 11 with the story and the five flashbacks complete
+# (`--complete-levels`). The hub's opening walks Swan in and holds the pad until about frame 750; the steer, given
+# early, takes over then and walks him at 60 % to the cabinet's flag (fMenu_4 at -177.3, 93.3), where he stops by
+# frame 910 at its prompt. Triangle there starts Armies of the Night: story.LoadLevel comes 1,000 ms later and
+# level60's loading screen about frame 1060. Frames are 1/30 s from the level's first frame of play.
+420 steer 60 -177.3,93.3
+930 tap triangle

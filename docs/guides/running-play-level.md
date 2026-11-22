@@ -247,6 +247,16 @@ a script starts with `MenuLoadLevel` (the hub's missions) is played the same way
 numbers carry from one level to the next, so the story's order holds: 99, 80, 87, the hub (`level95`), 34 and on.
 `--frames` still ends the run.
 
+### A story save {#complete-levels}
+
+`--complete-levels N,N...` (with `--play-level`) starts the level from a story save with
+those levels (1 to 255) complete, as their missions' completion leaves them: as the level's Lua state is fresh it runs
+`global.lua`'s main chunk and `UM_Unlock(N, 0, 0)` for each (`script::completeLevels`, the same set-up the hub's disc
+tests use), so whatever their completion unlocks is open. The hub at the story's end with the Armies of the Night
+cabinet offered ([The stages and the way in](../research/armies.md#stages)) is `--play-level level95 --checkpoint 11
+--complete-levels 99,80,87,34,2,3,5,81,86,93,31,14,9,51,52,54,55,84,82,92,83,20,11`; the clips scenario
+`level95-armies-cabinet` runs it. A developer's option: the release build refuses it, as it refuses `--play-level`.
+
 ### Event logs {#event-log}
 
 `--event-log FILE` writes what a player would notice to `FILE`, one CSV line per event (`step,kind,name,detail`;

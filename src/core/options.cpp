@@ -53,6 +53,7 @@ constexpr std::string_view kUsage =
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
     "             [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]]\n"
     "             [--give ITEM,COUNT]...\n"
+    "             [--complete-levels N,N...]\n"
     "             [--trace FILE] [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]]\n"
     "             [--freeze-world] [--scene-only] [--light-trace FILE]]\n"
     "             [--sandbox [NAME]] [--test-card NAME]\n"
@@ -109,6 +110,9 @@ constexpr std::string_view kUsage =
     "                     him with its view facing YAW degrees; a test aid for trace scenarios\n"
     "  --give ITEM,COUNT  with --play-level: player 1 holds COUNT (0 to 9999) of inventory item ITEM\n"
     "                     (0 to 22; 3 is spray paint) from the first step of play; repeatable; a test aid\n"
+    "  --complete-levels N,N...\n"
+    "                     with --play-level: start from a story save with those levels (1 to 255)\n"
+    "                     complete, as their missions' completion leaves them; a test aid\n"
     "  --trace FILE       with --play-level: write the player's and the camera's state after every\n"
     "                     step to FILE, one CSV line per step\n"
     "  --trace-humans FILE with --play-level or --rumble (--trace in a match): write every human's\n"
@@ -418,6 +422,9 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     }
     if (!options.gives.empty() && !options.playLevel.has_value()) {
         return invalidArgument("--give needs --play-level: it fills player 1's inventory");
+    }
+    if (!options.completeLevels.empty() && !options.playLevel.has_value()) {
+        return invalidArgument("--complete-levels needs --play-level: it makes the level's story save");
     }
     if (options.cameraPin.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--camera needs --play-level: it pins player 1's view");
@@ -887,6 +894,29 @@ std::expected<StartPlace, Error> parseStart(std::string_view text) {
                       .headingDegrees = values[3],
                       .cameraDistance = camera ? std::optional<float>(values[4]) : std::nullopt,
                       .cameraYawDegrees = camera ? std::optional<float>(values[5]) : std::nullopt};
+}
+
+// Parses the value after `--complete-levels`: level numbers from 1 to 255 in decimal digits, separated by commas.
+std::expected<std::vector<int>, Error> parseLevelList(std::string_view text) {
+    std::vector<int> levels;
+    std::size_t start = 0;
+    while (true) {
+        const std::size_t comma = text.find(',', start);
+        const std::string_view part =
+            text.substr(start, comma == std::string_view::npos ? text.size() - start : comma - start);
+        int value = 0;
+        const bool digits = isAllDigits(part);
+        const auto parsed = std::from_chars(part.data(), part.data() + part.size(), value);
+        if (!digits || parsed.ec != std::errc{} || value < 1 || value > 255) {
+            return invalidArgument(std::format(
+                "--complete-levels needs level numbers from 1 to 255 separated by commas, got \"{}\"", text));
+        }
+        levels.push_back(value);
+        if (comma == std::string_view::npos) {
+            return levels;
+        }
+        start = comma + 1;
+    }
 }
 
 // Parses the value after `--give`: ITEM,COUNT, an inventory item id from 0 to 22 and a count from 0 to kMaxGiftCount,
@@ -1563,6 +1593,15 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(start.error()));
             }
             options.start = *start;
+        } else if (arg == "--complete-levels") {
+            if (i + 1 == args.size()) {
+                return invalidArgument("--complete-levels needs N,N...");
+            }
+            auto levels = parseLevelList(args[++i]);
+            if (!levels) {
+                return std::unexpected(std::move(levels.error()));
+            }
+            options.completeLevels = std::move(*levels);
         } else if (arg == "--give") {
             if (i + 1 == args.size() || args[i + 1].empty()) {
                 return invalidArgument("--give needs ITEM,COUNT");

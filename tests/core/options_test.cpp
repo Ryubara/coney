@@ -1158,6 +1158,28 @@ TEST_CASE("the give option fills player 1's inventory in a played level", "[opti
     CHECK(coney::usageText().find("--give ITEM,COUNT") != std::string_view::npos);
 }
 
+TEST_CASE("the complete-levels option starts a played level from a story save with those levels complete",
+          "[options]") {
+    // Expected: unverified, Coney's own debug option (docs/guides/running-play-level.md#complete-levels)
+    auto given = parse(
+        std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level95", "--complete-levels", "84,82,92"});
+    REQUIRE(given.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    CHECK(given->completeLevels == std::vector<int>{84, 82, 92});
+    // A level number past 255 or below 1, an empty part, a sign or no level: refused.
+    for (const std::string_view bad : {"", "84,", ",84", "0", "256", "-1", "84;82", "8 4"}) {
+        INFO(bad);
+        CHECK_FALSE(
+            parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level95", "--complete-levels", bad})
+                .has_value());
+    }
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--complete-levels", "84"}).has_value());
+    // A developer's option: the release build's player options refuse it.
+    const std::array<std::string_view, 6> release{"--disc", "x", "--play-level", "level95", "--complete-levels", "84"};
+    CHECK_FALSE(parseOptions(std::span<const std::string_view>(release), coney::OptionSet::Player).has_value());
+    CHECK(coney::usageText().find("--complete-levels N,N...") != std::string_view::npos);
+}
+
 TEST_CASE("the cpu-skinning option is off unless given and is listed in the usage text", "[options]") {
     // Expected: ../guides/performance.md#gpu-skinning, Coney's own debug option (no counterpart in the original)
     auto on = parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "level95", "--cpu-skinning"});

@@ -233,6 +233,8 @@ add_executable(coney_tests
     platform/disc_level99_class_steps_test.cpp
     platform/disc_level99_player2_test.cpp
     platform/disc_hub_workout_test.cpp
+    platform/disc_hub_armies_test.cpp
+    platform/disc_complete_levels_test.cpp
     platform/disc_level95_crew_lock_test.cpp
     platform/disc_level99_street_test.cpp
     platform/disc_level99_vermin_fence_test.cpp

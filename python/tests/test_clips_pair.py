@@ -105,6 +105,24 @@ def test_a_scenario_refuses_an_unknown_key_or_a_wrong_type(checkout: Path, extra
         clips_pair.load_scenario(path, checkout)
 
 
+def test_a_scenario_may_start_from_a_story_save(checkout: Path) -> None:
+    # `complete_levels` is Coney's `--complete-levels`: the levels the played level's story save has complete.
+    text = 'description = "d"\nlevel = "level95"\ninput = "tests/support/walk.txt"\nseconds = 5\n'
+    path = _scenario(checkout / "tools" / "clips", "save", text + "complete_levels = [84, 82]\n")
+    run = clips_pair.load_scenario(path, checkout)
+    assert run.complete_levels == (84, 82)
+    args = " ".join(clips_pair.coney_arguments(Path("coney.exe"), "H:/", run, Path("/s/t/clips/after.mp4")))
+    assert "--complete-levels 84,82" in args
+    # None by default, and no option then; a level that is not a whole number from 1 to 255 is refused.
+    plain = clips_pair.load_scenario(_scenario(checkout / "tools" / "clips", "plain", text), checkout)
+    assert plain.complete_levels == ()
+    assert "--complete-levels" not in clips_pair.coney_arguments(Path("coney.exe"), "H:/", plain, Path("/s/a.mp4"))
+    for bad in ("[0]", "[256]", '["84"]', "[true]", "84", "[]"):
+        path = _scenario(checkout / "tools" / "clips", "bad", text + f"complete_levels = {bad}\n")
+        with pytest.raises(clips.ClipError, match="complete_levels"):
+            clips_pair.load_scenario(path, checkout)
+
+
 def test_a_scenario_refuses_a_missing_input_script(checkout: Path) -> None:
     path = _scenario(
         checkout / "tools" / "clips", "lost", 'description = "d"\nlevel = "l"\ninput = "nope.txt"\nseconds = 5\n'

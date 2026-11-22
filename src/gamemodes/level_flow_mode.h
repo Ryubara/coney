@@ -90,9 +90,9 @@ class LevelFlowMode final : public GameMode {
     /// The front-end world's frame: no world yet, so the black background the front end sets, presented.
     void render(const RenderTime& time) override;
 
-    /// `MenuLoadLevel(name)`: chooses the level named `name` (by the level table) to start on the next update. A name
-    /// the table does not have is logged and ignored.
-    /// @orig 0x00160d78 MenuLoadLevel_Choose (unknown)
+    /// Chooses the level named `name` (by the level table) to start on the next update: `MenuLoadLevel`'s choice
+    /// (StartUpFlow::menuLoadLevel() also asks gameplay to leave). A name the table does not have is logged and
+    /// chooses no level.
     /// @orig 0x0015c7b0 LevelFlow_ChooseLevel (unknown)
     void chooseLevel(std::string_view name);
 
