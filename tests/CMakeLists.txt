@@ -179,6 +179,7 @@ add_executable(coney_tests
     hud/stereo_hud_test.cpp
     hud/tag_hud_test.cpp
     hud/fixed_cam_icon_test.cpp
+    hud/crew_status_test.cpp
     hud/num_indicator_test.cpp
     hud/crime_panel_test.cpp
     hud/spinner_test.cpp
@@ -199,6 +200,7 @@ add_executable(coney_tests
     platform/disc_level80_test.cpp
     platform/disc_flash_test.cpp
     platform/disc_crew_commands_test.cpp
+    platform/disc_crew_status_test.cpp
     platform/disc_given_weapon_test.cpp
     platform/disc_scripted_held_test.cpp
     platform/disc_level80_wreck_test.cpp
@@ -624,6 +626,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/input_gate_test.cpp
         debug/light_trace_test.cpp
         debug/lighting_page_test.cpp
+        debug/console_lua_test.cpp
         debug/lua_console_test.cpp
         debug/menu_navigator_test.cpp
         debug/mesh_views_test.cpp

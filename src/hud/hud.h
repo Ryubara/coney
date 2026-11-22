@@ -18,6 +18,7 @@
 #include "hud/armies_hud.h"
 #include "hud/counter_panels.h"
 #include "hud/credits.h"
+#include "hud/crew_status.h"
 #include "hud/crime_panel.h"
 #include "hud/fixed_cam_icon.h"
 #include "hud/hint_box.h"
@@ -58,6 +59,9 @@ struct HudFrame {
     /// How many of gang `gang`'s members are standing (`Gang_CountLiving(gang, 1)`), which the gang-count
     /// indicators show; empty counts none.
     std::function<int(int gang)> gangLiving;
+    /// The humans the crew status list reads and each player slot's gang (CrewStatusList): the step adds each member of
+    /// slot 0's gang (`Humans_Update`'s `HUD_TagAddHuman`) and, below level 100, updates the list. Empty: none.
+    CrewFrame crew;
 };
 
 /// One player slot's standing HUD state: what the HUD's step is given for that player, read from his human, the stats
@@ -515,6 +519,9 @@ class Hud {
     /// Player 0's radar frame: the wanted and second-timer arcs round the radar disc.
     [[nodiscard]] const CrimePanel& crimePanel() const { return m_crimePanel; }
 
+    /// The crew status list (HUD `+0x10`, docs/research/hud-functions-parts.md#crew-status).
+    [[nodiscard]] const CrewStatusList& crewStatus() const { return m_crew; }
+
     /// The debug menus' values for player `player`'s panel.
     [[nodiscard]] PanelOverrides& overrides(std::size_t player) { return m_overrides.at(player); }
     [[nodiscard]] const PanelOverrides& overrides(std::size_t player) const { return m_overrides.at(player); }
@@ -612,6 +619,7 @@ class Hud {
     std::function<std::optional<anim::Vec3>(double)> m_locate;
     std::function<std::optional<int>(double)> m_brainOf;
     std::array<NumIndicator, kNumIndicators> m_indicators{};
+    CrewStatusList m_crew;   // HUD +0x10
     CrimePanel m_crimePanel; // HUD +0x177d0: player 0's radar frame
     std::string m_crimeText; // the radar frame's widget +0x450: the crime message it last took
     std::array<TextProgressRow, kTextProgressRows> m_progress{};
