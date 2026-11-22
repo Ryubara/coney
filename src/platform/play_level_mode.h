@@ -27,6 +27,7 @@
 #include "characters/dynamic_clips.h"
 #include "combat/stick.h"
 #include "combat/throw_aim.h"
+#include "core/engine_limits.h"
 #include "core/error.h"
 #include "core/interpolation.h"
 #include "core/options.h"
@@ -111,6 +112,9 @@ struct PlayerSetup {
     /// What the AI fighters are (ai::aiConfigFrom() of the scripts' configuration calls); the research's reference
     /// values by default.
     ai::AiConfig ai;
+    /// The engine limits preset the AI fighters of a level without the scripts' cast (a sandbox layout's) play under
+    /// (docs/guides/running-options.md#engine-limits); a level's cast takes the gameplay mode's brains, already set.
+    EngineLimits engineLimits = EngineLimits::Coney;
 };
 
 class PlayLevelMode;

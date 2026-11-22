@@ -28,6 +28,7 @@
 #include "characters/dynamic_clips.h"
 #include "combat/stick.h"
 #include "combat/throw_aim.h"
+#include "core/engine_limits.h"
 #include "core/error.h"
 #include "core/game_events.h"
 #include "core/interpolation.h"
@@ -316,9 +317,10 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // @coney-only Coney's wiring of the route planner to the ground
     void makePlanner();
     // The AI fighters of a level without the scripts' cast: the ground's `fighter` places (a sandbox layout's) as
-    // `fighters` configures them, planning on the route planner (makePlanner() first).
+    // `fighters` configures them, planning on the route planner (makePlanner() first), their brains under the run's
+    // engine limits preset `limits` (docs/guides/running-options.md#engine-limits).
     // @coney-only the sandbox's fighters; a level's are its scripts' cast (makeCast())
-    void makeLayoutFighters(const ai::AiConfig& fighters);
+    void makeLayoutFighters(const ai::AiConfig& fighters, EngineLimits limits);
     // One human the scripts created, made: player 1's first creation is the player (his brain bound to it); any other
     // with a position an AI human of its type's class, drawn as its model, snapped as `HuCreate` snaps. Returns its
     // brain; null for a creation with no position. The script's half (name, slot, handle) is makeHuCreate's.
