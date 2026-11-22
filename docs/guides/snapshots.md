@@ -216,15 +216,16 @@ walking.
 
 | Snapshot | Entries | Bytes |
 | --- | --- | --- |
-| The first (full): 31 humans of 302 bits fit, the other 29 wait | 31 | 1,179 |
-| The second: the 29 in full, and the 7 walkers among the 31 (x, heading and playhead: 84 bits each) | 36 | 1,177 |
-| Every one after: the 12 walkers | 12 | 134 |
+| The first (full): 31 humans of 304 bits fit, the other 29 wait | 31 | 1,186 |
+| The second: the 29 in full, and the 7 walkers among the 31 (x, heading and playhead: 85 bits each) | 36 | 1,185 |
+| Every one after: the 12 walkers | 12 | 136 |
 
-134 bytes at 30 snapshots a second is about 4 KB/s per client, under the [architecture's
+136 bytes at 30 snapshots a second is about 4 KB/s per client, under the [architecture's
 estimate](network-architecture.md#snapshots) of 340 bytes for a similar scene. Carrying four layers rather than two
 cost a human in full 70 bits more and a walker's delta 6 (the older layers' changed bits); the four gait values cost
-it 44 more and the walker 4. A fight where 20 humans each move, turn and change every animation field takes about
-20 × 34 bytes, under 60 % of the budget.
+it 44 more and the walker 4; the move style, 2 more for a human in full (its changed bit and its word) and 1 for a
+walker (its changed bit). A fight where 20 humans each move, turn and change every animation field takes about 20 × 34
+bytes, under 60 % of the budget.
 
 ## Testing {#testing}
 

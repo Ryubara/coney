@@ -510,10 +510,10 @@ TEST_CASE("snapshots: the players' HUDs take their room in a full budget before 
     CHECK(snapshot.huds[1].slot == 1);
     CHECK(receiver.huds().size() == 2);
     // The humans have what is left: the header is still 64 bits (the HUD count, 2, is one byte), so 30 humans in full
-    // fit, 64 + 2 x 126 + 30 x 302 = 9,376 bits, 1,172 bytes; a 31st would take it past 9,600 bits. Humans taken
-    // first would fit 31 (9,426 bits) and leave room for one HUD only.
+    // fit, 64 + 2 x 126 + 30 x 304 = 9,436 bits, 1,180 bytes; a 31st would take it past 9,600 bits. Humans taken
+    // first would fit 31 (9,488 bits) and leave room for no HUD.
     CHECK(snapshot.humans.size() == 30);
-    CHECK(encode(snapshot).size() == 1172);
+    CHECK(encode(snapshot).size() == 1180);
 }
 
 // Expected: unverified, #554 (Coney's own priority accumulator; the original has no network play)
@@ -539,7 +539,7 @@ TEST_CASE("snapshots: the budget holds every packet to its bytes, and the priori
     CHECK(lastSent.size() == 200);         // everyone has been sent
     CHECK(longestWait.at(idOf(150)) == 1); // the high-priority human goes in every snapshot
     // Nobody waits long: their priority grows until they go. The longest wait is the first one: a human in full is
-    // 302 bits, so a snapshot holds 31 ((9,600 - 48) / 302), and the 200 first go out over seven snapshots.
+    // 304 bits, so a snapshot holds 31 ((9,600 - 48) / 304), and the 200 first go out over seven snapshots.
     int longest = 0;
     for (const auto& [id, wait] : longestWait) {
         longest = std::max(longest, wait);
