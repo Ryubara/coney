@@ -108,7 +108,9 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
         "--base-merged-reason",
         metavar="WHY",
         help="with --restart: the coordinator's reason for going on when the old base cannot be shown to have merged "
-        "(the default branch edited its lines after the squash and no change matches); recorded in the claimed stamp",
+        "(the default branch edited its lines after the squash and no change matches); "
+        "recorded in the claimed stamp and shown to the reviewer in the review packet; refused when it does not fit "
+        "the stamp",
     )
     slots = commands.add_parser(
         "slots",
