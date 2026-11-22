@@ -52,6 +52,8 @@ class Brains {
     /// has none.
     /// @coney-only Coney's table of brains; the original frees a fixed slot, in code not traced here
     void remove(const human::Human& human);
+    /// The brains' part of destroying `human` (`Human_Destroy`).
+    void destroy(human::Human& human) { static_cast<void>(human); }
     /// `human`'s brain (his first in slot order, when he has two); null when he has none. Constant time: the slot is
     /// kept on the human (human::Human::brainSlot()), as the opposition test between every two humans asks it for both,
     /// many times a step (docs/guides/performance.md#brain-lookup). A human with brains in two tables at once (only

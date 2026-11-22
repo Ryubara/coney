@@ -84,6 +84,10 @@ class Humans {
     void remove(const Human& human);
     /// Sets what runs at the brains' place.
     void setBrains(BrainsHook brains) { m_brains = std::move(brains); }
+    /// What destroys a human taken away once faded (`Human_Destroy`).
+    using Destroy = std::function<void(Human& human)>;
+    /// Sets what destroys a human taken away once faded; empty: nothing.
+    void setDestroy(Destroy destroy) { m_destroy = std::move(destroy); }
     /// Sets what an airborne human's body touches (Human::BodyContact), given to every human it steps; empty: nothing.
     void setBodyContact(Human::BodyContact contact) { m_bodyContact = std::move(contact); }
     /// Sets what a walking human slides along beyond the walls (Human::ObjectPush), given to every human it steps;
@@ -206,6 +210,7 @@ class Humans {
     SlotContacts m_slotContacts;
     std::unordered_map<const Combatant*, std::size_t> m_slotOf; // each human's slot, kept by add() and remove()
     BrainsHook m_brains;
+    Destroy m_destroy;
     Human::BodyContact m_bodyContact;
     Human::ObjectPush m_objectPush;
     Human::StrikeContact m_strikeContact;

@@ -384,6 +384,8 @@ class Human final : public Holdable {
     [[nodiscard]] bool airborne() const { return m_airborne; }
     /// The human fell more than kOutOfWorldDepth below the mesh; it stays put until spawned again.
     [[nodiscard]] bool outOfWorld() const { return m_outOfWorld; }
+    /// The fade of a human being taken away (the character instance's colour alpha, `+0x2b`): 255 whole.
+    [[nodiscard]] int fade() const { return 255; }
     /// Where it last stood on the ground (a creation's or a placement's point, or its feet on the last update it
     /// stood): where a human stuck in the air for two seconds lands.
     [[nodiscard]] anim::Vec3 lastGround() const { return m_lastGround; }

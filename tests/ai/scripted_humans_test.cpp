@@ -37,6 +37,7 @@
 #include "scripting/binding_args.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
+#include "scripting/message_handlers.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "support/ai_fixtures.h"
@@ -654,4 +655,58 @@ TEST_CASE("HuEnableController hands a player's human to its pad or its brain; an
     level.call("HuEnableController", {Value(99.0), Value(1.0)});
     CHECK(pad.size() == 3);
     CHECK_FALSE(thug.dead());
+}
+
+TEST_CASE("an AI human who falls out of the world is knocked out once faded: his message 18 and his gang's run once, "
+          "and he is no longer alive",
+          "[ai][scripted]") {
+    // Expected: characters.md#out-of-world, confirmed (code) at 0x00249108 (the fade), 0x0021c7c8 (Human_Destroy),
+    // 0x00230328 and 0x0028c3b0 (the knock-out's event 18) and 0x00166220 (the count still standing); confirmed
+    // (runtime) run r-20261122-fall-out-of-world (each handler ran once, the gang's with 0 standing)
+    Level level;
+    coney::script::MessageHandlers messages;
+    level.scripted->setMessages(&messages);
+    coney::ai::Gangs& gangs = level.scene.brains.gangs();
+    const int gang = gangs.create(19, "StandardGang2");
+    Brain& faller = level.add({44.0F, 40.0F, 0.0F});
+    Brain& mate = level.add({46.0F, 40.0F, 0.0F});
+    gangs.addMember(gang, faller);
+    gangs.addMember(gang, mate);
+    // The Brawl's per-member death handler, and a gang handler beside it.
+    messages.set(faller.handle(), coney::ai::kGangMessageDown, "RageFull");
+    gangs.setMessageHandler(gang, coney::ai::kGangMessageDown, "P1.GangDied");
+    // The play mode's part (ai::AiHumans::destroy()): the knock-out, then the scripts forget him; the owner takes him
+    // out of the step after it.
+    std::vector<coney::human::Human*> destroyed;
+    level.scene.step.setDestroy([&](coney::human::Human& human) {
+        level.scene.brains.destroy(human);
+        if (Brain* brain = level.scene.brains.find(human); brain != nullptr) {
+            level.scripted->humanDestroyed(*brain);
+        }
+        destroyed.push_back(&human);
+    });
+    const double handle = faller.handle();
+    REQUIRE(level.call("HuIsAlive", {Value(handle)}).number() == 1.0);
+
+    faller.human().place(level.scene.mesh.get(), {44.0F, 40.0F, -30.0F}, 0.0F);
+    level.scene.run(25);
+    // Fading: alive to the scripts, no message yet.
+    CHECK(faller.human().outOfWorld());
+    CHECK(destroyed.empty());
+    CHECK(level.rageCalls.empty());
+    CHECK(level.call("HuIsAlive", {Value(handle)}).number() == 1.0);
+
+    level.scene.run(1);
+    REQUIRE(destroyed.size() == 1);
+    // His own handler: message 18 about him.
+    REQUIRE(level.rageCalls.size() == 1);
+    CHECK(level.rageCalls[0].at(0) == handle);
+    // His gang's: him, no foe, and the one member still standing (he no longer counts).
+    REQUIRE(level.scene.services.calls.size() == 1);
+    CHECK(level.scene.services.calls[0].function == "P1.GangDied");
+    CHECK(level.scene.services.calls[0].args == std::vector<double>{handle, 0.0, 1.0});
+    // Gone for the scripts.
+    CHECK(level.call("HuIsAlive", {Value(handle)}).isNil());
+    CHECK(level.scripted->brain(handle) == nullptr);
+    CHECK(level.call("HuIsAlive", {Value(mate.handle())}).number() == 1.0);
 }
