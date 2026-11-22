@@ -389,11 +389,11 @@ The minimum to show Armies of the Night instead of a black screen, in order. All
 3. **The way in** (issue #569, done): the hub's arcade cabinet, `FBMission`'s sixth entry, is offered once the story
    and levels 82, 92, 83, 20 and 11 are complete, and triangle there loads `level60` ([The stages](#stages)). Coney
    ran the cabinet's scripts already; what stopped it was `MenuLoadLevel` from a level in play, which chose the level
-   and left gameplay running, so nothing loaded (the hub's chapter missions and the mission menu's replays met the
-   same). Now it asks gameplay to leave as the original's `+0x14c` = 3 does (`StartUpFlow::menuLoadLevel`,
-   `GameplayMode::updateWorld`), and `repo:tests/platform/disc_hub_armies_test.cpp` walks to the cabinet with the
-   stick from that story save, presses triangle and reaches `level60`'s first frame of play, and checks the refusal
-   with `level11` incomplete.
+   and left gameplay running, so nothing loaded and the cabinet's fade left the screen black (the hub's chapter
+   missions and the mission menu's replays make the same call from play). Now it asks gameplay to leave as the
+   original's `+0x14c` = 3 does (`StartUpFlow::menuLoadLevel`, `GameplayMode::updateWorld`), and
+   `repo:tests/platform/disc_hub_armies_test.cpp` walks to the cabinet with the stick from that story save, presses
+   triangle and reaches `level60`'s first frame of play, and checks the refusal with `level11` incomplete.
 4. **Make the stage recognisable:** mode 3 of the rail and `isArmiesLevel` as 60-69 (done).
 5. **The bindings:** the HUD's credits, GO sign and join messages, then the game over (mode 0xd), so that losing ends
    in the stage's own screen (done).
