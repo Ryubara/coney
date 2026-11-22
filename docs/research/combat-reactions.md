@@ -773,11 +773,19 @@ at `0x00227e60`):
   `Human_SetWounded` (`0x00237628`, the script's `HuSetWounded`).
 - **Tackled: whatever he had.** A tackled human holds state `0x800` (his tackler `0x400`), which is not among
   `Human_IsDownOrDead`'s states, so he counts as **standing**, and the tackle writes no health. Confirmed (runtime), run
-  r-20261122-tackle-victim (the set-up of `repo:research/traces/scenarios/tackle_victim.toml`, slot 6, `PoizoCiv`
-  given the tackle at the player with no input after it): the player's state word read `0x805` from update 30 to the
-  end at 400 (the puppet never let go) and his health 900 throughout. The `0x10000` that the HUD's count leaves out is
-  the **wounded** bit, not a tackle: the record's held flags (`+0x08`) carry a `0x10000` on a tackled victim
-  ([State flags](combat/index.md#state-flags)), a different word.
+  r-20261122-tackle-victim (the set-up of `repo:research/traces/scenarios/tackle_victim.toml`, slot 6, `PoizoCiv` given
+  the tackle at the player with no input after it): the player's state word read `0x805` from update 30 to the end at
+  400 (the puppet never let go) and his health 900 throughout. **How long he stays tackled:** until the victim's escape,
+  the tackler's next move, or the tackler's power running out under the mount's drain (`Mount_GetOff`, `0x00271470`,
+  [The mounted victim](combat-moves.md#mounted-victim)), so the tackle has no length of its own (confirmed (code)
+  there), and he is never down by state meanwhile. Confirmed (runtime), run r-20261122-tackle-escape
+  (`repo:research/traces/scenarios/tackle_escape.toml`, the same set-up with circle every 3 updates from update 95):
+  state `0x805` from update 30 to 150 (121 updates, the mount's idle 207 from 75), the third circle at 102 broke free
+  (`MOUNT_BREAK` 246 from 103, 48 updates, his tackler 247), and he stood at 151 with state `0x5`, never knocked down
+  (`0x80000`), at 900 health throughout. The `0x10000` that the HUD's count leaves out is the **wounded** bit, not a
+  tackle: the record's held flags (`+0x08`) carry a `0x10000` on a tackled victim ([State
+  flags](combat/index.md#state-flags)), a different word. Coney's tackled player keeps his health and is not down by
+  state either (`Human::downOrDead()`, the test in `repo:tests/human/human_grab_test.cpp`).
 
 In a WAR PARTY (confirmed (runtime), run r-20261122-war-party: the scenario
 `repo:research/traces/scenarios/war_party.toml`, QUICK RUMBLE, Furies against Orphans, five a side, every fighter on
@@ -1246,18 +1254,24 @@ Tests: `repo:tests/human/knockout_test.cpp` (not knocked out through the whole d
 ends), `repo:tests/human/death_chain_test.cpp` (each case's chain, its blends, the held flag, the knock-out as 205
 ends, the push weight) and `repo:tests/hud/armies_hud_test.cpp` (the panel stays while the clip plays).
 
-**The health a downed human keeps** ([The health a downed human keeps](#down-health)): Coney keeps no state word, so
-`combat::Health` (`repo:src/combat/meters.h`) keeps the down state beside the value: `depleted()` is the health run
-out and not given back since (by a heal, a revive or a script's health), whatever the value reads. `Victim::die()` sets
-the value to 1 as it builds the chain (`keepOneWhileOut()`), so a dying or knocked-out human reads 1, as in the
-original, and a hit on him takes nothing more. Every down-or-dead test reads `depleted()` (dying, knocked out) and the
-script's states (`Human::downOrDead()`, `ai::humanIsDownOrDead()`), never the value, as `Human_IsDownOrDead`
-(`0x00227e60`) reads the states. Tests: `repo:tests/human/knockout_test.cpp` (1 health from the hit through the
-knock-out) and `repo:tests/platform/disc_rumble_gang_count_test.cpp` (in the disc's WAR PARTY every fighter down by state
-has 1 health, and the HUD's count is the standing members on the updates a health count would get wrong). **Not
-ported:** the original's knocked-out fighters are made dead 14 s after the knock-out when no camera sees them, and
-deleted 41 updates later (`Humans_Update`, `0x00249108`; [the WAR PARTY's table](#down-health)); Coney's stay knocked
-out to the end of the match.
+**The health a downed human keeps**{#down-health-coney} ([The health a downed human keeps](#down-health)): Coney keeps
+no state word, so `combat::Health` (`repo:src/combat/meters.h`) keeps the down state beside the value: `depleted()` is
+the health run out and not given back since (by a heal, a revive or a script's health), whatever the value reads.
+`Victim::die()` sets the value to 1 as it builds the chain (`keepOneWhileOut()`), so a dying or knocked-out human reads
+1, as in the original, and a hit on him takes nothing more, as `Human_ApplyPendingDamage` (`0x00265f70`) drops the
+pending damage of a man knocked out, dying or dead (confirmed (code) at `0x00265f70`). **Not ported:** its exception, a
+hit by an object of kind `0x1d` or `0x22`, which still takes health there. **Differs:** a script's health write above 0
+(`Health::set()`) gets a downed human up again, where `Human_SetHealthPercent` (`0x002378a8`, `HuSetHealthPercent`)
+writes only `+0x144` and leaves a knocked-out man down (confirmed (code) at `0x002378a8`). Every down-or-dead test reads
+`depleted()` (dying, knocked out) and the script's states (`Human::downOrDead()`, `ai::humanIsDownOrDead()`), never the
+value, as `Human_IsDownOrDead` (`0x00227e60`) reads the states. Tests: `repo:tests/human/knockout_test.cpp` (1 health
+from the hit through the knock-out), `repo:tests/human/human_grab_test.cpp` (a tackled player keeps all his health and
+is never down by state, under the tackle or breaking free), `repo:tests/ai/gangs_test.cpp` (a lethal hit's event 1
+carries all the health it took, the 1 left counting as none) and `repo:tests/platform/disc_rumble_gang_count_test.cpp`
+(in the disc's WAR PARTY every fighter down by state has 1 health, and the HUD's count is the standing members on the
+updates a health count would get wrong). **Not ported:** the original's knocked-out fighters are made dead 14 s after
+the knock-out when no camera sees them, and deleted 41 updates later (`Humans_Update`, `0x00249108`; [the WAR PARTY's
+table](#down-health)); Coney's stay knocked out to the end of the match.
 
 **Stand-ins:** the blends between the chain's clips are recorded (`Victim::deathChain()`) but not built: a clip hands
 over to the next at once, as every chained clip in Coney does (the end blend, `kAttackFade` in

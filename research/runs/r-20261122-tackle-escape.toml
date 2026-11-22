@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261122-tackle-escape"
+date = "2026-11-22"
+kind = "trace"
+tool = "trace original"
+digest = "0d2ba2043c505bd10f54824c0792c9916b554a05a4323f74514f7575afcbcb3c"
+
+[who]
+agent = "af0339436a26b363b"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["puppet", "right-stick", "scripted-pad", "strike-contact", "strike-shape"]
+
+[run]
+name = "tackle_escape"
+method = ""
+
+[values]
+updates = 301
+missed_updates = 0
+columns = 54
+
+[hashes]
+trace_csv = "3b277576bc709558b780a3ad3685e5b4bd2ac3a4e73dfed4959c2feceefe039b"
