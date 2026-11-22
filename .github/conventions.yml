@@ -1466,6 +1466,11 @@ ci:
     # from its DLL, so an allocating destructor is reported in CI and not here). The local run prints their findings as
     # advice and does not fail on them (docs/guides/clang-tidy.md#differences); CI still fails on them.
     local_advisory: [bugprone-exception-escape]
+    # Clang warnings (without the -W) the local run turns on, with their `clang-diagnostic-` check, beyond the compile
+    # database's flags: CI's GCC and Clang builds get them from -Wextra and -Werror, but the Windows database is MSVC's
+    # (/W4), which has neither, so a change leaving a member out of an aggregate passed `task check` and failed every
+    # Linux build (docs/guides/clang-tidy.md#local-warnings). Reported on the changed lines like any finding.
+    local_warnings: [missing-field-initializers, missing-designated-field-initializers]
   # A failed run on the default branch (the nightly build, a push, a manual run) opens a P-critical issue, or comments
   # on the one that is still open for the same workflow (`coney-tools ci report-failure`, workflow ci-failure.yml).
   failure:

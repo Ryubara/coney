@@ -676,19 +676,18 @@ steps, preceded by the title, the description and the docs rule and followed by 
 [Agent tools other than Claude Code](agents-other-tools.md)). A tool that cannot reach the disc, Ghidra or PCSX2 names
 that in the Testing section instead of claiming a check it could not run.
 
-**clang-tidy runs here first, then in CI.** `task check`'s `clang-tidy` check runs it on the lines a change touches
-in its C++ files, on this machine and on Windows too, with the repository's `.clang-tidy` and the compile database of
-the build the check has just made; a finding fails the check and names its file, line and check, so it is fixed in the
-worktree before review ([clang-tidy here](clang-tidy.md#local); [#1496](issue:1496): six pull requests in one day
-failed CI's clang-tidy after their reviews had passed). CI's required `clang-tidy` check
-still runs the same pass on the pull request, and every file on `main` and nightly ([clang-tidy](clang-tidy.md)). It
-catches what MSVC lets through, such as an unchecked `std::optional` access (`bugprone-unchecked-optional-access`;
-locally only through `.value()`, not `*`) or a use after a move. The local run reads the code through MSVC's headers,
-so a few findings come only from CI's Linux run ([the differences](clang-tidy.md#differences)); one of those is an
-annotation on the pull request, fixed as a fix task on the branch ([Tracks](how-we-work.md#slots)). A designated
-initializer that skips a field (`-Wmissing-designated-field-initializers`) is caught by the GCC and Clang builds
-instead, whose `-Wall -Wextra` warnings are errors in the `ci`, `ci-release` and `asan` presets
-(`CONEY_WARNINGS_AS_ERRORS`); clang-tidy's `-*` turns off its compiler diagnostics.
+**clang-tidy runs here first, then in CI.** `task check`'s `clang-tidy` check runs it on the lines a change touches in
+its C++ files, on this machine and on Windows too, with the repository's `.clang-tidy` and the compile database of the
+build the check has just made; a finding fails the check and names its file, line and check, so it is fixed in the
+worktree before review ([clang-tidy here](clang-tidy.md#local); [#1496](issue:1496): six pull requests in one day failed
+CI's clang-tidy after their reviews had passed). CI's required `clang-tidy` check still runs the same pass on the pull
+request, and every file on `main` and nightly ([clang-tidy](clang-tidy.md)). It catches what MSVC lets through, such as
+an unchecked `std::optional` access (`bugprone-unchecked-optional-access`; locally only through `.value()`, not `*`) or
+a use after a move. The local run reads the code through MSVC's headers, so a few findings come only from CI's Linux run
+([the differences](clang-tidy.md#differences)); one of those is an annotation on the pull request, fixed as a fix task
+on the branch ([Tracks](how-we-work.md#slots)). An aggregate or designated initializer that leaves a member out is
+refused by GCC and Clang (`-Wall -Wextra` as errors in the `ci`, `ci-release` and `asan` presets) and passed by MSVC;
+`clang-tidy` turns those warnings on here ([the warnings MSVC lacks](clang-tidy.md#local-warnings)).
 
 `ci run` runs on Windows, Linux and macOS. Nobody checks it by hand on all three, so CI does: the `python` workflow
 runs its `repo` and `pre-commit` steps on every operating system it tests (`--base HEAD^1`, the branch a pull request's

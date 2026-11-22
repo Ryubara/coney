@@ -185,14 +185,16 @@ uv run --project python coney-tools ci tidy-local [--base REF] [--build-dir DIR]
 ```
 
 CI's pull-request clang-tidy pass on this machine, the same code `task check`'s `clang-tidy` check runs: the branch's
-diff against its merge base with `--base`, the sources `tidy-plan` would choose, clang-tidy against the compile
-database of the `ci` preset's build (build it first: `coney-tools build --preset ci`), and only the findings on the
-changed lines. It prints each as `path:line:column [check] message` and a last line with the verdict and the program.
-The program is clang-tidy of CI's major version (`ci.tidy.llvm_major`): `clang_tidy_program` of coney.local.toml, else
-the copy `workspace init --fetch clang-tidy` downloaded, else `clang-tidy-19` or `clang-tidy` on `PATH`. Exit 0 when
-clean, 1 on a finding or when clang-tidy failed on a source (it does not compile, or the compile database does not
-name it: build again), 2 when it cannot run (no clang-tidy of that version, no compile database). Where it can differ
-from CI: [clang-tidy here](clang-tidy.md#local).
+diff against its merge base with `--base`, the sources `tidy-plan` would choose, clang-tidy against the compile database
+of the `ci` preset's build (build it first: `coney-tools build --preset ci`), and only the findings on the changed
+lines, with the warnings of `ci.tidy.local_warnings` switched on (an aggregate or designated initializer that leaves a
+member out, which GCC and Clang refuse and MSVC does not: [the warnings MSVC lacks](clang-tidy.md#local-warnings)). It
+prints each as `path:line:column [check] message` and a last line with the verdict and the program. The program is
+clang-tidy of CI's major version (`ci.tidy.llvm_major`): `clang_tidy_program` of coney.local.toml, else the copy
+`workspace init --fetch clang-tidy` downloaded, else `clang-tidy-19` or `clang-tidy` on `PATH`. Exit 0 when clean, 1 on
+a finding or when clang-tidy failed on a source (it does not compile, or the compile database does not name it: build
+again), 2 when it cannot run (no clang-tidy of that version, no compile database). Where it can differ from CI:
+[clang-tidy here](clang-tidy.md#local).
 
 ### ci disc-suite {#disc-suite}
 

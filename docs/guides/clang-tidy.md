@@ -43,6 +43,33 @@ version, or none, makes the check "cannot run" (no stamp, nothing wrong with the
 would not, an older one misses what it would. `task check` looks for the program before it starts, so a machine
 without one learns it at once, not after the build and the tests.
 
+**The warnings MSVC lacks** {#local-warnings}. CI's GCC and Clang builds run `-Wall -Wextra` with `-Werror`; MSVC's
+`/W4`, and so the Windows compile database, has no warning for an aggregate or designated initializer that leaves a
+member out, and `-*` keeps clang-tidy's own compiler diagnostics off. A change could pass `task check` on Windows
+and fail every Linux build (twice on 2026-11-22: [#1642](issue:1642)). The run therefore adds, for each warning in
+`ci.tidy.local_warnings` of [.github/conventions.yml](repo:.github/conventions.yml) (`missing-field-initializers`,
+`missing-designated-field-initializers`; GCC's `-Wmissing-field-initializers` covers both), the compiler's
+`--extra-arg=-W<name>` and the `--checks=clang-diagnostic-<name>` that makes clang-tidy print it (a diagnostic shows
+only when its check is on, and the `--checks` is added to `.clang-tidy`'s list, which stays CI's list; CI needs
+neither, its database carries `-Wextra`). `warning_arguments` of `local_tidy.py` builds them, on every platform, and
+the finding is one of any other: `path:line:column [clang-diagnostic-missing-field-initializers] missing field
+'radar' initializer`, on the changed lines only. The warning is reported where clang puts it, at the initializer's
+closing brace, so a multi-line initializer to which a member was added but whose closing line is untouched is not
+caught. A member with a default member initializer may be left out, as in GCC and Clang, and so may all of them (`T{}`).
+To add a warning of this kind, put its name in the list: no more is needed.
+This is the clang-diagnostic case only: [#1628](issue:1628)'s unchecked optional `*` is a check's finding, not a
+warning, and stays [a difference](#differences).
+
+**Measured** on 2026-11-22 with the pinned clang-tidy. A probe of an aggregate of three `int`s against a clang-cl
+compile command with `/W4`: `HudFrame{1}`, `{1, 2}`, `{.radar = 1}` and `{.radar = 1, .gangLiving = 2}` each reported
+once, and `{1, 2, 3}`, the designated form with all three and an empty `HudFrame{}` were quiet; the test is
+`test_local_tidy.py`'s `test_an_initializer_that_leaves_a_member_out_is_refused` and its accepted twin (they run the
+real clang-tidy, and skip where none of CI's major version is installed). For false positives, the whole of 60 sources
+drawn at random from `src/` and `tests/` (seed 1642) was taken as changed, so every line counted, against the MSVC `ci`
+compile database of a build: no finding. Planting `ProbeFrame{.radar = 1}` in `src/core/pads.cpp` then gave exactly
+`src/core/pads.cpp:108:55 [clang-diagnostic-missing-designated-field-initializers] missing field 'gangLiving'
+initializer`.
+
 **Windows paths.** clang-tidy sees a header's path with backslashes on Windows (`<checkout>\src\core/pad.h`), so the
 check hands it `.clang-tidy`'s `HeaderFilterRegex` with each `/` widened to either slash, and applies the line filter
 itself after clang-tidy instead of through `--line-filter` (whose names clang-tidy compares with those paths). Both
