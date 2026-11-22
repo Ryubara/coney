@@ -1070,13 +1070,16 @@ Switches a player's human between pad control and AI control by setting its per-
 counters apply); with 1 the pad's commands drive it again.
 
 **Notes.** Readers: [AI](../../research/ai/index.md), [Combat](../../research/combat/index.md) and the follow camera
-(camera.md), which only acts for a pad-controlled player. Armies of the Night uses it for players that have not joined.
+(camera.md), which only acts for a pad-controlled player. Armies of the Night uses it for players that have not joined,
+and level60's `F1.NoBrain` and `F1.Restore02` take player 1's pad away and give it back round its scripted moments. In
+level60 play the byte read 1, 0 after `HuEnableController(player, nil)` or with `enable` left out, and 1 again after
+`HuEnableController(player, 1)`: confirmed (runtime), run r-20261122-level60-570-bindings.
 
 - **Evidence:** confirmed (code) at `0x002384f8`; detail: traced
 - **Wrapper** `0x0035c120` (registered by `RegisterBindings`); **calls** `0x002384f8` `Human_EnableController`
 - **Used by** 7 of 467 script chunks (30 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuEnableOnFire {#huenableonfire}
 

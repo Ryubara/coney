@@ -81,10 +81,10 @@ void RailCamera::setup(const RailSetup& setup) {
     m_fieldOfView.set(setup.fieldOfView, 0.0F);
     m_lookHeight.set(setup.offset.z, 0.0F);
     m_blend = 0.0F;
-    m_held = false;
+    // The hold (`+0x3e4`) is left as it is: a CamLockRail lock outlasts CamSetupRail (docs/research/camera.md#rail).
 }
 
-void RailCamera::setHeld(bool /*on*/) {}
+void RailCamera::setHeld(bool on) { m_held = on; }
 
 void RailCamera::addPoint(anim::Vec3 point) {
     m_points.at(std::min(m_count, kMaxPoints - 1)) = point;

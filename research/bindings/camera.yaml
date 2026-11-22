@@ -467,6 +467,7 @@
     `CamSetupRail` with `CameraMakeActive` left the hold at 1, and `CamLockRail(nil)` set it to 0: confirmed
     (runtime), run r-20261122-level60-570-bindings.
   usage: {chunks: 15, calls: 118, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: CamModifyRail
   wrapper: 0x003668e8

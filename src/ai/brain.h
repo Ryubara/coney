@@ -270,6 +270,8 @@ class Brain {
     using PadControl = std::function<void(bool padControlled)>;
     /// Sets what a player's brain calls when it gives up or takes back the pad.
     void setPadControl(PadControl control) { m_padControl = std::move(control); }
+    /// What a player's brain calls to give up or take back the pad; empty for an AI brain.
+    [[nodiscard]] const PadControl& padControl() const { return m_padControl; }
     /// Suspended (`+0x0a`, `BrSuspend`): its update keeps only the time.
     [[nodiscard]] bool suspended() const { return m_suspended; }
     /// Sets the suspended byte.

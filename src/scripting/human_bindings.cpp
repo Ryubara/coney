@@ -325,6 +325,15 @@ NativeFunction makeLockPad(const BindingContext& context) {
     });
 }
 
+// `HuEnableController(human, enable)`: `enable` nil or left out is false.
+// @orig 0x0035c120 lua_HuEnableController (unknown)
+NativeFunction makeEnableController(const BindingContext& context) {
+    return hostCall(context, [](HumanBindingHost& host, std::span<const Value> args) {
+        const double human = binding::handleArg(args, 0);
+        host.enableController(human, binding::booleanArg(args, 1));
+    });
+}
+
 // `EnableCommand(human, command, enable)`: a command outside 1-57 is ignored.
 // @orig 0x001467a8 PlayerCommand_EnableForHuman (unknown)
 NativeFunction makeEnableCommand(const BindingContext& context) {
@@ -790,6 +799,7 @@ void addHumanBindings(LuaVm& vm, const BindingContext& context, std::function<do
     vm.registerFunction("HuSetLookTarget", makeSetLookTarget(context));
     vm.registerFunction("HuTeleportNearHuman", makeTeleportNear(context));
     vm.registerFunction("HuLockPad", makeLockPad(context));
+    vm.registerFunction("HuEnableController", makeEnableController(context));
     vm.registerFunction("EnableCommand", makeEnableCommand(context));
     vm.registerFunction("EnableCommands", makeEnableCommands(context));
     vm.registerFunction("HuAttachSpinningIcon", makeAttachSpinningIcon(context));

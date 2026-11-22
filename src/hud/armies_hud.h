@@ -73,9 +73,11 @@ class ArmiesHud {
     /// The level's set-up (`HUD_InitLevel`), before the level's script, in the game's `language`: the credits 0 (the
     /// HUD's word `+0x190d0`, `0x00619910`, which the Armies stages carry from one stage to the next in their Lua save
     /// data), the GO sign Off and placed for the language, both join messages on (the original allocates its `ANHud`
-    /// panels afresh and its slot `+0x80` sets each one's flag; a panel's first attach clears it again).
+    /// panels afresh and its slot `+0x80` sets each one's flag; a panel's first attach clears it again), and no boss
+    /// pictures (each new panel's target panel starts with its six pairs free).
     /// @orig 0x0019e030 GoSign_Setup (unknown)
     /// @orig 0x004ec650 ANHud_SetPlayer (unknown)
+    /// @orig 0x0020e170 TargetPanel_Construct (unknown)
     void levelSetUp(Language language = Language::English);
     /// How far left of its English place the GO sign sits in the set-up's language, in GUI units (`0x0050cf98`).
     [[nodiscard]] float goSignShift() const { return m_goShift; }
@@ -127,9 +129,10 @@ class ArmiesHud {
         return m_bosses.at(player);
     }
     /// The picture panel `player`'s target panel shows for the boss `human`: the word of the first pair holding him,
-    /// none when no pair does (the plain panel). The target panel's search for a class-13 target
-    /// (`TargetPanel_Update`, `0x0020e6f8`).
-    /// @orig 0x0020e6f8 TargetPanel_Update (unknown)
+    /// none when no pair does (the plain panel). The search the target panel makes for a class-13 target
+    /// (`TargetPanel_Update`, `0x0020e6f8`), whose drawing is not built (#662).
+    /// @coney-only the lookup for the target panel and the tests; TargetPanel_Update (not ported, #662) searches in
+    /// place
     [[nodiscard]] std::optional<std::uint32_t> bossTexture(std::size_t player, std::uint32_t human) const;
 
     /// One HUD step at game time `nowMs` in level number `level`, with which players are in the game (their panel

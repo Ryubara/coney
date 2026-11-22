@@ -285,7 +285,14 @@ void Cameras::modifyRail(std::uint32_t param, float value, float seconds) {
     }
 }
 
-void Cameras::lockRail(int /*player*/, bool /*on*/) {}
+void Cameras::lockRail(int player, bool on) {
+    // A negative player is player 0. Coney keeps player 0's rail camera only, so another player finds none, and -1's
+    // walk over the other players' rails has none to set.
+    if (player > 0 || !m_rail) {
+        return;
+    }
+    m_rail->setHeld(on);
+}
 
 void Cameras::createFixed(double handle, double target, const FixedCamera& camera) {
     // Stand-in (#692): the original resolves the target first and makes no camera for a handle that names nothing;

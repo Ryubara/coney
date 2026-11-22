@@ -253,6 +253,16 @@ NativeFunction makeCamLeadRail(const BindingContext& context) {
     });
 }
 
+// `CamLockRail(on, player)`: `on` read as tolua reads a boolean (nil false), `player` as a signed integer, -1 when
+// left out.
+// @orig 0x00366880 lua_CamLockRail (unknown)
+NativeFunction makeCamLockRail(const BindingContext& context) {
+    return camerasCall(context, [](camera::Cameras& cameras, std::span<const Value> args) {
+        const bool on = binding::booleanArg(args, 0);
+        cameras.lockRail(binding::signedArg(args, 1, -1.0), on);
+    });
+}
+
 // `CamModifyRail(param, value, seconds, player)`.
 // @orig 0x003668e8 CamModifyRail (unknown)
 NativeFunction makeCamModifyRail(const BindingContext& context) {
@@ -328,6 +338,7 @@ void addCameraBindings(LuaVm& vm, const BindingContext& context, std::function<d
     vm.registerFunction("CamSetupRail", makeCamSetupRail(context, nextHandle));
     vm.registerFunction("CamAddRailPoint", makeCamAddRailPoint(context));
     vm.registerFunction("CamLeadRail", makeCamLeadRail(context));
+    vm.registerFunction("CamLockRail", makeCamLockRail(context));
     vm.registerFunction("CamModifyRail", makeCamModifyRail(context));
     vm.registerFunction("CameraCreateFixed", makeCameraCreateFixed(context, nextHandle));
     vm.registerFunction("CameraCreateThird", makeCameraCreateThird(context, nextHandle));

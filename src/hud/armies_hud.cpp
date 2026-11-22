@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hud/armies_hud.h"
 
+#include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -74,12 +76,30 @@ void ArmiesHud::levelSetUp(Language language) {
     m_in = {};
     m_dropped = {};
     m_dropping = {};
+    // The level's panels are built afresh (TargetPanel_Construct, 0x0020e170): no boss pictures.
+    m_bosses = {};
 }
 
-void ArmiesHud::setBossTexture(std::uint32_t /*human*/, std::uint32_t /*texture*/, bool /*on*/) {}
+// **Coney's stand-in**: the pairs are kept in every level, where the original's story panels have an empty slot `+0x74`
+// and keep none; only the Armies target panel reads them (not drawn yet, #662).
+void ArmiesHud::setBossTexture(std::uint32_t human, std::uint32_t texture, bool on) {
+    for (std::array<BossPicture, kBossPictures>& pairs : m_bosses) {
+        // On: the first free pair takes him; off: the first pair holding him is freed. A full table keeps no more.
+        const std::uint32_t wanted = on ? BossPicture::kFree : human;
+        const auto found = std::ranges::find(pairs, wanted, &BossPicture::human);
+        if (found != pairs.end()) {
+            *found = on ? BossPicture{.human = human, .texture = texture} : BossPicture{};
+        }
+    }
+}
 
-std::optional<std::uint32_t> ArmiesHud::bossTexture(std::size_t /*player*/, std::uint32_t /*human*/) const {
-    return std::nullopt;
+std::optional<std::uint32_t> ArmiesHud::bossTexture(std::size_t player, std::uint32_t human) const {
+    const std::array<BossPicture, kBossPictures>& pairs = m_bosses.at(player);
+    const auto found = std::ranges::find(pairs, human, &BossPicture::human);
+    if (found == pairs.end()) {
+        return std::nullopt;
+    }
+    return found->texture;
 }
 
 void ArmiesHud::setJoinMessage(std::size_t player, bool on) {

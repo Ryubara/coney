@@ -665,16 +665,19 @@ camera.md#rail-frame). It stays locked until `CamLockRail(false)`: neither `CamS
 it. The rail camera also holds itself for one update at a time while its look-at point is past the rail's end. Armies of
 the Night (levels 60-64) uses it to hold the side-scrolling view.
 
-**Notes.** A player with no rail camera is skipped (Camera_GetPlayerRail returns none). Modes 1 and 2 ignore the lock;
-mode 3 sets it itself at the rail's ends. Every reader and writer: [Camera: rail
-cameras](../../research/camera.md#rail).
+**Notes.** A player with no rail camera is skipped (Camera_GetPlayerRail returns none). Any negative player reads as
+player 0; only -1 also sets the other players', and only when player 0 has a rail camera (0x0011d180). Modes 1 and 2
+ignore the lock; mode 3 sets it itself at the rail's ends. Every reader and writer: [Camera: rail
+cameras](../../research/camera.md#rail). In level60, `CamLockRail(1)`, `CamLockRail(1, -5)` and a later `CamSetupRail`
+with `CameraMakeActive` left the hold at 1, and `CamLockRail(nil)` set it to 0: confirmed (runtime), run
+r-20261122-level60-570-bindings.
 
 - **Evidence:** confirmed (code) at `0x0011d180`, `0x0013d6b0`; detail: traced
 - **Wrapper** `0x00366880` (registered by `RegisterBindings`); **calls** `0x0011d180` `Camera_LockRail`, `0x0013d6b0`
   `CamRail_UpdatePosition`
 - **Used by** 15 of 467 script chunks (118 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamModifyRail {#cammodifyrail}
 

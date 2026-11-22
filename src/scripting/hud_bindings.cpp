@@ -331,6 +331,14 @@ void addArmiesBindings(LuaVm& vm, const BindingContext& context) {
                                 hud.armies().setJoinMessage(static_cast<std::size_t>(player), boolArg(args, 1));
                             }
                         }));
+    // `HUDSetANBossTexture(human, texture, on)`: the human and the texture as unsigned integers, `on` true when left
+    // out; both panels take the pair (ArmiesHud::setBossTexture()).
+    // @orig 0x0036e8d8 lua_HUDSetANBossTexture (unknown)
+    vm.registerFunction("HUDSetANBossTexture", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            const std::uint32_t human = binding::unsignedArg(args, 0);
+                            const std::uint32_t texture = binding::unsignedArg(args, 1);
+                            hud.armies().setBossTexture(human, texture, binding::booleanArg(args, 2, true));
+                        }));
 }
 
 // The radars.
