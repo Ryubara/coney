@@ -22,6 +22,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "camera/camera_view.h"
 #include "camera/cameras.h"
 #include "camera/rail_camera.h"
 #include "camera/rail_frame.h"
@@ -79,6 +80,8 @@ constexpr float kOriginalLockX = -122.95F;
 constexpr float kLockTolerance = 1.5F;
 constexpr std::uint64_t kHeldFrames = std::uint64_t{10} * 30;
 constexpr coney::anim::Vec3 kRailOffset{0.0F, -0.25F, 1.25F};
+// How far inside the held view's sides that point must stay: half the push's margin (setting 7, 0.5 m in level60).
+constexpr float kLeastInside = 0.25F;
 // The two bosses level60_destroyers' main chunk registers (Lemmy and Virgil) and their pictures' sprite words.
 constexpr std::array<std::uint32_t, 2> kDestroyersBossPictures{1966095, 1966110};
 
@@ -268,7 +271,7 @@ TEST_CASE("the disc's level60 played on: the pad taken and given back, the bosse
 }
 
 TEST_CASE("the disc's level60 at the first fight: the rail camera locks where the original's does and keeps the "
-          "player in its frame",
+          "player in view",
           "[disc][story][armies]") {
     // Expected: camera.md#rail-frame, confirmed (runtime), run r-20261122-level60-570-frame: P1.CamLock01's
     // CamLockRail(true) held the original's rail camera at x -122.95 with the player at x -123.44; walking on toward
@@ -310,8 +313,9 @@ TEST_CASE("the disc's level60 at the first fight: the rail camera locks where th
     }
     REQUIRE(locked);
     const float lockedAt = rail->position().x;
-    // On toward -x for 10 s with the camera held: how far inside the view's sides his feet raised by level60's look-at
-    // offset stay at the worst frame.
+    // On toward -x for 10 s with the camera held: the frames his feet raised by level60's look-at offset are out of
+    // the held view, and how far inside its sides they stay at the worst frame (the push keeps setting 7, 0.5 m).
+    std::uint64_t outOfView = 0;
     float leastInside = std::numeric_limits<float>::max();
     for (std::uint64_t frame = 0; frame < kHeldFrames; ++frame) {
         REQUIRE(walkOn());
@@ -319,16 +323,21 @@ TEST_CASE("the disc's level60 at the first fight: the rail camera locks where th
         REQUIRE(play != nullptr);
         const coney::anim::Vec3 feet = play->player().human().position();
         const coney::anim::Vec3 point{feet.x + kRailOffset.x, feet.y + kRailOffset.y, feet.z + kRailOffset.z};
+        if (!coney::camera::canSeePoint(rail->view(), point, 0.0F, nullptr)) {
+            ++outOfView;
+        }
         const auto planes = coney::camera::framePlanes(rail->view());
         for (std::size_t side = 0; side < 2; ++side) {
             leastInside = std::min(leastInside, coney::anim::dot(point, planes.at(side).normal) - planes.at(side).w);
         }
     }
-    std::printf("  level60 fight: rail camera locked at x %.2f (the original's %.2f), held %d, the player at least "
-                "%.2f m inside the sides\n",
+    std::printf("  level60 fight: rail camera locked at x %.2f (the original's %.2f), held %d, the player out of view "
+                "%llu frames of %llu, at least %.2f m inside the sides\n",
                 static_cast<double>(lockedAt), static_cast<double>(kOriginalLockX), rail->held() ? 1 : 0,
+                static_cast<unsigned long long>(outOfView), static_cast<unsigned long long>(kHeldFrames),
                 static_cast<double>(leastInside));
     CHECK(std::abs(lockedAt - kOriginalLockX) <= kLockTolerance);
     CHECK(rail->held());
-    CHECK(leastInside >= 0.0F);
+    CHECK(outOfView == 0);
+    CHECK(leastInside >= kLeastInside);
 }
