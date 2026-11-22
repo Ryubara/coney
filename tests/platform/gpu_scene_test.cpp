@@ -8,9 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <filesystem>
 #include <string>
-#include <system_error>
 #include <vector>
 
 #include <SDL3/SDL.h>
@@ -22,6 +20,7 @@
 #include "platform/character_skin.h"
 #include "platform/render_engine.h"
 #include "platform/scene_assets.h"
+#include "support/fixtures.h"
 #include "support/optional_value.h"
 
 using coney::graphics::Rgba;
@@ -219,7 +218,9 @@ TEST_CASE("the GPU renderer draws a scene pass's meshes lit, textured, blended, 
     const std::size_t away =
         add(column(5.0F, 0, 320, QuadSpec{.prelit = true, .prelight = {255, 0, 255, 255}, .facingAway = true}));
 
-    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-scene-capture.png").string();
+    // A folder of its own: runs at once never write the same file (docs/guides/testing.md#capture-paths).
+    const coney::test::TempDir folder;
+    const std::string path = (folder.path() / "capture.png").string();
     engine.requestCapture(0, path);
     const Rgba clear{100, 100, 100, 255};
     engine.beginWindowFrame(clear);
@@ -281,8 +282,6 @@ TEST_CASE("the GPU renderer draws a scene pass's meshes lit, textured, blended, 
     }
     assets.removeTexture(*textureId);
     texture->destroy();
-    std::error_code ignored;
-    std::filesystem::remove(path, ignored);
 }
 
 TEST_CASE("the GPU renderer skins a posed mesh by its bones", "[render][renderer][window][scene][skinning]") {
@@ -342,7 +341,9 @@ TEST_CASE("the GPU renderer skins a posed mesh by its bones", "[render][renderer
     REQUIRE(redId.has_value());
     REQUIRE(whiteId.has_value());
 
-    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-skin-capture.png").string();
+    // A folder of its own: runs at once never write the same file (docs/guides/testing.md#capture-paths).
+    const coney::test::TempDir folder;
+    const std::string path = (folder.path() / "capture.png").string();
     engine.requestCapture(0, path);
     engine.beginWindowFrame(Rgba{100, 100, 100, 255});
     coney::graphics::SceneCamera camera;
@@ -396,8 +397,6 @@ TEST_CASE("the GPU renderer skins a posed mesh by its bones", "[render][renderer
     assets.removeMesh(*whiteId);
     assets.removeTexture(*textureId);
     texture->destroy();
-    std::error_code ignored;
-    std::filesystem::remove(path, ignored);
 }
 
 TEST_CASE("the GPU renderer clears the depth for a scene pass that asks and lights a draw that is lit",
@@ -464,7 +463,9 @@ TEST_CASE("the GPU renderer clears the depth for a scene pass that asks and ligh
     const std::size_t unlitGrey =
         add(quadAt(10.0F, 160, 320, 120, 240, QuadSpec{.prelit = true, .prelight = {60, 60, 60, 255}}));
 
-    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-depth-clear.png").string();
+    // A folder of its own: runs at once never write the same file (docs/guides/testing.md#capture-paths).
+    const coney::test::TempDir folder;
+    const std::string path = (folder.path() / "coney-gpu-depth-clear.png").string();
     engine.requestCapture(0, path);
     engine.beginWindowFrame(Rgba{0, 0, 0, 255});
     coney::graphics::SceneCamera camera;
@@ -514,8 +515,6 @@ TEST_CASE("the GPU renderer clears the depth for a scene pass that asks and ligh
     }
     assets.removeTexture(*textureId);
     texture->destroy();
-    std::error_code ignored;
-    std::filesystem::remove(path, ignored);
 }
 
 TEST_CASE("the GPU renderer cuts away what lies past the camera's far clip", "[render][renderer][window][scene]") {
@@ -574,7 +573,9 @@ TEST_CASE("the GPU renderer cuts away what lies past the camera's far clip", "[r
         meshes.push_back(*id);
     }
 
-    const std::string path = (std::filesystem::temp_directory_path() / "coney-gpu-far-clip.png").string();
+    // A folder of its own: runs at once never write the same file (docs/guides/testing.md#capture-paths).
+    const coney::test::TempDir folder;
+    const std::string path = (folder.path() / "coney-gpu-far-clip.png").string();
     engine.requestCapture(0, path);
     engine.beginWindowFrame(Rgba{0, 0, 0, 255});
     coney::graphics::SceneCamera camera;
@@ -613,6 +614,4 @@ TEST_CASE("the GPU renderer cuts away what lies past the camera's far clip", "[r
     }
     assets.removeTexture(*textureId);
     texture->destroy();
-    std::error_code ignored;
-    std::filesystem::remove(path, ignored);
 }

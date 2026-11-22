@@ -325,9 +325,11 @@ posed sphere, and `tests/platform/draw_calls_test.cpp` that the headless draw la
 device's do.
 `tests/platform/imgui_overlay_test.cpp` runs the developer overlay on each renderer in a hidden window, stepping every
 frame itself: closed, its frame is the background; opened, a capture shows it; closed again, the frame is byte-identical
-to the first. `tests/graphics/overlay_batch_test.cpp` checks the batch, the alpha ranges, the window's clear and the
-upload cache headless. On CI, every build job builds it, and the Linux GCC job starts `coney --renderer gpu --frames 10`
-under lavapipe (Mesa's software Vulkan) on a virtual X display and checks the run log's `renderer: gpu on vulkan` and
-`renderer: N of 10 frames shown` lines ([What CI runs](../guides/building.md#what-ci-runs)). The [software
-pictures](../guides/testing.md#software-pictures) draw the test cards, the 3D `scene` card among them, on both renderers
-and compare them by the cross-renderer tolerance ([How pictures are compared](renderer.md#comparing)).
+to the first. Each test that saves a capture keeps it in a folder of its own, so copies of it running at once never
+share the file ([a path of its own](../guides/testing.md#capture-paths)). `tests/graphics/overlay_batch_test.cpp` checks
+the batch, the alpha ranges, the window's clear and the upload cache headless. On CI, every build job builds it, and the
+Linux GCC job starts `coney --renderer gpu --frames 10` under lavapipe (Mesa's software Vulkan) on a virtual X display
+and checks the run log's `renderer: gpu on vulkan` and `renderer: N of 10 frames shown` lines ([What CI
+runs](../guides/building.md#what-ci-runs)). The [software pictures](../guides/testing.md#software-pictures) draw the
+test cards, the 3D `scene` card among them, on both renderers and compare them by the cross-renderer tolerance ([How
+pictures are compared](renderer.md#comparing)).

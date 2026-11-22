@@ -137,6 +137,27 @@ Two things a person who sees such a test stall will want, measured in the same r
   quits, and its runs were the same with and without the hint), so it is left alone; a test that restarts the renderer
   hundreds of times could set the hint before the video starts.
 
+### A test that saves a file gives it a path of its own {#capture-paths}
+
+Tests run several at once: `build --test` runs them `-j` at a time, and other agents' checks use the same machine and
+the same temp folder. A test that saves a file (a capture's PNG, a settings file) in a **fixed name** under
+`temp_directory_path()` shares that file with every other run of itself. `the developer overlay opens and closes on the
+GPU renderer in a scripted run` failed once in a full `task check` with "the frame was not captured" while other
+agents' runs were using the machine (#1588). It looked like GPU load and was not: the GPU read the frame back every
+time. The engine removes a capture's file before it writes the PNG and checks that the new one is there, and another
+process's run did the same to the same `coney-overlay-capture.png` between the write and the check, so the capture
+"could not write the screenshot". Five copies of the test at once failed 3 runs in 100; the
+message the test printed did not say so, and now does. A test that reads the PNG back (`gpu_renderer_test.cpp`,
+`gpu_scene_test.cpp`) could also have read another run's picture.
+
+So a test that writes a capture, or any file another run of it could write, makes a `coney::test::TempDir`
+(`repo:tests/support/fixtures.h`: a folder unique to its process, removed at the end of the test) and names the file
+inside it. `python/tests/test_test_capture_paths.py` refuses a `temp_directory_path() / "name.png"` in any C++ test; it
+covers pictures (`.png`) only, so another fixed name for a file (a settings or text file) is for the test's author to
+catch. A missing capture still fails the test: no wait or retry hides it, because a GPU read-back is complete when the
+frame's fence is (`docs/engine/gpu-renderer.md#capture`), and a test that skips for lack of a GPU device does so where
+the renderer is started.
+
 ### Python tests do not depend on the shell {#python-environment}
 
 A Python test gives the same answer in a task's shell (`CONEY_TASK` and `VIRTUAL_ENV` set), inside an agent tool
