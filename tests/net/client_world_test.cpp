@@ -76,24 +76,27 @@ AnimClip testClip(float duration, float endAngle, float bone3Angle = 0.0F) {
 // The identity bind pose.
 const std::array<Quat, coney::anim::kPoseBones> kBind{};
 
-// A clip source over a fixed set of clips by anim id, with one gait set.
+// A clip source over a fixed set of clips by anim id, with a gait set for each move style (the hidden style's empty
+// unless a test gives it one).
 class TestClips final : public ClipSource {
   public:
     std::map<std::int32_t, AnimClip> clips;
     std::array<std::int32_t, 5> gaitIds{};
+    std::array<std::int32_t, 5> hiddenGaitIds{};
 
     [[nodiscard]] const AnimClip* clip(std::int32_t animId) const override {
         const auto found = clips.find(animId);
         return found == clips.end() ? nullptr : &found->second;
     }
-    [[nodiscard]] std::optional<std::array<coney::anim::GaitClip, 5>> gaitClips(std::int32_t animId) const override {
-        if (std::ranges::find(gaitIds, animId) == gaitIds.end()) {
+    [[nodiscard]] std::optional<std::array<coney::anim::GaitClip, 5>> gaitClips(std::int32_t animId,
+                                                                                MoveStyle style) const override {
+        const std::array<std::int32_t, 5>& ids = style == MoveStyle::Hidden ? hiddenGaitIds : gaitIds;
+        if (std::ranges::find(ids, animId) == ids.end()) {
             return std::nullopt;
         }
         std::array<coney::anim::GaitClip, 5> set{};
         for (std::size_t i = 0; i < set.size(); ++i) {
-            set.at(i) =
-                coney::anim::GaitClip{.clip = clip(gaitIds.at(i)), .animId = static_cast<std::uint32_t>(gaitIds.at(i))};
+            set.at(i) = coney::anim::GaitClip{.clip = clip(ids.at(i)), .animId = static_cast<std::uint32_t>(ids.at(i))};
         }
         return set;
     }
@@ -392,6 +395,66 @@ TEST_CASE("client world: a human's pose is its layers sampled and faded in as it
     CHECK(rest.rotations.at(2).w == 1.0F);
 }
 
+// Expected: unverified, #1613 (Coney's own; the style is HumanAnimator::stealthStyle(), one bit of the human's words)
+TEST_CASE("client world: a human's move style travels in its words and is the newer snapshot's in a blend",
+          "[net][client_world]") {
+    HumanState normal = standing(0.0F);
+    CHECK(normal.moveStyle == MoveStyle::Normal);
+    CHECK(humanState(humanWords(normal)).moveStyle == MoveStyle::Normal);
+
+    HumanState hidden = standing(1.0F);
+    hidden.moveStyle = MoveStyle::Hidden;
+    CHECK(humanState(humanWords(hidden)).moveStyle == MoveStyle::Hidden);
+    // The style is a word of its own: the same human in the other style has different words, and only that one.
+    HumanState other = hidden;
+    other.moveStyle = MoveStyle::Normal;
+    const HumanWords hiddenWords = humanWords(hidden);
+    const HumanWords otherWords = humanWords(other);
+    std::size_t differing = 0;
+    for (std::size_t field = 0; field < kHumanFieldCount; ++field) {
+        differing += hiddenWords.at(field) != otherWords.at(field) ? 1U : 0U;
+    }
+    CHECK(differing == 1);
+
+    // Between two snapshots a style is a discrete state: the newer one's, in either direction.
+    CHECK(blendHumans(normal, hidden, 0.5F).moveStyle == MoveStyle::Hidden);
+    CHECK(blendHumans(hidden, normal, 0.5F).moveStyle == MoveStyle::Normal);
+}
+
+// Expected: unverified, #1613 (Coney's own; the blend of a style is HumanAnimator::gaitBlend() over that style's slots)
+TEST_CASE("client world: a gait blend is rebuilt from the clips of the human's move style", "[net][client_world]") {
+    TestClips clips;
+    // The normal style's blend (walk 20, jog 21, run 22, sprint 23 and 23) and the hidden style's (its own walk 30, the
+    // rest the same): the jog, run and sprint are in both.
+    for (std::int32_t id = 20; id < 25; ++id) {
+        clips.clips.emplace(id, testClip(1.0F, 0.3F * static_cast<float>(id - 19), 0.1F * static_cast<float>(id - 19)));
+    }
+    clips.clips.emplace(30, testClip(1.0F, -0.9F, -0.4F));
+    clips.gaitIds = {20, 21, 22, 23, 23};
+    clips.hiddenGaitIds = {30, 21, 22, 23, 23};
+
+    // A blend between the walk and the jog, led by the jog late in the pair: the walk under it is the style's.
+    const auto blendOf = [&](const std::array<std::int32_t, 5>& ids) {
+        std::array<coney::anim::GaitClip, 5> gait{};
+        for (std::size_t i = 0; i < gait.size(); ++i) {
+            gait.at(i) = {.clip = clips.clip(ids.at(i)), .animId = static_cast<std::uint32_t>(ids.at(i))};
+        }
+        return coney::anim::GaitBlendTask(gait, 0.9F, 0.0F, 1.0F, coney::anim::kGaitBlendFlags, 0.25F);
+    };
+    const coney::anim::GaitBlendTask normalBlend = blendOf(clips.gaitIds);
+    const coney::anim::GaitBlendTask hiddenBlend = blendOf(clips.hiddenGaitIds);
+    HumanState human = standing(0.0F);
+    human.layers[0] = HumanAnimLayer{.clip = 21, .playhead = 0.25F, .gait = 0.9F, .fade = 1.0F};
+
+    human.moveStyle = MoveStyle::Normal;
+    checkSamePose(humanPose(human, clips, kBind), normalBlend.sample(kBind));
+    human.moveStyle = MoveStyle::Hidden;
+    const coney::anim::Pose hiddenPose = humanPose(human, clips, kBind);
+    checkSamePose(hiddenPose, hiddenBlend.sample(kBind));
+    // The two styles' poses differ, so the checks above tell the styles apart.
+    CHECK(hiddenPose.rotations.at(2).z != Approx(normalBlend.sample(kBind).rotations.at(2).z).margin(1e-3));
+}
+
 namespace {
 
 constexpr std::uint64_t kStepNs = 33'333'333; // one 30 Hz step
@@ -461,6 +524,8 @@ std::map<NetId, HumanState> sceneAt(std::uint32_t step) {
         }
         human.grounded = (step / 25) % 2 == 0;
         human.knockedOut = i == 3 && step > 200;
+        // One human takes the hidden move style a third of the way in, and leaves it a third from the end.
+        human.moveStyle = i == 2 && step >= 100 && step < 200 ? MoveStyle::Hidden : MoveStyle::Normal;
         humans.emplace(idOf(i), human);
     }
     return humans;

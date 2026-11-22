@@ -41,6 +41,13 @@ struct HumanAnimLayer {
     friend bool operator==(const HumanAnimLayer&, const HumanAnimLayer&) = default;
 };
 
+/// A human's move style, which picks the clips its locomotion's gait blends are built from.
+/// @coney-only network play; the original has none
+enum class MoveStyle : std::uint8_t {
+    Normal, ///< The usual walk, jog, run and sprint.
+    Hidden, ///< The hidden style (`0x14`): its own walk (633 `STEALTH_WALK`), the rest as the normal style's.
+};
+
 /// A replicated human's state as a client holds it: its field table's values, decoded.
 /// @coney-only network play; the original has none
 struct HumanState {
@@ -51,6 +58,7 @@ struct HumanState {
     std::array<HumanAnimLayer, kHumanAnimLayers> layers{}; ///< the newest first
     bool grounded = false;                                 ///< on the ground
     bool knockedOut = false;                               ///< knocked out or wounded
+    MoveStyle moveStyle = MoveStyle::Normal;               ///< the move style its gait blends are built in
 
     friend bool operator==(const HumanState&, const HumanState&) = default;
 };
@@ -101,7 +109,8 @@ class ClipSource {
     [[nodiscard]] virtual const anim::AnimClip* clip(std::int32_t animId) const = 0;
     /// The five clips of the gait blend that clip `animId` is one of (the style's walk, jog, run, sprint and sprint
     /// slots), or nothing when it is in none.
-    [[nodiscard]] virtual std::optional<std::array<anim::GaitClip, 5>> gaitClips(std::int32_t animId) const = 0;
+    [[nodiscard]] virtual std::optional<std::array<anim::GaitClip, 5>> gaitClips(std::int32_t animId,
+                                                                                 MoveStyle style) const = 0;
 };
 
 /// A human's pose from its layers, as its AnimTaskStack sampled it on the server: each playing layer sampled at its

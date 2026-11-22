@@ -336,8 +336,8 @@ TEST_CASE("snapshots: the packet is pinned, round-trips and refuses what breaks 
                                                   }()}}};
     // From bit 0: slot 2 (16 bits) = 0x02 0x00; generation 1 (6 bits), removed 0, field 0's changed bit 0 = 0x01;
     // fields 1 to 8 unchanged = 0x00; fields 9 to 16 unchanged = 0x00; fields 17 to 20 unchanged (bits 0 to 3), field
-    // 21 changed and its word 1 (bits 4 and 5), field 22 unchanged = 0x30; then no HUD entries, a varint 0 from bit 7
-    // (protocol 7) = 0x00; then no HUD elements and no HUD texts, two more varints 0 (protocol 9) = 0x00 0x00.
+    // 21 changed and its word 1 (bits 4 and 5), fields 22 and 23 unchanged = 0x30; then no HUD entries, a varint 0 from
+    // bit 7 (protocol 7) = 0x00; then no HUD elements and no HUD texts, two more varints 0 (protocol 9) = 0x00 0x00.
     const std::vector<std::byte> expected{std::byte{0x0a}, std::byte{0x03}, std::byte{0x01}, std::byte{0x07},
                                           std::byte{0x01}, std::byte{0x02}, std::byte{0x00}, std::byte{0x01},
                                           std::byte{0x00}, std::byte{0x00}, std::byte{0x30}, std::byte{0x00},
@@ -472,22 +472,22 @@ TEST_CASE("snapshots: a busy scene's bytes per snapshot are pinned", "[net][snap
         bytes.push_back(encode(snapshot).size());
         entries.push_back(snapshot.humans.size());
     }
-    // A human in full: id 22 bits, removed 1, 23 changed bits and the fields' 256 bits = 302 bits. The header: the id
+    // A human in full: id 22 bits, removed 1, 24 changed bits and the fields' 257 bits = 304 bits. The header: the id
     // byte and four one-byte varints, and the counts of HUD entries, HUD elements and HUD texts (0 each) = 64 bits.
-    // The first snapshot fits 31 of the 60: 64 + 31 x 302 = 9,426 bits, 1,179 bytes; a 32nd would take it past 9,600
+    // The first snapshot fits 31 of the 60: 64 + 31 x 304 = 9,488 bits, 1,186 bytes; a 32nd would take it past 9,600
     // bits (1,200 bytes).
     CHECK(entries[0] == 31);
-    CHECK(bytes[0] == 1179);
+    CHECK(bytes[0] == 1186);
     // The second: the 29 left out, in full (their priority grew to 2), and the 7 walkers among the first 31 (x,
-    // heading and playhead changed: 23 + 23 + 18 + 10 + 10 = 84 bits): 64 + 29 x 302 + 7 x 84 = 9,410 bits, 1,177
+    // heading and playhead changed: 23 + 24 + 18 + 10 + 10 = 85 bits): 64 + 29 x 304 + 7 x 85 = 9,475 bits, 1,185
     // bytes.
     CHECK(entries[1] == 36);
-    CHECK(bytes[1] == 1177);
-    // From then on, the 12 walkers alone: 64 + 12 x 84 = 1,072 bits, 134 bytes a snapshot, about 4 KB/s at 30 Hz.
+    CHECK(bytes[1] == 1185);
+    // From then on, the 12 walkers alone: 64 + 12 x 85 = 1,084 bits, 136 bytes a snapshot, about 4 KB/s at 30 Hz.
     CHECK(entries[2] == 12);
-    CHECK(bytes[2] == 134);
-    CHECK(bytes[3] == 134);
-    CHECK(bytes[4] == 134);
+    CHECK(bytes[2] == 136);
+    CHECK(bytes[3] == 136);
+    CHECK(bytes[4] == 136);
     CHECK(receiver.humans() == holdingOf(scene(60, 4, 5)));
 }
 

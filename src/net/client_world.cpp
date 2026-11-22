@@ -90,7 +90,7 @@ std::optional<anim::Pose> layerPose(const HumanAnimLayer& layer, const ClipSourc
     if (clip == nullptr) {
         return std::nullopt;
     }
-    if (const auto gait = clips.gaitClips(layer.clip); gait.has_value()) {
+    if (const auto gait = clips.gaitClips(layer.clip, MoveStyle::Normal); gait.has_value()) {
         const bool loaded = std::ranges::all_of(*gait, [](const anim::GaitClip& slot) { return slot.clip != nullptr; });
         if (loaded) {
             const anim::GaitBlendTask blend(*gait, layer.gait, 0.0F, 1.0F, anim::kGaitBlendFlags, layer.playhead);

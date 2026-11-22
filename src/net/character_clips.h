@@ -35,7 +35,8 @@ class CharacterClips final : public ClipSource {
     [[nodiscard]] const anim::AnimClip* clip(std::int32_t animId) const override;
     /// The five clips of the gait blend `animId` is one of: the normal style's for its walk, jog, run or sprint, the
     /// hidden style's for its walk; nothing for any other id, or when the set lacks one of the blend's clips.
-    [[nodiscard]] std::optional<std::array<anim::GaitClip, 5>> gaitClips(std::int32_t animId) const override;
+    [[nodiscard]] std::optional<std::array<anim::GaitClip, 5>> gaitClips(std::int32_t animId,
+                                                                         MoveStyle style) const override;
 
   private:
     // The blend of `ids` (walk, jog, run, sprint, sprint), or nothing when a clip is missing.

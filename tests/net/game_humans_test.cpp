@@ -100,6 +100,28 @@ TEST_CASE("a human's replicated state is read from the game") {
     }
 }
 
+TEST_CASE("a human's replicated state carries its move style: normal, hidden while it hides, normal again") {
+    // Expected: Human::enterHiding() puts the hidden move style on (HumanAnimator::stealthStyle(), the original's
+    // style 0x14, docs/research/stealth.md#sneaking); the field is Coney's own (snapshots.md#human-state)
+    Scene scene;
+    Human& human = scene.add(3.0F, -4.0F, 90.0F);
+    scene.run(2);
+    CHECK(replicatedState(human).moveStyle == MoveStyle::Normal);
+
+    human.enterHiding();
+    REQUIRE(human.animator().stealthStyle());
+    CHECK(replicatedState(human).moveStyle == MoveStyle::Hidden);
+    // It travels through the snapshot's words.
+    GameHumans game;
+    game.capture(scene.brains);
+    REQUIRE(game.humans().size() == 1);
+    CHECK(humanState(game.humans()[0].words).moveStyle == MoveStyle::Hidden);
+
+    human.clearHiding();
+    REQUIRE_FALSE(human.animator().stealthStyle());
+    CHECK(replicatedState(human).moveStyle == MoveStyle::Normal);
+}
+
 TEST_CASE("the game's humans get ids in brain order, keep them, and lose them when they go") {
     // Expected: multiplayer.md#net-ids (ids allocated in order, never reused in a generation)
     Scene scene;

@@ -24,7 +24,7 @@ const anim::AnimClip* CharacterClips::clip(std::int32_t animId) const {
     return m_anims.clip(static_cast<std::size_t>(animId));
 }
 
-std::optional<std::array<anim::GaitClip, 5>> CharacterClips::gaitClips(std::int32_t animId) const {
+std::optional<std::array<anim::GaitClip, 5>> CharacterClips::gaitClips(std::int32_t animId, MoveStyle /*style*/) const {
     if (animId < 0) {
         return std::nullopt;
     }
