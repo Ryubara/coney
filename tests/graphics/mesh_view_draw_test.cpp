@@ -46,13 +46,15 @@ MeshData threeMaterialMesh() {
 
 // The first scene pass of `frame`; fails the test when there is none.
 const ScenePass& sceneOf(const FrameDescription& frame) {
+    const ScenePass* found = nullptr;
     for (const auto& pass : frame.passes()) {
         if (const auto* scene = std::get_if<ScenePass>(&pass); scene != nullptr) {
-            return *scene;
+            found = scene;
+            break;
         }
     }
-    FAIL("the frame has no scene pass");
-    return std::get<ScenePass>(frame.passes().front());
+    REQUIRE(found != nullptr);
+    return *found;
 }
 
 } // namespace

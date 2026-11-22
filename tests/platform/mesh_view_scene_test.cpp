@@ -36,13 +36,15 @@ namespace {
 
 // The frame's one scene pass; fails the test when it has none.
 const ScenePass& sceneOf(const coney::graphics::FrameDescription& frame) {
+    const ScenePass* found = nullptr;
     for (const auto& pass : frame.passes()) {
         if (const auto* scene = std::get_if<ScenePass>(&pass); scene != nullptr) {
-            return *scene;
+            found = scene;
+            break;
         }
     }
-    FAIL("the frame has no scene pass");
-    return std::get<ScenePass>(frame.passes().front());
+    REQUIRE(found != nullptr);
+    return *found;
 }
 
 // A NULL-backend engine with a quad of two materials in its scene assets: the first textured "wall" in white, the
