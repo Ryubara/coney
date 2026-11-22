@@ -165,7 +165,9 @@ How it is wired, so that a run stays deterministic and every peer plays the same
 
 - **Chosen once for a run.** `engineLimitsFor()` (`repo:src/core/options.h`) reads the options; the game session hands
   the choice to the start-up flow, the flow to the gameplay mode, and the gameplay mode to the parts of a level that
-  apply a lifted limit: the brains and their gangs, the trigger spheres and the volume boxes. Nothing in play changes
+  apply a lifted limit: the brains and their gangs, the trigger spheres and the volume boxes. A sandbox layout's
+  fighters (`--play-level sandbox:NAME`), whose brains are their own and not a level's, get it through their player
+  setup (`PlayerSetup::engineLimits`), so a sandbox run in test mode is pinned too. Nothing in play changes
   it, and it is not a setting a player saves.
 - **Read in one place per limit.** Each function that carries a `@coney-only limit:` marker takes the preset
   (`EngineLimits`, `repo:src/core/engine_limits.h`) and gives the original's number under it, so the code that applies

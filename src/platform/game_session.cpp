@@ -368,8 +368,11 @@ std::expected<std::unique_ptr<GameMode>, Error> GameSession::loadLevel(const Lev
     // Network play follows every load gameplay starts, whether or not it loads (NetLevels).
     ++m_levelStarts;
     m_lastLevelStart.emplace(start.level, start.checkpoint);
-    auto mode = PlayLevelMode::create(m_renderer, m_wad, start.level, m_budget, m_log, playerStartOf(start),
-                                      playerSetupOf(start, *cast.recorded), &cast);
+    // A level without the scripts' cast plays its layout's fighters under the run's preset too.
+    PlayerSetup setup = playerSetupOf(start, *cast.recorded);
+    setup.engineLimits = m_flow->gameplay().engineLimits();
+    auto mode =
+        PlayLevelMode::create(m_renderer, m_wad, start.level, m_budget, m_log, playerStartOf(start), setup, &cast);
     if (!mode) {
         return std::unexpected(std::move(mode.error()));
     }

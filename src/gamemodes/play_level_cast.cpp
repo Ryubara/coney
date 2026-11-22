@@ -46,8 +46,11 @@ void PlayLevelSimulation::makePlanner() {
     }
 }
 
-void PlayLevelSimulation::makeLayoutFighters(const ai::AiConfig& fighters, [[maybe_unused]] EngineLimits limits) {
+void PlayLevelSimulation::makeLayoutFighters(const ai::AiConfig& fighters, EngineLimits limits) {
     m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, fighters);
+    // Their brains are their own, not a level's, so the run's preset reaches them here (a level's cast plays on the
+    // gameplay mode's brains, which it set).
+    m_ai->brains().setEngineLimits(limits);
     m_ai->brains().setPlanner(m_planner.get());
     m_ai->brains().setCollision(&m_scenery->collision());
     for (const human::Place& point : m_scenery->fighters()) {

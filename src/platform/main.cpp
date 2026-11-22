@@ -41,6 +41,7 @@
 #include "core/clip_recording.h"
 #include "core/deferred_input.h"
 #include "core/display_preset.h"
+#include "core/engine_limits.h"
 #include "core/error.h"
 #include "core/event_log.h"
 #include "core/frame_clock.h"
@@ -261,8 +262,9 @@ coney::LevelScriptOptions levelScriptOptions(const coney::io::Wad& wad, std::str
 
 // The setup of a sandbox's player: **Coney's choice**, level99's configuration (the combat training level whose
 // fighters the sandbox's stand in for, docs/research/ai/index.md#level99) for the AI fighters and the character types,
-// from its scripts run alone and quietly; the player is Rembrandt.
-coney::platform::PlayerSetup sandboxSetup(const coney::io::Wad& wad) {
+// from its scripts run alone and quietly; the player is Rembrandt. Its fighters play under the run's engine limits
+// preset `limits` (docs/guides/running-options.md#engine-limits).
+coney::platform::PlayerSetup sandboxSetup(const coney::io::Wad& wad, coney::EngineLimits limits) {
     std::vector<std::uint32_t> table;
     const coney::LevelScriptRun run = coney::runLevelScriptAlone(
         coney::script::wadScriptSource(wad), "level99", 1, [](std::string_view /*line*/) {},
@@ -270,6 +272,7 @@ coney::platform::PlayerSetup sandboxSetup(const coney::io::Wad& wad) {
     coney::platform::PlayerSetup setup;
     setup.ai = coney::ai::aiConfigFrom(run.recorded);
     setup.types = coney::characters::CharacterTypes::fromRecorded(run.recorded);
+    setup.engineLimits = limits;
     logText(std::format("fighters: level99's configuration ({} calls read); {} character types\n", setup.ai.callsRead,
                         setup.types.all().size()));
     return setup;
@@ -636,9 +639,10 @@ int main(int argc, char** argv) {
         // A level, or a sandbox layout (`sandbox:NAME`) with the same player and camera on its collision mesh.
         if (const std::optional<std::string> layout = coney::sandboxOfPlayLevel(*playName); layout) {
             auto world = loadSandbox(*options, *layout);
-            auto playMode = world ? coney::platform::createPlayInSandbox(renderer, *wad, std::move(*world),
-                                                                         options->spawn, logText, sandboxSetup(*wad))
-                                  : std::unexpected(std::move(world.error()));
+            auto playMode =
+                world ? coney::platform::createPlayInSandbox(renderer, *wad, std::move(*world), options->spawn, logText,
+                                                             sandboxSetup(*wad, coney::engineLimitsFor(*options)))
+                      : std::unexpected(std::move(world.error()));
             if (!playMode) {
                 logError(std::format("{}: {}", *playName, playMode.error().message));
                 return 1;
@@ -1108,7 +1112,7 @@ int main(int argc, char** argv) {
         }
         if (wad) {
             auto mode = coney::platform::createPlayInSandbox(renderer, *wad, std::move(*world), std::nullopt, logText,
-                                                             sandboxSetup(*wad));
+                                                             sandboxSetup(*wad, coney::engineLimitsFor(*options)));
             if (!mode) {
                 debugSession.print("levels: " + mode.error().message);
                 return;
