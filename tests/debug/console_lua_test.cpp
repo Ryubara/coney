@@ -23,6 +23,7 @@ using coney::console::Outcome;
 using coney::debug::DebugServices;
 using coney::debug::DebugSession;
 
+// Expected: Coney's own rule, docs/guides/studio/console.md#developer-set
 TEST_CASE("the console's lua command runs a line in the script state at the step boundary", "[debug][console]") {
     coney::debug::TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);
@@ -38,6 +39,7 @@ TEST_CASE("the console's lua command runs a line in the script state at the step
     CHECK(session.vm().global("SCENETEST").number() == std::optional<double>(42.0));
 }
 
+// Expected: Coney's own rule, docs/guides/studio/console.md#access
 TEST_CASE("a console that takes player commands only refuses the lua command", "[debug][console]") {
     coney::debug::TunableRegistry tunables;
     DebugSession session(tunables, DebugServices{}, nullptr);

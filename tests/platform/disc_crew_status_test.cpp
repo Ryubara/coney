@@ -63,10 +63,10 @@ coney::ai::Brain* firstCrewWarrior(coney::test::DiscSession& run) {
 
 } // namespace
 
-// Expected: CrewStatus_Add (0x001a0420) lists a member of player 1's gang in state 0x20000, the state the arrest sets
-// (docs/research/crimes.md#arrest); CrewStatusEntry_Update (0x001a0d28) gives him the blue badge 0x19; the caption
-// ends in GSTRING.HUD 226; a release hides him and the next update removes him (confirmed (runtime) in the original,
-// hud-functions-parts.md#crew-status).
+// Expected: hud-functions-parts.md#crew-status, confirmed (runtime): CrewStatus_Add (0x001a0420) lists a member of
+// player 1's gang in state 0x20000, the state the arrest sets (docs/research/crimes.md#arrest); CrewStatusEntry_Update
+// (0x001a0d28) gives him the blue badge 0x19; the caption ends in GSTRING.HUD 226; a release hides him and the next
+// update removes him.
 TEST_CASE("the disc's level80: a Warrior cuffed by HuSetArrested gets a crew status entry with the arrested caption",
           "[disc][story][crew]") {
     std::optional<coney::io::Wad> wad = coney::test::openDisc();

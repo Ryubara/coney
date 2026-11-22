@@ -188,9 +188,11 @@ class CrewStatusList {
     /// The slots.
     [[nodiscard]] const std::array<Entry, kEntries>& entries() const { return m_entries; }
     /// The listed entry of `handle`; null when he is not listed.
+    /// @coney-only a lookup for the HUD's callers and tests; the original walks its slots where it needs one
     [[nodiscard]] const Entry* find(double handle) const;
-    /// The caption's marked-up text (`+0x1328`), and when it was set.
+    /// The caption's marked-up text (`+0x1328`).
     [[nodiscard]] const std::string& caption() const { return m_caption; }
+    /// When the caption was set (game time, ms).
     [[nodiscard]] std::uint64_t captionSinceMs() const { return m_captionSinceMs; }
     /// Where the last update placed the caption.
     [[nodiscard]] GuiPoint captionPlace() const { return m_captionPlace; }
@@ -207,6 +209,7 @@ class CrewStatusList {
   private:
     // One entry's update: hidden unless its member is in slot 0's gang and a state holds; else the state's status
     // rectangle.
+    // @orig 0x001a0d28 CrewStatusEntry_Update (unknown)
     static void updateEntry(Entry& entry, const CrewMember& member, const CrewFrame& frame);
 
     std::array<Entry, kEntries> m_entries{};

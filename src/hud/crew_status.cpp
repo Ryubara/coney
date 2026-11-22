@@ -46,7 +46,7 @@ constexpr std::array<PortraitKind, 12> kPortraitKinds{{
     {11, {45, 46, 47, 48, -1}},
 }};
 
-// The GSTRING.HUD caption of `state`.
+// The GSTRING.HUD caption of `state`. @orig 0x001a0420 CrewStatus_Add (unknown)
 std::uint32_t captionString(CrewState state) {
     switch (state) {
     case CrewState::KnockedOut:
@@ -58,7 +58,7 @@ std::uint32_t captionString(CrewState state) {
     }
 }
 
-// The status rectangle of `state` (not CrewState::None).
+// The status rectangle of `state` (not CrewState::None). @orig 0x001a0d28 CrewStatusEntry_Update (unknown)
 std::uint32_t statusRect(CrewState state) {
     switch (state) {
     case CrewState::KnockedOut:
@@ -70,13 +70,13 @@ std::uint32_t statusRect(CrewState state) {
     }
 }
 
-// The human of `handle` among `frame`'s; null when his handle no longer resolves.
+// The human of `handle` among `frame`'s; null when it no longer resolves. @orig 0x0019fda0 CrewStatus_Update (unknown)
 const CrewMember* memberOf(const CrewFrame& frame, double handle) {
     const auto found = std::ranges::find(frame.humans, handle, &CrewMember::handle);
     return found == frame.humans.end() ? nullptr : &*found;
 }
 
-// An unsigned count as a float, as the original converts its unsigned counts (a wrapped "less one" stays huge).
+// An unsigned count as a float (a wrapped "less one" stays huge). @orig 0x0019fda0 CrewStatus_Update (unknown)
 float unsignedFloat(std::uint32_t value) { return static_cast<float>(value); }
 
 } // namespace

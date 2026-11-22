@@ -1,0 +1,41 @@
+version = 1
+id = "r-20261122-crew-status-layout"
+date = "2026-11-22"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "9c81881926a5844b90e31ea86c12676bf3239c4a1a2a81925c4fb09da365b9da"
+
+[who]
+agent = "a532a633472867eb4"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "level80 checkpoint 2 state with one crew Warrior (Vermin) cuffed by HuSetArrested through the lua recipe before the save; read over the debug server while running: the crew list's count (HUD +0x10 list, +0x40) and first order slot (+0x44), its cell (+0x12f0) and step (+0x1310) vectors, the device flags word at *0x0050cdb4 and the layout floats 0x0050cfe4-0x0050d01c"
+
+[values]
+crew_count = 1
+order_slot0 = 0
+device_flags = 1
+cell_x = 0.03
+cell_y = -0.018
+step_x = 0.12
+step_y = 0.08
+status_scale = -2.3
+origin_x = 0.407
+origin_y = 0.07
+
+[addresses]
+crew_list = 0x00600850
+layout_floats = 0x0050cfe4
+device_flags_ptr = 0x0050cdb4

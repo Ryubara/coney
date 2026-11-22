@@ -73,6 +73,7 @@ void step(CrewStatusList& list, const std::vector<CrewMember>& humans, std::uint
 
 } // namespace
 
+// Expected: hud-functions-parts.md#crew-status, confirmed (code)
 TEST_CASE("a knocked-out, cuffed or far-fighting crew member gets one entry with its icon and caption", "[hud][crew]") {
     // Each state: its status rectangle and its GSTRING.HUD caption (225-227), after the 2.5 s format, colour tag 5
     // and the name with a space.
@@ -111,6 +112,7 @@ TEST_CASE("a knocked-out, cuffed or far-fighting crew member gets one entry with
     }
 }
 
+// Expected: hud-functions-parts.md#crew-status, confirmed (code)
 TEST_CASE("the fight alert needs an enemy, an attacker and more than 50 m to the camera", "[hud][crew]") {
     CrewMember member = warrior(10.0);
     member.hunted = true;
@@ -132,6 +134,7 @@ TEST_CASE("the fight alert needs an enemy, an attacker and more than 50 m to the
     CHECK(coney::hud::crewState(member) == CrewState::KnockedOut);
 }
 
+// Expected: hud-functions-parts.md#crew-status, confirmed (code)
 TEST_CASE("a crew member whose state clears is hidden at once and gone at the next update", "[hud][crew]") {
     CrewStatusList list;
     CrewMember member = warrior(10.0);
@@ -154,6 +157,7 @@ TEST_CASE("a crew member whose state clears is hidden at once and gone at the ne
     CHECK(list.find(10.0) == nullptr);
 }
 
+// Expected: hud-functions-parts.md#crew-status, confirmed (code)
 TEST_CASE("a listed human who is gone leaves the list and the others move up", "[hud][crew]") {
     CrewStatusList list;
     std::vector<CrewMember> humans;
@@ -180,6 +184,7 @@ TEST_CASE("a listed human who is gone leaves the list and the others move up", "
     CHECK(list.find(12.0)->order == 0U);
 }
 
+// Expected: hud-functions-parts.md#crew-status, confirmed (code)
 TEST_CASE("nine crew members in trouble give eight entries", "[hud][crew]") {
     CrewStatusList list;
     std::vector<CrewMember> humans;
@@ -194,6 +199,7 @@ TEST_CASE("nine crew members in trouble give eight entries", "[hud][crew]") {
     CHECK_FALSE(list.add(humans.back(), frameOf(humans), namingTexts(), 33));
 }
 
+// Expected: hud-functions-parts.md#crew-status, confirmed (code)
 TEST_CASE("a bum or a member of another gang is never listed", "[hud][crew]") {
     // The bums, character types 270-287, never; the types either side are.
     for (const int type : {270, 287}) {
@@ -237,6 +243,7 @@ TEST_CASE("a bum or a member of another gang is never listed", "[hud][crew]") {
     }
 }
 
+// Expected: hud-functions-parts.md#crew-status, confirmed (code)
 TEST_CASE("the HUD lists player 1's gang members only, and steps the list below level 100", "[hud][crew]") {
     coney::hud::Hud hud;
     CrewMember mine = warrior(10.0);
@@ -267,6 +274,7 @@ TEST_CASE("the HUD lists player 1's gang members only, and steps the list below 
     CHECK(rumble.crewStatus().count() == 1);
 }
 
+// Expected: hud-functions-parts.md#crew-status, confirmed (code)
 TEST_CASE("the caption capitalises the name and spells out WarriorsSoldier", "[hud][crew]") {
     CHECK(coney::hud::crewCaptionName("vermin") == "Vermin");
     CHECK(coney::hud::crewCaptionName("Snow") == "Snow");
@@ -278,6 +286,7 @@ TEST_CASE("the caption capitalises the name and spells out WarriorsSoldier", "[h
     CHECK(coney::hud::crewCaption(member, CrewState::None, namingTexts()).empty());
 }
 
+// Expected: hud-functions-parts.md#crew-status, confirmed (code)
 TEST_CASE("the status icon pulses on an 800 ms triangle wave, cubed", "[hud][crew]") {
     // The wave is 1 at 0 and 800 ms and 0 at 400 ms; the alpha share is 1 less its cube.
     CHECK(coney::hud::crewStatusAlpha(0) == Approx(0.0F));
@@ -289,6 +298,7 @@ TEST_CASE("the status icon pulses on an 800 ms triangle wave, cubed", "[hud][cre
     CHECK(coney::hud::crewStatusAlpha(1000) == Approx(0.875F));
 }
 
+// Expected: hud-functions-parts.md#crew-status, confirmed (code); the kinds: characters.md#code-core
 TEST_CASE("crew portraits show the Warrior outside co-op and whose gang in co-op", "[hud][crew]") {
     CrewMember member = warrior(10.0);
     CrewFrame frame;
@@ -316,6 +326,7 @@ TEST_CASE("crew portraits show the Warrior outside co-op and whose gang in co-op
     CHECK(coney::hud::crewPortraitRect(member, frame) == 0x28U);
 }
 
+// Expected: hud-functions-parts.md#crew-status, confirmed (code)
 TEST_CASE("crew entries stand four a row from (0.407, 0.07), shifted while fewer than four", "[hud][crew]") {
     // x 0.407 + column × 0.072, y 0.07 + row × 0.096; with fewer than four listed, x + 0.11 − 0.025 per entry after
     // the first.
