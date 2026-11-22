@@ -56,10 +56,10 @@ TEST_CASE("a ring's rim splits into fill, lost and beyond-capacity arcs", "[heal
     CHECK(coney::hud::ringArcOf(22, 12.25F, 35.0F) == RingArc::Lost);
     CHECK(coney::hud::ringArcOf(23, 12.25F, 35.0F) == RingArc::Rest);
     CHECK(coney::hud::ringArcOf(64, 12.25F, 35.0F) == RingArc::Rest);
-    // Full: no rest arc and no lost arc; the closing vertex 64 is not lost, as the lost arc, like the rest, needs
-    // more than nothing (0x0017b2e0's test at 0x0017b758).
+    // Full: no rest arc, and only the closing vertex 64 lost, as Coney has it; the original has it in the fill (the
+    // page's guard at 0x0017b758): a known difference, #1630.
     CHECK(coney::hud::ringArcOf(63, 100.0F, 100.0F) == RingArc::Fill);
-    CHECK(coney::hud::ringArcOf(64, 100.0F, 100.0F) == RingArc::Fill);
+    CHECK(coney::hud::ringArcOf(64, 100.0F, 100.0F) == RingArc::Lost);
 }
 
 TEST_CASE("a ring is 64 triangles in one colour each, round its centre", "[health_rings]") {

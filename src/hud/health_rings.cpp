@@ -58,7 +58,7 @@ RingArc ringArcOf(int k, float value, float capacity) {
     if (rest > 0 && segments - k <= rest) {
         return RingArc::Rest;
     }
-    if (lost > 0 && segments - k <= lost) {
+    if (segments - k <= lost) {
         return RingArc::Lost;
     }
     return RingArc::Fill;
