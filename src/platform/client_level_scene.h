@@ -72,6 +72,13 @@ class ClientLevelScene final : public ClientScene {
     [[nodiscard]] std::size_t meshes() const { return m_meshes.size(); }
     /// How many sprites the HUD's newest step queued (HudLayer::spritesQueued()).
     [[nodiscard]] std::size_t hudSpritesQueued() const { return m_hudLayer->spritesQueued(); }
+    /// The character the last frame drew human `id` with; null for a human it did not draw. Stub.
+    [[nodiscard]] const human::PlayerCharacter* characterOf(net::NetId id) const {
+        (void)id;
+        return nullptr;
+    }
+    /// How many characters the scene holds: the one it falls back to and each one a human it drew was. Stub.
+    [[nodiscard]] std::size_t charactersLoaded() const { return 0; }
     /// The view the last frame was drawn through (RenderWare's axes).
     [[nodiscard]] const WorldView& lastView() const { return m_lastView; }
 

@@ -267,6 +267,46 @@ TEST_CASE("client world: each step draws the buffer's time, and a frame between 
     CHECK(last.at(idOf(0)).pose.position.x == world.humans().at(idOf(0)).position.x);
 }
 
+// Expected: unverified, #1612 (Coney's own; snapshots.md#character: the field is a Character List index plus one)
+TEST_CASE("client world: a human's character is in his words, and a client draws each human with his own",
+          "[net][client_world]") {
+    HumanState rembrandt = standing(0.0F);
+    rembrandt.character = 31;
+    HumanState cleon = standing(3.0F);
+    cleon.character = 120;
+    // The state and its words carry it, within the field's range.
+    CHECK(humanState(humanWords(rembrandt)).character == 31);
+    CHECK(humanState(humanWords(cleon)).character == 120);
+    CHECK(humanState(humanWords(standing(1.0F))).character == 0); // none
+
+    // Blended between two snapshots, a human has the newer one's (a human who changed character is drawn as the new
+    // one from the snapshot that says so, never a mix).
+    HumanState swapped = rembrandt;
+    swapped.character = 120;
+    CHECK(blendHumans(rembrandt, swapped, 0.5F).character == 120);
+    CHECK(blendHumans(rembrandt, rembrandt, 0.5F).character == 31);
+
+    // Over the snapshots, through the jitter buffer, to the frame's drawn humans.
+    SnapshotSender sender;
+    SnapshotReceiver receiver;
+    ClientWorld world;
+    for (std::uint32_t step = 0; step <= 6; ++step) {
+        const std::vector<SnapshotHuman> humans{{.id = idOf(0), .words = humanWords(rembrandt)},
+                                                {.id = idOf(1), .words = humanWords(cleon)}};
+        const Snapshot snapshot = sender.build(step, humans);
+        REQUIRE(receiver.apply(snapshot) == SnapshotApplied::Applied);
+        REQUIRE(sender.acknowledge(snapshot.sequence).has_value());
+        world.receive(receiver);
+        world.step();
+    }
+    REQUIRE(world.humans().size() == 2);
+    CHECK(world.humans().at(idOf(0)).character == 31);
+    CHECK(world.humans().at(idOf(1)).character == 120);
+    const auto drawn = world.drawn(0.5F);
+    CHECK(drawn.at(idOf(0)).state.character == 31);
+    CHECK(drawn.at(idOf(1)).state.character == 120);
+}
+
 // Expected: unverified, #555 (Coney's own; NetClient::receive() decodes every snapshot that arrived in a step)
 TEST_CASE("client world: every snapshot decoded since the last step goes into the buffer, not only the newest",
           "[net][client_world]") {

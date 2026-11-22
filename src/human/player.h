@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <memory>
@@ -65,6 +66,11 @@ class PlayerCharacter {
     /// ErrorCode::NotFound when a clip the locomotion plays is missing.
     [[nodiscard]] static std::expected<std::unique_ptr<PlayerCharacter>, Error>
     load(const io::Wad& wad, const chunk::ChunkHandlerTable& table, std::string_view name);
+    /// As load(), for the character at `index` in `list` (the Character List of `wad`): what a client draws a human a
+    /// snapshot names by his character id with. Fails as load() does, and with ErrorCode::NotFound past the list.
+    [[nodiscard]] static std::expected<std::unique_ptr<PlayerCharacter>, Error>
+    loadAt(const io::Wad& wad, const chunk::ChunkHandlerTable& table, const characters::CharacterList& list,
+           std::size_t index);
     /// A character from resources already decoded: `assets` (its model and character data), the generic character data
     /// `generic` and its Anim Range List `ranges`; load() without the disc, for the core simulation built where no disc
     /// is (the tests of PlayLevelSimulation's step). Checks nothing load() would not: a clip missing from the

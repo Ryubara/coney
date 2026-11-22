@@ -148,6 +148,7 @@ enum class HumanField : std::uint8_t {
     Grounded,   ///< On the ground (not jumping or falling).
     KnockedOut, ///< Knocked out or wounded.
     MoveStyle,  ///< In the hidden move style (`HumanAnimator::stealthStyle()`): its gait blends' walk is 633.
+    Character,  ///< Which character the human is: a Character List index plus one, 0 for none (character_id.h).
     Count,
 };
 

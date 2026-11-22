@@ -35,6 +35,15 @@ std::expected<CharacterAssets, Error> loadCharacterAssets(const io::Wad& wad, co
     return assets;
 }
 
+std::expected<CharacterAssets, Error> loadCharacterAssetsAt(const io::Wad& wad, const CharacterList& list,
+                                                            const chunk::ChunkHandlerTable& table, std::size_t index) {
+    (void)wad;
+    (void)list;
+    (void)table;
+    (void)index; // stub: the change is not made yet
+    return fail(ErrorCode::NotFound, "not made yet");
+}
+
 std::expected<CharacterAssets, Error> loadCharacterAssets(const io::Wad& wad, const CharacterRecord& record,
                                                           const chunk::ChunkHandlerTable& table) {
     auto modelEntry = resourceEntry(wad, record.modelHash, "model");

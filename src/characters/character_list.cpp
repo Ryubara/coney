@@ -49,6 +49,11 @@ const CharacterRecord* CharacterList::find(std::string_view name) const {
     return found == m_records.end() ? nullptr : &*found;
 }
 
+std::optional<std::size_t> CharacterList::indexOf(std::string_view name) const {
+    (void)name; // stub: the change is not made yet
+    return std::nullopt;
+}
+
 std::uint32_t characterNameHash(std::string_view name) { return crc32(lowercaseAscii(name)); }
 
 std::string resourceFileName(std::uint32_t hash) { return std::format("{}", hash); }

@@ -145,6 +145,17 @@ PlayerCharacter::load(const io::Wad& wad, const chunk::ChunkHandlerTable& table,
     return character;
 }
 
+std::expected<std::unique_ptr<PlayerCharacter>, Error> PlayerCharacter::loadAt(const io::Wad& wad,
+                                                                               const chunk::ChunkHandlerTable& table,
+                                                                               const characters::CharacterList& list,
+                                                                               std::size_t index) {
+    (void)wad;
+    (void)table;
+    (void)list;
+    (void)index; // stub: the change is not made yet
+    return fail(ErrorCode::NotFound, "not made yet");
+}
+
 std::unique_ptr<PlayerCharacter> PlayerCharacter::fromParts(characters::CharacterAssets assets,
                                                             characters::CharacterData generic,
                                                             combat::AnimRangeList ranges) {

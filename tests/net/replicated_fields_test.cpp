@@ -25,6 +25,7 @@
 #include "animation/anim_task.h"
 #include "core/error.h"
 #include "net/bit_stream.h"
+#include "net/character_id.h"
 
 using coney::ErrorCode;
 using coney::net::BitReader;
@@ -149,9 +150,32 @@ TEST_CASE("field tables: a whole thing's bits are the sum of its fields' bits", 
     CHECK(coney::net::fieldsBits(fields) == expected);
     // A human in full, pinned exactly: 96 bits for its position, heading and health, 32 for the newest animation
     // layer (clip, playhead, gait value), 42 for each of the three older ones (the same and the fade over it;
-    // snapshots.md#human-state) and 3 flags (on the ground, knocked out, the hidden move style; #1613), 257 bits. The
-    // busy scene's and the packet's pinned bytes in snapshot_test.cpp follow from it.
-    CHECK(coney::net::fieldsBits(fields) == 257);
+    // snapshots.md#human-state), 3 flags (on the ground, knocked out, the hidden move style; #1613) and 10 for its
+    // character (snapshots.md#character), 267 bits. The busy scene's and the packet's pinned bytes in
+    // snapshot_test.cpp follow from it.
+    CHECK(coney::net::fieldsBits(fields) == 267);
+}
+
+// Expected: unverified, #1612 (Coney's own field table; the Character List's 543 records, characters.md#files)
+TEST_CASE("field tables: a human's character is a Character List index plus one in ten exact bits", "[net][fields]") {
+    const auto fields = coney::net::fieldTable(ReplicatedKind::Human);
+    const FieldSpec& character = fields[static_cast<std::size_t>(coney::net::HumanField::Character)];
+    CHECK(character.name == "character");
+    CHECK(character.encoding == coney::net::FieldEncoding::Integer);
+    CHECK(character.bits == 10);
+    CHECK(character.min == 0.0F);
+    CHECK(character.max == static_cast<float>(coney::net::kMostCharacterId));
+    CHECK(coney::net::kMostCharacterId == 1023);
+    // Every record of the disc's list (543) and "none" fit, exactly.
+    constexpr std::int32_t kListRecords = 543;
+    for (const std::int32_t id : {0, 1, kListRecords, 1023}) {
+        BitWriter out;
+        coney::net::writeField(out, character, coney::net::FieldValue{id});
+        BitReader in(out.bytes());
+        const auto read = coney::net::readField(in, character);
+        REQUIRE(read.has_value());
+        CHECK(std::get<std::int32_t>(*read) == id);
+    }
 }
 
 // Expected: combat-reactions.md#damage, confirmed (runtime)

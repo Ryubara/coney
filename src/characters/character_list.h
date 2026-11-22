@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -49,6 +50,9 @@ class CharacterList {
     /// The record of the model `name` (any letter case, such as "warr_re_cv"), found by the CRC-32 of its lower-case
     /// spelling; nullptr when there is none. The pointer stays valid as long as this list.
     [[nodiscard]] const CharacterRecord* find(std::string_view name) const;
+
+    /// The index in records() of the model `name` (found as find() does); nothing when there is none.
+    [[nodiscard]] std::optional<std::size_t> indexOf(std::string_view name) const;
 
     /// Every record, in the chunk's order.
     [[nodiscard]] std::span<const CharacterRecord> records() const { return m_records; }

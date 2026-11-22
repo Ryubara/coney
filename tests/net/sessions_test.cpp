@@ -597,6 +597,7 @@ std::vector<SnapshotHuman> walkers(std::size_t count, std::uint32_t step) {
         values.at(static_cast<std::size_t>(HumanField::Fade3)) = 1.0F;
         values.at(static_cast<std::size_t>(HumanField::Grounded)) = true;
         values.at(static_cast<std::size_t>(HumanField::KnockedOut)) = false;
+        values.at(static_cast<std::size_t>(HumanField::Character)) = std::int32_t{0}; // none named
         humans.push_back(SnapshotHuman{.id = NetId{.slot = static_cast<std::uint16_t>(i), .generation = 1},
                                        .words = humanWords(values),
                                        .priority = 1});
