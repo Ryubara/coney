@@ -286,8 +286,8 @@ void Cameras::modifyRail(std::uint32_t param, float value, float seconds) {
 }
 
 void Cameras::lockRail(int player, bool on) {
-    // A negative player is player 0. Coney keeps player 0's rail camera only, so another player finds none, and -1's
-    // walk over the other players' rails has none to set.
+    // A negative player is player 0. **Coney's stand-in**: Coney keeps player 0's rail camera only (one player), so
+    // another player finds none, and -1's walk over the other players' rails has none to set.
     if (player > 0 || !m_rail) {
         return;
     }

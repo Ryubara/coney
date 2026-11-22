@@ -247,6 +247,8 @@ void ScriptedHumans::lockPad(double human, bool locked) {
 
 void ScriptedHumans::enableController(double human, bool enable) {
     onBrain(human, [enable](Brain& brain) {
+        // The record's pad flag, written through the pad call. **Coney's stand-in**: an AI brain has none, so its human
+        // is left as it is (Coney keeps the flag only for the player's human).
         if (const Brain::PadControl& pad = brain.padControl(); pad) {
             pad(enable);
         }
