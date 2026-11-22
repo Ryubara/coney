@@ -98,6 +98,12 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
         metavar="BRANCH",
         help="the same for an existing branch that is not named like the task",
     )
+    start.add_argument(
+        "--restart",
+        action="store_true",
+        help="start a unit that was started from another branch again from the default branch once that base has "
+        "merged and the branch is rebased off it; the old stamp log is moved aside, the stages are redone",
+    )
     slots = commands.add_parser(
         "slots",
         help="show the engineer tracks (reimplementation, fix, Studio, networking, renderer) and the machine's "
@@ -480,7 +486,16 @@ def run_task(
             overlap=_start_overlap(_overlap_env(root, conventions, _overlap_gh(conventions, run, remote), now)),
         )
         return start_task(
-            StartRequest(name, args.base, args.remote, not args.no_fetch, args.dry_run, args.adopt, args.adopt_branch),
+            StartRequest(
+                name,
+                args.base,
+                args.remote,
+                not args.no_fetch,
+                args.dry_run,
+                args.adopt,
+                args.adopt_branch,
+                args.restart,
+            ),
             start_env,
         )
     if args.command == "leads":

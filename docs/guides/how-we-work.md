@@ -337,6 +337,8 @@ Several tasks run at once, each owning the scope its claim names:
   main checkout.
 - **No stacked work.** A claim is refused while an issue in its "Blocked by" section is not done, so every task starts
   from `main` and `pr open` refuses a unit cut from any other base ([Claiming an issue](issues.md#claiming)).
+  A unit that was started from another branch anyway is made a unit of `main` once that branch has merged, by `task
+  start <task> --restart` ([Restarting a stacked unit](issues.md#restarting)).
 - **Pending work is read, not built on.** Work that is finished but not merged (an open pull request,
   another unit in progress) is invisible to a unit that starts from `main`. `task start` lists the pending work that
   touches the same files, `@orig` addresses or research pages in the task file's "Pending work that overlaps" section,

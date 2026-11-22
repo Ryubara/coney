@@ -13,7 +13,10 @@ fixes, so it gets a record that points there, and its `claimed` stamp joins that
 branch that already exists, with its worktree when it has one (a pull request's branch made before `task start`
 existed): the branch keeps its name, so the pull request is not renamed, and the record starts at the commit the branch
 left the base. `--adopt-branch BRANCH` is the same for a branch that is not named like the task; either one moves an old
-stamp log of the task aside and starts a fresh one (`task_start_adopt`, docs/guides/issues.md#adopting).
+stamp log of the task aside and starts a fresh one (`task_start_adopt`, docs/guides/issues.md#adopting). `--restart` is
+for a unit that was started from another unit's branch (stacked): once that base has merged and the branch is rebased
+off it, the unit starts again from the default branch, with the old log moved aside (`task_start_restart`,
+docs/guides/issues.md#restarting).
 
 The engineer tracks (`task_slots`) are counted and reported here, and a start over the limit (its track's cap, or
 the machine's places with the places other tracks keep set aside) is refused while `tasks.start.slots.enforce` is on;
@@ -63,6 +66,10 @@ class StartRequest:
     #: The same for a branch of another name (a pull request opened by hand whose task has the card's id); an old stamp
     #: log of the task is moved aside. docs/guides/issues.md#adopting.
     adopt_branch: str | None = None
+    #: Start the unit of a task that was started from another branch (stacked) again from the default branch, once that
+    #: base has merged: the record's base, the stamp log's start and the stages are made new, the branch is not moved.
+    #: docs/guides/issues.md#restarting.
+    restart: bool = False
 
 
 @dataclass
@@ -173,9 +180,11 @@ def _stamp_start(
     commit: str,
     base_commit: str,
     adopted: bool = False,
+    restarted: dict[str, Any] | None = None,
 ) -> None:
     """Append the stamps `steps` names (from `_missing_steps`) to the log of `record`; `adopted` says in the `claimed`
-    stamp that the branch was there before the unit."""
+    stamp that the branch was there before the unit, `restarted` (the old base and where the old log went) that the
+    unit started again from the default branch, in both stamps."""
     fix = record.task if record.parent else ""
     entries: list[dict[str, Any]] = []
     if "assigned" in steps:
@@ -191,6 +200,7 @@ def _stamp_start(
                     "kind": task.kind,
                     "claimant": task.claimant,
                     "claimed_at": iso_time(task.claimed_at),
+                    **({"restarted": True} if restarted else {}),
                 },
                 "who": who,
             }
@@ -209,6 +219,7 @@ def _stamp_start(
                     "kind": task.kind,
                     "fix": fix,
                     **({"adopted": True} if adopted else {}),
+                    **({"restarted": restarted} if restarted else {}),
                 },
                 "who": who,
             }
@@ -317,6 +328,12 @@ def start_task(request: StartRequest, env: StartEnv) -> int:
     if (request.adopt or request.adopt_branch is not None) and task.kind == "fix":
         out("refused: --adopt makes a unit of an ordinary task's branch; a fix task works in its parent's unit")
         return 1
+    if request.restart and (request.adopt or request.adopt_branch is not None or request.base is not None):
+        out("refused: --restart starts the unit again from the default branch; it goes with neither --adopt nor --base")
+        return 1
+    if request.restart and task.kind == "fix":
+        out("refused: --restart makes an ordinary task's unit start again; a fix task works in its parent's unit")
+        return 1
     if task.kind == "fix" and not task.parent:
         out(
             "refused: the task file names no parent task, so there is no unit to work in; "
@@ -335,7 +352,15 @@ def start_task(request: StartRequest, env: StartEnv) -> int:
     record_path = env.scratch / request.task / conventions.tasks.start.unit_file
     slot_line, slot_problem = slot_check(task, env, engine)
     if record_path.is_file():
+        if request.restart:
+            # Imported here because task_start_restart builds on this module's helpers.
+            from coney_tools.task_start_restart import restart_unit
+
+            return restart_unit(request, env, main, task, read_record(record_path), record_path, slot_line)
         return _resume(read_record(record_path), record_path, task, env, slot_line, request.dry_run)
+    if request.restart:
+        out(f"refused: no unit to restart: '{request.task}' was never started (task start {request.task})")
+        return 1
     if not task.parent:
         problem = limit_problem(task, user, engine)
         if problem is not None:

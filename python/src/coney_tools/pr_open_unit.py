@@ -124,9 +124,9 @@ def find_unit(run: Run) -> None:
         raise Stop(
             EXIT_UNABLE,
             f"{run.task}: the unit was started from {run.record.base_ref}, not from {expected}; "
-            "pr open releases a unit onto the default branch only and no pull request is stacked: start the work "
-            "again from the default branch once the branch it builds on has merged "
-            "(docs/guides/how-we-work.md#working-in-parallel)",
+            "pr open releases a unit onto the default branch only and no pull request is stacked: once the branch it "
+            "builds on has merged, the engineer rebases the unit off it and runs "
+            f"`task start {run.task} --restart` (docs/guides/issues.md#restarting)",
         )
     run.unit = Unit.of(root0, run.owner)
     own_task, own_raw = read_task(own_dir, run.task, run.conventions)
