@@ -46,3 +46,37 @@ TEST_CASE("a human beaten to 0 health is knocked out when his dying reaction's c
     fight.run("", 30);
     CHECK(human.knockedOut());
 }
+
+TEST_CASE("a human beaten to 0 health keeps 1 health from the hit, and is down by state while he lies there",
+          "[human][combat]") {
+    // Expected: combat-reactions.md#down-health. Human_PlayDeathReaction (0x00267a00) writes 1 to the health (record
+    // +0x144) as it builds the death chain at the lethal hit, and the knock-out at the chain's end (Human_OnHealthOut
+    // 0x002674c0, Human_KnockOut 0x00230328) leaves it; Human_IsDownOrDead (0x00227e60) reads the states 0x180050000,
+    // not the health. Confirmed (runtime), run r-20261122-war-party: the Orphans and Furies knocked out lay at 1
+    // health, dying from the update of the lethal hit.
+    const coney::test::FightCharacter character;
+    coney::test::Fight fight(character, 30.0F);
+    Human& human = fight.human();
+    human.setFlag(coney::human::flag::kDemiGod, false);
+    human.takeHit(coney::human::IncomingHit{
+        .damage = 900, .attackAnim = 12, .code = 0x0a, .flags = 0x800, .attacker = {40.0F, 41.0F, 0.0F}});
+    fight.run("", 1);
+    // Dying: down by state, with 1 health.
+    CHECK(human.fighter().health().value() == 1);
+    CHECK(human.downOrDead());
+    CHECK_FALSE(human.knockedOut());
+    int updates = 0;
+    while (human.animator().drivingClipPlaying() && updates < 600) {
+        fight.run("", 1);
+        ++updates;
+    }
+    // Knocked out: still down by state, still 1 health, and a hit on him takes none.
+    REQUIRE(human.knockedOut());
+    CHECK(human.fighter().health().value() == 1);
+    CHECK(human.downOrDead());
+    human.takeHit(coney::human::IncomingHit{
+        .damage = 50, .attackAnim = 12, .code = 0x0a, .flags = 0x800, .attacker = {40.0F, 41.0F, 0.0F}});
+    fight.run("", 30);
+    CHECK(human.knockedOut());
+    CHECK(human.fighter().health().value() == 1);
+}
