@@ -665,6 +665,10 @@ class Brain {
     [[nodiscard]] static bool fightable(const Brain& other);
     /// Forgets `other` wherever this brain refers to it (its target, enemies, slots): `other` is going away.
     void forget(const Brain& other);
+    /// Whether forget(`other`) would change anything: its target, enemy list, attack slots, sectors or detour refer to
+    /// `other`. The enemy scan reads it to know whom it must test however far (ai::nearestSeen()).
+    /// @coney-only lookup for the scan's ray order (#1555); the original casts every ray
+    [[nodiscard]] bool refersTo(const Brain& other) const;
 
   private:
     // The peer standing at an announced attack's position (the warning's attacker); null when none.

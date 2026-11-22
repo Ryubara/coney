@@ -3,6 +3,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <span>
+#include <vector>
 
 #include "ai/brain.h"
 #include "ai/gangs.h"
@@ -38,6 +41,28 @@ inline constexpr float kScanWarriorCopRange = 10.0F;
 /// scanner who may not start a fight, its investigation count and vertical sight modifier, and the Warriors' filter's
 /// civilians (warriorThreat()).
 [[nodiscard]] bool scanSees(const Brain& scanner, const Brain& member);
+
+/// One member of an enemy gang that a scan's step 1 has tested up to his line of sight (scanSees() less its ray).
+struct SightCandidate {
+    float distance = 0.0F; ///< From the scanner, metres (Brain::distanceTo()).
+    bool needsRay = false; ///< Only the line of sight is left to decide him; false when his gang is always seen.
+    bool referred = false; ///< The scanner refers to him (Brain::refersTo()), so it must know whether he is found.
+};
+
+/// Which of `candidates` a scan's step 1 finds, one flag per candidate in their order. A candidate is found when he
+/// needs no ray or `clearLine(k)` (his line of sight, by his index) says it is clear; the lines are cast nearest first,
+/// and once `keep` are found no line is cast to a candidate farther than the `keep`-th found, unless the scanner
+/// refers to him: such a one is not found. The result of the scan is the same as with every line cast: step 4 keeps
+/// the nearest `keep` of all it found, so a member farther than `keep` found ones would leave the list again, and
+/// forgetting him (Brain::forget()) changes nothing when the scanner does not refer to him. **Coney's order** (#1555):
+/// the original casts every candidate's line, in the gangs' order (at most 59 other humans there; Coney's 32 gangs of
+/// 16 slots allow up to 512 a scan). **Holds only while step 4 always sorts** (the #1597 stand-in): under the
+/// original's rule of sorting only past 16, a scan that found exactly 16 before skipping would keep the gangs' order
+/// where casting every line finds 17 or more and sorts, so fixing #1597 must cast until 17 are found, or otherwise know
+/// whether more than 16 would be.
+/// @orig 0x0028b358 Brain_ScanEnemies (unknown)
+[[nodiscard]] std::vector<bool> nearestSeen(std::span<const SightCandidate> candidates, std::size_t keep,
+                                            const std::function<bool(std::size_t)>& clearLine);
 
 /// `scanner`'s scan (`Brain_ScanEnemies`): a human who is down empties his list. Otherwise every member of a gang in
 /// use that is an enemy of his (Gangs::enemies()) that scanSees() is found, and his gang's shared target

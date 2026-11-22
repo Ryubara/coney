@@ -918,7 +918,8 @@ bool deliverEvent(Brain& brain, const BrainEvent& event) {
     return brain.onEvent(event);
 }
 
-// @coney-only Coney's brains hold pointers; the original's handles stop resolving on their own
+// @coney-only Coney's brains hold pointers; the original's handles stop resolving on their own. Every field it
+// clears is one refersTo() reads.
 void Brain::forget(const Brain& other) {
     if (m_target == &other) {
         m_target = nullptr;
@@ -931,6 +932,13 @@ void Brain::forget(const Brain& other) {
     if (m_steering.avoiding == &other) {
         setAvoiding(*this, nullptr);
     }
+}
+
+// The fields forget() clears, read: keep the two in step.
+bool Brain::refersTo(const Brain& other) const {
+    return m_target == &other || std::ranges::find(m_enemies, &other) != m_enemies.end() ||
+           std::ranges::find(m_slots, &other) != m_slots.end() || m_sectors.heldBy(other) ||
+           m_steering.avoiding == &other;
 }
 
 Sectors& Brain::sectors(std::uint64_t maxAgeMs) {

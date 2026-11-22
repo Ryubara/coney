@@ -1171,6 +1171,16 @@ what = "the hostile counts (Brain_CountHostile, Brain_UncountHostile) are not ke
 relation = "not-ported"
 issue = 1011
 
+[[function.gaps]]
+what = "the gang's shared target is sorted by its own distance; the original files it at distance 0, so beyond 16 found it is always kept"
+relation = "stand-in"
+issue = 1597
+
+[[function.gaps]]
+what = "the found list is always sorted by distance; the original sorts only past 16, so 16 or fewer keep the gangs' order for the list and the events"
+relation = "stand-in"
+issue = 1597
+
 [[function]]
 address = 0x0028bbf0
 name = "Brain_UpdateAlertness"

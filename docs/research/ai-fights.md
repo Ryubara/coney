@@ -822,7 +822,8 @@ kind 1) and `c` = cos(field of view / 2):
        for a member walking or standing 1.5 m) only the line of sight counts, unless the member is a player sneaking
        in shadow (`Human_IsHiddenFromBrain` `0x00223c50`); beyond it, or when sneaking, he must also be in front
        (direction · facing > `c`). Then `Human_HasLineOfSight` must pass.
-2. The scanner gang's chosen target (gang `+0x10`) is added when it passes `Brain_ValidateEnemy`.
+2. The scanner gang's chosen target (gang `+0x10`) is added when it passes `Brain_ValidateEnemy`, filed at distance 0,
+   so the sort of step 4 puts him first and he is always kept.
 3. Old entries not found again are kept while within `R`, still valid, and within 3 m or in line of sight; others are
    dropped. Each old entry's hostile count (his brain `+0x152`) is lowered first.
 4. More than 16: sorted by distance, the 16 nearest kept. Each human new to the list is sent to the scanner's own
@@ -1065,8 +1066,16 @@ chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#pow
   not pass a scanner whose class role Coney cannot look up (the original always has one), Coney builds no Chase goal
   (`0x0c`) for `mayStartFight` to find, the investigation count is taken as 0 and the vertical sight modifier is not
   applied; nothing sets the gang's chosen target; the civilians' ped type, the hostile counts, the radar's enemy marks,
-  the detail level's slowdown and the rescan on a gang change are not built. The Scout tactic (below) scans its members
-  at their posts.
+  the detail level's slowdown and the rescan on a gang change are not built. **Coney stand-ins** (#1597): the gang's
+  shared target is sorted by his own distance (the original files him at distance 0, step 2, so past 16 he is always
+  kept), and the list is sorted whenever it is built (the original sorts only past 16, so 16 or fewer keep the gangs'
+  order, and so do the events `0xb`); confirmed (code) at `0x0028b358`. **Coney's order** (#1555): the lines of sight of
+  step 1 are cast nearest first (`nearestSeen`), and once 16 are found none is cast to a member farther than the 16th,
+  unless the scanner still refers to him (`Brain::refersTo`: his target, enemy list, attack slots, sectors or detour),
+  because whether he is found decides how step 3 or 4 forgets him. The list, the `forget` calls and the events are those
+  of casting every line, which the original does (at most 59 other humans in its world; Coney's 32 gangs of 16 slots
+  allow up to 512 a scan, and an engaged crowd of 1000 cast 2,988 a step on average, 713 nearest first). The Scout
+  tactic (below) scans its members at their posts.
 - **Blocking**: `BlockGoal` never produces a block: Coney's block starts only on R1 held in the record's buttons,
   which only a pad writes, so its command 4 does nothing. It turns the human's hit reactions off
   (`Fighter::setHitReactionsOff`, bit `0x800`) from its start until its sixth update with the human free; rolls the
