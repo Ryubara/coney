@@ -356,4 +356,11 @@ float fogAt(const SceneCamera& camera, bool fog, float depth) {
     return std::clamp((depth - camera.farClip) * range, fog ? 0.0F : 1.0F, 1.0F);
 }
 
+// STUBS (test commit): the mesh views' passes are not worked out yet.
+DrawColours viewColoursOf(const MeshData& /*mesh*/, std::span<const Rgba> /*colours*/) { return {}; }
+
+SceneStates viewStatesOf(const SceneStates& states, ViewPass /*pass*/) { return states; }
+
+DrawLights viewLightsOf() { return {}; }
+
 } // namespace coney::graphics

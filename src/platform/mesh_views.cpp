@@ -123,6 +123,12 @@ void MeshViews::draw(rw::Atomic* atomic, DrawKind kind, bool layer, const std::f
     }
 }
 
+// STUB (test commit): a recorded model gets the game's own draw alone.
+ViewPasses MeshViews::passesFor(DrawKind /*kind*/, graphics::MeshId /*mesh*/,
+                                std::span<const ViewMaterial> /*materials*/) {
+    return {};
+}
+
 rw::World* MeshViews::flatWorld() {
     if (m_world == nullptr) {
         m_world = rw::World::create();

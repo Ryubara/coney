@@ -205,4 +205,19 @@ struct TextureLevels {
 /// plane, and 1 everywhere when the draw has no fog.
 [[nodiscard]] float fogAt(const SceneCamera& camera, bool fog, float depth);
 
+/// The colours the mesh views' Flat or Wire pass (Draw3d::view) draws `mesh` with: its material `i` in `colours[i]`
+/// (the last of them for the materials past the end, so a wire pass hands one colour for all), always opaque, white for
+/// a material when none is given; the mesh is modulated by them whatever it does itself. The GL3 renderer's flat pass
+/// swaps the material colours the same way (platform/mesh_views.cpp).
+[[nodiscard]] DrawColours viewColoursOf(const MeshData& mesh, std::span<const Rgba> colours);
+
+/// The states the mesh views' `pass` of a draw drawn in `states` takes: its own, except that the fog is off and the
+/// alpha test passes everything, and that a Wire pass does not write depth.
+[[nodiscard]] SceneStates viewStatesOf(const SceneStates& states, ViewPass pass);
+
+/// What a mesh views' pass is lit by: one white ambient light and nothing else, so with the material's ambient at 1 a
+/// vertex is white before it takes the material's colour (the GL3 renderer lights its flat pass in a world of one white
+/// ambient light), even for a mesh that is not lit itself.
+[[nodiscard]] DrawLights viewLightsOf();
+
 } // namespace coney::graphics

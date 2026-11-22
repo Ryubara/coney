@@ -19,6 +19,7 @@ void FrameDescription::begin(const FrameStart& start) {
     m_lights.clear();
     m_sceneTextures.clear();
     m_bones.clear();
+    m_viewColours.clear();
     m_camera.reset();
 }
 
@@ -94,7 +95,7 @@ void FrameDescription::addTriangles(const Material2d& material, std::span<const 
 ScenePass& FrameDescription::scene() {
     // A new scene pass keeps the camera set last this frame.
     if (m_passes.empty() || !std::holds_alternative<ScenePass>(m_passes.back())) {
-        m_passes.emplace_back(ScenePass{m_camera, false, {}});
+        m_passes.emplace_back(ScenePass{m_camera, false, {}, {}});
     }
     return std::get<ScenePass>(m_passes.back());
 }
@@ -110,7 +111,7 @@ void FrameDescription::setSceneCamera(const SceneCamera& camera) {
             return;
         }
     }
-    m_passes.emplace_back(ScenePass{camera, false, {}});
+    m_passes.emplace_back(ScenePass{camera, false, {}, {}});
 }
 
 void FrameDescription::clearSceneDepth() {
@@ -121,12 +122,12 @@ void FrameDescription::clearSceneDepth() {
             return;
         }
     }
-    m_passes.emplace_back(ScenePass{m_camera, true, {}});
+    m_passes.emplace_back(ScenePass{m_camera, true, {}, {}});
 }
 
 void FrameDescription::addSceneDraw(Draw3d draw, std::span<const SceneLight> lights,
                                     std::span<const TextureId> textures, std::span<const TextureId> dualTextures,
-                                    std::span<const Transform3d> bones) {
+                                    std::span<const Transform3d> bones, std::span<const Rgba> /*viewColours*/) {
     // The ranges point into the frame's arrays, after what earlier draws added.
     draw.firstLight = static_cast<std::uint32_t>(m_lights.size());
     draw.lightCount = static_cast<std::uint32_t>(lights.size());
@@ -172,5 +173,10 @@ std::span<const Transform3d> FrameDescription::bonesOf(const Draw3d& draw) const
     CONEY_ASSERT(draw.firstBone + draw.boneCount <= m_bones.size());
     return std::span<const Transform3d>(m_bones).subspan(draw.firstBone, draw.boneCount);
 }
+
+// STUB (test commit): the mesh views' data is not kept yet.
+void FrameDescription::addSceneLines(std::span<const SceneLineVertex> /*lines*/) {}
+
+std::span<const Rgba> FrameDescription::viewColoursOf(const Draw3d& /*draw*/) const { return {}; }
 
 } // namespace coney::graphics

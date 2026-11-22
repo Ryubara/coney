@@ -663,6 +663,9 @@ void RenderEngine::clearSceneDepth() {
     drawDescribed();
 }
 
+// STUB (test commit): the lines are not recorded yet.
+void RenderEngine::drawSceneLines(std::span<const graphics::SceneLineVertex> /*lines*/) {}
+
 void RenderEngine::startFrame(graphics::Rgba clear, const graphics::FrameStart& start) {
     CONEY_ASSERT(!m_inFrame);
     m_inFrame = true;

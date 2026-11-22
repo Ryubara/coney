@@ -120,6 +120,7 @@ add_executable(coney_tests
     graphics/frame_description_test.cpp
     graphics/frame_stats_test.cpp
     graphics/overlay_batch_test.cpp
+    graphics/mesh_view_draw_test.cpp
     graphics/scene_batch_test.cpp
     graphics/car_draw_test.cpp
     graphics/throw_arc_test.cpp
@@ -262,6 +263,7 @@ add_executable(coney_tests
     platform/ffmpeg_info_test.cpp
     platform/gpu_renderer_test.cpp
     platform/gpu_scene_test.cpp
+    platform/mesh_view_scene_test.cpp
     platform/pixel_texture_test.cpp
     platform/present_mode_test.cpp
     platform/profile_folder_test.cpp
@@ -670,6 +672,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/imgui_overlay_test.cpp
         platform/lighting_rows_test.cpp
         platform/mesh_views_test.cpp
+        platform/mesh_views_passes_test.cpp
         platform/test_card_test.cpp
         platform/world_edit_test.cpp
         platform/disc_world_split_test.cpp

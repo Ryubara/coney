@@ -337,15 +337,26 @@ class RenderEngine final : public graphics::RenderDevice {
     /// (MeshViewHook::hides(): the World page's scenery, humans and objects; null: none), a draw's kind being the
     /// draw scope's it is made in (DrawKindScope). The play mode says it at each frame's start and clears it at its
     /// end, so a renderer that records its draws (the GPU renderer) hides one kind without drawing the others through
-    /// librw.
-    /// @coney-only the World page's parts (docs/guides/debug-menu.md#world); the original has none
-    void hideKindsOf(const MeshViewHook* hook) {
+    /// librw. The hook is also asked for the mesh views' passes of each recorded model (MeshViewHook::passesFor())
+    /// until the next call, so the same renderer draws the wireframe and the flat views
+    /// (docs/engine/gpu-renderer.md#scene); it must outlive its use.
+    /// @coney-only the World page's parts and the mesh views (docs/guides/debug-menu.md#world); the original has none
+    void hideKindsOf(MeshViewHook* hook) {
+        m_viewHook = hook;
         for (const DrawKind kind : {DrawKind::Scenery, DrawKind::Humans, DrawKind::Objects}) {
             m_hiddenKinds[static_cast<std::size_t>(kind)] = hook != nullptr && hook->hides(kind);
         }
     }
     /// Whether drawScene() leaves out the draws of `kind` (hideKindsOf()).
     [[nodiscard]] bool kindHidden(DrawKind kind) const { return m_hiddenKinds[static_cast<std::size_t>(kind)]; }
+
+    /// Adds the lines `lines` (two vertices to a line, RenderWare's axes) to the frame description, drawn after the 3D
+    /// draws of the pass they join, depth tested and in their own colours: the Debug draw page's lines (the normals and
+    /// bone axes of the mesh views, the collision wireframe) on the renderer that draws the frame description. The GL3
+    /// renderer draws them through librw itself, so there is nothing to add for it. Only between beginFrame() and
+    /// present() (checked by CONEY_ASSERT).
+    /// @coney-only the Debug draw page (docs/guides/debug-menu.md#debug-draw); the original has none
+    void drawSceneLines(std::span<const graphics::SceneLineVertex> lines);
 
   private:
     // Only start() makes one, which then fills it in as librw comes up.
@@ -393,6 +404,7 @@ class RenderEngine final : public graphics::RenderDevice {
     std::uint32_t m_fpsCap = 0;      // the frame pacer's cap, for the GPU backend's present mode
     bool m_inFrame = false;          // between beginFrame() and present()
     std::array<bool, kDrawKinds> m_hiddenKinds{}; // hideKindsOf(): by DrawKind
+    MeshViewHook* m_viewHook = nullptr;           // hideKindsOf(): asked for each recorded model's passes
     bool m_librwStarted = false;                  // librw has reached Engine::start and must be stopped
     bool m_sdlStarted = false;                    // this object holds a reference to SDL's video subsystem
     bool m_glStubbed = false;                     // the NULL backend's stand-in for glDeleteTextures is installed
