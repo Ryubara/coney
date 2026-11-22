@@ -113,7 +113,7 @@ void StartUpFlow::setAiSeed(std::uint32_t seed) {
     m_gameplay.setAiVariation(seed);
 }
 
-void StartUpFlow::setEngineLimits(EngineLimits /*limits*/) {}
+void StartUpFlow::setEngineLimits(EngineLimits limits) { m_gameplay.setEngineLimits(limits); }
 
 void StartUpFlow::start() {
     // Game_InitializeSubsystems makes the script system before main pushes the first modes.

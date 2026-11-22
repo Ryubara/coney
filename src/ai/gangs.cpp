@@ -569,7 +569,7 @@ void Gangs::setTactic(int id, std::unique_ptr<Tactic> tactic) {
     ++gang->m_tacticsSet;
 }
 
-void Gangs::setEngineLimits(EngineLimits /*limits*/) {}
+void Gangs::setEngineLimits(EngineLimits limits) { m_limits = limits; }
 
 void Gangs::update(std::uint64_t nowMs) {
     // Coney stand-in: the debug build's check that player 1 stands on the path data, with its warning text, is left

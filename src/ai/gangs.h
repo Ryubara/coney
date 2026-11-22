@@ -489,7 +489,7 @@ class Gangs {
     /// @coney-only the engine limits preset, a test-mode switch
     void setEngineLimits(EngineLimits limits);
     /// The engine limits preset setEngineLimits() gave.
-    [[nodiscard]] EngineLimits engineLimits() const { return EngineLimits::Coney; }
+    [[nodiscard]] EngineLimits engineLimits() const { return m_limits; }
 
   private:
     std::array<Gang, kGangSlots> m_gangs{};
@@ -499,6 +499,8 @@ class Gangs {
     std::uint64_t m_nowMs = 0;
     combat::CombatRandom m_random;
     ScanSchedule m_scans;
+    // The rule of the scan tokens (setEngineLimits()).
+    EngineLimits m_limits = EngineLimits::Coney;
     std::uint64_t m_truceEndMs = 0; // 0x0050cb7c
     int m_boundsTurn = 5;           // 0x0050cbec: which fifth of the gangs updates its bounds; 5 at start-up
     GameRandom m_ownRandom;

@@ -328,7 +328,16 @@ void GameplayMode::endLevel() {
     m_systemEmitters.clear();
 }
 
-void GameplayMode::setEngineLimits(EngineLimits /*limits*/) {}
+void GameplayMode::setEngineLimits(EngineLimits limits) {
+    m_limits = limits;
+    m_spheres.setEngineLimits(limits);
+    if (m_context.boxes != nullptr) {
+        m_context.boxes->setEngineLimits(limits);
+    }
+    if (m_brains) {
+        m_brains->setEngineLimits(limits);
+    }
+}
 
 void GameplayMode::enter() {
     // Not ported (#548): entering an Armies of the Night level from another level keeps whether player 2 is in.
@@ -340,6 +349,8 @@ void GameplayMode::enter() {
         m_context.sound->gameplayEntered();
     }
     m_brains = std::make_unique<ai::Brains>(m_aiVariation);
+    // The run's engine limits preset, for the level's brains and gangs (docs/guides/running-options.md#engine-limits).
+    m_brains->setEngineLimits(m_limits);
     // What the scripts' handles name: a human, else a live world object (IsInsideBox on a thrown bottle, a flag on an
     // object), at its spawn record's place and heading.
     m_scripted = std::make_unique<ai::ScriptedBrains>(

@@ -142,9 +142,9 @@ class VolumeBoxes {
     /// Gives the engine limits preset the boxes' lists of occupants follow (core/engine_limits.h); the game mode that
     /// owns the level gives its own. Coney's own rule until set.
     /// @coney-only the engine limits preset, a test-mode switch
-    void setEngineLimits(EngineLimits /*limits*/) {}
+    void setEngineLimits(EngineLimits limits) { m_limits = limits; }
     /// The engine limits preset setEngineLimits() gave.
-    [[nodiscard]] EngineLimits engineLimits() const { return EngineLimits::Coney; }
+    [[nodiscard]] EngineLimits engineLimits() const { return m_limits; }
 
   private:
     // One update of the kind-0 box at `index`: the stay timer (stayDue()); each living human inside enters (3) or, on
@@ -176,7 +176,8 @@ class VolumeBoxes {
     std::vector<VolumeBox> m_boxes;
     Resolves m_resolves;
     Period m_stayPeriod;
-    std::uint32_t m_frame = 0; ///< `0x00514804`: whose turn it is, 0-4.
+    std::uint32_t m_frame = 0;                   ///< `0x00514804`: whose turn it is, 0-4.
+    EngineLimits m_limits = EngineLimits::Coney; ///< The rule of the occupants' lists (setEngineLimits()).
 };
 
 } // namespace coney::world_objects

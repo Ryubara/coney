@@ -128,6 +128,8 @@ GameSession::GameSession(RenderEngine& renderer, GameModeStack& stack, const io:
     }
     // `--ai-seed`: the random stream's start and the brains' seeds (0, the default, changes nothing).
     m_flow->setAiSeed(settings.aiSeed);
+    // The engine limits preset the run plays under (docs/guides/running-options.md#engine-limits).
+    m_flow->setEngineLimits(settings.engineLimits);
     // Each level's scenes, and the front end's (the Wonder Wheel's `WonderWheel_100`), over the disc's scene list.
     m_flow->gameplay().setSceneMaker([this] { return makeScenes(); });
     m_flow->levelFlow().setScenes([this] { return makeScenes(); }, &m_flow->context());

@@ -73,7 +73,7 @@ class Brains {
     /// @coney-only the engine limits preset, a test-mode switch
     void setEngineLimits(EngineLimits limits);
     /// The engine limits preset setEngineLimits() gave.
-    [[nodiscard]] EngineLimits engineLimits() const { return EngineLimits::Coney; }
+    [[nodiscard]] EngineLimits engineLimits() const { return m_limits; }
 
     /// One step: the game time advances by one step; the formations, then the gangs (their tactics) step; each enabled
     /// brain whose human is in the world thinks when `index % 5 == step % 5` and updates; then every player brain's
@@ -162,6 +162,7 @@ class Brains {
     std::uint32_t m_variation = 0;
     RoutePlanner* m_planner = nullptr;
     const raycast::CollisionMesh* m_collision = nullptr;
+    EngineLimits m_limits = EngineLimits::Coney; // given to the gangs and every brain (setEngineLimits())
 };
 
 } // namespace coney::ai

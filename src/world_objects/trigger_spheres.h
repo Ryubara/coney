@@ -113,9 +113,9 @@ class TriggerSpheres {
     /// Gives the engine limits preset the humans a sphere finds and lists follow (core/engine_limits.h); the game mode
     /// that owns the level gives its own. Coney's own rule until set.
     /// @coney-only the engine limits preset, a test-mode switch
-    void setEngineLimits(EngineLimits /*limits*/) {}
+    void setEngineLimits(EngineLimits limits) { m_limits = limits; }
     /// The engine limits preset setEngineLimits() gave.
-    [[nodiscard]] EngineLimits engineLimits() const { return EngineLimits::Coney; }
+    [[nodiscard]] EngineLimits engineLimits() const { return m_limits; }
 
   private:
     // A sphere for `object` with the defaults of 0x00414480; null when the pool is full.
@@ -147,6 +147,7 @@ class TriggerSpheres {
     ClearLine m_clearLine;
     ClearLine m_connected; ///< Mode 1's test (`Nav_IsConnected`, `0x0024dee8`).
     std::uint32_t m_frame = 0;
+    EngineLimits m_limits = EngineLimits::Coney; ///< The rule of the found humans (setEngineLimits()).
 };
 
 } // namespace coney::world_objects
