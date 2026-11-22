@@ -213,7 +213,7 @@ def test_on_windows_the_local_run_reads_the_copy_first(tree: Path) -> None:
 def test_without_a_probe_or_off_windows_the_run_is_unchanged(tree: Path) -> None:
     for windows, probe in ((True, None), (False, Probe(toolset(tree)))):
         tidy, notes = local(tree, windows, probe)
-        assert not any(word.startswith("--extra-arg") for word in tidy.commands[0])
+        assert not any("tidy-optional" in word for word in tidy.commands[0])
         assert notes == []
 
 
