@@ -403,10 +403,20 @@ void Hud::setTextProgress(std::string_view label, std::uint32_t value, graphics:
 }
 
 void Hud::update(const HudFrame& frame) {
-    // Not ported, from HUD_Update: two menus' countdown (+0x20ac, #682), the crew status list below level 100
-    // (#515) and the Rumble intro screen (#661).
+    // Not ported, from HUD_Update: two menus' countdown (+0x20ac, #682) and the Rumble intro screen (#661).
     m_nowMs = frame.nowMs;
     m_levelNumber = frame.levelNumber;
+    // The crew status list's additions are Humans_Update's, not the HUD step's: HUD_TagAddHuman for each member of
+    // player 1's gang every update, whatever the letterbox and the level
+    // (docs/research/hud-functions-parts.md#crew-status).
+    if (const int gang = frame.crew.playerGangs.at(0); gang >= 0) {
+        const CrewTexts texts{.hudString = m_services.hudString, .hudColour = m_services.hudColour};
+        for (const CrewMember& member : frame.crew.humans) {
+            if (member.gang == gang) {
+                m_crew.add(member, frame.crew, texts, frame.nowMs);
+            }
+        }
+    }
     // The credits scroll in the overlay pass, whatever the HUD's visibility and the letterbox.
     m_credits->update();
     // 0. The letterbox's step: a move (in or out) arms the restore, the first step with the bars out stamps it, the
@@ -476,6 +486,10 @@ void Hud::update(const HudFrame& frame) {
     // announcement ends when its `<DISPLAYTIME>` has passed.
     m_scrollIn.update(frame.nowMs, m_services.sound);
     m_counters.update(frame.nowMs);
+    // The crew status list, below level 100 only (the level record's +0x04, HUD_Update's test at 0x001b02d4).
+    if (frame.levelNumber < kArcadeLevelStart) {
+        m_crew.update(frame.crew);
+    }
     for (std::optional<Announcement>* announcement : {&m_announcement, &m_centred}) {
         if (*announcement && (*announcement)->displayMs &&
             frame.nowMs - (*announcement)->startMs >= *(*announcement)->displayMs) {
@@ -733,7 +747,7 @@ void Hud::renderWarCommands(const HudCanvas& canvas) const {
 void Hud::render(const HudCanvas& canvas) const {
     // Not ported, from HUD_Render: the split-screen dividers (#549); the HudLabel and the caption pager drawn even
     // while hidden, the +0x1911c and +0xe050 widgets, the mission item icons, the status column and, under the
-    // letterbox, the pending Warrior commands issued (#662); the crew status list (#515).
+    // letterbox, the pending Warrior commands issued (#662).
     m_credits->render(canvas.text);
     if (!m_visible || m_letterbox) {
         return;
@@ -757,6 +771,11 @@ void Hud::render(const HudCanvas& canvas) const {
     if (m_levelNumber >= kArcadeLevelStart) {
         m_indicators.at(kSharedNumIndicator)
             .render(canvas, m_services.language ? m_services.language() : Language::English);
+    }
+    // The crew status list, outside the Armies levels and below level 100 (HUD_Render's call at 0x001b1c44, after the
+    // announcement and before the Warrior command menus).
+    if (!isArmiesLevel(m_levelNumber) && m_levelNumber < kArcadeLevelStart) {
+        m_crew.render(canvas, m_nowMs);
     }
     // Per player, the mini-game panels.
     for (std::size_t i = 0; i < kPlayers; ++i) {

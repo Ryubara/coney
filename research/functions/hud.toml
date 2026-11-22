@@ -157,6 +157,98 @@ coney = "src/hud/hud.cpp:Hud::renderPrompt"
 status = "compared"
 
 [[function]]
+address = 0x0019f988
+name = "CrewStatus_GetIcon"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "the crew entry's portrait rectangle: by the character kind outside co-op, else by whose gang"
+level = "confirmed-code"
+coney = "src/hud/crew_status.h:crewPortraitRect"
+status = "compared"
+
+[[function]]
+address = 0x0019faf0
+name = "CrewStatus_Init"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "eight empty slots, count 0"
+level = "confirmed-code"
+coney = "src/hud/crew_status.h:CrewStatusList"
+status = "compared"
+
+[[function]]
+address = 0x0019fda0
+name = "CrewStatus_Update"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "places the live entries four a row, removes the hidden and the gone, places the caption"
+level = "confirmed-code"
+coney = "src/hud/crew_status.h:CrewStatusList::update"
+status = "compared"
+
+[[function.gaps]]
+what = "the 16:9, PAL and progressive layouts"
+relation = "not-ported"
+issue = 890
+
+[[function]]
+address = 0x001a03a8
+name = "CrewStatus_Render"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "the entries and the caption"
+level = "confirmed-code"
+coney = "src/hud/crew_status.h:CrewStatusList::render"
+status = "compared"
+
+[[function]]
+address = 0x001a0420
+name = "CrewStatus_Add"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "lists a knocked-out, cuffed or far-fighting member of player 1's gang, with the caption"
+level = "confirmed-code"
+coney = "src/hud/crew_status.h:CrewStatusList::add"
+status = "compared"
+
+[[function.gaps]]
+what = "the hostile count +0x152, read from the enemy lists"
+relation = "stand-in"
+issue = 649
+
+[[function.gaps]]
+what = "the distance to the nearest camera, measured to player 1's"
+relation = "stand-in"
+question = "hud-functions-parts.md#q-crew-camera"
+
+[[function]]
+address = 0x001a07f0
+name = "CrewStatus_Remove"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "drops a human's entry and renumbers the rest"
+level = "confirmed-code"
+coney = "src/hud/crew_status.h:CrewStatusList::remove"
+status = "compared"
+
+[[function.gaps]]
+what = "the calls from Human_Destroy and Human_MakePlayer"
+relation = "not-ported"
+question = "hud-functions-parts.md#q-crew-remove"
+
+[[function]]
+address = 0x001a0c90
+name = "CrewStatusEntry_Render"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "the portrait and the status icon"
+level = "confirmed-code"
+coney = "src/hud/crew_status.h:CrewStatusList::render"
+status = "compared"
+
+[[function]]
+address = 0x001a0d28
+name = "CrewStatusEntry_Update"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "hides an entry outside player 1's gang or with no state, else picks the status icon; the icon pulses"
+level = "confirmed-code"
+coney = "src/hud/crew_status.h:crewState"
+status = "compared"
+
+[[function]]
 address = 0x001a1138
 name = "HudBar_Draw"
 page = "hud-bar.md#draw"
@@ -526,6 +618,15 @@ role = "`Credits_Load` / `Credits_Start` on `+0xea30`"
 level = "confirmed-code"
 coney = "src/hud/credits.h:Credits::start"
 status = "legacy"
+
+[[function]]
+address = 0x001b3960
+name = "HUD_TagAddHuman"
+page = "hud-functions-parts.md#fn-pre-basewidget"
+role = "hands a member of player 1's gang to CrewStatus_Add"
+level = "confirmed-code"
+coney = "src/hud/crew_status.h:CrewStatusList::add"
+status = "compared"
 
 [[function]]
 address = 0x001b3f98

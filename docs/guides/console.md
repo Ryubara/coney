@@ -13,7 +13,10 @@ commands, build issue 2: the handlers of the release set, over the game session'
 ([Player commands](#player-commands)); and the F8 bar, issue 3 ([The F8 bar](#front-end)), in the release build and the
 debug tools' builds alike. Not built yet: the panels and the commands that open them (`log`, `resmon`, `perf`, `net` and
 `profiler`, issues 4 and 5: they wait in the catalog for their feature and are unknown when typed), the developer set
-(issue 6) and mod commands through the SDK (issue 7).
+(issue 6) but for its `lua <line>`, and mod commands through the SDK (issue 7). `lua` alone of the developer set is
+built (`src/debug/console_lua.h`, catalogued in `src/debug/console_commands.toml`): the debug tools' entry point
+registers it, and it runs the line in the debug session's script state with the Lua console page's evaluator, so an
+input script's `console lua "..."` line can call a binding in a test-mode run (a clip's `HuSetArrested`, for one).
 
 | Part | Where | What it does |
 | --- | --- | --- |
@@ -30,6 +33,7 @@ debug tools' builds alike. Not built yet: the panels and the commands that open 
 | The game's console | `src/platform/game_console.h`, `game_console_links.h`, `game_settings.h` | Both entry points' set-up: the session host, network play's host and the settings ([In the game](#in-the-game)) |
 | The line, the picker, the pad gate | `src/console/line_editor.h`, `command_picker.h`, `console_pad.h` | The F8 bar's model: typing, the gamepad's picker, SELECT and R3 ([The F8 bar](#front-end)) |
 | The bar | `src/platform/console_view.h`, `console_ui.h` | The bar's widgets and its window, in `coney_console_ui` ([The F8 bar](#front-end)) |
+| The developer `lua` | `src/debug/console_lua.h`, `src/debug/console_commands.toml` | A line of Lua in the debug session's script state, debug tools only |
 
 The core is in `coney_core`, so the release build has it. Its files include only `console/`, `core/` and the standard
 library, which the split test checks (`python/tests/test_debug_tools_split.py`,

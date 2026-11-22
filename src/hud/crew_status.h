@@ -183,9 +183,6 @@ class CrewStatusList {
     /// @orig 0x001a0c90 CrewStatusEntry_Render (unknown)
     void render(const HudCanvas& canvas, std::uint64_t nowMs) const;
 
-    /// Empties the list and its caption (the HUD's level shut-down).
-    void clear();
-
     /// How many are listed (`+0x40`).
     [[nodiscard]] std::size_t count() const { return m_count; }
     /// The slots.
