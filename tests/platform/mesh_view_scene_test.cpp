@@ -234,6 +234,49 @@ TEST_CASE("a view's pass of a posed model carries his pose and no second layer",
     }
 }
 
+TEST_CASE("a human's blood layer is recorded after his wire pass, as GL3 draws it over the lines",
+          "[platform][mesh-views][frame-description][gpu-renderer]") {
+    // Expected: docs/guides/debug-menu.md#mesh-views: on GL3 the blood layer is a second atomic the rig draws after the
+    // first one's passes, so it covers the wireframe where it blends; recorded in the same order, the shaded body
+    // first with no layer, then the wire, then the layer alone (ViewPass::DualLayer). A world's or an object's dual
+    // layer (DualPass::Layer) rides with its shaded draw as before.
+    Fixture fixture;
+    PassHook hook(ViewPasses{.shaded = true, .flat = {}, .wire = Rgba{0, 255, 0, 255}});
+    const std::array<coney::graphics::Transform3d, 2> pose{};
+    const auto recordHuman = [&](coney::graphics::DualPass pass) {
+        fixture.engine->beginWindowFrame(Rgba{0, 0, 0, 255});
+        fixture.engine->setSceneCamera(coney::graphics::SceneCamera{});
+        fixture.engine->hideKindsOf(&hook);
+        {
+            const DrawKindScope scope(DrawKind::Humans);
+            Draw3d draw;
+            draw.mesh = fixture.mesh;
+            draw.dualLayer = fixture.mesh; // stands in for the blood layer
+            draw.dualPass = pass;
+            fixture.engine->drawScene(draw, {}, pose);
+        }
+        fixture.engine->hideKindsOf(nullptr);
+        return sceneOf(fixture.engine->frame()).draws;
+    };
+    const std::vector<Draw3d> blood = recordHuman(coney::graphics::DualPass::Blood);
+    REQUIRE(blood.size() == 3);
+    CHECK(blood[0].view == ViewPass::Shaded);
+    CHECK_FALSE(blood[0].dualLayer.valid());
+    CHECK(blood[1].view == ViewPass::Wire);
+    CHECK(blood[2].view == ViewPass::DualLayer);
+    CHECK(blood[2].dualLayer == fixture.mesh);
+    CHECK(blood[2].dualPass == coney::graphics::DualPass::Blood);
+    CHECK(blood[2].boneCount == 2);
+    fixture.engine->present();
+
+    const std::vector<Draw3d> layer = recordHuman(coney::graphics::DualPass::Layer);
+    REQUIRE(layer.size() == 2);
+    CHECK(layer[0].view == ViewPass::Shaded);
+    CHECK(layer[0].dualLayer == fixture.mesh);
+    CHECK(layer[1].view == ViewPass::Wire);
+    fixture.engine->present();
+}
+
 TEST_CASE("scene lines are recorded into the frame description for the renderer that draws it",
           "[platform][mesh-views][frame-description][gpu-renderer]") {
     // Expected: docs/guides/debug-menu.md#mesh-views: the normals and bone axes are Debug draw lines: two vertices

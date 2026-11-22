@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -266,6 +267,8 @@ struct GpuFrame {
         std::size_t quad = 0;
         DrawKind kind = DrawKind::Scenery;
         coney::graphics::Material3d material{};
+        std::optional<std::size_t> dual{}; ///< A quad to draw as the dual layer, in the `dualPass`.
+        coney::graphics::DualPass dualPass = coney::graphics::DualPass::Layer;
     };
     std::vector<std::uint8_t> draw(coney::platform::MeshViewHook* hook, const std::vector<Item>& items,
                                    std::span<const coney::graphics::SceneLineVertex> lines = {}) {
@@ -293,6 +296,10 @@ struct GpuFrame {
             scene.mesh = meshes[item.quad];
             scene.material = item.material;
             scene.states = states;
+            if (item.dual) {
+                scene.dualLayer = meshes[*item.dual];
+                scene.dualPass = item.dualPass;
+            }
             engine->drawScene(scene, {});
         }
         engine->hideKindsOf(nullptr);
@@ -416,6 +423,29 @@ TEST_CASE("the GPU renderer draws the wireframe over the shaded model, on its ed
     CHECK(anyInRow(rgba, 120, 77, 83, wire));                           // the left edge
     CHECK(anyInRow(rgba, 120, 237, 243, wire));                         // the right edge
     CHECK(anyInColumn(rgba, 160, 57, 63, wire));                        // the top edge
+}
+
+TEST_CASE("the GPU renderer draws a human's blood layer over his wireframe, as GL3 does",
+          "[render][renderer][window][scene][mesh-views]") {
+    // Expected: docs/guides/debug-menu.md#mesh-views: on GL3 the blood layer is drawn after the body's passes and
+    // covers the lines where it blends; here an opaque layer over the same quad leaves no wire colour inside the
+    // quad's outline (the diagonal between its two triangles is the line it must cover), where a layer drawn before
+    // the wire leaves the diagonal showing.
+    GpuFrame gpu;
+    const std::size_t body = gpu.addQuad(80, 240, 60, 180, 10.0F, paintedQuad(Rgba{200, 0, 0, 255}));
+    const std::size_t blood = gpu.addQuad(80, 240, 60, 180, 10.0F, paintedQuad(Rgba{0, 0, 200, 255}));
+    coney::debug::DebugDrawOptions options;
+    options.mesh.wireframe = MeshScope::Everything;
+    MeshViews views(options);
+    const Rgba wire = coney::debug::meshWireColour(MeshKind::Scenery, false);
+    const std::vector<std::uint8_t> rgba =
+        gpu.draw(&views, {GpuFrame::Item{.quad = body, .dual = blood, .dualPass = coney::graphics::DualPass::Blood}});
+    // The diagonal runs from the top right corner to the bottom left of the quad: no pixel inside the outline is wire.
+    bool wireInside = false;
+    for (int y = 66; y <= 174 && !wireInside; ++y) {
+        wireInside = anyInRow(rgba, y, 86, 234, wire);
+    }
+    CHECK_FALSE(wireInside);
 }
 
 TEST_CASE("the GPU renderer draws the wireframe-only view as edges with no fill",

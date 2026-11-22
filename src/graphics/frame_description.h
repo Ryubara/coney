@@ -225,6 +225,9 @@ enum class ViewPass : std::uint8_t {
     /// The triangles' edges in the first of FrameDescription::viewColoursOf(), over what is drawn: the fill off, depth
     /// not written and the lines pulled a little towards the camera so they sit on it.
     Wire,
+    /// A shaded draw's dual layer alone, recorded after its Flat and Wire passes so it covers them as the GL3
+    /// renderer's second atomic does (a human's blood layer).
+    DualLayer,
 };
 
 /// How a 3D draw's dual layer is drawn over its mesh.
