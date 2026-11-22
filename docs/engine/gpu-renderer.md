@@ -234,7 +234,7 @@ a part is hidden); the normals and bone axes alone do not, being lines.
   as OpenGL culls polygons drawn as lines too. Stand-in: the two APIs count the bias in their own units (OpenGL in the
   depth buffer's smallest steps, SDL passes the constant factor on as the API takes it), so how far a line is pulled
   differs a little between drivers.
-- **Lines.** GL3 draws the normals and the bone axes, Debug draw lines, through librw's immediate mode. Here
+- **Lines.** GL3 draws the normals and the bone axes, Debug draw lines, as one effect draw of lines (`LineList`). Here
   `PlayLevelMode::drawSceneLines()` hands them to `RenderEngine::drawSceneLines()`, which adds them to the scene pass
   the frame's draws are in (`ScenePass::lines`, two vertices to a line, `SceneLineVertex`), and `GpuScene` draws them
   after that pass's meshes with the same shaders as a line list: depth tested, not written, never fogged or culled, in

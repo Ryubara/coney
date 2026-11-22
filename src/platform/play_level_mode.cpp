@@ -55,12 +55,6 @@ std::uint64_t millisecondsOf(std::uint64_t ticks) { return ticks / (GameTimer::k
 constexpr float kTeleportDrop = 2.0F;
 // How fast the free camera flies, in metres a second: the sandbox viewer's walking pace for a level's scale.
 constexpr float kFreeCameraSpeed = 8.0F;
-// How far debug lines are lifted off what they lie on, in metres.
-constexpr float kLineLift = 0.02F;
-
-// A debug line's end (game axes) in RenderWare's axes, lifted a little so a line on a surface is not hidden in it.
-world::Vec3 lineEndOf(anim::Vec3 game) { return toRenderWare(anim::Vec3{game.x, game.y, game.z + kLineLift}); }
-
 // The gait's name for the summary.
 const char* gaitName(human::Gait gait) {
     switch (gait) {
@@ -794,8 +788,9 @@ void PlayLevelMode::drawSceneLines(const human::PlayerSnapshot& snapshot, float 
     if (!m_sceneLines) {
         return;
     }
-    // GL3 draws them through librw at once; a renderer that draws the frame description (the GPU renderer, and the NULL
-    // backend that records as it does) takes them in the frame (docs/engine/gpu-renderer.md#mesh-views).
+    // GL3 draws them as an effect draw (LineList); a renderer that draws only the scene passes (the GPU renderer,
+    // and the NULL backend that records as it does) takes them as the scene pass's lines
+    // (docs/engine/gpu-renderer.md#mesh-views).
     if (!m_engine.drawsPixels()) {
         std::vector<graphics::SceneLineVertex> vertices;
         for (const SceneLine& line : m_sceneLines(*this, snapshot, alpha)) {

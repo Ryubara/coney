@@ -14,10 +14,12 @@ constexpr float kLineLift = 0.02F;
 
 } // namespace
 
+world::Vec3 lineEndOf(anim::Vec3 game) { return toRenderWare(anim::Vec3{game.x, game.y, game.z + kLineLift}); }
+
 void LineList::add(anim::Vec3 a, anim::Vec3 b, graphics::Rgba colour) {
-    // One vertex each, lifted a little so a line on a surface is not hidden in it, turned into RenderWare's axes.
+    // One vertex each, lifted and turned into RenderWare's axes.
     for (const anim::Vec3 game : {a, b}) {
-        const world::Vec3 p = toRenderWare(anim::Vec3{game.x, game.y, game.z + kLineLift});
+        const world::Vec3 p = lineEndOf(game);
         m_vertices.push_back(graphics::EffectVertex{p.x, p.y, p.z, colour, 0.0F, 0.0F});
     }
 }
