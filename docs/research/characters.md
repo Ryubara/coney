@@ -1893,8 +1893,9 @@ keeps falling through it, up to 0.38 m below in one phase. The unshifted jump (t
 trace is this, not a sampling artefact. The code path is the sweep's landing contact (`0x0023e408`, run from
 `0x0033d340` when body flag `0x40` is set; segment from feet + `+0x4e8` − 0.16 × scale, 0.880 m for the player,
 to the moved feet), which records the contact's fraction as `(hit − 1.0) / (length − 1.0)`, or 0 when the hit is
-nearer than 1.0 m (the human's vtable `+0x5c`, the constant 1.0 at `0x004ed818`); why the hit is not taken until the
-feet are about 0.17 m under is not traced. What the code shows (confirmed (code)):
+nearer than 1.0 m (the human's vtable `+0x5c`, which returns the constant 1.0:
+[Human_LandingTest](physics-bodies.md#u3-landing)); why the hit is not taken until the feet are about 0.17 m under is
+not traced. What the code shows (confirmed (code)):
 
 - the segment's upper point is `0x00226a20`: the feet + `+0x4e8` − 0.16 × the scale (confirmed (code));
 - only a hit with a normal `z` above 0.65 records a landing contact;
