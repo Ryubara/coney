@@ -1,10 +1,9 @@
 # A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level5 checkpoint 4, the boss fight. The input
-# script skips the opening scene, shows the player's rings and holds L1 on a boss at full health: a boss's ring (the
-# power class byte 100) is the one ring that fills the whole circle. For a change to the health rings' shape, colours
-# or draw, above all a full ring's.
-description = "level5 checkpoint 4: the player's rings and a boss's full ring under L1"
+# script skips the opening scene and shows the player's rings at full health, which in Coney fill the whole circle
+# there. For a change to the health rings' shape, colours or draw, above all a full ring's.
+description = "level5 checkpoint 4: the player's full health rings after SELECT"
 level = "level5"
 input = "tools/clips/level5-boss-rings.txt"
 checkpoint = 4
-start_frame = 400
-seconds = 8
+start_frame = 250
+seconds = 6

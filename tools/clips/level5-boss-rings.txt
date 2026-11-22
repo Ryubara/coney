@@ -1,8 +1,6 @@
 # Level5 checkpoint 4 (Diego and Vargas, the boss fight), for the `level5-boss-rings` clips pair scenario
-# (tools/clips/level5-boss-rings.toml). START and cross skip the opening scene (as the boss camera's disc test does),
-# then SELECT shows the player's rings and L1, held, targets a boss, whose ring is full at full health. Frames are
-# 1/30 s from the level's first frame of play.
-300 tap start
-310 tap cross
-400 tap select
-400 press l1
+# (tools/clips/level5-boss-rings.toml). The opening scene, l5_c6, starts at frame 99 and takes a skip after 60 of its
+# updates, so cross skips it; then SELECT shows the player's rings, whose outer ring is full at full health. Frames
+# are 1/30 s from the level's first frame of play.
+170 tap cross
+260 tap select
