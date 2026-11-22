@@ -238,6 +238,20 @@ from the frame description instead. The views set the hook when the wireframe or
   vertex colour alone. So every other line of the Debug draw page (the collision wireframe, the headings, the places) is
   drawn on this renderer too.
 
+**Against GL3** (confirmed (runtime), `picture compare` in the task's scratch folder, Direct3D 12 on the agents' Windows
+machine, `level99` at checkpoint 2, frame 100 at 640x448 with `--freeze-world --scene-only`): the flat views draw as
+GL3's do, 3 or 4 pixels over 4 of 255 in each of the four frames (by material, by draw call, by LOD on the humans, by
+material on the selection; largest difference 192, 156, 67 and 67, single pixels along a polygon's edge). The line
+views, which are hairlines, differ more: wireframe only 2,300 pixels over (0.8 %, largest 203), the wireframe on
+everything 1,772 (0.6 %, largest 187) and the humans' wireframe with the selection's normals and bone axes 3,110 (1.1 %,
+largest 209), scattered along the lines where Direct3D and OpenGL cover a pixel differently (the difference pictures
+show the same lines in the same places: inferred). A line view is therefore over the cross-renderer tolerance of 0.2 %
+and is listed here with that reason, the two rasterisers' rules for a one-pixel line being the APIs' own. Without
+`--scene-only`
+the whole frame differs from GL3 by what the GPU renderer does not draw yet (the blob shadows, the health rings, the
+coronas), 3.7 % with the views off and the same with the normals and bone axes on. The GL3 frames, branch against
+base, are the same in all nine frames, and the GPU frames with every view off in both, 0 pixels over 2.
+
 `tests/graphics/mesh_view_draw_test.cpp` checks the passes' colours, lighting and states and the frame description's
 colours and lines without a window; `tests/platform/mesh_view_scene_test.cpp` checks on the NULL backend, which records
 as this one does, what lands in the frame description for each pass, a hidden kind and a posed model;
