@@ -1,8 +1,0 @@
-# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): the level99 street from the play mode. The
-# input script skips the intro scene at frame 70 and presses SELECT at frame 150, which shows the player's health
-# rings at full health for four seconds. For a change to the health rings' shape, colours or draw.
-description = "level99 street: SELECT shows the player's health rings at full health"
-level = "level99"
-input = "tests/support/play_rings_level99.txt"
-start_frame = 140
-seconds = 5
