@@ -374,7 +374,9 @@ void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 madeLook, anim::Vec3 old
     // The ends: the camera's point at the first rail point (on segment 0) with the look-at point as made behind the
     // rail's start in plan, or else at the last point with it beyond the end, holds: the camera takes that end point
     // (after an activation its place at Q, within 1e-5 of it) and P and the look-at point go back to the update's
-    // start. The hold this sets is put back to its start value by the collision step, so it lasts this update only.
+    // start. The collision step reads the hold this sets (0x0013dbbc), so CamRail_CollideTwoTargets pushes the target
+    // back into the frame as for a hold at the start, then puts the hold back to its start value, so it lasts this
+    // update only.
     if (m_count >= 2 && m_placed) {
         const auto atPoint = [q](anim::Vec3 point) {
             const anim::Vec3 away = anim::subtract(q, point);
@@ -387,6 +389,7 @@ void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 madeLook, anim::Vec3 old
             atFirst ? planDot(segmentVector(0), anim::subtract(madeLook, first)) < 0.0F
                     : atPoint(last) && planDot(segmentVector(m_count - 2), anim::subtract(madeLook, last)) > 0.0F;
         if (ended) {
+            (void)keepInFrame(feet, false);
             m_position = m_undamped ? q : (atFirst ? first : last);
             m_target = oldTarget;
             m_lookAt = oldLook;
@@ -394,7 +397,8 @@ void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 madeLook, anim::Vec3 old
         }
     }
     // Not ported (#1017): the collision with no hold (CamRail_Collide, or CamRail_CollideTwoTargets with two targets;
-    // a held rail's push runs above) and, after a shake moved the view, the camera faced again and `+0x3ec` stepped.
+    // a held rail's push, at the start or at an end, runs above) and, after a shake moved the view, the camera faced
+    // again and `+0x3ec` stepped.
     m_position = q;
 }
 
