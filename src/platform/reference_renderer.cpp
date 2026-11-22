@@ -208,8 +208,8 @@ class OffscreenCamera {
         const auto side = static_cast<std::size_t>(m_size);
         const std::size_t rowBytes = side * 4;
         std::vector<std::uint8_t> bottomUp(rowBytes * side);
-        if (!draw::readFrame(0, 0, m_size, m_size, bottomUp.data())) {
-            return fail(ErrorCode::PlatformFailure, "glReadPixels could not read the offscreen frame");
+        if (const auto read = draw::readFrame(0, 0, m_size, m_size, bottomUp.data()); !read) {
+            return fail(ErrorCode::PlatformFailure, "the offscreen frame: " + read.error().message);
         }
         // OpenGL's rows run bottom up; images run top down.
         std::vector<std::uint8_t> rgba(bottomUp.size());

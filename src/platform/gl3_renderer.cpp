@@ -300,7 +300,13 @@ void Gl3Renderer::drawOverlay(const graphics::FrameDescription& frame, const gra
         vertex.setU(in.u, recipZ);
         vertex.setV(in.v, recipZ);
     }
-    draw::im2dRenderPrimitive(rw::PRIMTYPETRILIST, vertices.data(), static_cast<rw::int32>(vertices.size()));
+    // In runs of whole triangles that fit librw's 2D vertex buffer (draw::kIm2dMaxVertices): a longer call raised
+    // GL_INVALID_VALUE and drew nothing right.
+    constexpr std::size_t kMostVertices = (static_cast<std::size_t>(draw::kIm2dMaxVertices) / 3) * 3;
+    for (std::size_t first = 0; first < vertices.size(); first += kMostVertices) {
+        const std::size_t count = std::min(kMostVertices, vertices.size() - first);
+        draw::im2dRenderPrimitive(rw::PRIMTYPETRILIST, &vertices[first], static_cast<rw::int32>(count));
+    }
     draw::setRenderState(rw::ALPHATESTFUNC, testFunction);
     draw::setRenderState(rw::ALPHATESTREF, testRef);
 }
@@ -333,8 +339,11 @@ void Gl3Renderer::drawWindowQuads(rw::Raster* raster, std::span<const graphics::
             vertex.setV(corners[i].v, recipZ);
         }
     }
-    // 16-bit indices: draw in runs of at most 16,384 quads, each run indexing its own vertices from 0.
-    constexpr std::size_t kMaxQuadsPerDraw = 0x10000 / 4;
+    // Draw in runs, each indexing its own vertices from 0 (so 16-bit indices reach), of the most quads librw's 2D
+    // buffers take in one call (draw::kIm2dMaxVertices): a longer call raised GL_INVALID_VALUE and drew nothing right,
+    // as the debug menu's text does with Coney's bitmap font, one quad a lit pixel.
+    constexpr auto kMaxQuadsPerDraw =
+        static_cast<std::size_t>(std::min(draw::kIm2dMaxVertices / 4, draw::kIm2dMaxIndices / 6));
     std::vector<std::uint16_t> indices;
     for (std::size_t first = 0; first < quads.size(); first += kMaxQuadsPerDraw) {
         const std::size_t count = std::min(kMaxQuadsPerDraw, quads.size() - first);

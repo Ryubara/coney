@@ -910,8 +910,8 @@ void RenderEngine::tapFrame() {
     m_tapRows.resize(rowBytes * height);
     m_tapFrame.resize(rowBytes * height);
     // OpenGL counts rows from the bottom of the frame; the rectangle is given from the top.
-    if (!draw::readFrame(rect.x, m_frameSize.height - rect.y - rect.height, rect.width, rect.height,
-                         m_tapRows.data())) {
+    if (!draw::readFrame(rect.x, m_frameSize.height - rect.y - rect.height, rect.width, rect.height, m_tapRows.data())
+             .has_value()) {
         return;
     }
     for (std::size_t y = 0; y < height; ++y) {
@@ -964,8 +964,8 @@ std::expected<CapturedFrame, Error> RenderEngine::captureBackBuffer(const std::s
     const auto height = static_cast<std::size_t>(m_frameSize.height);
     const std::size_t rowBytes = width * 4;
     std::vector<std::uint8_t> bottomUp(rowBytes * height);
-    if (!draw::readFrame(0, 0, m_frameSize.width, m_frameSize.height, bottomUp.data())) {
-        return std::unexpected(Error{ErrorCode::PlatformFailure, "glReadPixels could not read the frame"});
+    if (auto read = draw::readFrame(0, 0, m_frameSize.width, m_frameSize.height, bottomUp.data()); !read) {
+        return std::unexpected(std::move(read.error()));
     }
     // OpenGL's rows run bottom up; images run top down.
     std::vector<std::uint8_t> rgba(bottomUp.size());

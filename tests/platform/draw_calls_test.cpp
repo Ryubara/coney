@@ -324,7 +324,7 @@ TEST_CASE("headless the draw layer records without reaching librw or OpenGL", "[
     draw::copyFrameToRaster(raster, 0, 0, 64, 32, 448);
     // NOLINTNEXTLINE(bugprone-implicit-widening-of-multiplication-result): constants, 8192 bytes, which cannot overflow
     std::vector<std::uint8_t> rgba(64 * 32 * 4);
-    CHECK_FALSE(draw::readFrame(0, 0, 64, 32, rgba.data()));
+    CHECK_FALSE(draw::readFrame(0, 0, 64, 32, rgba.data()).has_value());
     draw::setWireframe(true);
     draw::setWireframe(false);
     draw::bindWindowTarget();

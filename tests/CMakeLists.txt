@@ -272,6 +272,7 @@ add_executable(coney_tests
     platform/scene_stage_test.cpp
     platform/sdl_devices_test.cpp
     platform/user_folders_test.cpp
+    platform/window_screenshot_test.cpp
     platform/pad_pipe_test.cpp
     platform/sdl_input_test.cpp
     platform/window_activation_test.cpp
