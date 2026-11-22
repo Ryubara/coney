@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <numbers>
 #include <optional>
 #include <utility>
@@ -756,6 +757,36 @@ TEST_CASE("a held mode 0 rail camera pushes its target into the frame; let go it
     REQUIRE(pushed.has_value());
     CHECK(pushed.value_or(Vec3{}).x > -5.0F);
     CHECK(held.position().x == Approx(5.0F));
+}
+
+TEST_CASE("a mode 0 rail camera held at its rail's end pushes its target into the frame", "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): CamRail_UpdatePosition (0x0013d6b0) step 6 sets the hold at the
+    // rail's end (0x0013dafc) and step 7 reads it (0x0013dbbc) and runs CamRail_CollideTwoTargets (0x00140708), whose
+    // push (0x00140d68) moves a target out of frame back in by his radius.
+    // The target runs on past the rail's end and the camera holds there (as in the end-hold test above); then, 10 m
+    // past the end, he is far off the frame's right side.
+    RailCamera rail = straightRail();
+    (void)rail.update(Vec3{15.0F, 4.0F, 0.0F}, false, kStep);
+    for (int i = 0; i < 30; ++i) {
+        (void)rail.update(Vec3{30.0F, 4.0F, 0.0F}, false, kStep);
+    }
+    REQUIRE(rail.position().x == Approx(20.0F));
+    const auto planes = coney::camera::framePlanes(rail.view());
+    const Vec3 feet{30.0F, 4.0F, 0.0F};
+    // How far his point (feet plus the 1.5 m offset) is inside frame plane `plane`.
+    const auto inside = [&planes](std::size_t plane, Vec3 at) {
+        const Vec3 point{at.x, at.y, at.z + 1.5F};
+        return coney::anim::dot(point, planes.at(plane).normal) - planes.at(plane).w;
+    };
+    REQUIRE(inside(1, feet) < 0.0F);
+    const RailFrameInput frame{.before = feet};
+    const std::optional<Vec3> pushed = rail.update(feet, false, kStep, Vec3{}, false, &frame);
+    REQUIRE(pushed.has_value());
+    // Inside the right side and over the bottom edge (the bottom step, after the side's, leans him a little back).
+    CHECK(inside(1, pushed.value_or(feet)) > 0.4F);
+    CHECK(inside(2, pushed.value_or(feet)) >= 0.5F - 1e-3F);
+    CHECK(rail.position().x == Approx(20.0F));
+    CHECK(rail.targetPoint().x == Approx(18.75F));
 }
 
 TEST_CASE("the cameras' manager moves a held rail camera's target back into its frame", "[camera]") {
