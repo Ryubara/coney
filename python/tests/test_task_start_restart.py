@@ -333,6 +333,8 @@ def test_a_restart_whose_stamping_failed_is_run_again(world: World, monkeypatch:
     assert world.record().base_ref == "origin/main"
     assert [s.step for s in world.log().stamps] == ["assigned", "claimed"]
     assert world.log().stamps[1].detail["restarted"]["from_base_ref"] == STACK
+    # The new `claimed` stamp points at the log the first run moved aside, not at nothing.
+    assert world.log().stamps[1].detail["restarted"]["log"] == archives(world)[0].name
 
 
 def test_a_failing_git_is_an_error_and_not_an_empty_answer(world: World) -> None:

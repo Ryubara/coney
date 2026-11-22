@@ -700,10 +700,11 @@ It takes no `--base`, `--adopt` or `--adopt-branch`, refuses a task that was nev
 and a unit that is on `origin/main` already, and for a fix task refuses, as it works in its parent's unit. Running it
 again changes nothing but the refusal. `--dry-run` runs every check and prints what it would do.
 
-The old log is moved first, then the new one stamped, then the record written, so a restart that stops half way (the
-stamping failed) left the record on the old base and a rerun runs the restart again, moving aside whatever the new log
-holds. A base the default branch has edited since it merged is refused with the conflict (the refusal asks for the
-coordinator): there is no override yet.
+The old log is moved first, then the new one is stamped, then the record is written. A restart that stops in between
+(the stamping fails) leaves the record on the old base, so the command can be run again: it restarts again, moves aside
+whatever the new log holds, and the `claimed` stamp's `log` names the newest log moved aside, or is empty when none was.
+A base that the default branch has edited since it merged conflicts when merged, so it is refused with the files named
+and the command asks for the coordinator. It has no way on for that case; that is issue #1632.
 
 ### Tracks {#slots}
 

@@ -168,6 +168,13 @@ def _worktree_problem(record: UnitRecord, main: Path) -> str | None:
     return None
 
 
+def _newest_archive(log_folder: Path) -> str:
+    """The name of the newest old log moved aside beside `log_folder`, or "" when there is none: a rerun after a stop
+    between moving the log and stamping finds no log to move, and the earlier move is where the old stamps went."""
+    found = sorted(p.name for p in log_folder.parent.glob(f"{task_adopt.ARCHIVE_PREFIX}*") if p.is_dir())
+    return found[-1] if found else ""
+
+
 def restart_unit(
     request: StartRequest, env: StartEnv, main: Path, task: TaskFile, record: UnitRecord, record_path: Path, line: str
 ) -> int:
@@ -241,7 +248,7 @@ def restart_unit(
     note = {
         "from_base_ref": record.base_ref,
         "from_base_commit": record.base_commit,
-        "log": target.name if target else "",
+        "log": target.name if target else _newest_archive(log_folder),
     }
     _stamp_start(fresh, task, who, env, steps, tip, fork_point, restarted=note)
     write_record(record_path, fresh)
