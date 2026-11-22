@@ -818,8 +818,11 @@ anim::Vec3 Human::meetHumans(anim::Vec3 from, anim::Vec3 move) {
     // The candidates, as the original's body pass asks its world only for the bodies in the move's box
     // (`IPhysics_QueryBox`): a human whose axis is further from the start, across the ground, than the move's length
     // and both radii cannot be met in any pass, since each pass goes part of what is left and a slide only takes away
-    // the part into the one met (the normals lie flat), so the passes never go further than the move. The source (the
-    // step's grid) gives the humans near; the test drops the rest, the others keeping their order. stand-in (#1607):
+    // the part into the one met (the normals lie flat), so the passes never go further than the move. That bound is
+    // Coney's slide's, not the original's: PhysicsBody_Sweep (0x0033e278) sweeps the whole slid move again on every
+    // pass from where the last advance left the body (docs/research/physics.md#sweep), so its passes can reach
+    // further, and porting that (#667) must widen this reach. The source (the step's grid) gives the humans near; the
+    // test drops the rest, the others keeping their order. stand-in (#1607):
     // the contact list's order (slots), where the original's box query gives its bodies in x order. stand-in: only the
     // humans' capsules answer here, where the query's mask also takes the world objects' bodies (by the shape's flag,
     // a sprint's gait and the player's number; Coney's objects push after the walls, Human::sweep(), #371).
@@ -984,6 +987,8 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
     // docs/research/physics-bodies.md#u3-human-scale).
     // **Coney's reading**: the fall itself goes straight down and lands by the segment below, not by the sweep's
     // landing contact (#369).
+    // Not ported (#102): `false` keeps an airborne body from meeting any human, where the original's airborne mask
+    // (0x44) still takes the bodies with BLOCKHUMANS (docs/research/physics.md#coneys-implementation).
     const Swept moved =
         sweep(mesh, anim::Vec3{m_velocity.x, m_velocity.y, 0.0F}, anim::Vec3{push.x, push.y, 0.0F}, false);
     if (moved.velocity) {

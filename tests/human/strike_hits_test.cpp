@@ -286,7 +286,7 @@ TEST_CASE("a strike asks whether two humans are opposed only about the humans ne
     // broad reach, so none need be asked about as a victim. Gathering every opposed human as a victim asked about each
     // of them in every step the shapes were on (issue 1556); the target searches ask about none of them either (issue
     // 1550). The 3 m is human::kStrikeBroadReach.
-    // Expected: physics.md#coneys-implementation, confirmed (code)
+    // Expected: physics.md#coneys-implementation, Coney's choice (the 3 m broad reach is Coney's own)
     Strike strike(1.0F, 0.9F);
     std::vector<std::unique_ptr<Human>> crowd;
     const std::array<float, 6> lines{4.0F, 16.0F, 28.0F, 52.0F, 64.0F, 76.0F};

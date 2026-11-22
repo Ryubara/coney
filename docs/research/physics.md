@@ -891,6 +891,9 @@ What differs, each marked in the code:
 - **Coney's stand-in** (#1607): the humans are tried in slot order, and a strike's victims too, where the original's
   box query gives its bodies in x order (`Contact_InsertSorted` keeps the earlier of equal fractions), so at equal
   fractions the first contact can differ.
+- **Coney's choice** (#667): the reach that leaves a human out rests on Coney's slide, where each pass goes only the
+  part of the move that is left; the original sweeps the whole slid `V × dt` again on every pass ([Sweeping a
+  body](#sweep), confirmed (code)), so its passes can go further than one move, and porting that widens the reach.
 - **Not ported** (#102): an airborne body meets no human (a jump's strike and code 1 against a human); a scene's shared
   group; the pushed human's reaction (`Human_OnPushContact`'s timers and damage).
 
