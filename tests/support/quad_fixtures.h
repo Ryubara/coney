@@ -28,10 +28,10 @@ struct QuadSpec {
     bool prelit = false;   ///< PRELIT, every vertex `prelight`.
     graphics::Rgba prelight{255, 255, 255, 255};
     graphics::Rgba colour{255, 255, 255, 255}; ///< The first material's colour.
-    std::string texture;                       ///< The first material's texture's name; none for empty.
+    std::string texture{};                     ///< The first material's texture's name; none for empty.
     /// A second material for the quad's second triangle: its colour and texture name.
-    std::optional<graphics::Rgba> secondColour;
-    std::string secondTexture;
+    std::optional<graphics::Rgba> secondColour{};
+    std::string secondTexture{};
 };
 
 /// A librw atomic of one quad as `spec` says: texture coordinates (0, 0) at its top left to (1, 1) at its bottom right,
