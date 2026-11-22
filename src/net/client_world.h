@@ -41,6 +41,13 @@ struct HumanAnimLayer {
     friend bool operator==(const HumanAnimLayer&, const HumanAnimLayer&) = default;
 };
 
+/// A human's move style, which picks the clips its locomotion's gait blends are built from.
+/// @coney-only network play; the original has none
+enum class MoveStyle : std::uint8_t {
+    Normal, ///< The usual walk, jog, run and sprint.
+    Hidden, ///< The hidden style (`0x14`): its own walk (633 `STEALTH_WALK`), the rest as the normal style's.
+};
+
 /// A replicated human's state as a client holds it: its field table's values, decoded.
 /// @coney-only network play; the original has none
 struct HumanState {
@@ -51,6 +58,7 @@ struct HumanState {
     std::array<HumanAnimLayer, kHumanAnimLayers> layers{}; ///< the newest first
     bool grounded = false;                                 ///< on the ground
     bool knockedOut = false;                               ///< knocked out or wounded
+    MoveStyle moveStyle = MoveStyle::Normal;               ///< the move style its gait blends are built in
 
     friend bool operator==(const HumanState&, const HumanState&) = default;
 };
@@ -99,16 +107,17 @@ class ClipSource {
 
     /// The clip of anim id `animId`, or null when it is not loaded (yet).
     [[nodiscard]] virtual const anim::AnimClip* clip(std::int32_t animId) const = 0;
-    /// The five clips of the gait blend that clip `animId` is one of (the style's walk, jog, run, sprint and sprint
-    /// slots), or nothing when it is in none.
-    [[nodiscard]] virtual std::optional<std::array<anim::GaitClip, 5>> gaitClips(std::int32_t animId) const = 0;
+    /// The five clips of the gait blend that clip `animId` is one of in a human's move style `style` (the style's walk,
+    /// jog, run, sprint and sprint slots, as HumanAnimator::gaitBlend() builds it), or nothing when it is in none.
+    [[nodiscard]] virtual std::optional<std::array<anim::GaitClip, 5>> gaitClips(std::int32_t animId,
+                                                                                 MoveStyle style) const = 0;
 };
 
 /// A human's pose from its layers, as its AnimTaskStack sampled it on the server: each playing layer sampled at its
-/// playhead (a gait blend rebuilt from its clips, value and phase when the layer's clip is one of the pair the value
-/// plays), then from the oldest up each newer layer over what is under it by its fade. A layer whose clip `clips` does
-/// not have is left out; with none, the rest pose of `defaultRotations`. Root motion is the server's, so the task flags
-/// that only change it are not carried.
+/// playhead (a gait blend rebuilt from its clips in the human's move style, value and phase when the layer's clip is
+/// one of the pair the value plays), then from the oldest up each newer layer over what is under it by its fade. A
+/// layer whose clip `clips` does not have is left out; with none, the rest pose of `defaultRotations`. Root motion is
+/// the server's, so the task flags that only change it are not carried.
 /// @coney-only network play; the original has none
 [[nodiscard]] anim::Pose humanPose(const HumanState& human, const ClipSource& clips,
                                    std::span<const anim::Quat, anim::kPoseBones> defaultRotations);

@@ -82,15 +82,15 @@ std::optional<std::int32_t> gaitClipAt(const HumanAnimLayer& before, const Human
 }
 
 // The pose of one layer at its playhead: a gait blend rebuilt when the layer's clip is one of the pair its gait value
-// plays (the lower clip, or the upper one while the value is between whole numbers), else the clip alone. Nothing
-// when the clip is not loaded.
-std::optional<anim::Pose> layerPose(const HumanAnimLayer& layer, const ClipSource& clips,
+// plays (the lower clip, or the upper one while the value is between whole numbers), else the clip alone; the blend is
+// the human's move style's. Nothing when the clip is not loaded.
+std::optional<anim::Pose> layerPose(const HumanAnimLayer& layer, MoveStyle style, const ClipSource& clips,
                                     std::span<const anim::Quat, anim::kPoseBones> defaultRotations) {
     const anim::AnimClip* clip = clips.clip(layer.clip);
     if (clip == nullptr) {
         return std::nullopt;
     }
-    if (const auto gait = clips.gaitClips(layer.clip); gait.has_value()) {
+    if (const auto gait = clips.gaitClips(layer.clip, style); gait.has_value()) {
         const bool loaded = std::ranges::all_of(*gait, [](const anim::GaitClip& slot) { return slot.clip != nullptr; });
         if (loaded) {
             const anim::GaitBlendTask blend(*gait, layer.gait, 0.0F, 1.0F, anim::kGaitBlendFlags, layer.playhead);
@@ -125,6 +125,7 @@ HumanState humanState(const HumanWords& words) {
     }
     human.grounded = std::get<bool>(values.at(at(HumanField::Grounded)));
     human.knockedOut = std::get<bool>(values.at(at(HumanField::KnockedOut)));
+    human.moveStyle = std::get<bool>(values.at(at(HumanField::MoveStyle))) ? MoveStyle::Hidden : MoveStyle::Normal;
     return human;
 }
 
@@ -147,6 +148,7 @@ HumanWords humanWords(const HumanState& human) {
     }
     values.at(at(HumanField::Grounded)) = human.grounded;
     values.at(at(HumanField::KnockedOut)) = human.knockedOut;
+    values.at(at(HumanField::MoveStyle)) = human.moveStyle == MoveStyle::Hidden;
     return humanWords(std::span<const FieldValue, kHumanFieldCount>(values));
 }
 
@@ -230,7 +232,7 @@ anim::Pose humanPose(const HumanState& human, const ClipSource& clips,
     // older weighing the outgoing weight, which is 1 less the fade the newer one came in by.
     std::optional<anim::Pose> pose;
     for (std::size_t layer = playingLayers(human); layer-- > 0;) {
-        auto sampled = layerPose(human.layers.at(layer), clips, defaultRotations);
+        auto sampled = layerPose(human.layers.at(layer), human.moveStyle, clips, defaultRotations);
         if (!sampled.has_value()) {
             continue;
         }

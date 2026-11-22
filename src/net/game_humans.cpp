@@ -45,6 +45,7 @@ HumanState replicatedState(const human::Human& human) {
     state.healthMax = human.fighter().health().maximum();
     state.grounded = !human.airborne();
     state.knockedOut = human.knockedOut() || human.script().wounded;
+    state.moveStyle = human.animator().stealthStyle() ? MoveStyle::Hidden : MoveStyle::Normal;
     // The layers, newest first; each older layer's fade is how far the one over it has faded in.
     const anim::AnimTaskStack& tasks = human.animator().tasks();
     const std::size_t layers = std::min(tasks.layerCount(), state.layers.size());

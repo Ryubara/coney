@@ -477,7 +477,7 @@ TEST_CASE("HUD standing: the elements go with the HUDs and the texts after them,
     CHECK(snapshot.hudElements.size() == parts.elements.size());
     CHECK(snapshot.hudTexts.size() == parts.texts.size());
     CHECK(hudStanding(receiver.hudElements(), receiver.hudTexts()) == sample());
-    // The humans have what is left of 9,600 bits, each 302 in full.
+    // The humans have what is left of 9,600 bits, each 304 in full.
     std::size_t used = snapshotHeaderBits(snapshot, humans.size(), 2, parts.elements.size(), parts.texts.size());
     for (const SnapshotHudEntry& entry : snapshot.huds) {
         used += snapshotHudEntryBits(entry);
@@ -488,6 +488,6 @@ TEST_CASE("HUD standing: the elements go with the HUDs and the texts after them,
     for (const SnapshotHudTextEntry& entry : snapshot.hudTexts) {
         used += snapshotHudTextEntryBits(entry);
     }
-    CHECK(snapshot.humans.size() == (9600 - used) / 302);
+    CHECK(snapshot.humans.size() == (9600 - used) / 304);
     CHECK(encode(snapshot).size() <= kSnapshotBudgetBytes);
 }

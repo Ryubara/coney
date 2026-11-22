@@ -27,8 +27,9 @@ namespace coney::net {
 
 /// `human`'s replicated state now: its feet and heading, health and maximum, its animation stack's layers (newest
 /// first, each one's clip, playhead and gait value, and how far the layer over it has faded in), on the ground (not
-/// airborne), and knocked out or wounded. A layer the stack does not hold is "no such layer" (clip 0, fade 1). Clip ids
-/// over the field's range are held at its top (the field table's stand-in range, replicated_fields.cpp).
+/// airborne), knocked out or wounded, and its move style (hidden while its animator's stealth style is on). A layer the
+/// stack does not hold is "no such layer" (clip 0, fade 1). Clip ids over the field's range are held at its top (the
+/// field table's stand-in range, replicated_fields.cpp).
 /// @coney-only network play; the original has none
 [[nodiscard]] HumanState replicatedState(const human::Human& human);
 

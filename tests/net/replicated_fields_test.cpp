@@ -149,9 +149,9 @@ TEST_CASE("field tables: a whole thing's bits are the sum of its fields' bits", 
     CHECK(coney::net::fieldsBits(fields) == expected);
     // A human in full, pinned exactly: 96 bits for its position, heading and health, 32 for the newest animation
     // layer (clip, playhead, gait value), 42 for each of the three older ones (the same and the fade over it;
-    // snapshots.md#human-state) and 2 flags, 32 bytes. The busy scene's and the packet's pinned bytes in
-    // snapshot_test.cpp follow from it.
-    CHECK(coney::net::fieldsBits(fields) == 256);
+    // snapshots.md#human-state) and 3 flags (on the ground, knocked out, the hidden move style; #1613), 257 bits. The
+    // busy scene's and the packet's pinned bytes in snapshot_test.cpp follow from it.
+    CHECK(coney::net::fieldsBits(fields) == 257);
 }
 
 // Expected: combat-reactions.md#damage, confirmed (runtime)

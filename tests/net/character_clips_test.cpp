@@ -25,6 +25,7 @@ using Catch::Approx;
 using coney::characters::AnimSet;
 using coney::characters::CharacterData;
 using coney::net::CharacterClips;
+using coney::net::MoveStyle;
 
 namespace {
 
@@ -54,7 +55,7 @@ TEST_CASE("character clips: a clip by its anim id, and the gait blend of each mo
 
     constexpr std::array<std::uint32_t, 5> kNormal{408, 409, 410, 411, 411};
     for (const std::int32_t id : {408, 409, 410, 411}) {
-        const auto blend = clips.gaitClips(id);
+        const auto blend = clips.gaitClips(id, MoveStyle::Normal);
         REQUIRE(blend.has_value());
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
         CHECK(idsOf(*blend) == kNormal);
@@ -64,14 +65,14 @@ TEST_CASE("character clips: a clip by its anim id, and the gait blend of each mo
         }
     }
     // The hidden style's walk leads its own blend, whose jog, run and sprint are the normal style's.
-    const auto hidden = clips.gaitClips(633);
+    const auto hidden = clips.gaitClips(633, MoveStyle::Hidden);
     REQUIRE(hidden.has_value());
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
     CHECK(idsOf(*hidden) == std::array<std::uint32_t, 5>{633, 409, 410, 411, 411});
     // The idle, the sneak and a combat clip are in no blend.
-    CHECK_FALSE(clips.gaitClips(388).has_value());
-    CHECK_FALSE(clips.gaitClips(407).has_value());
-    CHECK_FALSE(clips.gaitClips(-1).has_value());
+    CHECK_FALSE(clips.gaitClips(388, MoveStyle::Normal).has_value());
+    CHECK_FALSE(clips.gaitClips(407, MoveStyle::Normal).has_value());
+    CHECK_FALSE(clips.gaitClips(-1, MoveStyle::Normal).has_value());
 }
 
 // Expected: unverified, #1603 (Coney's own; a blend needs all five clips, GaitBlendTask's)
@@ -82,7 +83,7 @@ TEST_CASE("character clips: a set that lacks one of a blend's clips has no blend
     const AnimSet anims(data, nullptr);
     const CharacterClips clips(anims);
     CHECK(clips.clip(409) != nullptr);
-    CHECK_FALSE(clips.gaitClips(409).has_value());
+    CHECK_FALSE(clips.gaitClips(409, MoveStyle::Normal).has_value());
 }
 
 // Expected: unverified, #1603 (Coney's own; the pose is GaitBlendTask::sample()'s, as the server's stack sampled it)
@@ -91,7 +92,7 @@ TEST_CASE("character clips: a human's jog-to-run layer is drawn as the server's 
     const CharacterData data = coney::test::locomotionData();
     const AnimSet anims(data, nullptr);
     const CharacterClips clips(anims);
-    const auto blendClips = clips.gaitClips(409);
+    const auto blendClips = clips.gaitClips(409, MoveStyle::Normal);
     REQUIRE(blendClips.has_value());
 
     // The server's blend between the jog and the run, a third of the way through their shared phase.
@@ -110,4 +111,41 @@ TEST_CASE("character clips: a human's jog-to-run layer is drawn as the server's 
         CHECK(got.rotations.at(bone).z == Approx(expected.rotations.at(bone).z).margin(1e-5));
         CHECK(got.rotations.at(bone).w == Approx(expected.rotations.at(bone).w).margin(1e-5));
     }
+}
+
+// Expected: unverified, #1613 (Coney's own; the blend of each style is HumanAnimator::gaitBlend() over the style's
+// slots: the walk, jog, run, sprint and sprint, the hidden style's walk being 633, human_animator.h)
+TEST_CASE("character clips: the jog, run and sprint are answered with the blend of the human's move style",
+          "[net][client_world]") {
+    const CharacterData data = coney::test::locomotionData();
+    const AnimSet anims(data, nullptr);
+    const CharacterClips clips(anims);
+
+    constexpr std::array<std::uint32_t, 5> kNormal{408, 409, 410, 411, 411};
+    constexpr std::array<std::uint32_t, 5> kHidden{633, 409, 410, 411, 411};
+    // The clips every style's blend shares answer by the style asked for.
+    for (const std::int32_t id : {409, 410, 411}) {
+        const auto normal = clips.gaitClips(id, MoveStyle::Normal);
+        const auto hidden = clips.gaitClips(id, MoveStyle::Hidden);
+        REQUIRE(normal.has_value());
+        REQUIRE(hidden.has_value());
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
+        CHECK(idsOf(*normal) == kNormal);
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
+        CHECK(idsOf(*hidden) == kHidden);
+    }
+    // Each style's own walk leads that style's blend, in either style: a layer of the style a human has just left,
+    // fading out under the new one, is still its own blend.
+    for (const MoveStyle style : {MoveStyle::Normal, MoveStyle::Hidden}) {
+        const auto walk = clips.gaitClips(408, style);
+        const auto sneak = clips.gaitClips(633, style);
+        REQUIRE(walk.has_value());
+        REQUIRE(sneak.has_value());
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
+        CHECK(idsOf(*walk) == kNormal);
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
+        CHECK(idsOf(*sneak) == kHidden);
+    }
+    // A clip of no blend is in none, in either style.
+    CHECK_FALSE(clips.gaitClips(388, MoveStyle::Hidden).has_value());
 }
