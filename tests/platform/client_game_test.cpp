@@ -65,6 +65,7 @@ std::vector<SnapshotHuman> hostHumans(std::uint32_t step) {
     std::vector<SnapshotHuman> humans;
     for (std::uint16_t slot = 0; slot < 3; ++slot) {
         HumanState human;
+        // NOLINTNEXTLINE(bugprone-narrowing-conversions): slot is 0 to 2, exact as a float
         human.position = coney::anim::Vec3{10.0F * slot, 5.0F, 0.0F};
         human.health = 150;
         human.healthMax = 150;
