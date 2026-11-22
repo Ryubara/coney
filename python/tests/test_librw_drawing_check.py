@@ -4,8 +4,9 @@
 Only the GL3 renderer calls a render state, an `rw::gl3::` type or function, or an Im2D or Im3D draw
 (docs/engine/renderer.md#frame-description): the rest of the game says what a frame draws in the frame description.
 The hook excludes the files that still call, in two groups its comment names; these tests hold the pattern to what it
-is meant to find, hold every file of `src/` to the hook, and fail an exclusion whose file no longer calls, so the
-group of files waiting for the description only shrinks (item 10 of docs/engine/renderer.md#order).
+is meant to find, hold every file of `src/` to the hook, fail an exclusion whose file no longer calls, and pin the
+excluded names, so the group of files waiting for the description grows only by a change here, which review sees
+(item 10 of docs/engine/renderer.md#order).
 """
 
 import functools
@@ -19,6 +20,42 @@ from conventions_support import REPO
 pytestmark = pytest.mark.reads("engine")
 
 HOOK_ID = "no-librw-drawing-outside-gl3"
+
+# The GL3 renderer and what it is made of: the files that call librw's drawing for good.
+GL3_RENDERER = frozenset(
+    {
+        "character_skin",
+        "draw_calls",
+        "gl3_renderer",
+        "gl3_screen_passes",
+        "lit_atomic",
+        "render_engine",
+        "texture_dictionary",
+        "texture_lod",
+    }
+)
+# The files waiting for the frame description: #1622 (the scene states) and #1623 (the debug tools' viewers). Meant
+# only to lose names; a name added here is a decision review sees.
+WAITING = frozenset(
+    {
+        "parked_cars",
+        "placed_objects",
+        "play_level_mode",
+        "play_lighting",
+        "world_renderer",
+        "character_viewer_mode",
+        "mesh_views",
+        "reference_renderer",
+        "sandbox_renderer",
+        "studio_level_renderer",
+    }
+)
+
+
+def excluded_names() -> list[str]:
+    """The file names (no folder, no extension) the hook's exclusion lists."""
+    names: list[str] = re.findall(r"[a-z_0-9]+(?=\\\.(?:cpp|h))", hook()["exclude"])
+    return names
 
 
 @functools.cache
@@ -109,11 +146,19 @@ def test_every_file_of_src_calls_nothing_or_is_excluded() -> None:
 
 
 def test_no_exclusion_names_a_file_that_calls_nothing() -> None:
-    # The exclusion only shrinks: a file that left the description's debt (or never had a call) is taken out of it.
+    # A file that left the description's debt (or never had a call) is taken out of the exclusion.
     excluded = re.compile(hook()["exclude"])
     stale = [path for path in source_files() if excluded.search(path) and not file_calls(path)]
     assert not stale, f"these files no longer call, so the hook no longer excludes them: {stale}"
     # Every file the exclusion names exists, so a renamed file does not leave its old name behind.
-    names = re.findall(r"[a-z_0-9]+(?=\\\.(?:cpp|h))", hook()["exclude"])
-    missing = [name for name in names if not (REPO / "src" / "platform" / f"{name}.cpp").exists()]
+    missing = [name for name in excluded_names() if not (REPO / "src" / "platform" / f"{name}.cpp").exists()]
     assert not missing, f"the exclusion names files that are gone: {missing}"
+
+
+def test_the_exclusion_names_only_the_pinned_files() -> None:
+    # A file joins the exclusion only by being added to GL3_RENDERER or WAITING above, which review sees.
+    unpinned = [name for name in excluded_names() if name not in GL3_RENDERER | WAITING]
+    assert not unpinned, f"the exclusion names files this test does not pin: {unpinned}"
+    # And the pins name nothing the exclusion has dropped, so a file that leaves is unpinned too.
+    unused = sorted((GL3_RENDERER | WAITING) - set(excluded_names()))
+    assert not unused, f"pinned but no longer excluded, so take them out of the pins: {unused}"

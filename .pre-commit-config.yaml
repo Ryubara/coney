@@ -108,9 +108,10 @@ repos:
       # renderer. The second is what still sets render states beside the description, each to leave when its code moves
       # onto it: the states the world, objects, cars and humans set for their described draws (items 7 to 9, which kept
       # the states in librw for the draw-stream hashes: #1622, from `parked_cars` on) and the debug tools' own viewers
-      # (#1623, from `character_viewer_mode` to `studio_level_renderer`). Nothing joins that group: a new draw is an
-      # effect draw or a scene draw of the description, and python/tests/test_librw_drawing_check.py fails an entry
-      # whose file no longer calls, so the group only shrinks.
+      # (#1623, from `character_viewer_mode` to `studio_level_renderer`). Nothing is meant to join that group: a new draw
+      # is an effect draw or a scene draw of the description. python/tests/test_librw_drawing_check.py fails an entry
+      # whose file no longer calls, and pins both groups' names, so a file joins only by a change to that test, which
+      # review sees.
       - id: no-librw-drawing-outside-gl3
         name: only the GL3 renderer calls librw's drawing
         language: pygrep
@@ -118,7 +119,7 @@ repos:
         files: ^src/.*\.(h|cpp)$
         exclude: >-
           (?x)^src/platform/(
-          character_skin\.cpp|draw_calls\.cpp|gl3_renderer\.cpp|lit_atomic\.cpp|render_engine\.cpp|
+          character_skin\.cpp|draw_calls\.cpp|gl3_renderer\.cpp|gl3_screen_passes\.cpp|lit_atomic\.cpp|render_engine\.cpp|
           texture_dictionary\.cpp|texture_lod\.cpp|
           character_viewer_mode\.cpp|mesh_views\.cpp|reference_renderer\.cpp|sandbox_renderer\.cpp|
           studio_level_renderer\.cpp|

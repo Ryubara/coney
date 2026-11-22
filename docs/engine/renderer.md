@@ -587,8 +587,8 @@ Item 10 adds the check the design asks for: the pre-commit hook `no-librw-drawin
 type or function, or an Im2D or Im3D draw, through the draw layer or librw itself, in any file of `src/` but the GL3
 renderer and what it is made of (the draw layer, the draw of a lit atomic, the skinning and texture-level pipelines, the
 raster conversion, the engine) and the files [listed above](#frame-description) that still set states beside the
-description. `python/tests/test_librw_drawing_check.py` holds the pattern to what it finds and fails an exclusion whose
-file no longer calls, so the list only shrinks.
+description. `python/tests/test_librw_drawing_check.py` holds the pattern to what it finds, fails an exclusion whose
+file no longer calls and pins the excluded names, so the list grows only by a change to that test, which review sees.
 
 ## Performance {#performance}
 
