@@ -15,6 +15,7 @@
 #include "platform/error_dialogs.h"
 
 // Runs the loops, and prints `done` when none was refused.
+// NOLINTNEXTLINE(bugprone-exception-escape): the pool's threads and the argument's string can fail only on allocation
 int main(int argc, char** argv) {
     // The abort of a refused loop must reach stderr, not open a window (platform/error_dialogs.h).
     coney::platform::reportErrorsToConsole();
