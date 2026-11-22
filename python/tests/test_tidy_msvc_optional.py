@@ -167,7 +167,7 @@ DIFF = "--- a/src/a.cpp\n+++ b/src/a.cpp\n@@ -1 +1 @@\n-old\n+new\n"
 @pytest.fixture
 def tree(tmp_path: Path) -> Path:
     """A checkout with one changed source and the compile database of its build."""
-    write(tmp_path / "src", "a.cpp", "new\n") if False else write(tmp_path / "src" / "a.cpp", "new\n")
+    write(tmp_path / "src" / "a.cpp", "new\n")
     write(tmp_path / ".clang-tidy", (REPO / ".clang-tidy").read_text(encoding="utf-8"))
     entry = {"directory": str(tmp_path / "build"), "command": "cl.exe /c a.cpp", "file": str(tmp_path / "src/a.cpp")}
     write(tmp_path / "build" / "compile_commands.json", json.dumps([entry]))

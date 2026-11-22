@@ -109,8 +109,9 @@ calling the base class's (`python/src/coney_tools/tidy_msvc_optional.py`):
 1. before the sources, one clang-tidy run on an empty file, with the compiler of the build's compile database, prints
    the include folders it uses (`-v`), and the first with an `optional` is Microsoft's;
 2. the copy is written to `tidy-optional/optional` in the build folder (not again while it is current), and every
-   clang-tidy command of the run gets `--extra-arg=-I<that folder>`, so each `#include <optional>`, the library's own
-   included, finds it first;
+   clang-tidy command of the run gets `--extra-arg=-external:I<that folder>`, so each `#include <optional>`, the
+   library's own included, finds it first. It has to be a system folder: with a plain `-I` the copy is a user header,
+   and its sign-compare warnings became errors in five test files;
 3. nothing but clang-tidy reads the copy, and the check does not look into the call, so it models the dereference as it
    does libstdc++'s. The cost is one 0.1-second run.
 
