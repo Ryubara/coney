@@ -105,6 +105,11 @@ class Cameras {
     using AirborneTest = std::function<bool(double handle)>;
     /// Sets how the manager tells an airborne human (null: never).
     void setAirborneTest(AirborneTest test) { m_airborne = std::move(test); }
+    /// A human's radius by handle, metres, for the rail's keep-in-frame push: a player's scale x 0.5, another
+    /// human's capsule radius (docs/research/camera.md#rail-frame); nothing for a handle that names none.
+    using RadiusLocator = std::function<std::optional<float>(double handle)>;
+    /// Sets how the manager finds a human's radius (null: 0.5 m, a player of scale 1).
+    void setRadiusLocator(RadiusLocator locator) { m_radius = std::move(locator); }
 
     /// `CamCanSee(object, range)`: whether the current camera sees the point just above the human (1 m up) or object
     /// (0.3 m up) `handle` names: within `range` of the camera (at most its far clip; 0 or less: the far clip), inside
@@ -417,6 +422,7 @@ class Cameras {
     Locator m_locateObject;
     Locator m_velocity;
     AirborneTest m_airborne;
+    RadiusLocator m_radius;
     Mover m_move;
     std::map<double, anim::Vec3> m_keptBefore; // each kept-in-view human's feet at the last update
     CameraShake m_shake;

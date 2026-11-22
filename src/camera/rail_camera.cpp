@@ -485,10 +485,10 @@ void RailCamera::placeLeading(anim::Vec3 feet, bool beside) {
     // re-facing after a shake (#1017).
 }
 
-void RailCamera::update(std::optional<anim::Vec3> feet, bool beside, float seconds, anim::Vec3 velocity,
-                        bool airborne) {
+std::optional<anim::Vec3> RailCamera::update(std::optional<anim::Vec3> feet, bool beside, float seconds,
+                                             anim::Vec3 velocity, bool airborne, const RailFrameInput* /*frame*/) {
     if (seconds <= 0.0F && m_placed) {
-        return;
+        return std::nullopt;
     }
     placeFor(feet, beside, seconds, velocity, airborne);
     // Not ported (#549): the split-screen extras (CamRail_UpdateSplitScreen) and the co-op flash's fade.
@@ -497,6 +497,7 @@ void RailCamera::update(std::optional<anim::Vec3> feet, bool beside, float secon
         m_starting = false;
         m_undamped = false;
     }
+    return std::nullopt;
 }
 
 void RailCamera::placeFor(std::optional<anim::Vec3> feet, bool beside, float seconds, anim::Vec3 velocity,

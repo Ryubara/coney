@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <format>
+#include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -23,6 +24,7 @@
 
 #include "camera/cameras.h"
 #include "camera/rail_camera.h"
+#include "camera/rail_frame.h"
 #include "core/input_script.h"
 #include "debug/debug_session.h"
 #include "debug/menu_model.h"
@@ -70,6 +72,13 @@ constexpr float kWalkOnX = -400.0F;
 constexpr int kStickPercent = 60;
 constexpr std::uint64_t kLockLimit = std::uint64_t{90} * 30;
 constexpr float kDegreesPerRadian = 57.29578F;
+// The first fight held: where the original's rail camera locked (x, PCSX2 run r-20261122-level60-570-frame) and how far
+// Coney's may be from it (the lock's CamCanSee test runs every 100 ms, ScheduleFunc), the frames watched after the
+// lock, and level60's look-at offset (CamSetupRail's {0, -0.25, 1.25}), which the push keeps inside the view's sides.
+constexpr float kOriginalLockX = -122.95F;
+constexpr float kLockTolerance = 1.5F;
+constexpr std::uint64_t kHeldFrames = std::uint64_t{10} * 30;
+constexpr coney::anim::Vec3 kRailOffset{0.0F, -0.25F, 1.25F};
 // The two bosses level60_destroyers' main chunk registers (Lemmy and Virgil) and their pictures' sprite words.
 constexpr std::array<std::uint32_t, 2> kDestroyersBossPictures{1966095, 1966110};
 
@@ -256,4 +265,70 @@ TEST_CASE("the disc's level60 played on: the pad taken and given back, the bosse
     std::printf("  level60 on: rail camera locked %d after %llu frames of walking, player at x %.1f\n", locked ? 1 : 0,
                 static_cast<unsigned long long>(walked), static_cast<double>(play->player().human().position().x));
     CHECK(locked);
+}
+
+TEST_CASE("the disc's level60 at the first fight: the rail camera locks where the original's does and keeps the "
+          "player in its frame",
+          "[disc][story][armies]") {
+    // Expected: camera.md#rail-frame, confirmed (runtime), run r-20261122-level60-570-frame: P1.CamLock01's
+    // CamLockRail(true) held the original's rail camera at x -122.95 with the player at x -123.44; walking on toward
+    // -x he stayed at the held view's right edge (x -126.18). Confirmed (code) at 0x00140d68: the push keeps him
+    // setting 7 (0.5 m in level60) inside the sides.
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    coney::test::LivePad pad;
+    coney::test::DiscSession run(*wad, pad);
+    run.session().startAtLevel("level60", 1);
+    REQUIRE(run.runUntilPlay());
+    coney::StartUpFlow& flow = run.session().flow();
+    REQUIRE(run.runUntil([&flow] { return flow.state().player.stopWatch.running(); }, kWalkLimit));
+    const coney::camera::Cameras* cameras = run.session().gameplay().cameras();
+    const coney::camera::RailCamera* rail = cameras != nullptr ? cameras->rail() : nullptr;
+    REQUIRE(rail != nullptr);
+    // One frame of the walk on: the stick toward -x along the rail, through the camera as it faces.
+    const auto walkOn = [&run, &pad] {
+        const coney::platform::PlayLevelMode* play = run.session().play();
+        if (play == nullptr) {
+            return false;
+        }
+        const coney::human::Human& player = play->player().human();
+        const coney::SteerView view{.x = player.position().x,
+                                    .y = player.position().y,
+                                    .cameraHeading =
+                                        coney::human::headingOf(player.record().cameraForward) * kDegreesPerRadian};
+        const std::array<int, 2> stick = coney::steerStick(view, kWalkOnX, kFlag02Y, kStickPercent);
+        pad.play(std::format("{} stick left {} {}\n", pad.nextFrame(), stick[0], stick[1]));
+        run.run(1);
+        return true;
+    };
+    bool locked = false;
+    for (std::uint64_t walked = 0; walked < kLockLimit && !locked; ++walked) {
+        REQUIRE(walkOn());
+        locked = rail->held();
+    }
+    REQUIRE(locked);
+    const float lockedAt = rail->position().x;
+    // On toward -x for 10 s with the camera held: how far inside the view's sides his feet raised by level60's look-at
+    // offset stay at the worst frame.
+    float leastInside = std::numeric_limits<float>::max();
+    for (std::uint64_t frame = 0; frame < kHeldFrames; ++frame) {
+        REQUIRE(walkOn());
+        const coney::platform::PlayLevelMode* play = run.session().play();
+        REQUIRE(play != nullptr);
+        const coney::anim::Vec3 feet = play->player().human().position();
+        const coney::anim::Vec3 point{feet.x + kRailOffset.x, feet.y + kRailOffset.y, feet.z + kRailOffset.z};
+        const auto planes = coney::camera::framePlanes(rail->view());
+        for (std::size_t side = 0; side < 2; ++side) {
+            leastInside = std::min(leastInside, coney::anim::dot(point, planes.at(side).normal) - planes.at(side).w);
+        }
+    }
+    std::printf("  level60 fight: rail camera locked at x %.2f (the original's %.2f), held %d, the player at least "
+                "%.2f m inside the sides\n",
+                static_cast<double>(lockedAt), static_cast<double>(kOriginalLockX), rail->held() ? 1 : 0,
+                static_cast<double>(leastInside));
+    CHECK(std::abs(lockedAt - kOriginalLockX) <= kLockTolerance);
+    CHECK(rail->held());
+    CHECK(leastInside >= 0.0F);
 }

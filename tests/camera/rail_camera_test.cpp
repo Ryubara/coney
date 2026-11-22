@@ -16,14 +16,19 @@
 #include "animation/anim_math.h"
 #include "camera/cameras.h"
 #include "camera/fixed_camera.h"
+#include "camera/rail_frame.h"
 #include "camera/third_camera.h"
 
 using Catch::Approx;
 using coney::anim::Vec3;
 using coney::camera::CameraKind;
 using coney::camera::Cameras;
+using coney::camera::CameraView;
 using coney::camera::FixedCamera;
 using coney::camera::RailCamera;
+using coney::camera::RailFrameInput;
+using coney::camera::RailFrameRules;
+using coney::camera::RailFrameTarget;
 using coney::camera::RailMode;
 using coney::camera::RailSetup;
 using coney::camera::ThirdCamera;
@@ -618,4 +623,171 @@ TEST_CASE("CamLockRail's lock reaches player 1's rail camera for player 0 or any
     CHECK(cameras.rail()->held());
     cameras.lockRail(1, false); // player 2 has no rail camera in Coney
     CHECK(cameras.rail()->held());
+}
+
+namespace {
+
+// A level view from the origin along +y with a 60 degree field of view: its left edge leans tan(30 deg) across.
+CameraView levelView() { return coney::camera::viewLookingAt(Vec3{}, Vec3{0.0F, 10.0F, 0.0F}, 60.0F, 0.1F, 100.0F); }
+
+// How far `p` is inside the plane through the origin with the inward normal `n` (any length).
+float insideOf(Vec3 p, Vec3 n) {
+    const float length = std::sqrt((n.x * n.x) + (n.y * n.y) + (n.z * n.z));
+    return ((p.x * n.x) + (p.y * n.y) + (p.z * n.z)) / length;
+}
+
+} // namespace
+
+TEST_CASE("the rail's frame planes are the left, right and bottom edges of the camera's 4:3 view window", "[camera]") {
+    // Expected: camera.md#rail-frame, confirmed (code): CamRail_KeepTargetsInFrame (0x00140d68) reads planes 0, 1 and
+    // 3 of Camera_BuildFrustum (0x00120c50), through the camera, normals inward; the window is tan(fov / 2) wide and
+    // three quarters of that high (0x00120a98).
+    const float wide = std::tan(30.0F * std::numbers::pi_v<float> / 180.0F);
+    const auto planes = coney::camera::framePlanes(levelView());
+    const float across = std::sqrt(1.0F + (wide * wide));
+    CHECK(planes[0].normal.x == Approx(1.0F / across));
+    CHECK(planes[0].normal.y == Approx(wide / across));
+    CHECK(planes[0].w == Approx(0.0F).margin(1e-6F));
+    CHECK(planes[1].normal.x == Approx(-1.0F / across));
+    CHECK(planes[1].normal.y == Approx(wide / across));
+    const float high = 0.75F * wide;
+    const float up = std::sqrt(1.0F + (high * high));
+    CHECK(planes[2].normal.z == Approx(1.0F / up));
+    CHECK(planes[2].normal.y == Approx(high / up));
+}
+
+TEST_CASE("the rail's keep-in-frame push moves its target just inside the view's left edge and keeps the rest of his "
+          "move",
+          "[camera]") {
+    // Expected: camera.md#rail-frame, confirmed (code) at 0x00140d68: within the margin of the left plane, the move
+    // from where he stood is split into its part along the plane's normal, which becomes the margin + 1e-5 inside,
+    // and the rest, kept (no wall to cut it short); his height stays where nothing hits below.
+    const float wide = std::tan(30.0F * std::numbers::pi_v<float> / 180.0F);
+    const Vec3 left{1.0F, wide, 0.0F};
+    const RailFrameRules rules{.offset = Vec3{0.0F, 0.0F, 0.0F}, .sideMargin = 0.5F};
+    const RailFrameTarget target{.feet = Vec3{-6.0F, 5.0F, 0.0F}, .before = Vec3{-4.0F, 5.0F, 0.0F}, .radius = 0.5F};
+    const std::optional<Vec3> placed = coney::camera::keepTargetInFrame(levelView(), target, rules, nullptr);
+    REQUIRE(placed.has_value());
+    const Vec3 at = placed.value_or(Vec3{});
+    CHECK(insideOf(at, left) == Approx(0.5F).margin(1e-4F));
+    CHECK(at.z == Approx(0.0F));
+    // The rest of his move (across the plane's normal) is kept, less the 1e-5 the ray's stop takes off.
+    const float across = std::sqrt(1.0F + (wide * wide));
+    const Vec3 n{left.x / across, left.y / across, 0.0F};
+    const auto along = [&n](Vec3 v) {
+        const float d = (v.x * n.x) + (v.y * n.y);
+        return Vec3{v.x - (n.x * d), v.y - (n.y * d), 0.0F};
+    };
+    const Vec3 restBefore = along(Vec3{target.feet.x - target.before.x, target.feet.y - target.before.y, 0.0F});
+    const Vec3 restAfter = along(Vec3{at.x - target.before.x, at.y - target.before.y, 0.0F});
+    CHECK(restAfter.x == Approx(restBefore.x).margin(1e-4F));
+    CHECK(restAfter.y == Approx(restBefore.y).margin(1e-4F));
+
+    // Well inside the frame he stays.
+    const RailFrameTarget inside{.feet = Vec3{0.0F, 5.0F, 0.0F}, .before = Vec3{0.0F, 5.0F, 0.0F}};
+    CHECK_FALSE(coney::camera::keepTargetInFrame(levelView(), inside, rules, nullptr).has_value());
+}
+
+TEST_CASE("the rail's keep-in-frame push lifts its target over the view's bottom edge by his radius", "[camera]") {
+    // Expected: camera.md#rail-frame, confirmed (code) at 0x00140d68: within his radius of the bottom plane (3) the
+    // point moves across it by the shortfall + 1e-5 along the plane's normal; his height is then kept at his feet's
+    // where no ground is hit below.
+    const CameraView view =
+        coney::camera::viewLookingAt(Vec3{0.0F, 0.0F, 5.0F}, Vec3{0.0F, 10.0F, 0.0F}, 60.0F, 0.1F, 100.0F);
+    const float high = 0.75F * std::tan(30.0F * std::numbers::pi_v<float> / 180.0F);
+    const float hypot = std::sqrt(125.0F);
+    const Vec3 forward{0.0F, 10.0F / hypot, -5.0F / hypot};
+    const Vec3 up{0.0F, 5.0F / hypot, 10.0F / hypot};
+    const Vec3 bottom{0.0F, up.y + (high * forward.y), up.z + (high * forward.z)};
+    const float length = std::sqrt((bottom.y * bottom.y) + (bottom.z * bottom.z));
+    const Vec3 feet{0.0F, 2.0F, 0.0F};
+    const float inside = insideOf(Vec3{feet.x, feet.y, feet.z - 5.0F}, bottom);
+    REQUIRE(inside < 0.5F);
+    const std::optional<Vec3> placed =
+        coney::camera::keepTargetInFrame(view, RailFrameTarget{.feet = feet, .before = feet, .radius = 0.5F},
+                                         RailFrameRules{.offset = Vec3{}, .sideMargin = 0.5F}, nullptr);
+    REQUIRE(placed.has_value());
+    CHECK(placed.value_or(Vec3{}).y == Approx(feet.y + (bottom.y / length * (0.5F - inside))).margin(1e-4F));
+    CHECK(placed.value_or(Vec3{}).z == Approx(0.0F));
+}
+
+TEST_CASE("the rail's keep-in-frame push in mode 3 keeps its target inside the sides by setting 7, not his radius",
+          "[camera]") {
+    // Expected: camera.md#rail-frame and #rail-mode3, confirmed (code) at 0x00140d68: in mode 3 the side margin is
+    // setting 7 (`+0x3d4`); the Armies gang scripts set it to -10 or -15, so a target that far outside stays.
+    const RailFrameTarget target{.feet = Vec3{-6.0F, 5.0F, 0.0F}, .before = Vec3{-6.0F, 5.0F, 0.0F}, .radius = 0.5F};
+    const RailFrameRules loose{.offset = Vec3{}, .sideMargin = -10.0F, .trailing = true};
+    const RailFrameRules tight{.offset = Vec3{}, .sideMargin = 0.5F, .trailing = true};
+    CHECK_FALSE(coney::camera::keepTargetInFrame(levelView(), target, loose, nullptr).has_value());
+    CHECK(coney::camera::keepTargetInFrame(levelView(), target, tight, nullptr).has_value());
+}
+
+TEST_CASE("a mode 3 rail camera pushes its target into the frame on each update after its start and trails him from "
+          "there",
+          "[camera]") {
+    // Expected: camera.md#rail-mode3, confirmed (code): CamRail_PlaceMode3 (0x0013dcc8) calls the keeper before it
+    // makes P from the target's feet, so P is made from where he is put; the start after an activation does not.
+    RailCamera rail = straightRail();
+    rail.modify(RailCamera::kMode3Pitch, -7.0F, 0.0F);
+    rail.modify(RailCamera::kMode3Margin, 0.5F, 0.0F);
+    rail.activate();
+    const RailFrameInput frame{.before = Vec3{-5.0F, 4.0F, 0.0F}};
+    // The start: placed level with him, no push.
+    CHECK_FALSE(rail.update(Vec3{5.0F, 4.0F, 0.0F}, false, kStep, Vec3{}, false, &frame).has_value());
+    // Far off the left edge: pushed right, and P is made from where he is put.
+    const std::optional<Vec3> pushed = rail.update(Vec3{-5.0F, 4.0F, 0.0F}, false, kStep, Vec3{}, false, &frame);
+    REQUIRE(pushed.has_value());
+    CHECK(pushed.value_or(Vec3{}).x > -4.0F);
+    CHECK(rail.targetPoint().x == Approx(pushed.value_or(Vec3{}).x));
+}
+
+TEST_CASE("a held mode 0 rail camera pushes its target into the frame; let go it does not", "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): a held mode 0 placement runs CamRail_CollideTwoTargets (0x00140708),
+    // which pushes a target out of frame back in (0x00140d68); with one target and no hold CamRail_Collide runs
+    // instead, which moves no one with switch 2 off.
+    const RailFrameInput frame{.before = Vec3{-5.0F, 4.0F, 0.0F}};
+    RailCamera rail = straightRail();
+    (void)rail.update(Vec3{5.0F, 4.0F, 0.0F}, false, kStep);
+    CHECK_FALSE(rail.update(Vec3{-5.0F, 4.0F, 0.0F}, false, kStep, Vec3{}, false, &frame).has_value());
+    RailCamera held = straightRail();
+    (void)held.update(Vec3{5.0F, 4.0F, 0.0F}, false, kStep);
+    held.setHeld(true);
+    const std::optional<Vec3> pushed = held.update(Vec3{-5.0F, 4.0F, 0.0F}, false, kStep, Vec3{}, false, &frame);
+    REQUIRE(pushed.has_value());
+    CHECK(pushed.value_or(Vec3{}).x > -5.0F);
+    CHECK(held.position().x == Approx(5.0F));
+}
+
+TEST_CASE("the cameras' manager moves a held rail camera's target back into its frame", "[camera]") {
+    // Expected: camera.md#rail-frame, confirmed (code) at 0x00140d68: the keeper places the target with his rotation
+    // (Human_SetTransform, vtable +0x6c); Coney's manager hands the new feet to its mover.
+    Cameras cameras;
+    Vec3 at{5.0F, 4.0F, 0.0F};
+    cameras.setPlacer([&at](double handle) -> std::optional<std::pair<Vec3, float>> {
+        if (handle == 3.0) {
+            return std::pair<Vec3, float>{at, 0.0F};
+        }
+        return std::nullopt;
+    });
+    std::optional<Vec3> moved;
+    cameras.setMover([&moved, &at](double handle, Vec3 feet) {
+        if (handle == 3.0) {
+            moved = feet;
+            at = feet;
+        }
+    });
+    RailSetup setup;
+    setup.fieldOfView = 60.0F;
+    setup.offset = Vec3{0.0F, 0.0F, 1.5F};
+    (void)cameras.setupRail(20.0, 3.0, setup);
+    (void)cameras.addRailPoint(Vec3{0.0F, 0.0F, 2.0F});
+    (void)cameras.addRailPoint(Vec3{20.0F, 0.0F, 2.0F});
+    cameras.makeActive(20.0, 0.0F);
+    cameras.update(coney::camera::FollowTarget{}, 128, 128, nullptr, kStep);
+    REQUIRE_FALSE(moved.has_value());
+    cameras.lockRail(0, true);
+    at = Vec3{-5.0F, 4.0F, 0.0F};
+    cameras.update(coney::camera::FollowTarget{}, 128, 128, nullptr, kStep);
+    REQUIRE(moved.has_value());
+    CHECK(moved.value_or(Vec3{}).x > -5.0F);
 }

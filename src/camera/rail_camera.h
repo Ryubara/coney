@@ -10,6 +10,7 @@
 
 #include "animation/anim_math.h"
 #include "camera/camera_view.h"
+#include "camera/rail_frame.h"
 
 // The rail camera (`Cam_Rail`, type 9, `CamSetupRail`): a camera that slides along a line of points the scripts lay
 // (`CamAddRailPoint`) while it frames its target, the chases' camera. In mode 0 it stands at the target point's foot on
@@ -26,6 +27,15 @@ struct RailSetup {
     anim::Vec3 offset;      ///< The look-at offset from the target, metres (`+0x320`); its z starts setting 9.
     float nearClip = 0.1F;  ///< Metres.
     float farClip = 150.0F; ///< Metres, at most RailCamera::kMaxFarClip.
+};
+
+/// What the keep-in-frame push (keepTargetInFrame()) needs of the rail's target beyond his feet, and the level's
+/// collision mesh (null: no rays).
+struct RailFrameInput {
+    anim::Vec3 before;   ///< His feet at the start of his update.
+    float radius = 0.5F; ///< A player's scale x 0.5, another human's capsule radius.
+    bool falling = false;
+    const raycast::CollisionMesh* mesh = nullptr;
 };
 
 /// How the rail camera places itself (`+0x3ed`).
@@ -113,10 +123,14 @@ class RailCamera {
     /// easing), his locomotion's velocity `velocity` (mode 3 reads it) and whether he is `airborne` (jumping or
     /// falling: the points are not damped): the settings eased, the target and look-at points made and damped, then
     /// the camera placed by its mode; with `beside` (switch 7) a leading mode stands the camera off the rail, the lead
-    /// from the target, and looks at the target point (docs/research/camera.md#rail-leading).
+    /// from the target, and looks at the target point (docs/research/camera.md#rail-leading). With `frame`, a held mode
+    /// 0 rail and a mode 3 rail past its start push the target back into the frame the camera had at the update's
+    /// start (keepTargetInFrame()) and go on from where he is put; returns his new feet then, nothing otherwise (the
+    /// caller moves him, docs/research/camera.md#rail-frame).
     /// @orig 0x0013d010 CamRail_Update (unknown)
-    void update(std::optional<anim::Vec3> feet, bool beside, float seconds, anim::Vec3 velocity = {},
-                bool airborne = false);
+    std::optional<anim::Vec3> update(std::optional<anim::Vec3> feet, bool beside, float seconds,
+                                     anim::Vec3 velocity = {}, bool airborne = false,
+                                     const RailFrameInput* frame = nullptr);
 
     /// What it shows: the view the update's end builds from the position and look-at point, in every mode.
     /// @orig 0x0013d010 CamRail_Update (unknown)
