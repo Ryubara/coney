@@ -2,8 +2,10 @@
 #pragma once
 
 #include <cstdint>
+#include <expected>
 #include <optional>
 
+#include "core/error.h"
 #include "platform/draw_stream.h"
 
 // librw's types, declared rather than included: <rw.h> has no include guard, and the files that call this layer
@@ -138,9 +140,9 @@ void setRasterFromImage(rw::Raster* raster, rw::Image* image);
 /// into level 0 of `raster` (glCopyTexSubImage2D): the screen passes' copies of the back buffer.
 void copyFrameToRaster(rw::Raster* raster, int x, int y, int width, int height, int frameHeight);
 /// Reads the frame buffer's rectangle `x`, `y`, `width`, `height` (OpenGL's: from the bottom left) as RGBA rows from
-/// the bottom into `rgba`, which holds width * height * 4 bytes (glReadPixels); false when OpenGL reports an error or
+/// the bottom into `rgba`, which holds width * height * 4 bytes (glReadPixels); an error when OpenGL reports one or
 /// nothing is forwarded.
-[[nodiscard]] bool readFrame(int x, int y, int width, int height, std::uint8_t* rgba);
+[[nodiscard]] std::expected<void, Error> readFrame(int x, int y, int width, int height, std::uint8_t* rgba);
 /// Draws polygons as lines, pulled a little towards the camera, or filled again (glPolygonMode and glPolygonOffset):
 /// the mesh views' wireframe.
 void setWireframe(bool on);

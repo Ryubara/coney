@@ -715,15 +715,18 @@ void copyFrameToRaster(rw::Raster* raster, int x, int y, int width, int height, 
     glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, x, frameHeight - (y + height), width, height);
 }
 
-bool readFrame(int x, int y, int width, int height, std::uint8_t* rgba) {
+std::expected<void, Error> readFrame(int x, int y, int width, int height, std::uint8_t* rgba) {
     recordWords(DrawRecord::FrameRead, {static_cast<std::uint32_t>(x), static_cast<std::uint32_t>(y),
                                         static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height)});
     if (!forwarding()) {
-        return false;
+        return fail(ErrorCode::PlatformFailure, "glReadPixels could not read the frame");
     }
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
     glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, rgba);
-    return glGetError() == GL_NO_ERROR;
+    if (glGetError() != GL_NO_ERROR) {
+        return fail(ErrorCode::PlatformFailure, "glReadPixels could not read the frame");
+    }
+    return {};
 }
 
 void setWireframe(bool on) {
