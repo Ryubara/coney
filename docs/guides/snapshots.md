@@ -85,8 +85,8 @@ the play mode hands them to network play (`GameHumans::captureHuds()`, `NetPlay:
 every slot's in each snapshot (`SnapshotSender::build(step, humans, huds)`). A guest holds the newest decoded
 (`NetPlay::arrivedHuds()`, `net::playerHudState()` of the words) and steps its own HUD from it, the one slot that is its
 own as the HUD's panel 0 (`net::playerHudForSlot()`, [The client's HUD](client-world.md#client-hud)), so its panel
-counts, fades and plays its cues as the host's does: the panel's own step is deterministic from these inputs, and a loopback
-test steps a client's HUD from what it decodes and finds its panels the server's at every step.
+counts, fades and plays its cues as the host's does: the panel's own step is deterministic from these inputs, and a
+loopback test steps a client's HUD from what it decodes and finds its panels the server's at every step.
 
 **The fields** ([field table](multiplayer.md#field-tables), `HudField`): rage and its maximum (16 bits each, the s16
 range of the original's meter and class), raging and the blue-grey banner (a bit each), the score (25 bits, past the
