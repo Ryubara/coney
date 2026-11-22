@@ -982,6 +982,25 @@ TEST_CASE("the network test files: the state digest, the snapshot digests and a 
     refused(std::array<std::string_view, 1>{"--digest"}, "--digest");
 }
 
+// Expected: unverified, #1603 (Coney's own option, docs/guides/client-world.md#client-game)
+TEST_CASE("--net-view makes a guest the client game, and needs --join", "[options]") {
+    const auto view = parse(std::array<std::string_view, 3>{"--join", "127.0.0.1:1", "--net-view"});
+    REQUIRE(view.has_value());
+    CHECK(view->netView);
+    const auto plain = parse(std::array<std::string_view, 2>{"--join", "127.0.0.1:1"});
+    REQUIRE(plain.has_value());
+    CHECK_FALSE(plain->netView);
+
+    const auto refused = [](auto args) {
+        const auto result = parse(args);
+        REQUIRE_FALSE(result.has_value());
+        CHECK(result.error().code == ErrorCode::InvalidArgument);
+        CHECK(result.error().message.find("--net-view needs --join") != std::string::npos);
+    };
+    refused(std::array<std::string_view, 1>{"--net-view"});
+    refused(std::array<std::string_view, 3>{"--host", "0", "--net-view"});
+}
+
 TEST_CASE("the bench options measure a played level with fighters spawned", "[options]") {
     auto bench =
         parse(std::array<std::string_view, 12>{"--disc", "x", "--play-level", "level99", "--frames", "300", "--bench",

@@ -60,6 +60,9 @@ target_sources(coney_platform PRIVATE game_console.cpp game_console_links.cpp ga
 # Network play over UDP with ENet, and the game's side of it (host, join, the Network page's figures); the sessions
 # themselves are coney_net (docs/guides/multiplayer.md); the session's levels in the running game (net_levels.cpp).
 target_sources(coney_platform PRIVATE enet_transport.cpp net_game.cpp net_levels.cpp net_play.cpp)
+# The client game: a guest that runs no game of its own and draws the host's from its snapshots
+# (docs/guides/client-world.md#client-game).
+target_sources(coney_platform PRIVATE client_game.cpp client_level_scene.cpp)
 coney_target_defaults(coney_platform)
 # Never coney_debug or Dear ImGui: the game reaches the debug tools only through hooks it offers
 # (docs/guides/building.md#debug-tools).

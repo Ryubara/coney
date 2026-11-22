@@ -247,6 +247,7 @@ add_executable(coney_tests
     platform/disc_throw_arc_test.cpp
     platform/disc_world_test.cpp
     platform/disc_level_test.cpp
+    platform/disc_client_level_test.cpp
     platform/disc_movies_test.cpp
     platform/disc_play_frame_rate_test.cpp
     platform/disc_play_level_simulation_test.cpp
@@ -554,7 +555,7 @@ target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cp
 target_sources(coney_tests PRIVATE net/bit_stream_test.cpp net/input_buffer_test.cpp net/link_conditioner_test.cpp
                                    net/link_quality_test.cpp net/loopback_transport_test.cpp net/net_id_test.cpp net/protocol_test.cpp net/replicated_fields_test.cpp net/snapshot_test.cpp
                                    net/jitter_buffer_test.cpp net/client_world_test.cpp net/event_channel_test.cpp net/state_digest_test.cpp net/game_humans_test.cpp net/session_record_test.cpp
-                                   net/player_huds_test.cpp net/hud_standing_test.cpp
+                                   net/player_huds_test.cpp net/hud_standing_test.cpp net/character_clips_test.cpp platform/client_game_test.cpp
                                    net/sessions_test.cpp net/level_sync_test.cpp platform/enet_transport_test.cpp platform/net_play_test.cpp
                                    platform/game_console_test.cpp platform/game_settings_test.cpp)
 # What the console takes from the running game, apart from the list above so that its tests' registration stays theirs.

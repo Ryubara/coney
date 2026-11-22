@@ -137,6 +137,9 @@ class ClientWorld {
     /// Takes every snapshot `snapshots` has decoded since the last call into the buffer, oldest first, by its server
     /// step: two may arrive in one step. Call after each NetClient::receive().
     void receive(const SnapshotReceiver& snapshots);
+    /// Takes none of what `snapshots` has decoded so far: receive() takes only the snapshots decoded after this call.
+    /// For a world made for a new level, whose receiver still keeps the last level's snapshots.
+    void skipDecoded(const SnapshotReceiver& snapshots);
     /// One client step: the buffer's clock advances, and the humans it shows become this step's.
     void step();
     /// The humans as this frame draws them, `alpha` of the way from the step before to the last one: a human new in
