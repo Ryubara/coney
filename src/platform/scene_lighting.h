@@ -107,7 +107,9 @@ class SceneLighting {
     void drawHumanAtomic(rw::Atomic* atomic, bool hidden);
 
     /// Draws this frame's coronas onto `engine`'s frame: Z test on, no Z write, no fog, blended by alpha.
-    /// @orig 0x0017caa8 Light_UpdateFlickerAndCorona (LightManager.cpp)
+    /// @coney-only draws at once the sprites LightManager::addCorona makes from the original's corona step (0x0017caa8
+    /// Light_UpdateFlickerAndCorona queues them into its sprite batch, which ResourceMgr_Render3DSprites 0x00185b38
+    /// draws); the original's batch is not ported
     void drawCoronas(RenderEngine& engine) const;
     /// Draws one blob shadow (game axes) per entry of `shadows` onto `engine`'s frame.
     void drawBlobShadows(RenderEngine& engine, std::span<const graphics::BlobShadow> shadows) const;
@@ -131,7 +133,8 @@ class SceneLighting {
     /// Draws the health rings and the L1 markers (game axes) from `part_page1` onto `engine`'s frame: triangle fans in
     /// their per-vertex colours, Z tested, fog off. **Coney's stand-in** for the state the world pass leaves (not
     /// traced): alpha blended, no Z write.
-    /// @orig 0x0017b2e0 GroundRing_DrawQueued (unknown)
+    /// @coney-only draws the fans hud::ringFan makes; the original's ring draw (0x0017b2e0 GroundRing_DrawQueued) makes
+    /// the arcs and the fans and draws them in one function, and Coney's arcs and fans are src/hud/health_rings.cpp
     void drawGroundRings(RenderEngine& engine, std::span<const hud::GroundRing> rings,
                          std::span<const hud::TargetMarker> markers) const;
 
