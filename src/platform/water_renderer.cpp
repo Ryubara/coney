@@ -45,7 +45,7 @@ void WaterRenderer::loadTexture() {
     m_dictionary = std::move(dictionaries->front());
 }
 
-void WaterRenderer::draw(const effects::Water& water) {
+void WaterRenderer::draw(RenderEngine& /*engine*/, const effects::Water& water) {
     if (!water.placed()) {
         return;
     }

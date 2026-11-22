@@ -13,6 +13,8 @@
 
 namespace coney::platform {
 
+class RenderEngine;
+
 /// Draws player 1's throw-aim arc (graphics::throwArcStrip()) while he aims: the ribbon with back-face culling off, as
 /// `ThrowArc_Render` draws its clump, textured with `aimthrow` (the WAD file named by the decimal CRC-32 of
 /// `aimthrow_tex`), wrapping, linearly filtered. The texture is loaded the first time the arc is drawn; one that does
@@ -28,8 +30,9 @@ class ThrowArcRenderer {
     /// RenderEngine stops.
     ThrowArcRenderer(const io::Wad& wad, std::function<void(std::string_view)> print);
 
-    /// Draws the ribbon `strip` (graphics::throwArcStrip(), game axes) through the current camera.
-    void draw(const std::vector<graphics::ThrowArcVertex>& strip);
+    /// Draws the ribbon `strip` (graphics::throwArcStrip(), game axes) onto `engine`'s frame through the current
+    /// camera.
+    void draw(RenderEngine& engine, const std::vector<graphics::ThrowArcVertex>& strip);
 
   private:
     // Loads and converts the texture dictionary, once.

@@ -36,6 +36,7 @@
 #include "net/game_humans.h"
 #include "platform/draw_calls.h"
 #include "platform/human_posing.h"
+#include "platform/line_list.h"
 #include "platform/object_draw.h"
 #include "platform/perf_probes.h"
 #include "platform/play_level_effects.h"
@@ -59,45 +60,6 @@ constexpr float kLineLift = 0.02F;
 
 // A debug line's end (game axes) in RenderWare's axes, lifted a little so a line on a surface is not hidden in it.
 world::Vec3 lineEndOf(anim::Vec3 game) { return toRenderWare(anim::Vec3{game.x, game.y, game.z + kLineLift}); }
-
-// A coloured line list for librw's 3D immediate mode, in RenderWare's axes.
-class LineList {
-  public:
-    // Adds a line from `a` to `b` (game axes) in `colour`.
-    void add(anim::Vec3 a, anim::Vec3 b, graphics::Rgba colour) {
-        push(a, colour);
-        push(b, colour);
-    }
-    // Draws the lines through the current camera: tested against depth, not writing it, untextured.
-    void draw() {
-        if (m_vertices.empty()) {
-            return;
-        }
-        draw::setRenderState(rw::ZTESTENABLE, 1);
-        draw::setRenderState(rw::ZWRITEENABLE, 0);
-        draw::setRenderState(rw::VERTEXALPHA, 0);
-        draw::setRenderStatePtr(rw::TEXTURERASTER, nullptr);
-        draw::im3dTransform(m_vertices.data(), static_cast<rw::int32>(m_vertices.size()), nullptr,
-                            rw::im3d::VERTEXXYZ | rw::im3d::VERTEXRGBA);
-        draw::im3dRenderPrimitive(rw::PRIMTYPELINELIST);
-        draw::im3dEnd();
-        draw::setRenderState(rw::ZWRITEENABLE, 1);
-    }
-
-  private:
-    // One vertex, lifted a little so a line on a surface is not hidden in it, turned into RenderWare's axes.
-    void push(anim::Vec3 game, graphics::Rgba colour) {
-        const world::Vec3 p = lineEndOf(game);
-        rw::gl3::Im3DVertex vertex{};
-        vertex.setX(p.x);
-        vertex.setY(p.y);
-        vertex.setZ(p.z);
-        vertex.setColor(colour.r, colour.g, colour.b, colour.a);
-        m_vertices.push_back(vertex);
-    }
-
-    std::vector<rw::gl3::Im3DVertex> m_vertices;
-};
 
 // The gait's name for the summary.
 const char* gaitName(human::Gait gait) {
@@ -849,7 +811,7 @@ void PlayLevelMode::drawSceneLines(const human::PlayerSnapshot& snapshot, float 
     for (const SceneLine& line : m_sceneLines(*this, snapshot, alpha)) {
         lines.add(line.a, line.b, line.colour);
     }
-    lines.draw();
+    lines.draw(m_engine);
 }
 
 anim::Vec3 PlayLevelMode::playerFeet() const { return m_player->human().position(); }

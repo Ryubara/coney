@@ -46,7 +46,7 @@ void ThrowArcRenderer::loadTexture() {
     m_dictionary = std::move(dictionaries->front());
 }
 
-void ThrowArcRenderer::draw(const std::vector<graphics::ThrowArcVertex>& strip) {
+void ThrowArcRenderer::draw(RenderEngine& /*engine*/, const std::vector<graphics::ThrowArcVertex>& strip) {
     if (strip.empty()) {
         return;
     }

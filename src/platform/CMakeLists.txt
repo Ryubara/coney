@@ -24,8 +24,9 @@ target_sources(coney_platform PRIVATE sdl_input.cpp)
 # (docs/guides/running-play-level.md#pad-pipe).
 target_sources(coney_platform PRIVATE pad_pipe.cpp)
 # A level's particle systems and motion blur, drawn in play (docs/research/particles.md#coneys-implementation).
-target_sources(coney_platform PRIVATE motion_blur_pass.cpp parked_cars.cpp particle_renderer.cpp play_level_effects.cpp
-                                      room_smoke_overlay.cpp throw_arc_renderer.cpp water_renderer.cpp)
+target_sources(coney_platform PRIVATE line_list.cpp motion_blur_pass.cpp parked_cars.cpp particle_renderer.cpp
+                                      play_level_effects.cpp room_smoke_overlay.cpp throw_arc_renderer.cpp
+                                      water_renderer.cpp)
 # Real-time frame pacing: the one place that reads the clock (docs/guides/conventions.md#update-and-render).
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
 # The GPU renderer's start on SDL3's GPU API: its window, device, swapchain and present modes

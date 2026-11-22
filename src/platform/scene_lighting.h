@@ -27,6 +27,8 @@ struct World;
 
 namespace coney::platform {
 
+class RenderEngine;
+
 /// Draws atomics lit the way the original's LightManager lights them: per atomic, the lights
 /// graphics::LightManager::select() chooses, handed to librw (whose GL3 lighting adds ambient, directional and point
 /// lights to the prelighting and clamps, as the PS2 pipeline does); then the frame's coronas from the `lighting`
@@ -103,11 +105,11 @@ class SceneLighting {
     /// @orig 0x00174320 HumanRender_Draw (HumanRender.cpp)
     void drawHumanAtomic(rw::Atomic* atomic, bool hidden);
 
-    /// Draws this frame's coronas: Z test on, no Z write, no fog, blended by alpha.
+    /// Draws this frame's coronas onto `engine`'s frame: Z test on, no Z write, no fog, blended by alpha.
     /// @orig 0x0017caa8 Light_UpdateFlickerAndCorona (LightManager.cpp)
-    void drawCoronas() const;
-    /// Draws one blob shadow (game axes) per entry of `shadows`.
-    void drawBlobShadows(std::span<const graphics::BlobShadow> shadows) const;
+    void drawCoronas(RenderEngine& engine) const;
+    /// Draws one blob shadow (game axes) per entry of `shadows` onto `engine`'s frame.
+    void drawBlobShadows(RenderEngine& engine, std::span<const graphics::BlobShadow> shadows) const;
     /// Draws a world object's atomic with the objects' lights for its squared distance to the camera and the point
     /// lights its sphere overlaps, as a human's (docs/research/objects.md#models: the lights are chosen per object).
     /// The tag covers ObjectRender_Draw's light selection alone (its call of LightManager_SelectLights, 0x0017de10);
@@ -121,15 +123,16 @@ class SceneLighting {
     /// clump's, is commented at the play mode's draw of the cars.
     /// @orig 0x00172c70 CarInstance_Render (unknown)
     void drawCarAtomic(rw::Atomic* atomic);
-    /// Draws the glass panes (game axes) from `part_page1`, each a quad of its rectangle in its colour: alpha blended,
-    /// Z tested, no Z write, no culling, no fog.
+    /// Draws the glass panes (game axes) from `part_page1` onto `engine`'s frame, each a quad of its rectangle in its
+    /// colour: alpha blended, Z tested, no Z write, no culling, no fog.
     /// @orig 0x001831c0 Instance_DrawOneSpriteIm3D (unknown)
-    void drawGlass(std::span<const world_objects::GlassQuad> panes) const;
-    /// Draws the health rings and the L1 markers (game axes) from `part_page1`: triangle fans in their per-vertex
-    /// colours, Z tested, fog off. **Coney's stand-in** for the state the world pass leaves (not traced): alpha
-    /// blended, no Z write.
+    void drawGlass(RenderEngine& engine, std::span<const world_objects::GlassQuad> panes) const;
+    /// Draws the health rings and the L1 markers (game axes) from `part_page1` onto `engine`'s frame: triangle fans in
+    /// their per-vertex colours, Z tested, fog off. **Coney's stand-in** for the state the world pass leaves (not
+    /// traced): alpha blended, no Z write.
     /// @orig 0x0017b2e0 GroundRing_DrawQueued (unknown)
-    void drawGroundRings(std::span<const hud::GroundRing> rings, std::span<const hud::TargetMarker> markers) const;
+    void drawGroundRings(RenderEngine& engine, std::span<const hud::GroundRing> rings,
+                         std::span<const hud::TargetMarker> markers) const;
 
     /// The lighting lab's switches to draw with (docs/guides/realtime-lighting.md#lab), which must outlive their use;
     /// null (the default): the faithful picture, lit from the frame's own camera, as without the debug tools.

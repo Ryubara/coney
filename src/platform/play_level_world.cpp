@@ -356,7 +356,7 @@ void PlayLevelMode::drawThrowArc(float alpha) {
     if (!m_throwArc) {
         m_throwArc = std::make_unique<ThrowArcRenderer>(m_wad, m_print);
     }
-    m_throwArc->draw(ribbon);
+    m_throwArc->draw(m_engine, ribbon);
 }
 
 } // namespace coney::platform

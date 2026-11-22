@@ -347,7 +347,7 @@ void SceneLighting::drawCarAtomic(rw::Atomic* atomic) {
     m_routed = false;
 }
 
-void SceneLighting::drawGroundRings(std::span<const hud::GroundRing> rings,
+void SceneLighting::drawGroundRings(RenderEngine& /*engine*/, std::span<const hud::GroundRing> rings,
                                     std::span<const hud::TargetMarker> markers) const {
     rw::Texture* texture = rwTextureOf(m_shadowSheet);
     if (texture == nullptr || !m_shadowSheet) {
@@ -382,7 +382,7 @@ void SceneLighting::drawGroundRings(std::span<const hud::GroundRing> rings,
     drawQuads(vertices, texture);
 }
 
-void SceneLighting::drawCoronas() const {
+void SceneLighting::drawCoronas(RenderEngine& /*engine*/) const {
     rw::Texture* texture = rwTextureOf(m_coronaSheet);
     if (texture == nullptr || !m_coronaSheet) {
         return;
@@ -402,7 +402,7 @@ void SceneLighting::drawCoronas() const {
     drawQuads(vertices, texture);
 }
 
-void SceneLighting::drawBlobShadows(std::span<const graphics::BlobShadow> shadows) const {
+void SceneLighting::drawBlobShadows(RenderEngine& /*engine*/, std::span<const graphics::BlobShadow> shadows) const {
     rw::Texture* texture = rwTextureOf(m_shadowSheet);
     if (texture == nullptr || !m_shadowSheet) {
         return;
@@ -427,7 +427,7 @@ void SceneLighting::drawBlobShadows(std::span<const graphics::BlobShadow> shadow
     drawQuads(vertices, texture);
 }
 
-void SceneLighting::drawGlass(std::span<const world_objects::GlassQuad> panes) const {
+void SceneLighting::drawGlass(RenderEngine& /*engine*/, std::span<const world_objects::GlassQuad> panes) const {
     rw::Texture* texture = rwTextureOf(m_shadowSheet);
     if (texture == nullptr || !m_shadowSheet) {
         return;

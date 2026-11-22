@@ -162,7 +162,12 @@ const graphics::SpriteSheet* ParticleRenderer::sheet(effects::ParticleSheet whic
     return slot.get();
 }
 
-void ParticleRenderer::draw(const effects::ParticleSystems& systems, const world::CameraPose& view) {
+void ParticleRenderer::useSheet(effects::ParticleSheet which, graphics::SpriteSheet sheet) {
+    m_sheets[which] = std::make_unique<graphics::SpriteSheet>(std::move(sheet));
+}
+
+void ParticleRenderer::draw(RenderEngine& /*engine*/, const effects::ParticleSystems& systems,
+                            const world::CameraPose& view) {
     if (systems.particleCount() == 0) {
         return;
     }
@@ -199,8 +204,8 @@ void ParticleRenderer::draw(const effects::ParticleSystems& systems, const world
     endSprites(fogged);
 }
 
-void ParticleRenderer::drawSprites(std::span<const effects::Particle> sprites, effects::ParticleSheet sheetOf, bool add,
-                                   const world::CameraPose& view) {
+void ParticleRenderer::drawSprites(RenderEngine& /*engine*/, std::span<const effects::Particle> sprites,
+                                   effects::ParticleSheet sheetOf, bool add, const world::CameraPose& view) {
     if (sprites.empty()) {
         return;
     }

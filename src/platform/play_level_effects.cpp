@@ -37,7 +37,7 @@ void PlayLevelEffects::drawCars(const std::function<void(const ObjectDraw&)>& re
 void PlayLevelEffects::drawInScene(const world::CameraPose& view) {
     // The NULL backend draws nothing, so the sheets are never loaded there.
     if (m_effects != nullptr && m_engine.drawsPixels()) {
-        m_particles.draw(m_effects->particles, view);
+        m_particles.draw(m_engine, m_effects->particles, view);
         drawFog(view);
     }
 }
@@ -59,18 +59,18 @@ void PlayLevelEffects::drawFog(const world::CameraPose& view) {
         sprite.fades = false;
         sprites.push_back(sprite);
     }
-    m_particles.drawSprites(sprites, effects::GroundFog::sheetOf(settings->sprite), false, view);
+    m_particles.drawSprites(m_engine, sprites, effects::GroundFog::sheetOf(settings->sprite), false, view);
 }
 
 void PlayLevelEffects::drawWater() {
     if (m_effects != nullptr && m_engine.drawsPixels()) {
-        m_water.draw(m_effects->water);
+        m_water.draw(m_engine, m_effects->water);
     }
 }
 
 void PlayLevelEffects::drawGlints(std::span<const effects::Particle> glints, const world::CameraPose& view) {
     if (m_engine.drawsPixels()) {
-        m_particles.drawSprites(glints, effects::Triglint::kSheet, true, view);
+        m_particles.drawSprites(m_engine, glints, effects::Triglint::kSheet, true, view);
     }
 }
 

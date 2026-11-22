@@ -334,7 +334,7 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     }
     // The coronas of the visible lights, over the world.
     if (!m_sceneOnly) { // Coney's --scene-only (debug): no coronas, which the GPU renderer does not draw yet.
-        lit.drawCoronas();
+        lit.drawCoronas(engine);
     }
     draw::setRenderState(rw::FOGENABLE, 0);
     // The 2D pass over the world (the menus or the HUD): no depth test, nothing culled.
