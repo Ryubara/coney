@@ -92,7 +92,7 @@ class LevelFlowMode final : public GameMode {
 
     /// Chooses the level named `name` (by the level table) to start on the next update: `MenuLoadLevel`'s choice
     /// (StartUpFlow::menuLoadLevel() also asks gameplay to leave). A name the table does not have is logged and
-    /// ignored.
+    /// chooses no level.
     /// @orig 0x0015c7b0 LevelFlow_ChooseLevel (unknown)
     void chooseLevel(std::string_view name);
 
