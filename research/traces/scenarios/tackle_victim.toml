@@ -1,7 +1,7 @@
 # The tackle's victim from the tackle to standing again, with no input: his health and state word each update, to say
 # whether a tackled human is down by state and what health he keeps (docs/research/combat-reactions.md#down-health).
 # The set-up is moves_mounted_square.toml's.
-description = "slot 6: PoizoCiv 1.5 m ahead is given the tackle (command 0xe) at the player, who does nothing until he stands"
+description = "slot 6: PoizoCiv 1.5 m ahead is given the tackle (command 0xe) at the player, with no input after it"
 research = "docs/research/combat-reactions.md"
 input = "tackle_victim.txt"
 updates = 400
