@@ -177,6 +177,34 @@ def test_coney_records_on_the_renderer_it_is_given(checkout: Path) -> None:
     assert args[args.index("--renderer") + 1] == "gpu"
 
 
+def test_a_scenario_can_keep_the_debug_draw_in_its_clips(checkout: Path) -> None:
+    # The mesh views are Debug draw items, which a clip drops unless `--record-debug-draw` keeps them, so a scenario for
+    # them asks for it; every other scenario leaves it off.
+    path = _scenario(
+        checkout / "tools" / "clips",
+        "views",
+        'description = "views"\nlevel = "level99"\ninput = "tests/support/walk.txt"\nseconds = 5\n'
+        "record_debug_draw = true\n",
+    )
+    run = clips_pair.load_scenario(path, checkout)
+    assert run.record_debug_draw is True
+    args = clips_pair.coney_arguments(Path("coney.exe"), "H:/", run, Path("/s/t/clips/after.mp4"))
+    assert "--record-debug-draw" in args
+    plain = clips_pair.PairRun("w", "level99", run.input_script, seconds=5)
+    assert plain.record_debug_draw is False
+    assert "--record-debug-draw" not in clips_pair.coney_arguments(Path("coney.exe"), "H:/", plain, Path("/s/a.mp4"))
+
+
+def test_a_scenario_refuses_a_record_debug_draw_that_is_not_a_bool(checkout: Path) -> None:
+    text = (
+        'description = "d"\nlevel = "level99"\ninput = "tests/support/walk.txt"\nseconds = 5\n'
+        'record_debug_draw = "yes"\n'
+    )
+    path = _scenario(checkout / "tools" / "clips", "bad", text)
+    with pytest.raises(clips.ClipError, match="record_debug_draw"):
+        clips_pair.load_scenario(path, checkout)
+
+
 def test_the_record_line_gives_the_frames_and_their_hash() -> None:
     text = "loading\n" + RECORD_LINE.format(path="C:/s/clips/after.mp4", frames=300, seconds=10, digest="0x00ab")
     recording = clips_pair.parse_record_line(text)
