@@ -12,7 +12,19 @@ namespace coney::ai {
 // The gangs' tactic rolls start from their usual seed, 1, moved by the variation.
 Brains::Brains(std::uint32_t variation) : m_gangs(variedSeed(1, variation)), m_variation(variation) {}
 
+Brains::~Brains() {
+    for (const std::unique_ptr<Brain>& brain : m_brains) {
+        human::Human& human = brain->human();
+        if (linked(human) && human.brainSlot() == brain->slot()) {
+            human.setBrainSlot(std::nullopt);
+        }
+    }
+}
+
 Brain& Brains::add(human::Human& human, BrainType type, const FightSettings& settings, std::uint32_t seed) {
+    // The first brain a human was given is the one find() gives, as the scan in slot order did: only a human with no
+    // brain here yet is linked to the new slot, or, when another table holds his slot, listed as not linked.
+    const bool first = find(human) == nullptr;
     // The flags its brain type gives a human as it is made (Human_Init), on top of what it has.
     human.setFlag(startingFlags(type), true);
     m_brains.push_back(std::make_unique<Brain>(human, type, settings, variedSeed(seed, m_variation), nowMs()));
@@ -20,8 +32,12 @@ Brain& Brains::add(human::Human& human, BrainType type, const FightSettings& set
     m_brains.back()->setPlanner(m_planner);
     m_brains.back()->setCollision(m_collision);
     m_brains.back()->setPeers(&m_brains);
-    // The first brain a human was given is the one find() gives, as the scan in slot order did.
-    m_byHuman.try_emplace(&human, m_brains.back().get());
+    m_humanOf.push_back(&human);
+    if (first && !human.brainSlot().has_value()) {
+        human.setBrainSlot(static_cast<std::uint32_t>(m_brains.size() - 1));
+    } else if (first) {
+        m_unlinked.push_back(&human);
+    }
     return *m_brains.back();
 }
 
@@ -31,28 +47,56 @@ void Brains::remove(const human::Human& human) {
     if (found == m_brains.end()) {
         return;
     }
+    human::Human& owner = (*found)->human();
+    const bool ownerLinked = linked(owner);
     m_gangs.removeMember(**found);
     m_gangs.forget(**found);
     m_formations.forget(**found);
     for (const std::unique_ptr<Brain>& other : m_brains) {
         other->forget(**found);
     }
+    m_humanOf.erase(m_humanOf.begin() + (found - m_brains.begin()));
     m_brains.erase(found);
-    // The human's next brain in slot order, if it had two, is found from now on.
-    m_byHuman.erase(&human);
-    if (const auto next =
-            std::ranges::find_if(m_brains, [&human](const std::unique_ptr<Brain>& b) { return &b->human() == &human; });
-        next != m_brains.end()) {
-        m_byHuman.emplace(&human, next->get());
-    }
+    // The slots after it close up; a human whose slot was a brain's old one follows it to the new.
     for (std::size_t slot = 0; slot < m_brains.size(); ++slot) {
-        m_brains[slot]->setSlot(slot);
+        Brain& brain = *m_brains[slot];
+        human::Human& other = brain.human();
+        if (linked(other) && other.brainSlot() == brain.slot()) {
+            other.setBrainSlot(static_cast<std::uint32_t>(slot));
+        }
+        brain.setSlot(slot);
+    }
+    // The human's next brain in slot order, if he had two, is found from now on.
+    const std::optional<std::size_t> next = firstSlotOf(owner);
+    if (ownerLinked) {
+        owner.setBrainSlot(next.has_value() ? std::optional<std::uint32_t>(static_cast<std::uint32_t>(*next))
+                                            : std::nullopt);
+    } else if (!next.has_value()) {
+        std::erase(m_unlinked, &owner);
     }
 }
 
 Brain* Brains::find(const human::Human& human) {
-    const auto found = m_byHuman.find(&human);
-    return found == m_byHuman.end() ? nullptr : found->second;
+    // A human another table holds the slot of is found by the walk; every other one by his slot, checked to be his.
+    if (!linked(human)) {
+        const std::optional<std::size_t> slot = firstSlotOf(human);
+        return slot.has_value() ? m_brains[*slot].get() : nullptr;
+    }
+    const std::optional<std::uint32_t> slot = human.brainSlot();
+    if (slot.has_value() && *slot < m_humanOf.size() && m_humanOf[*slot] == &human) {
+        return m_brains[*slot].get();
+    }
+    return nullptr;
+}
+
+bool Brains::linked(const human::Human& human) const {
+    return m_unlinked.empty() || std::ranges::find(m_unlinked, &human) == m_unlinked.end();
+}
+
+std::optional<std::size_t> Brains::firstSlotOf(const human::Human& human) const {
+    const auto found = std::ranges::find(m_humanOf, &human);
+    return found == m_humanOf.end() ? std::nullopt
+                                    : std::optional<std::size_t>(static_cast<std::size_t>(found - m_humanOf.begin()));
 }
 
 void Brains::setPlanner(RoutePlanner* planner) {

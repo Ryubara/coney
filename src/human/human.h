@@ -264,6 +264,13 @@ class Human final : public Holdable {
     /// set back to null (human::Humans sets it around each human's actions); it must outlive those calls.
     /// @coney-only Coney's per-slot target query, the dispatcher's input
     void setTargetSource(const TargetSource* source) { m_targetSource = source; }
+    /// The AI's slot of this human's brain, kept by ai::Brains so that it finds the brain without a search: the
+    /// opposition test asks it for both humans of every pair, many times a step. Nothing for none. Only ai::Brains
+    /// writes it; to anyone else it means nothing (ai::Brains::find() is the lookup).
+    /// @coney-only the brain table's link on the human; the original's human record points at its brain itself
+    void setBrainSlot(std::optional<std::uint32_t> slot) { m_brainSlot = slot; }
+    /// The slot setBrainSlot() left; nothing for none.
+    [[nodiscard]] std::optional<std::uint32_t> brainSlot() const { return m_brainSlot; }
 
     /// The pose to draw now: its clips over the default pose, which is the face clips' (human/face.h) while the face is
     /// shown (faceShown()), else the bind rotations it was made with. Ports only the face's part of the original
@@ -1336,6 +1343,7 @@ class Human final : public Holdable {
     const BodyContact* m_bodyContact = nullptr;   // setBodyContact(), the step's
     std::span<Combatant* const> m_calm;           // setCalm(), for the next updateActions() only
     const TargetSource* m_targetSource = nullptr; // setTargetSource()
+    std::optional<std::uint32_t> m_brainSlot;     // setBrainSlot(), ai::Brains' own
     const ObjectPush* m_objectPush = nullptr;     // setObjectPush(), the step's
     const anim::Skeleton* m_skeleton = nullptr;   // setSkeleton()
     StrikeShapes m_strikes;

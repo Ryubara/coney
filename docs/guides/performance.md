@@ -334,9 +334,10 @@ human's. The test runs for every pair: each human gathers the humans it may hit 
 the victims of its strike, so with 300 fighters a step made 207,000 lookups that visited 32.5 million brains, and the
 gathering alone took a median 14.8 ms of a 31 ms step. A step over its 33 ms then makes the frames that follow run two
 or three steps to catch up, each as long, which is the drop to a few frames a second until the fight thins out. The
-lookup is now a hash table kept beside the brains (the first brain a human was given, as the walk found it), and the
-gathering takes 2.6 ms. The game does the same: the allocations per step, a fingerprint of the work, are identical
-before and after in lockstep (median 3,718, maximum 5,446).
+lookup became a hash table kept beside the brains (the first brain a human was given, as the walk found it; since
+[#1551](issue:1551) a slot kept on the human: [The brain lookup](#brain-lookup)), and the gathering took 2.6 ms. The
+game does the same: the allocations per step, a fingerprint of the work, are identical before and after in lockstep
+(median 3,718, maximum 5,446).
 
 | 150 enemies and 150 allies, crowd view | Before | After |
 | --- | --- | --- |
@@ -358,11 +359,47 @@ lockstep frame went from 38.9 to 24.3 ms.
 
 **What is left.** A step of the brawl is now `humans.state` 8.2 ms (3.5 ms of it the strike tests, which test a
 striking human's capsules against every opposed human; the rest the walking bodies' sweeps against every other
-human's capsule), `humans.actions` 5.3 ms (2.6 ms gathering, each pair still two hash lookups), `humans.brains` 2.7 ms
+human's capsule), `humans.actions` 5.3 ms (2.6 ms gathering, each pair still two hash lookups, since
+[#1551](issue:1551) none: [The brain lookup](#brain-lookup)), `humans.brains` 2.7 ms
 and the fighters' pose snapshots 0.8 ms; the render is 10.6 ms, of which posing the 313 humans is 7.9 ms. The worst
 real-time frames left are the ones that run two steps while many fighters strike at once (the strike tests up to 17 ms
 a step). The sweeps and strikes are port code of the original's pair loops, so a broad phase that skips the far pairs
 without changing a result is its own task.
+
+### The brain lookup without a hash table (#1551) {#brain-lookup}
+
+Whether two humans may fight (`human::Humans::opposed`) and whether one is a threat to the other each ask
+`ai::Brains::find` for both humans' brains, for every pair of humans every step. Since #1031 the lookup was a hash
+table keyed by the human's address (`std::unordered_map`), and MSVC's hash of a pointer is a byte-by-byte FNV hash:
+the #1542 sweep measured the hashing at 30 % of the brawl's step. The table is gone: each human keeps the slot of his
+brain (`human::Human::brainSlot()`, written only by `ai::Brains`, renumbered when a removal closes the slots up), and
+`find` reads the slot and checks it against a small array of each slot's human kept beside the brains. Checking it
+against the brain itself cost a cache miss per lookup: 100 ms a brawl step against 86 ms for a bare pointer. That the
+array is as fast as the pointer is inferred, not measured side by side: both gave about 23 % over the main each was
+built on. The brain found is the same as before (the first one a human was given); a human with brains in two tables
+at once, which only tests make, is found by a walk over the second table's slots.
+
+Taken on 2026-11-21 from `playtest` builds in one build folder, each `main` with and without the change, the sweep's
+bench (headless, 500 enemies and 500 allies, 25 a row, the main thread's CPU time, best and median of interleaved runs
+of 150 steps; the processor at 100 % with other agents' builds). "Engaged" puts every fighter in a gang and scales the
+scan tokens, the sweep's measurement switches, from 15 s after the spawn. Before [the targets' grid](#targets-grid-1550)
+(`main` at `61ae9883a`, three runs) every pair asked for the brains; since it (`b0648193d`, five runs) a human asks only
+for the candidates within a search's reach:
+
+| Step, CPU ms (best / median of runs) | Before the grid: before | After | With the grid: before | After |
+| --- | --- | --- | --- | --- |
+| Brawl 1000, step | 90.4 / 92.2 | 70.0 / 70.0 | 12.10 / 12.35 | 11.74 / 12.34 |
+| Brawl 1000, `humans.actions` | 76.6 / 78.1 | 56.1 / 56.3 | 1.44 / 1.47 | 1.21 / 1.29 |
+| Engaged 1000, step | 96.7 / 97.1 | 79.1 / 79.9 | 44.16 / 44.46 | 43.83 / 44.51 |
+| Engaged 1000, `humans.actions` | 54.2 / 55.0 | 37.7 / 38.2 | 2.92 / 2.95 | 2.42 / 2.49 |
+
+Alone, the change takes 23 % off the brawl's step and 18 % off the engaged one's. The sweep's 30 % (133 to 92 ms) was
+measured on the `playtest` build before [#1552](issue:1552) made it inline as a release does, on an older `main`; the
+same day's `/Ob1` build gave 112 ms before and 86 ms with the sweep's own form (a bare pointer), 23 %. With the grid,
+which leaves few lookups, it takes 0.2 to 0.5 ms (16 %) off `humans.actions`, about 3 % of the brawl's step and within
+the noise of the engaged one's, whose time is the strike tests and the scans. Gameplay is unchanged: the all-humans
+trace, the event log and the lockstep digest hash the same before and after on both `main`s, on brawl 300 for 500
+steps and engaged 300 for 700 steps.
 
 ### The AI fighters page with a crowd (#1031) {#ai-page-1031}
 
