@@ -13,6 +13,10 @@ Whether the old base "has merged" is judged by what it changed, not by its commi
 none of its commits are in the default branch. The base's tip is merged into the default branch in memory
 (`git merge-tree`); if that adds nothing, every change of the base is in the default branch already. A branch must hold
 none of the base's commits either, by hash or by change (`git patch-id`), so what is left of it is the unit's own.
+When merging conflicts, because the default branch edited the base's lines after the squash, the base is judged merged
+patch by patch instead: every one of its commits has its change in the default branch (`git cherry`), or its whole
+change is the change of one commit there (the squash commit, by `git patch-id`). If neither tells, the coordinator can
+go on with `--base-merged-reason "<why>"`, which is recorded in the `claimed` stamp.
 These are the git helpers and the decision; `task_start` dispatches here and stamps the start through `_stamp_start`.
 """
 
@@ -75,16 +79,15 @@ def _names(items: list[str], more: str = "") -> str:
     return shown + (f" and {len(items) - SHOWN} more{more}" if len(items) > SHOWN else "")
 
 
-def unmerged_problem(main: Path, onto: str, tip: str, base_ref: str) -> str | None:
-    """Why the old base (at `tip`) has not merged into `onto`, or None when merging it adds nothing. Merging it in
-    memory shows by change what its commits' hashes cannot, since a squash merge leaves none of them in `onto`."""
+def _merge_conflict_or_additions(main: Path, onto: str, tip: str, base_ref: str) -> str | None:
+    """Why merging the base (at `tip`) into `onto` in memory does not add nothing, or None when it adds nothing."""
     done = _git(main, "merge-tree", "--write-tree", "--name-only", "--no-messages", onto, tip)
     lines = done.stdout.split("\n")
     if done.returncode == 1:
         files = [line for line in lines[1:] if line.strip()]
         return (
             f"the old base {base_ref} has not merged into {onto}, or {onto} has changed what it added since: merging "
-            f"it conflicts in {_names(files)}; ask the coordinator"
+            f"it conflicts in {_names(files)}"
         )
     if done.returncode != 0 or not lines[0].strip():
         raise ConfigError(f"git merge-tree failed (it needs git 2.38 or later): {done.stderr.strip() or 'no output'}")
@@ -93,10 +96,44 @@ def unmerged_problem(main: Path, onto: str, tip: str, base_ref: str) -> str | No
     if merged == current:
         return None
     changed = _git(main, "diff", "--name-only", current, merged).stdout.split()
-    return (
-        f"the old base {base_ref} has not merged into {onto}: it still adds changes {onto} lacks "
-        f"({_names(changed)}); wait for its pull request to merge"
-    )
+    return f"the old base {base_ref} has not merged into {onto}: it still adds changes {onto} lacks ({_names(changed)})"
+
+
+def merged_patch_by_patch(main: Path, onto: str, tip: str) -> bool:
+    """Whether the base (at `tip`) has merged into `onto` judged by its changes alone, which holds when `onto` has
+    edited the base's lines since and merging it conflicts: either every commit of the base has an equivalent in `onto`
+    (`git cherry`: they were merged one by one), or the base's whole change against where it left `onto` is the change
+    of one commit in `onto` (a squash merge). A base with no change of its own is not "merged" by this."""
+    cherry = _git(main, "cherry", onto, tip)
+    if cherry.returncode != 0:
+        raise ConfigError(f"git cherry {onto} {tip} failed: {cherry.stderr.strip() or 'no output'}")
+    marks = [line.split()[0] for line in cherry.stdout.splitlines() if line.strip()]
+    if marks and all(mark == "-" for mark in marks):
+        return True
+    fork = _git(main, "merge-base", onto, tip)
+    if fork.returncode != 0 or not fork.stdout.strip():
+        return False
+    fork_point = fork.stdout.strip()
+    whole = _run_bytes(main, ["diff", "--no-ext-diff", "--no-color", "--binary", "--no-renames", fork_point, tip])
+    if whole.returncode != 0:
+        raise ConfigError(f"git diff failed: {whole.stderr.decode('utf-8', 'replace').strip() or 'no output'}")
+    if not whole.stdout.strip():
+        return False
+    mine = _run_bytes(main, ["patch-id", "--stable"], whole.stdout)
+    if mine.returncode != 0 or not mine.stdout.strip():
+        raise ConfigError(f"git patch-id failed: {mine.stderr.decode('utf-8', 'replace').strip() or 'no output'}")
+    return mine.stdout.decode("utf-8", "replace").split()[0] in _patch_ids(main, [f"{fork_point}..{onto}"])
+
+
+def unmerged_problem(main: Path, onto: str, tip: str, base_ref: str) -> str | None:
+    """Why the old base (at `tip`) has not merged into `onto`, or None when it has. Merging it in memory shows by change
+    what its commits' hashes cannot, since a squash merge leaves none of them in `onto`; when that conflicts or adds
+    something, because `onto` has edited the lines since, the patch-by-patch check (`merged_patch_by_patch`) decides.
+    The caller adds the way on when neither check tells: the coordinator's `--base-merged-reason`."""
+    problem = _merge_conflict_or_additions(main, onto, tip, base_ref)
+    if problem is None or merged_patch_by_patch(main, onto, tip):
+        return None
+    return problem
 
 
 def _patch_ids(main: Path, revs: list[str]) -> dict[str, str]:
@@ -104,7 +141,10 @@ def _patch_ids(main: Path, revs: list[str]) -> dict[str, str]:
     recognised by its change under another hash."""
     # No external diff or colour from the user's config, and binary files' content in the patch: the id must depend on
     # the change alone.
-    log = _run_bytes(main, ["log", "-p", "--no-ext-diff", "--no-color", "--binary", "--no-merges", "--reverse", *revs])
+    log = _run_bytes(
+        main,
+        ["log", "-p", "--no-ext-diff", "--no-color", "--binary", "--no-renames", "--no-merges", "--reverse", *revs],
+    )
     if log.returncode != 0:
         raise ConfigError(f"git log failed: {log.stderr.decode('utf-8', 'replace').strip() or 'no output'}")
     ids = _run_bytes(main, ["patch-id", "--stable"], log.stdout)
@@ -212,13 +252,21 @@ def restart_unit(
             "it added cannot be checked; fetch it, or ask the coordinator"
         )
         return 1
-    for why in (
-        unmerged_problem(main, onto, old, record.base_ref),
-        foreign_problem(main, onto, record.branch, tips, record.base_ref),
-    ):
-        if why is not None:
-            out(f"refused: {why}")
-            return 1
+    reason = (request.base_merged_reason or "").strip()
+    unmerged = unmerged_problem(main, onto, old, record.base_ref)
+    if unmerged is not None and not reason:
+        out(
+            f"refused: {unmerged}; if its pull request has merged, this check cannot tell, and the coordinator can go "
+            f'on with a recorded reason: task start {task.task} --restart --base-merged-reason "<why it merged>" '
+            "(docs/guides/issues.md#restarting)"
+        )
+        return 1
+    if reason and unmerged is None:
+        out("  the old base is shown merged: --base-merged-reason is not needed and not recorded")
+    why = foreign_problem(main, onto, record.branch, tips, record.base_ref)
+    if why is not None:
+        out(f"refused: {why}")
+        return 1
     tip = _git(main, "rev-parse", f"refs/heads/{record.branch}^{{commit}}").stdout.strip()
     fork_point = task_adopt.merge_base(main, record.branch, onto)
     if fork_point is None:
@@ -231,6 +279,7 @@ def restart_unit(
         out(
             f"dry run: would restart '{task.task}' from {base_ref} (the branch left it at {fork_point[:12]}); "
             f"its base {record.base_ref} has merged"
+            + (f" (by the coordinator's reason: {reason})" if unmerged is not None else "")
         )
         if old_log:
             out(f"dry run: would move the old stamp log {log_folder} to {moved}")
@@ -249,12 +298,16 @@ def restart_unit(
         "from_base_ref": record.base_ref,
         "from_base_commit": record.base_commit,
         "log": target.name if target else _newest_archive(log_folder),
+        # What the check said and the coordinator's reason for going on, in the stamp the reviewer reads.
+        **({"base_merged_override": {"reason": reason, "check": unmerged}} if unmerged is not None else {}),
     }
     _stamp_start(fresh, task, who, env, steps, tip, fork_point, restarted=note)
     write_record(record_path, fresh)
     if not record.progress_posted:
         _post_progress(fresh, record_path, env)
     extra = pending_lines(env, task, fresh, True)
+    if unmerged is not None:
+        out(f"  --base-merged-reason recorded in the claimed stamp (the check said: {unmerged}): {reason}")
     _summary(
         fresh, steps, line, env.scratch, f"restarted from {base_ref} (its base {record.base_ref} merged)", env, extra
     )

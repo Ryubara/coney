@@ -684,8 +684,12 @@ checkout:
      `pr-opened` stamp (a unit that was released is updated by `pr open`, not restarted);
    - **the old base has merged**, judged by what it changed and not by its commits, because a squash merge leaves none
      of them in `main`: the base's branch (here or on the remote; the commit the record kept when it is gone) is merged
-     into `origin/main` in memory (`git merge-tree`), and that must add nothing. A base that merged only in part, or
-     whose changes `main` has altered since, is refused and the refusal names the files;
+     into `origin/main` in memory (`git merge-tree`), and that should add nothing. When it does not (the base merged
+     in part, or `main` edited its lines after the squash, so the merge conflicts), the base is judged **patch by
+     patch**: it has merged if every one of its commits has an equivalent in `main` (`git cherry`, a base merged commit
+     by commit), or if its whole change since it left `main` is the change of one commit in `main` (`git patch-id`, a
+     base squash-merged). Neither is met by a base that has not merged, or that merged only in part; that is refused
+     with the files named, and the refusal gives the way on below;
    - **the branch holds nothing but its own**: none of the old base's commits that are not in `main`, by hash or by
      change (`git patch-id`), so a branch not rebased yet, or rebuilt with the base's commits copied, is refused with
      the rebase to run.
@@ -703,8 +707,15 @@ again changes nothing but the refusal. `--dry-run` runs every check and prints w
 The old log is moved first, then the new one is stamped, then the record is written. A restart that stops in between
 (the stamping fails) leaves the record on the old base, so the command can be run again: it restarts again, moves aside
 whatever the new log holds, and the `claimed` stamp's `log` names the newest log moved aside, or is empty when none was.
-A base that the default branch has edited since it merged conflicts when merged, so it is refused with the files named
-and the command asks for the coordinator. It has no way on for that case; that is issue #1632.
+When neither check can tell, because the squash commit holds more than the base did (a merge resolved by hand, or `main`
+changed the base's neighbouring lines before it merged), the refusal says so and names the way on, which is the
+coordinator's: after looking at the base's pull request and `main`, the coordinator gives the engineer the command
+`task start <task> --restart --base-merged-reason "<why it merged>"`. The reason must say what was looked at, for
+example the number of the pull request that merged the base; the check that failed and the reason are recorded in the
+`claimed` stamp (`restarted.base_merged_override`), where the reviewer finds them, and the command prints them.
+The flag goes with `--restart` only, takes words, is not needed (and not recorded) when the check passes, and skips
+only the check that the base merged: the worktree, the log and the branch holding none of the base's commits are still
+checked.
 
 ### Tracks {#slots}
 

@@ -70,6 +70,10 @@ class StartRequest:
     #: base has merged: the record's base, the stamp log's start and the stages are made new, the branch is not moved.
     #: docs/guides/issues.md#restarting.
     restart: bool = False
+    #: With `restart`: the coordinator's reason for going on although the old base cannot be shown to have merged
+    #: (merging it conflicts, as the default branch edited its lines after the squash, and no change matches). It is
+    #: recorded in the `claimed` stamp. docs/guides/issues.md#restarting.
+    base_merged_reason: str | None = None
 
 
 @dataclass
@@ -330,6 +334,12 @@ def start_task(request: StartRequest, env: StartEnv) -> int:
         return 1
     if request.restart and (request.adopt or request.adopt_branch is not None or request.base is not None):
         out("refused: --restart starts the unit again from the default branch; it goes with neither --adopt nor --base")
+        return 1
+    if request.base_merged_reason is not None and not request.restart:
+        out("refused: --base-merged-reason goes with --restart: the way on when the old base is not shown merged")
+        return 1
+    if request.base_merged_reason is not None and not request.base_merged_reason.strip():
+        out("refused: --base-merged-reason needs a reason in words")
         return 1
     if request.restart and task.kind == "fix":
         out("refused: --restart makes an ordinary task's unit start again; a fix task works in its parent's unit")

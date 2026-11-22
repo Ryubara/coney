@@ -49,9 +49,14 @@ def stacked(world: World) -> Path:
     return tree
 
 
-def merge_base_by_squash(world: World) -> None:
-    """The base lands on `main` as one commit with none of its commits, and `main` moves on once more."""
+def merge_base_by_squash(world: World, tweak: bool = False) -> None:
+    """The base lands on `main` as one commit with none of its commits, and `main` moves on once more. With `tweak`
+    the squash commit also holds a change the base did not (as when the merge was resolved by hand), so its change is
+    not the base's."""
     git(world.main, "merge", "-q", "--squash", STACK)
+    if tweak:
+        (world.main / "base-one.txt").write_text("base-one.txt\nresolved by hand\n", encoding="utf-8")
+        git(world.main, "add", "-A")
     git(world.main, "commit", "-q", "-m", "core: Add the base (#1)")
     git(world.main, "push", "-q", "origin", "main")
     world.push_to_origin("after-the-base.txt")
@@ -220,17 +225,92 @@ def test_a_copy_of_a_base_commit_under_another_hash_is_refused(world: World) -> 
     assert archives(world) == []
 
 
-def test_a_base_the_default_branch_changed_since_it_merged_is_refused_with_the_files(world: World) -> None:
+def test_a_base_the_default_branch_edited_after_the_squash_is_judged_merged_by_its_change(world: World) -> None:
     tree = stacked(world)
     merge_base_by_squash(world)
     rebase_onto_main(tree)
-    # `main` edits a file the base added, after the squash: merging the base into it conflicts.
+    # `main` edits a file the base added, after the squash: merging the base into it conflicts, but the squash commit
+    # in `main` is exactly the base's whole change.
+    world.push_to_origin("base-one.txt")
+    assert world.run(restart=True) == 0, world.said()
+    assert world.record().base_ref == "origin/main"
+    assert "base_merged_override" not in world.log().stamps[1].detail["restarted"]
+
+
+def test_a_base_merged_commit_by_commit_and_edited_since_is_judged_merged(world: World) -> None:
+    tree = stacked(world)
+    git(world.main, "cherry-pick", f"{STACK}~1", STACK)
+    git(world.main, "push", "-q", "origin", "main")
+    world.push_to_origin("base-one.txt")
+    rebase_onto_main(tree)
+    assert world.run(restart=True) == 0, world.said()
+    assert world.record().base_ref == "origin/main"
+
+
+def test_the_merge_the_check_cannot_tell_is_refused_and_names_the_way_on(world: World) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world, tweak=True)
+    rebase_onto_main(tree)
     world.push_to_origin("base-one.txt")
     before = snapshot(world)
     assert world.run(restart=True) == 1
-    assert "has not merged" in world.said() and "conflicts in base-one.txt" in world.said()
-    assert "ask the coordinator" in world.said()
+    said = world.said()
+    assert "has not merged" in said and "conflicts in base-one.txt" in said
+    assert f'task start {TASK} --restart --base-merged-reason "<why it merged>"' in said
+    assert "coordinator" in said
     assert snapshot(world) == before and archives(world) == []
+    assert world.record().base_ref == STACK
+
+
+def test_a_coordinator_reason_goes_on_and_is_recorded_in_the_claimed_stamp(world: World) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world, tweak=True)
+    rebase_onto_main(tree)
+    world.push_to_origin("base-one.txt")
+    why = "PR #1 merged it with a hand-resolved squash; checked by the coordinator"
+    assert world.run(restart=True, base_merged_reason=why) == 0, world.said()
+    assert world.record().base_ref == "origin/main"
+    claimed = world.log().stamps[1]
+    override = claimed.detail["restarted"]["base_merged_override"]
+    assert override["reason"] == why and "conflicts in base-one.txt" in override["check"]
+    assert claimed.detail["restarted"]["from_base_ref"] == STACK
+    assert "recorded in the claimed stamp" in world.said()
+
+
+def test_a_reason_is_not_needed_and_not_recorded_when_the_base_is_shown_merged(world: World) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world)
+    rebase_onto_main(tree)
+    assert world.run(restart=True, base_merged_reason="to be sure") == 0, world.said()
+    assert "not needed" in world.said()
+    assert "base_merged_override" not in world.log().stamps[1].detail["restarted"]
+
+
+def test_a_reason_does_not_excuse_the_branch_holding_the_old_bases_commits(world: World) -> None:
+    stacked(world)
+    merge_base_by_squash(world, tweak=True)
+    assert world.run(restart=True, base_merged_reason="it merged") == 1
+    assert "still holds 2 commits of the old base" in world.said() and archives(world) == []
+
+
+def test_a_reason_in_a_dry_run_changes_nothing(world: World) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world, tweak=True)
+    rebase_onto_main(tree)
+    world.push_to_origin("base-one.txt")
+    before = snapshot(world)
+    assert world.run(restart=True, dry_run=True, base_merged_reason="it merged") == 0, world.said()
+    assert "it merged" in world.said() and snapshot(world) == before and world.record().base_ref == STACK
+
+
+def test_a_reason_needs_restart_and_words(world: World) -> None:
+    tree = stacked(world)
+    merge_base_by_squash(world)
+    rebase_onto_main(tree)
+    assert world.run(base_merged_reason="it merged") == 1 and "goes with --restart" in world.said()
+    world.output.clear()
+    assert world.run(restart=True, base_merged_reason="  ") == 1 and "needs a reason" in world.said()
+    assert world.record().base_ref == STACK and archives(world) == []
 
 
 def test_a_base_branch_deleted_after_the_merge_is_judged_from_the_commit_the_unit_recorded(world: World) -> None:
@@ -412,6 +492,8 @@ def test_the_command_line_takes_restart(
 ) -> None:
     assert parse("start", "t", "--restart").restart is True
     assert parse("start", "t").restart is False
+    assert parse("start", "t", "--restart", "--base-merged-reason", "why").base_merged_reason == "why"
+    assert parse("start", "t").base_merged_reason is None
     tree = stacked(world)
     merge_base_by_squash(world)
     rebase_onto_main(tree)
