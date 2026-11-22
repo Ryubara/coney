@@ -143,9 +143,9 @@ that change's commit, or `--before` a hand-made commit where later commits edit 
 route without the kill.
 
 `level5-boss-rings` is the scenario for the health rings: at level5's boss fight (checkpoint 4) cross skips the
-opening scene and SELECT shows the player's rings at full health, whose outer ring fills the whole circle there (in the
-level99 street Rembrandt's stops at his power class byte, 35 %), so this is the run for a change to a full ring
-(#1630).
+opening scene, the player walks toward the fight and holds L1 on Diego at full health. Only a human whose power class
+byte is 100, a boss, has a ring that fills the whole circle (Rembrandt's stops at 35 %), so this is the run for a change
+to a full ring (#1630).
 
 `level99-world-parts` is the scenario for the World page's part switches: it opens the pad menu in the level99 street
 and hides the streamed world, then shows it and hides the objects, for a change to the mesh views' hook or to what a
