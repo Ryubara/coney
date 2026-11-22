@@ -305,7 +305,7 @@ TEST_CASE("past 60 humans a sphere finds every one within its radius and lists t
 
 TEST_CASE("under the engine limits preset a sphere finds and lists the original's 60 past 60 humans",
           "[trigger_spheres][crowd][engine-limits]") {
-    // Expected: trigger-updates.md, confirmed (code): TriggerSphere_Update 0x004146e0 finds at most 60, in slot
+    // Expected: trigger-updates.md#found, confirmed (code): TriggerSphere_Update 0x004146e0 finds at most 60, in slot
     // order; the preset pins the lift at it (docs/guides/running-options.md#engine-limits)
     TriggerSpheres spheres;
     spheres.setLocate(locate);
