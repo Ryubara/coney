@@ -8,8 +8,9 @@ out each in the unit's worktree and puts the branch back, and appends one `fails
 
 The verdict is a pass when the build succeeded at both commits, the test failed on the first and passed on the second. A
 test that passes on the first (it detects nothing) or still fails on the second is a `fail` stamp. A build that does not
-compile, a queued build, a build that never started (the cap on build folders refused it: it printed no `result:`
-line) or a test that does not exist is an error with no stamp: the log records verdicts, not infrastructure faults.
+compile, a queued build, a build that never started (the cap on build folders refused it, or it was interrupted or
+ended unexpectedly: it printed no verdict) or a test that does not exist is an error with no stamp: the log records
+verdicts, not infrastructure faults.
 The test commit may carry the minimal stubs a new feature's test needs to compile, and the stamp lists them; a stub
 must not implement the new behaviour: it returns a default or an empty result, or for a `keeps` test does what the code
 did before. The test commit is never the fix commit. The test files must be the

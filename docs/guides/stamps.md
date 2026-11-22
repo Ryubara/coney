@@ -411,8 +411,9 @@ C++ tests run), does the same on the fix commit (default HEAD), then puts the br
   failed. A test that passes on the test commit detects nothing, and one that still fails on the fix does not
   prove it: both write a `fail` stamp. A build that does not compile, a build left queued for a slot, names
   that match no test and **a build that never started** are errors with no stamp. A build that never started
-  printed no `result:` line: the cap on worktrees that hold a build folder refused it ([The
-  cap](agents.md#build-cap)), it had no `--agent`, or a program it needs is missing. Nothing ran, so there is no
+  printed no verdict (no `result: ok`, `FAILED` or `QUEUED` line): the cap on worktrees that hold a build folder
+  refused it ([The cap](agents.md#build-cap)), it had no `--agent`, a program it needs is missing, or it was
+  interrupted, stopped by a signal or ended unexpectedly. The tests did not run to a result, so there is no
   verdict about the test (task 1549 wrote `fail` stamps #17 to #23 for runs the cap had refused); the error names the
   build's first line (`the red build at <commit> never started: build refused: 7 worktrees already hold ...`) and the
   run goes on once that is fixed.

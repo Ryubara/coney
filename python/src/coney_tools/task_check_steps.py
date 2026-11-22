@@ -22,7 +22,15 @@ from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 
-from coney_tools import docs_check, docs_cli, local_tidy, progress_cli, proof_profiles, uv_environment
+from coney_tools import (
+    ci_python_checks,
+    docs_check,
+    docs_cli,
+    local_tidy,
+    progress_cli,
+    proof_profiles,
+    uv_environment,
+)
 from coney_tools.check_cli import MYPY_COMMAND, RUFF_COMMANDS
 from coney_tools.config import ConfigError
 from coney_tools.conventions import Conventions
@@ -132,19 +140,36 @@ def _commands(
 
 
 def docs_check_step(context: StepContext) -> StepResult:
-    """`coney-tools docs check` (the pages the change touched meet the standards: writing-docs.md#touch-it) and
-    `progress check` as CI runs it (`progress_cli.check_as_ci`: the progress inputs agree, and an `@orig` tag the
-    branch adds spells the database's name, measured from this check's base; CI's python job compares with HEAD^1 and
-    insists on a readable base). Both run, so one run shows every problem; a pass of this check says both held."""
+    """`coney-tools docs check` (the pages the change touched meet the standards: writing-docs.md#touch-it) and the
+    checks CI's python job runs over the checkout, with CI's words and this check's base for its `HEAD^1`: `progress
+    check` (`progress_cli.check_as_ci`: the progress inputs agree, and an `@orig` tag the branch adds spells the
+    database's name; CI insists on a readable base) and each of `ci_python_checks.CHECKS` (the conventions and their
+    generated blocks, the `@orig` tag and copy rules, every generator's `--check`). All of them run, so one run shows
+    every problem; a pass of this check says all held. They are part of this check, not checks of their own, so a stamp
+    written before they were added still names every check its profile lists."""
     result = docs_check.check_changed(context.root, context.base, docs_check.context_for(context.root))
     failed = result.failed
     lines = [line for page in result.pages if page in failed for line in docs_cli.page_lines(result, page)]
     code, printed = progress_cli.check_as_ci(context.root, context.base)
     if code != 0:
         lines += [f"progress check: {line}" for line in printed if line.strip()]
+    broken = 0
+    for words in ci_python_checks.CHECKS:
+        command = ci_python_checks.command(words, context.base)
+        # Never sync the shared environment: another session may hold its executables open (uv_environment.py).
+        status, output = context.run(uv_environment.no_sync(command, context.root), context.root)
+        if status != 0:
+            broken += 1
+            lines.append(f"{' '.join(command[5:])}: exit {status}")
+            lines.extend(f"  {line}" for line in _tail(output))
     pages = f"{len(result.pages)} pages meet the standards" if not failed else f"{len(failed)} pages fail"
-    detail = f"{pages}; progress inputs {'agree' if code == 0 else 'fail'}"
-    return StepResult("docs-check", not failed and code == 0, detail, output=tuple(lines))
+    repository = (
+        f"{len(ci_python_checks.CHECKS)} repository checks pass"
+        if not broken
+        else f"{broken} repository check{'' if broken == 1 else 's'} fail{'s' if broken == 1 else ''}"
+    )
+    detail = f"{pages}; progress inputs {'agree' if code == 0 else 'fail'}; {repository}"
+    return StepResult("docs-check", not failed and code == 0 and not broken, detail, output=tuple(lines))
 
 
 def mkdocs_step(context: StepContext) -> StepResult:
