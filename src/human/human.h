@@ -555,12 +555,14 @@ class Human final : public Holdable {
     [[nodiscard]] bool climbingOver() const { return m_climbRun.has_value() && m_climbRun->over; }
     /// `Human_IsDownOrDead`'s states `0x180050000` as Coney models them: its health run out (dying, knocked out in a
     /// fight: combat::Health::depleted(), which a downed human's 1 health does not undo), a script's knock-out or
-    /// wounded (`0x10000`); never the health's value (docs/research/combat-reactions.md#down-health). Knocked down
-    /// alive (`0x80000`), tackled (`0x800`) and cuffed (`0x20000`) are not among them. The narrow reading:
+    /// wounded (`0x10000`); never the health's value (docs/research/combat-reactions.md#down-health). A health run
+    /// out whose death a paired move still holds back (Fighter::deathPending(), a tandem's victim in his end clip)
+    /// sets none of those states yet. Knocked down alive (`0x80000`), tackled (`0x800`) and cuffed (`0x20000`) are not
+    /// among them. The narrow reading:
     /// ai::downOrDead() (src/ai/gangs.h) is Coney's wider one, which also counts a human knocked down alive.
     /// @orig 0x00227e60 Human_IsDownOrDead (unknown)
     [[nodiscard]] bool downOrDead() const {
-        return m_fighter.health().depleted() || m_script.knockedOut || m_script.wounded;
+        return (m_fighter.health().depleted() && !m_fighter.deathPending()) || m_script.knockedOut || m_script.wounded;
     }
     /// Knocked out, state `0x40000`: its health run out and its dying reaction over (`Human_OnHealthOut` 0x002674c0,
     /// the end callback of the death chain's last clip, knocks a player, flag `0x4`, out through `Human_KnockOut`

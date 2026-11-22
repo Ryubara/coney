@@ -631,8 +631,14 @@ const Combatant* Fighter::lockTarget() const {
     if (m_player) {
         return m_lockOn && !m_lockMoveFree ? m_target : nullptr;
     }
-    return !m_lockBlocked && combat::lockedOn(combat::combatTuning(), m_target != nullptr, m_l1Held) ? m_target
-                                                                                                     : nullptr;
+    if (m_lockBlocked) {
+        return nullptr;
+    }
+    // The fight goal's stance walks round its man whatever the distance; otherwise the lock-on settings decide.
+    if (m_aiStance != nullptr) {
+        return m_aiStance;
+    }
+    return combat::lockedOn(combat::combatTuning(), m_target != nullptr, m_l1Held) ? m_target : nullptr;
 }
 
 bool Fighter::inFightStance() const { return m_player ? m_stanceOn : lockTarget() != nullptr; }

@@ -17,3 +17,11 @@ address = 0x002b3c18
 # lw v0,-0x48cc(a1); lw v1,0x48(v0)
 original = [0x8ca2b734, 0x8c430048]
 log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s1", name = "goal" }, { value = "[s1 + 0x0]", name = "brain" }, { value = "[s1 + 0x14]", name = "due" }, { value = "[[0x0050b734] + 0x48]", name = "now" }]
+
+[hook.fight-reposition]
+description = "FightGoal_Reposition (0x002b2fc8) at its taunt timer test (0x002b31bc, the timer +0x20 just loaded into v1): the brain, the squared distance it was called with (f23), the reason (Brain_CheckAttack's answer), close-in (s7), the timer and whether the target holds an object (s8); one entry per reposition call."
+research = "docs/research/ai-fights.md#fight-reposition"
+address = 0x002b31bc
+# lw a0,-0x48cc(v0); lw s1,0x48(a0)
+original = [0x8c44b734, 0x8c910048]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "[s0 + 0x0]", name = "brain" }, { value = "f23", name = "dist_sq" }, { value = "s2", name = "reason" }, { value = "s7", name = "close_in" }, { value = "v1", name = "timer" }, { value = "s8", name = "holding" }]

@@ -634,9 +634,15 @@ class Brain {
     /// The move aim's radius (`+0x118`).
     [[nodiscard]] float moveAimRadius() const { return m_moveAimRadius; }
     void setMoveAim(anim::Vec3 point, float radius);
-    /// Stubs until the fight stance is ported: a flag nothing reads.
+    /// Whether the human is in the fight stance (`Human_IsInFightStance`, its state `0x1` or `0x2`), in which the AI
+    /// control walks the feet toward moveAim() while the facing follows the move's heading (`Human_UpdateControl`
+    /// `0x00243848`). The fight goal enters or leaves it every update (`Human_EnterFightStance` `0x0022fe80`,
+    /// `Human_LeaveFightStance` `0x0022fef0`) and the band move leaves it for a class with no stance
+    /// (docs/research/ai-moving.md#move-melee). **Coney stand-in**: the brain keeps the flag and hands its target to
+    /// the fighter as the stance's (human::Fighter::setAiStance()), off when made and when the fight goal ends.
     [[nodiscard]] bool fightStance() const { return m_fightStance; }
-    void setFightStance(bool on) { m_fightStance = on; }
+    /// Enters (true) or leaves the fight stance (fightStance()).
+    void setFightStance(bool on);
     /// The scene's brains (every brain, this one included), which the sector record counts round this one; Brains
     /// gives it (null for none: the record stays empty).
     void setPeers(const std::vector<std::unique_ptr<Brain>>* peers) { m_peers = peers; }
@@ -829,7 +835,7 @@ class Brain {
     int m_unreportedDamage = 0;
     std::uint64_t m_seenBusyUntilMs = 0; // seenBusyUntilMs()
     int m_turnBoost = 0;                 // +0x0b
-    bool m_fightStance = false;          // stub
+    bool m_fightStance = false;          // the human's state 0x1 or 0x2 (fightStance())
     BrainType m_type;
     bool m_enabled = true;
     MoveFailure m_moveFailure = MoveFailure::None; // +0x284

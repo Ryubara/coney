@@ -893,6 +893,14 @@ void Brain::setMoveAim(anim::Vec3 point, float radius) {
     }
 }
 
+// Enters or leaves the fight stance round the brain's target, handed to its fighter, whose lock-on movement the
+// human's control walks.
+// @coney-only the stance kept as a flag (Brain::fightStance()); the original sets the human's state bits
+void Brain::setFightStance(bool on) {
+    m_fightStance = on;
+    m_human->fighter().setAiStance(on && m_target != nullptr ? &m_target->human() : nullptr);
+}
+
 void Brain::stopMove() { m_human->record().move.reset(); }
 
 // Coney's choice: a route leg's climb is handed to the human, who tries it in its update (the original, at once).

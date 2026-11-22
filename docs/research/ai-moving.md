@@ -1032,10 +1032,22 @@ humans than points, else `0x00299b50`), then up to 5 passes swap pairs whose pat
   the standing step (the stand-in above) when it stands more than 15° off, and 0.375° whatever the speed when wounded;
   the feet go along the line to the move's point (`Brain::setMoveAim`, `+0x90`) at the combat-walk speed (the walk when
   wounded) when it asks for more than 0.1. With no move the human keeps its facing: it does not track its target. The
-  move-to-human action aims 2 m along its way, as `MoveMelee` does. **Stand-in**: the fight goal's reposition,
-  standing within its ring, turns the human to its target (the move's heading, at speed 0), where the original's
-  band-keeping move circles him facing him; without it the `level5` bosses kept whatever facing their last attack
-  left and the pad-driven boss-fight disc test lost the fight. EngageEnemy's stop turns the human to its target
+  move-to-human action aims 2 m along its way, as `MoveMelee` does. The fight goal's reposition, its moves into a kind's
+  reach and its refused grab's step back queue the band-keeping move (`MoveToHumanAction` with a near and a far
+  distance, since 2026-11-22): its radial and side counters, the side pick and the turn boosts as [above](#move-melee),
+  facing the target while the stance strafes the feet toward the aim. The fight goal's stance (`Brain::setFightStance`,
+  its step 11) hands the brain's target to the fighter as the target of its lock-on movement (`Fighter::setAiStance`),
+  so the AI control walks the stance, or stands in the fight idle with no move, whatever the lock-on settings' range,
+  and the human counts as in the fight stance (`Fighter::inFightStance`); **stand-in**: only while the fighter waits
+  (the reposition), an attacker's stance staying the lock-on settings' as before; before, a waiter beyond that range
+  went back to the locomotion's idle, whose fade holds `0x10000000` for 5 updates, and `Human_IsFreeForFidget` refused
+  his taunt. **Stand-ins**: settled in the band, the human turns to its target (the move's heading, at speed 0), for the
+  stance's own facing (without it the `level5` bosses kept whatever facing their last attack left and the pad-driven
+  boss-fight disc test lost the fight); "in a standing reaction" is a reaction goal on top and "up" is
+  `Brain::fightable`; the band and the directions are across the ground; a tie between two free sides goes by the
+  brain's handle; the stance is left when the fight goal ends, where the original's next goal leaves it; the other
+  callers (the fight goal's grab try, the bosses, the crew, the Melee goal and the tactics) still use the plain move to
+  one distance. EngageEnemy's stop turns the human to its target
   with the 0.3 s body turn (`Human::turnToFace`), not with the move. Only a pad's human faces its target every update.
   Before (found 2026-10-11) the stance faced the target, so a move that had to turn first asked for speed 0 for good:
   `level5`'s Vargas, sent to his flag by his BigBrawler with the player beside him, stood at his 67 % cap. Tests:
@@ -1136,6 +1148,23 @@ the slower of the two corners' speeds is used. A move clears `+0x284` at its sta
 (`Human_IsBusy`). The look-at's turn value is kept, not read; no turn is ever refused its abort.
 
 ## Open questions
+
+- **The band move's reaction and "up" tests**{#q-band-reaction}: `MoveMeleeAction_Update` (`0x002fd4e8`) ends in a
+  standing reaction (`Human_IsInStandingReaction`) and when its human is not up (`Handle_IsUp`); Coney reads a
+  reaction goal on top and `Brain::fightable`. Which states each covers (a held man, a man getting up) decides
+  whether a waiter circles on round a grabbed target; read both functions and compare in a grab.
+- **The band across the ground**{#q-band-ground}: the original's band test and directions are 3D (`Vec_DistSq` of
+  the two transforms); Coney's are across the ground. They differ only on slopes and stairs; a fight on stairs in
+  PCSX2 would show whether a waiter's band shifts.
+- **The tie between two free sides**{#q-band-side-tie}: the side pick breaks a tie between two free sides by bit
+  `0x10000` of the mover's handle; Coney's handles are numbered otherwise, so it uses the brain's handle's lowest
+  bit. Which side the original's waiters take there needs its handle layout.
+- **The AI fight stance**{#q-ai-stance}: the original keeps the stance as the human's state (`0x1`/`0x2`), entered
+  and left by goals (`Human_EnterFightStance` `0x0022fe80`, `Human_LeaveFightStance` `0x0022fef0`, 80 callers);
+  Coney keeps it as the target of the fighter's lock-on movement, set by the fight goal only while the fighter waits
+  in the reposition and left at the goal's end; taken for an attacker too, as the original does, it changed the
+  WAR PARTY's pace (no Orphan knocked out in 6,000 updates), which wants the stance's effect on the attack choice
+  and the AI control read first. The other goals' calls are not ported.
 
 - **The polygon flag `+0x02`**{#q-polygon-graph}: what sets it in the level files (non-zero for most areas with route
   nodes, [Path planning](#path-planning)), and the goals that search with the mask `0x13` (`0x002aafd0`,

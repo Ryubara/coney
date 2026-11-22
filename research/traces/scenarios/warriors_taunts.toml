@@ -1,7 +1,8 @@
 # level99's sparring fight, as warriors_passive (the same state, input and fields), with the hooks that show what the
 # waiting Warriors do: the speech lines (say-command: a reposition taunt is FidgetAction_Start's cheer2, ra
 # 0x002fa090), every taunt action started (taunt-init: the gloat over a downed man is ra 0x00293430), each fight
-# goal's re-target test (fight-retarget-due) and every target set (set-target). Research:
+# goal's re-target test (fight-retarget-due), every target set (set-target) and each reposition call with its distance
+# and close-in flag (fight-reposition, 2026-11-22). Research:
 # docs/research/ai-fights.md#fight-reposition and docs/research/gang-fights.md#waiting. The state is not a quick-save slot:
 # make it as ai-fights.md#level99-save says.
 description = "level99 sparring fight against a still player (no input): the waiting Warriors' taunts, gloats, re-targets and distances"
@@ -12,7 +13,7 @@ fields = ["player", "enemy"]
 
 [original]
 state = "states/l99-warriors-before-fight.p2s"
-patches = ["scripted-pad", "right-stick", "call-brains", "say-command", "set-target", "fight-retarget-due", "taunt-init"]
+patches = ["scripted-pad", "right-stick", "call-brains", "say-command", "set-target", "fight-retarget-due", "taunt-init", "fight-reposition"]
 let = { enemy = 'human("Generic1")', g2 = 'human("Generic2")', g3 = 'human("Generic3")' }
 
 [[field]]

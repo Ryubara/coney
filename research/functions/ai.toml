@@ -2901,8 +2901,13 @@ name = "FightGoal_Process"
 page = "ai-fights.md#fight-order"
 role = "goal type `0xf`"
 level = "confirmed-code"
-coney = "src/ai/fight_goal.cpp:maybeTaunt"
-status = "legacy"
+coney = "src/ai/fight_goal.h:FightGoal::process"
+status = "compared"
+
+[[function.gaps]]
+what = "the fight stance is the target of the fighter's lock-on movement, left when the goal ends"
+relation = "stand-in"
+question = "ai-moving.md#q-ai-stance"
 
 [[function]]
 address = 0x002b4098
@@ -5181,7 +5186,87 @@ name = "MoveToHumanAction_Init"
 page = "ai-moving.md#move-melee"
 level = "confirmed-code"
 coney = "src/ai/move_to_human_action.h:MoveToHumanAction"
-status = "legacy"
+status = "compared"
+
+[[function]]
+address = 0x002fcff0
+name = "MoveMeleeAction_Start"
+page = "ai-moving.md#move-melee"
+kind = "`MoveMelee` Start"
+role = "the limit made absolute; a class of role 6 or 7 leaves the fight stance; saves the turn boost"
+level = "confirmed-code"
+coney = "src/ai/move_to_human_action.h:MoveToHumanAction::start"
+status = "compared"
+
+[[function.gaps]]
+what = "the stance left is the brain's flag, handed to the fighter's lock-on movement"
+relation = "stand-in"
+question = "ai-moving.md#q-ai-stance"
+
+[[function]]
+address = 0x002fd068
+name = "MoveMeleeAction_Abort"
+page = "ai-moving.md#move-melee"
+kind = "`MoveMelee` Abort"
+role = "a class with no stance turns to a live target; restores the turn boost; never refused"
+level = "confirmed-code"
+coney = "src/ai/move_to_human_action.h:MoveToHumanAction::abort"
+status = "compared"
+
+[[function.gaps]]
+what = "a live target is Brain::fightable(); Brain_IsTargetInvalid's turf test is left out"
+relation = "stand-in"
+question = "ai-moving.md#q-band-reaction"
+
+[[function]]
+address = 0x002fd128
+name = "Brain_IsKind6Or7"
+page = "ai-moving.md#move-melee"
+kind = "helper"
+role = "the class role `+0x11b` is 6 or 7: a class that fights with no stance"
+level = "confirmed-code"
+coney = "src/ai/move_to_human_action.h:fightsWithoutStance"
+status = "compared"
+
+[[function.gaps]]
+what = "the role is read through the gang's lookups, so a brain with no gang never counts"
+relation = "stand-in"
+question = "ai-moving.md#q-ai-stance"
+
+[[function]]
+address = 0x002fd158
+name = "MoveMeleeAction_PickSide"
+page = "ai-moving.md#move-melee"
+kind = "helper"
+role = "which way to circle (sector 2 or 6) or straight in (8): a blocked radial step ends for a free side; else the cheaper side; on a tie round a rear grab's threat to his back"
+level = "confirmed-code"
+coney = "src/ai/move_to_human_action.h:MoveToHumanAction::pickSide"
+status = "compared"
+
+[[function.gaps]]
+what = "a tie between two free sides goes by the brain's handle, not bit 0x10000 of the human's"
+relation = "stand-in"
+question = "ai-moving.md#q-band-side-tie"
+
+[[function]]
+address = 0x002fd4e8
+name = "MoveMeleeAction_Update"
+page = "ai-moving.md#move-melee"
+kind = "`MoveMelee` Update"
+role = "keeps the band: radial steps of 10 updates in or out, side steps from the side pick, turn boosts closing in; done settled in the band"
+level = "confirmed-code"
+coney = "src/ai/move_to_human_action.h:MoveToHumanAction::update"
+status = "compared"
+
+[[function.gaps]]
+what = "in a standing reaction is a reaction goal on top, and up is Brain::fightable()"
+relation = "stand-in"
+question = "ai-moving.md#q-band-reaction"
+
+[[function.gaps]]
+what = "the band test and the directions are across the ground, not 3D"
+relation = "stand-in"
+question = "ai-moving.md#q-band-ground"
 
 [[function]]
 address = 0x002fdb90

@@ -459,6 +459,12 @@ queues a fidget now and then, and always a move-to-human action that **holds A i
 So waiting attackers circle in a band of 4-4.75 m (5 m far range), and the one T is fighting stays close. The
 "shuffle" is this band-keeping move, not a dedicated sidestep.
 
+That band is what lets them taunt: the taunt needs T at least 2.75 m off, so only a waiter the move has backed off to
+4 m can say it, and the one T is fighting (close in, his inner radius 2 × T's capsule) never does. In the level99
+sparring fight the original's two waiters stood a median 4.1-4.2 m off and said all 11 taunts (confirmed (runtime),
+run r-20261122-warriors-taunts, `0x002b31bc`); Coney's, without the band move, stood where their last attack left
+them and taunted a fraction as often ([How this was checked](#runtime-taunts)).
+
 #### The tackle try {#try-tackle}
 
 Confirmed (code) at the cited addresses unless a line says otherwise.
@@ -1012,10 +1018,13 @@ chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#pow
   `CfgGang` values 2 and 3, a Warrior target keeping 1 standing, back to 1 when its slot list empties) and the tackle
   meter, kept by the cops', gang soldiers' and Warriors' thinks. `CfgGang`'s values 2, 3, 5, 7 and 8 are read per
   gang kind from the scripts' calls. `Brain_CheckAttack` answers in the page's order; a waiting attacker holds the
-  reposition ring. **Stand-ins**: the rows about held objects (4, 6, 8) never apply; the police row applies when the
-  target's own target is a cop; the ring is a move to its outer edge, standing within it, with no taunt; the fight
-  stance is not built (the charge and the dive count as out of it); the re-target's threat is a valid enemy on the
-  brain's list; the swing time reads the
+  reposition ring with the band-keeping move ([MoveMelee](ai-moving.md#move-melee), since 2026-11-22), so a waiter
+  too near backs off to the ring's inner radius; the moves into a kind's reach and the refused grab's step back keep
+  their bands too. **Stand-ins**: the rows about held objects (4, 6, 8) never apply;
+  the police row applies when the target's own target is a cop; the fight stance is a flag the brain hands to its
+  fighter as the target of its lock-on movement, taken only while the fighter waits and left when the fight goal ends
+  (the charge and the dive, and a class with no stance, are out of it); the grab try's step-in is a plain move to its
+  outer distance; the re-target's threat is a valid enemy on the brain's list; the swing time reads the
   attacker's own set, not the bat and bottle sets' clips (25 and 29 the throws, 26-28 the power strikes, 31 the
   struggle strikes 96 and 108, 32-34 the escapes 100 and 112).
 - **A fight's three goals** ([Closing on the target](#fight-approach), `repo:src/ai/melee_goal.h`,
@@ -1121,12 +1130,14 @@ and a held AI's presses reach no handler (its holder drives it). A block ends wh
 
 ## Open questions
 
-- Why Coney's waiting attackers taunt about a tenth as often as the original's (the level99 sparring fight: 11
-  `cheer2` taunts in 1,198 updates in the original, 0-2 in Coney; [The reposition](#fight-reposition)). To check, in
-  this order: how long each Warrior waits in the reposition (Coney may let more of them attack at once); and the
-  close-in test, which reads the player's own target. The gesture slots are ruled out: Coney keeps them as the original
-  does, per reaction kind and help level ([Gestures](sound-events.md#command-ids)), and the sparring Warriors (type 2)
-  have two, as everyone had before.
+### Who is close in {#q-close-in-target}
+
+The reposition's close-in test reads T's own target (`+0x124` of his brain, `0x002b2fc8`). In the sparring fight the
+original's still player has none except while a Warrior grabs or mounts him (the sets come from `Pair_LinkMount`,
+`Grab_Link`, `Human_DropTarget` and `Player_UpdateSprint`, run r-20261122-warriors-taunts), so the first of his slot
+holders is close in. Coney's test also accepts the target the player's fighter holds, which changes with the nearest
+attacker, so a waiter is close in some of the time and does not taunt then. To settle: read the player brain's
+`+0x124` per update in the scenario and compare with Coney's `Brain::target` and `Fighter::target` for the player.
 
 ### Coney's knocked-down test {#q-score-down-flag}
 
@@ -1198,9 +1209,33 @@ from their run-in (updates 502-1700): one Warrior once, the other two five times
 582 updates apart (the 1000-2000 ms timer allows one every 30-60 updates at most). Two earlier recordings of the
 same state end 12 updates sooner, before the eleventh taunt, and hold 10 each: the first ten, at the same game
 ticks, so the fight is deterministic from that state. Coney's count
-over the same span, printed by the level99 sparring disc test for its eight AI sequences (2026-10-21, two runs), is
-0-2: 2 or 1, 0, 0, 0, 1, 0, 1, 0. Coney's waiters taunt far less often than the original's; why is an
-[open question](#open-questions).
+over the same span, printed by the level99 sparring disc test for its eight AI sequences (2026-10-21, two runs), was
+0-2: 2 or 1, 0, 0, 0, 1, 0, 1, 0.
+
+**What made the difference: where the waiters wait** (2026-11-22). The same scenario with a hook on
+`FightGoal_Reposition` at its taunt timer test (`fight-reposition`, `0x002b31bc`: the brain, the squared distance it
+was called with, the reason and the close-in flag), from a state made again as [below](#level99-save), gave 11
+`cheer2` taunts in updates 0-1,198 again (confirmed (runtime), run r-20261122-warriors-taunts, which started 6
+updates later and holds the last 10 of them, at the same spacing). Of the three Warriors, the one the player faces is
+close in on 278 of his 308 reposition calls and stands 0.8-2.7 m off (median 1.1 m), never at the taunt's 2.75 m, so
+he never taunts. The other two are never close in: they are called 63 and 105 times, at a median 4.2 and 4.1 m, and
+62 and 100 of those calls are at 2.75 m or more; each passes the taunt timer about 9 times and taunts about 5 times.
+So the taunts come from the waiters standing in the ring's band of 4-4.75 m, which the band-keeping move
+([MoveMelee](ai-moving.md#move-melee), `0x002fd4e8`) holds them in: one that comes nearer than 4 m backs off over 10
+updates. Confirmed (runtime) for the distances, confirmed (code) at `0x002b2fc8` for the band.
+
+Coney had no band move: its waiters stood where their last attack left them, a median 0.8-1.6 m off, so the
+distance test refused nearly every taunt (0-8 for the eight sequences on 2026-11-22, after other fixes had raised
+the count). With the band move ported they wait at a median 4.1-4.3 m, but half of the taunts still failed at
+`FidgetAction_Start`'s `Human_IsFreeForFidget` (`0x00225f58`): a waiter beyond the fighter's lock dropped out of the
+fight stance whenever no move was written and went back to the locomotion's idle, whose fade holds `0x10000000` for
+5 updates. With the fight goal's stance kept while the goal holds it (the original keeps it as the human's state,
+`0x1`/`0x2`; [the band move](ai-moving.md#move-melee)), the disc test counts 8, 8, 7, 9, 8, 13, 2 and 10 taunts for AI
+sequences 0-7, around the
+original's 11, and checks at least 2. The close-in test still differs: Coney's player counts as facing whichever
+Warrior his fighter holds, so a waiter is sometimes close in, where the original's player brain holds a target only
+while a pair links him (a grab or a mount, `Pair_LinkMount` `0x0022bfd0`, `Grab_Link` `0x0022c730`) and the first
+slot holder is close in otherwise; inferred, not yet ported ([Open questions](#q-close-in-target)).
 
 ### Melee ranges {#runtime-melee-range}
 
@@ -1317,6 +1352,14 @@ The state is not a quick-save slot; it is made once and named by the scenarios' 
    here, is brain `+0x20c`'s); then `P1.SetupWarriors`.
 3. Save while the scene plays ([Driving PCSX2](../guides/research-workflow.md#driving-pcsx2)), and put the patched
    words back before using it as a source.
+
+The recipes do the same faster (2026-11-22): hand out a level99 state with `call-brains`
+(`coney-tools pcsx2 states hand-out fence-run-jump --patch call-brains --launch`), run `load-checkpoint` (checkpoint
+1), wait for the tutorial's first hint, then run `lua` with `AddFenceWarriors1() GangMakeFriends(0, 5)
+P1.SetupWarriors()`. Pause, write `call-brains`' two words back at `0x00293b28`, and save with the debug server's
+input recording (`input_recording` `new` from the savestate, then `stop`), which writes the state beside the
+recording; move it to `<scratch_dir>/pcsx2/states/l99-warriors-before-fight.p2s`. A state made this way starts
+about 500 updates later in the fight than the first one (the run-ins come at once), so its taunts fall at other steps.
 
 #### The cast while the scene plays {#level99-scene-state}
 

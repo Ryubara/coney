@@ -424,6 +424,15 @@ coney = "src/human/face.h:FaceState::setMood"
 status = "compared"
 
 [[function]]
+address = 0x002239c0
+name = "Human_IsGrabbingRear"
+page = "characters.md#code-core"
+role = "State flag 0x80: the human holds his victim from behind."
+level = "confirmed-code"
+coney = "src/ai/move_to_human_action.cpp:grabbingRear"
+status = "compared"
+
+[[function]]
 address = 0x00223b98
 name = "Human_IsKnockedDown"
 page = "characters.md#code-core"

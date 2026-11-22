@@ -219,7 +219,12 @@ void FightGoal::resume(Brain& brain) {
 
 void FightGoal::suspend(Brain& brain) { releasePlace(brain); }
 
-void FightGoal::end(Brain& brain) { releasePlace(brain); }
+void FightGoal::end(Brain& brain) {
+    releasePlace(brain);
+    // **Coney stand-in**: the stance is left here; in the original the next goal's own update leaves it (Melee,
+    // EngageEnemy, Spectate and most others call Human_LeaveFightStance `0x0022fef0`), which Coney's goals do not.
+    brain.setFightStance(false);
+}
 
 void FightGoal::releasePlace(Brain& brain) {
     if (m_place && brain.target() != nullptr) {
@@ -282,6 +287,9 @@ GoalStatus FightGoal::process(Brain& brain) {
         m_kind = pickAttackFor(brain, *target, PickFilter::CanUse).value_or(kNoAttackKind);
         m_angle.reset();
     }
+    // The stance: left for a charge or a dive and for a class with no stance, else taken. **Coney stand-in**: taken
+    // only while A waits (the reposition below); an attacker's stance is the lock-on settings' as before.
+    const bool stance = m_kind != kChargeKind && m_kind != kDiveKind && !fightsWithoutStance(brain);
     // 10. May A attack now?
     CheckAttackInput input;
     input.cooledDown = brain.nowMs() >= brain.nextAttackMs();
@@ -297,6 +305,7 @@ GoalStatus FightGoal::process(Brain& brain) {
         return m_place;
     });
     const float distance = brain.distanceTo(*target);
+    brain.setFightStance(stance && answer != check::kGo);
     if (answer != check::kGo) {
         // The reposition: hold a ring round him.
         RepositionInput ring;
@@ -319,23 +328,18 @@ GoalStatus FightGoal::process(Brain& brain) {
                 brain.nowMs() + static_cast<std::uint64_t>(rollRange(brain.random(), kTauntLowMs, kTauntHighMs));
             maybeTaunt(brain, ring, distance);
         }
-        if (distance > band.outer) {
-            brain.queueAction(std::make_unique<MoveToHumanAction>(band.limitMs, band.outer));
-        } else {
-            // **Coney stand-in** for the band-keeping move while it waits in the ring: the original's circles him
-            // with the heading to him written each update (docs/research/ai-moving.md#move-melee); standing here, the
-            // human only turns to him (the brain's move is cleared every update, so nothing else would).
-            brain.setMoveHeading(human::headingOf(anim::subtract(target->human().position(), brain.human().position())),
-                                 0.0F);
-        }
+        // The band-keeping move holds him between the ring's radii: a waiter too near backs off to the inner one
+        // (docs/research/ai-moving.md#move-melee).
+        brain.queueAction(std::make_unique<MoveToHumanAction>(band.limitMs, band.inner, band.outer));
         return GoalStatus::Stop;
     }
     // Out of the kind's reach (3D, feet to feet): move in, to between 2 × his radius and max(reach, that + 0.1 m).
     const float reach = kindReach(brain, *target, m_kind);
     if (reachDistance(brain, *target) > reach) {
         const int limit = brain.characterClass() == kBossClass ? kShortMoveMs : kLongMoveMs;
-        const float stop = std::max(reach, 2.0F * capsuleRadius(*target) + kMoveBandSlack);
-        brain.queueAction(std::make_unique<MoveToHumanAction>(static_cast<std::uint32_t>(limit), stop));
+        const float inner = 2.0F * capsuleRadius(*target);
+        const float stop = std::max(reach, inner + kMoveBandSlack);
+        brain.queueAction(std::make_unique<MoveToHumanAction>(static_cast<std::uint32_t>(limit), inner, stop));
         return GoalStatus::Stop;
     }
     // In reach: the grab and snap try.
@@ -345,8 +349,8 @@ GoalStatus FightGoal::process(Brain& brain) {
     // The start test: a refused grab steps back to 0.8 × near; then another kind that can start.
     if (!canStart(brain, *target, m_kind)) {
         if (m_kind == kGrabKind) {
-            const float stop = kGrabRefusedShare * brain.meleeNear() + kGrabRefusedBand;
-            brain.queueAction(std::make_unique<MoveToHumanAction>(kGrabRefusedMoveMs, stop));
+            const float inner = kGrabRefusedShare * brain.meleeNear();
+            brain.queueAction(std::make_unique<MoveToHumanAction>(kGrabRefusedMoveMs, inner, inner + kGrabRefusedBand));
         }
         m_kind = pickAttackFor(brain, *target, PickFilter::CanStart).value_or(kNoAttackKind);
         m_angle.reset();
