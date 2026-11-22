@@ -25,7 +25,8 @@ struct FramePlane {
 
 /// The frame planes the push reads of `view`, left, right, bottom: each through the camera, along the edge of its 4:3
 /// view window (viewWindow()), its normal inward.
-/// @orig 0x00120c50 Camera_BuildFrustum (unknown)
+/// @coney-only the three planes the push reads, built from the view window; the original's Camera_BuildFrustum
+/// (0x00120c50) builds all six from the window's corner points (docs/research/camera.md#rail-frame)
 [[nodiscard]] std::array<FramePlane, 3> framePlanes(const CameraView& view);
 
 /// The target the push works on.

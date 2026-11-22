@@ -52,8 +52,8 @@ anim::Vec3 pushAcross(anim::Vec3 a, anim::Vec3 b, const FramePlane& plane, float
     const anim::Vec3 rest = anim::subtract(move, across);
     across = anim::add(across, anim::scale(plane.normal, margin - inside + Distances::kNudge));
     anim::Vec3 kept;
-    // **Coney's guard**: a rest of zero length has no direction, so there is no ray; the original normalises it
-    // anyway.
+    // Stand-in (Coney's guard): a rest of zero length has no direction, so there is no ray; the original normalises
+    // it anyway.
     if (const float restLength = anim::length(rest); restLength > 0.0F) {
         const anim::Vec3 direction = anim::scale(rest, 1.0F / restLength);
         const float reach = rayReach(mesh, b, direction, restLength + margin);
@@ -82,6 +82,7 @@ std::optional<anim::Vec3> keepTargetInFrame(const CameraView& view, const RailFr
     // the offset's height, at least 1 m.
     const float lowest = std::min(target.feet.z, target.before.z);
     const float highest = std::max(target.feet.z, target.before.z) + std::max(rules.offset.z, Distances::kMinHeadroom);
+    // Stand-in for the loop over the targets: Coney's rail has one target, so the push runs once.
     anim::Vec3 a = anim::add(target.feet, rules.offset);
     const anim::Vec3 b = anim::add(target.before, rules.offset);
     const float radius = target.radius;
@@ -122,8 +123,8 @@ std::optional<anim::Vec3> keepTargetInFrame(const CameraView& view, const RailFr
             if (const std::optional<raycast::RayHit> hit = mesh->rayCast(ray, {}, mask)) {
                 const anim::Vec3 face{hit->normal.x, hit->normal.y, hit->normal.z};
                 const float facing = -anim::dot(direction, face);
-                // **Coney's guard**: a face met edge-on gives no stopping point; the two-sided test turns every hit
-                // face toward the ray, so only a degenerate hit is skipped.
+                // Stand-in (Coney's guard): a face met edge-on gives no stopping point; the two-sided test turns
+                // every hit face toward the ray, so only a degenerate hit is skipped.
                 if (facing > 0.0F) {
                     a = anim::add(origin, anim::scale(direction, hit->t - ((radius + Distances::kNudge) / facing)));
                     sightHit = true;

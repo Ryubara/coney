@@ -7,6 +7,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "characters/character_class.h"
 #include "core/engine_limits.h"
@@ -51,15 +52,21 @@ struct BossPicture {
     friend bool operator==(const BossPicture&, const BossPicture&) = default;
 };
 
+/// How many boss pictures a panel keeps under `limits`: ArmiesHud::kOrigBossPictures under the engine limits preset
+/// (EngineLimits::Original), no cap under Coney's rule.
+/// @coney-only limit: the original's target panel keeps 6 boss pictures and drops a seventh boss; past 6 Coney keeps
+/// every boss, a freed pair still taken first (docs/research/hud-functions-panels.md#fn-anhud)
+[[nodiscard]] std::size_t bossPictureCap(EngineLimits limits);
+
 /// The Armies of the Night credits line, GO sign and join messages.
 class ArmiesHud {
   public:
-    /// How many boss pictures each panel's target panel keeps (`TargetPanel_SetBossTexture`'s six pairs).
-    static constexpr std::size_t kBossPictures = 6;
-    /// The original's six pairs.
+    /// How many boss pictures the original's target panel keeps (`TargetPanel_SetBossTexture`'s six pairs); each
+    /// panel starts a level with this many free pairs.
     static constexpr std::size_t kOrigBossPictures = 6;
-    /// The engine limits preset the panels keep their boss pictures under.
-    void setEngineLimits(EngineLimits /*limits*/) {}
+    /// The engine limits preset the panels keep their boss pictures under (bossPictureCap()); Coney's rule unless
+    /// told.
+    void setEngineLimits(EngineLimits limits) { m_limits = limits; }
     /// The global strings they show: the credits label, "GO" and the join message.
     static constexpr std::uint32_t kCreditsString = 0xd5;
     static constexpr std::uint32_t kGoString = 0xd3;
@@ -123,16 +130,15 @@ class ArmiesHud {
     [[nodiscard]] bool panelWanted(std::size_t player) const;
 
     /// `HUDSetANBossTexture(human, texture, on)` on both panels (`HUD_SetANBossTexture` calls each player panel's
-    /// slot `+0x74`): with `on` the pair (human, texture) goes into the first free pair of each panel's six (none when
-    /// all six are used, and the same human may be in twice); without, the first pair holding `human` is freed.
+    /// slot `+0x74`): with `on` the pair (human, texture) goes into the first free pair of each panel's (a new pair
+    /// past the original's six while bossPictureCap() allows, none past it; the same human may be in twice); without,
+    /// the first pair holding `human` is freed.
     /// @orig 0x001b5b80 HUD_SetANBossTexture (unknown)
     /// @orig 0x00210dc0 ANHud_SetBossTexture (unknown)
     /// @orig 0x0020fc98 TargetPanel_SetBossTexture (unknown)
     void setBossTexture(std::uint32_t human, std::uint32_t texture, bool on);
-    /// Panel `player`'s six boss pictures, in their order.
-    [[nodiscard]] const std::array<BossPicture, kBossPictures>& bossPictures(std::size_t player) const {
-        return m_bosses.at(player);
-    }
+    /// Panel `player`'s boss pictures, in their order: the original's six, and any past them.
+    [[nodiscard]] const std::vector<BossPicture>& bossPictures(std::size_t player) const { return m_bosses.at(player); }
     /// The picture panel `player`'s target panel shows for the boss `human`: the word of the first pair holding him,
     /// none when no pair does (the plain panel). The search the target panel makes for a class-13 target
     /// (`TargetPanel_Update`, `0x0020e6f8`), whose drawing is not built (#662).
@@ -169,8 +175,9 @@ class ArmiesHud {
     // A panel dropped by its player's knock-out (`+0x40f8` cleared), and one that drops at the next step.
     std::array<bool, kPlayers> m_dropped{};
     std::array<bool, kPlayers> m_dropping{};
-    // Each panel's target panel's six boss pictures (`+0x4590` + `0x44`).
-    std::array<std::array<BossPicture, kBossPictures>, kPlayers> m_bosses{};
+    // Each panel's target panel's boss pictures (`+0x4590` + `0x44`): six in the original.
+    std::array<std::vector<BossPicture>, kPlayers> m_bosses{};
+    EngineLimits m_limits = EngineLimits::Coney;
     bool m_joinTimed = false; // `0x0063f1f4`
     std::uint64_t m_joinLastMs = 0;
 };

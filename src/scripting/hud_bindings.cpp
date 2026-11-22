@@ -324,11 +324,12 @@ void addArmiesBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("HUDANSetGOSignMode", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
                             hud.armies().setGoSignMode(static_cast<std::uint8_t>(unsignedArg(args, 0)));
                         }));
-    // `HUDANEnableJoinMsg(player, on)`: panel `player`'s join message. **Coney's choice**: a player other than 0 or 1
-    // is ignored (the original reads it unsigned, a negative one as 0, and indexes its panel table unchecked).
+    // `HUDANEnableJoinMsg(player, on)`: panel `player`'s join message, a negative player read as 0 (tolua's unsigned
+    // conversion). **Coney's choice**: a player past 1 is ignored, where the original indexes its panel table
+    // unchecked.
     // @orig 0x003701c8 lua_HUDANEnableJoinMsg (unknown)
     vm.registerFunction("HUDANEnableJoinMsg", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
-                            const int player = intArg(args, 0);
+                            const int player = std::max(intArg(args, 0), 0);
                             if (player >= 0 && player < static_cast<int>(hud::kPlayers)) {
                                 hud.armies().setJoinMessage(static_cast<std::size_t>(player), boolArg(args, 1));
                             }

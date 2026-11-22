@@ -397,7 +397,7 @@ after the profile-manager screen has no path string of its own, and the static i
 | `0x0020e5b8` | `TargetPanel_Shutdown` | slot `+0x68`: both slots' sprites and bars released, the pairs cleared | confirmed (code) |
 | `0x0020e6f8` | `TargetPanel_Update` | slot `+0x30`, from `ANHud_Update` only: [The target panel](hud-radar.md#the-target-panel) | confirmed (code) |
 | `0x0020fbc0` | `TargetPanel_Render` | slot `+0x38`, from `ANHud_Draw`: each used slot's frame, picture and bar | confirmed (code) |
-| `0x0020fc98` | `TargetPanel_SetBossTexture(panel, handle, word, on)` | on: the pair `{handle, word}` into the first free of the six; off: the handle's pair cleared. The pairs give a target its picture (inferred from the name and the sprite word) | confirmed (code) |
+| `0x0020fc98` | `TargetPanel_SetBossTexture(panel, handle, word, on)` | on: the pair `{handle, word}` into the first free of the six (a seventh boss is dropped); off: the handle's pair cleared. The pairs give a target its picture (inferred from the name and the sprite word). Coney lifts the six (rule: past six a new pair is added for each boss, a freed pair still taken first; the engine limits preset pins it at six, `repo:src/hud/armies_hud.cpp`) | confirmed (code) |
 
 ## After `PM_TooManyProfiles.cpp` (no path string): the Armies of the Night panel {#fn-anhud}
 

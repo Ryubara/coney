@@ -254,7 +254,8 @@ TEST_CASE("a boss's picture goes into the first free of each panel's six pairs a
     CHECK(armies.bossTexture(0, 41) == std::optional<std::uint32_t>{0x1e001e});
     armies.setBossTexture(41, 0, false);
     CHECK(armies.bossTexture(0, 41) == std::optional<std::uint32_t>{0x1e0020});
-    // Six pairs at most: a seventh boss is not kept.
+    // Six pairs at most under the engine limits preset: a seventh boss is not kept.
+    armies.setEngineLimits(coney::EngineLimits::Original);
     for (std::uint32_t human = 50; human < 56; ++human) {
         armies.setBossTexture(human, 0x1e0000 + human, true);
     }

@@ -738,7 +738,7 @@ coney = "src/camera/rail_camera.h:RailCamera::setup"
 status = "compared"
 
 [[function.gaps]]
-what = "switch 2 off and switches 7 and 8 on again; the lead's and mode 3's ease times zeroed; mode 3's angle off. Coney's set-up also switches setting 8's pitch off, which the original leaves"
+what = "switch 2 off and switches 7 and 8 on again: Coney's rail does not keep these switches"
 relation = "not-ported"
 issue = 1017
 

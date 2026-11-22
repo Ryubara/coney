@@ -67,9 +67,8 @@ void EasedValue::step(float seconds) {
 }
 
 void RailCamera::setup(const RailSetup& setup) {
-    // **Coney's stand-in** (#1017): the original's reset leaves setting 8's pitch and setting 9's ease time as they
-    // were, where Coney's switches the pitch off; and it zeroes the lead's and mode 3's ease times, turns mode 3's
-    // angle off and switches 2 off and 7 and 8 on (`0x0013b2b8`), which Coney's does not.
+    // Not ported (#1017): the reset also switches 2 off and 7 and 8 on (`0x0013b2b8`), which Coney's rail does not
+    // keep. Setting 8's pitch is left as it was, as the original's reset leaves it.
     m_setup = setup;
     m_setup.farClip = std::min(setup.farClip, kMaxFarClip);
     m_count = 0;
@@ -79,10 +78,14 @@ void RailCamera::setup(const RailSetup& setup) {
     m_shift.set(0.0F, 0.0F);
     m_lookShift.set(0.0F, 0.0F);
     m_height.set(-1.0F, 0.0F);
-    m_pitch.set(-std::numeric_limits<float>::max(), 0.0F);
     m_heightOffPending = false;
     m_fieldOfView.set(setup.fieldOfView, 0.0F);
-    m_lookHeight.set(setup.offset.z, 0.0F);
+    // Setting 9's value and target from the offset's height (Camera_SetupRail); its ease time is left as it was.
+    m_lookHeight.current = setup.offset.z;
+    m_lookHeight.target = setup.offset.z;
+    // The lead's ease time zeroed, and mode 3's angle off with its ease time.
+    m_lead.secondsLeft = 0.0F;
+    m_mode3Pitch.set(-std::numeric_limits<float>::max(), 0.0F);
     m_blend = 0.0F;
     // The hold (`+0x3e4`) is left as it is: a CamLockRail lock outlasts CamSetupRail (docs/research/camera.md#rail).
 }
@@ -119,8 +122,8 @@ void RailCamera::activate() {
 }
 
 void RailCamera::modify(std::uint32_t param, float value, float seconds) {
-    // Not ported (#549): the player argument (negative: player 0) and, for -1, each setting written into every
-    // other player's rail too; Coney has player 1's rail only.
+    // Not ported (#549): -1's write of each setting into every other player's rail too; Coney has player 1's rail
+    // only, which a negative player names (forPlayerOne).
     switch (param) {
     case kDistance:
         // Switched on, it eases from the present distance in plan to the target point.
