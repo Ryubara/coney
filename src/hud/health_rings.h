@@ -96,7 +96,7 @@ enum class RingArc : std::uint8_t { Fill, Lost, Rest };
 
 /// The arc of rim vertex `k` (0-64) of a ring filled to `value` and lost to `capacity` (both 0-100): Rest when
 /// 64 − k ≤ floor(64 × (100 − capacity) / 100) and that is above 0, else Lost when 64 − k ≤ floor(64 × (100 − value) /
-/// 100), else Fill. The arc step of the original's ring draw.
+/// 100) and that is above 0, else Fill. The arc step of the original's ring draw.
 /// @orig 0x0017b2e0 GroundRing_DrawQueued (unknown)
 [[nodiscard]] RingArc ringArcOf(int k, float value, float capacity);
 

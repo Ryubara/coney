@@ -253,7 +253,8 @@ last); the value is the band's fill, not the health. Not seen at runtime.
   middle of rectangle 1; each rim vertex takes u = centre u + 0.062 cos, v = centre v − 0.124 sin (whole-sheet units),
   the centre vertex the middle. Runtime: the middle is (0.6973, 0.3789).
 - **Colours per vertex**: the centre has colour A; each rim vertex k has C when 64 − k ≤ floor(64 × (100 − capacity) /
-  100) (and that is above 0), else B when 64 − k ≤ floor(64 × (100 − value) / 100), else A (or black when blinking).
+  100) (and that is above 0), else B when 64 − k ≤ floor(64 × (100 − value) / 100) (and that is above 0, the test at
+  `0x0017b758`, so a full ring has no B vertex), else A (or black when blinking) (confirmed (code)).
   Drawn with **flat shading**, so each segment takes one vertex's colour and the arcs end on hard edges.
 - **Drawing** (`GroundRing_DrawQueued`, `0x0017b2e0`, from the viewport pass `0x00156408` after the world and the
   sprite batches, so after the blob shadows, [Boot](boot.md#one-frame)): the queue is drawn and emptied once a frame,
