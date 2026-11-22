@@ -1,8 +1,9 @@
 # A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level80 checkpoint 2, one of player 1's
 # Warriors cuffed. The input script taps cross to skip the opening scene, then types the developer console's
-# `lua` line that calls HuSetArrested on Vermin, as a script would (docs/guides/console.md#built). For a change to the
-# HUD's crew status list (docs/research/hud-functions-parts.md#crew-status): the portrait, its pulsing badge and the
-# caption. A build without the `lua` command refuses the line, so its run shows no cuffed Warrior.
+# `lua` line that calls HuSetArrested on Vermin by the handle the level script keeps (`Warriors2.Vermin`), as a
+# script would (docs/guides/console.md#built). For a change to the HUD's crew status list
+# (docs/research/hud-functions-parts.md#crew-status): the portrait, its pulsing badge and the caption. A build
+# without the `lua` command refuses the line, so its run shows no cuffed Warrior.
 description = "level80 checkpoint 2: Vermin cuffed by HuSetArrested, and the crew status list"
 level = "level80"
 input = "tools/clips/level80-crew-cuffed.txt"

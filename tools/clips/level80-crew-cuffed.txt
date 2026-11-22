@@ -21,4 +21,4 @@
 540 tap cross
 570 tap cross
 600 tap cross
-720 console lua "HuSetArrested(HuFind(\"Vermin\"), 1)"
+720 console lua "HuSetArrested(Warriors2.Vermin, 1)"
