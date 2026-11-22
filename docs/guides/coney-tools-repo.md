@@ -425,7 +425,7 @@ cannot be read ends the run with exit 2.
 
 | Profile | For | Checks (in this order) |
 | --- | --- | --- |
-| `docs` | only documentation paths | `docs-check` (`coney-tools docs check --base`, and `progress check` as CI runs it, below), `mkdocs` (`mkdocs build --strict`), `pre-commit` (all files), `pytest` ([the tests that read the docs](#task-check-pytest)), `actionlint` |
+| `docs` | only documentation paths | `docs-check` (`coney-tools docs check --base`, and the repository checks of CI's python job, below), `mkdocs` (`mkdocs build --strict`), `pre-commit` (all files), `pytest` ([the tests that read the docs](#task-check-pytest)), `actionlint` |
 | `tooling` | documentation and tooling paths (`python/`, `.claude/`, `.github/ISSUE_TEMPLATE/`, `python.yml`, ...; `paths.tools_only`) | the above and `ruff` (check and format), `mypy` (strict); `pytest` is the whole suite |
 | `full` | anything else, including a path in no class (`.github/scripts/`) | the above and `msvc-ci-build` and `ctest-full-disc` ([the C++ tests the change reaches](#task-check-ctest), with the disc) |
 
@@ -464,6 +464,34 @@ so one run shows every problem, and a failure prints the check's own lines after
 (`HEAD^1`, `--require-base`) are two constants of `progress_cli.py` that a test holds the workflow to, like the ruff
 and mypy commands. It is part of `docs-check`, not a check of its own, so a stamp written before it existed still
 names every check its profile lists and `pr verify` accepts it.
+
+**`docs-check` also runs the repository checks of CI's python job** {#task-check-repository-checks}. The same job runs
+a list of `coney-tools` commands over the checkout, and `task check` ran none of them (task 1618: a unit passed its
+gate and failed CI). `docs-check` now runs each, as CI spells it, in the worktree, with the base of the run in place of
+CI's `HEAD^1` (`ci_python_checks.CHECKS`, one source for the words):
+
+| Check | What CI fails on |
+| --- | --- |
+| `repo check-conventions` | `.github/conventions.yml` and the agent pointer files |
+| `repo render --check` | a generated block of `AGENTS.md`, `CONTRIBUTING.md` or the guides that no longer matches the conventions |
+| `repo audit --files` | the issue forms, the pull request template, the CI scope script and pre-commit's size limit disagreeing with the conventions |
+| `orig check-tags --base HEAD^1` | a function the change adds to a gameplay folder with no `@orig` or `@coney-only`; a `src/` folder listed as neither |
+| `orig check-copy --base HEAD^1` | a decompiler fingerprint in a C++ line the change adds |
+| `bindings render --check`, `bindings sync-coney --check`, `bindings render-cpp --check` | the script-binding pages, their Coney status and the debug menus' signature table out of date |
+| `refs render --check`, `missions render --check`, `research render --check` | the reference, mission and research pages out of date, or the research data invalid |
+| `pcsx2 recipes render --check` | the PCSX2 recipes pages out of date |
+| `console render-cpp --check`, `console render --check` | the console's generated table and commands reference out of date |
+
+`HEAD^1` there is CI's word for the branch a pull request's merge commit joins; the gate passes the base it measures the
+change from (`orig` rules read only what the change adds, so the answer is the same). Every one runs on any machine:
+each reads only the checkout, so none is left to CI, and the list of what cannot run locally
+(`ci_python_checks.NOT_RUN_LOCALLY`) is empty. All run even when one fails, so one run shows every problem, and a failure
+prints the command's own last lines. Like the progress check they are part of `docs-check`, not checks of their own, so
+a `checked` stamp written before this change still names every check its profile lists and stays valid, with no rerun.
+A test reads the steps of `.github/workflows/python.yml` and fails when CI's python job gains a `coney-tools` step that
+is in neither `CHECKS` nor `NOT_RUN_LOCALLY` (which needs the reason, repeated here), or runs another program that the
+gate has no check for, so a check added to CI and not to `task check` cannot go unnoticed. The `ci run` step of the job
+stands for `repo audit --files` and the `pre-commit` check.
 
 **It never syncs the shared environment.** `uv run --project python <tool>` syncs `python/.venv` before it starts the
 tool, and on Windows that fails ("Access is denied") while another session has `coney-tools.exe` or `coney-agent.exe`

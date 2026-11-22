@@ -545,7 +545,7 @@ def check_checked(subject: Subject) -> list[Refusal]:
     tested: Sequence[str] = subject.paths
     fixed = check_fix.DETAIL in stamp.detail
     needed_cpp: ctest_scope.CtestScope | None = None
-    if check_fix.DETAIL in stamp.detail:  # a fix: its tests are those of the files changed since the Check it stands on
+    if fixed:  # a fix: its tests are those of the files changed since the Check it stands on
         plan, not_fix = _fix_scope(subject, stamp, builds)
         if plan is None:
             return found + not_fix
