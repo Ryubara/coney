@@ -70,6 +70,10 @@ class StartRequest:
     #: base has merged: the record's base, the stamp log's start and the stages are made new, the branch is not moved.
     #: docs/guides/issues.md#restarting.
     restart: bool = False
+    #: With `restart`: the coordinator's reason for going on although the old base cannot be shown to have merged
+    #: (merging it conflicts, as the default branch edited its lines after the squash, and no change matches). It is
+    #: recorded in the `claimed` stamp. docs/guides/issues.md#restarting.
+    base_merged_reason: str | None = None
 
 
 @dataclass
@@ -171,6 +175,21 @@ def _warn_unverified(who: dict[str, Any], env: StartEnv) -> None:
         )
 
 
+def claimed_detail(
+    record: UnitRecord, task: TaskFile, adopted: bool = False, restarted: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """The `detail` of the `claimed` stamp of `record`: where the unit works and, when it was adopted or restarted,
+    that (and for a restart the old base, where the old log went and any base-merged override)."""
+    return {
+        "branch": record.branch,
+        "base_ref": record.base_ref,
+        "kind": task.kind,
+        "fix": record.task if record.parent else "",
+        **({"adopted": True} if adopted else {}),
+        **({"restarted": restarted} if restarted else {}),
+    }
+
+
 def _stamp_start(
     record: UnitRecord,
     task: TaskFile,
@@ -185,7 +204,6 @@ def _stamp_start(
     """Append the stamps `steps` names (from `_missing_steps`) to the log of `record`; `adopted` says in the `claimed`
     stamp that the branch was there before the unit, `restarted` (the old base and where the old log went) that the
     unit started again from the default branch, in both stamps."""
-    fix = record.task if record.parent else ""
     entries: list[dict[str, Any]] = []
     if "assigned" in steps:
         entries.append(
@@ -213,14 +231,7 @@ def _stamp_start(
                 "result": "pass",
                 "commit": commit,
                 "covers": {"base": base_commit},
-                "detail": {
-                    "branch": record.branch,
-                    "base_ref": record.base_ref,
-                    "kind": task.kind,
-                    "fix": fix,
-                    **({"adopted": True} if adopted else {}),
-                    **({"restarted": restarted} if restarted else {}),
-                },
+                "detail": claimed_detail(record, task, adopted, restarted),
                 "who": who,
             }
         )
@@ -330,6 +341,12 @@ def start_task(request: StartRequest, env: StartEnv) -> int:
         return 1
     if request.restart and (request.adopt or request.adopt_branch is not None or request.base is not None):
         out("refused: --restart starts the unit again from the default branch; it goes with neither --adopt nor --base")
+        return 1
+    if request.base_merged_reason is not None and not request.restart:
+        out("refused: --base-merged-reason goes with --restart: the way on when the old base is not shown merged")
+        return 1
+    if request.base_merged_reason is not None and not request.base_merged_reason.strip():
+        out("refused: --base-merged-reason needs a reason in words")
         return 1
     if request.restart and task.kind == "fix":
         out("refused: --restart makes an ordinary task's unit start again; a fix task works in its parent's unit")

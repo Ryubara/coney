@@ -104,6 +104,14 @@ def add_task_parser(groups: argparse._SubParsersAction[argparse.ArgumentParser])
         help="start a unit that was started from another branch again from the default branch once that base has "
         "merged and the branch is rebased off it; the old stamp log is moved aside, the stages are redone",
     )
+    start.add_argument(
+        "--base-merged-reason",
+        metavar="WHY",
+        help="with --restart: the coordinator's reason for going on when the old base cannot be shown to have merged "
+        "(the default branch edited its lines after the squash and no change matches); "
+        "recorded in the claimed stamp and shown to the reviewer in the review packet; refused when it does not fit "
+        "the stamp",
+    )
     slots = commands.add_parser(
         "slots",
         help="show the engineer tracks (reimplementation, fix, Studio, networking, renderer) and the machine's "
@@ -495,6 +503,7 @@ def run_task(
                 args.adopt,
                 args.adopt_branch,
                 args.restart,
+                args.base_merged_reason,
             ),
             start_env,
         )
