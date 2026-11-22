@@ -178,11 +178,13 @@ default mode.
 
 Every HUD count of a gang's members passes **1** as `Gang_CountLiving`'s second argument, so the marks show the
 members that are **standing**, not every member that still exists. **Evidence:** confirmed (code) at each call
-site below. Because both the indicator and the panel recount every update, a member who is knocked out or tackled
+site below. Because both the indicator and the panel recount every update, a member who is knocked out or wounded
 loses his mark while he is down, health or not: confirmed (runtime) on 2026-10-20, a WAR PARTY (Furies against
 Orphans, five a side, every fighter on the AI) watched in PCSX2, the Orphans' indicator (`+0xc40`) dropped in the
 same update as each member went down by state (5 to 4 to 3 to 2 over 4,500 updates) and showed 3 while all 5 still
-had health, one of them tackled with 250 health left and one knocked out with 1. That he gets the mark back when he
+had health, one of them wounded (state `0x10000`) with 250 health left and one knocked out with 1 (an earlier reading
+called the first one tackled; a tackle's `0x800` is not among the states the count reads: [The health a downed human
+keeps](combat-reactions.md#down-health)). That he gets the mark back when he
 is up again is inferred from the recount (not seen in that run).
 
 | Call | Caller | Argument |
@@ -201,8 +203,8 @@ is up again is inferred from the recount (not seen in that run).
   with **any other value** it returns `HandleArray16_CountLive(gang + 0x48)` (`0x004dae00`), the handles that
   resolve, down or not. Confirmed (code) at `0x00166158`, `0x004dae00`.
 - `Human_IsDownOrDead` (`0x00227e60`) is 1 when the human has no record (`+0xd4` = 0) or is in any of the states
-  `0x180050000`: dead `0x100000000`, dying `0x80000000`, knocked out `0x40000`, tackled `0x10000`
-  ([the gang pages](ai-gangs.md) name the bits). Confirmed (code) at `0x00227e60`. Health is not read.
+  `0x180050000`: dead `0x100000000`, dying `0x80000000`, knocked out `0x40000`, wounded `0x10000`
+  ([the health each keeps](combat-reactions.md#down-health)). Confirmed (code) at `0x00227e60`. Health is not read.
 - `Gang_CountStanding` (`0x00166220`, the script's `GangGetStandingCount` through `0x0016a4a8`) is a **different,
   stricter** count that the HUD does not use: a member counts when his handle resolves and he is not knocked out,
   not in state `0x100000000` and not wounded (three separate tests). Confirmed (code) at `0x00166220`.

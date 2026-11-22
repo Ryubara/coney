@@ -1656,9 +1656,8 @@ int Fighter::quarteredFor(const Combatant& victim, int damage) const {
 
 bool Fighter::scoresRageOn(const Combatant& victim) {
     // `Hit_Score` (`0x002653d8`) gives nothing for a hit on a man in state 0x180040000 (knocked out, dying or dead) or
-    // on a class of category 13 with flag 0x10. **Coney's reading** (inferred): those states are a man whose health
-    // ran out before this hit, as Coney has no state word.
-    if (victim.health().depleted()) {
+    // on a class of category 13 with flag 0x10; it reads no health.
+    if (victim.knockedOutOrDying()) {
         return false;
     }
     return !(victim.bossClass() && (victim.flags() & flag::kGod) != 0);

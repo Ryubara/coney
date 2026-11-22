@@ -127,8 +127,8 @@ ReactionKind Victim::react(const IncomingHit& hit, const VictimFrame& frame, Hum
     return ReactionKind::Plain;
 }
 
-void Victim::die(const IncomingHit& hit, const VictimFrame& frame, const DyingState& dying, HumanAnimator& animator,
-                 const NamedDying* named) {
+void Victim::die(const IncomingHit& hit, const VictimFrame& frame, const DyingState& dying, combat::Health& health,
+                 HumanAnimator& animator, const NamedDying* named) {
     const auto has = [&dying](std::uint64_t bits) { return (dying.state & bits) != 0; };
     const bool cuffed = has(human_state::kCuffed);
     const bool wounded = has(human_state::kWounded);
@@ -209,12 +209,12 @@ void Victim::die(const IncomingHit& hit, const VictimFrame& frame, const DyingSt
         animator.playCombat(clips, loop, AnimState::Hold, kCombatFade, kDyingHolds);
     }
     m_deathChain = DeathChain{.steps = std::move(steps), .loop = loop};
-    // 6. The hit waiting is dropped (the pending damage +0x118).
+    // 6. The hit waiting is dropped (the pending damage +0x118), and the health, run out, reads 1 while he stays down.
     m_hasPending = false;
-    // **Gap**: the original then sets the health to 1 (it reads 0 here, the fighter's spent health; #592).
+    health.keepOneWhileOut();
     m_lastReaction = static_cast<int>(dyingClip);
-    // stand-in: the ground and the fighter's spent health stand for the dying state 0x80000000, and the animator's
-    // held state for the record's +0x18 = 0.
+    // stand-in: the ground and the health's down state (combat::Health::depleted()) stand for the dying state
+    // 0x80000000, and the animator's held state for the record's +0x18 = 0.
     m_grounded = true;
     m_stunUntilMs = 0;
     m_stunTimeOver = false;

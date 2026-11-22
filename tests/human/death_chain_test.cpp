@@ -12,6 +12,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "characters/anim_set.h"
+#include "combat/meters.h"
 #include "combat/power_class.h"
 #include "human/human.h"
 #include "human/human_animator.h"
@@ -79,7 +80,8 @@ IncomingHit lethalPunch() { return IncomingHit{.damage = 900, .attackAnim = 12, 
 DeathChain chainOf(const DyingState& dying, const ChainCharacter& character = ChainCharacter{}) {
     HumanAnimator animator(character.anims, coney::human::AnimSlots::player());
     Victim victim(coney::combat::kPlayerPowerClass);
-    victim.die(lethalPunch(), VictimFrame{}, dying, animator);
+    coney::combat::Health health(0, 900); // run out by the punch
+    victim.die(lethalPunch(), VictimFrame{}, dying, health, animator);
     return victim.deathChain();
 }
 
@@ -227,7 +229,8 @@ TEST_CASE("the death chain plays its clips in turn then its loop, holding 0x2000
     HumanAnimator animator(character.anims, coney::human::AnimSlots::player());
     Victim victim(coney::combat::kPlayerPowerClass);
     victim.hit(lethalPunch());
-    victim.die(lethalPunch(), VictimFrame{}, DyingState{.state = state::kOnFire, .woundable = true}, animator);
+    coney::combat::Health health(0, 900); // run out by the punch
+    victim.die(lethalPunch(), VictimFrame{}, DyingState{.state = state::kOnFire, .woundable = true}, health, animator);
     // The pending hit is gone with it (pending damage +0x118 = 0).
     CHECK_FALSE(victim.pending());
     std::vector<std::uint32_t> played;

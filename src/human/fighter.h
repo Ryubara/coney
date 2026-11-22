@@ -492,8 +492,9 @@ class Fighter {
     [[nodiscard]] bool warriorBrain() const { return m_warriorBrain; }
     /// Sets whether the human's brain is a Warrior's (warriorBrain()).
     void setWarriorBrain(bool warrior) { m_warriorBrain = warrior; }
-    /// Whether a hit on `victim` earns rage at all: not on a man already out (health run out), nor on a class of
-    /// category 13 with flag `0x10` (docs/research/combat-rage.md#hit-score-skips).
+    /// Whether a hit on `victim` earns rage at all: not on a man knocked out, dying or dead
+    /// (Combatant::knockedOutOrDying()), nor on a class of category 13 with flag `0x10`
+    /// (docs/research/combat-rage.md#hit-score-skips).
     /// @orig 0x002653d8 Stats_AttackRage (unknown)
     [[nodiscard]] static bool scoresRageOn(const Combatant& victim);
 

@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261122-war-party"
+date = "2026-11-22"
+kind = "trace"
+tool = "trace original"
+digest = "c736f58ad7ce3d90b23a5c491a6a13856d9c58b324b4c99e06891086f87b4e9e"
+
+[who]
+agent = "acec42b3ad7c201a9"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["call-brains"]
+
+[run]
+name = "war_party"
+method = ""
+
+[values]
+updates = 6000
+missed_updates = 1
+columns = 66
+
+[hashes]
+trace_csv = "9b6f8bf4f23c5945ff1c748e9c92e175371f52f57bd49556ab161d7be7c6bfd3"

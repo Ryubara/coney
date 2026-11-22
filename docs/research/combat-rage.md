@@ -494,12 +494,12 @@ keep-weapon drops in Coney are on [Combat: throws, weapons in hand](combat-throw
 
 ### Who scores {#hit-score-coney}
 
-Read 2026-10-21: `human::Fighter::scoresRageOn` (`repo:src/human/fighter.h`) skips a victim whose health ran out before
-the hit (**Coney's reading**, inferred: Coney has no state word, and in Coney all three states follow a man's health
-running out; in the original a knocked-out man can keep some health, issue #592, so once Coney has that state the test
-reads it instead) and a category-13 victim with flag `0x10`; a hit only reaches an opponent, so the friends test holds;
-the player test is the fighter's player profile with the rage flag `0x2000000`. A grabbed player's counters and
-strike-backs read the grabber's flag through `combat::GrabberState::scoresRage`.
+Read 2026-11-22: `human::Fighter::scoresRageOn` (`repo:src/human/fighter.h`) skips a victim knocked out, dying or dead
+(`Combatant::knockedOutOrDying()`: for a human, his health run out, which is Coney's dying and knocked-out state, or a
+script's knock-out; the value is not read, as a downed man keeps 1, [The health a downed human
+keeps](combat-reactions.md#down-health)) and a category-13 victim with flag `0x10`; a hit only reaches an opponent, so
+the friends test holds; the player test is the fighter's player profile with the rage flag `0x2000000`. A grabbed
+player's counters and strike-backs read the grabber's flag through `combat::GrabberState::scoresRage`.
 
 ### The flash {#flash-coney}
 

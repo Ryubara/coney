@@ -22,18 +22,33 @@ int wholePoints(float ratePerSecond, std::uint64_t elapsedMs, float& carry) {
 
 Health::Health(int maximum) : Health(maximum, maximum) {}
 
-Health::Health(int value, int maximum) : m_value(std::clamp(value, 0, maximum)), m_maximum(maximum) {
+Health::Health(int value, int maximum)
+    : m_value(std::clamp(value, 0, maximum)), m_maximum(maximum), m_out(m_value == 0) {
     CONEY_ASSERT(maximum > 0);
 }
 
 float Health::fraction() const { return static_cast<float>(m_value) / static_cast<float>(m_maximum); }
 
-void Health::set(int value) { m_value = std::clamp(value, 0, m_maximum); }
+void Health::set(int value) {
+    m_value = std::clamp(value, 0, m_maximum);
+    m_out = m_value == 0;
+}
 
 int Health::apply(int damage) {
+    // Run out, the health stays as the death chain left it.
+    if (m_out) {
+        return 0;
+    }
     const int taken = std::clamp(damage, 0, m_value);
     m_value -= taken;
+    m_out = m_value == 0;
     return taken;
+}
+
+void Health::keepOneWhileOut() {
+    if (m_out) {
+        m_value = 1;
+    }
 }
 
 void PendingDamage::add(int damage, int kind) {

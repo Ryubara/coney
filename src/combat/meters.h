@@ -51,16 +51,27 @@ class Health {
     /// Health over its maximum, 0 to 1.
     /// @orig 0x00222ef0 Human_HealthPercent (unknown)
     [[nodiscard]] float fraction() const;
-    /// Takes `damage` off (never below 0); returns what was taken.
+    /// Takes `damage` off (never below 0); returns what was taken. Health that has run out takes nothing more: a downed
+    /// human keeps what the death chain left him (docs/research/combat-reactions.md#down-health).
     int apply(int damage);
-    /// Health is 0.
-    [[nodiscard]] bool depleted() const { return m_value == 0; }
-    /// Sets health to `value`, clamped to 0..maximum (a script's `HuSetHealthPercent`, `HuRevive`).
+    /// The health has run out and has not been given back since (set() above 0): the down state Coney keeps beside the
+    /// value, where the original keeps dying (`0x80000000`), knocked out (`0x40000`) and dead in the state word, which
+    /// `Human_IsDownOrDead` (0x00227e60) reads instead of the health. The value may read 1 meanwhile
+    /// (keepOneWhileOut()).
+    [[nodiscard]] bool depleted() const { return m_out; }
+    /// Sets health to `value`, clamped to 0..maximum (a script's `HuSetHealthPercent`, `HuRevive`): 0 runs it out, any
+    /// more gives it back.
     void set(int value);
+    /// Health that has run out reads 1 and stays out: the write `Human_PlayDeathReaction` (0x00267a00) makes as it
+    /// builds the death chain, so a dying or knocked-out human keeps 1 health
+    /// (docs/research/combat-reactions.md#down-health). Health that has not run out is left alone.
+    /// @coney-only Coney keeps the down state beside the value (depleted()), so the write leaves it set
+    void keepOneWhileOut();
 
   private:
     int m_value;
     int m_maximum;
+    bool m_out; // depleted(): run out and not given back since
 };
 
 /// The damage waiting to be applied to a human this update: the largest of the update's hits, with its kind.

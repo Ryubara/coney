@@ -357,7 +357,8 @@ TEST_CASE("a lethal tandem lets the victim finish his end clip before he dies", 
         }
     });
     REQUIRE(deadAt >= 0);
-    CHECK(fight.enemy().fighter().health().value() == 0);
+    // Out of health, the death chain leaves him 1 (docs/research/combat-reactions.md#down-health).
+    CHECK(fight.enemy().fighter().health().value() == 1);
     // Out of health, the victim's end clip still plays (his held 0x400000 holds the death back), then he lies dead.
     CHECK(clipKeptAfterDeath);
     CHECK(fight.enemy().state() == TargetState::Grounded);

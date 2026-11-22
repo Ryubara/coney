@@ -994,11 +994,6 @@ relation = "stand-in"
 question = "combat-reactions.md#q-death-chain-states"
 
 [[function.gaps]]
-what = "the health is left at 0, not set to 1"
-relation = "not-ported"
-issue = 592
-
-[[function.gaps]]
 what = "a woundable human looping 200 replays the chain when hit again: only 349 stops a second chain, where Human_OnHealthOut (0x002674c0) clears state 0x80000000 at the chain's end, so a later hit gets an ordinary reaction"
 relation = "not-ported"
 issue = 685
