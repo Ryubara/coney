@@ -905,6 +905,20 @@ coney = "src/camera/rail_camera.h:RailCamera::placeLevel"
 status = "compared"
 
 [[function]]
+address = 0x00140708
+name = "CamRail_CollideTwoTargets"
+page = "camera.md#rail-frame"
+role = "Mode 0's collision while held or with two targets: when a target is out of frame and the camera is not held, the camera's start-of-update place and look-at point are put back; held or not, the targets are pushed back into frame (0x00140d68). [frame](camera.md#rail-frame)."
+level = "confirmed-code"
+coney = "src/camera/rail_camera.h:RailCamera::keepInFrame"
+status = "compared"
+
+[[function.gaps]]
+what = "with no hold (two targets and switch 8): the camera, P and the look-at point put back; Coney's one-target rail comes here only held"
+relation = "not-ported"
+issue = 1017
+
+[[function]]
 address = 0x00140d68
 name = "CamRail_KeepTargetsInFrame"
 page = "camera.md#rail-frame"
