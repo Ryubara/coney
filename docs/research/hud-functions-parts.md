@@ -160,6 +160,18 @@ alert was not checked (speculative that it can).
 listed member handed the player keeps his entry while his state holds; whether the original then lists him again at
 the next update (he is in player 1's gang and the code does not exclude the player) was not checked.
 
+#### Open: where the status icon sits across {#q-crew-icon-x}
+
+The layout's numbers hold at runtime (confirmed (runtime), PCSX2 2.9.94, a `level80` checkpoint 2 state with one
+Warrior cuffed, read from the state's memory): the floats `0x0050cfe4`-`0x0050d01c` keep their static values, the
+device flags at `*0x0050cdb4` are `0x01`, and the list's cell at `+0x12f0` is (0.03, 0, -0.018, 1), its step at
+`+0x1310` (0.12, 0, 0.08, 1). On the original's screen the portrait is 0.075 of the height tall and the icon 0.039
+below its centre, as the layout gives, but the icon sits only about 0.018 of the width left of the portrait's centre,
+not 0.069, and the portrait about 0.48 across, not 0.517 (measured from one capture). Coney draws the layout's
+numbers, so its icon is further left. How the original turns a widget's x into the screen's (an anchor, or a scale
+about the centre) was not found; Coney's action prompt sits right of the original's in the same capture, so it may be
+the HUD's x mapping in general rather than the list (speculative).
+
 ## After `GUI/BaseWidget.cpp` (no path string): mash meter and chase HUD {#fn-after-basewidget}
 
 The **mash meter** (HUD `+0xebc0` + player × `0x430`, vtable `0x00539568`) and the **chase HUD** (HUD `+0x9640` =
