@@ -690,12 +690,13 @@ checkout:
      merged if every one of its commits that changes something has an equivalent in `main` (`git cherry`, a base merged
      commit by commit), or if its whole change since it left `main` is the change of one commit in `main`
      (`git patch-id`, a base squash-merged), and no later commit of `main` reverts that commit. A revert is seen by
-     `git revert`'s message (`This reverts commit <hash>`), by GitHub's title `Revert "<the commit's title>"`, or by a
-     change that is exactly the inverse of the commit's; **the limit** is a revert made by hand that is none of these
-     (a conflict resolved another way, other edits in it) or by several commits, which is not seen, so such a base is
-     judged merged. A base with no change of its own (empty commits) is not merged by this check. What is not shown
-     merged is refused with the files named, and the refusal says to wait for the base's pull request to merge or to
-     take the way on below;
+     `git revert`'s message (`This reverts commit <hash>`, the whole hash), by GitHub's title `Revert "<the commit's
+     title>"` (the whole title, with or without the pull request number, and the revert's own number after it; a later
+     `Revert` of a longer title is another commit's), or by a change that is exactly the inverse of the commit's;
+     **the limit** is a revert made by hand that is none of these (a conflict resolved another way, other edits in it)
+     or by several commits, which is not seen, so such a base is judged merged. A base with no change of its own (empty
+     commits) is not merged by this check. What is not shown merged is refused with the files named, and the refusal
+     says to wait for the base's pull request to merge or to take the way on below;
    - **the branch holds nothing but its own**: none of the old base's commits that are not in `main`, by hash or by
      change (`git patch-id`), so a branch not rebased yet, or rebuilt with the base's commits copied, is refused with
      the rebase to run.

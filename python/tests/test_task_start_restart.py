@@ -280,6 +280,14 @@ def take_out(world: World, how: str, files: tuple[str, ...] = ("base-one.txt", "
         git(world.main, "add", "-A")
         if how == "message":
             git(world.main, "commit", "-q", "-m", "core: Take it out", "-m", f"This reverts commit {squash}.")
+        elif how == "title-plain":
+            git(world.main, "commit", "-q", "-m", 'Revert "core: Add the base"')
+        elif how == "title-bare":
+            git(world.main, "commit", "-q", "-m", 'Revert "core: Add the base (#1)"')
+        elif how == "unrelated":
+            git(world.main, "commit", "-q", "-m", 'Revert "core: Add the base layer (#12)" (#9)')
+        elif how == "other-hash":
+            git(world.main, "commit", "-q", "-m", "core: Take it out", "-m", f"This reverts commit {squash[::-1]}.")
         else:
             git(world.main, "commit", "-q", "-m", 'Revert "core: Add the base (#1)" (#9)')
     git(world.main, "push", "-q", "origin", "main")
@@ -296,7 +304,7 @@ def test_a_base_merged_and_then_reverted_is_refused_and_nothing_changes(world: W
     assert snapshot(world) == before and archives(world) == [] and world.record().base_ref == STACK
 
 
-@pytest.mark.parametrize("how", ["message", "title"])
+@pytest.mark.parametrize("how", ["message", "title", "title-plain", "title-bare"])
 def test_a_base_merged_edited_and_then_reverted_is_refused(world: World, how: str) -> None:
     tree = stacked(world)
     merge_base_by_squash(world)
@@ -310,6 +318,18 @@ def test_a_base_merged_edited_and_then_reverted_is_refused(world: World, how: st
     assert world.run(restart=True) == 1
     assert "reverts it" in world.said() and squash[:10] in world.said()
     assert snapshot(world) == before and archives(world) == []
+
+
+@pytest.mark.parametrize("how", ["unrelated", "other-hash"])
+def test_a_later_revert_of_another_commit_does_not_make_the_base_reverted(world: World, how: str) -> None:
+    """A later `Revert "<a title that only starts like the base's>"` (or a message naming another hash) reverts
+    something else: the base stays merged."""
+    tree = stacked(world)
+    merge_base_by_squash(world)
+    world.push_to_origin("base-one.txt")
+    take_out(world, how, ("base-two.txt",))
+    rebase_onto_main(tree)
+    assert world.run(restart=True, dry_run=True) == 0, world.said()
 
 
 def test_a_base_reverted_by_its_exact_inverse_and_edited_again_is_refused(world: World) -> None:

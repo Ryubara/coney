@@ -25,6 +25,7 @@ These are the git helpers and the decision; `task_start` dispatches here and sta
 
 from __future__ import annotations
 
+import re
 import subprocess
 from dataclasses import replace
 from pathlib import Path
@@ -184,12 +185,15 @@ def reverting_commit(main: Path, onto: str, commit: str) -> str | None:
     subject = _git(main, "log", "-1", "--format=%s", commit).stdout.strip()
     # GitHub puts the pull request number after a squash commit's title, and one after its revert's as well.
     plain = subject.rsplit(" (#", 1)[0] if subject.endswith(")") and " (#" in subject else subject
+    # Whole matches only: a later `Revert "<a longer title>"` or a message naming another hash is not this commit's.
+    by_message = re.compile(rf"^This reverts commit {re.escape(commit)}(?![0-9a-fA-F])", re.MULTILINE)
+    by_title = re.compile(rf'Revert "(?:{re.escape(subject)}|{re.escape(plain)})"(?: \(#\d+\))?')
     for entry in later.stdout.split("\x1e"):
         parts = entry.strip("\n").split("\x00", 2)
         if len(parts) != 3:
             continue
         found, title, body = parts
-        if f"This reverts commit {commit}" in body or title.startswith((f'Revert "{subject}"', f'Revert "{plain}')):
+        if by_message.search(body) or by_title.fullmatch(title):
             return found
     parent = _commit(main, f"{commit}^")
     if parent is None:
