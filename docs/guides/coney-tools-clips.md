@@ -126,13 +126,14 @@ removes what is left.
 **Scenarios.** A named scenario is a TOML file in `tools/clips/` (`workspace.clips.pair.scenarios`), so a reviewer
 reruns the same pair; `clips scenarios` lists them. Its keys are `description`, `level` (`--play-level`), `input` (an
 input script, a path in the checkout, played from the level's first frame of play) and `seconds` (how long the clips
-show), and optionally `start_frame` (the frame of play the clips start at), `checkpoint`, `ai_seed` and `skip_movies`
-(default true); any other key is refused. Without a scenario, `--level` and `--input-script` give the same run
-(`--seconds` defaults to 10). The clips are at most `workspace.clips.max_seconds` (10) long, but the run before them
-is not: Coney plays the script from the level's first frame of play and starts recording at `start_frame` through
-[`--record-from-frame`](running-options.md#record), so a scenario can punch a cabinet 70 s into the level
-(`level99-cabinet`) and still show 8 s of it. `start_frame` and the input script's frames count the same way, from the
-level's first frame of play.
+show), and optionally `start_frame` (the frame of play the clips start at), `checkpoint`, `ai_seed`, `skip_movies`
+(default true) and `record_debug_draw` (default false: `--record-debug-draw`, which keeps the Debug draw page's switches
+the run sets, as a clip drops them otherwise); any other key is refused. Without a scenario, `--level` and
+`--input-script` give the same run (`--seconds` defaults to 10). The clips are at most `workspace.clips.max_seconds`
+(10) long, but the run before them is not: Coney plays the script from the level's first frame of play and starts
+recording at `start_frame` through [`--record-from-frame`](running-options.md#record), so a scenario can punch a cabinet
+70 s into the level (`level99-cabinet`) and still show 8 s of it. `start_frame` and the input script's frames count the
+same way, from the level's first frame of play.
 
 `level87-stealth-kill` is the scenario for the stealth kill and for hiding: from level87's checkpoint 5 it takes the
 player into the tutorial's hint volume, which warps him behind the first guard (S01), where he hides. The tutorial
@@ -144,6 +145,13 @@ route without the kill.
 `level99-world-parts` is the scenario for the World page's part switches: it opens the pad menu in the level99 street
 and hides the streamed world, then shows it and hides the objects, for a change to the mesh views' hook or to what a
 renderer records for a hidden kind; record it on `--renderer gpu`.
+
+`level99-mesh-views` is the scenario for the Debug draw page's mesh views: it opens the pad menu in the level99 street
+and sets the model wireframe on every human before the clips, then the mesh view to flat by material and, near the
+end, to wireframe only, for a change to what a renderer draws for the views; it keeps the debug draw
+(`record_debug_draw`), and record it on `--renderer gpu` against GL3 (`--before-renderer gl3`) or against the base,
+where the switches did nothing. The normals and bone axes need an Entity inspector selection, which a clip never
+keeps, so its clips show the wireframe and the flat views only.
 
 **The encodes** port the ideas of GD Studio's capture tools to Coney's clips. `clips encode` re-encodes any clip the
 same way: a GIF for an `--out` ending in `.gif`, else a silent MP4. A bare `--out` name goes beside the clip, never

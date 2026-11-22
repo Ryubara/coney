@@ -60,7 +60,17 @@ CONEY_TIMEOUT = 600
 WITHOUT = "-without-"
 #: The keys a scenario file may hold, and the ones it must.
 SCENARIO_KEYS = frozenset(
-    {"description", "level", "input", "seconds", "start_frame", "checkpoint", "ai_seed", "skip_movies"}
+    {
+        "description",
+        "level",
+        "input",
+        "seconds",
+        "start_frame",
+        "checkpoint",
+        "ai_seed",
+        "skip_movies",
+        "record_debug_draw",
+    }
 )
 SCENARIO_REQUIRED = ("description", "level", "input", "seconds")
 
@@ -86,6 +96,9 @@ class PairRun:
     checkpoint: int | None = None
     ai_seed: int | None = None
     skip_movies: bool = True
+    #: Keep the Debug draw page's switches the run sets in the clips (Coney's `--record-debug-draw`: a clip drops them
+    #: otherwise), for a scenario that shows the mesh views.
+    record_debug_draw: bool = False
     description: str = ""
 
 
@@ -127,6 +140,9 @@ def load_scenario(path: Path, root: Path) -> PairRun:
         checkpoint=optional.get("checkpoint"),
         ai_seed=optional.get("ai_seed"),
         skip_movies=_scenario_value(data, "skip_movies", bool, path) if "skip_movies" in data else True,
+        record_debug_draw=(
+            _scenario_value(data, "record_debug_draw", bool, path) if "record_debug_draw" in data else False
+        ),
         description=_scenario_value(data, "description", str, path),
     )
 
@@ -173,6 +189,8 @@ def coney_arguments(executable: Path, disc: str, run: PairRun, out: Path, render
         args.append("--skip-movies")
     if run.ai_seed is not None:
         args += ["--ai-seed", str(run.ai_seed)]
+    if run.record_debug_draw:
+        args.append("--record-debug-draw")
     return [
         *args,
         "--input-script",

@@ -1,0 +1,13 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): the level99 street with the Debug draw page's
+# mesh views switched from the pad menu. The input script (tools/clips/level99-mesh-views.txt) puts the model wireframe
+# on every human before the clips start, then switches the mesh view to the flat colours by material and, near the end,
+# to the wireframe alone. A clip drops the Debug draw page's switches unless `record_debug_draw` keeps them, so this
+# scenario asks for it; the normals and bone axes need an Entity inspector selection, which a clip never keeps, so the
+# clips show the wireframe and the flat views only. For a change to what a renderer draws for the mesh views: record it
+# on `--renderer gpu`, where the switches did nothing before, or against `--before-renderer gl3`, the reference.
+description = "level99 street: the Debug draw page's wireframe, then the flat colours, then the wireframe alone"
+level = "level99"
+input = "tools/clips/level99-mesh-views.txt"
+start_frame = 270
+seconds = 7
+record_debug_draw = true
