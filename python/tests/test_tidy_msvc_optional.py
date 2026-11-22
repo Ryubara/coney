@@ -116,7 +116,7 @@ def test_prepare_writes_the_copy_into_the_build_folder_and_puts_it_on_the_includ
     model = prepare("clang-tidy", build, probe)
     assert model.notes == []
     assert model.include == build / "tidy-optional"
-    assert model.arguments() == (f"--extra-arg=-I{build / 'tidy-optional'}",)
+    assert model.arguments() == (f"--extra-arg=-external:I{build / 'tidy-optional'}",)
     assert (build / "tidy-optional" / "optional").read_text(encoding="utf-8") == patched_header(MICROSOFT)
     # the probe asks the compiler of the build for its include list, with no source of the project
     command = probe.commands[0]
@@ -206,7 +206,7 @@ def local(tree: Path, windows: bool, probe: ci_tidy.Runner | None) -> tuple[Tidy
 def test_on_windows_the_local_run_reads_the_copy_first(tree: Path) -> None:
     tidy, notes = local(tree, True, Probe(toolset(tree)))
     assert notes == []
-    expected = f"--extra-arg=-I{tree / 'build' / 'tidy-optional'}"
+    expected = f"--extra-arg=-external:I{tree / 'build' / 'tidy-optional'}"
     assert expected in tidy.commands[0] and tidy.commands[0].index(expected) < tidy.commands[0].index("src/a.cpp")
 
 
@@ -307,6 +307,7 @@ def findings(tmp_path: Path, model: bool) -> list[int]:
         tmp_path,
     )
     assert code in (0, 1), output
+    assert "tidy-optional" not in output, output  # nothing inside the copy is reported (it is a system header)
     return sorted({int(found.group(1)) for found in re.finditer(r"probe\.cpp:(\d+):\d+: (?:warning|error):", output)})
 
 

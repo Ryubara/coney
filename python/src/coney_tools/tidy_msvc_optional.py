@@ -8,11 +8,14 @@ matches a `*value` there: `value.value()` and `value->x` are reported, `*value` 
 `operator*` in `std::optional` and CI reports all three.
 
 The fix keeps Microsoft's library and changes one line of a copy of it: `patched_header` writes `<optional>` with that
-`using` replaced by the four overloads declared in `optional`, each calling the base's, and the copy is put first on the
-include path of every local clang-tidy command (`-I`), so every `#include <optional>`, the library's own included, reads
-it. Nothing but clang-tidy reads the copy (the build uses Microsoft's header); the check does not look inside the call,
-so it models the dereference as it does libstdc++'s. The copy is made from the very header clang-tidy would read, found
-with the include list clang-tidy prints for the build's compiler (`include_dirs`), and written to the build folder.
+`using` replaced by the four overloads declared in `optional`, each calling the base's. The copy's folder is put on the
+include path of every local clang-tidy command as a system folder (`-external:I`, as the build's own flags name its
+dependencies), ahead of the toolset's, so every `#include <optional>`, the library's own included, reads it and no
+diagnostic inside it is reported (a plain `-I` makes it a user header: its `-Wsign-compare` is then an error in the
+tests that compare an optional with an int). Nothing but clang-tidy reads the copy (the build uses Microsoft's header),
+and the check does not look inside the call, so it models the dereference as it does libstdc++'s. The copy is made from
+the very header clang-tidy would read, found with the include list clang-tidy prints for the build's compiler
+(`include_dirs`), and written to the build folder.
 
 When Microsoft's header changes so that the line is not there, the check still runs as before and says so in a note;
 `tests/test_tidy_msvc_optional.py` fails on a machine with such a toolset, so the copy is brought up to date.
@@ -58,7 +61,7 @@ class OptionalModel:
 
     def arguments(self) -> tuple[str, ...]:
         """The clang-tidy arguments that put the copy first on the include path; none without a copy."""
-        return (f"--extra-arg=-I{self.include}",) if self.include is not None else ()
+        return (f"--extra-arg=-external:I{self.include}",) if self.include is not None else ()
 
 
 def patched_header(text: str) -> str | None:
