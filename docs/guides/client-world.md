@@ -190,8 +190,10 @@ against `AnimTaskStack::sample()` itself: two layers in a fade, a gait blend bet
 plain loop, and a clip that is not loaded. It also covers a gait blend crossing from the walk's pair into the jog's
 and back, two snapshots decoded in one step both reaching the buffer, and a world told to skip what was decoded taking
 only the snapshots after. `tests/net/character_clips_test.cpp` covers [a character's clips](#clips) on synthetic ones:
-a clip by its id, each style's gait blend, a set missing one of a blend's clips, and a jog-to-run layer posed as the
-server's gait blend samples it.
+a clip by its id, each style's gait blend and the blend each style answers for the jog, run and sprint, a set missing
+one of a blend's clips, and a jog-to-run layer posed as the server's gait blend samples it. The move style is pinned
+where it is carried: in the words' round trip and the pose of a hidden human's gait blend (`client_world_test.cpp`), in
+`replicatedState()` for a human that hides (`game_humans_test.cpp`), and in the human field table's 257 bits.
 
 Its last case is the architecture's **What a client sees** test ([Testing](network-architecture.md#testing)): a
 `NetServer` and a `NetClient` on the loopback, each behind a link conditioner with 20 ms latency, 15 ms jitter, 5 %
