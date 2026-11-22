@@ -1013,6 +1013,10 @@ TEST_CASE("the net-view option refuses every other mode beside it", "[options]")
     refused(std::array<std::string_view, 5>{"--join", "127.0.0.1:1", "--net-view", "--play-level", "level99"});
     refused(std::array<std::string_view, 5>{"--join", "127.0.0.1:1", "--net-view", "--load", "x"});
     refused(std::array<std::string_view, 5>{"--join", "127.0.0.1:1", "--net-view", "--view-txd", "x"});
+    refused(std::array<std::string_view, 5>{"--join", "127.0.0.1:1", "--net-view", "--view-sheet", "x"});
+    refused(std::array<std::string_view, 6>{"--join", "127.0.0.1:1", "--net-view", "--view-text", "x", "y"});
+    refused(std::array<std::string_view, 5>{"--join", "127.0.0.1:1", "--net-view", "--view-world", "x"});
+    refused(std::array<std::string_view, 5>{"--join", "127.0.0.1:1", "--net-view", "--view-character", "x"});
     refused(std::array<std::string_view, 5>{"--join", "127.0.0.1:1", "--net-view", "--test-card", "x"});
 }
 
