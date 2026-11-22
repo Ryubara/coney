@@ -52,8 +52,8 @@ TEST_CASE("a human beaten to 0 health keeps 1 health from the hit, and is down b
     // Expected: combat-reactions.md#down-health. Human_PlayDeathReaction (0x00267a00) writes 1 to the health (record
     // +0x144) as it builds the death chain at the lethal hit, and the knock-out at the chain's end (Human_OnHealthOut
     // 0x002674c0, Human_KnockOut 0x00230328) leaves it; Human_IsDownOrDead (0x00227e60) reads the states 0x180050000,
-    // not the health. Confirmed (runtime), run r-20261122-war-party: the Orphans and Furies knocked out lay at 1
-    // health, dying from the update of the lethal hit.
+    // not the health. Confirmed (runtime), run r-20261122-war-party: the fighters knocked out lay at 1 health, dying
+    // from the update of the lethal hit.
     const coney::test::FightCharacter character;
     coney::test::Fight fight(character, 30.0F);
     Human& human = fight.human();

@@ -781,21 +781,21 @@ at `0x00227e60`):
 
 In a WAR PARTY (confirmed (runtime), run r-20261122-war-party: the scenario
 `repo:research/traces/scenarios/war_party.toml`, QUICK RUMBLE, Furies against Orphans, five a side, every fighter on
-the AI, 6,000 updates; the trace and its summary stay in the task's scratch folder), 8 of the 10 fighters went down,
-and every one was dying, knocked out or dead with health **1**, or wounded with **250** of 1000:
+the AI, 6,000 updates; the trace and its summary stay in the task's scratch folder), all five Furies went down (the
+Orphans won), and every one was dying, knocked out or dead with health **1**, or wounded from **250** of 1000:
 
 | Phase | Health | Updates | Fighters |
 | --- | --- | --- | --- |
-| Dying (`0x80000000`), from the lethal hit | 1 | 36-94 | 8 |
-| Wounded (`0x10000`, clip 200) | 250 | 420-421 | 4 |
-| Dying while wounded (`0x80010000`, clip 204) | 1 | 40 | 4 |
-| Knocked out (`0x40000`, clip 349) | 1 | 420-421, or 1,262 (three 14 s turns and 2) | 8 |
-| Dead (`0x100000000`) until deleted | 1 | 41-42 | 8 |
+| Dying (`0x80000000`), from the lethal hit | 1 | 45-119 | 5 |
+| Wounded (`0x10000`, clip 200) | 250 (one hit while wounded: 190) | 420-421, the one hit 735 | 3 |
+| Dying while wounded (`0x80010000`, clip 204) | 1 | 40 | 3 |
+| Knocked out (`0x40000`, clip 349) | 1 | 420, or 840-841 (two 14 s turns) | 5 |
+| Dead (`0x100000000`) until deleted | 1 | 41-42 | 5 |
 
-Each wound ended 420-421 updates (14 s) after it began, in the dying clip 204 and then 349: inferred, the wound's
-`+0xf0` stamp running out rather than a hit (the same length every time). A knocked-down
-fighter (`0x80000`) is not down by state and kept his health (86-122 updates, 22-985 health). A tackle did not happen
-in that match.
+The two wounds no one hit ended 420-421 updates (14 s) after they began, in the dying clip 204 and then 349: inferred,
+the wound's `+0xf0` stamp running out; the third lasted longer, its stamp moved on by the hits it took (inferred). A
+knocked-down fighter (`0x80000`) is not down by state and kept his health (86-88 updates, 1-1109 health). A tackle did
+not happen in that match.
 
 #### Who sets and clears the knocked-out bit {#knocked-out-bit}
 

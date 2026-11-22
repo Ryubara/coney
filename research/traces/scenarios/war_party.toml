@@ -12,10 +12,9 @@ fields = ["humans"]
 
 [original]
 # Made from QUICK RUMBLE > WAR PARTY > 1P vs CPU > Furies, Orphans, the Fight Pen, with the set-up left as the menus
-# give it: saved at the intro's "press X" prompt, brains off, with the scripted-pad patch already in its memory (so
-# none is applied again).
+# give it: saved at the intro's "press X" prompt, brains off.
 state = "states/war_party_intro.p2s"
-patches = ["call-brains"]
+patches = ["scripted-pad", "call-brains"]
 # At frame 200, after the countdown, player 1 is given back to his brain, as HuSwitchPlayer gives a player back:
 # Human_ReleasePlayer(h, 0, 1) (docs/research/rumble.md#gang-battle-setup).
 calls = [ { function = "0x0022a2a8", args = ["player", "0", "1"], frame = 200 } ]

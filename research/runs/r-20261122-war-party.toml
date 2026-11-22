@@ -3,7 +3,7 @@ id = "r-20261122-war-party"
 date = "2026-11-22"
 kind = "trace"
 tool = "trace original"
-digest = "c736f58ad7ce3d90b23a5c491a6a13856d9c58b324b4c99e06891086f87b4e9e"
+digest = "3a9d728b1a19322810502b7dba110b29e8f58dfdba54caca5144466def6acd25"
 
 [who]
 agent = "acec42b3ad7c201a9"
@@ -17,16 +17,16 @@ copy = "pcsx2"
 
 [start]
 state = "unknown"
-patches = ["call-brains"]
+patches = ["call-brains", "scripted-pad"]
 
 [run]
 name = "war_party"
 method = ""
 
 [values]
-updates = 6000
-missed_updates = 1
+updates = 6001
+missed_updates = 0
 columns = 66
 
 [hashes]
-trace_csv = "9b6f8bf4f23c5945ff1c748e9c92e175371f52f57bd49556ab161d7be7c6bfd3"
+trace_csv = "0e7988017700b0ae42fc3bfff15fc49ba66331da51ad28e86f7f94eee7c9f10d"
