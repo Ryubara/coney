@@ -104,7 +104,10 @@ TEST_CASE("the client game's scene of level99 draws a guest's humans posed with 
     const auto clientStep = [&] {
         world.receive(receiver);
         world.step();
-        hudOwner.hud().update(coney::hud::HudFrame{.nowMs = 100 * (index + 1)});
+        // A default frame with only the clock set (a designated initializer would leave members out).
+        coney::hud::HudFrame hudFrame;
+        hudFrame.nowMs = 100 * (index + 1);
+        hudOwner.hud().update(hudFrame);
         drawn.step(world, coney::FrameTime{.index = index++, .seconds = 1.0 / 30.0});
         drawn.render(world, coney::RenderTime{});
     };
