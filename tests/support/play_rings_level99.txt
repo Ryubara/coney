@@ -1,0 +1,7 @@
+# The health rings at full health in the level99 street from the play mode (--play-level level99 --skip-movies): cross
+# skips the intro scene (as play_walk_level99.txt does), then SELECT shows Rembrandt's rings, which fade in over half a
+# second and stay four seconds. Frames are 1/30 s.
+# Skip the intro scene.
+70 tap cross
+# Stand still while the view fades back in, then ask for the rings.
+150 tap select

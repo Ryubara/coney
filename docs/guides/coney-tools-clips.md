@@ -142,6 +142,9 @@ and square at frame 680 plays the kill (clips 637 and 638). Its before for the s
 that change's commit, or `--before` a hand-made commit where later commits edit its lines. `level87-hide` is the same
 route without the kill.
 
+`level99-rings` is the scenario for the health rings: in the level99 street SELECT shows the player's rings at full
+health, for a change to their shape, colours or draw (the full ring's last segment, #1630).
+
 `level99-world-parts` is the scenario for the World page's part switches: it opens the pad menu in the level99 street
 and hides the streamed world, then shows it and hides the objects, for a change to the mesh views' hook or to what a
 renderer records for a hidden kind; record it on `--renderer gpu`.
