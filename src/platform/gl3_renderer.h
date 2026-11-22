@@ -114,6 +114,8 @@ class Gl3Renderer {
 
     // Binds `texture`'s filter and addressing and returns its raster; null for no texture.
     static rw::Raster* bindTexture(const graphics::Texture* texture, graphics::TextureAddress address);
+    // The near plane 2D vertices take their depth from: the camera's, or a new camera's while the NULL backend records.
+    static float nearPlaneOf(const Target& target);
     // Sets the 2D pass's render states with `raster` (null: flat colour); `opaque` replaces what is below (ONE / ZERO)
     // instead of blending by alpha.
     static void set2dStates(rw::Raster* raster, bool opaque);

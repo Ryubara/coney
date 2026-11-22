@@ -26,11 +26,6 @@ namespace {
 // librw's Camera::create starts a camera's near plane at 0.05: the 2D vertices' depth while the NULL backend records.
 constexpr float kNewCameraNearPlane = 0.05F;
 
-// The near plane 2D vertices take their depth from: the camera's, or a new camera's while the NULL backend records.
-float nearPlaneOf(const Gl3Renderer::Target& target) {
-    return target.camera != nullptr ? target.camera->nearPlane : kNewCameraNearPlane;
-}
-
 // Whether 2D draws are made: with a camera to draw through, or while the draw layer records.
 bool drawing2d(const Gl3Renderer::Target& target) { return target.camera != nullptr || draw::recording(); }
 
@@ -105,6 +100,11 @@ rw::Texture* rwTextureOf(const graphics::Texture* texture) {
 }
 
 } // namespace
+
+// The near plane 2D vertices take their depth from (shared with gl3_screen_passes.cpp).
+float Gl3Renderer::nearPlaneOf(const Target& target) {
+    return target.camera != nullptr ? target.camera->nearPlane : kNewCameraNearPlane;
+}
 
 Gl3Renderer::~Gl3Renderer() { releaseAll(); }
 
