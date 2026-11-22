@@ -267,6 +267,11 @@ void ClientWorld::receive(const SnapshotReceiver& snapshots) {
     m_taken = std::max(m_taken, newest);
 }
 
+void ClientWorld::skipDecoded(const SnapshotReceiver& snapshots) {
+    // Everything decoded so far counts as taken, so the next receive() starts after it.
+    m_taken = std::max(m_taken, snapshots.newest());
+}
+
 void ClientWorld::step() {
     m_humans.commit();
     m_poses.commit();

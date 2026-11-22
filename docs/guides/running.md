@@ -44,7 +44,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
         [--bench-measure N] [--bench-frames FILE] [--bench-real-time] [--bench-place X,Y,Z,H]
         [--bench-neutrals N] [--bench-fps]]
       [--log-file FILE] [--log-verbose CATEGORIES]
-      [--host [[ADDR:]PORT] | --join ADDR[:PORT]] [--net-name NAME] [--cpu-skinning]
+      [--host [[ADDR:]PORT] | --join ADDR[:PORT] [--net-view]] [--net-name NAME] [--cpu-skinning]
       [--digest FILE] [--digest-net FILE] [--net-record FILE | --net-replay FILE]
 ```
 

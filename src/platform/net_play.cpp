@@ -307,6 +307,8 @@ hud::HudStanding NetPlay::arrivedHudStanding() const {
     return net::hudStanding(m_client->snapshots().hudElements(), m_client->snapshots().hudTexts());
 }
 
+const net::SnapshotReceiver* NetPlay::clientSnapshots() const { return m_client ? &m_client->snapshots() : nullptr; }
+
 net::SnapshotHuds NetPlay::arrivedHuds() const {
     if (!m_client) {
         return {};

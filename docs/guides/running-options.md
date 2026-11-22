@@ -205,7 +205,11 @@ build/dev/src/platform/coney --headless --frames 60 --audio-test
 
 Coney's [network play](multiplayer.md): a game can host and one other can join it, with the ping and loss on the
 debug menus' Network page. The guest's pad plays the host's pad port 2, as a second pad plugged into the
-host's machine would ([Player two](multiplayer.md#player-two)); the guest's own screen does not show the host's game.
+host's machine would ([Player two](multiplayer.md#player-two)). A guest's own screen shows its own game, unless
+`--net-view` (with `--join`) makes it [the client game](client-world.md#client-game): no game of its own, the host's
+level and humans drawn from the snapshots, every human as Rembrandt and the camera behind the host's player 1 until the
+snapshots say more. It is the guest's whole game, so it is refused with `--play-level`, `--sandbox`, `--load`,
+`--test-card` or a viewer.
 `--host` hosts from the start, on UDP
 port 27615 of every interface unless told otherwise: `--host 30000` picks the port, `--host 127.0.0.1:0` listens on
 this machine only on any free port (the tests do), and the run prints the port it got. `--join ADDR[:PORT]` joins the
@@ -217,6 +221,7 @@ run prints one `net:` line at the end with the state and the bytes sent and rece
 ```sh
 build/dev/src/platform/coney --host --net-name Cleon            # the host
 build/dev/src/platform/coney --join 192.168.1.20 --net-name Swan # another machine on the network
+build/dev/src/platform/coney --join 192.168.1.20 --net-view      # the host's game drawn from its snapshots
 build/dev/src/platform/coney --headless --frames 3 --host 127.0.0.1:0
 ```
 

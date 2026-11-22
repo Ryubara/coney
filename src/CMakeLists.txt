@@ -578,7 +578,7 @@ add_library(coney_net STATIC net/bit_stream.cpp net/input_buffer.cpp net/link_co
                              net/loopback_transport.cpp net/net_client.cpp net/net_server.cpp net/protocol.cpp net/snapshot_wire.cpp
                              net/event_wire.cpp net/event_channel.cpp net/level_wire.cpp net/level_barrier.cpp
                              net/jitter_buffer.cpp net/client_world.cpp net/state_digest.cpp net/game_humans.cpp net/session_record.cpp
-                             net/player_huds.cpp)
+                             net/player_huds.cpp net/character_clips.cpp)
 coney_target_defaults(coney_net)
 target_link_libraries(coney_net PUBLIC coney_core)
 if(CONEY_DEBUG_TOOLS)

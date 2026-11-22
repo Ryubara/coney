@@ -21,8 +21,9 @@ draw a client's humans from them; the host's game's humans in those snapshots, s
 a scene or a movie) sent to the guest at its step; [level loads, checkpoints and the loading barrier](#levels), the
 session's side of a level change, a checkpoint restart, a mid-level join and a movie's wait; and the proof of it
 without a person: the [state digest](#digest),
-[two processes](#two-processes) over ENet in CI and [replays](#replays). The guest does not see the host's game yet:
-no client game mode draws the snapshots it decodes or plays the events.
+[two processes](#two-processes) over ENet in CI and [replays](#replays); and [the client
+game](client-world.md#client-game) (`--net-view`), a guest that runs no game of its own and draws the host's level and
+humans from the snapshots it decodes. It plays no game event and draws no HUD yet (#1614).
 **Next:** the layers under [The plan](#plan).
 
 ## The model {#model}
@@ -251,8 +252,8 @@ as `Network/Ping (ms)`; a host shows its slowest player's), the loss, bytes and 
 players with their ping and loss; a **Simulate network** submenu (latency, jitter, loss, duplicates, reordering on
 what this game sends, live); and a log of what happened, also printed as `net:` lines.
 
-**The command line:** `--host [[ADDR:]PORT]`, `--join ADDR[:PORT]` and `--net-name NAME`
-([Running Coney](running-options.md#network-play)).
+**The command line:** `--host [[ADDR:]PORT]`, `--join ADDR[:PORT]` (with `--net-view` for [the client
+game](client-world.md#client-game)) and `--net-name NAME` ([Running Coney](running-options.md#network-play)).
 
 ## Player two {#player-two}
 
@@ -597,8 +598,10 @@ network play's receive and before the step gate.
   the guest's game plays is waited for to its end, past the time-out, so a guest still watching its copy never falls
   behind the host's next step. The debug menu's movies are the game's own and wait for nobody.
 
-A guest still runs its own whole game until the client game mode that draws the snapshots is built: its level is the
-host's, but what happens in it is its own, including the movies its own scripts play.
+A guest started without `--net-view` still runs its own whole game: its level is the host's, but what happens in it
+is its own, including the movies its own scripts play. With `--net-view` it runs [the client
+game](client-world.md#client-game) instead, the `LevelGame` NetLevels follows the host with: it loads the level's scene
+in one step, plays no movie and answers each of the host's at once.
 
 ## Game events {#events}
 
@@ -650,8 +653,9 @@ under the host's instance; the host's SoundStop and SoundMove act on that handle
 lost start, one before it joined) is nothing to act on. `stopAll()` stops what it keeps when the session ends. A world
 object's Sound3D (`LevelObjectServices`) carries instance 0: nothing stops or moves it. The stop and the move go
 reliably, so a guest's radio never plays on, or stays where it was, after a lost packet; the start stays a one-shot.
-Nothing in the running game makes a `SoundEventPlayer` yet: the client game mode that draws the snapshots will (until
-then a guest runs its own game, whose own sound already plays its radios).
+Nothing in the running game makes a `SoundEventPlayer` yet: the client game ([The client
+game](client-world.md#client-game)) plays none of the host's events (#1614), and a guest that runs its own game plays
+its radios with its own sound.
 
 **Delivery.** One-shots (the sounds, hits, material pairs, cues, particle starts and breaks) go **Unreliable**: a lost
 one is a sound nobody misses, and one resent late would play out of time. The music, the loop, the messages, the
@@ -669,8 +673,8 @@ its sequence (one-shots remember the last 64); a one-shot whose step was already
 reliable event is handed over at the next take however late it comes. `net::toGameEvent()` turns an arrived event back
 into the event raised, without its subject (a client has no handle for the server's ids yet). Only the sound starts,
 stops and moves have a player on a guest (`SoundEventPlayer`, [A playing sound](#sound-instances)), and nothing makes it
-yet: the client game mode that draws the snapshots will play the events, with each player's panel from the HUD state
-the snapshots carry ([HUD state](snapshots.md#hud-state), `NetPlay::arrivedHuds()`).
+yet: the client game plays none of the events and draws no panel from the HUD state the snapshots carry ([HUD
+state](snapshots.md#hud-state), `NetPlay::arrivedHuds()`); #1614 adds both.
 
 **For the session record.** `coney::describe(const GameEvent&)` gives an event's one-line text (`sound3d id=0x22
 value=1 at=1.500,-2.000,0.250`), the form a session record writes beside its `event STEP TEXT` lines.
@@ -780,8 +784,9 @@ Each step is a pull request that builds and is tested on its own.
 5. **Replicated players:** network ids and the field tables (built: [Network ids](#net-ids)), snapshots (built:
    quantized, delta-compressed against acknowledged baselines, [Snapshots](snapshots.md)), the client's jitter buffer
    and interpolation (built: [The client's world](client-world.md)), the game's humans in them (built: [The game's
-   humans](#game-humans)), a client game mode that draws them, and its own follow camera. The state digest,
-   two-process tests and replays (built: [Proof without a person](#proof)).
+   humans](#game-humans)), a client game mode that draws them (built: [The client game](client-world.md#client-game),
+   with stand-ins for each human's character, #1612, and the camera until its own follow camera, #1333). The state
+   digest, two-process tests and replays (built: [Proof without a person](#proof)).
 6. **AI humans, events, mission state:** the rest of what a client must see and hear: the game events (built: [Game
    events](#events)), each player's panel state and the HUD's standing state in the snapshot (built: [HUD
    state](snapshots.md#hud-state), [The HUD's standing state](snapshots.md#hud-standing); the radar's blips: #1537),

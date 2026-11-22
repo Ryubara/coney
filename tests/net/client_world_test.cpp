@@ -303,6 +303,40 @@ TEST_CASE("client world: every snapshot decoded since the last step goes into th
     }
 }
 
+// Expected: unverified, #1603 (Coney's own: a new level's world takes nothing the last level left in the receiver,
+// docs/guides/client-world.md#client-game)
+TEST_CASE("client world: a world told to skip what was decoded takes only the snapshots decoded after",
+          "[net][client_world]") {
+    SnapshotSender sender;
+    SnapshotReceiver receiver;
+    // The snapshot of one human at `x` at `step`, decoded and acknowledged.
+    const auto decode = [&](std::uint32_t step, float x) {
+        const Snapshot snapshot =
+            sender.build(step, std::vector<SnapshotHuman>{{.id = idOf(0), .words = humanWords(standing(x))}});
+        REQUIRE(receiver.apply(snapshot) == SnapshotApplied::Applied);
+        REQUIRE(sender.acknowledge(snapshot.sequence).has_value());
+    };
+    // The last level's snapshots, still kept by the receiver.
+    for (std::uint32_t step = 0; step < 5; ++step) {
+        decode(step, -50.0F);
+    }
+
+    ClientWorld world;
+    world.skipDecoded(receiver);
+    world.receive(receiver);
+    CHECK(world.buffer().size() == 0);
+    world.step();
+    CHECK(world.humans().empty());
+
+    // The new level's first snapshot is the first the world takes, and the one it draws.
+    decode(40, 7.0F);
+    world.receive(receiver);
+    CHECK(world.buffer().size() == 1);
+    world.step();
+    REQUIRE(world.humans().size() == 1);
+    CHECK(world.humans().begin()->second.position.x == Approx(7.0F).margin(0.01F));
+}
+
 // Expected: unverified, #555 (Coney's own; the pose is AnimTaskStack::sample()'s,
 // docs/research/formats/animation.md#task-stack)
 TEST_CASE("client world: a human's pose is its layers sampled and faded in as its task stack sampled them",
