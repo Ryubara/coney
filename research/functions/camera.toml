@@ -203,7 +203,17 @@ page = "camera.md#fn-script"
 role = "[`CamSetupRail`](../references/bindings/camera.md#camsetuprail): a player's rail camera: name, target on the target list, fov, offset, near, far; CamRail_Reset. [rail](camera.md#rail)."
 level = "confirmed-code"
 coney = "src/camera/rail_camera.h:RailCamera::setup"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the target handle is not resolved: only the null handle makes no camera"
+relation = "not-ported"
+issue = 692
+
+[[function.gaps]]
+what = "the other players' rails, which -1 also sets up: Coney has player 1's rail only"
+relation = "not-ported"
+issue = 549
 
 [[function]]
 address = 0x0011cf70
@@ -222,6 +232,20 @@ role = "[`CamAddRailPoint`](../references/bindings/camera.md#camaddrailpoint): a
 level = "confirmed-code"
 coney = "src/camera/cameras.h:Cameras::addRailPoint"
 status = "legacy"
+
+[[function]]
+address = 0x0011d180
+name = "Camera_LockRail"
+page = "camera.md#rail"
+role = "[`CamLockRail`](../references/bindings/camera.md#camlockrail): a player's rail camera held or let go (`+0x3e4`), a negative player read as player 0; -1 also every other player's. [rail](camera.md#rail)."
+level = "confirmed-code"
+coney = "src/camera/cameras.h:Cameras::lockRail"
+status = "compared"
+
+[[function.gaps]]
+what = "the other players' rails, which -1 also sets: Coney has player 1's rail only"
+relation = "stand-in"
+issue = 549
 
 [[function]]
 address = 0x0011d228
@@ -711,7 +735,12 @@ page = "camera.md#fn-rail"
 role = "CamSetupRail's reset: no points, mode 0, settings and ease times off, fov target the current fov, switches 7 and 8 on. [rail](camera.md#rail)."
 level = "confirmed-code"
 coney = "src/camera/rail_camera.h:RailCamera::setup"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "switch 2 off and switches 7 and 8 on again; the lead's and mode 3's ease times zeroed; mode 3's angle off. Coney's set-up also switches setting 8's pitch off, which the original leaves"
+relation = "not-ported"
+issue = 1017
 
 [[function]]
 address = 0x0013b508

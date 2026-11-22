@@ -1364,6 +1364,20 @@ coney = "src/scripting/story_bindings.cpp:makeHuExitWorld"
 status = "legacy"
 
 [[function]]
+address = 0x002384f8
+name = "Human_EnableController"
+page = "characters.md#code-script"
+role = "`HuEnableController`: the human's per-player record flag `+0x1b`, pad control on or off."
+level = "confirmed-code"
+coney = "src/ai/scripted_humans.h:ScriptedHumans::enableController"
+status = "compared"
+
+[[function.gaps]]
+what = "a human no pad can drive (an AI brain's) is left as it is: Coney keeps the pad flag only for the player's human"
+relation = "stand-in"
+question = "armies.md#coney"
+
+[[function]]
 address = 0x002385f8
 name = "Human_PlaceHatOnHead"
 page = "characters.md#code-script"

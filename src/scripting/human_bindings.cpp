@@ -774,6 +774,7 @@ void addGetters(LuaVm& vm, const BindingContext& context) {
 
 } // namespace
 
+// @coney-only the registration of Coney's character bindings (RegisterBindings registers the original's)
 void addHumanBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
     for (const FlagSetter& setter : kFlagSetters) {
         vm.registerFunction(setter.name,

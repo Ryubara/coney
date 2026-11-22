@@ -211,6 +211,7 @@ TEST_CASE("CamLockLocked lists a human on a locked camera and takes him off agai
 
 TEST_CASE("a chase's rail camera calls: set-up, points, lead and settings; fixed and third-person cameras",
           "[camera_bindings]") {
+    // Expected: camera.md#rail, confirmed (code)
     Harness h;
     // A point before any rail camera is not added; a NilHandle target makes none.
     CHECK(h.call("CamAddRailPoint", {triple(0, 0, 2)}).isNil());

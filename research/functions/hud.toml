@@ -812,6 +812,20 @@ coney = "src/hud/hud.h:Hud::setAnnouncement"
 status = "legacy"
 
 [[function]]
+address = 0x001b5b80
+name = "HUD_SetANBossTexture"
+page = "hud-functions-lua.md#fn-hudlua"
+role = "`HUDSetANBossTexture`: both player panels' slot `+0x74` (on an Armies panel, the target panel's boss pictures)"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::setBossTexture"
+status = "compared"
+
+[[function.gaps]]
+what = "kept in every level, where a story panel's slot is empty: only the Armies target panel reads the pictures"
+relation = "stand-in"
+issue = 662
+
+[[function]]
 address = 0x001b5c30
 name = "HUD_EnableInstructionArrow"
 page = "hud-functions-lua.md#fn-hudlua"
@@ -1277,6 +1291,29 @@ coney = "src/hud/player_panel.h:PlayerPanel::show"
 status = "legacy"
 
 [[function]]
+address = 0x0020e170
+name = "TargetPanel_Construct"
+page = "hud-functions-panels.md#fn-anhud"
+role = "the target panel's widget base and its six boss pictures free"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::levelSetUp"
+status = "compared"
+
+[[function.gaps]]
+what = "the widget base and its table (the target panel is not drawn)"
+relation = "not-ported"
+issue = 662
+
+[[function]]
+address = 0x0020fc98
+name = "TargetPanel_SetBossTexture"
+page = "hud-functions-panels.md#fn-anhud"
+role = "a boss's picture into the first free of six pairs, or the first pair holding him freed"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::setBossTexture"
+status = "compared"
+
+[[function]]
 address = 0x0020fd40
 name = "ANHud_Enable"
 page = "hud-functions-panels.md#fn-anhud"
@@ -1303,6 +1340,15 @@ status = "compared"
 what = "the panel's bars, score counter and target panel (Coney's story panel stands in)"
 relation = "not-ported"
 issue = 662
+
+[[function]]
+address = 0x00210dc0
+name = "ANHud_SetBossTexture"
+page = "hud-functions-panels.md#fn-anhud"
+role = "the Armies panel's slot `+0x70`: its target panel's boss pictures"
+level = "confirmed-code"
+coney = "src/hud/armies_hud.h:ArmiesHud::setBossTexture"
+status = "compared"
 
 [[function]]
 address = 0x00211938

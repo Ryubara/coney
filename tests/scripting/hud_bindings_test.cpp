@@ -347,6 +347,7 @@ TEST_CASE("PreloadCredits runs credits.lua into a fresh list; ShowCredits starts
 }
 
 TEST_CASE("the credit bindings do nothing without a HUD", "[script][hud][credits]") {
+    // Expected: frontend.md#fn-credits, confirmed (code), for the bindings; a missing HUD is Coney's own harness
     Harness harness(nullptr);
     harness.call("PreloadCredits", {});
     harness.call("CfgCredits", {Value(1.0), Value(std::string("Role")), Value(std::string("Name"))});

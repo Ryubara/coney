@@ -614,6 +614,8 @@ TEST_CASE("HuChangePlayerGang hands player 1 to the new gang's lowest priority; 
 }
 
 TEST_CASE("an anim a human starts twice in one step calls its animation callback once", "[ai][scripted]") {
+    // Expected: characters.md#anim-callbacks, confirmed (code): the callback runs when the human starts the anim;
+    // one call for two starts in one step is Coney's step, which runs the callbacks after the characters' step.
     // Declared before the level: the level's destructor detaches itself from the callbacks, so they must outlive it.
     coney::script::AnimCallbacks callbacks;
     Level level;
@@ -636,7 +638,7 @@ TEST_CASE("an anim a human starts twice in one step calls its animation callback
 
 TEST_CASE("HuEnableController hands a player's human to its pad or its brain; an AI human or a bad handle is untouched",
           "[ai][scripted]") {
-    // Expected: character.md#code-script, confirmed (code): lua_HuEnableController (0x0035c120) reads the human as a
+    // Expected: characters.md#code-script, confirmed (code): lua_HuEnableController (0x0035c120) reads the human as a
     // handle and `enable` as a boolean (nil false); Human_EnableController (0x002384f8) writes the per-player record's
     // `+0x1b` of the human the handle names, nothing for a bad handle.
     Level level;

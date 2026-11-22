@@ -200,6 +200,7 @@ NativeFunction makeCamTarget(const BindingContext& context) {
 
 // Whether a `player` argument (default -1, every player) reaches player 1's cameras, the only ones Coney has: a
 // negative player is player 0, as the rail's calls read it (Camera_SetupRail 0x0011cce8, Camera_LockRail 0x0011d180).
+// @coney-only the player argument's reading for Coney's one set of cameras; each original call reads it in place
 bool forPlayerOne(std::span<const Value> args, std::size_t i) {
     if (i >= args.size() || args[i].isNil()) {
         return true;
@@ -324,6 +325,7 @@ NativeFunction makeCameraCreateThird(const BindingContext& context, std::functio
 
 } // namespace
 
+// @coney-only the registration of Coney's camera bindings (RegisterBindings registers the original's)
 void addCameraBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
     vm.registerFunction("CamEnable", makeCamEnable(context));
     vm.registerFunction("CameraCreateLocked", makeCameraCreateLocked(context, nextHandle));
