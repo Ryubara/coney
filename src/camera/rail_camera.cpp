@@ -393,8 +393,8 @@ void RailCamera::placeLevel(anim::Vec3 feet, anim::Vec3 madeLook, anim::Vec3 old
             return;
         }
     }
-    // Not ported (#1017): the world collision (CamRail_Collide, with two targets or held CamRail_CollideTwoTargets)
-    // and, after a shake moved the view, the camera faced again and `+0x3ec` stepped.
+    // Not ported (#1017): the collision with no hold (CamRail_Collide, or CamRail_CollideTwoTargets with two targets;
+    // a held rail's push runs above) and, after a shake moved the view, the camera faced again and `+0x3ec` stepped.
     m_position = q;
 }
 
@@ -646,8 +646,8 @@ void RailCamera::placeTrailing(std::optional<anim::Vec3> feet, anim::Vec3 veloci
         return;
     }
     // 2. The keep-in-frame push (0x00140d68) moves him back inside the view's sides by setting 7, over its bottom by
-    // his radius and out of walls; the rest of the placement goes on from where he is put. Coney's rail has one
-    // target, so the hindmost is he.
+    // his radius and out of walls, and the placement goes on from where he is put. Stand-in for the choice of the
+    // hindmost target: Coney's rail has one, so it is he.
     feet = keepInFrame(*feet, true);
     m_feet = *feet;
     // 3. The target point: his feet raised by the offset's height only.
