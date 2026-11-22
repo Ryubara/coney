@@ -114,7 +114,7 @@ relation = "stand-in"
 issue = 993
 
 [[function.gaps]]
-what = "the far camera and black frames, the file and audio services, the pools, unlockables, distortion, trains, rage config, pads, rain, the stopwatch's service and the state flags and globals it clears"
+what = "the far camera and black frames, the file and audio services, the pools, unlockables, distortion, trains, rage config, pads, rain, the stopwatch's service and the state flags and globals it clears, but for +0x14c (GameState::levelChangeAsked)"
 relation = "not-ported"
 issue = 993
 
