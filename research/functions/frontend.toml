@@ -124,7 +124,7 @@ name = "LevelFlow_SelectLevelByName"
 page = "frontend.md#mode-8-fields"
 level = "confirmed-code"
 coney = "src/gamemodes/level_flow_mode.h:LevelFlowMode::chooseLevel"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0015c858
