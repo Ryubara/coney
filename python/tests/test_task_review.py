@@ -1279,6 +1279,37 @@ def test_the_headless_reviewer_is_told_the_generated_sections_are_not_the_engine
     assert "PR-BODY.md" in prompt and "generated" in prompt
 
 
+# --- a restarted unit's base-merged override (#1632) -----------------------------------------------------------------
+
+
+def restart_with_override(rig: Rig) -> dict[str, str]:
+    """The `claimed` stamp `task start --restart` writes when the coordinator's reason let it go on."""
+    override = {"reason": "PR 1620 merged it, then 1634 edited its lines", "check": "merging it conflicts in a.txt"}
+    rig.stamp(
+        "claimed",
+        covers={"base": rig.tip()},
+        detail={"restarted": {"from_base_ref": "old", "from_base_commit": rig.tip(), "base_merged_override": override}},
+    )
+    return override
+
+
+def test_the_packet_carries_the_override_a_restart_was_let_on_by_and_none_otherwise(rig: Rig) -> None:
+    assert rig.prepare()[0]["base_merged_override"] is None
+    override = restart_with_override(rig)
+    assert rig.prepare()[0]["base_merged_override"] == override
+
+
+def test_prepare_and_the_reviewer_prompt_show_the_override(rig: Rig, capsys: pytest.CaptureFixture[str]) -> None:
+    assert task_review.prepare(rig.env(), "full") == 0
+    assert "OVERRIDE" not in capsys.readouterr().out
+    assert "base_merged_override" not in task_review.review_prompt(rig.env(), "full")
+    override = restart_with_override(rig)
+    assert task_review.prepare(rig.env(), "full") == 0
+    out = capsys.readouterr().out
+    assert "RESTARTED ON AN OVERRIDE" in out and override["reason"] in out and override["check"] in out
+    assert "base_merged_override" in task_review.review_prompt(rig.env(), "full")
+
+
 # --- every refusal names a command that exists (#1094) ---------------------------------------------------------------
 
 

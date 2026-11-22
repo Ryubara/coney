@@ -175,6 +175,21 @@ def _warn_unverified(who: dict[str, Any], env: StartEnv) -> None:
         )
 
 
+def claimed_detail(
+    record: UnitRecord, task: TaskFile, adopted: bool = False, restarted: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """The `detail` of the `claimed` stamp of `record`: where the unit works and, when it was adopted or restarted,
+    that (and for a restart the old base, where the old log went and any base-merged override)."""
+    return {
+        "branch": record.branch,
+        "base_ref": record.base_ref,
+        "kind": task.kind,
+        "fix": record.task if record.parent else "",
+        **({"adopted": True} if adopted else {}),
+        **({"restarted": restarted} if restarted else {}),
+    }
+
+
 def _stamp_start(
     record: UnitRecord,
     task: TaskFile,
@@ -189,7 +204,6 @@ def _stamp_start(
     """Append the stamps `steps` names (from `_missing_steps`) to the log of `record`; `adopted` says in the `claimed`
     stamp that the branch was there before the unit, `restarted` (the old base and where the old log went) that the
     unit started again from the default branch, in both stamps."""
-    fix = record.task if record.parent else ""
     entries: list[dict[str, Any]] = []
     if "assigned" in steps:
         entries.append(
@@ -217,14 +231,7 @@ def _stamp_start(
                 "result": "pass",
                 "commit": commit,
                 "covers": {"base": base_commit},
-                "detail": {
-                    "branch": record.branch,
-                    "base_ref": record.base_ref,
-                    "kind": task.kind,
-                    "fix": fix,
-                    **({"adopted": True} if adopted else {}),
-                    **({"restarted": restarted} if restarted else {}),
-                },
+                "detail": claimed_detail(record, task, adopted, restarted),
                 "who": who,
             }
         )

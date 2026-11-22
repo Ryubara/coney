@@ -684,12 +684,18 @@ checkout:
      `pr-opened` stamp (a unit that was released is updated by `pr open`, not restarted);
    - **the old base has merged**, judged by what it changed and not by its commits, because a squash merge leaves none
      of them in `main`: the base's branch (here or on the remote; the commit the record kept when it is gone) is merged
-     into `origin/main` in memory (`git merge-tree`), and that should add nothing. When it does not (the base merged
-     in part, or `main` edited its lines after the squash, so the merge conflicts), the base is judged **patch by
-     patch**: it has merged if every one of its commits has an equivalent in `main` (`git cherry`, a base merged commit
-     by commit), or if its whole change since it left `main` is the change of one commit in `main` (`git patch-id`, a
-     base squash-merged). Neither is met by a base that has not merged, or that merged only in part; that is refused
-     with the files named, and the refusal gives the way on below;
+     into `origin/main` in memory (`git merge-tree`), and that should add nothing. A merge that is clean but adds
+     changes is refused (the base has not merged, merged only in part, or merged and was reverted). Only when the merge
+     **conflicts**, because `main` edited the base's lines after it merged, is the base judged **patch by patch**: it has
+     merged if every one of its commits that changes something has an equivalent in `main` (`git cherry`, a base merged
+     commit by commit), or if its whole change since it left `main` is the change of one commit in `main`
+     (`git patch-id`, a base squash-merged), and no later commit of `main` reverts that commit. A revert is seen by
+     `git revert`'s message (`This reverts commit <hash>`), by GitHub's title `Revert "<the commit's title>"`, or by a
+     change that is exactly the inverse of the commit's; **the limit** is a revert made by hand that is none of these
+     (a conflict resolved another way, other edits in it) or by several commits, which is not seen, so such a base is
+     judged merged. A base with no change of its own (empty commits) is not merged by this check. What is not shown
+     merged is refused with the files named, and the refusal says to wait for the base's pull request to merge or to
+     take the way on below;
    - **the branch holds nothing but its own**: none of the old base's commits that are not in `main`, by hash or by
      change (`git patch-id`), so a branch not rebased yet, or rebuilt with the base's commits copied, is refused with
      the rebase to run.
@@ -712,7 +718,11 @@ changed the base's neighbouring lines before it merged), the refusal says so and
 coordinator's: after looking at the base's pull request and `main`, the coordinator gives the engineer the command
 `task start <task> --restart --base-merged-reason "<why it merged>"`. The reason must say what was looked at, for
 example the number of the pull request that merged the base; the check that failed and the reason are recorded in the
-`claimed` stamp (`restarted.base_merged_override`), where the reviewer finds them, and the command prints them.
+`claimed` stamp (`restarted.base_merged_override`) and the command prints them. The reviewer finds them in the
+review packet (`base_merged_override`), which `task review` prints and the reviewer's prompt names, and judges the
+reason ([the checklist](review/task.md#restarted)). A reason is refused before anything is moved when it does not fit
+the stamp (its detail holds 2048 bytes in all, the check's words and the old base's names included; a non-ASCII
+character counts six).
 The flag goes with `--restart` only, takes words, is not needed (and not recorded) when the check passes, and skips
 only the check that the base merged: the worktree, the log and the branch holding none of the base's commits are still
 checked.

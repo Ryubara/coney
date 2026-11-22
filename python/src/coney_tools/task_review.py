@@ -327,6 +327,18 @@ def generated_body(env: ReviewEnv) -> Path:
     return env.text_file.parent / pr_text.BODY_FILE
 
 
+def base_merged_override(report: stamps.Report) -> dict[str, str] | None:
+    """The coordinator's `--base-merged-reason` and the check's words, from the `claimed` stamp of a unit that
+    `task start --restart` started again without the check showing its base merged (docs/guides/issues.md#restarting),
+    or None. The reviewer judges the reason: nothing else reads it."""
+    claimed = report.latest("claimed")
+    restarted = claimed.detail.get("restarted") if claimed is not None else None
+    found = restarted.get("base_merged_override") if isinstance(restarted, dict) else None
+    if not isinstance(found, dict):
+        return None
+    return {"reason": str(found.get("reason", "")), "check": str(found.get("check", ""))}
+
+
 def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
     """The packet for the branch as it is now, and the problems the tool part found (empty when it may be reviewed).
 
@@ -427,6 +439,8 @@ def build_packet(env: ReviewEnv, mode: str) -> tuple[dict[str, Any], list[str]]:
             "generated_body": {"path": str(generated_body(env)), "exists": generated_body(env).is_file()},
         },
         "rubric_version": env.conventions.pull_requests.orig_review.rubric_version,
+        # Set only for a restarted unit whose old base the check could not show merged: the coordinator's reason.
+        "base_merged_override": base_merged_override(report),
     }
     if delta is not None:
         packet["delta"] = review_delta.packet_entry(delta, delta_file(env))
@@ -614,6 +628,13 @@ def prepare(env: ReviewEnv, mode: str) -> int:
                 "  main changed these too (the delta shows the branch's patch then and now): "
                 f"{', '.join(delta['rebased'])}"
             )
+    override = packet["base_merged_override"]
+    if override is not None:
+        print(
+            "  RESTARTED ON AN OVERRIDE: the unit's old base was not shown merged and the coordinator's reason let it "
+            f'go on: "{override["reason"]}" (the check said: {override["check"]}); judge it, '
+            "docs/guides/review/task.md#restarted"
+        )
     print("  the tool part passed")
     print(f"  {_description_note(packet)}")
     print(f"  {_clip_note(packet)}")
@@ -831,6 +852,11 @@ def mode_flag(mode: str) -> str:
     return {"text": " --text", "full": " --full", review_delta.DELTA: " --delta"}.get(mode, "")
 
 
+def packet_overrides(env: ReviewEnv) -> bool:
+    """Whether the unit's log holds a base-merged override (`base_merged_override`)."""
+    return base_merged_override(stamps.verify(env.unit.stamps, env.conventions.stamps)) is not None
+
+
 def review_prompt(env: ReviewEnv, mode: str) -> str:
     """The task the headless reviewer is given: where everything is and how to finish."""
     rules = env.conventions.tasks.review
@@ -844,6 +870,12 @@ def review_prompt(env: ReviewEnv, mode: str) -> str:
             f"- This is a delta review: judge only the files in the packet's `delta.files`, as {delta_file(env)} "
             "shows them; the earlier passing review holds for the rest (docs/guides/review/task.md#delta).\n"
             if mode == review_delta.DELTA
+            else ""
+        )
+        + (
+            "- The unit restarted on a recorded override (the packet's `base_merged_override`): judge its reason "
+            "against the base's pull request and the default branch (docs/guides/review/task.md#restarted).\n"
+            if packet_overrides(env)
             else ""
         )
         + f"- The description file {env.text_file.name} is the engineer's; `pr text` generates the sections the "

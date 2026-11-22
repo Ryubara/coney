@@ -127,6 +127,7 @@ exist ([test citations](../testing.md#done), the standards of touched files).
 | `tests` | Each added C++ test and the result of its `fails-first` stamp (`pass`, `keeps`, `fail` or `missing`) |
 | `text` | The description: `file` (the engineer's file, `PR.md`), `title`, `paragraph`, the pictures (`path`, `sha256`) and the three hashes of them; and [what `pr text` generates](#generated): `generated_sections` (each `section` and `what` is written into it) and `generated_body` (the `path` of `PR-BODY.md` and whether it `exists`) |
 | `rubric_version` | The [orig rubric](orig.md)'s version |
+| `base_merged_override` | `null`, or for a unit restarted on the coordinator's word ([Restarted](#restarted)) its `reason` and the `check` that could not show the old base merged |
 | `delta` | Only in a [delta review](#delta): `since_seq` (the passing review it stacks on), `full_seq` (the full review at the bottom), `since_tip`, `since_base` and `since_diff_sha256` (what that review judged), `files`, `rebased` (the files main changed as well), `text_changed` and `diff_file`, the delta for the reviewer to read |
 
 ### Tests that keep behaviour {#keeps}
@@ -160,6 +161,21 @@ the section names of `pull_requests` in [.github/conventions.yml](repo:.github/c
 `PR.md` for the engineer's parts and asks for `pr text` before judging the rest). The [description checklist](text.md)
 says what to judge in each file. The text hashes of the verdict and the stamp cover `PR.md`; `PR-BODY.md` is read, not
 hashed, because it is regenerated from the stamps, among them this review's own.
+
+### A restarted unit {#restarted}
+
+A unit that `task start --restart` started again from the default branch ([Restarting](../issues.md#restarting))
+normally passes a check that its old base merged. When that check could not tell (the default branch edited the base's
+lines after the squash and no change matches) the coordinator can go on with `--base-merged-reason`, and the packet's
+`base_merged_override` holds the reason and the check's words; `prepare` prints them (`RESTARTED ON AN OVERRIDE`) and
+the headless reviewer's prompt names the field. The reviewer, with `git log` and the pull request of the base:
+
+* confirms the reason says what was looked at (the pull request that merged the base) and that it is true: the base's
+  change is in the default branch, and was not reverted since;
+* reads the branch against the default branch for the base's work: the unit's change must hold none of it, and miss
+  none of what the unit relies on;
+* writes a finding (Important) when the reason is a bare assertion, names a pull request that did not merge the base,
+  or the base's work is missing from the default branch.
 
 ### Which checklists apply {#kinds}
 

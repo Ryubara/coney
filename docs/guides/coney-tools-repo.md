@@ -722,7 +722,7 @@ coney-tools task start [TASK] [--base REF] [--remote REMOTE] [--no-fetch] [--dry
 | `--adopt` | flag | off | make a unit of the branch named like the task that exists already (made before units existed or opened by hand), keeping its name and its worktree; an old stamp log is moved aside |
 | `--adopt-branch BRANCH` | text | none | the same for an existing branch that is not named like the task |
 | `--restart` | flag | off | start a unit that was started from another branch again from the default branch once that base has merged and the branch is rebased off it; the old stamp log is moved aside, the stages are redone |
-| `--base-merged-reason WHY` | text | none | with --restart: the coordinator's reason for going on when the old base cannot be shown to have merged (the default branch edited its lines after the squash and no change matches); recorded in the claimed stamp |
+| `--base-merged-reason WHY` | text | none | with --restart: the coordinator's reason for going on when the old base cannot be shown to have merged (the default branch edited its lines after the squash and no change matches); recorded in the claimed stamp and shown to the reviewer in the review packet; refused when it does not fit the stamp |
 
 ### `task slots` {#task-slots-usage}
 
