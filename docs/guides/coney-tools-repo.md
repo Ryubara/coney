@@ -294,7 +294,7 @@ uv run --project python coney-tools task create ISSUE [ISSUE ...] [--terms TERM 
     [--name ID] [--resume] [--dry-run]
 uv run --project python coney-tools task create --fix-of ISSUE [--terms TERM ...] [--name ID] [--dry-run]
 uv run --project python coney-tools task start [TASK] [--base REF] [--remote NAME] [--no-fetch] [--dry-run]
-    [--adopt | --adopt-branch BRANCH]
+    [--adopt | --adopt-branch BRANCH | --restart]
 uv run --project python coney-tools task slots [--json]
 uv run --project python coney-tools task slots --fill-check [--session ID]
 uv run --project python coney-tools task slots --waive N --reason CODE --hours H --note TEXT [--issues A,B]
@@ -709,6 +709,7 @@ Make the branch, worktree and unit record of a claimed task and stamp assigned a
 
 ```text
 coney-tools task start [TASK] [--base REF] [--remote REMOTE] [--no-fetch] [--dry-run] [--adopt] [--adopt-branch BRANCH]
+    [--restart]
 ```
 
 | Parameter | Type | Default | Meaning |
@@ -720,6 +721,7 @@ coney-tools task start [TASK] [--base REF] [--remote REMOTE] [--no-fetch] [--dry
 | `--dry-run` | flag | off | check and print; make, stamp and post nothing |
 | `--adopt` | flag | off | make a unit of the branch named like the task that exists already (made before units existed or opened by hand), keeping its name and its worktree; an old stamp log is moved aside |
 | `--adopt-branch BRANCH` | text | none | the same for an existing branch that is not named like the task |
+| `--restart` | flag | off | start a unit that was started from another branch again from the default branch once that base has merged and the branch is rebased off it; the old stamp log is moved aside, the stages are redone |
 
 ### `task slots` {#task-slots-usage}
 

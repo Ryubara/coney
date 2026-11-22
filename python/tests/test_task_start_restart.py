@@ -334,4 +334,4 @@ def test_pr_open_refuses_a_stacked_unit_and_accepts_it_once_restarted(tmp_path: 
     assert result.ok, result.refusals
     opened.said.clear()
     assert opened.run() == 0, opened.text()
-    assert opened.log().ok
+    assert opened.opened_stamps()

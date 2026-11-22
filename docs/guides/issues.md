@@ -605,7 +605,8 @@ scratch folder and proof log) and makes everything the later stages look for, so
    log is refused here, before anything is made, rather than after the branch exists.
 6. The branch and the folder are free, and the base is a commit: `<remote>/<default branch>` after
    `git fetch`, or `--base`. A fetch that fails stops the command (`--no-fetch` starts from the ref as it is).
-   A branch that exists already is refused, unless the start is an [adoption](#adopting) (`--adopt`).
+   A branch that exists already is refused, unless the start is an [adoption](#adopting) (`--adopt`). A unit that
+   exists already is resumed, or with `--restart` [started again](#restarting) from the default branch.
 
 **It makes**, in this order:
 
@@ -665,6 +666,38 @@ PR guard refuses every hand-typed push, so it is updated only through a unit; re
 
 Running it again changes nothing; `--dry-run` prints what it would do. Conclave lists a conflicting branch with no unit
 with these two commands ([Conflicts](conclave.md#conflicts)).
+
+### Restarting a stacked unit {#restarting}
+
+A unit started from another unit's branch (`task start <task> --base <branch>`, stacked on work that is not merged yet)
+records that branch as its base, and `pr open` refuses it: a pull request is opened onto the default branch only, and
+nothing stacks ([No stacked work](how-we-work.md#working-in-parallel)). Once the base's pull request has merged the unit
+is started again from the default branch. The unit exists already, so `task start` alone only resumes it, and adopting
+refuses a branch that is a unit's; **`task start <task> --restart`** is the route, run by the engineer from the main
+checkout:
+
+1. The engineer rebases the branch off the base's commits in the unit's worktree, which keeps its own:
+   `git rebase --onto origin/main <old base> <branch>` (after `git fetch origin main`).
+2. `task start <task> --restart` fetches the default branch and checks, before it changes anything:
+   - the unit has a record that names another base, a worktree on the unit's branch and a readable log with no
+     `pr-opened` stamp (a unit that was released is updated by `pr open`, not restarted);
+   - **the old base has merged**, judged by what it changed and not by its commits, because a squash merge leaves none
+     of them in `main`: the base's branch (here or on the remote; the commit the record kept when it is gone) is merged
+     into `origin/main` in memory (`git merge-tree`), and that must add nothing. A base that merged only in part, or
+     whose changes `main` has altered since, is refused and the refusal names the files;
+   - **the branch holds nothing but its own**: none of the old base's commits that are not in `main`, by hash or by
+     change (`git patch-id`), so a branch not rebased yet, or rebuilt with the base's commits copied, is refused with
+     the rebase to run.
+3. It then moves the task's stamp log aside, never deleting it, to `<scratch>/<task>/stamps.legacy-<time>/` (the
+   folder an adoption uses), writes the record again with the base `origin/main` and the commit where the branch left it
+   (the branch, the worktree and the progress comment already posted are untouched), and stamps `assigned` and
+   `claimed` again; both say `restarted`, and `claimed` names the old base and the folder the old log went to.
+4. Every stage is redone (`orig study` and `orig compare` for each `@orig` function, `orig fails-first`, `task check`,
+   `task review`), because each stamp covers a change that had another base; then the coordinator runs `pr open <task>`.
+
+It takes no `--base`, `--adopt` or `--adopt-branch`, refuses a task that was never started (`task start` makes the unit)
+and a unit that is on `origin/main` already, and for a fix task refuses, as it works in its parent's unit. Running it
+again changes nothing but the refusal. `--dry-run` runs every check and prints what it would do.
 
 ### Tracks {#slots}
 
