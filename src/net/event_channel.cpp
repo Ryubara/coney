@@ -175,4 +175,6 @@ std::vector<ArrivedEvent> EventReceiver::take(std::uint32_t step) {
     return out;
 }
 
+void EventReceiver::discardHeld() {}
+
 } // namespace coney::net

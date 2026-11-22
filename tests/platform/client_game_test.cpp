@@ -435,3 +435,28 @@ TEST_CASE("client game: a new level gets a new HUD, and the guest's events stop 
     g.run(3);
     CHECK(g.client.hud() == nullptr);
 }
+
+// Expected: unverified, #1614 (Coney's own: a level's events are the level's, docs/guides/client-world.md#client-game)
+TEST_CASE("client game: an event the host raised just before a level change is not presented in the next level",
+          "[net][net_play][client_game][hud][events]") {
+    HostAndClient g;
+    g.host.loadLevel("level99", 1);
+    g.connect();
+    g.run(40);
+    REQUIRE(g.client.hud() != nullptr);
+    const std::uint64_t presentedBefore = g.client.eventsPresented();
+    const std::size_t loadsBefore = g.loads.size();
+
+    // The host raises a message and, a step later, goes on to another level: the guest's playback has not reached
+    // the message's step when the new level loads.
+    g.host.gameEvents().raise(coney::GameEvent{.kind = coney::GameEventKind::HudMessage, .id = 5, .text = "Run!"});
+    g.run(1);
+    g.host.loadLevel("level34", 2);
+    g.run(60);
+
+    // The new level loaded, and its HUD never showed the last level's message.
+    REQUIRE(g.loads.size() == loadsBefore + 1);
+    REQUIRE(g.client.hud() != nullptr);
+    CHECK_FALSE(g.client.hud()->centredAnnouncement().has_value());
+    CHECK(g.client.eventsPresented() == presentedBefore);
+}

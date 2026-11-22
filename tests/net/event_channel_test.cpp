@@ -373,3 +373,39 @@ TEST_CASE("event channel: a player who joins later gets none of the events befor
     CHECK(arrived[0].step == at);
     CHECK(arrived[0].event.kind == GameEventKind::MusicStop);
 }
+
+// Expected: unverified, #1614 (Coney's own network play; the original has none)
+TEST_CASE("event receiver: discarding the held events hands none over, and a one-shot late for them is dropped",
+          "[net][events]") {
+    EventReceiver receiver;
+    const auto sound = [](std::uint16_t ordinal, std::uint32_t id) {
+        return NetEvent{.kind = GameEventKind::Sound2D, .ordinal = ordinal, .id = id};
+    };
+    REQUIRE(receiver.apply({.reliable = false, .sequence = 1, .step = 5, .events = {sound(0, 50)}}) ==
+            EventsApplied::Applied);
+    REQUIRE(receiver.apply({.reliable = true,
+                            .sequence = 1,
+                            .step = 6,
+                            .events = {NetEvent{.kind = GameEventKind::SceneStart, .ordinal = 0, .id = 60}}}) ==
+            EventsApplied::Applied);
+    REQUIRE(receiver.pending() == 2);
+
+    receiver.discardHeld();
+    CHECK(receiver.pending() == 0);
+    CHECK(receiver.stats().discarded == 2);
+
+    // A one-shot of a step discarded that comes late is dropped; one of a later step is held as ever.
+    REQUIRE(receiver.apply({.reliable = false, .sequence = 2, .step = 6, .events = {sound(1, 61)}}) ==
+            EventsApplied::Applied);
+    REQUIRE(receiver.apply({.reliable = false, .sequence = 3, .step = 7, .events = {sound(0, 70)}}) ==
+            EventsApplied::Applied);
+    CHECK(receiver.pending() == 1);
+    CHECK(receiver.stats().late == 1);
+    const std::vector<ArrivedEvent> later = receiver.take(100);
+    REQUIRE(later.size() == 1);
+    CHECK(later[0] == ArrivedEvent{.step = 7, .event = sound(0, 70)});
+    // Discarding nothing changes nothing.
+    receiver.discardHeld();
+    receiver.discardHeld();
+    CHECK(receiver.stats().discarded == 2);
+}

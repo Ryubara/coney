@@ -71,6 +71,7 @@ struct EventReceiverStats {
     std::uint64_t stale = 0;      ///< one-shots' batches dropped as too old (Stale)
     std::uint64_t late = 0;       ///< one-shot events dropped because their step had already been handed over
     std::uint64_t handed = 0;     ///< events handed over by take()
+    std::uint64_t discarded = 0;  ///< events held and dropped by discardHeld()
 };
 
 /// A client's incoming events: the batches it decodes, each event held until take() reaches its step, then handed
@@ -88,6 +89,8 @@ class EventReceiver {
     [[nodiscard]] std::expected<EventsApplied, Error> apply(const EventBatch& batch);
     /// The events held whose step is at most `step`, oldest first; each is handed over once.
     [[nodiscard]] std::vector<ArrivedEvent> take(std::uint32_t step);
+    /// Stub for the test commit: drops nothing yet.
+    void discardHeld();
     /// How many events are held, waiting for their step.
     [[nodiscard]] std::size_t pending() const { return m_held.size(); }
     /// The counts so far.
