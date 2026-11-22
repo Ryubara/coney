@@ -470,3 +470,30 @@ to 9 on the `/Ob1` build; the same proportions hold here on today's `main`, whic
 the same three quarters. **The result is the same**: the all-humans trace, the event log and the lockstep digest of
 brawl 300 for 500 steps (127,015 rows, 6,590 events) and engaged 300 for 700 steps (189,815 rows, 8,081 events) hash
 the same before and after.
+
+### The contacts and strikes from the grid (#1556) {#contacts-grid-1556}
+
+**The cause.** The state pass swept each walking body against every human of the step, up to three passes, and each
+strike gathered every human it fights as a victim before its own 3 m test, so with 1000 humans the pass grew with the
+square of the crowd. The state pass now builds the humans' grid of [#1550](#targets-grid-1550) as it starts and keeps
+it as each human moves: a walking body asks it for the humans near its move (`Humans::SlotContacts`) and first drops
+every one further from the start than the move and both radii, who cannot be met, and a strike takes its victims
+within 3 m from it, testing the distance before asking whether the two fight
+([Which humans are tried](../research/physics.md#coneys-implementation)); the performance sweep's experiments 3, 4 and
+13 (#1542) made into Coney's only path, the grid asked for each move's own reach rather than a fixed 4 m.
+
+**The gain.** Main-thread CPU time a step (`CONEY_PERF_CPU_CLOCK`), best of interleaved runs, a `playtest` build of
+`main` at `ccf49e9e3` and of the change in the same build folder, headless lockstep in `level95`, rows of 25, 300 steps:
+
+| Scenario | `humans.state`, before / after (ms) | `step`, before / after (ms) |
+| --- | --- | --- |
+| Brawl 1000 (500 + 500, 3 runs) | 8.42 / 4.79 | 18.66 / 14.30 |
+| Engaged 1000 (every fighter in a gang, scaled scan tokens, 3 runs) | 28.74 / 13.51 | 49.19 / 32.43 |
+
+The sweep measured `humans.state` 10.8 -> 7.9 ms (-27 %, bits 3 and 4 without the reject, brawl 1000) and, engaged
+1000, 43.5 -> 27.6 ms for the grid and then 22.8 -> 14.8 ms for the reject on top of its other experiments (bit 13),
+-59 % together. Here the brawl falls by 43 %, as it holds the reject too; the engaged crowd by 53 %, on a `main` that
+already has the sweep's other experiments (#1550, #1551, #1555) and so a smaller rest of the pass to cut. **The result
+is the same**: the all-humans trace, the event log and the lockstep digest of brawl 300 for 500 steps (127,015 trace
+rows, 8,852 event rows) and engaged 300 for 700 steps (189,815 trace rows, 11,723 event rows) hash the same before and
+after.

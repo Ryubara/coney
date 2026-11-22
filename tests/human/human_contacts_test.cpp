@@ -7,6 +7,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <memory>
 #include <span>
@@ -219,6 +221,8 @@ TEST_CASE("BLOCKHUMANS comes back from a heal or the release from an arrest, nev
 }
 
 TEST_CASE("a grab links the pair: they pass through each other and neither can be pushed", "[human][contacts]") {
+    // A linked pair skips each other's capsules and both weigh 1e9 (Human_GetAttribute's link weight).
+    // Expected: physics.md#human-contacts, confirmed (code)
     const coney::test::FightCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
     Human player(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
@@ -265,4 +269,129 @@ TEST_CASE("a grab links the pair: they pass through each other and neither can b
     CHECK(player.pushWeight() == 1e9F);
     std::printf("  contacts: the linked pair came within %.3f m\n", nearest);
     CHECK(nearest < kReach - 0.1F);
+}
+
+namespace {
+
+// A contact source that answers every question with the humans it lists and keeps the reaches it was asked for.
+struct ListedContacts final : coney::human::ContactSource {
+    std::vector<Human*> listed;
+    mutable std::vector<float> asked;
+
+    [[nodiscard]] std::span<Human* const> near(const Vec3& /*at*/, float reach) const override {
+        asked.push_back(reach);
+        return listed;
+    }
+};
+
+// The player at (40, 40) walking north at 60 % of the stick for `steps` steps, his contact list `both`.
+void walkNorth(Human& player, Human& other, const coney::raycast::CollisionMesh& mesh, int steps) {
+    const std::vector<Human*> both{&player, &other};
+    for (int i = 0; i < steps; ++i) {
+        player.setHumanContacts(both);
+        player.step(coney::human::HumanInput{.stickX = 0.0F,
+                                             .stickY = 0.6F,
+                                             .cameraForward = Vec3{0.0F, 1.0F, 0.0F},
+                                             .sprintHeld = false,
+                                             .actionPressed = false,
+                                             .command = coney::combat::command::kNone,
+                                             .buttons = 0,
+                                             .targets = {}},
+                    &mesh);
+    }
+}
+
+} // namespace
+
+TEST_CASE("a walking body meets only the humans its contact source gives for the move's reach", "[human][contacts]") {
+    // The step's contact list holds a human 2 m ahead, unpushable; a source that leaves him out lets the player walk
+    // through him, one that gives him stops the player at him. Each move asks for the humans within its own length
+    // across the ground plus the walker's radius (0.35 m) and a hair: no one further can be met, as the original's body
+    // pass asks its world only for the bodies in the move's box (IPhysics_QueryBox, issue 1556).
+    // Expected: physics-bodies.md#u11-body-pass (the candidates from a box query), confirmed (code)
+    const coney::test::FightCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    for (const bool given : {false, true}) {
+        Human player(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
+                     &character.ranges);
+        Human other(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
+                    &character.ranges);
+        player.spawn(mesh.get(), Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
+        other.setFighterProfile(aiProfile());
+        other.spawn(mesh.get(), Vec3{40.0F, 42.0F, 0.0F}, 180.0F);
+        other.script().pushable = false;
+        ListedContacts source;
+        if (given) {
+            source.listed.push_back(&other);
+        }
+        player.setContactSource(&source);
+        walkNorth(player, other, *mesh, 90);
+        player.setContactSource(nullptr);
+        REQUIRE_FALSE(source.asked.empty());
+        for (const float reach : source.asked) {
+            CHECK(reach > 0.35F);
+            CHECK(reach < 0.35F + 0.2F);
+        }
+        if (given) {
+            CHECK(player.position().y == Approx(42.0F - kReach).margin(0.01F));
+        } else {
+            CHECK(player.position().y > 43.0F);
+        }
+    }
+}
+
+namespace {
+
+// Which of two humans standing side by side ahead a walking human meets first.
+enum class Met : std::uint8_t { None, Left, Right };
+
+// A human in the last slot walked north by its brain from (40, 40) at two humans 1 m ahead, a quarter metre to either
+// side, so that his capsule meets both at the same fraction: the left one in slot `leftSlot` and the right one in the
+// other of slots 0 and 1, with a third human far off at (`farX`, `farY`) to move the cells of the step's grid.
+Met firstMet(std::size_t leftSlot, float farX, float farY) {
+    const coney::test::FightCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 120.0F, 0.0F, 120.0F));
+    std::vector<std::unique_ptr<Human>> people;
+    const Vec3 left{39.75F, 41.0F, 0.0F};
+    const Vec3 right{40.25F, 41.0F, 0.0F};
+    const std::vector<Vec3> at{leftSlot == 0 ? left : right, leftSlot == 0 ? right : left, Vec3{farX, farY, 0.0F},
+                               Vec3{40.0F, 40.0F, 0.0F}};
+    coney::human::Humans humans;
+    for (const Vec3& place : at) {
+        people.push_back(std::make_unique<Human>(character.anims, coney::human::AnimSlots::player(),
+                                                 coney::test::identityBind(), 1.0F, &character.ranges));
+        people.back()->setFighterProfile(aiProfile());
+        people.back()->spawn(mesh.get(), place, 0.0F);
+        humans.add(*people.back(), false);
+    }
+    humans.setBrains([](std::span<Human* const> all) {
+        all[3]->record().move = coney::human::BrainMove{.heading = 0.0F, .speed = 1.6F, .turnBoost = 0, .aim = {}};
+    });
+    const Human& walker = *people[3];
+    for (int i = 0; i < 60; ++i) {
+        humans.update(mesh.get());
+        if (!walker.contacts().empty()) {
+            // The first contact's normal points from the human met to the walker.
+            return walker.contacts().front().x > 0.0F ? Met::Left : Met::Right;
+        }
+    }
+    return Met::None;
+}
+
+} // namespace
+
+// A stand-in pin: Coney's contacts take the humans in slot order, where the original's body pass takes them in its box
+// query's order (x-sorted) and keeps the earlier of equal fractions; #1607 ports that and turns these expectations
+// round. Until then the test holds the grid to the rule the contact list had before it (a refactor pin, not the
+// original's rule).
+TEST_CASE("of two humans met at the same fraction, the walking body meets the one in the earlier slot first",
+          "[human][contacts]") {
+    // The nearest-contact test keeps the first of equals (`fraction < first`), so the earlier slot is met first
+    // whichever side it stands on. The third human at x 37.5 puts the left and the right one in different cells of the
+    // step's grid (2.5 m cells from the lowest x and y); at (70, 41) both are in one cell (issue 1556).
+    // Expected: physics.md#coneys-implementation, Coney's stand-in (#1607): the original keeps the earlier in x order
+    CHECK(firstMet(0, 37.5F, 70.0F) == Met::Left);
+    CHECK(firstMet(1, 37.5F, 70.0F) == Met::Right);
+    CHECK(firstMet(0, 70.0F, 41.0F) == Met::Left);
+    CHECK(firstMet(1, 70.0F, 41.0F) == Met::Right);
 }

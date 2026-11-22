@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -211,6 +212,7 @@ TEST_CASE("square at a human down behind the attacker within the pick's wide pas
     // Player_PickTarget's wide pass (any angle, 2.0 m × 0.7) skips only the knocked out, so it finds a downed human
     // 0.9 m behind, and its state picks 193; 1.6 m behind he is out of every pass and square plays S1
     // (docs/research/combat-targets.md#targeting).
+    // Expected: combat-targets.md#targeting, confirmed (code)
     for (const auto& [behind, wanted] : {std::pair{0.9F, 193U}, std::pair{1.6F, 12U}}) {
         Strike strike(-behind, 0.5F);
         const std::array<std::uint32_t, 1> down{196};
@@ -236,6 +238,7 @@ TEST_CASE("the rage sweep 645 strikes a bum's capsule at shin height: 1.0 m away
           "[human][combat][strike]") {
     // 645 carries clip flag 0x10000, so its strike shapes are tested against the target's upright capsule (radius
     // 0.35, from the feet to the head + 0.2), not its spine and head (docs/research/combat/index.md#capsule-strike).
+    // Expected: combat/index.md#capsule-strike, confirmed (code)
     // The foot (30, a sphere of 0.15) stands 0.6 m ahead and 0.2 m up; the spine sits 1.0 m up and the head 1.6 m. The
     // victim is a bum: flagged never to be a target, so nothing steers onto it. 653 without the flag never reaches the
     // spine or the head from shin height.
@@ -275,4 +278,34 @@ TEST_CASE("the rage sweep 645 strikes a bum's capsule at shin height: 1.0 m away
         REQUIRE(shapesOn);
         CHECK((strike.attacker.fighter().hitsLanded() > 0) == c.hits);
     }
+}
+
+TEST_CASE("a strike asks whether two humans are opposed only about the humans near the striker", "[human][strikes]") {
+    // The attacker's square switches its strike shapes on with its victim 1 m ahead and 36 more humans 12 m apart,
+    // none within 12 m of the two, every one opposed to every other: none of those is within the strike test's 3 m
+    // broad reach, so none need be asked about as a victim. Gathering every opposed human as a victim asked about each
+    // of them in every step the shapes were on (issue 1556); the target searches ask about none of them either (issue
+    // 1550). The 3 m is human::kStrikeBroadReach.
+    // Expected: physics.md#coneys-implementation, Coney's choice (the 3 m broad reach is Coney's own)
+    Strike strike(1.0F, 0.9F);
+    std::vector<std::unique_ptr<Human>> crowd;
+    const std::array<float, 6> lines{4.0F, 16.0F, 28.0F, 52.0F, 64.0F, 76.0F};
+    for (const float x : lines) {
+        for (const float y : lines) {
+            crowd.push_back(std::make_unique<Human>(strike.character.anims, coney::human::AnimSlots::player(),
+                                                    coney::test::identityBind(), 1.0F, &strike.character.ranges));
+            crowd.back()->spawn(strike.mesh.get(), coney::anim::Vec3{x, y, 0.0F}, 0.0F);
+            strike.humans.add(*crowd.back(), false);
+        }
+    }
+    std::size_t farAsked = 0;
+    strike.humans.setOpposition([&farAsked](const Human& attacker, const Human& victim) {
+        const float dx = attacker.position().x - victim.position().x;
+        const float dy = attacker.position().y - victim.position().y;
+        farAsked += (dx * dx) + (dy * dy) > 10.0F * 10.0F ? 1U : 0U;
+        return &attacker != &victim;
+    });
+    strike.run();
+    REQUIRE(strike.shapesOn.has_value());
+    CHECK(farAsked == 0);
 }

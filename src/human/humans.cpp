@@ -78,6 +78,7 @@ void Humans::remove(const Human& human) {
     (*found)->setBodyContact(nullptr);
     (*found)->setObjectPush(nullptr);
     (*found)->setHumanContacts({});
+    (*found)->setContactSource(nullptr);
     (*found)->setTargetSource(nullptr);
     // The others' list this step no longer holds it.
     std::ranges::replace(m_contactList, *found, nullptr);
@@ -113,6 +114,7 @@ void Humans::buildTargetGrid() {
     grid.valid = false;
     grid.count = m_humans.size();
     grid.places.clear();
+    grid.widest = 0.0F;
     if (m_humans.empty()) {
         return;
     }
@@ -130,6 +132,7 @@ void Humans::buildTargetGrid() {
         minY = std::min(minY, at.y);
         maxY = std::max(maxY, at.y);
         grid.places.push_back(at);
+        grid.widest = std::max(grid.widest, human->capsuleRadius());
     }
     grid.cell = kGridCell;
     const float extent = std::max(maxX - minX, maxY - minY);
@@ -306,6 +309,52 @@ bool Humans::SlotTargets::calm(const Combatant* target) const {
     return !threat || owner.m_padControlled[other];
 }
 
+// @coney-only Coney's broad phase for the contacts (issue 1556)
+std::span<Human* const> Humans::SlotContacts::near(const anim::Vec3& at, float reach) const {
+    Humans& owner = *m_owner;
+    // The grid holds where each human stood; the widest radius covers his capsule's.
+    if (!owner.markNear(at, reach + owner.m_grid.widest)) {
+        return owner.m_contactList;
+    }
+    m_near.clear();
+    // A slot added since the list was made is not in it; one removed leaves the grid unbuilt.
+    owner.visitMarked([this, &owner](std::size_t other) {
+        if (other < owner.m_contactList.size() && owner.m_contactList[other] != nullptr) {
+            m_near.push_back(owner.m_contactList[other]);
+        }
+    });
+    return m_near;
+}
+
+// @coney-only Coney's broad phase for the strikes (issue 1556)
+void Humans::gatherVictims(std::size_t slot) {
+    m_victims.clear();
+    const anim::Vec3 striker = m_humans[slot]->position();
+    // A hair of room, so that no rounding drops one the strike test's own `distance <= 3 m` keeps.
+    const float limit = (kStrikeBroadReach * 1.001F) + 0.01F;
+    const auto take = [this, slot, &striker, limit](std::size_t other) {
+        if (other == slot) {
+            return;
+        }
+        const anim::Vec3 at = m_humans[other]->position();
+        const float dx = at.x - striker.x;
+        const float dy = at.y - striker.y;
+        if ((dx * dx) + (dy * dy) > limit * limit) {
+            return;
+        }
+        if (opposed(slot, other)) {
+            m_victims.push_back(m_humans[other]);
+        }
+    };
+    if (markNear(striker, limit)) {
+        visitMarked(take);
+    } else {
+        for (std::size_t other = 0; other < m_humans.size(); ++other) {
+            take(other);
+        }
+    }
+}
+
 void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets, float stepSeconds) {
     // The step every human advances by this time.
     for (Human* human : m_humans) {
@@ -345,23 +394,25 @@ void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* con
         human->setHumanContacts(m_contactList);
     }
     // Each human's strike test runs in its state update, after its move (the humans it fights, and the level's
-    // objects).
+    // objects). The humans a walking body meets (SlotContacts) and a strike's victims (gatherVictims()) come from a
+    // grid of where every human stands as the pass starts, rather than every human (issue 1556).
+    buildTargetGrid();
+    m_slotContacts.begin(*this);
     {
         CONEY_PERF_ZONE("humans.state");
         for (std::size_t slot = 0; slot < m_humans.size(); ++slot) {
             if (m_held[slot]) {
                 continue;
             }
+            Human* const walker = m_humans[slot];
+            walker->setContactSource(&m_slotContacts);
             m_humans[slot]->updateState(mesh);
+            walker->setContactSource(nullptr);
             if (m_humans[slot]->strikeShapes().anyOn()) {
-                m_victims.clear();
-                for (std::size_t other = 0; other < m_humans.size(); ++other) {
-                    if (other != slot && opposed(slot, other)) {
-                        m_victims.push_back(m_humans[other]);
-                    }
-                }
+                gatherVictims(slot);
                 m_humans[slot]->testStrikes(m_victims, m_strikeContact ? &m_strikeContact : nullptr);
             }
+            keepTargetGrid(slot);
         }
     }
     // 5. Every human's actions, first to last on one step and last to first on the next.

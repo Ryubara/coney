@@ -130,6 +130,32 @@ enum class Traversal : std::uint8_t {
 /// @coney-only names for the summaries and the debug menus
 [[nodiscard]] const char* traversalName(Traversal traversal);
 
+class Human;
+
+/// Beyond this between the feet, across the ground, no strike shape can meet another body's (each reaches well under
+/// 1.5 m from its feet), so Human::testStrikes() leaves the victim out unposed.
+/// @coney-only the strike test's broad reach (the original's test asks its world for the bodies in its box,
+/// docs/research/combat/index.md#moving-strikes)
+inline constexpr float kStrikeBroadReach = 3.0F;
+
+/// Where a walking body finds the humans it may meet (Human::setContactSource()); human::Humans gives one in its state
+/// pass, from a grid of where the humans stand.
+/// @coney-only Coney's broad phase for the contacts: the original's body pass asks its physics world for the bodies in
+/// the move's box (`IPhysics_QueryBox`, docs/research/physics-bodies.md#u11-body-pass)
+class ContactSource {
+  public:
+    ContactSource() = default;
+    ContactSource(const ContactSource&) = default;
+    ContactSource& operator=(const ContactSource&) = default;
+    ContactSource(ContactSource&&) = default;
+    ContactSource& operator=(ContactSource&&) = default;
+    virtual ~ContactSource() = default;
+    /// Every human of the step's contact list (Human::setHumanContacts()) whose axis may lie within `reach` plus his
+    /// own capsule's radius of `at` across the ground, and perhaps some beyond, in the list's order; it may hold the
+    /// asking human and null slots, which are skipped. The span is good until the next call.
+    [[nodiscard]] virtual std::span<Human* const> near(const anim::Vec3& at, float reach) const = 0;
+};
+
 /// A human: position (the feet), heading, velocity, ground and air state, stamina, its fighting and its animation,
 /// driven by its record. Another human fights it as a Combatant, and grabs or tackles it as a Holdable.
 class Human final : public Holdable {
@@ -925,6 +951,9 @@ class Human final : public Holdable {
     /// human its list each update (Humans::update()); the list may hold this human and null slots, which are skipped.
     /// Empty (the default): it meets none.
     void setHumanContacts(std::span<Human* const> humans) { m_otherHumans = humans; }
+    /// Sets where its walking body asks for the humans of its contact list near its move (ContactSource; not owned,
+    /// null for the whole list).
+    void setContactSource(const ContactSource* source) { m_contactSource = source; }
     /// Whether its capsule blocks other humans' walks: body flag `0x4` `BLOCKHUMANS`
     /// (docs/research/physics.md#human-contacts). A human loses it when knocked out (by a script or his health running
     /// out), wounded or arrested, and gets it back only from heal() (a new body) or the release from an arrest: one
@@ -1123,10 +1152,10 @@ class Human final : public Holdable {
     [[nodiscard]] Swept sweep(const raycast::CollisionMesh& mesh, anim::Vec3 velocity, anim::Vec3 push,
                               bool meetOthers);
     // The humans the walking capsule meets moving from the feet at `from` by `move` (docs/research/physics.md
-    // #human-contacts), up to three passes: the nearest contact stops the capsule at it, the rest of the move slides
-    // along the other (code 1), and, unless this capsule strikes (a charge), the other is given half of the pass's move
-    // into him as his pending push (code 4). Returns the move left, which the walls then take; each contact's normal
-    // goes to m_contacts.
+    // #human-contacts), of those its contact list (or its source) gives within the move's reach, up to three passes:
+    // the nearest contact stops the capsule at it, the rest of the move slides along the other (code 1), and, unless
+    // this capsule strikes (a charge), the other is given half of the pass's move into him as his pending push (code
+    // 4). Returns the move left, which the walls then take; each contact's normal goes to m_contacts.
     // @orig 0x0033d498 PhysicsBody_SweepHumanMask (unknown)
     [[nodiscard]] anim::Vec3 meetHumans(anim::Vec3 from, anim::Vec3 move);
     // The airborne body's push-out after its move to `feet`: its sphere (a player's larger one) out of the nearest wall
@@ -1354,10 +1383,12 @@ class Human final : public Holdable {
     bool m_chargeStopped = false;              // the charge playing met a wall head-on (moveOnGround())
     std::vector<ObjectTarget> m_objectTargets; // the breakable objects square may strike
     std::optional<ClimbProbe> m_climbProbe;
-    physics::MeshScratch m_meshScratch;    // the mesh queries' memory, reused between sweeps
-    std::vector<anim::Vec3> m_contacts;    // the normals of the humans and objects the last sweep slid along
-    std::span<Human* const> m_otherHumans; // setHumanContacts(), the step's
-    anim::Vec3 m_pendingPush{};            // addPush(): others' pushes, for the next move
+    physics::MeshScratch m_meshScratch;             // the mesh queries' memory, reused between sweeps
+    std::vector<anim::Vec3> m_contacts;             // the normals of the humans and objects the last sweep slid along
+    std::span<Human* const> m_otherHumans;          // setHumanContacts(), the step's
+    const ContactSource* m_contactSource = nullptr; // setContactSource()
+    std::vector<Human*> m_reachable;                // meetHumans(): the humans within the move's reach, in order
+    anim::Vec3 m_pendingPush{};                     // addPush(): others' pushes, for the next move
 };
 
 /// Ends the rage of every human in `humans` that rages, at once (Human::setRageMode() off, the meters left where they
