@@ -96,10 +96,10 @@ class PairRun:
     checkpoint: int | None = None
     ai_seed: int | None = None
     skip_movies: bool = True
+    description: str = ""
     #: Keep the Debug draw page's switches the run sets in the clips (Coney's `--record-debug-draw`: a clip drops them
     #: otherwise), for a scenario that shows the mesh views.
     record_debug_draw: bool = False
-    description: str = ""
 
 
 def _scenario_value(data: dict[str, Any], key: str, kind: type, path: Path) -> Any:
