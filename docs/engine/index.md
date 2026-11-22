@@ -27,3 +27,4 @@ Add each page to this one; the rules for writing a page, and how they are checke
 | [Simulation and drawing threads](render-threads.md) | The renderer design's plan to run the simulation on a thread of its own and draw from a snapshot each step publishes (`src/core/`, `src/platform/`) |
 | [Crowd rules](crowd-rules.md) | What Coney does past the original's 60 humans: the scan tokens, the lists of humans, and the limits kept or planned (`src/core/crowd_limits.*`) |
 | [GPU renderer](gpu-renderer.md) | The renderer on SDL3's GPU API: `--renderer gpu`, its device, window and present modes, and librw opened for data only (`src/platform/gpu_presenter.*`, `src/core/renderer_choice.*`) |
+| [Beyond the original](beyond-the-original.md) | Every deliberate way Coney differs from the PS2 build (the limits it lifts, the picture and sound past both builds, the Xbox features, multiplayer, mods and tools), with the option that switches each, kept by `docs check` |

@@ -1769,6 +1769,29 @@ class TouchScope:
 
 
 @dataclass(frozen=True)
+class BeyondPage:
+    """The page of how Coney goes beyond the original, and how `docs check` holds the code to it
+    (docs/guides/coney-tools-build.md#beyond): every marker in the sources has an entry in the lifted limits table and
+    every entry names a marker that exists."""
+
+    #: The page, relative to the checkout.
+    page: str
+    #: The text of a lift's marker in a comment of the sources (`@coney-only limit:`).
+    marker: str
+    #: The anchor of the section that lists the lifted limits, one of `sections`.
+    limits_section: str
+    #: The anchors of the sections whose tables list the differences, in the page's order.
+    sections: tuple[str, ...]
+    #: The header cells every table of those sections has, the status column among them.
+    columns: tuple[str, ...]
+    #: The column that holds each entry's status, and the words a status starts with.
+    status_column: str
+    statuses: tuple[str, ...]
+    #: The extra column of the lifted limits table, holding the `path:Symbol` of each entry's marker.
+    marker_column: str
+
+
+@dataclass(frozen=True)
 class Standards:
     """The standards a touched file is held to and where the files that do not meet them yet are listed
     (docs/guides/coney-tools-standards.md#standards)."""
@@ -1782,6 +1805,7 @@ class Standards:
     code: CodeStandard
     tests: TestsStandard
     touch: TouchScope
+    beyond: BeyondPage
 
 
 @dataclass(frozen=True)
@@ -3091,9 +3115,40 @@ def _suffix_list(value: object, where: str) -> tuple[str, ...]:
     return suffixes
 
 
+def _read_beyond(data: object, where: str) -> BeyondPage:
+    """The `standards.beyond` section: the page of the original's differences and what its tables are checked by."""
+    table = _table(
+        data,
+        where,
+        ("page", "marker", "limits_section", "sections", "columns", "status_column", "statuses", "marker_column"),
+    )
+    page = _text(table["page"], _at(where, "page"))
+    if page.startswith(("/", "\\")) or ".." in page or ":" in page or not page.endswith(".md"):
+        raise _fail(_at(where, "page"), "a Markdown page inside the checkout")
+    sections = _texts(table["sections"], _at(where, "sections"))
+    limits = _text(table["limits_section"], _at(where, "limits_section"))
+    _names_in((limits,), sections, _at(where, "limits_section"), "one of the sections")
+    columns = _texts(table["columns"], _at(where, "columns"))
+    status = _text(table["status_column"], _at(where, "status_column"))
+    _names_in((status,), columns, _at(where, "status_column"), "one of the columns")
+    marker_column = _text(table["marker_column"], _at(where, "marker_column"))
+    if marker_column in columns:
+        raise _fail(_at(where, "marker_column"), "an extra column, not one of the columns every table has")
+    return BeyondPage(
+        page=page,
+        marker=_text(table["marker"], _at(where, "marker")),
+        limits_section=limits,
+        sections=sections,
+        columns=columns,
+        status_column=status,
+        statuses=_texts(table["statuses"], _at(where, "statuses")),
+        marker_column=marker_column,
+    )
+
+
 def _read_standards(data: object, where: str) -> Standards:
     """The `standards` section: the code and test standards and the legacy file of the files that fail them."""
-    table = _table(data, where, ("legacy_file", "enforce", "cutover", "code", "tests", "touch"))
+    table = _table(data, where, ("legacy_file", "enforce", "cutover", "code", "tests", "touch", "beyond"))
     legacy_file = _text(table["legacy_file"], _at(where, "legacy_file"))
     if legacy_file.startswith(("/", "\\")) or ".." in legacy_file or ":" in legacy_file:
         raise _fail(_at(where, "legacy_file"), "a path inside the checkout")
@@ -3134,6 +3189,7 @@ def _read_standards(data: object, where: str) -> Standards:
             section_level=_count(touch["section_level"], _at(touch_where, "section_level"), 1, 6),
             page_rules=_texts(touch["page_rules"], _at(touch_where, "page_rules"), empty_ok=True),
         ),
+        beyond=_read_beyond(table["beyond"], _at(where, "beyond")),
     )
 
 

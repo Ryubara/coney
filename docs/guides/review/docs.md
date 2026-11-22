@@ -32,7 +32,14 @@ Report findings in the [format on the index page](index.md#finding-format) and n
 - [ ] **An engine page says nothing about what the original does.** A page under `docs/engine/` describes Coney's own
   code and port notes; a sentence about the original's behaviour belongs on a
   [research page](../writing-docs.md#research-pages) and is linked from the engine page. No program checks this
-  ([Engine pages](../writing-docs.md#engine-pages)).
+  ([Engine pages](../writing-docs.md#engine-pages)). The one exception is [Beyond the
+  original](../../engine/beyond-the-original.md), whose "The original" column gives the original's number or rule in a
+  few words and links the research page that owns it; anything longer there is the same finding.
+- [ ] **A change that goes beyond the original updates [Beyond the original](../../engine/beyond-the-original.md).** A
+  picture or sound option, an Xbox-native option, a multiplayer or mod feature, a debug or player tool, or a lifted
+  limit has its row (status `on main`, or `planned` with its issue) in the same commit. `docs check` catches a lift
+  with no row; for everything else you are the check, so look at the diff for a new option or feature and then at the
+  page. A missing row is Important.
 - [ ] **No game data.** No file bytes, game text or script source, and no decompiler output
   ([LEGAL.md](repo:LEGAL.md#no-game-data)).
 - [ ] **The page standards pass.** `uv run --project python coney-tools docs check` is clean for every page the diff

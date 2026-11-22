@@ -244,6 +244,7 @@ nav:
       - Simulation and drawing threads: engine/render-threads.md
       - GPU renderer: engine/gpu-renderer.md
       - Crowd rules: engine/crowd-rules.md
+      - Beyond the original: engine/beyond-the-original.md
   - Game references:
       - references/index.md
       - Entities: references/entities.md
