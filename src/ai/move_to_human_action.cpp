@@ -67,6 +67,7 @@ bool grabbingRear(const Brain& target) {
 } // namespace
 
 bool fightsWithoutStance(const Brain& brain) {
+    // **Coney stand-in**: the role through the gang's lookups (GangLookups::role); a brain with no gang has none.
     const Gang* gang = brain.gang();
     const std::optional<int> role = gang != nullptr ? gang->owner().roleOf(brain) : std::nullopt;
     return role == kNoStanceRoleA || role == kNoStanceRoleB;
@@ -223,6 +224,7 @@ int MoveToHumanAction::pickSide(Brain& brain, const Brain& target) {
                     return kSideRight;
                 }
             } else if (sectors.free(brain, kSideRight) && sectors.free(brain, kSideLeft)) {
+                // **Coney stand-in**: the brain's handle's low bit for bit 0x10000 of the human's handle.
                 return (static_cast<std::uint64_t>(brain.handle()) & 1U) != 0 ? kSideLeft : kSideRight;
             } else if (sectors.cost(brain, kSideRight) <= sectors.cost(brain, kSideLeft)) {
                 if (sectors.free(brain, kSideRight)) {

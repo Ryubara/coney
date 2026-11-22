@@ -2905,9 +2905,34 @@ coney = "src/ai/fight_goal.h:FightGoal::process"
 status = "compared"
 
 [[function.gaps]]
-what = "the fight stance is the target of the fighter's lock-on movement, left when the goal ends"
+what = "the fight stance is the target of the fighter's lock-on movement, taken only while the fighter waits, left when the goal ends"
 relation = "stand-in"
 question = "ai-moving.md#q-ai-stance"
+
+[[function.gaps]]
+what = "the range test never goes on for a throwable or a kind 4 or 6 object in hand, as an AI holds none"
+relation = "stand-in"
+question = "ai-fights.md#q-score-held-object"
+
+[[function.gaps]]
+what = "after a block try the block goal runs in the same update; the original returns 0 there"
+relation = "stand-in"
+question = "ai-fights.md#q-block-same-update"
+
+[[function.gaps]]
+what = "row 4 of the attack check (the target holding an object) is not computed"
+relation = "not-ported"
+issue = 678
+
+[[function.gaps]]
+what = "a FollowAndDefend goal on the stack does not shorten the move into reach to 1000 ms"
+relation = "not-ported"
+issue = 678
+
+[[function.gaps]]
+what = "the cheer after a press (class 13, 6 or 7 or a dealer, 20 percent, with a gesture slot) is not built"
+relation = "not-ported"
+issue = 678
 
 [[function]]
 address = 0x002b4098
@@ -5267,6 +5292,11 @@ question = "ai-moving.md#q-band-reaction"
 what = "the band test and the directions are across the ground, not 3D"
 relation = "stand-in"
 question = "ai-moving.md#q-band-ground"
+
+[[function.gaps]]
+what = "the brain's +0x11c (no one-clip arrival) is not kept, as Coney builds no arrival clip; a man settled in the band stands turned to his target"
+relation = "stand-in"
+question = "ai-moving.md#q-ai-stance"
 
 [[function]]
 address = 0x002fdb90

@@ -1146,6 +1146,14 @@ no such flag; its port reads the Grounded target state instead. Whether the two 
 to the end of 199 (the flag is cleared by 199's end callback, [Getting up](combat-reactions.md#ground-escape)) is not
 checked: compare both through a knockdown in PCSX2 and Coney.
 
+### The update after a block try {#q-block-same-update}
+
+When the block try pushes a block goal, `FightGoal_Process` (`0x002b3ab0`) gives up the place and returns 0, as it
+does after the tackle try (confirmed (code)). Coney's fight goal answers "again" there, so its goal stack runs the new
+block goal in the same update. Whether the original's goal stack also starts the new top goal in that update or only
+on the next is not traced: a breakpoint on `BlockGoal_Process` (`0x002b5808`) with the frame counter read, at a block
+in the level99 sparring fight, would tell.
+
 ### What an AI holds, for the armed term {#q-score-held-object}
 
 `Human_IsHoldingObject` (`0x00224060`) counts a held world object whose kind (`+0x86`) is not 0, whatever its anim

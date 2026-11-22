@@ -244,7 +244,8 @@ GoalStatus FightGoal::process(Brain& brain) {
     if (tryTackle(brain, *target)) {
         return GoalStatus::Stop;
     }
-    // 3. Within the far melee range × 1.1 (any distance with a throwable in hand: never, in Coney).
+    // 3. Within the far melee range × 1.1. **Coney stand-in**: the original also goes on at any distance with a
+    // throwable or a kind 4 or 6 object in hand; Coney's AI holds none.
     if (brain.distanceTo(*target) > brain.meleeFar() * kFightRangeScale) {
         return GoalStatus::Done;
     }
@@ -264,7 +265,8 @@ GoalStatus FightGoal::process(Brain& brain) {
             return GoalStatus::Stop;
         }
     }
-    // 6. The block try: the block goal is then the top, processed at once.
+    // 6. The block try: the block goal is then the top, processed at once. **Coney stand-in**: the original returns 0
+    // here, as after the tackle try; whether its goal stack runs the new top in the same update is not traced.
     if (tryBlock(brain)) {
         releasePlace(brain);
         return GoalStatus::Again;

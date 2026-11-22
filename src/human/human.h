@@ -558,8 +558,9 @@ class Human final : public Holdable {
     /// wounded (`0x10000`); never the health's value (docs/research/combat-reactions.md#down-health). A health run
     /// out whose death a paired move still holds back (Fighter::deathPending(), a tandem's victim in his end clip)
     /// sets none of those states yet. Knocked down alive (`0x80000`), tackled (`0x800`) and cuffed (`0x20000`) are not
-    /// among them. The narrow reading:
-    /// ai::downOrDead() (src/ai/gangs.h) is Coney's wider one, which also counts a human knocked down alive.
+    /// among them. The narrow reading: ai::downOrDead() (src/ai/gangs.h) is Coney's wider one, which also counts a
+    /// human knocked down alive. **Coney stand-in**: Coney keeps no state word, so the states are read from the
+    /// health, the held-back death and the script's flags (docs/research/combat-reactions.md#q-lethal-state).
     /// @orig 0x00227e60 Human_IsDownOrDead (unknown)
     [[nodiscard]] bool downOrDead() const {
         return (m_fighter.health().depleted() && !m_fighter.deathPending()) || m_script.knockedOut || m_script.wounded;

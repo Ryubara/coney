@@ -1547,7 +1547,12 @@ name = "Human_IsDownOrDead"
 page = "hud-functions-lua.md#gang-count-what"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::downOrDead"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the states are read from the health, a death a paired move holds back and the script's flags, as Coney keeps no state word"
+relation = "stand-in"
+question = "combat-reactions.md#q-lethal-state"
 
 [[function]]
 address = 0x0024a230

@@ -40,8 +40,9 @@ void giveRole(AiScene& scene, Brain& brain, int role) {
     coney::ai::Gangs& gangs = scene.brains.gangs();
     gangs.addMember(gangs.create(3, "movers"), brain);
     gangs.setLookups(coney::ai::GangLookups{.role = [&brain, role](const Brain& who) -> std::optional<int> {
-        return &who == &brain ? std::optional<int>(role) : std::nullopt;
-    }});
+                                                return &who == &brain ? std::optional<int>(role) : std::nullopt;
+                                            },
+                                            .fleeShare = {}});
 }
 
 } // namespace
