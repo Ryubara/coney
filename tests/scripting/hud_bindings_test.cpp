@@ -374,3 +374,15 @@ TEST_CASE("HUDSetANBossTexture(human, texture, on) registers a boss's picture on
     harness.call("HUDSetANBossTexture", {Value(41.0), Value(1966110.0), Value(0.0)});
     CHECK_FALSE(hud.armies().bossTexture(1, 41).has_value());
 }
+
+TEST_CASE("HUDANEnableJoinMsg(player, on) reads a negative player as player 1's panel", "[scripting][hud]") {
+    // Expected: hud-functions-lua.md#fn-hudlua, confirmed (code): lua_HUDANEnableJoinMsg (0x003701c8) reads the player
+    // as an unsigned integer, which tolua's conversion gives as 0 for a negative number: panel 0.
+    coney::hud::Hud hud;
+    Harness harness(&hud);
+    hud.armies().levelSetUp();
+    REQUIRE(hud.armies().joinMessage(0));
+    harness.call("HUDANEnableJoinMsg", {Value(-1.0), Value()});
+    CHECK_FALSE(hud.armies().joinMessage(0));
+    CHECK(hud.armies().joinMessage(1));
+}

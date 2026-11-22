@@ -9,6 +9,7 @@
 #include <string>
 
 #include "characters/character_class.h"
+#include "core/engine_limits.h"
 #include "core/language.h"
 #include "hud/hud_canvas.h"
 #include "hud/hud_layout.h"
@@ -55,6 +56,10 @@ class ArmiesHud {
   public:
     /// How many boss pictures each panel's target panel keeps (`TargetPanel_SetBossTexture`'s six pairs).
     static constexpr std::size_t kBossPictures = 6;
+    /// The original's six pairs.
+    static constexpr std::size_t kOrigBossPictures = 6;
+    /// The engine limits preset the panels keep their boss pictures under.
+    void setEngineLimits(EngineLimits /*limits*/) {}
     /// The global strings they show: the credits label, "GO" and the join message.
     static constexpr std::uint32_t kCreditsString = 0xd5;
     static constexpr std::uint32_t kGoString = 0xd3;

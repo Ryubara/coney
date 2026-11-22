@@ -13,6 +13,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/engine_limits.h"
 #include "graphics/font.h"
 #include "graphics/overlay_camera.h"
 #include "graphics/sprite_batch.h"
@@ -262,4 +263,33 @@ TEST_CASE("a boss's picture goes into the first free of each panel's six pairs a
     // The next level's panels start empty (TargetPanel_Construct clears the pairs).
     armies.levelSetUp();
     CHECK_FALSE(armies.bossTexture(1, 42).has_value());
+}
+
+TEST_CASE("past the original's six boss pictures a panel keeps every boss; the engine limits preset drops the seventh",
+          "[hud][armies]") {
+    // Expected: hud-functions-panels.md#fn-anhud, confirmed (code): TargetPanel_SetBossTexture (0x0020fc98) has six
+    // pairs and ignores a seventh boss. Coney lifts that table's size (conventions.md#original-limits) and keeps the
+    // original's order inside it; the engine limits preset pins it at six.
+    ArmiesHud lifted;
+    lifted.levelSetUp();
+    ArmiesHud pinned;
+    pinned.setEngineLimits(coney::EngineLimits::Original);
+    pinned.levelSetUp();
+    for (std::uint32_t boss = 40; boss < 47; ++boss) {
+        lifted.setBossTexture(boss, 0x1e0000 + boss, true);
+        pinned.setBossTexture(boss, 0x1e0000 + boss, true);
+    }
+    // Inside the range both keep the same six pairs in the same order.
+    for (std::size_t pair = 0; pair < ArmiesHud::kOrigBossPictures; ++pair) {
+        CHECK(lifted.bossPictures(0)[pair] == pinned.bossPictures(0)[pair]);
+    }
+    CHECK(lifted.bossTexture(1, 46) == std::optional<std::uint32_t>{0x1e0000 + 46});
+    CHECK_FALSE(pinned.bossTexture(1, 46).has_value());
+    // A freed pair is taken first, past the range too.
+    lifted.setBossTexture(41, 0, false);
+    lifted.setBossTexture(47, 0x1e002f, true);
+    CHECK(lifted.bossPictures(1)[1] == coney::hud::BossPicture{47, 0x1e002f});
+    // A new level's panels start with the original's six free pairs.
+    lifted.levelSetUp();
+    CHECK(lifted.bossPictures(0).size() == ArmiesHud::kOrigBossPictures);
 }

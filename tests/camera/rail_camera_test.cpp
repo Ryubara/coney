@@ -791,3 +791,26 @@ TEST_CASE("the cameras' manager moves a held rail camera's target back into its 
     REQUIRE(moved.has_value());
     CHECK(moved.value_or(Vec3{}).x > -5.0F);
 }
+
+TEST_CASE("the rail camera's set-up keeps setting 8's pitch and switches mode 3's angle off", "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): CamRail_Reset (0x0013b2b8) never writes setting 8's pitch and turns
+    // mode 3's angle off (+0x368, +0x388) with its ease time; Camera_SetupRail (0x0011cce8) writes setting 9's value
+    // and target from the offset's height.
+    RailCamera rail = straightRail();
+    rail.modify(RailCamera::kPitch, -30.0F, 0.0F);
+    rail.modify(RailCamera::kMode3Pitch, -7.0F, 5.0F);
+    RailSetup setup;
+    setup.fieldOfView = 60.0F;
+    setup.offset = Vec3{0.0F, 0.0F, 1.5F};
+    rail.setup(setup);
+    rail.addPoint(Vec3{0.0F, 0.0F, 2.0F});
+    rail.addPoint(Vec3{20.0F, 0.0F, 2.0F});
+    CHECK(rail.mode() == RailMode::Level);
+    CHECK(rail.mode3Pitch() < RailCamera::kAngleOff);
+    rail.update(Vec3{5.0F, 4.0F, 0.0F}, false, kStep);
+    // The fixed pitch still sets the look-at point: 30 degrees down from the camera.
+    const Vec3 toward{rail.lookAt().x - rail.position().x, rail.lookAt().y - rail.position().y,
+                      rail.lookAt().z - rail.position().z};
+    const float pitch = std::atan2(toward.z, std::hypot(toward.x, toward.y)) * 180.0F / std::numbers::pi_v<float>;
+    CHECK(pitch == Approx(-30.0F).margin(0.5F));
+}
