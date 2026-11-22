@@ -1081,8 +1081,8 @@ command gives nothing) and always rebuilds the tactic.
   `0x00541d70`). In a two-player game a Warrior of the first player's gang more than 10 m from him whose nearest player
   is the other one gets `FollowAndDefend` (`0x35`, `0x002bca20`) on that player instead. "Not down" is
   `Human_IsDownOrDead` (`0x00227e60`) returning 0: the human has its record (`+0xd4`) and none of the state bits
-  `0x180050000` (`0x100000000` dead, `0x80000000` dying, `0x40000` knocked out, `0x10000` wounded;
-  [Combat](combat-reactions.md#down-health)). It does not read the brain's `+0x09` (`BrDead`), the health, or knocked down
+  `0x180050000` (`0x100000000` dead, `0x80000000` dying, `0x40000` knocked out, `0x10000` tackled;
+  [Combat](combat/index.md#state-flags)). It does not read the brain's `+0x09` (`BrDead`), the health, or knocked down
   (`0x80000`): a member made dead to the AI still gets the follow goal. Confirmed (code). The binding `HuIsAlive` is the
   same test. Start also fills the gang's anim group 604 with ten idle clips (`0x00169468`; End `0x00311230` undoes it).
 - **Process** (`0x00311638`): done (1) when the gang has no leader; every 8 s the chief's slot set is re-picked

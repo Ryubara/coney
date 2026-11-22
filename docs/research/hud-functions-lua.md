@@ -176,16 +176,17 @@ default mode.
 
 ### What the count counts {#gang-count-what}
 
-Every HUD count of a gang's members passes **1** as `Gang_CountLiving`'s second argument, so the marks show the
-members that are **standing**, not every member that still exists. **Evidence:** confirmed (code) at each call
-site below. Because both the indicator and the panel recount every update, a member who is knocked out or wounded
-loses his mark while he is down, health or not: confirmed (runtime) on 2026-10-20, a WAR PARTY (Furies against
-Orphans, five a side, every fighter on the AI) watched in PCSX2, the Orphans' indicator (`+0xc40`) dropped in the
-same update as each member went down by state (5 to 4 to 3 to 2 over 4,500 updates) and showed 3 while all 5 still
-had health, one of them wounded (state `0x10000`) with 250 health left and one knocked out with 1 (an earlier reading
-called the first one tackled; a tackle's `0x800` is not among the states the count reads: [The health a downed human
-keeps](combat-reactions.md#down-health)). That he gets the mark back when he
-is up again is inferred from the recount (not seen in that run).
+Read in Ghidra: confirmed (code) where no other level is given.
+
+Every HUD count of a gang's members passes **1** as `Gang_CountLiving`'s second argument, so the marks show the members
+that are **standing**, not every member that still exists. **Evidence:** confirmed (code) at each call site below.
+Because both the indicator and the panel recount every update, a member who is knocked out or wounded loses his mark
+while he is down, health or not (inferred from the recount), and a downed member keeps health: in a WAR PARTY (Furies
+against Orphans, five a side, every fighter on the AI) each fighter beaten lay dying and then knocked out with 1 health,
+or wounded (state `0x10000`) with 250 of 1000 (confirmed (runtime), run r-20261122-war-party, [The health a downed human
+keeps](combat-reactions.md#down-health)). A tackle's victim (state `0x800`) is not among the states the count reads, so
+he keeps his mark (confirmed (code) at `0x00227e60`). That a member gets the mark back when he is up again is inferred
+from the recount too.
 
 | Call | Caller | Argument |
 | --- | --- | --- |

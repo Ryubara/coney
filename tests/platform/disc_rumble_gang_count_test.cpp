@@ -42,6 +42,10 @@ constexpr int kUpdates = 2700;
 
 TEST_CASE("the disc's WAR PARTY gang counter shows the standing Orphans, not those with health left",
           "[disc][rumble][hud]") {
+    // Expected: hud-functions-lua.md#gang-count-what, confirmed (code) at NumIndicator_Update (0x001b67b8) and
+    // Gang_CountLiving (0x00166158): the count is the members for whom Human_IsDownOrDead (0x00227e60) is false; and
+    // combat-reactions.md#down-health, confirmed (runtime), run r-20261122-war-party: members lie down by state with 1
+    // health, so a match has updates where the health count and the state count differ.
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

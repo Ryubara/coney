@@ -42,8 +42,10 @@ inline constexpr float kRageRateSeconds = 20.0F;
 class Health {
   public:
     /// Full health of `maximum` (at least 1, CONEY_ASSERT).
+    /// @coney-only the health's value object, with the down state Coney keeps beside it
     explicit Health(int maximum);
-    /// `value` of `maximum`, `value` clamped to 0..maximum.
+    /// `value` of `maximum`, `value` clamped to 0..maximum; at 0 it has run out (depleted()).
+    /// @coney-only the health's value object, with the down state Coney keeps beside it
     Health(int value, int maximum);
 
     [[nodiscard]] int value() const { return m_value; }
@@ -53,6 +55,7 @@ class Health {
     [[nodiscard]] float fraction() const;
     /// Takes `damage` off (never below 0); returns what was taken. Health that has run out takes nothing more: a downed
     /// human keeps what the death chain left him (docs/research/combat-reactions.md#down-health).
+    /// @coney-only the damage as Coney's health takes it, the down state kept beside the value
     int apply(int damage);
     /// The health has run out and has not been given back since (set() above 0): the down state Coney keeps beside the
     /// value, where the original keeps dying (`0x80000000`), knocked out (`0x40000`) and dead in the state word, which
@@ -61,6 +64,7 @@ class Health {
     [[nodiscard]] bool depleted() const { return m_out; }
     /// Sets health to `value`, clamped to 0..maximum (a script's `HuSetHealthPercent`, `HuRevive`): 0 runs it out, any
     /// more gives it back.
+    /// @coney-only a script's or a heal's write of the health, the down state kept beside the value
     void set(int value);
     /// Health that has run out reads 1 and stays out: the write `Human_PlayDeathReaction` (0x00267a00) makes as it
     /// builds the death chain, so a dying or knocked-out human keeps 1 health
