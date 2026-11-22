@@ -7,7 +7,22 @@
 #include <optional>
 #include <span>
 
+#include "combat/meters.h"
+
 namespace coney::ai {
+
+namespace {
+
+// The health the damage stand-in measures falls in: 0 once it has run out. The death chain then leaves a downed human 1
+// (Human_PlayDeathReaction 0x00267a00, docs/research/combat-reactions.md#down-health), which is no health given back,
+// so a lethal hit reports all the health it took, never one point less.
+// @coney-only bookkeeping for the reportDamage() stand-in
+int healthSeen(const human::Human& human) {
+    const combat::Health& health = human.fighter().health();
+    return health.depleted() ? 0 : health.value();
+}
+
+} // namespace
 
 // The gangs' tactic rolls start from their usual seed, 1, moved by the variation.
 Brains::Brains(std::uint32_t variation) : m_gangs(variedSeed(1, variation)), m_variation(variation) {}
@@ -150,7 +165,7 @@ void Brains::update() {
 
 void Brains::noteDamage() {
     for (const std::unique_ptr<Brain>& brain : m_brains) {
-        const int health = brain->human().fighter().health().value();
+        const int health = healthSeen(brain->human());
         const int seen = brain->seenHealth();
         if (seen >= 0 && health < seen) {
             brain->setUnreportedDamage(brain->unreportedDamage() + seen - health);
@@ -161,7 +176,7 @@ void Brains::noteDamage() {
 
 void Brains::reportDamage() {
     for (const std::unique_ptr<Brain>& brain : m_brains) {
-        const int health = brain->human().fighter().health().value();
+        const int health = healthSeen(brain->human());
         const int seen = brain->seenHealth();
         brain->setSeenHealth(health);
         // What noteDamage() kept from before the tactics ran, and whatever fell since.

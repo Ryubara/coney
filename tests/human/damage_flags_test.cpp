@@ -77,6 +77,8 @@ TEST_CASE("a Warrior's hit on class 0x80 is quartered, after the doubling; anyon
 }
 
 TEST_CASE("a hit earns no rage on a man already out or on a boss with flag 0x10", "[human][combat]") {
+    // Expected: combat-rage.md#hit-score-skips, confirmed (code) at Hit_Score (0x002653d8): nothing for a victim in
+    // the states 0x180040000 or of category 13 with flag 0x10; X1's 5 rage is being_hit_test.cpp's.
     const FightCharacter character;
     // X1 earns 5 rage (the rage test in being_hit_test.cpp).
     SECTION("a standing man: 5") {
@@ -110,4 +112,17 @@ TEST_CASE("a hit earns no rage on a man already out or on a boss with flag 0x10"
         classOnly.run("10 tap cross\n", 40);
         CHECK(classOnly.human().fighter().combat().rage().value() == 5);
     }
+}
+
+TEST_CASE("a hit earns no rage on a man a script knocked out, though his health is full", "[human][combat]") {
+    // Expected: combat-rage.md#hit-score-coney. Hit_Score (0x002653d8) skips a victim in the states 0x180040000
+    // (knocked out, dying or dead) and reads no health; HuSetConscious(h, false) knocks out through Human_KnockOut
+    // (0x00230328, state 0x40000) and leaves the health as it was (combat-reactions.md#knocked-out-bit).
+    const FightCharacter character;
+    Fight fight(character);
+    coney::human::Human& man = fight.human();
+    REQUIRE_FALSE(man.fighter().health().depleted());
+    CHECK(coney::human::Fighter::scoresRageOn(man));
+    man.script().knockedOut = true;
+    CHECK_FALSE(coney::human::Fighter::scoresRageOn(man));
 }

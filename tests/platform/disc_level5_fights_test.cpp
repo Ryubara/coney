@@ -231,7 +231,7 @@ FightRun playFight(const coney::io::Wad& wad, int checkpoint, std::vector<std::s
         const auto nearestOf = [&feet](const std::vector<const coney::ai::Brain*>& brains) {
             std::optional<coney::anim::Vec3> nearest;
             for (const coney::ai::Brain* brain : brains) {
-                if (brain->human().health().value() <= 0) {
+                if (brain->human().health().depleted()) {
                     continue;
                 }
                 const coney::anim::Vec3 at = brain->human().position();
@@ -309,7 +309,7 @@ FightRun playFight(const coney::io::Wad& wad, int checkpoint, std::vector<std::s
         const std::vector<const coney::ai::Brain*> found = foeBrains(*level);
         run.foes = found.size();
         for (const coney::ai::Brain* brain : found) {
-            run.standing += brain->human().health().value() > 0 ? 1 : 0;
+            run.standing += brain->human().health().depleted() ? 0 : 1;
         }
         run.health = level->player().human().health().value();
     }

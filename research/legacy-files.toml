@@ -146,7 +146,7 @@ tag = 1
 comment = 1
 
 ["src/ai/reaction_goals.cpp"]
-tag = 3
+tag = 2
 
 ["src/ai/riot_goals.cpp"]
 tag = 15
@@ -183,7 +183,7 @@ comment = 2
 tag = 1
 
 ["src/ai/scripted_story.cpp"]
-tag = 62
+tag = 61
 
 ["src/ai/sectors.cpp"]
 tag = 4
@@ -211,7 +211,7 @@ tag = 1
 tag = 12
 
 ["src/ai/story_tactics.cpp"]
-tag = 21
+tag = 20
 
 ["src/ai/swap_prompt.cpp"]
 tag = 3
@@ -477,7 +477,7 @@ tag = 6
 tag = 2
 
 ["src/combat/meters.cpp"]
-tag = 11
+tag = 8
 
 ["src/combat/meters.h"]
 comment = 10
@@ -629,7 +629,7 @@ tag = 8
 tag = 1
 
 ["src/gamemodes/level_items.cpp"]
-tag = 6
+tag = 5
 
 ["src/gamemodes/level_object_services.cpp"]
 tag = 18
@@ -989,10 +989,10 @@ tag = 6
 tag = 1
 
 ["src/human/fighter_grab.cpp"]
-tag = 15
+tag = 14
 
 ["src/human/fighter_tandem.cpp"]
-tag = 5
+tag = 4
 
 ["src/human/fighter_victim.cpp"]
 tag = 8
@@ -1002,7 +1002,7 @@ comment = 1
 tag = 1
 
 ["src/human/human_animator.cpp"]
-tag = 38
+tag = 37
 
 ["src/human/human_animator.h"]
 comment = 3
@@ -1060,7 +1060,7 @@ comment = 4
 tag = 2
 
 ["src/human/target_human.cpp"]
-tag = 13
+tag = 12
 
 ["src/human/target_human.h"]
 comment = 9
@@ -1093,7 +1093,7 @@ tag = 3
 tag = 4
 
 ["src/movies/movie_mode.cpp"]
-tag = 9
+tag = 7
 
 ["src/net/bit_stream.cpp"]
 comment = 3
@@ -1502,7 +1502,7 @@ citation = 4
 citation = 4
 
 ["tests/ai/brain_events_test.cpp"]
-citation = 6
+citation = 5
 
 ["tests/ai/crew_test.cpp"]
 citation = 17
@@ -1580,7 +1580,7 @@ citation = 16
 citation = 6
 
 ["tests/ai/steering_test.cpp"]
-citation = 18
+citation = 16
 
 ["tests/ai/swap_prompt_test.cpp"]
 citation = 8
@@ -1946,7 +1946,7 @@ citation = 2
 citation = 3
 
 ["tests/graphics/human_lighting_test.cpp"]
-citation = 5
+citation = 4
 
 ["tests/graphics/light_manager_test.cpp"]
 citation = 12
@@ -2069,7 +2069,7 @@ citation = 7
 citation = 33
 
 ["tests/human/damage_flags_test.cpp"]
-citation = 4
+citation = 3
 
 ["tests/human/debug_clip_test.cpp"]
 citation = 4
@@ -2093,7 +2093,7 @@ citation = 23
 citation = 3
 
 ["tests/human/humans_test.cpp"]
-citation = 7
+citation = 6
 
 ["tests/human/jump_test.cpp"]
 citation = 2
@@ -2111,7 +2111,7 @@ citation = 11
 citation = 6
 
 ["tests/human/player_snapshot_test.cpp"]
-citation = 2
+citation = 1
 
 ["tests/human/player_trace_test.cpp"]
 citation = 1
@@ -2147,7 +2147,7 @@ citation = 6
 citation = 5
 
 ["tests/movies/movie_mode_test.cpp"]
-citation = 11
+citation = 10
 
 ["tests/net/bit_stream_test.cpp"]
 citation = 10
@@ -2341,11 +2341,8 @@ citation = 1
 ["tests/platform/disc_rise_counter_test.cpp"]
 citation = 2
 
-["tests/platform/disc_rumble_gang_count_test.cpp"]
-citation = 1
-
 ["tests/platform/disc_scene_option_test.cpp"]
-citation = 2
+citation = 1
 
 ["tests/platform/disc_spawner_money_test.cpp"]
 citation = 1
@@ -2360,7 +2357,7 @@ citation = 2
 citation = 1
 
 ["tests/platform/disc_story_missions_test.cpp"]
-citation = 4
+citation = 3
 
 ["tests/platform/disc_story_start_test.cpp"]
 citation = 6
@@ -2471,7 +2468,7 @@ citation = 6
 citation = 1
 
 ["tests/scenes/scene_player_test.cpp"]
-citation = 18
+citation = 17
 
 ["tests/scenes/scene_record_test.cpp"]
 citation = 5

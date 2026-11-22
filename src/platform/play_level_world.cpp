@@ -161,7 +161,7 @@ void PlayLevelMode::stepRings(const Pad& pad, std::uint64_t nowMs) {
             ring.feet = passive->position();
             ring.healthPercent = healthPercentOf(passive->health());
             ring.classByte = passive->powerClass().ringByte;
-            ring.canShow = standing(passive->state()) && passive->health().value() > 0;
+            ring.canShow = standing(passive->state()) && !passive->health().depleted();
             ringPlayer.target = ring;
         }
     }

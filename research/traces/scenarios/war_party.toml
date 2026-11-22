@@ -1,0 +1,26 @@
+# The WAR PARTY of QUICK RUMBLE: Furies against Orphans, five a side, in the Fight Pen, every fighter driven by his
+# brain, every human traced on every update. It shows who goes down by state with health left (knocked out at 1,
+# wounded at a quarter of the maximum) and for how long.
+# Research: docs/research/combat-reactions.md#down-health (the health a downed fighter keeps),
+# docs/research/hud-functions-lua.md#gang-count-what (the HUD's count of the standing members).
+description = "Fight Pen WAR PARTY, 5 a side, player 1 handed to the AI after the countdown: every human, every update"
+research = "docs/research/combat-reactions.md"
+input = "war_party.txt"
+updates = 6000
+rows = "humans"
+fields = ["humans"]
+
+[original]
+# Made from QUICK RUMBLE > WAR PARTY > 1P vs CPU > Furies, Orphans, the Fight Pen, with the set-up left as the menus
+# give it: saved at the intro's "press X" prompt, brains off.
+state = "states/war_party_intro.p2s"
+patches = ["scripted-pad", "call-brains"]
+# At frame 200, after the countdown, player 1 is given back to his brain, as HuSwitchPlayer gives a player back:
+# Human_ReleasePlayer(h, 0, 1) (docs/research/rumble.md#gang-battle-setup).
+calls = [ { function = "0x0022a2a8", args = ["player", "0", "1"], frame = 200 } ]
+# Ten fighters and the crowd sample well inside an update at 0.5 speed.
+speed = 0.5
+
+[coney]
+level = "level102"
+args = ["--rumble", "warparty", "--ai-player"]

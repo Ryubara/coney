@@ -368,6 +368,11 @@ class Human final : public Holdable {
     [[nodiscard]] TargetState state() const override;
     /// Its health (record `+0x144`).
     [[nodiscard]] const combat::Health& health() const override { return m_fighter.health(); }
+    /// Its health run out (dying or knocked out in a fight) or a script's knock-out (`HuSetConscious(false)`).
+    /// @coney-only Coney's reading of the states `0x180040000` from the fighter's down state and the script's
+    [[nodiscard]] bool knockedOutOrDying() const override {
+        return m_fighter.health().depleted() || m_script.knockedOut;
+    }
     [[nodiscard]] anim::Vec3 velocity() const override { return m_velocity; }
     /// The horizontal speed.
     /// @coney-only a read of the velocity
@@ -537,9 +542,11 @@ class Human final : public Holdable {
     /// running), while record `+0x08` holds bit `0x40` (fences do not block the body); not its first or last clip.
     /// @orig 0x00223c10 Human_HasHeld40 (unknown)
     [[nodiscard]] bool climbingOver() const { return m_climbRun.has_value() && m_climbRun->over; }
-    /// `Human_IsDownOrDead`'s states `0x180050000` as Coney models them: no health left (dead, dying), knocked out or
-    /// wounded (`0x10000`). Knocked down alive (`0x80000`) and cuffed (`0x20000`) are not among them. The narrow
-    /// reading: ai::downOrDead() (src/ai/gangs.h) is Coney's wider one, which also counts a human knocked down alive.
+    /// `Human_IsDownOrDead`'s states `0x180050000` as Coney models them: its health run out (dying, knocked out in a
+    /// fight: combat::Health::depleted(), which a downed human's 1 health does not undo), a script's knock-out or
+    /// wounded (`0x10000`); never the health's value (docs/research/combat-reactions.md#down-health). Knocked down
+    /// alive (`0x80000`), tackled (`0x800`) and cuffed (`0x20000`) are not among them. The narrow reading:
+    /// ai::downOrDead() (src/ai/gangs.h) is Coney's wider one, which also counts a human knocked down alive.
     /// @orig 0x00227e60 Human_IsDownOrDead (unknown)
     [[nodiscard]] bool downOrDead() const {
         return m_fighter.health().depleted() || m_script.knockedOut || m_script.wounded;

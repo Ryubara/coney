@@ -12,6 +12,7 @@
 #include "ai/brain.h"
 #include "ai/idle_goals.h"
 #include "ai/tactic.h"
+#include "combat/meters.h"
 #include "hud/hud.h"
 #include "human/human.h"
 #include "support/ai_fixtures.h"
@@ -256,6 +257,39 @@ TEST_CASE("a fall in a human's health is event 1 about the nearest human that ca
     CHECK(event.value == 20);
     scene.run(3);
     CHECK(hits().size() == 1); // once per fall
+}
+
+TEST_CASE("a lethal hit is event 1 with all the health it took, though the death chain leaves the victim 1",
+          "[ai][gangs]") {
+    // Expected: combat-reactions.md#down-health, confirmed (code): Human_DealDamage (0x0021d680) sends event 1 with
+    // the damage it deals, and Human_PlayDeathReaction (0x00267a00) then writes 1 to the downed victim's health; the 1
+    // is no health given back, so the event still carries all the health the hit took.
+    AiScene scene;
+    Brain& victim = scene.add({44.0F, 40.0F, 0.0F}, 0.0F);
+    scene.add({45.0F, 40.0F, 0.0F}, 0.0F);
+    victim.setServices(&scene.services);
+    scene.run(3);
+    coney::combat::Health& health = victim.human().fighter().health();
+    const int full = health.value();
+    // The lethal hit, then the death chain's write of 1.
+    static_cast<void>(health.apply(full));
+    health.keepOneWhileOut();
+    REQUIRE(health.value() == 1);
+    // The damage each event 1 sent so far carried.
+    const auto damage = [&scene] {
+        std::vector<int> found;
+        for (const auto& [brain, event] : scene.services.humanEvents) {
+            if (event.id == coney::ai::kEventDamaged) {
+                found.push_back(event.value);
+            }
+        }
+        return found;
+    };
+    scene.run(1);
+    REQUIRE(damage().size() == 1);
+    CHECK(damage()[0] == full);
+    scene.run(3);
+    CHECK(damage().size() == 1); // the 1 left is no new fall
 }
 
 TEST_CASE("GangMakeNeutralOfType ends the enmity with every unfriendly gang of a kind, both ways", "[ai][gangs]") {

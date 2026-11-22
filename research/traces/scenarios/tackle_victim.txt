@@ -1,0 +1,1 @@
+# No input: the tackled player lies until the tackle lets him go.

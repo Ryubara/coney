@@ -134,7 +134,8 @@ void PlayLevelSimulation::stepWearer(human::Human& human, std::optional<int> typ
     }
     // Going down knocks it off: a knockdown (but for a cop or class 0x80 or 13), being knocked out, being mounted.
     // **Coney's reading**: the reactions and messages that call the knock-off are read as the human's state changing
-    // to grounded or mounted.
+    // to grounded or mounted. Knocked out or dying is the health's down state (depleted()), never its value, which a
+    // downed human keeps at 1 (docs/research/combat-reactions.md#down-health).
     const human::TargetState state = human.state();
     const bool wasUp = wearer.state == human::TargetState::Standing || wearer.state == human::TargetState::Held;
     bool knocked = false;
@@ -143,7 +144,7 @@ void PlayLevelSimulation::stepWearer(human::Human& human, std::optional<int> typ
         const bool cop = classRecord != nullptr && classRecord->behaviour &&
                          ai::brainTypeOf(*classRecord->behaviour) == ai::BrainType::Cop;
         const bool keeps = cop || classId == kKeepsHatClassA || classId == kKeepsHatClassB;
-        knocked = human.health().value() <= 0 || !keeps;
+        knocked = human.health().depleted() || !keeps;
     } else if (wearer.state != human::TargetState::Mounted && state == human::TargetState::Mounted) {
         knocked = true;
     }

@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261122-tackle-victim"
+date = "2026-11-22"
+kind = "trace"
+tool = "trace original"
+digest = "201ec3841a2147346409995d7ae4e39d4037fe830bc0eaf11edf1e1331969ce5"
+
+[who]
+agent = "acec42b3ad7c201a9"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["puppet", "right-stick", "scripted-pad", "strike-contact", "strike-shape"]
+
+[run]
+name = "tackle_victim"
+method = ""
+
+[values]
+updates = 401
+missed_updates = 0
+columns = 54
+
+[hashes]
+trace_csv = "b62078cda3c608279942097a938739307302104195963c1495152910c086263f"

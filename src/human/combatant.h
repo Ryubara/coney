@@ -57,6 +57,10 @@ class Combatant {
     /// How it lies now.
     [[nodiscard]] virtual TargetState state() const = 0;
     [[nodiscard]] virtual const combat::Health& health() const = 0;
+    /// Knocked out, dying or dead (the states `0x180040000`, which `Hit_Score` 0x002653d8 reads): by default its health
+    /// run out (combat::Health::depleted(), never the value, which a downed human keeps at 1).
+    /// @coney-only Coney's reading of those states from what it keeps (docs/research/combat-reactions.md#down-health)
+    [[nodiscard]] virtual bool knockedOutOrDying() const { return health().depleted(); }
     /// A hit this update, acted on at its next update (the update keeps its largest).
     virtual void hit(const IncomingHit& hit) = 0;
     /// The attacker's clip announces its hit (message `0xa4` or `0xa6`), acted on at its next update.

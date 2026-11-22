@@ -265,7 +265,7 @@ void Fighter::dieNow(const IncomingHit& hit, const FighterInput& input, HumanAni
     if (animator.animId() == kDeathLoopClip) {
         return;
     }
-    m_victim.die(hit, frame(input), dying, animator, named);
+    m_victim.die(hit, frame(input), dying, m_health, animator, named);
     m_reacting = true;
     const std::string_view attacker = hit.attackerName.empty() ? std::string_view("no one") : hit.attackerName;
     logging::info(logging::Category::Combat, std::format("death: {} by {}", logName(), attacker));
