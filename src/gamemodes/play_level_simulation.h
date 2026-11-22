@@ -561,9 +561,9 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // @orig 0x003e7b88 HatObject_Update (unknown)
     void stepHats();
     // One human's part of stepHats(), made as `type` (none: no class hat) and posed at this step by `pose` of
-    // `character` at `feet` facing `heading`: among it the knock-off when its wearer goes down, which the original's
-    // update reads as dying or knocked out.
-    // @orig 0x003e7b88 HatObject_Update (unknown)
+    // `character` at `feet` facing `heading`: among it the knock-off when its wearer goes down.
+    // @coney-only Coney's reading of the reactions and messages that knock a worn hat off as the wearer's state
+    // changing (docs/research/script-types.md#hat-object)
     void stepWearer(human::Human& human, std::optional<int> type, const human::PlayerCharacter& character,
                     const anim::Pose& pose, anim::Vec3 feet, float heading);
     // Makes hat `hat` of type `hatName` (when its record is not there yet) and puts it on `human`'s head as `wearer`'s.
