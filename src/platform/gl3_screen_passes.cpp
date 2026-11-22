@@ -15,18 +15,6 @@
 
 namespace coney::platform {
 
-namespace {
-
-// Drops `raster` if there is one (as gl3_renderer.cpp's own).
-void destroyRaster(rw::Raster*& raster) {
-    if (raster != nullptr) {
-        raster->destroy();
-        raster = nullptr;
-    }
-}
-
-} // namespace
-
 void Gl3Renderer::drawScreenPass(const graphics::ScreenPass& pass, const Target& target) {
     // Each copies the frame, so it needs one: nothing with the NULL backend, even while recording.
     if (target.camera == nullptr) {

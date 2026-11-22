@@ -29,14 +29,6 @@ constexpr float kNewCameraNearPlane = 0.05F;
 // Whether 2D draws are made: with a camera to draw through, or while the draw layer records.
 bool drawing2d(const Gl3Renderer::Target& target) { return target.camera != nullptr || draw::recording(); }
 
-// Drops `raster` if there is one.
-void destroyRaster(rw::Raster*& raster) {
-    if (raster != nullptr) {
-        raster->destroy();
-        raster = nullptr;
-    }
-}
-
 // librw's addressing for `address` (the 2D side records only Clamp and Wrap; the rest map one to one).
 rw::Texture::Addressing rwAddress(graphics::TextureAddress address) {
     switch (address) {
@@ -100,6 +92,14 @@ rw::Texture* rwTextureOf(const graphics::Texture* texture) {
 }
 
 } // namespace
+
+// Drops `raster` if there is one (shared with gl3_screen_passes.cpp).
+void Gl3Renderer::destroyRaster(rw::Raster*& raster) {
+    if (raster != nullptr) {
+        raster->destroy();
+        raster = nullptr;
+    }
+}
 
 // The near plane 2D vertices take their depth from (shared with gl3_screen_passes.cpp).
 float Gl3Renderer::nearPlaneOf(const Target& target) {
