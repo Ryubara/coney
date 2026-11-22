@@ -330,7 +330,9 @@ against 17 to 23), and the timer runs 6 ticks shorter (3031 steps of 33 ms count
   ([Story coverage](../references/bindings/story.md#level60)): `HuColor`, `GangSetMoney` and `CfgBaseChanceToBlock`.
   The run goes on past them. `CamLockRail` holds the rail camera (`repo:src/camera/cameras.cpp`),
   `HuEnableController` hands player 1's human to his pad or his brain (`repo:src/ai/scripted_humans.cpp`) and
-  `HUDSetANBossTexture` keeps each panel's six boss pictures (`repo:src/hud/armies_hud.cpp`); a disc test plays
+  `HUDSetANBossTexture` keeps each panel's boss pictures (`repo:src/hud/armies_hud.cpp`): the original's target panel
+  has six pairs and drops a seventh boss (`0x0020fc98`, confirmed (code)); Coney lifts it past six (rule: a new pair
+  for each further boss, a freed pair still taken first; the engine limits preset pins six); a disc test plays
   `level60` through all three, to the rail camera's lock at the first fight. Marked stand-ins: the target panel that
   shows a boss's picture is not drawn (#662), so the pictures are kept but not shown; `HuEnableController` on a
   human no pad can drive (an AI human) does nothing, as Coney's pad flag exists only for the player's human. The

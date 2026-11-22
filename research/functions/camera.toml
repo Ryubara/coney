@@ -926,6 +926,7 @@ issue = 1017
 [[function.gaps]]
 what = "one target: Coney's rail has one, so the loop over the targets is a single push"
 relation = "stand-in"
+issue = 1017
 
 [[function]]
 address = 0x00142578
