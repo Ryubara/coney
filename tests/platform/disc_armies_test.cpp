@@ -8,10 +8,12 @@
 // variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <format>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -21,6 +23,7 @@
 
 #include "camera/cameras.h"
 #include "camera/rail_camera.h"
+#include "core/input_script.h"
 #include "debug/debug_session.h"
 #include "debug/menu_model.h"
 #include "debug/tunables.h"
@@ -28,11 +31,15 @@
 #include "gamemodes/armies_game_over_mode.h"
 #include "gamemodes/start_up_flow.h"
 #include "hud/armies_hud.h"
+#include "human/human.h"
+#include "human/locomotion.h"
+#include "human/player.h"
 #include "platform/game_session.h"
 #include "platform/game_session_debug.h"
 #include "platform/play_level_mode.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
+#include "support/live_pad.h"
 #include "warriors/game_state.h"
 
 namespace {
@@ -56,6 +63,15 @@ constexpr float kArrivalRadius = 0.5F;
 constexpr std::uint64_t kWalkLimit = std::uint64_t{40} * 30;
 constexpr std::uint64_t kTimerLimit = std::uint64_t{110} * 30;
 constexpr std::uint64_t kCountdownFrames = std::uint64_t{11} * 30;
+// The walk on along the rail (toward -x, level60's Rail1) to the first fight, where P1.CamLock01 locks the rail
+// camera; the stick at 60 %, a walk (the stage makes the player walk only, CfgPlayerCombatWalkOnly), and the frames
+// allowed for it.
+constexpr float kWalkOnX = -400.0F;
+constexpr int kStickPercent = 60;
+constexpr std::uint64_t kLockLimit = std::uint64_t{90} * 30;
+constexpr float kDegreesPerRadian = 57.29578F;
+// The two bosses level60_destroyers' main chunk registers (Lemmy and Virgil) and their pictures' sprite words.
+constexpr std::array<std::uint32_t, 2> kDestroyersBossPictures{1966095, 1966110};
 
 } // namespace
 
@@ -169,4 +185,75 @@ TEST_CASE("the disc's level60 with the pad idle: the walk out, the Armies HUD, t
     // The countdown, then the end phase: about 10 s more with nobody pressing Start.
     run.run(kCountdownFrames);
     CHECK(flow.armiesGameOver().menu().ending());
+}
+
+TEST_CASE("the disc's level60 played on: the pad taken and given back, the bosses' pictures and the rail camera "
+          "locked at the first fight",
+          "[disc][story][armies]") {
+    // Expected: armies.md#level60-start, confirmed (code): level60_destroyers' main chunk calls HUDSetANBossTexture for
+    // Lemmy and Virgil, F1.NoBrain and F1.Restore02 switch HuEnableController off and on round the walk out, and
+    // P1.CamLock01 calls CamLockRail(true) once the camera sees the first fight's marker.
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    coney::test::LivePad pad;
+    coney::test::DiscSession run(*wad, pad);
+    run.session().startAtLevel("level60", 1);
+    REQUIRE(run.runUntilPlay());
+    coney::StartUpFlow& flow = run.session().flow();
+    const auto padControlled = [&run] {
+        const coney::platform::PlayLevelMode* play = run.session().play();
+        return play != nullptr && play->player().padControlled();
+    };
+
+    // The intro and the walk out with the pad taken (F1.NoBrain), then the timer with it given back (F1.Restore02).
+    bool padTaken = false;
+    const bool timerRuns = run.runUntil(
+        [&] {
+            padTaken = padTaken || !padControlled();
+            return flow.state().player.stopWatch.running() && padControlled();
+        },
+        kWalkLimit);
+    const coney::hud::ArmiesHud& armies = flow.hud().armies();
+    std::array<std::size_t, 2> pictures{};
+    for (std::size_t player = 0; player < pictures.size(); ++player) {
+        for (const coney::hud::BossPicture& picture : armies.bossPictures(player)) {
+            if (std::ranges::find(kDestroyersBossPictures, picture.texture) != kDestroyersBossPictures.end()) {
+                ++pictures.at(player);
+            }
+        }
+    }
+    std::printf("  level60 on: pad taken %d, timer and pad back %d after %llu frames, boss pictures %zu and %zu\n",
+                padTaken ? 1 : 0, timerRuns ? 1 : 0, static_cast<unsigned long long>(run.frames()), pictures[0],
+                pictures[1]);
+    CHECK(padTaken);
+    REQUIRE(timerRuns);
+    CHECK(pictures == std::array<std::size_t, 2>{2, 2});
+
+    // On along the rail with the stick, through the camera as it faces, until the rail camera is held.
+    const coney::camera::Cameras* cameras = run.session().gameplay().cameras();
+    const coney::camera::RailCamera* rail = cameras != nullptr ? cameras->rail() : nullptr;
+    REQUIRE(rail != nullptr);
+    REQUIRE_FALSE(rail->held());
+    bool locked = false;
+    std::uint64_t walked = 0;
+    for (; walked < kLockLimit && !locked; ++walked) {
+        const coney::platform::PlayLevelMode* play = run.session().play();
+        REQUIRE(play != nullptr);
+        const coney::human::Human& player = play->player().human();
+        const coney::SteerView view{.x = player.position().x,
+                                    .y = player.position().y,
+                                    .cameraHeading =
+                                        coney::human::headingOf(player.record().cameraForward) * kDegreesPerRadian};
+        const std::array<int, 2> stick = coney::steerStick(view, kWalkOnX, kFlag02Y, kStickPercent);
+        pad.play(std::format("{} stick left {} {}\n", pad.nextFrame(), stick[0], stick[1]));
+        run.run(1);
+        locked = rail->held();
+    }
+    const coney::platform::PlayLevelMode* play = run.session().play();
+    REQUIRE(play != nullptr);
+    std::printf("  level60 on: rail camera locked %d after %llu frames of walking, player at x %.1f\n", locked ? 1 : 0,
+                static_cast<unsigned long long>(walked), static_cast<double>(play->player().human().position().x));
+    CHECK(locked);
 }

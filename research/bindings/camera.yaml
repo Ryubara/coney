@@ -460,8 +460,12 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    A player with no rail camera is skipped (Camera_GetPlayerRail returns none). Modes 1 and 2 ignore the lock;
-    mode 3 sets it itself at the rail's ends. Every reader and writer: [Camera: rail cameras](../../research/camera.md#rail).
+    A player with no rail camera is skipped (Camera_GetPlayerRail returns none). Any negative player reads as player
+    0; only -1 also sets the other players', and only when player 0 has a rail camera (0x0011d180). Modes 1 and 2
+    ignore the lock; mode 3 sets it itself at the rail's ends. Every reader and writer: [Camera: rail
+    cameras](../../research/camera.md#rail). In level60, `CamLockRail(1)`, `CamLockRail(1, -5)` and a later
+    `CamSetupRail` with `CameraMakeActive` left the hold at 1, and `CamLockRail(nil)` set it to 0: confirmed
+    (runtime), run r-20261122-level60-570-bindings.
   usage: {chunks: 15, calls: 118, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: CamModifyRail

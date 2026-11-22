@@ -5,9 +5,11 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <functional>
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -349,4 +351,25 @@ TEST_CASE("the credit bindings do nothing without a HUD", "[script][hud][credits
     harness.call("PreloadCredits", {});
     harness.call("CfgCredits", {Value(1.0), Value(std::string("Role")), Value(std::string("Name"))});
     harness.call("ShowCredits", {});
+}
+
+TEST_CASE("HUDSetANBossTexture(human, texture, on) registers a boss's picture on both Armies panels; on defaults to "
+          "true and nil removes it",
+          "[scripting][hud]") {
+    // Expected: hud-functions-lua.md#fn-hudlua, confirmed (code): lua_HUDSetANBossTexture (0x0036e8d8) reads the human
+    // and the texture as unsigned integers and `on` as a boolean defaulting to true; HUD_SetANBossTexture
+    // (0x001b5b80) hands them to both panels.
+    coney::hud::Hud hud;
+    Harness harness(&hud);
+    // level60_destroyers' Lemmy, as its main chunk registers him.
+    harness.call("HUDSetANBossTexture", {Value(40.0), Value(1966095.0)});
+    CHECK(hud.armies().bossTexture(0, 40) == std::optional<std::uint32_t>{1966095});
+    CHECK(hud.armies().bossTexture(1, 40) == std::optional<std::uint32_t>{1966095});
+    // A Lua 4 false is nil: the picture leaves.
+    harness.call("HUDSetANBossTexture", {Value(40.0), Value(1966095.0), Value()});
+    CHECK_FALSE(hud.armies().bossTexture(0, 40).has_value());
+    harness.call("HUDSetANBossTexture", {Value(41.0), Value(1966110.0), Value(1.0)});
+    CHECK(hud.armies().bossTexture(1, 41) == std::optional<std::uint32_t>{1966110});
+    harness.call("HUDSetANBossTexture", {Value(41.0), Value(1966110.0), Value(0.0)});
+    CHECK_FALSE(hud.armies().bossTexture(1, 41).has_value());
 }

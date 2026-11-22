@@ -285,6 +285,8 @@ void Cameras::modifyRail(std::uint32_t param, float value, float seconds) {
     }
 }
 
+void Cameras::lockRail(int /*player*/, bool /*on*/) {}
+
 void Cameras::createFixed(double handle, double target, const FixedCamera& camera) {
     // Stand-in (#692): the original resolves the target first and makes no camera for a handle that names nothing;
     // Coney's binding (makeCameraCreateFixed) tests only for NilHandle, so a stale handle still makes one.

@@ -2051,7 +2051,9 @@
   notes: >-
     Readers: [AI](../../research/ai/index.md), [Combat](../../research/combat/index.md) and the follow camera
     (camera.md), which only acts for a pad-controlled player. Armies of the Night uses it for players that have not
-    joined.
+    joined, and level60's `F1.NoBrain` and `F1.Restore02` take player 1's pad away and give it back round its
+    scripted moments. In level60 play the byte read 1, 0 after `HuEnableController(player, nil)` or with `enable` left
+    out, and 1 again after `HuEnableController(player, 1)`: confirmed (runtime), run r-20261122-level60-570-bindings.
   usage: {chunks: 7, calls: 30, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: HuCanSee

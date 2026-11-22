@@ -84,6 +84,8 @@ void RailCamera::setup(const RailSetup& setup) {
     m_held = false;
 }
 
+void RailCamera::setHeld(bool /*on*/) {}
+
 void RailCamera::addPoint(anim::Vec3 point) {
     m_points.at(std::min(m_count, kMaxPoints - 1)) = point;
     m_count = std::min(m_count + 1, kMaxPoints);

@@ -2205,6 +2205,14 @@ height set negative eases back to the present height before it switches off. Set
   frustum is rebuilt. Step 7 then runs `CamRail_CollideTwoTargets`: when a target is out of frame (`0x00140ad0`) it
   pushes the targets back into the frame (`0x00140d68`, [below](#rail-frame)); a held camera is not put back, it stays.
   The hold is written back as 1, so a `CamLockRail(true)` lock lasts until `CamLockRail(false)`. Confirmed (code).
+- **`CamLockRail(on, player)`** (`Camera_LockRail`, `0x0011d180`) writes `on` into the hold of player `player`'s rail
+  camera, a negative player read as player 0; only -1 (the default) then writes the other players' too, up to the
+  player count (game state `+0x224`), and only when player 0 has a rail camera. A player with none is skipped.
+  Confirmed (code) at `0x0011d180`. In level60's play the hold read 1 after `CamLockRail(1)` and after
+  `CamLockRail(1, -5)`, 0 after `CamLockRail(nil)`, and stayed 1 through `Rail1()` (`CamSetupRail` and its points)
+  and `CameraMakeActive`: confirmed (runtime), run r-20261122-level60-570-bindings. Coney: `Cameras::lockRail`
+  (`repo:src/camera/cameras.cpp`) on its one rail camera, player 0's; its `RailCamera::setup` no longer clears the
+  hold.
 - **Every writer**: the constructor (0, `0x0013b1fc`); `Camera_LockRail` (`0x0011d180`, the script's value);
   `CamRail_CopySettings` (`0x0013b498`, copies player 1's, so a joining player inherits his lock); the mode 0 ends
   test (1) and step 7 (the start value); mode 3 (1, below). `CamRail_Reset` (`0x0013b2b8`), `CamRail_Activate`

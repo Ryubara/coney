@@ -247,3 +247,26 @@ TEST_CASE("a chase's rail camera calls: set-up, points, lead and settings; fixed
     CHECK(h.cameras.third(third) != nullptr);
     CHECK(h.call("CameraCreateThird", {str("third"), Value(0.0)}).number() == 0.0);
 }
+
+TEST_CASE("CamLockRail(on, player) holds player 1's rail camera for -1 (the default), 0 or any negative player",
+          "[camera_bindings]") {
+    // Expected: camera.md#rail, confirmed (code): lua_CamLockRail (0x00366880) reads `on` as a boolean (nil false) and
+    // `player` truncated, -1 when left out; Camera_LockRail (0x0011d180) reads a negative player as player 0.
+    Harness h;
+    h.call("CamLockRail", {Value(1.0)}); // no rail camera yet: nothing
+    CHECK(h.call("CamSetupRail", {str("rail"), Value(5.0), Value(60.0), triple(0, 0, 1.5), Value(0.1), Value(90.0)})
+              .number()
+              .value_or(0.0) >= 1.0);
+    REQUIRE(h.cameras.rail() != nullptr);
+    CHECK_FALSE(h.cameras.rail()->held());
+    h.call("CamLockRail", {Value(1.0)});
+    CHECK(h.cameras.rail()->held());
+    h.call("CamLockRail", {Value()});
+    CHECK_FALSE(h.cameras.rail()->held());
+    h.call("CamLockRail", {Value(1.0), Value(0.0)});
+    CHECK(h.cameras.rail()->held());
+    h.call("CamLockRail", {Value(), Value(-2.0)}); // nil is false
+    CHECK_FALSE(h.cameras.rail()->held());
+    h.call("CamLockRail", {Value(1.0), Value(1.0)}); // player 2 has no rail camera
+    CHECK_FALSE(h.cameras.rail()->held());
+}

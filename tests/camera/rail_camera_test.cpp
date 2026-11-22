@@ -564,3 +564,58 @@ TEST_CASE("the cameras' manager keeps one rail camera, fixed cameras on the targ
     cameras.deleteCamera(40.0);
     CHECK(cameras.third(40.0) != nullptr);
 }
+
+TEST_CASE("CamLockRail's hold keeps the rail camera in mode 0 where it stands until it is let go, through a set-up and "
+          "an activation",
+          "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): Camera_LockRail (0x0011d180) writes the hold `+0x3e4`; a held mode
+    // 0 placement (0x0013d6b0) skips the rail and puts the camera back; CamRail_Reset (0x0013b2b8), Camera_SetupRail
+    // (0x0011cce8) and CamRail_Activate (0x0013b508) never write it.
+    RailCamera rail = straightRail();
+    rail.update(Vec3{5.0F, 4.0F, 0.0F}, false, kStep);
+    REQUIRE(rail.position().x == Approx(5.0F));
+    rail.setHeld(true);
+    CHECK(rail.held());
+    for (int i = 0; i < 10; ++i) {
+        rail.update(Vec3{12.0F, 4.0F, 0.0F}, false, kStep);
+    }
+    CHECK(rail.held());
+    CHECK(rail.position().x == Approx(5.0F));
+    // A set-up and an activation keep the lock.
+    RailSetup setup;
+    setup.offset = Vec3{0.0F, 0.0F, 1.5F};
+    rail.setup(setup);
+    rail.addPoint(Vec3{0.0F, 0.0F, 2.0F});
+    rail.addPoint(Vec3{20.0F, 0.0F, 2.0F});
+    rail.activate();
+    CHECK(rail.held());
+    // Let go, the camera follows its target along the rail again.
+    rail.setHeld(false);
+    for (int i = 0; i < 30; ++i) {
+        rail.update(Vec3{12.0F, 4.0F, 0.0F}, false, kStep);
+    }
+    CHECK_FALSE(rail.held());
+    CHECK(rail.position().x == Approx(12.0F).margin(0.05F));
+}
+
+TEST_CASE("CamLockRail's lock reaches player 1's rail camera for player 0 or any negative player, none for another",
+          "[camera]") {
+    // Expected: camera.md#rail, confirmed (code): Camera_LockRail (0x0011d180) reads a negative player as player 0
+    // and sets nothing for a player with no rail camera (Camera_GetPlayerRail).
+    Cameras cameras;
+    cameras.lockRail(-1, true); // no rail camera yet: nothing
+    CHECK(cameras.rail() == nullptr);
+    RailSetup setup;
+    setup.fieldOfView = 60.0F;
+    cameras.setupRail(20.0, 3.0, setup);
+    REQUIRE(cameras.rail() != nullptr);
+    CHECK_FALSE(cameras.rail()->held());
+    cameras.lockRail(-1, true);
+    CHECK(cameras.rail()->held());
+    cameras.lockRail(0, false);
+    CHECK_FALSE(cameras.rail()->held());
+    cameras.lockRail(-5, true);
+    CHECK(cameras.rail()->held());
+    cameras.lockRail(1, false); // player 2 has no rail camera in Coney
+    CHECK(cameras.rail()->held());
+}

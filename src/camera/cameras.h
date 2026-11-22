@@ -225,6 +225,11 @@ class Cameras {
     /// `CamModifyRail`: one of the rail camera's settings eased (RailCamera::modify()); nothing without one.
     /// @coney-only a forwarder to RailCamera::modify(), which ports 0x0011d228
     void modifyRail(std::uint32_t param, float value, float seconds);
+    /// `CamLockRail(on, player)`: player `player`'s rail camera held or let go (RailCamera::setHeld()); a negative
+    /// player is player 0, and -1 also sets every other player's. Coney has player 1's rail only (player 0), so
+    /// another player's finds no rail and does nothing, as the original's does for a player with none.
+    /// @orig 0x0011d180 Camera_LockRail (unknown)
+    void lockRail(int player, bool on);
     /// The rail camera, once made.
     [[nodiscard]] const RailCamera* rail() const { return m_rail ? &*m_rail : nullptr; }
 

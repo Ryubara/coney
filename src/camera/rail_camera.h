@@ -139,8 +139,13 @@ class RailCamera {
     [[nodiscard]] anim::Vec3 targetPoint() const { return m_target; }
     /// The rail segment it is on (its first point's index).
     [[nodiscard]] std::size_t segment() const { return m_segment; }
-    /// Whether it is held at an end of the rail (`+0x3e4`).
+    /// Whether it is held (`+0x3e4`): locked by `CamLockRail(true)`, or at an end of the rail in mode 3.
     [[nodiscard]] bool held() const { return m_held; }
+    /// `CamLockRail(on)` on this camera: the hold (`+0x3e4`) set to `on`. Held, mode 0 no longer moves along the rail
+    /// after the target and mode 3 no longer trails him; modes 1 and 2 never read it. Only `CamLockRail(false)` lets
+    /// it go: neither setup() nor activate() writes it (docs/research/camera.md#rail).
+    /// @coney-only the store of the byte Camera_LockRail (0x0011d180, Cameras::lockRail()) writes in place
+    void setHeld(bool on);
 
   private:
     // update()'s body: the easing and the placement by mode.

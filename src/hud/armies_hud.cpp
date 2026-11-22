@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hud/armies_hud.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <format>
+#include <optional>
 #include <string>
 
 #include "graphics/render_device.h"
@@ -71,6 +74,12 @@ void ArmiesHud::levelSetUp(Language language) {
     m_in = {};
     m_dropped = {};
     m_dropping = {};
+}
+
+void ArmiesHud::setBossTexture(std::uint32_t /*human*/, std::uint32_t /*texture*/, bool /*on*/) {}
+
+std::optional<std::uint32_t> ArmiesHud::bossTexture(std::size_t /*player*/, std::uint32_t /*human*/) const {
+    return std::nullopt;
 }
 
 void ArmiesHud::setJoinMessage(std::size_t player, bool on) {
