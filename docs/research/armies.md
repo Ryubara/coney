@@ -35,7 +35,8 @@ Inferred from the level table and the scripts unless a line says otherwise.
   flashbacks complete and the hub at checkpoint 11, the cabinet shows its title and a play hint, and triangle there
   loads `level60` at checkpoint 1, which plays; with `level11` left incomplete it shows the title and a generic hint to
   finish every flashback mission, naming none, and triangle loads nothing (confirmed (runtime), run
-  r-20261122-level95-armies-cabinet, which also made the Original clip at the cabinet). Nothing else leads there:
+  r-20261122-level95-armies-cabinet, which also made the Original clip at the cabinet, and r-20261122-level95-armies-trophy,
+  which has the stage playing). Nothing else leads there:
     - the main menu offers STORY, EXTRAS (only the trailer) and QUICK RUMBLE ([The screens](frontend.md#pm-screens));
     - the mission menu leaves levels 60-65 out (`MissionSelect_IsMissionListed`, `0x001bc100`, confirmed (code));
     - a cheat loads the next stage from within one (`CheatArmiesLoadLevel`, [Debug](debug.md)).
