@@ -144,8 +144,9 @@ drawn with the normal walk under it, until the style is in the snapshot (#1613).
 
 `--join ADDR --net-view` starts a guest that runs **no game of its own**: no front end, no scripts, no simulation. Its
 one mode is `ClientGame`, and what it shows is the host's game as the snapshots carry it. The guest's pad still plays the
-host's port 2 ([Player two](multiplayer.md#player-two)), and the client game sends nothing else, so the host's game reads
-what it reads with any guest.
+host's port 2 ([Player two](multiplayer.md#player-two)), and the client game sends nothing the host's game reads beyond
+that pad (it also says it is in the level and answers each movie as ended), so the host's game reads what it reads with
+any guest.
 
 | When | What the client game does |
 | --- | --- |
