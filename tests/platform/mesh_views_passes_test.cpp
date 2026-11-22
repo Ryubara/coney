@@ -161,10 +161,12 @@ TEST_CASE("the wireframe adds the wire in the colour of the model's kind over it
         CHECK(passes.shaded);
         CHECK(passes.flat.empty());
         REQUIRE(passes.wire.has_value());
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
         CHECK(*passes.wire == coney::debug::meshWireColour(meshKind, false));
     }
     const ViewPasses selected = views.passesFor(DrawKind::Humans, MeshId{7}, twoMaterials());
     REQUIRE(selected.wire.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): the REQUIRE above ends the test when empty
     CHECK(*selected.wire == coney::debug::meshWireColour(MeshKind::Human, true));
 
     // Only the selection's: the others get none.
