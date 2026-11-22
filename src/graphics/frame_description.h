@@ -520,7 +520,7 @@ class FrameDescription {
     std::vector<Rgba> m_viewColours;        // the mesh views' passes' colours
     std::vector<EffectVertex> m_effectVertices;
     std::vector<std::uint16_t> m_effectIndices;
-    std::optional<SceneCamera> m_camera;    // the camera setSceneCamera() last set this frame
+    std::optional<SceneCamera> m_camera; // the camera setSceneCamera() last set this frame
 };
 
 } // namespace coney::graphics
