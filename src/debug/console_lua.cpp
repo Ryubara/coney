@@ -34,7 +34,7 @@ std::expected<console::CommandId, Error> registerLuaCommand(console::Registry& r
         kLuaSpec, [&session](console::CommandContext& context) -> std::expected<void, std::string> {
             // The line runs as one scheduler entry of the state, its prints and values going to the terminal.
             const std::string line(context.args.get("line"));
-            const LuaConsole::PrintSink toTerminal = [&context](std::string out) { context.print(out); };
+            const LuaConsole::PrintSink toTerminal = [&context](const std::string& out) { context.print(out); };
             std::expected<std::vector<std::string>, Error> printed;
             session.runInState([&](script::LuaVm& vm) { printed = session.console().run(vm, line, toTerminal); });
             if (!printed) {
