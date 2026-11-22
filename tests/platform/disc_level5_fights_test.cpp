@@ -93,6 +93,17 @@ const coney::ai::Brain* brainNamed(const coney::platform::PlayLevelMode& play, d
     return nullptr;
 }
 
+// Player 1's brain in `play`, or null.
+const coney::ai::Brain* playerBrainOf(const coney::platform::PlayLevelMode& play) {
+    const coney::ai::Brains& brains = play.fighters().brains();
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        if (brains.at(i).type() == coney::ai::BrainType::Player) {
+            return &brains.at(i);
+        }
+    }
+    return nullptr;
+}
+
 // The pad until `lastFrame`: from kFightFrom on, every kAimEvery frames a `steer` line toward the point (0, 0), which
 // the fight's steer source places on the nearest foe standing, and square tapped every kTapEvery frames.
 std::string fightScript(std::uint64_t lastFrame) {
@@ -221,17 +232,25 @@ FightRun playFight(const coney::io::Wad& wad, int checkpoint, std::vector<std::s
         }
         return found;
     };
-    // The nearest foe still standing, where player 1's feet are: a preferred one within kPreferRange before any other.
+    // The foe to fight, where player 1's feet are: one holding an active-attacker place on him first (the man swinging
+    // at him, as a player fights; waiting ones keep their band 4-4.75 m off,
+    // docs/research/ai-fights.md#fight-reposition), else the nearest foe still standing, a preferred one within
+    // kPreferRange before any other.
     const auto nearestFoe = [&play, &foeBrains]() -> std::optional<coney::anim::Vec3> {
         const coney::platform::PlayLevelMode* level = play();
         if (level == nullptr) {
             return std::nullopt;
         }
         const coney::anim::Vec3 feet = level->playerFeet();
-        const auto nearestOf = [&feet](const std::vector<const coney::ai::Brain*>& brains) {
+        const coney::ai::Brain* self = playerBrainOf(*level);
+        const auto nearestOf = [&feet, self](const std::vector<const coney::ai::Brain*>& brains,
+                                             bool attackersOnly = false) {
             std::optional<coney::anim::Vec3> nearest;
             for (const coney::ai::Brain* brain : brains) {
                 if (brain->human().health().depleted()) {
+                    continue;
+                }
+                if (attackersOnly && (self == nullptr || !self->fightBook().places.holds(brain))) {
                     continue;
                 }
                 const coney::anim::Vec3 at = brain->human().position();
@@ -242,13 +261,16 @@ FightRun playFight(const coney::io::Wad& wad, int checkpoint, std::vector<std::s
             }
             return nearest;
         };
+        if (const std::optional<coney::anim::Vec3> attacker = nearestOf(foeBrains(*level), true)) {
+            return attacker;
+        }
         if (const std::optional<coney::anim::Vec3> preferred = nearestOf(foeBrains(*level, true));
             preferred && std::hypot(preferred->x - feet.x, preferred->y - feet.y) < kPreferRange) {
             return preferred;
         }
         return nearestOf(foeBrains(*level));
     };
-    // Whether the nearest standing foe is within kFightRange of player 1.
+    // Whether the foe to fight is within kFightRange of player 1.
     const auto inReach = [&play, &nearestFoe] {
         const std::optional<coney::anim::Vec3> nearest = nearestFoe();
         if (!nearest || play() == nullptr) {

@@ -15,6 +15,8 @@ constexpr float kAimAhead = 2.0F;
 
 } // namespace
 
+bool fightsWithoutStance(const Brain& /*brain*/) { return false; }
+
 ActionStatus MoveToHumanAction::start(Brain& brain) {
     m_untilMs = brain.nowMs() + m_limitMs;
     return ActionStatus::Running;

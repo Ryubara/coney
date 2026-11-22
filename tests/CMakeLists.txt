@@ -537,6 +537,7 @@ target_sources(coney_tests PRIVATE
     ai/gangs_test.cpp
     ai/give_way_test.cpp
     ai/move_action_test.cpp
+    ai/move_band_test.cpp
     ai/perception_test.cpp
     ai/hiding_test.cpp
     ai/enemy_scan_test.cpp

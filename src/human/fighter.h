@@ -663,6 +663,9 @@ class Fighter {
     /// is taken forgets it.
     /// @orig 0x002674c0 Human_OnHealthOut (unknown)
     [[nodiscard]] bool takeHealthOut() { return std::exchange(m_healthOutBegan, false); }
+    /// A defeating hit taken while a paired move holds its death back.
+    /// @coney-only the death held back, which the original leaves in its pending health and its state word
+    [[nodiscard]] bool deathPending() const { return m_deathPending.has_value(); }
     /// The player's reactions, stun and ground timers.
     [[nodiscard]] const Victim& victim() const { return m_victim; }
     /// The game time, ms, until which a hit keeps an AI busy (record `+0x108`, set to the time + the power class's

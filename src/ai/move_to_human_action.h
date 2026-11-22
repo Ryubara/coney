@@ -16,12 +16,17 @@ namespace coney::ai {
 /// close by; the boundary is not traced).
 inline constexpr float kRunDistance = 4.0F;
 
+/// Stub until the band move is ported: no class fights with no stance yet.
+[[nodiscard]] bool fightsWithoutStance(const Brain& brain);
+
 /// The move to the target.
 /// @orig 0x002fcf50 MoveToHumanAction_Init (unknown)
 class MoveToHumanAction final : public Action {
   public:
     /// A move of at most `limitMs` that ends within `stopDistance` of the target.
     MoveToHumanAction(std::uint32_t limitMs, float stopDistance) : m_limitMs(limitMs), m_stopDistance(stopDistance) {}
+    /// Stub until the band move is ported: a plain move to `farM`.
+    MoveToHumanAction(std::uint32_t limitMs, float /*nearM*/, float farM) : m_limitMs(limitMs), m_stopDistance(farM) {}
 
     /// Sets the time limit.
     [[nodiscard]] ActionStatus start(Brain& brain) override;
@@ -32,6 +37,14 @@ class MoveToHumanAction final : public Action {
     [[nodiscard]] ActionStatus update(Brain& brain) override;
     /// Stops the move; never refused.
     [[nodiscard]] bool abort(Brain& brain) override;
+
+    /// Stubs until the band move is ported.
+    [[nodiscard]] std::uint32_t limitMs() const { return m_limitMs; }
+    [[nodiscard]] bool band() const { return false; }
+    [[nodiscard]] float bandNear() const { return 0.0F; }
+    [[nodiscard]] float bandFar() const { return m_stopDistance; }
+    [[nodiscard]] int sideSteps() const { return 0; }
+    [[nodiscard]] int radialSteps() const { return 0; }
 
   private:
     std::uint32_t m_limitMs;

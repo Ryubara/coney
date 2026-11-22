@@ -86,6 +86,11 @@ constexpr int kFightFrames = 300;
 constexpr int kTauntFrames = 1198;
 // The taunt's line, `cheer2`.
 constexpr int kTauntLine = 0x11;
+// The fewest taunts every AI sequence gives over those updates. The original's three said 11 (10 in a recording that
+// started 6 updates later), the two waiters 5 each from the band 4-4.75 m out; Coney's eight sequences give 2-13 with
+// the band-keeping move, and gave 0-8 while its waiters stood where their last attack left them, inside the taunt's
+// 2.75 m (docs/research/ai-fights.md#runtime-taunts).
+constexpr int kLeastTaunts = 2;
 // How near every Warrior comes to the player: 0.75 × his far melee range (5 m), the distance within which the run-in
 // may stop for a busy target (EngageEnemy step 9, `0x002afa48`, docs/research/ai-fights.md#engage-enemy). Beyond it the
 // run-in stops only for a target this Warrior may not attack, and step 5 has just made the player attackable.
@@ -421,6 +426,9 @@ void playSparringFight(std::uint32_t seed) {
     CHECK(engaged == 3);
     CHECK(closed == 3);
     CHECK(attacked > 0);
+    // The waiting Warriors taunt from the band round him.
+    // Expected: ai-fights.md#runtime-taunts, confirmed (runtime)
+    CHECK(taunts >= kLeastTaunts);
     CHECK(scripts.scripts().errors() == 0);
 }
 

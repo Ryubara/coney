@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/fight_goal.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -16,6 +17,7 @@
 #include "ai/gangs.h"
 #include "ai/idle_goals.h"
 #include "ai/melee_goal.h"
+#include "ai/move_to_human_action.h"
 #include "combat/commands.h"
 #include "combat/reactions.h"
 #include "human/human.h"
@@ -341,4 +343,42 @@ TEST_CASE("a stunned fighter stays stunned through 355 and 356 and fights on the
     // The reaction goal ends the update after, and the fight goal acts in that update.
     CHECK(goalEnded == cleared + 1);
     CHECK(actedAtGoalEnd);
+}
+
+TEST_CASE("an attacker waiting his turn on a man not fighting him backs off to the 4-4.75 m band", "[ai]") {
+    // Expected: ai-fights.md#fight-reposition, confirmed (code)
+    Scene scene;
+    const FightSettings square = onlyKind(1);
+    Brain& front = scene.add({40.0F, 40.9F, 0.0F}, 180.0F, BrainType::Gang, square);
+    Brain& back = scene.add({40.0F, 39.1F, 0.0F}, 0.0F, BrainType::Gang, square);
+    for (Brain* brain : {&front, &back}) {
+        brain->setTarget(&scene.playerBrain());
+        REQUIRE(brain->pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
+    }
+    // The man has no target, so the first in his slot list is close in; the other waits in the wide band: inner
+    // (near + far) / 2, outer 0.95 × far.
+    Brain* waiter = nullptr;
+    const coney::ai::MoveToHumanAction* band = nullptr;
+    for (int k = 0; k < 120 && band == nullptr; ++k) {
+        scene.run(1);
+        for (Brain* brain : {&front, &back}) {
+            const auto* move = dynamic_cast<const coney::ai::MoveToHumanAction*>(brain->frontAction());
+            if (move != nullptr && move->band() && move->bandNear() > 2.0F) {
+                waiter = brain;
+                band = move;
+            }
+        }
+    }
+    REQUIRE(band != nullptr);
+    REQUIRE(waiter != nullptr);
+    CHECK(band->bandNear() == (waiter->meleeNear() + waiter->meleeFar()) / 2.0F);
+    CHECK(band->bandFar() == 0.95F * waiter->meleeFar());
+    CHECK(band->limitMs() == 2000);
+    // He walks back out of the taunt's 2.75 m (a quarter of (1.1 x far) squared) within a few band moves.
+    float farthest = 0.0F;
+    for (int k = 0; k < 90; ++k) {
+        scene.run(1);
+        farthest = std::max(farthest, waiter->distanceTo(scene.playerBrain()));
+    }
+    CHECK(farthest > 2.75F);
 }

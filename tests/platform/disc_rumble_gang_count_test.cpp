@@ -35,8 +35,10 @@
 
 namespace {
 
-// Updates of play looked at: about a minute and a half of the match after the menus.
-constexpr int kUpdates = 2700;
+// Updates of play looked at: about two minutes of the match after the menus, long enough for an Orphan to be knocked
+// out (with the waiters keeping the band round their man, docs/research/ai-fights.md#fight-reposition, the first falls
+// at about game frame 3,930; 2,700 updates ended at about 3,700).
+constexpr int kUpdates = 3500;
 
 } // namespace
 

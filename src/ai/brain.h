@@ -634,6 +634,9 @@ class Brain {
     /// The move aim's radius (`+0x118`).
     [[nodiscard]] float moveAimRadius() const { return m_moveAimRadius; }
     void setMoveAim(anim::Vec3 point, float radius);
+    /// Stubs until the fight stance is ported: a flag nothing reads.
+    [[nodiscard]] bool fightStance() const { return m_fightStance; }
+    void setFightStance(bool on) { m_fightStance = on; }
     /// The scene's brains (every brain, this one included), which the sector record counts round this one; Brains
     /// gives it (null for none: the record stays empty).
     void setPeers(const std::vector<std::unique_ptr<Brain>>* peers) { m_peers = peers; }
@@ -826,6 +829,7 @@ class Brain {
     int m_unreportedDamage = 0;
     std::uint64_t m_seenBusyUntilMs = 0; // seenBusyUntilMs()
     int m_turnBoost = 0;                 // +0x0b
+    bool m_fightStance = false;          // stub
     BrainType m_type;
     bool m_enabled = true;
     MoveFailure m_moveFailure = MoveFailure::None; // +0x284
