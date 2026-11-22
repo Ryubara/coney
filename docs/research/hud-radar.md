@@ -232,7 +232,10 @@ otherwise `(158, 24 + int(h × 1.1571), 24)` with `h` the health % (`h × 0.0133
 over `(134, 26, 0)`, below that `(134, 26, 0)` over black, each band filling over its range (× 3.33, or × 2.5 for the
 last); the value is the band's fill, not the health. Not seen at runtime.
 
-**Shape and placement** (confirmed (code); the numbers confirmed (runtime) from the queued records):
+### The rings' shape, colours and draw {#ring-colours-and-draw}
+
+**Shape and placement** (confirmed (code); the numbers were also read from the queued records at runtime, with no run
+record kept):
 
 - Both rings are fans of 64 triangles from the centre, radius 0.6 × `s` in the ring's own units, then scaled by **0.6
   (inner) and 0.9 (outer)**: 0.36 × `s` and 0.54 × `s` metres to the rim. The visible band is the texture's.
@@ -248,17 +251,15 @@ last); the value is the band's fill, not the health. Not seen at runtime.
   orientation quaternion turned on +y (`0x00335f48`). Segment `k` (0-64) is at start + `k` × 2π / 64, at
   (r cos, r sin) on the game's x and y. So the arcs **turn with the camera, not the human**: on screen the fill starts
   at the front right of the feet (about half past four on a clock face) and grows clockwise, through the front, then
-  the left; the same place after the camera turned half round (confirmed (runtime)).
+  the left; the same place after the camera turned half round (inferred from a watch at runtime of which no run
+  record was kept; the angle and step are confirmed (code)).
 - **Texture**: `part_page1` (resource instance 9, or 10 in the second view, the blob shadow's sheet), centred on the
   middle of rectangle 1; each rim vertex takes u = centre u + 0.062 cos, v = centre v − 0.124 sin (whole-sheet units),
   the centre vertex the middle. Runtime: the middle is (0.6973, 0.3789).
-
-### The arcs' colours and the draw {#ring-colours-and-draw}
-
 - **Colours per vertex**: the centre has colour A; each rim vertex k has C when 64 − k ≤ floor(64 × (100 − capacity) /
   100) (and that is above 0), else B when 64 − k ≤ floor(64 × (100 − value) / 100) (and that is above 0, the test at
   `0x0017b758`, so a full ring has no B vertex), else A (or black when blinking) (confirmed (code)). Coney lacks the
-  second guard and draws a full ring's last segment in B ([#1630](issue:1630)).
+  second guard and draws a full ring's last segment in B.
   Drawn with **flat shading**, so each segment takes one vertex's colour and the arcs end on hard edges.
 - **Drawing** (`GroundRing_DrawQueued`, `0x0017b2e0`, from the viewport pass `0x00156408` after the world and the
   sprite batches, so after the blob shadows, [Boot](boot.md#one-frame)): the queue is drawn and emptied once a frame,
