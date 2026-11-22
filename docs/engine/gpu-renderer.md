@@ -53,9 +53,10 @@ present.
 ## librw for data only {#librw}
 
 The GPU backend opens librw exactly as the NULL backend does, so texture dictionaries, streams and PS2 rasters load and
-the game runs; `drawsPixels()` is false, so nothing converts textures for librw's GL3 device, and what still draws
-through librw (the effects) is not drawn (item 20 of [Order](renderer.md#order)). The humans come through the
-description and are skinned by the GPU renderer ([Skinning](#skinning)).
+the game runs; `drawsPixels()` is false, so nothing converts textures for librw's GL3 device, and the effects,
+which the frame description holds as effect passes ([renderer](renderer.md#frame-description)), are not drawn (item 20
+of [Order](renderer.md#order)): the GPU renderer reads none of them yet. The humans come through the description and
+are skinned by the GPU renderer ([Skinning](#skinning)).
 `drawsScene()` is true, as on GL3 (`drawsSceneOn()`), so play loads the world objects and parked cars, their textures
 held as read, for the scene passes ([below](#scene)). What draws the 2D layers runs on either windowed backend; the
 movie player picks its screen with `makeMovieScreen()` by backend.
@@ -177,10 +178,11 @@ as before. The GL3 renderer draws the parts and clears the depth at once, throug
 draw stream is the one it was (the `keeps` hash of a Coney-made scene with a level in
 `tests/platform/world_draw_stream_test.cpp`).
 
-**Not yet:** the effects drawn through librw (the water, the see-through panes, the throw arc, particles, blob shadows,
-rings and coronas), item 20. A frame on `--renderer gpu` misses them; `--scene-only` leaves them out on both renderers,
-and draws the background, so that the frames can be compared on the part both draw ([How pictures are
-compared](renderer.md#comparing)).
+**Not yet:** the effects (the water, the see-through panes, the throw arc, particles, blob shadows, rings and coronas),
+item 20 ([#1212](issue:1212)): the frame description holds them as effect passes (`EffectPass`: vertices in the world,
+a texture, the states each draw sets and puts back), which `GpuRenderer` skips. A frame on `--renderer gpu` misses
+them; `--scene-only` leaves them out on both renderers, and draws the background, so that the frames can be compared
+on the part both draw ([How pictures are compared](renderer.md#comparing)).
 
 **The World page** ([debug menu guide](../guides/debug-menu.md#world)): its fog reaches the GPU renderer as it does GL3,
 through the camera's fog start and the draws' fog colour, and each part hides there as on GL3. The play mode's own

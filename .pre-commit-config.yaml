@@ -99,6 +99,31 @@ repos:
         entry: '^[^/"]*\b(throw\s*;|throw\s+[\w:]+\s*[({]|catch\s*\((?!const std::system_error&\)))'
         files: ^src/.*\.(h|cpp)$
         exclude: ^src/platform/perf_probes\.cpp$
+      # Only the GL3 renderer calls librw's drawing: a render state, an `rw::gl3::` type or function, or an Im2D or Im3D
+      # draw, through the draw layer (`draw::`, platform/draw_calls.h) or librw itself, so a second renderer (the SDL3
+      # GPU renderer) has one place to match and the frame description (docs/engine/renderer.md#frame-description) is the
+      # one way the game says what a frame draws. A code line (no `/` or `"` before the call, so comments and strings
+      # pass). The first group of the exclusion is the GL3 renderer and what it is made of: the draw layer, the draw of
+      # a lit atomic, the GL3 skinning and texture-level pipelines, the raster conversion and the engine that hosts the
+      # renderer. The second is what still sets render states beside the description, each to leave when its code moves
+      # onto it: the states the world, objects, cars and humans set for their described draws (items 7 to 9, which kept
+      # the states in librw for the draw-stream hashes: #1622, from `parked_cars` on) and the debug tools' own viewers
+      # (#1623, from `character_viewer_mode` to `studio_level_renderer`). Nothing joins that group: a new draw is an
+      # effect draw or a scene draw of the description, and python/tests/test_librw_drawing_check.py fails an entry
+      # whose file no longer calls, so the group only shrinks.
+      - id: no-librw-drawing-outside-gl3
+        name: only the GL3 renderer calls librw's drawing
+        language: pygrep
+        entry: '^[^/"]*\b(rw::gl3::|draw::(setRenderState|setRenderStatePtr|getRenderState|im2d\w*|im3d\w*)\(|rw::(Set|Get)RenderState\w*\(|rw::im[23]d::)'
+        files: ^src/.*\.(h|cpp)$
+        exclude: >-
+          (?x)^src/platform/(
+          character_skin\.cpp|draw_calls\.cpp|gl3_renderer\.cpp|lit_atomic\.cpp|render_engine\.cpp|
+          texture_dictionary\.cpp|texture_lod\.cpp|
+          character_viewer_mode\.cpp|mesh_views\.cpp|reference_renderer\.cpp|sandbox_renderer\.cpp|
+          studio_level_renderer\.cpp|
+          parked_cars\.cpp|placed_objects\.cpp|play_level_mode\.cpp|play_lighting\.cpp|world_renderer\.cpp
+          )$
       # The commit message's trailers (`commits.trailers` in .github/conventions.yml): the only trailer is the AI
       # co-author line, no other e-mail address, and when an agent commits through Claude Code (whose hooks write an
       # identity file, coney_tools.identity) the line names that agent's model. Checked before the commit exists, for

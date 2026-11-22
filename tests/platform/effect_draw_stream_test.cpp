@@ -241,8 +241,8 @@ DrawStream drawLinesScene(RenderEngine& engine) {
 } // namespace
 
 TEST_CASE("the particle scene's draw stream has its expected hash", "[platform][draw-stream][effects]") {
-    // Expected: recorded from this scene before the effects moved onto the frame description
-    // (docs/engine/renderer.md#frame-description).
+    // Expected: ../engine/renderer.md#comparing, Coney's own recording: taken from this scene before the effects
+    // moved onto the frame description (#frame-description), which keeps it.
     auto engine = startHeadless();
     const EmptyWad archive;
     const DrawStream stream = drawParticleScene(*engine, *archive.wad);
@@ -251,8 +251,8 @@ TEST_CASE("the particle scene's draw stream has its expected hash", "[platform][
 }
 
 TEST_CASE("the sprite scene's draw stream has its expected hash", "[platform][draw-stream][effects]") {
-    // Expected: recorded from this scene before the effects moved onto the frame description
-    // (docs/engine/renderer.md#frame-description).
+    // Expected: ../engine/renderer.md#comparing, Coney's own recording: taken from this scene before the effects
+    // moved onto the frame description (#frame-description), which keeps it.
     auto engine = startHeadless();
     const DrawStream stream = drawSpriteScene(*engine);
     CHECK(stream.counts().im3dDraws == 4);
@@ -260,8 +260,8 @@ TEST_CASE("the sprite scene's draw stream has its expected hash", "[platform][dr
 }
 
 TEST_CASE("the water scene's draw stream has its expected hash", "[platform][draw-stream][effects]") {
-    // Expected: recorded from this scene before the effects moved onto the frame description
-    // (docs/engine/renderer.md#frame-description).
+    // Expected: ../engine/renderer.md#comparing, Coney's own recording: taken from this scene before the effects
+    // moved onto the frame description (#frame-description), which keeps it.
     auto engine = startHeadless();
     const EmptyWad archive;
     const DrawStream stream = drawWaterScene(*engine, *archive.wad);
@@ -270,8 +270,8 @@ TEST_CASE("the water scene's draw stream has its expected hash", "[platform][dra
 }
 
 TEST_CASE("the scene lines scene's draw stream has its expected hash", "[platform][draw-stream][effects]") {
-    // Expected: recorded from this scene before the effects moved onto the frame description
-    // (docs/engine/renderer.md#frame-description).
+    // Expected: ../engine/renderer.md#comparing, Coney's own recording: taken from this scene before the effects
+    // moved onto the frame description (#frame-description), which keeps it.
     auto engine = startHeadless();
     const DrawStream stream = drawLinesScene(*engine);
     CHECK(stream.counts().im3dDraws == 1);

@@ -23,6 +23,7 @@ Add each page to this one; the rules for writing a page, and how they are checke
 | [Mesh and texture formats](asset-formats.md) | Coney's own mesh and texture data, the store that holds them by id, and their conversion from librw (`src/graphics/`, `src/platform/asset_convert.h`) |
 | [Renderer](renderer.md) | How Coney draws, and the design for its frame rates, backend, lighting, anti-aliasing, presets and performance (`src/platform/`, `src/graphics/`) |
 | [Renderer performance](renderer-performance.md) | The renderer design's benchmark, the baseline measured with it and the frame-time budgets (`src/platform/`, `python/src/coney_tools/perf_*.py`) |
+| [Renderer pictures](renderer-pictures.md) | How the renderer design compares draw streams and pictures: the draw-stream hash, the scenes, the disc frames, the gates and the measured tolerances (`tests/pictures/`, `python/src/coney_tools/picture_*.py`) |
 | [Anti-aliasing, scaling and HDR](renderer-scaling.md) | The renderer design's anti-aliasing, render scale, upscaler tiers and HDR output |
 | [Simulation and drawing threads](render-threads.md) | The renderer design's plan to run the simulation on a thread of its own and draw from a snapshot each step publishes (`src/core/`, `src/platform/`) |
 | [Crowd rules](crowd-rules.md) | What Coney does past the original's 60 humans: the scan tokens, the lists of humans, and the limits kept or planned (`src/core/crowd_limits.*`) |
