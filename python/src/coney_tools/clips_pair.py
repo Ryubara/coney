@@ -70,6 +70,7 @@ SCENARIO_KEYS = frozenset(
         "ai_seed",
         "skip_movies",
         "record_debug_draw",
+        "complete_levels",
     }
 )
 SCENARIO_REQUIRED = ("description", "level", "input", "seconds")
@@ -100,6 +101,8 @@ class PairRun:
     #: Keep the Debug draw page's switches the run sets in the clips (Coney's `--record-debug-draw`: a clip drops them
     #: otherwise), for a scenario that shows the mesh views.
     record_debug_draw: bool = False
+    #: The levels the played level's story save has complete (Coney's `--complete-levels`); none: a fresh save.
+    complete_levels: tuple[int, ...] = ()
 
 
 def _scenario_value(data: dict[str, Any], key: str, kind: type, path: Path) -> Any:
@@ -108,6 +111,18 @@ def _scenario_value(data: dict[str, Any], key: str, kind: type, path: Path) -> A
     if not isinstance(value, kind) or (kind is int and isinstance(value, bool)):
         raise ClipError(f"{path}: {key} must be {'a whole number' if kind is int else kind.__name__}")
     return value
+
+
+def _level_list(data: dict[str, Any], path: Path) -> tuple[int, ...]:
+    """The scenario's `complete_levels`: a non-empty list of level numbers from 1 to 255, else ClipError."""
+    value = data["complete_levels"]
+    if (
+        not isinstance(value, list)
+        or not value
+        or not all(isinstance(level, int) and not isinstance(level, bool) and 1 <= level <= 255 for level in value)
+    ):
+        raise ClipError(f"{path}: complete_levels must be a list of level numbers from 1 to 255")
+    return tuple(value)
 
 
 def load_scenario(path: Path, root: Path) -> PairRun:
@@ -144,6 +159,7 @@ def load_scenario(path: Path, root: Path) -> PairRun:
             _scenario_value(data, "record_debug_draw", bool, path) if "record_debug_draw" in data else False
         ),
         description=_scenario_value(data, "description", str, path),
+        complete_levels=_level_list(data, path) if "complete_levels" in data else (),
     )
 
 
@@ -191,6 +207,8 @@ def coney_arguments(executable: Path, disc: str, run: PairRun, out: Path, render
         args += ["--ai-seed", str(run.ai_seed)]
     if run.record_debug_draw:
         args.append("--record-debug-draw")
+    if run.complete_levels:
+        args += ["--complete-levels", ",".join(str(level) for level in run.complete_levels)]
     return [
         *args,
         "--input-script",

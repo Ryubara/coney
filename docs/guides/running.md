@@ -28,7 +28,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
       [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]] [--give ITEM,COUNT]... [--trace FILE]
                    [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]] [--freeze-world]
-                   [--scene-only]]
+                   [--scene-only] [--complete-levels N,N...]]
       [--trace-humans FILE]
       [--render-size WxH]
       [--sandbox [NAME]] [--test-card NAME] [--assets DIR]
