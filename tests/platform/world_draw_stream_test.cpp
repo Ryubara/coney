@@ -30,6 +30,8 @@
 #include "graphics/texture_data.h"
 #include "platform/draw_stream.h"
 #include "platform/level_file.h"
+#include "platform/mesh_view_hook.h"
+#include "platform/perf_probes.h"
 #include "platform/render_engine.h"
 #include "platform/scene_assets.h"
 #include "platform/texture_dictionary.h"
@@ -37,6 +39,7 @@
 #include "platform/world_renderer.h"
 #include "platform/world_set.h"
 #include "support/fixtures.h"
+#include "support/mesh_view_hide_hook.h"
 #include "support/optional_value.h"
 #include "support/rw_fixtures.h"
 #include "support/world_fixtures.h"
@@ -174,6 +177,42 @@ DrawStream drawWorldScene(const WorldScene& scene) {
     }
     REQUIRE(stream.has_value());
     return coney::test::got(stream);
+}
+
+// The scene's sectors drawn on `engine`, recorded as the play mode records a frame with `hook` offered to the lighting
+// rig and the renderer (`passes`: the draws go through the rig for the hook's own passes, as on GL3), inside the
+// scenery's draw scope; how many sector draws the frame description holds then.
+std::size_t sectorDraws(RenderEngine& engine, bool headless, coney::platform::MeshViewHook* hook, bool passes) {
+    const SceneDisc disc;
+    coney::world::SectorBudget budget(10'000);
+    const std::vector<std::string> names{"scene"};
+    auto set = WorldSet::load(*disc.wad, names, budget, false, engine.sceneAssets());
+    REQUIRE(set.has_value());
+    coney::world::StreamedWorld& world = *(*set)->worlds()[0];
+    for (const std::uint32_t part : {1U, 2U}) {
+        auto requested = coney::world::requestPart(world, 0, part, budget, **set, 100);
+        REQUIRE(requested.has_value());
+        REQUIRE(*requested);
+    }
+    {
+        WorldRenderer renderer;
+        renderer.recordHeadless(headless);
+        renderer.lighting().setMeshViews(hook, passes);
+        engine.hideKindsOf(hook);
+        {
+            const coney::platform::DrawKindScope kind(coney::platform::DrawKind::Scenery);
+            renderer.render(engine, **set, nullptr, sceneView(), 1000.0F, 2000);
+        }
+        engine.hideKindsOf(nullptr);
+        renderer.lighting().setMeshViews(nullptr);
+    }
+    std::size_t draws = 0;
+    for (const auto& pass : engine.frame().passes()) {
+        if (const auto* found = std::get_if<ScenePass>(&pass); found != nullptr) {
+            draws += found->draws.size();
+        }
+    }
+    return draws;
 }
 
 } // namespace
@@ -561,6 +600,34 @@ std::unique_ptr<WorldSet> loadedScene(RenderEngine& engine, const SceneDisc& dis
     return std::move(*set);
 }
 
+// The scene's sectors and the level's background (the sky, the clouds, the skyline, the glows) drawn on `engine` as the
+// play mode draws them: with `hook` offered to the lighting rig and the renderer (`passes`: as sectorDraws()), inside
+// the scenery's draw scope; how many draws the frame description holds then.
+std::size_t levelDraws(RenderEngine& engine, bool headless, coney::platform::MeshViewHook* hook, bool passes) {
+    const SceneDisc disc;
+    coney::world::SectorBudget budget(10'000);
+    std::unique_ptr<WorldSet> set = loadedScene(engine, disc, budget);
+    std::unique_ptr<coney::world::LevelObject> level = backgroundLevel();
+    coney::platform::holdLevelMeshes(*level, engine.sceneAssets());
+    {
+        WorldRenderer renderer;
+        renderer.recordHeadless(headless);
+        renderer.lighting().setMeshViews(hook, passes);
+        engine.hideKindsOf(hook);
+        {
+            const coney::platform::DrawKindScope kind(coney::platform::DrawKind::Scenery);
+            renderer.render(engine, *set, level.get(), sceneView(), 1000.0F, 2000);
+        }
+        engine.hideKindsOf(nullptr);
+        renderer.lighting().setMeshViews(nullptr);
+    }
+    std::size_t draws = 0;
+    for (const ScenePass* pass : scenePassesOf(engine.frame())) {
+        draws += pass->draws.size();
+    }
+    return draws;
+}
+
 } // namespace
 
 TEST_CASE("the level's background is recorded before the world, through its own cameras",
@@ -706,4 +773,153 @@ TEST_CASE("on the GPU backend the level's background is recorded before the worl
     CHECK(scenes[1]->draws.size() == 1);
     CHECK(scenes[2]->clearDepth);
     CHECK(scenes[2]->draws.size() == 3);
+}
+
+TEST_CASE("hiding the scenery leaves the sectors out of the frame description, and no other kind does",
+          "[platform][world][frame-description][world-page]") {
+    // Expected: docs/engine/gpu-renderer.md#scene: the World page's Streamed world switch hides the sectors
+    // alone: the renderer leaves out a recorded draw of a kind the hook hides (RenderEngine::hideKindsOf()), and a hook
+    // that hides another kind, or none, leaves them as recorded. Coney's own debug tooling (the original has no page);
+    // the NULL backend records as the GPU backend does, from the same call.
+    using coney::platform::DrawKind;
+    using coney::test::HideHook;
+    auto engine = startHeadless();
+    CHECK(sectorDraws(*engine, true, nullptr, true) == 2);
+    HideHook scenery({DrawKind::Scenery});
+    CHECK(sectorDraws(*engine, true, &scenery, false) == 0);
+    HideHook humans({DrawKind::Humans});
+    CHECK(sectorDraws(*engine, true, &humans, false) == 2);
+    HideHook objects({DrawKind::Objects});
+    CHECK(sectorDraws(*engine, true, &objects, false) == 2);
+    HideHook both({DrawKind::Humans, DrawKind::Objects});
+    CHECK(sectorDraws(*engine, true, &both, false) == 2);
+}
+
+TEST_CASE("a mesh view's passes do not take the sectors out of a renderer that cannot draw them",
+          "[platform][world][frame-description][world-page]") {
+    // Expected: docs/engine/gpu-renderer.md#scene: mesh passes are GL3's (librw draws them); a renderer that
+    // records draws keeps recording the shaded sector while a view is on (the play mode says so with passes off, see
+    // drawsMeshViewPassesOn()), instead of sending it through librw, which draws nothing there.
+    using coney::test::HideHook;
+    auto engine = startHeadless();
+    HideHook viewing({}, true);
+    CHECK(sectorDraws(*engine, true, &viewing, false) == 2);
+    // The passes asked for (GL3): the sectors go through the rig for the hook, so nothing is recorded.
+    CHECK(sectorDraws(*engine, true, &viewing, true) == 0);
+}
+
+TEST_CASE("on GL3 a hook that only hides a kind sends the sectors through the rig, recording none",
+          "[platform][world][frame-description][world-page]") {
+    // Expected: docs/guides/debug-menu.md#world: GL3 (the play mode leaves the passes on) keeps the path it had before
+    // the part switches reached the GPU renderer: with any hook set the sectors draw through the lighting rig for
+    // the hook, which hides its kind there, so the frame description holds none of them whichever kind is hidden and
+    // however few passes the hook has; the same frame with no hook records both (the unchanged GL3 draw stream).
+    using coney::platform::DrawKind;
+    using coney::test::HideHook;
+    auto engine = startHeadless();
+    CHECK(sectorDraws(*engine, true, nullptr, true) == 2);
+    HideHook scenery({DrawKind::Scenery});
+    CHECK(sectorDraws(*engine, true, &scenery, true) == 0);
+    HideHook humans({DrawKind::Humans});
+    CHECK(sectorDraws(*engine, true, &humans, true) == 0);
+    HideHook nothing;
+    CHECK(sectorDraws(*engine, true, &nothing, true) == 0);
+}
+
+TEST_CASE("only the GPU backend leaves the mesh views' passes to GL3", "[platform][world-page]") {
+    // Expected: docs/engine/gpu-renderer.md#scene: GL3 draws the passes through librw, the NULL backend keeps
+    // asking the hook (the tests see it wired), the GPU renderer has no librw camera to draw them with.
+    CHECK(coney::platform::drawsMeshViewPassesOn(RenderBackend::OpenGl));
+    CHECK(coney::platform::drawsMeshViewPassesOn(RenderBackend::Null));
+    CHECK_FALSE(coney::platform::drawsMeshViewPassesOn(RenderBackend::Gpu));
+}
+
+TEST_CASE("on the GPU backend hiding the scenery leaves out the sectors and a mesh view leaves them in",
+          "[platform][world][frame-description][world-page][window]") {
+    // Expected: docs/engine/gpu-renderer.md#scene: #1545: on --renderer gpu the Streamed world switch hides
+    // the sectors, and no other switch and no mesh view does. Needs SDL's video and a GPU device, and skips where
+    // there is none.
+    using coney::platform::DrawKind;
+    using coney::test::HideHook;
+    coney::platform::WindowDesc desc;
+    desc.activate = false;
+    desc.hidden = true;
+    desc.width = 320;
+    desc.height = 224;
+    auto started = RenderEngine::start(RenderBackend::Gpu, desc);
+    if (!started || (*started)->backend() != RenderBackend::Gpu) {
+        SKIP("no display or no GPU device here");
+    }
+    RenderEngine& engine = **started;
+    const bool passes = coney::platform::drawsMeshViewPassesOn(engine.backend());
+    CHECK(sectorDraws(engine, false, nullptr, passes) == 2);
+    HideHook scenery({DrawKind::Scenery});
+    CHECK(sectorDraws(engine, false, &scenery, passes) == 0);
+    HideHook others({DrawKind::Humans, DrawKind::Objects});
+    CHECK(sectorDraws(engine, false, &others, passes) == 2);
+    HideHook viewing({}, true);
+    CHECK(sectorDraws(engine, false, &viewing, passes) == 2);
+}
+
+TEST_CASE("the renderer hides the kinds a hook hides, and no hook hides none", "[platform][world-page]") {
+    // Expected: docs/engine/gpu-renderer.md#scene: RenderEngine::hideKindsOf() reads the World page's scenery, humans
+    // and objects from the mesh views' hook (MeshViewHook::hides()) and forgets them for no hook; the effects and the
+    // other kinds draw no recorded 3D model and are never hidden here.
+    using coney::platform::DrawKind;
+    using coney::test::HideHook;
+    auto engine = startHeadless();
+    for (const DrawKind kind : {DrawKind::Scenery, DrawKind::Humans, DrawKind::Objects}) {
+        CHECK_FALSE(engine->kindHidden(kind));
+    }
+    HideHook humans({DrawKind::Humans, DrawKind::Effects});
+    engine->hideKindsOf(&humans);
+    CHECK_FALSE(engine->kindHidden(DrawKind::Scenery));
+    CHECK(engine->kindHidden(DrawKind::Humans));
+    CHECK_FALSE(engine->kindHidden(DrawKind::Objects));
+    CHECK_FALSE(engine->kindHidden(DrawKind::Effects));
+    HideHook all({DrawKind::Scenery, DrawKind::Humans, DrawKind::Objects});
+    engine->hideKindsOf(&all);
+    for (const DrawKind kind : {DrawKind::Scenery, DrawKind::Humans, DrawKind::Objects}) {
+        CHECK(engine->kindHidden(kind));
+    }
+    engine->hideKindsOf(nullptr);
+    for (const DrawKind kind : {DrawKind::Scenery, DrawKind::Humans, DrawKind::Objects}) {
+        CHECK_FALSE(engine->kindHidden(kind));
+    }
+}
+
+TEST_CASE("hiding the scenery hides the level's background with the sectors, and no other kind does",
+          "[platform][world][frame-description][world-page]") {
+    // Expected: docs/guides/debug-menu.md#world: the World page's Streamed world switch is the scenery kind, which the
+    // background (the sky box, the clouds, the skyline and the light glows) is drawn in with the sectors, so off it
+    // hides all six draws of the level scene (docs/engine/gpu-renderer.md#scene); the Humans and Objects switches
+    // leave them. Coney's own debug tooling.
+    using coney::platform::DrawKind;
+    using coney::test::HideHook;
+    auto engine = startHeadless();
+    CHECK(levelDraws(*engine, true, nullptr, true) == 6);
+    CHECK(levelDraws(*engine, true, nullptr, false) == 6);
+    HideHook scenery({DrawKind::Scenery});
+    CHECK(levelDraws(*engine, true, &scenery, false) == 0);
+    HideHook others({DrawKind::Humans, DrawKind::Objects});
+    CHECK(levelDraws(*engine, true, &others, false) == 6);
+    HideHook viewing({}, true);
+    CHECK(levelDraws(*engine, true, &viewing, false) == 6);
+}
+
+TEST_CASE("on GL3 a hook that only hides a kind sends the background through the rig too",
+          "[platform][world][frame-description][world-page]") {
+    // Expected: docs/guides/debug-menu.md#world: GL3 keeps the path it had before the part switches reached the GPU
+    // renderer: with any hook set the background's models, like the sectors', go through the lighting rig for the
+    // hook (SceneLighting::meshViewsOn()), so the frame description holds none of the level scene's six draws, a part
+    // hidden or not.
+    using coney::platform::DrawKind;
+    using coney::test::HideHook;
+    auto engine = startHeadless();
+    HideHook scenery({DrawKind::Scenery});
+    CHECK(levelDraws(*engine, true, &scenery, true) == 0);
+    HideHook humans({DrawKind::Humans});
+    CHECK(levelDraws(*engine, true, &humans, true) == 0);
+    HideHook nothing;
+    CHECK(levelDraws(*engine, true, &nothing, true) == 0);
 }

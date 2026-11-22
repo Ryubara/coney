@@ -636,6 +636,10 @@ void RenderEngine::drawDescribed() { m_gl3.drawNew(m_frame, Gl3Renderer::Target{
 void RenderEngine::drawScene(const graphics::Draw3d& draw, std::span<const graphics::SceneLight> lights,
                              std::span<const graphics::Transform3d> bones, const rw::Texture* dualTexture) {
     CONEY_ASSERT(m_inFrame);
+    // The World page hides a kind of model: its recorded draws are left out here, whatever draws them (hideKindsOf()).
+    if (kindHidden(currentDrawKind())) {
+        return;
+    }
     std::span<const graphics::TextureId> dualTextures = m_assets.materialTextures(draw.dualLayer);
     // A texture given for the dual layer this frame: its id (invalid when the scene assets do not hold it) for each
     // of the layer's materials.

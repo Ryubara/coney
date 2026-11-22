@@ -1,0 +1,10 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): the level99 street with the World page's parts
+# switched from the pad menu. The input script (tools/clips/level99-world-parts.txt) hides the streamed world at frame
+# 228, so the street shows its objects alone, then at 372 shows it again and hides the objects instead, so it shows the
+# scenery alone. For a change to the World page's parts, the mesh views' hook or what the renderer records for a kind
+# the page hides; recorded on `--renderer gpu`, where a hidden kind used to take the others with it.
+description = "level99 street: the World page hides the scenery, then the objects"
+level = "level99"
+input = "tools/clips/level99-world-parts.txt"
+start_frame = 240
+seconds = 8

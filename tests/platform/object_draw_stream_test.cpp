@@ -32,6 +32,7 @@
 #include "graphics/render_device.h"
 #include "graphics/texture_data.h"
 #include "platform/draw_stream.h"
+#include "platform/mesh_view_hook.h"
 #include "platform/object_draw.h"
 #include "platform/parked_cars.h"
 #include "platform/perf_probes.h"
@@ -41,6 +42,7 @@
 #include "platform/scene_lighting.h"
 #include "platform/world_renderer.h"
 #include "platform/world_set.h"
+#include "support/mesh_view_hide_hook.h"
 #include "support/object_model_fixtures.h"
 #include "support/optional_value.h"
 #include "world/sector_budget.h"
@@ -104,6 +106,9 @@ struct ObjectScene {
     bool painted = true;
     float carX = 6.0F;
     int pointLights = 0;
+    // The mesh views' hook the lighting rig and the renderer are offered while the scene draws, with the passes off as
+    // the play mode leaves them on a renderer that records its draws (null: no hook).
+    coney::platform::MeshViewHook* hook = nullptr;
 };
 
 // The camera the scene is drawn through: in front of the objects, looking along RenderWare's z.
@@ -173,6 +178,8 @@ DrawStream drawObjectScene(const ObjectScene& scene, const SceneInspection& insp
         if (scene.pointLights > 0) {
             renderer.setLighting(&lighting);
         }
+        renderer.lighting().setMeshViews(scene.hook, false);
+        engine->hideKindsOf(scene.hook);
         const auto render = [&engine, &renderer](const ObjectDraw& draw) {
             coney::platform::drawObject(*engine, renderer.lighting(), draw);
         };
@@ -191,6 +198,8 @@ DrawStream drawObjectScene(const ObjectScene& scene, const SceneInspection& insp
         if (inspect) {
             inspect(*engine, cars, renderer.lighting());
         }
+        engine->hideKindsOf(nullptr);
+        renderer.lighting().setMeshViews(nullptr);
     }
     REQUIRE(stream.has_value());
     return coney::test::got(stream);
@@ -363,4 +372,35 @@ TEST_CASE("a car far from the camera keeps the nearest cap of lights", "[platfor
                 }
             }
         });
+}
+
+TEST_CASE("hiding the objects leaves the objects and cars out of the frame description, and no other kind does",
+          "[platform][objects][frame-description][world-page]") {
+    // Expected: docs/engine/gpu-renderer.md#scene: the World page's Objects switch hides the world objects,
+    // doors and cars (the car's glass too) and nothing else: the renderer leaves out a recorded draw of a kind the hook
+    // hides (RenderEngine::hideKindsOf()), and a hook that hides another kind, or only views, leaves the 28 draws (two
+    // crates and the car's 26 parts) as they are recorded. Coney's own debug tooling.
+    using coney::test::HideHook;
+    const auto recorded = [](coney::platform::MeshViewHook* hook) {
+        std::size_t draws = 0;
+        drawObjectScene(ObjectScene{.hook = hook}, [&](const RenderEngine& engine, const coney::world_objects::Cars&,
+                                                       const coney::platform::SceneLighting&) {
+            for (const auto& pass : engine.frame().passes()) {
+                if (const auto* found = std::get_if<ScenePass>(&pass); found != nullptr) {
+                    draws += found->draws.size();
+                }
+            }
+        });
+        return draws;
+    };
+    CHECK(recorded(nullptr) == 28);
+    HideHook objects({DrawKind::Objects});
+    CHECK(recorded(&objects) == 0);
+    HideHook scenery({DrawKind::Scenery});
+    CHECK(recorded(&scenery) == 28);
+    HideHook humans({DrawKind::Humans});
+    CHECK(recorded(&humans) == 28);
+    // A mesh view on (the passes are GL3's) hides nothing here either.
+    HideHook viewing({}, true);
+    CHECK(recorded(&viewing) == 28);
 }

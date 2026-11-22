@@ -82,10 +82,14 @@ class SceneLighting {
     /// the same lights (PlayLighting::drawHumanPasses()). Counts the atomic as drawn and adds the lighting frame's row
     /// of its selection, as drawHumanAtomic() does; noteHiddenHuman() says `hidden` for the row first.
     [[nodiscard]] std::vector<graphics::SceneLight> humanLights(rw::Atomic* atomic, bool hidden);
-    /// Whether the debug tools' mesh views are set (setMeshViews()): they decide per atomic what is drawn, so the world
-    /// renderer then draws its sectors through drawWorldAtomic().
+    /// Whether the debug tools' mesh views decide per atomic what is drawn through this rig (setMeshViews()): a hook is
+    /// set and the play mode left its passes on (a renderer that draws them: GL3). The world renderer, the objects
+    /// and the humans then draw through the rig instead of recording into the frame description, whatever the hook
+    /// does (hide a kind, draw a pass), as they always have with a hook set. A renderer that records its draws (the
+    /// GPU renderer) says its passes off, and a kind the hook hides is left out of the recording instead
+    /// (RenderEngine::hideKindsOf()).
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
-    [[nodiscard]] bool meshViewsOn() const { return m_meshViews != nullptr; }
+    [[nodiscard]] bool meshViewsOn() const { return m_meshViews != nullptr && m_meshPasses; }
     /// Draws the background's atomics with the world's ambient and directional lights only.
     void drawBackgroundAtomic(rw::Atomic* atomic);
     /// The lights a background atomic is drawn with (the world's ambient and directional lights, no point lights), by
@@ -152,9 +156,13 @@ class SceneLighting {
     [[nodiscard]] bool drawsBlobShadows() const { return m_switches == nullptr || m_switches->layers.blobShadows; }
 
     /// Hands every atomic drawn from now on to the debug tools' mesh views (`hook`, which must outlive its use), or to
-    /// nobody (null: each is drawn as it always is, the hook not consulted).
+    /// nobody (null: each is drawn as it always is, the hook not consulted). `passes` says the renderer draws the
+    /// hook's passes (drawsMeshViewPassesOn()); off, the hook's passes are not drawn through the rig.
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
-    void setMeshViews(MeshViewHook* hook) { m_meshViews = hook; }
+    void setMeshViews(MeshViewHook* hook, bool passes = true) {
+        m_meshViews = hook;
+        m_meshPasses = passes;
+    }
     /// Marks `atomic` as a second layer of the model drawn around it (a human's blood pass), which the mesh views draw
     /// only with the shaded draw; null: none. The caller marks it, so the original's draw functions stay as they are.
     /// @coney-only the debug tools' mesh views (docs/guides/debug-menu.md#mesh-views); the original has none
@@ -213,6 +221,7 @@ class SceneLighting {
     world::CameraPose m_pose;                               // this frame's camera
     graphics::LightingFrame m_frame;                        // this frame's lighting frame (beginFrame())
     MeshViewHook* m_meshViews = nullptr;                    // setMeshViews(); null: none
+    bool m_meshPasses = true;                               // setMeshViews(): the hook's passes are drawn
     const rw::Atomic* m_meshLayer = nullptr;                // setMeshLayer()
     std::uint64_t m_atomicsDrawn = 0;                       // atomicsDrawn()
     const graphics::LightingSwitches* m_switches = nullptr; // setSwitches(); null: none

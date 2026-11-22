@@ -45,6 +45,10 @@ class MeshViews final : public MeshViewHook {
 
     /// Whether any view is on or a kind of model hidden, and if so the selection's atomics in `mode` for this frame.
     bool beginFrame(const PlayLevelMode& mode) override;
+    /// Whether a wireframe or a mesh view other than shaded is on (debug::meshPassesOn()).
+    [[nodiscard]] bool hasPasses() const override;
+    /// Whether the World page's parts hide the models of `kind` (debug::meshHidden()).
+    [[nodiscard]] bool hides(DrawKind kind) const override;
     void draw(rw::Atomic* atomic, DrawKind kind, bool layer, const std::function<void()>& shaded) override;
 
     /// The materials the flat (filled) passes have drawn so far this frame: each is a draw, and the wire passes add

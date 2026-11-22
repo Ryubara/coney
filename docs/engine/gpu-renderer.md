@@ -183,12 +183,27 @@ and draws the background, so that the frames can be compared on the part both dr
 compared](renderer.md#comparing)).
 
 **The World page** ([debug menu guide](../guides/debug-menu.md#world)): its fog reaches the GPU renderer as it does GL3,
-through the camera's fog start and the draws' fog colour, and the parts the play mode's passes skip before a draw is
-recorded (the glass) or hands to the world renderer (the Background) hide there too; the effects it hides are not drawn
-there yet anyway (above). The Scenery, Humans and Objects parts do not ([#1545](issue:1545)): they hide through the mesh
-views' hook, and while it is set (any of the three hidden, or any mesh view on) the sectors, the objects and the humans
-are drawn through librw instead of being recorded (`SceneLighting::meshViewsOn()`), so on `--renderer gpu` hiding one of
-them leaves the others out too. The mesh views themselves are GL3's.
+through the camera's fog start and the draws' fog colour, and each part hides there as on GL3. The play mode's own
+passes skip the glass, the humans and the objects before a draw is recorded, and hand the Background to the world
+renderer; the effects it hides are not drawn there yet anyway (above). The streamed world's sectors are drawn by the
+ported `WorldManager_Render`, so the Scenery part reaches them through the mesh views' hook: the hook says which kinds
+it hides (`MeshViewHook::hides()`) apart from whether it draws passes of its own (`MeshViewHook::hasPasses()`). The play
+mode hands the hidden kinds to the renderer for the frame (`RenderEngine::hideKindsOf()`), and
+`RenderEngine::drawScene()` leaves out every recorded draw made in the scope of a hidden kind (`DrawKindScope`), so on
+this renderer the sectors, the objects and the humans are still recorded and hiding one kind never takes another with
+it. The level's background (the sky, the clouds, the skyline and the light glows, recorded as above) is drawn in the
+same scenery scope as the sectors, so *Streamed world* off hides it too, as the guide says and as on GL3, while the
+*Background* part hides it alone; *Humans* and *Objects* off leave it. GL3 is as it was: with a hook set (a part hidden
+or a view on) the sectors, the background, the objects and the humans go through the lighting rig for it, which hides
+the kind there (`SceneLighting::meshViewsOn()` is true whenever a hook is set and the play mode left its passes on), and
+nothing of them is recorded; the GPU renderer says its passes off, so no hook sends a model through the rig there. The
+tests record the frame description for each kind (`tests/platform/world_draw_stream_test.cpp`,
+`object_draw_stream_test.cpp`, `human_draw_stream_test.cpp`; the sectors also on a real GPU device).
+
+**The mesh views** (the wireframe and the flat views of the Debug draw page) are GL3's: each is a draw of the model's
+own librw atomic through the lighting rig, which draws nothing on the GPU backend. The play mode therefore leaves their
+passes off there (`drawsMeshViewPassesOn()`, false for `RenderBackend::Gpu`): the models are recorded and drawn shaded
+as without a view, and the page's help says the wireframe and the mesh views are not drawn on `--renderer gpu` yet.
 
 ## Skinning {#skinning}
 

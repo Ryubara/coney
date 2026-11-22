@@ -1,0 +1,48 @@
+# The World page's Parts switched from the pad menu in the level99 street, for the `level99-world-parts` clips pair
+# scenario (tools/clips/level99-world-parts.toml), played from the level's first frame of play. Cross skips the intro
+# scene at frame 70. L3 + R3 opens the debug menu (root: Favourites, Time, ... World is the 18th item); World, then
+# Parts, then the first switch, Streamed world, off (frame 228). The menu is closed (circle three times) and the
+# street shows with no scenery; at 360 it is opened again (the root's cursor is on World and each page keeps its
+# cursor), the scenery switched on and the third switch, Objects, off. The clips start at frame 240, so the first menu
+# session is before them and the second is in them: the menu is open from about 4 s to 5.4 s of the clip.
+70 tap cross
+150 tap l3 r3
+156 tap down
+159 tap down
+162 tap down
+165 tap down
+168 tap down
+171 tap down
+174 tap down
+177 tap down
+180 tap down
+183 tap down
+186 tap down
+189 tap down
+192 tap down
+195 tap down
+198 tap down
+201 tap down
+204 tap down
+207 tap cross
+210 tap down
+213 tap down
+216 tap down
+219 tap down
+222 tap down
+225 tap cross
+228 tap cross
+231 tap circle
+234 tap circle
+237 tap circle
+360 tap l3 r3
+366 tap cross
+369 tap cross
+372 tap cross
+375 tap down
+378 tap down
+381 tap down
+384 tap cross
+387 tap circle
+390 tap circle
+393 tap circle
