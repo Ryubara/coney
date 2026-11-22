@@ -672,9 +672,9 @@ TEST_CASE("an AI human who falls out of the world is knocked out once faded: his
     Brain& mate = level.add({46.0F, 40.0F, 0.0F});
     gangs.addMember(gang, faller);
     gangs.addMember(gang, mate);
-    // The Brawl's per-member death handler, and a gang handler beside it.
+    // The Brawl's per-member death handler, and a gang handler beside it (the level's recording native for both).
     messages.set(faller.handle(), coney::ai::kGangMessageDown, "RageFull");
-    gangs.setMessageHandler(gang, coney::ai::kGangMessageDown, "P1.GangDied");
+    gangs.setMessageHandler(gang, coney::ai::kGangMessageDown, "RageFull");
     // The play mode's part (ai::AiHumans::destroy()): the knock-out, then the scripts forget him; the owner takes him
     // out of the step after it.
     std::vector<coney::human::Human*> destroyed;
@@ -699,13 +699,11 @@ TEST_CASE("an AI human who falls out of the world is knocked out once faded: his
 
     level.scene.run(1);
     REQUIRE(destroyed.size() == 1);
-    // His own handler: message 18 about him.
-    REQUIRE(level.rageCalls.size() == 1);
+    // His own handler first: message 18 about him; then his gang's: him, no foe, and the one member still standing (he
+    // no longer counts).
+    REQUIRE(level.rageCalls.size() == 2);
     CHECK(level.rageCalls[0].at(0) == handle);
-    // His gang's: him, no foe, and the one member still standing (he no longer counts).
-    REQUIRE(level.scene.services.calls.size() == 1);
-    CHECK(level.scene.services.calls[0].function == "P1.GangDied");
-    CHECK(level.scene.services.calls[0].args == std::vector<double>{handle, 0.0, 1.0});
+    CHECK(level.rageCalls[1] == std::vector<double>{handle, 0.0, 1.0});
     // Gone for the scripts.
     CHECK(level.call("HuIsAlive", {Value(handle)}).isNil());
     CHECK(level.scripted->brain(handle) == nullptr);
