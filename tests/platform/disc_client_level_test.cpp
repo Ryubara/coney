@@ -20,6 +20,8 @@
 #include "fileio/disc.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
+#include "hud/hud.h"
+#include "hud/hud_owner.h"
 #include "net/client_world.h"
 #include "net/net_id.h"
 #include "net/snapshot.h"
@@ -69,8 +71,13 @@ TEST_CASE("the client game's scene of level99 draws a guest's humans posed with 
     REQUIRE(engine.has_value());
     coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
     std::vector<std::string> log;
-    auto scene = coney::platform::ClientLevelScene::load(**engine, *wad, {.level = "level99", .checkpoint = 1}, budget,
-                                                         [&log](std::string_view line) { log.emplace_back(line); });
+    // The HUD the client game would step, with the first player's panel up.
+    coney::hud::HudOwner hudOwner;
+    hudOwner.hud().attachPlayer(0, 0);
+    hudOwner.hud().showAll();
+    auto scene =
+        coney::platform::ClientLevelScene::load(**engine, *wad, {.level = "level99", .checkpoint = 1}, budget, hudOwner,
+                                                [&log](std::string_view line) { log.emplace_back(line); });
     REQUIRE(scene.has_value());
     coney::platform::ClientLevelScene& drawn = **scene;
 
@@ -97,6 +104,7 @@ TEST_CASE("the client game's scene of level99 draws a guest's humans posed with 
     const auto clientStep = [&] {
         world.receive(receiver);
         world.step();
+        hudOwner.hud().update(coney::hud::HudFrame{.nowMs = 100 * (index + 1)});
         drawn.step(world, coney::FrameTime{.index = index++, .seconds = 1.0 / 30.0});
         drawn.render(world, coney::RenderTime{});
     };
@@ -108,6 +116,8 @@ TEST_CASE("the client game's scene of level99 draws a guest's humans posed with 
     CHECK(drawn.humansPosed() == 2);
     CHECK(drawn.layersMissing() == 0);
     CHECK(drawn.meshes() == 2);
+    // The HUD's newest step was queued for drawing over the frame.
+    CHECK(drawn.hudSpritesQueued() > 0);
     // The camera stands behind player 1 (heading 0 faces +y: 4 m back along y, 2 m up), in RenderWare's axes.
     const coney::world::Vec3 feet = coney::platform::toRenderWare(world.humans().begin()->second.position);
     const coney::world::Vec3 eye = drawn.lastView().pose.position;

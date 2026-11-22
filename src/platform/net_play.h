@@ -95,6 +95,9 @@ class NetPlay final {
     /// Joined: each player slot's HUD the newest decoded snapshot holds, by slot: what this game draws each player's
     /// panel from (net::playerHudState() of the words). Empty when not joined, and when hosting (a host draws its own).
     [[nodiscard]] net::SnapshotHuds arrivedHuds() const;
+    /// Joined: this guest's own player slot in the host's game (net::NetClient::playerSlot(): 1 for the first remote
+    /// player, the host being 0), whose HUD this game draws; 0 when not joined.
+    [[nodiscard]] std::uint8_t playerSlot() const;
     /// Joining or joined: the session's snapshots as decoded so far (net::NetClient::snapshots()), what the client
     /// game's world takes (net::ClientWorld::receive()); null when not joining or joined.
     [[nodiscard]] const net::SnapshotReceiver* clientSnapshots() const;

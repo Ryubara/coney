@@ -74,7 +74,7 @@ loadDrawnCharacter(const RenderEngine& engine, const io::Wad& wad, std::string_v
 
 std::expected<std::unique_ptr<ClientLevelScene>, Error>
 ClientLevelScene::load(RenderEngine& engine, const io::Wad& wad, const LevelAt& level, world::SectorBudget& budget,
-                       std::function<void(std::string_view)> print) {
+                       hud::HudOwner& hud, std::function<void(std::string_view)> print) {
     auto scenery = LevelPlayScenery::load(engine, wad, level.level, budget, print);
     if (!scenery) {
         return std::unexpected(std::move(scenery.error()));
@@ -84,8 +84,11 @@ ClientLevelScene::load(RenderEngine& engine, const io::Wad& wad, const LevelAt& 
     if (!character) {
         return std::unexpected(std::move(character.error()));
     }
-    std::unique_ptr<ClientLevelScene> scene(new ClientLevelScene(
-        engine, wad, std::move(*scenery), std::move(character->first), std::move(character->second), std::move(print)));
+    // The HUD's sheets, which the client game's HUD is drawn with.
+    std::unique_ptr<HudLayer> hudLayer = HudLayer::create(hud, wad, engine.drawsPixels(), print);
+    std::unique_ptr<ClientLevelScene> scene(
+        new ClientLevelScene(engine, wad, std::move(*scenery), std::move(character->first),
+                             std::move(character->second), std::move(hudLayer), std::move(print)));
     scene->m_scenery->preload(scene->startView().pose.position);
     return scene;
 }
@@ -93,10 +96,10 @@ ClientLevelScene::load(RenderEngine& engine, const io::Wad& wad, const LevelAt& 
 // The scene over what load() loaded: the character's clips and the stand-in lights made here.
 ClientLevelScene::ClientLevelScene(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<LevelPlayScenery> scenery,
                                    std::unique_ptr<human::PlayerCharacter> character,
-                                   std::vector<TextureDictionary> dictionaries,
+                                   std::vector<TextureDictionary> dictionaries, std::unique_ptr<HudLayer> hudLayer,
                                    std::function<void(std::string_view)> print)
     : m_engine(engine), m_scenery(std::move(scenery)), m_character(std::move(character)),
-      m_dictionaries(std::move(dictionaries)), m_print(std::move(print)) {
+      m_dictionaries(std::move(dictionaries)), m_hudLayer(std::move(hudLayer)), m_print(std::move(print)) {
     m_clips = std::make_unique<net::CharacterClips>(m_character->anims());
     // The play mode's stand-in lights: the snapshots carry none of the level scripts' lighting.
     m_lights = std::make_unique<PlayLighting>(engine, wad, nullptr, m_scenery->lightDirection(), m_print);
@@ -146,6 +149,8 @@ void ClientLevelScene::step(const net::ClientWorld& world, const FrameTime& fram
     m_lights->step(after, m_scenery->collision(), feet,
                    static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
     m_scenery->findVisible(after);
+    // The sprites of the HUD's newest step, which the client game stepped before the scene.
+    m_hudLayer->render();
 }
 
 void ClientLevelScene::render(const net::ClientWorld& world, const RenderTime& time) {
@@ -197,6 +202,8 @@ void ClientLevelScene::render(const net::ClientWorld& world, const RenderTime& t
         const DrawKindScope kind(DrawKind::Effects);
         m_lights->drawShadows();
     };
+    // The HUD over the frame, before its present (the play mode's overlay order).
+    m_engine.addFrameOverlay([this](RenderEngine& engine) { m_hudLayer->draw(engine); });
     const DrawKindScope kind(DrawKind::Scenery);
     m_scenery->draw(m_engine, m_lastView, millisecondsOf(time.gameTicks), drawObjects, afterWorlds);
 }
