@@ -363,6 +363,8 @@ void SceneLighting::drawGroundRings(RenderEngine& engine, std::span<const hud::G
                     {shade, shade, shade, marker.alpha});
         }
     }
+    // **Coney's stand-in** for the blend and Z write the world pass leaves the original's fans: drawQuads' alpha blend
+    // with no Z write.
     drawQuads(engine, vertices, texture);
 }
 
