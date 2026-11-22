@@ -8,10 +8,10 @@
 // is why only the run without one failed. These tests run on a hidden window, as the other window tests do, and skip
 // without a display and OpenGL 3.3 (the software pictures job of CI has both).
 //
-// Expected values: a frame of white 2 x 2 quads on black has exactly four pixels for each quad (the logical frame is
-// the window's own 640 x 448, one pixel to one logical pixel, and every quad sits on whole pixels); librw's limits are
-// the two numbers above, from the sources the build pins (cmake/deps.cmake); OpenGL's error codes are the
-// specification's (GL_INVALID_VALUE 0x0501, GL_INVALID_ENUM 0x0500).
+// Expected values: ../engine/renderer.md#today holds librw's limits, from the sources the build pins
+// (cmake/deps.cmake); a frame of white 2 x 2 quads on black has exactly four pixels for each quad (the logical frame is
+// the window's own 640 x 448, one pixel to one logical pixel, and every quad sits on whole pixels); OpenGL's error
+// codes are the specification's (GL_INVALID_VALUE 0x0501, GL_INVALID_ENUM 0x0500).
 
 #include <array>
 #include <cstddef>
@@ -73,8 +73,9 @@ std::vector<LogicalQuad> whiteSpecks(std::size_t count) {
 
 TEST_CASE("a screenshot of a frame of thousands of flat quads, as a run without a disc draws a menu, is read back",
           "[render][window][screenshot]") {
-    // Expected: 6,000 quads is more than the 1,666 whose indices librw's 2D index buffer holds (10,000 / 6) and the
-    // 2,500 whose vertices its vertex buffer holds (10,000 / 4), and fewer than the 7,168 the grid has room for.
+    // Expected: ../engine/renderer.md#today, Coney's own limit of librw's buffers: 6,000 quads is more than the 1,666
+    // whose indices librw's 2D index buffer holds (10,000 / 6) and the 2,500 whose vertices its vertex buffer holds
+    // (10,000 / 4), and fewer than the 7,168 the grid has room for.
     constexpr std::size_t kQuads = 6000;
     auto engine = startWindow();
     const coney::test::TempDir folder;
@@ -97,8 +98,9 @@ TEST_CASE("a screenshot of a frame of thousands of flat quads, as a run without 
 }
 
 TEST_CASE("a read of the frame that OpenGL refuses names the error", "[render][window][screenshot]") {
-    // Expected: a negative width is GL_INVALID_VALUE (0x0501) in glReadPixels' specification, the error the issue's
-    // fix list names as the likeliest; the message must say which one it was.
+    // Expected: ../engine/renderer.md#today, Coney's own message: a negative width is GL_INVALID_VALUE (0x0501) in
+    // glReadPixels' specification, the error the issue's fix list names as the likeliest; the message must say which
+    // one it was.
     auto engine = startWindow();
     engine->beginFrame(Rgba{0, 0, 0, 255});
     std::array<std::uint8_t, 16> rgba{};
@@ -110,8 +112,9 @@ TEST_CASE("a read of the frame that OpenGL refuses names the error", "[render][w
 
 TEST_CASE("an error an earlier OpenGL call left is not blamed on the read of the frame",
           "[render][window][screenshot]") {
-    // Expected: GL_INVALID_ENUM (0x0500) is what glEnable(0) raises; glReadPixels itself is valid here, so the read
-    // succeeds, and the leftover error is taken off OpenGL's list so the next check does not find it again.
+    // Expected: ../engine/renderer.md#today, Coney's own rule for the read: GL_INVALID_ENUM (0x0500) is what
+    // glEnable(0) raises; glReadPixels itself is valid here, so the read succeeds, and the leftover error is taken off
+    // OpenGL's list so the next check does not find it again.
     auto engine = startWindow();
     engine->beginFrame(Rgba{0, 0, 0, 255});
     glEnable(0);
