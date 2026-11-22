@@ -18,7 +18,7 @@ from pr_open_support import OPENER, make_open
 from pr_support import make
 from test_task_start import TASK, WHO, World, parse
 
-from coney_tools import stamps, task_adopt, task_cli, task_start_restart
+from coney_tools import stamps, task_adopt, task_cli, task_start, task_start_restart
 from coney_tools.config import ConfigError
 from coney_tools.task_file import parse_task_file, render_task_file
 from coney_tools.task_start import StartEnv, StartRequest, start_task
@@ -317,17 +317,17 @@ def test_a_restart_whose_stamping_failed_is_run_again(world: World, monkeypatch:
     tree = stacked(world)
     merge_base_by_squash(world)
     rebase_onto_main(tree)
-    real = task_start_restart._stamp_start
+    real = task_start._stamp_start
 
     def fail(*args: object, **kwargs: object) -> None:
         raise ConfigError("the disk is full")
 
-    monkeypatch.setattr(task_start_restart, "_stamp_start", fail)
+    monkeypatch.setattr("coney_tools.task_start_restart._stamp_start", fail)
     with pytest.raises(ConfigError, match="disk is full"):
         world.run(restart=True)
     # The old log was moved, the record was not touched: the unit is still the stacked one and can restart.
     assert len(archives(world)) == 1 and world.record().base_ref == STACK
-    monkeypatch.setattr(task_start_restart, "_stamp_start", real)
+    monkeypatch.setattr("coney_tools.task_start_restart._stamp_start", real)
     world.output.clear()
     assert world.run(restart=True) == 0, world.said()
     assert world.record().base_ref == "origin/main"
