@@ -29,9 +29,9 @@
 #include "hud/hud.h"
 #include "platform/game_session.h"
 #include "platform/play_level_mode.h"
-#include "scripting/lua_value.h"
 #include "scripting/message_handlers.h"
 #include "scripting/script_system.h"
+#include "scripting/story_save.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
 #include "support/live_pad.h"
@@ -71,8 +71,9 @@ std::size_t countFrom(const std::vector<std::string>& lines, std::size_t from, s
 }
 
 // level95 at the story's end with a pad the driver steers frame by frame, the scripts' calls traced. The story save is
-// made as the level's Lua state is fresh: global.lua's main chunk fills the unlock records (CfgUnlockables), and
-// UM_Unlock(level, 0, 0), as a mission's completion calls it, completes every story mission and `flashbacks`.
+// made as the level's Lua state is fresh by script::completeLevels, the set-up `--complete-levels` runs (so the clips
+// show what this test proves): every story mission and `flashbacks` complete, as their missions' completion leaves
+// them.
 class Clubhouse {
   public:
     Clubhouse(const coney::io::Wad& wad, std::span<const int> flashbacks)
@@ -83,12 +84,7 @@ class Clubhouse {
         m_complete.insert(m_complete.end(), flashbacks.begin(), flashbacks.end());
         m_run.session().startAtLevel("level95", kHubAfterStory, [this] {
             m_scripts.traceCalls([this](std::string_view line) { m_trace.emplace_back(line); });
-            (void)m_scripts.runFile(coney::script::kGlobalScript);
-            for (const int level : m_complete) {
-                const std::array<coney::script::Value, 3> unlock{coney::script::Value(static_cast<double>(level)),
-                                                                 coney::script::Value(0.0), coney::script::Value(0.0)};
-                (void)m_scripts.call("UM_Unlock", unlock);
-            }
+            coney::script::completeLevels(m_scripts, m_complete);
         });
     }
 
@@ -206,9 +202,9 @@ TEST_CASE("the disc's level95: with the story and the five flashbacks complete, 
 TEST_CASE("the disc's level95: with a flashback missing, the arcade cabinet refuses and the hub goes on",
           "[disc][story][hub][armies]") {
     // Expected: story-progress.md#hub-doors, confirmed (code) at level95.lua:f73: with FBMission[6]'s requirement
-    // unmet, fMenu[4] gets a bonus marker and the handler flashback.NoAction, whose prompt names what is missing;
-    // triangle takes it and nothing loads, as in the original (confirmed (runtime), run
-    // r-20261122-level95-armies-trophy).
+    // unmet, fMenu[4] gets a bonus marker and the handler flashback.NoAction, which shows a hint to finish the
+    // flashback missions; triangle takes it and nothing loads, as in the original (confirmed (runtime), run
+    // r-20261122-level95-armies-cabinet).
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
