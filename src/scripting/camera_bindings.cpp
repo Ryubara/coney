@@ -198,13 +198,13 @@ NativeFunction makeCamTarget(const BindingContext& context) {
     };
 }
 
-// Whether a `player` argument (default -1, every player) reaches player 1's cameras, the only ones Coney has.
+// Whether a `player` argument (default -1, every player) reaches player 1's cameras, the only ones Coney has: a
+// negative player is player 0, as the rail's calls read it (Camera_SetupRail 0x0011cce8, Camera_LockRail 0x0011d180).
 bool forPlayerOne(std::span<const Value> args, std::size_t i) {
     if (i >= args.size() || args[i].isNil()) {
         return true;
     }
-    const int player = intArg(args, i);
-    return player == -1 || player == 0;
+    return intArg(args, i) <= 0;
 }
 
 // A table argument {x, y, z} as a vector; the origin when it is missing.
