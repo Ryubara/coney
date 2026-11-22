@@ -62,6 +62,7 @@ void PlayLevelSimulation::makeLayoutFighters(const ai::AiConfig& fighters, Engin
     }
 }
 
+// @coney-only Coney's wiring of a level's scripted cast into the simulation (the original has no such split)
 void PlayLevelSimulation::makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters) {
     m_cast = cast;
     // Player 1's cameras, which the level script set up: the player steps them and draws through the current one.
