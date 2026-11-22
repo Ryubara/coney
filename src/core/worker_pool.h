@@ -13,8 +13,9 @@ namespace coney {
 /// the inputs alone, never on the number of threads or which thread took which index, and test mode, lockstep and
 /// networked play see the same output with one thread or many. The game's simulation never runs on it.
 ///
-/// One loop runs at a time: a second caller waits for the first to finish, and a body must not start a loop on the
-/// same pool (CONEY_ASSERT). Threads start with the pool and stop when it is destroyed.
+/// One loop runs at a time: a second caller waits for the first to finish, and a body must not start a loop, of any
+/// size, on any pool (CONEY_ASSERT, checked first thing in parallelFor(), before any lock). Threads start with the
+/// pool and stop when it is destroyed.
 class WorkerPool {
   public:
     /// A pool of `threads` threads counting the caller (at least 1), so `threads - 1` workers; 1 runs every loop on
@@ -33,7 +34,8 @@ class WorkerPool {
 
     /// Runs `body(index)` once for every index below `count`, on the calling thread and the workers, and returns when
     /// all have run. Indices are taken in small chunks, so the order they run in is not fixed: each body must touch
-    /// only what its index owns and read only what no body writes. A short loop runs on the calling thread alone.
+    /// only what its index owns and read only what no body writes. A short loop runs on the calling thread alone. A
+    /// body that calls this, whatever the sizes, is a broken invariant (CONEY_ASSERT).
     void parallelFor(std::size_t count, const std::function<void(std::size_t index)>& body);
 
   private:

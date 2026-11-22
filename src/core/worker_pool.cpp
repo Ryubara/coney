@@ -26,14 +26,12 @@ constexpr std::size_t kChunk = 8;
 // Whether this thread is running a body of some pool's loop, so a body that starts a loop is caught, not deadlocked.
 thread_local bool tInBody = false;
 
-// Marks this thread as running bodies for its lifetime.
+// Marks this thread as running bodies for its lifetime. parallelFor() has refused a nested loop before any scope is
+// made, so the thread is never marked already.
 class BodyScope {
   public:
-    // Refuses a body that starts a loop, then marks the thread.
-    BodyScope() {
-        CONEY_ASSERT(!tInBody);
-        tInBody = true;
-    }
+    // Marks the thread.
+    BodyScope() { tInBody = true; }
     // The thread runs no body any more.
     ~BodyScope() { tInBody = false; }
     BodyScope(const BodyScope&) = delete;
@@ -170,6 +168,10 @@ WorkerPool::~WorkerPool() = default;
 std::size_t WorkerPool::threads() const { return m_threads; }
 
 void WorkerPool::parallelFor(std::size_t count, const std::function<void(std::size_t index)>& body) {
+    // Refuse a loop started from a body first, of any size and before any lock: a long one would lock the caller
+    // mutex its own loop holds (on the caller's thread a second lock of a plain mutex, undefined; on a worker, a wait
+    // for ever), so a check after the lock never ran.
+    CONEY_ASSERT(!tInBody);
     // A loop of two chunks or fewer gains less from the workers than waking them costs; on the caller alone, as
     // one thread runs every loop.
     if (m_workers == nullptr || count <= 2 * kChunk) {
