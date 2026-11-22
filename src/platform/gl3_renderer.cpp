@@ -302,7 +302,7 @@ void Gl3Renderer::drawOverlay(const graphics::FrameDescription& frame, const gra
     }
     // In runs of whole triangles that fit librw's 2D vertex buffer (draw::kIm2dMaxVertices): a longer call raised
     // GL_INVALID_VALUE and drew nothing right.
-    constexpr auto kMostVertices = static_cast<std::size_t>(draw::kIm2dMaxVertices / 3 * 3);
+    constexpr std::size_t kMostVertices = (static_cast<std::size_t>(draw::kIm2dMaxVertices) / 3) * 3;
     for (std::size_t first = 0; first < vertices.size(); first += kMostVertices) {
         const std::size_t count = std::min(kMostVertices, vertices.size() - first);
         draw::im2dRenderPrimitive(rw::PRIMTYPETRILIST, &vertices[first], static_cast<rw::int32>(count));

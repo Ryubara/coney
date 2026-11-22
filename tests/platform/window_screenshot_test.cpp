@@ -62,9 +62,14 @@ std::vector<LogicalQuad> whiteSpecks(std::size_t count) {
     std::vector<LogicalQuad> quads;
     quads.reserve(count);
     for (std::size_t i = 0; i < count; ++i) {
-        const auto column = static_cast<float>(i % kPerRow);
-        const auto row = static_cast<float>(i / kPerRow);
-        quads.push_back(LogicalQuad{column * 4.0F, row * 4.0F, 2.0F, 2.0F, {}, Rgba{255, 255, 255, 255}});
+        const std::size_t column = i % kPerRow;
+        const std::size_t row = i / kPerRow;
+        quads.push_back(LogicalQuad{static_cast<float>(column) * 4.0F,
+                                    static_cast<float>(row) * 4.0F,
+                                    2.0F,
+                                    2.0F,
+                                    {},
+                                    Rgba{255, 255, 255, 255}});
     }
     return quads;
 }
