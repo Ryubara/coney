@@ -48,6 +48,7 @@ TEST_CASE("the health colour goes green, orange to red, near black", "[health_ri
 }
 
 TEST_CASE("a ring's rim splits into fill, lost and beyond-capacity arcs", "[health_rings]") {
+    // Expected: hud-radar.md#ring-colours-and-draw, confirmed (code)
     // Rembrandt at 35 % health: value 35 × 0.35 = 12.25, capacity 35.
     CHECK(coney::hud::ringArcOf(0, 12.25F, 35.0F) == RingArc::Fill);
     CHECK(coney::hud::ringArcOf(7, 12.25F, 35.0F) == RingArc::Fill);

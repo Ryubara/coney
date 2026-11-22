@@ -252,6 +252,9 @@ last); the value is the band's fill, not the health. Not seen at runtime.
 - **Texture**: `part_page1` (resource instance 9, or 10 in the second view, the blob shadow's sheet), centred on the
   middle of rectangle 1; each rim vertex takes u = centre u + 0.062 cos, v = centre v − 0.124 sin (whole-sheet units),
   the centre vertex the middle. Runtime: the middle is (0.6973, 0.3789).
+
+### The arcs' colours and the draw {#ring-colours-and-draw}
+
 - **Colours per vertex**: the centre has colour A; each rim vertex k has C when 64 − k ≤ floor(64 × (100 − capacity) /
   100) (and that is above 0), else B when 64 − k ≤ floor(64 × (100 − value) / 100) (and that is above 0, the test at
   `0x0017b758`, so a full ring has no B vertex), else A (or black when blinking) (confirmed (code)).
@@ -259,8 +262,8 @@ last); the value is the band's fill, not the health. Not seen at runtime.
 - **Drawing** (`GroundRing_DrawQueued`, `0x0017b2e0`, from the viewport pass `0x00156408` after the world and the
   sprite batches, so after the blob shadows, [Boot](boot.md#one-frame)): the queue is drawn and emptied once a frame,
   each ring as an `RwIm3D` triangle fan (`0x00196b58`) in every viewport, with the shade mode flat, the ring's raster,
-  fog off, and the blend and Z states as the world pass left them; the legs hid the ring behind them at runtime (Z
-  test on).
+  fog off, and the blend and Z states as the world pass left them (confirmed (code)); the legs hid the ring behind
+  them at runtime (Z test on).
 
 **Markers on targets** (confirmed (code)): while a player holds L1 (record `+0x00` `0x8`, [Combat](combat-targets.md#targets))
 at a non-player target, a sprite of `part_page1` rectangle 0 lies under the target at 0.041 m, size 0.9 × `s`, white
