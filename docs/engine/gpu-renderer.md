@@ -91,13 +91,12 @@ the 2D quads is not known). Each texture is sampled with its own filter, nearest
 `MIPNEAREST`, linear for the rest, clamped or repeated as the draw says. No mip levels are uploaded (stand-in: GL3 would
 sample a sheet's own levels for a mip filter; 2D draws are near their textures' sizes, where level 0 is the one taken).
 
-**Not yet:** the screen passes and `--line-blend` (item 20), the 3D scene's effects (item 20; the background, world,
-objects, cars and humans are [below](#scene)), and the texture viewer's `RenderEngine::drawTexture`, which is not in the
-description. The renderer also has no `gpu.frame` measure: GL3 takes it from OpenGL timer queries
-([GPU time](../guides/performance.md#gpu-time)), and SDL3's GPU API has no timer or timestamp queries, so a bench of
-`--renderer gpu` reports `gpu.frame none` (its CPU zones are all there). Its GPU time can be read only with a
-platform's own tools until SDL adds them. A frame the GPU renderer cannot draw part of misses that part; it never
-fails.
+**Not yet:** the screen passes and `--line-blend` ([#1646](issue:1646)), and the texture viewer's
+`RenderEngine::drawTexture`, which is not in the description. The renderer also has no `gpu.frame` measure: GL3 takes it
+from OpenGL timer queries ([GPU time](../guides/performance.md#gpu-time)), and SDL3's GPU API has no timer or timestamp
+queries, so a bench of `--renderer gpu` reports `gpu.frame none` (its CPU zones are all there). Its GPU time can be read
+only with a platform's own tools until SDL adds them. A frame the GPU renderer cannot draw part of misses that part; it
+never fails.
 
 ## Drawing the scene passes {#scene}
 
@@ -178,16 +177,16 @@ as before. The GL3 renderer draws the parts and clears the depth at once, throug
 draw stream is the one it was (the `keeps` hash of a Coney-made scene with a level in
 `tests/platform/world_draw_stream_test.cpp`).
 
-**Not yet:** the effects (the water, the see-through panes, the throw arc, particles, blob shadows, rings and coronas),
-item 20 ([#1212](issue:1212)): the frame description holds them as effect passes (`EffectPass`: vertices in the world,
-a texture, the states each draw sets and puts back), which `GpuRenderer` skips. A frame on `--renderer gpu` misses
-them; `--scene-only` leaves them out on both renderers, and draws the background, so that the frames can be compared
-on the part both draw ([How pictures are compared](renderer.md#comparing)).
+**The effects** (the water, the see-through panes, the throw arc, particles, blob shadows, rings and coronas) are drawn
+in the same render pass since item 20 ([below](#effects)); `--scene-only` leaves them out on both renderers, and draws
+the background, so that the frames can be compared on the part both drew before ([How pictures are
+compared](renderer.md#comparing)).
 
 **The World page** ([debug menu guide](../guides/debug-menu.md#world)): its fog reaches the GPU renderer as it does GL3,
 through the camera's fog start and the draws' fog colour, and each part hides there as on GL3. The play mode's own
 passes skip the glass, the humans and the objects before a draw is recorded, and hand the Background to the world
-renderer; the effects it hides are not drawn there yet anyway (above). The streamed world's sectors are drawn by the
+renderer; the effects it hides (the water, the effects, the rings, the coronas, the blob shadows) are not drawn, so
+never recorded, and hide here as on GL3. The streamed world's sectors are drawn by the
 ported `WorldManager_Render`, so the Scenery part reaches them through the mesh views' hook: the hook says which kinds
 it hides (`MeshViewHook::hides()`) apart from whether it draws passes of its own (`MeshViewHook::hasPasses()`). The play
 mode hands the hidden kinds to the renderer for the frame (`RenderEngine::hideKindsOf()`), and
@@ -254,17 +253,73 @@ those pixels have the other renderer's colour within a pixel of them (checked on
 pixel over where Direct3D and OpenGL rasterise a one-pixel line differently. These two are over the cross-renderer
 tolerance of 0.2 % and are listed here with that reason.
 
-The whole frame, without `--scene-only`, differs from GL3 by what the GPU renderer does not draw yet (the blob shadows,
-the health rings, the coronas): the street frame with every view off, 10,583 pixels over 4 (3.7 %, largest 161); with
-the humans' wireframe in a wireframe-only view and the selection's normals and bone axes on 13,862 (4.8 %), and with the
-normals and bone axes alone 10,570 (3.7 %). GL3's own frames, branch against base, are the same in all nine frames (the
-seven above and those two), and the GPU frame with every view off, 0 pixels over 2.
+The whole frame, without `--scene-only`, differed from GL3 by what the GPU renderer did not draw then (the blob shadows,
+the health rings, the coronas, drawn since [#1212](issue:1212)): the street frame with every view off, 10,583 pixels
+over 4 (3.7 %, largest 161); with the humans' wireframe in a wireframe-only view and the selection's normals and bone
+axes on 13,862 (4.8 %), and with the normals and bone axes alone 10,570 (3.7 %). GL3's own frames, branch against base,
+are the same in all nine frames (the seven above and those two), and the GPU frame with every view off, 0 pixels over 2.
 
 `tests/graphics/mesh_view_draw_test.cpp` checks the passes' colours, lighting and states and the frame description's
 colours and lines without a window; `tests/platform/mesh_view_scene_test.cpp` checks on the NULL backend, which records
 as this one does, what lands in the frame description for each pass, a hidden kind, a posed model and a human's blood
 layer; `tests/platform/mesh_views_passes_test.cpp` checks the debug tools' answers and, on a hidden GPU window, the
 pixels of each view, of the blood layer over the wire and of the lines read back.
+
+## Drawing the effect passes {#effects}
+
+Item 20 of [Order](renderer.md#order) ([#1212](issue:1212)): the frame description's effect passes (`EffectPass`: the
+particles and debris, the glints, the ground fog, the water, the throw arc, the see-through panes, the blob shadows, the
+health rings, the coronas and the debug tools' lines, [Built for the effects](renderer.md#frame-description)), drawn by
+`GpuScene` with the scene's own shaders, in the same render pass and depth buffer as the scene passes, so an effect is
+hidden by what the world drew in front of it and a later scene draw by what the effect wrote. What each draw is drawn in
+is worked out headless in `graphics/effect_batch.h`; its reference is what librw's GL3 device does with the same Im3D
+primitive (the GL3 renderer's `drawEffect()`), at the pin `cmake/deps.cmake` names.
+
+**What it reads.** A draw sets only some states (`EffectStates`, each optional), as the game's effects always have, and
+leaves the rest as they stand. With the GPU renderer nothing is drawn through librw, so the engine records the states in
+force before each draw with it (`EffectDraw::inForce`, read from the draw layer by `effectStatesInForce()` in
+`RenderEngine::drawEffect()`). So that the draw layer holds what GL3 would leave there, the GL3 renderer sets each effect
+draw's states and its restores, and each scene draw's states, on every backend, and draws only where it has something to
+draw into.
+
+**Loaded for it.** The play mode draws its effects on every renderer that draws the scene (`drawsScene()`): the
+particles, the glints and the ground fog, the water, the panes, the throw arc, and the coronas, blob shadows and rings
+of `PlayLighting`, whose sprite sheets and texture dictionaries load for the GPU renderer too and are converted for
+librw on GL3 alone (`drawsPixels()`), as the HUD's sheets already were; the GPU renderer reads them as they are
+(`SheetTexture::toImage()`). The debug tools' scene lines reach it as the scene passes' lines ([The mesh
+views](#mesh-views)), not as effect draws.
+
+**The steps.** In `GpuScene::prepare()`, for each effect pass with a camera, each draw's corners become unlit vertices of
+the scene's format (`graphics::meshVertexOf()`: the corner's colour as the prelighting, its texture coordinate), and its
+indices (or the corners in order) go into one index buffer for the frame, each draw drawn from its first corner. Both
+buffers are kept, grown by doubling, and rewritten each frame. Each draw's texture is one of the renderer's 2D textures
+(the frame's table: a sprite sheet, a pixel texture), uploaded as the 2D draws' are, with whether a texel is not opaque.
+
+**What it matches.** Per draw, as librw's GL3 device draws an Im3D primitive (`graphics::effectLookOf()`):
+
+| Part | What GL3 does, and the GPU renderer with it | Where |
+| --- | --- | --- |
+| States | each depth, culling and fog state the draw's own, else the one in force | `effectLookOf()` |
+| Blending | on only for the vertex alpha (the draw's or the one in force) or a texture with a texel that is not opaque, then by the draw's blend (alpha, or added: source alpha over one) or the one in force; off, the draw replaces what is below | `effectLookOf()`, `GpuScene::pipelineFor()` |
+| Alpha test | on with the blending only: the test in force against librw's reference after its start (10 of 255), every fragment kept while it is off | `effectLookOf()` |
+| Colour | the corner's colour times the texel (white for no texture and for a line list, which librw draws untextured), fogged toward the fog colour in force by the pass camera's planes | `scene3d.vert.hlsl`, `scene3d.frag.hlsl` |
+| Shape | a triangle list, or a line list one pixel wide | `GpuScene::pipelineFor()` |
+
+**Stand-ins.** A draw that sets no filter is sampled with its texture's own filter, and one that sets no addressing is
+clamped: GL3 samples with the filter and addressing the render states hold, which librw's own atomic draws change
+without the draw layer seeing it, so what they hold at an effect is not known to the description. The game's effects
+that sample a texture set both, except the coronas, the blob shadows, the panes and the rings
+(`SceneLighting`'s sprites), whose textures' own filters are used. The states a 2D pass sets before an effect are not
+mirrored on the draw layer (the effects come before the 2D layers in a frame).
+
+**Not yet:** the screen passes ([#1646](issue:1646)). `--scene-only` still leaves the effects out on both renderers, so
+the part both drew before this item can be compared alone. `tests/graphics/effect_batch_test.cpp` checks the states,
+blending, alpha test and vertices headless; `tests/platform/gpu_effect_test.cpp` draws sprites blended and added, a
+surface in the fog in force, a sprite behind a mesh, a texture with alpha and a line on a hidden GPU window and reads
+them back; `tests/platform/frame_recording_test.cpp` checks the states recorded in force; the `effects` [test
+card](../guides/running-viewers.md#test-cards) draws them on both renderers in CI's software pictures, and
+`tests/platform/disc_gpu_effects_test.cpp` checks with the disc that play records them, textured, on this renderer. How
+the frames compare with GL3's: [Renderer pictures](renderer-pictures.md#comparing), the Across renderers row.
 
 ## Skinning {#skinning}
 

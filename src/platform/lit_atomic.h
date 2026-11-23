@@ -55,6 +55,11 @@ void applySceneStates(const graphics::SceneStates& states);
 /// (docs/engine/renderer.md#comparing), and the GPU renderer, which reads only SceneStates, relies on that.
 [[nodiscard]] graphics::SceneStates sceneStatesInForce();
 
+/// The render states in force on the draw layer, as an effect draw records them (graphics::EffectInForce): those of
+/// sceneStatesInForce(), the vertex alpha and the blend read whole: SRCALPHA over ONE is Additive, SRCALPHA over
+/// anything else Alpha, any other source blend Replace (the effects and the passes before them set no other).
+[[nodiscard]] graphics::EffectInForce effectStatesInForce();
+
 /// Changes an atomic's materials as a 3D draw's graphics::Material3d says while it lives: a fade, a paint or a shade
 /// (a human's colour and fade) is kept, and a tint (the first material's colour and the modulation it turns on) and a
 /// lit draw's LIGHT flag (Material3d::lit, the level's background) are put back when it goes. The one place the GL3

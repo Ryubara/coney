@@ -117,7 +117,7 @@ class WorldRenderer {
     /// (docs/engine/renderer.md#comparing), which has no window.
     /// @coney-only the draw-stream hashes' synthetic scenes; the original has no headless renderer
     void recordHeadless(bool on) { m_recordHeadless = on; }
-    /// Chooses whether render() leaves out the coronas, which the GPU renderer does not draw yet: `--scene-only`
+    /// Chooses whether render() leaves out the coronas, an effect: `--scene-only`
     /// (docs/engine/renderer.md#comparing). The level's background is drawn either way.
     /// @coney-only a developer's test aid; the original has none
     void sceneOnly(bool on) { m_sceneOnly = on; }

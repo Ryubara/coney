@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/water_renderer.h"
 
+#include <expected>
 #include <format>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "core/error.h"
 #include "core/name_hash.h"
 #include "graphics/frame_description.h"
 #include "platform/play_scenery.h"
@@ -18,7 +20,7 @@ WaterRenderer::WaterRenderer(const io::Wad& wad, std::function<void(std::string_
     addTextureDictionaryHandlers(m_table);
 }
 
-void WaterRenderer::loadTexture() {
+void WaterRenderer::loadTexture(bool convert) {
     m_tried = true;
     // The file is named by the decimal CRC-32 of the texture's name (a disc check: `water_tex` is 725908093).
     const std::string fileName = std::to_string(crc32(effects::Water::kTexture));
@@ -37,7 +39,9 @@ void WaterRenderer::loadTexture() {
         report(dictionaries ? "the file holds no texture" : dictionaries.error().message);
         return;
     }
-    if (auto converted = dictionaries->front().convertForDrawing(); !converted) {
+    // Only GL3 draws the raster through librw; the GPU renderer reads it as it is (SheetTexture::toImage()).
+    if (auto converted = convert ? dictionaries->front().convertForDrawing() : std::expected<void, Error>{};
+        !converted) {
         report(converted.error().message);
         return;
     }
@@ -54,7 +58,7 @@ void WaterRenderer::draw(RenderEngine& engine, const effects::Water& water) {
         return;
     }
     if (!m_tried) {
-        loadTexture();
+        loadTexture(engine.drawsPixels());
     }
     // The grid in the world, in RenderWare's axes.
     std::vector<graphics::EffectVertex> vertices;

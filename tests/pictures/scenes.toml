@@ -64,3 +64,11 @@ renderers = ["gl3", "gpu"]
 name = "test-card-scene"
 args = ["--test-card", "scene"]
 renderers = ["gl3", "gpu"]
+
+# The effects card: the 3D card, then an effect pass through its camera (sprites blended by their vertex alpha and
+# added, a surface in the fog in force, a texture blended by its alpha, a line list), drawn by both renderers and
+# compared the same way (docs/engine/gpu-renderer.md#effects).
+[[scene]]
+name = "test-card-effects"
+args = ["--test-card", "effects"]
+renderers = ["gl3", "gpu"]

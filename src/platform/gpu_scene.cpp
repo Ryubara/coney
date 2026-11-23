@@ -8,6 +8,7 @@
 
 #include <SDL3/SDL.h>
 
+#include "graphics/effect_batch.h"
 #include "platform/gpu_shader.h"
 
 namespace coney::platform {
@@ -22,8 +23,31 @@ constexpr std::uint32_t kBufferAlignment = 16;
 // The least size of the buffer the scene lines go in, in bytes: 1024 vertices.
 constexpr std::uint32_t kMinLineBuffer = 1024 * sizeof(graphics::MeshVertex);
 
+// The least size of each buffer the effects go in, in bytes: 1024 corners, 1024 indices.
+constexpr std::uint32_t kMinEffectVertexBuffer = 1024 * sizeof(graphics::MeshVertex);
+constexpr std::uint32_t kMinEffectIndexBuffer = 1024 * sizeof(std::uint16_t);
+
 // `value` rounded up to a multiple of `step`.
 std::uint32_t alignUp(std::uint32_t value, std::uint32_t step) { return (value + step - 1) / step * step; }
+
+// Makes `buffer` at least `bytes` large for `usage`, grown by doubling (at least `least`) so a frame with more does not
+// make a buffer every frame; false, with no buffer, when SDL refuses it.
+bool growBuffer(SDL_GPUDevice* device, SDL_GPUBuffer*& buffer, std::uint32_t& capacity, std::uint32_t bytes,
+                SDL_GPUBufferUsageFlags usage, std::uint32_t least) {
+    if (buffer != nullptr && bytes <= capacity) {
+        return true;
+    }
+    if (buffer != nullptr) {
+        SDL_ReleaseGPUBuffer(device, buffer);
+        buffer = nullptr;
+    }
+    SDL_GPUBufferCreateInfo info{};
+    info.usage = usage;
+    info.size = std::max({bytes, capacity * 2, least});
+    buffer = SDL_CreateGPUBuffer(device, &info);
+    capacity = buffer != nullptr ? info.size : 0;
+    return buffer != nullptr;
+}
 
 // The failure of a step of create(), with SDL's error text.
 std::unexpected<Error> failure(const std::string& what) {
@@ -173,8 +197,10 @@ GpuScene::~GpuScene() {
     for (const auto& [key, sampler] : m_samplers) {
         SDL_ReleaseGPUSampler(m_device, sampler);
     }
-    if (m_lineBuffer != nullptr) {
-        SDL_ReleaseGPUBuffer(m_device, m_lineBuffer);
+    for (SDL_GPUBuffer* buffer : {m_lineBuffer, m_effectVertexBuffer, m_effectIndexBuffer}) {
+        if (buffer != nullptr) {
+            SDL_ReleaseGPUBuffer(m_device, buffer);
+        }
     }
     if (m_vertexShader != nullptr) {
         SDL_ReleaseGPUShader(m_device, m_vertexShader);
@@ -199,16 +225,17 @@ SDL_GPUGraphicsPipeline* GpuScene::pipelineFor(const PipelineKey& key) {
         {4, 0, SDL_GPU_VERTEXELEMENTFORMAT_UBYTE4, offsetof(graphics::MeshVertex, bones)},
         {5, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, offsetof(graphics::MeshVertex, weights)},
     }};
-    // Blended by source alpha (librw's SRCALPHA over INVSRCALPHA, the alpha channel by the same factors), or
-    // replacing what is below (ONE over ZERO).
+    // Blended by source alpha (librw's SRCALPHA over INVSRCALPHA, the alpha channel by the same factors), added
+    // (SRCALPHA over ONE: an effect's light), or replacing what is below (ONE over ZERO).
+    const SDL_GPUBlendFactor below = key.additive ? SDL_GPU_BLENDFACTOR_ONE : SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
     SDL_GPUColorTargetDescription target{};
     target.format = static_cast<SDL_GPUTextureFormat>(m_colourFormat);
     target.blend_state.enable_blend = key.blend;
     target.blend_state.src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
-    target.blend_state.dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+    target.blend_state.dst_color_blendfactor = below;
     target.blend_state.color_blend_op = SDL_GPU_BLENDOP_ADD;
     target.blend_state.src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA;
-    target.blend_state.dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+    target.blend_state.dst_alpha_blendfactor = below;
     target.blend_state.alpha_blend_op = SDL_GPU_BLENDOP_ADD;
     SDL_GPUGraphicsPipelineCreateInfo info{};
     info.vertex_shader = m_vertexShader;
@@ -368,7 +395,8 @@ const GpuScene::GpuTexture* GpuScene::textureFor(graphics::TextureId id, const g
 }
 
 void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::AssetStore& store,
-                       std::uint64_t frameNumber, SDL_GPUTexture* white) {
+                       std::uint64_t frameNumber, SDL_GPUTexture* white,
+                       std::span<const EffectTexture> effectTextures) {
     m_frame = frameNumber;
     m_meshes.evict(m_frame, kKeepFrames);
     m_textures.evict(m_frame, kKeepFrames);
@@ -376,6 +404,9 @@ void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::
     m_levelUploads.clear();
     m_draws.clear();
     m_lineVertices.clear();
+    m_effectVertices.clear();
+    m_effectIndices.clear();
+    m_effectDraws.clear();
     m_white = white;
     // The frame's poses, in one palette for the copy pass; posed draws are left out when it finds no room.
     const bool posesHeld = m_bones.set(graphics::bonePaletteOf(frame.bones()));
@@ -383,6 +414,14 @@ void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::
     m_passDraws.assign(passes.size(), {0, 0});
     m_passLines.assign(passes.size(), LinePass{});
     for (std::size_t p = 0; p < passes.size(); ++p) {
+        // An effect pass: its sprites, surfaces and lines through the camera it keeps.
+        if (const auto* effects = std::get_if<graphics::EffectPass>(&passes[p]);
+            effects != nullptr && effects->camera.has_value()) {
+            const std::size_t first = m_draws.size();
+            prepareEffects(*effects, *effects->camera, frame, effectTextures);
+            m_passDraws[p] = {first, m_draws.size() - first};
+            continue;
+        }
         const auto* scene = std::get_if<graphics::ScenePass>(&passes[p]);
         if (scene == nullptr || !scene->camera) {
             continue;
@@ -450,6 +489,7 @@ void GpuScene::prepare(const graphics::FrameDescription& frame, const graphics::
         prepareLines(p, *scene, camera);
     }
     uploadLines();
+    uploadEffects();
 }
 
 void GpuScene::prepareMesh(const GpuMesh& uploaded, const graphics::MeshData& mesh, const graphics::Draw3d& draw,
@@ -527,7 +567,7 @@ void GpuScene::prepareMesh(const GpuMesh& uploaded, const graphics::MeshData& me
             fragment.alphaLow = pass.alpha.low;
             fragment.alphaHigh = pass.alpha.high;
             m_draws.push_back(SubDraw{pipeline, uploaded.vertices, uploaded.indices, sub.firstIndex, sub.indexCount,
-                                      texture != nullptr ? texture->texture : white, sampler, vertex, fragment});
+                                      texture != nullptr ? texture->texture : white, sampler, vertex, fragment, 0});
         }
     }
 }
@@ -570,25 +610,108 @@ void GpuScene::uploadLines() {
         return;
     }
     const auto bytes = static_cast<std::uint32_t>(m_lineVertices.size() * sizeof(graphics::MeshVertex));
-    if (m_lineBuffer == nullptr || bytes > m_lineCapacity) {
-        // Grown by doubling, so a frame with more lines does not make a buffer every frame.
-        if (m_lineBuffer != nullptr) {
-            SDL_ReleaseGPUBuffer(m_device, m_lineBuffer);
-            m_lineBuffer = nullptr;
-        }
-        SDL_GPUBufferCreateInfo info{};
-        info.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
-        info.size = std::max({bytes, m_lineCapacity * 2, kMinLineBuffer});
-        m_lineBuffer = SDL_CreateGPUBuffer(m_device, &info);
-        m_lineCapacity = m_lineBuffer != nullptr ? info.size : 0;
-    }
-    if (m_lineBuffer == nullptr) {
+    if (!growBuffer(m_device, m_lineBuffer, m_lineCapacity, bytes, SDL_GPU_BUFFERUSAGE_VERTEX, kMinLineBuffer)) {
         // A missing part of the picture, as for a mesh SDL cannot make a buffer for.
         m_lineVertices.clear();
         std::fill(m_passLines.begin(), m_passLines.end(), LinePass{});
         return;
     }
     m_bufferUploads.push_back(BufferUpload{m_lineBuffer, m_lineVertices.data(), bytes, 0, 0, true});
+}
+
+void GpuScene::prepareEffects(const graphics::EffectPass& effects, const graphics::SceneCamera& camera,
+                              const graphics::FrameDescription& frame, std::span<const EffectTexture> textures) {
+    // What every draw of the pass shares: no transform (the corners are in the world), the camera, no light, a white
+    // material and the corners' own colours taken as the prelighting, as librw's im3d.vert passes them through.
+    VertexUniform shared;
+    shared.world = graphics::worldMatrixOf(graphics::Transform3d{});
+    shared.viewProjection = graphics::multiply(graphics::projectionOf(camera), graphics::viewMatrixOf(camera));
+    shared.materialColour = channels(graphics::kWhite);
+    shared.surface = {0.0F, 0.0F, 0.0F, 1.0F};
+    for (const graphics::EffectDraw& draw : effects.draws) {
+        const std::span<const graphics::EffectVertex> corners = frame.effectVerticesOf(draw);
+        if (corners.empty()) {
+            continue;
+        }
+        const bool lines = draw.shape == graphics::EffectShape::Lines;
+        // Its texture: none for a line list, which librw draws untextured; one the renderer cannot draw leaves the draw
+        // out, as a missing part of the picture.
+        EffectTexture texture{m_white, false, true};
+        if (!lines && draw.texture != graphics::kNoFrameTexture) {
+            if (draw.texture >= textures.size() || textures[draw.texture].texture == nullptr) {
+                continue;
+            }
+            texture = textures[draw.texture];
+        }
+        const graphics::EffectLook look = graphics::effectLookOf(draw, texture.alpha);
+        SDL_GPUGraphicsPipeline* pipeline =
+            pipelineFor(PipelineKey{.blend = look.blend != graphics::BlendInForce::Replace,
+                                    .depthTest = look.depthTest,
+                                    .depthWrite = look.depthWrite,
+                                    .cull = look.cull,
+                                    .lines = lines,
+                                    .additive = look.blend == graphics::BlendInForce::Additive});
+        // Sampled with the filter the draw sets, else the texture's own (stand-in: GL3 samples with the filter the
+        // render states hold, docs/engine/gpu-renderer.md#effects), clamped unless the draw says otherwise.
+        const graphics::TextureFilter filter = draw.states.filter.value_or(
+            texture.linear ? graphics::TextureFilter::Linear : graphics::TextureFilter::Nearest);
+        const graphics::TextureAddress address = draw.states.address.value_or(graphics::TextureAddress::Clamp);
+        SDL_GPUSampler* sampler = samplerFor(graphics::TextureSampler{filter, address, address});
+        if (pipeline == nullptr || sampler == nullptr) {
+            continue;
+        }
+        VertexUniform vertex = shared;
+        vertex.fogData = {camera.fogStart, camera.farClip, 1.0F / (camera.fogStart - camera.farClip),
+                          look.fog ? 0.0F : 1.0F};
+        FragmentUniform fragment;
+        fragment.alphaLow = look.alpha.low;
+        fragment.alphaHigh = look.alpha.high;
+        fragment.levels = {0.0F, 1.0F, 0.0F, 1.0F}; // the GPU chooses: a 2D texture has one level
+        fragment.fogColour = channels(look.fogColour);
+        // The corners after those of the draws before it, and its indices (or the corners in order) after theirs.
+        const auto firstVertex = static_cast<std::int32_t>(m_effectVertices.size());
+        const auto firstIndex = static_cast<std::uint32_t>(m_effectIndices.size());
+        for (const graphics::EffectVertex& corner : corners) {
+            m_effectVertices.push_back(graphics::meshVertexOf(corner));
+        }
+        if (draw.indexCount != 0) {
+            const std::span<const std::uint16_t> indices = frame.effectIndicesOf(draw);
+            m_effectIndices.insert(m_effectIndices.end(), indices.begin(), indices.end());
+        } else {
+            for (std::size_t i = 0; i < corners.size(); ++i) {
+                m_effectIndices.push_back(static_cast<std::uint16_t>(i));
+            }
+        }
+        const auto indexCount = static_cast<std::uint32_t>(m_effectIndices.size()) - firstIndex;
+        m_effectDraws.push_back(m_draws.size());
+        m_draws.push_back(SubDraw{pipeline, nullptr, nullptr, firstIndex, indexCount, texture.texture, sampler, vertex,
+                                  fragment, firstVertex});
+    }
+}
+
+void GpuScene::uploadEffects() {
+    if (m_effectDraws.empty()) {
+        return;
+    }
+    const auto vertexBytes = static_cast<std::uint32_t>(m_effectVertices.size() * sizeof(graphics::MeshVertex));
+    const auto indexBytes = static_cast<std::uint32_t>(m_effectIndices.size() * sizeof(std::uint16_t));
+    const bool held = growBuffer(m_device, m_effectVertexBuffer, m_effectVertexCapacity, vertexBytes,
+                                 SDL_GPU_BUFFERUSAGE_VERTEX, kMinEffectVertexBuffer) &&
+                      growBuffer(m_device, m_effectIndexBuffer, m_effectIndexCapacity, alignUp(indexBytes, 4),
+                                 SDL_GPU_BUFFERUSAGE_INDEX, kMinEffectIndexBuffer);
+    for (const std::size_t at : m_effectDraws) {
+        // No buffer: the effects are a missing part of the picture, skipped by draw().
+        m_draws[at].vertices = held ? m_effectVertexBuffer : nullptr;
+        m_draws[at].indices = held ? m_effectIndexBuffer : nullptr;
+        if (!held) {
+            m_draws[at].indexCount = 0;
+        }
+    }
+    if (!held) {
+        return;
+    }
+    m_bufferUploads.push_back(BufferUpload{m_effectVertexBuffer, m_effectVertices.data(), vertexBytes, 0, 0, true});
+    m_bufferUploads.push_back(BufferUpload{m_effectIndexBuffer, m_effectIndices.data(), indexBytes, 0, 0, true});
 }
 
 std::uint32_t GpuScene::layUploads(std::uint32_t offset) {
@@ -648,6 +771,9 @@ void GpuScene::forgetUploads() {
     m_bones.forget();
     m_draws.clear();
     m_lineVertices.clear();
+    m_effectVertices.clear();
+    m_effectIndices.clear();
+    m_effectDraws.clear();
     std::fill(m_passLines.begin(), m_passLines.end(), LinePass{});
     std::fill(m_passDraws.begin(), m_passDraws.end(), std::pair<std::size_t, std::size_t>{0, 0});
 }
@@ -660,6 +786,9 @@ void GpuScene::draw(SDL_GPUCommandBuffer* commands, SDL_GPURenderPass* target, s
     SDL_GPUGraphicsPipeline* bound = nullptr;
     for (std::size_t i = first; i < first + count; ++i) {
         const SubDraw& sub = m_draws[i];
+        if (sub.indexCount == 0) {
+            continue; // an effect draw whose buffers SDL refused
+        }
         if (sub.pipeline != bound) {
             SDL_BindGPUGraphicsPipeline(target, sub.pipeline);
             bound = sub.pipeline;
@@ -675,7 +804,7 @@ void GpuScene::draw(SDL_GPUCommandBuffer* commands, SDL_GPURenderPass* target, s
         SDL_BindGPUFragmentSamplers(target, 0, &binding, 1);
         SDL_PushGPUVertexUniformData(commands, 0, &sub.vertex, sizeof(sub.vertex));
         SDL_PushGPUFragmentUniformData(commands, 0, &sub.fragment, sizeof(sub.fragment));
-        SDL_DrawGPUIndexedPrimitives(target, sub.indexCount, 1, sub.firstIndex, 0, 0);
+        SDL_DrawGPUIndexedPrimitives(target, sub.indexCount, 1, sub.firstIndex, sub.vertexOffset, 0);
     }
     // Then the pass's lines, as a line list from the shared buffer.
     if (pass < m_passLines.size() && m_passLines[pass].count != 0 && m_lineBuffer != nullptr &&

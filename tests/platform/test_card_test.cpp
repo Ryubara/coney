@@ -106,3 +106,30 @@ TEST_CASE("a test card of no such name is refused with the names", "[render][tes
     CHECK(card.error().code == coney::ErrorCode::NotFound);
     CHECK(card.error().message.find("shapes, textures or triangles") != std::string_view::npos);
 }
+
+// Expected: docs/guides/running-viewers.md#test-cards (the effects card) and src/platform/test_card_mode.cpp.
+TEST_CASE("the effects card draws the scene card and then an effect pass", "[render][test-card][effects]") {
+    auto engine = RenderEngine::start(RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    drawCard(**engine, "effects");
+    const FrameDescription& frame = (*engine)->frame();
+    REQUIRE(!frame.passes().empty());
+    // The scene card's pass first, its effects after it: sprites blended and added, a surface in the fog in force, a
+    // texture with alpha and lines.
+    CHECK(std::holds_alternative<coney::graphics::ScenePass>(frame.passes().front()));
+    const auto* effects = std::get_if<coney::graphics::EffectPass>(&frame.passes().back());
+    REQUIRE(effects != nullptr);
+    CHECK(effects->camera.has_value());
+    std::size_t additive = 0;
+    std::size_t lines = 0;
+    std::size_t textured = 0;
+    for (const auto& draw : effects->draws) {
+        additive += draw.states.blend == coney::graphics::EffectBlend::Additive ? 1U : 0U;
+        lines += draw.shape == coney::graphics::EffectShape::Lines ? 1U : 0U;
+        textured += draw.texture != coney::graphics::kNoFrameTexture ? 1U : 0U;
+    }
+    CHECK(effects->draws.size() == 5);
+    CHECK(additive == 1);
+    CHECK(lines == 1);
+    CHECK(textured == 1);
+}

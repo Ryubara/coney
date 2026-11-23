@@ -121,6 +121,7 @@ add_executable(coney_tests
     graphics/frame_stats_test.cpp
     graphics/overlay_batch_test.cpp
     graphics/mesh_view_draw_test.cpp
+    graphics/effect_batch_test.cpp
     graphics/scene_batch_test.cpp
     graphics/car_draw_test.cpp
     graphics/throw_arc_test.cpp
@@ -255,6 +256,7 @@ add_executable(coney_tests
     platform/disc_level_test.cpp
     platform/disc_client_level_test.cpp
     platform/disc_movies_test.cpp
+    platform/disc_gpu_effects_test.cpp
     platform/disc_play_frame_rate_test.cpp
     platform/disc_play_level_simulation_test.cpp
     platform/disc_world_streaming_test.cpp
@@ -265,6 +267,7 @@ add_executable(coney_tests
     platform/frame_recording_test.cpp
     platform/ffmpeg_info_test.cpp
     platform/gpu_renderer_test.cpp
+    platform/gpu_effect_test.cpp
     platform/gpu_scene_test.cpp
     platform/mesh_view_scene_test.cpp
     platform/pixel_texture_test.cpp

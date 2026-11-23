@@ -90,9 +90,12 @@ class Gl3Renderer {
     // Clears librw's camera's depth buffer for a scene pass that clears it first (graphics::ScenePass::clearDepth).
     static void clearDepth(const graphics::FrameDescription& frame, const Target& target);
     // One effect draw of `frame`: its states set, its corners and indices drawn through librw's 3D immediate mode with
-    // its texture's raster, then the states it puts back.
+    // its texture's raster, then the states it puts back. With nothing to draw into (the NULL or GPU backend, not
+    // recording) only the states are set and put back.
     static void drawEffect(const graphics::FrameDescription& frame, const graphics::EffectDraw& draw,
                            const Target& target);
+    // The corners and indices of effect draw `draw` through librw's 3D immediate mode, in the states set.
+    static void drawEffectPrimitives(const graphics::FrameDescription& frame, const graphics::EffectDraw& draw);
     // One screen pass.
     void drawScreenPass(const graphics::ScreenPass& pass, const Target& target);
     // One 3D draw of `frame`: a sector's, an object's, a car part's or a human's atomic as its draw function records

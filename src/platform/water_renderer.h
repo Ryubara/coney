@@ -32,8 +32,8 @@ class WaterRenderer {
     void draw(RenderEngine& engine, const effects::Water& water);
 
   private:
-    // Loads and converts the texture dictionary, once.
-    void loadTexture();
+    // Loads the texture dictionary, once, and with `convert` converts it for librw's GL3 device to draw.
+    void loadTexture(bool convert);
 
     const io::Wad& m_wad;
     std::function<void(std::string_view)> m_print;

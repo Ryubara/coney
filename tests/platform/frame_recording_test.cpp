@@ -5,16 +5,19 @@
 // graphics::logicalToWindow()'s and the line blend's shift graphics::originalLineShare()'s.
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <span>
 #include <variant>
 
 #include <catch2/catch_test_macros.hpp>
+#include <rw.h>
 
 #include "effects/motion_blur.h"
 #include "graphics/frame_description.h"
 #include "graphics/render_device.h"
 #include "graphics/screen.h"
+#include "platform/draw_calls.h"
 #include "platform/motion_blur_pass.h"
 #include "platform/render_engine.h"
 
@@ -216,4 +219,59 @@ TEST_CASE("each motion blur pass records its own kept copy", "[platform][frame-d
     const ScreenPass& again = screenAt(engine->frame(), 0);
     REQUIRE(std::holds_alternative<MotionBlurOverlay>(again.effect));
     CHECK(std::get<MotionBlurOverlay>(again.effect).copy == firstCopy);
+}
+
+TEST_CASE("an effect draw records the render states in force before it", "[platform][frame-description][effects]") {
+    // Expected: docs/engine/renderer.md#frame-description: an effect draw leaves the states it does not set as they
+    // stand (the GL3 renderer's drawEffect(), librw keeping the rest), so the engine records them with the draw for a
+    // renderer that does not draw through librw (EffectDraw::inForce), read from the draw layer as
+    // platform::sceneStatesInForce() reads a scene draw's. The draw's own states and restores reach the draw layer on
+    // every backend, so the next draw sees what GL3 leaves.
+    namespace draw = coney::platform::draw;
+    const std::array<std::int32_t, 8> touched{rw::FOGENABLE, rw::FOGCOLOR,  rw::CULLMODE,     rw::VERTEXALPHA,
+                                              rw::SRCBLEND,  rw::DESTBLEND, rw::ZWRITEENABLE, rw::ALPHATESTFUNC};
+    auto engine = startHeadless();
+    std::array<std::uint32_t, 8> before{};
+    for (std::size_t i = 0; i < touched.size(); ++i) {
+        before[i] = draw::getRenderState(touched[i]);
+    }
+    engine->beginFrame(Rgba{0, 0, 0, 255});
+    draw::setRenderState(rw::FOGENABLE, 1);
+    draw::setRenderState(rw::FOGCOLOR, 0x00302010U); // red in the low byte
+    draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
+    draw::setRenderState(rw::VERTEXALPHA, 0);
+    draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    draw::setRenderState(rw::DESTBLEND, rw::BLENDONE);
+    draw::setRenderState(rw::ZWRITEENABLE, 1);
+    draw::setRenderState(rw::ALPHATESTFUNC, rw::ALPHALESS);
+
+    const std::array<coney::graphics::EffectVertex, 3> corners{};
+    coney::graphics::EffectDraw first;
+    first.states.fog = false;
+    first.states.depthWrite = false;
+    engine->drawEffect(first, corners, {}, nullptr);
+    coney::graphics::EffectDraw second; // sets nothing: drawn in what the first left
+    engine->drawEffect(second, corners, {}, nullptr);
+    engine->present();
+
+    const auto& passes = engine->frame().passes();
+    REQUIRE(!passes.empty());
+    const auto* effects = std::get_if<coney::graphics::EffectPass>(&passes.back());
+    REQUIRE(effects != nullptr);
+    REQUIRE(effects->draws.size() == 2);
+    const coney::graphics::EffectInForce& inForce = effects->draws[0].inForce;
+    CHECK(inForce.fog);
+    CHECK(inForce.fogColour == Rgba{0x10, 0x20, 0x30, 0});
+    CHECK(inForce.cull == coney::graphics::CullFaces::Back);
+    CHECK_FALSE(inForce.vertexAlpha);
+    CHECK(inForce.blend == coney::graphics::BlendInForce::Additive);
+    CHECK(inForce.depthWrite);
+    CHECK(inForce.alphaTest == coney::graphics::AlphaTest::Less);
+    // The first draw turned the fog and the depth writes off and put nothing back.
+    CHECK_FALSE(effects->draws[1].inForce.fog);
+    CHECK_FALSE(effects->draws[1].inForce.depthWrite);
+
+    for (std::size_t i = 0; i < touched.size(); ++i) {
+        draw::setRenderState(touched[i], before[i]);
+    }
 }
