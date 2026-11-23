@@ -32,6 +32,7 @@
 #include "ai/turn_action.h"
 #include "combat/combat_tuning.h"
 #include "combat/commands.h"
+#include "core/log.h"
 #include "human/human.h"
 #include "human/humans.h"
 #include "human/locomotion.h"
@@ -672,6 +673,73 @@ TEST_CASE("the scripts' brains hold calls until the level makes the humans, then
     // Once released, calls run at once.
     scripted.brSuspend(7.0, false);
     CHECK_FALSE(brain->suspended());
+}
+
+TEST_CASE("the run log notes a cast human made when the hold ends, and a brain leaving the world", "[ai][log]") {
+    // Expected: Coney's own debug tooling (docs/guides/run-log.md#events).
+    coney::logging::reset();
+    std::vector<std::string> lines;
+    coney::logging::setSink([&lines](const coney::logging::Record& record, std::string_view /*line*/) {
+        lines.push_back(std::string(record.text));
+    });
+    MoveScene scene;
+    coney::world_objects::WorldFlags flags;
+    flags.createPool(4);
+    coney::ai::ScriptedBrains scripted(scene.brains, flags);
+    scripted.hold();
+    coney::HumanCreation ash;
+    ash.name = "Ash";
+    ash.type = 40;
+    ash.gang = 2;
+    ash.model = "warr_cl";
+    ash.position = std::array<float, 3>{41.0F, 41.0F, 0.0F};
+    ash.handle = 7.0;
+    scripted.humanCreated(ash);
+    CHECK(lines.empty()); // held: nothing made yet
+    Brain* made = nullptr;
+    scripted.release([&](const coney::HumanCreation& human) -> Brain* {
+        made = &scene.add({human.position->at(0), human.position->at(1), human.position->at(2)}, human.headingDegrees);
+        return made;
+    });
+    REQUIRE(made != nullptr);
+    REQUIRE(lines.size() == 1);
+    CHECK(lines[0] == "spawn: human 7 warr_cl type 40 gang 2 at (41.00, 41.00, 0.00)");
+    // Leaving the brains is its own line, and a human that has no brain says nothing.
+    lines.clear();
+    const coney::human::Human& leaving = made->human();
+    scene.brains.remove(leaving);
+    CHECK(lines == std::vector<std::string>{"remove: human 7 warr_cl leaves the brains (" +
+                                            std::to_string(scene.brains.size()) + " left)"});
+    lines.clear();
+    scene.brains.remove(leaving);
+    CHECK(lines.empty());
+    coney::logging::reset();
+}
+
+TEST_CASE("the spawn line says no position when the script gave none, not a place at the origin", "[ai][log]") {
+    // Expected: Coney's own debug tooling (docs/guides/run-log.md#events).
+    coney::logging::reset();
+    std::vector<std::string> lines;
+    coney::logging::setSink([&lines](const coney::logging::Record& record, std::string_view /*line*/) {
+        lines.push_back(std::string(record.text));
+    });
+    MoveScene scene;
+    coney::world_objects::WorldFlags flags;
+    flags.createPool(4);
+    coney::ai::ScriptedBrains scripted(scene.brains, flags);
+    scripted.hold();
+    coney::HumanCreation ash;
+    ash.type = 40;
+    ash.gang = 2;
+    ash.model = "warr_cl";
+    ash.handle = 9.0;
+    REQUIRE_FALSE(ash.position.has_value());
+    scripted.humanCreated(ash);
+    scripted.release(
+        [&](const coney::HumanCreation& /*human*/) -> Brain* { return &scene.add({0.0F, 0.0F, 0.0F}, 0.0F); });
+    REQUIRE(lines.size() == 1);
+    CHECK(lines[0] == "spawn: human 9 warr_cl type 40 gang 2 no position");
+    coney::logging::reset();
 }
 
 TEST_CASE("a teleport pops the brain's front move, keeps another front action, and only TeleportToFlag stops him",

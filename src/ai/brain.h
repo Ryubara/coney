@@ -7,6 +7,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -353,8 +354,9 @@ class Brain {
     /// (started, when it never was) if the action queue is empty, else before its next process. When the stack is
     /// then empty the human's goals ran out: he is sent event kEventGoalsRanOut about himself (deliverEvent()), which
     /// his script handlers and his gang's may answer, and it is counted (goalsRanOut()). Nothing on an empty stack
-    /// (**Coney's guard**: the original is never called on one).
-    /// @orig 0x0028d7d8 Brain_PopGoal (unknown)
+    /// (**Coney's guard**: the original is never called on one). The run log notes a goal popped; the pop itself is
+    /// popOffStack().
+    /// @coney-only the run log's line around the original's pop
     void popGoal();
     /// Pops every goal, then clears the goal base (−1).
     /// @orig 0x0028d910 Brain_ClearGoals (unknown)
@@ -704,6 +706,12 @@ class Brain {
     // freed after the update.
     // @orig 0x0029edd8 Goal_End (unknown)
     void retireGoal(std::unique_ptr<Goal>& slot);
+    // Writes the run log's line for a goal pushed or popped (`what` is "push" or "pop"), `depth` goals being on the
+    // stack after it.
+    void logGoal(std::string_view what, const Goal& goal, std::size_t depth) const;
+    // The pop of popGoal(): the top goal ends and is freed, the new top resumes, and an emptied stack tells the human.
+    // @orig 0x0028d7d8 Brain_PopGoal (unknown)
+    void popOffStack();
     // The reaction goal's turn, before the stack's: an active one is run (runGoal()) and, done, ended; then, unless the
     // brain's type, its goals or its human's class hold reactions off, a new one is made from the human's state, the
     // stack's top suspended and the actions cleared. Returns whether the stack is held off this update: a reaction
@@ -737,11 +745,37 @@ class Brain {
 
     human::Human* m_human;
     std::uint64_t m_nowMs = 0;
-    std::uint64_t m_lastUpdateMs = 0;                                  // +0x30
-    std::uint64_t m_updates = 0;                                       // +0x34
-    std::uint64_t m_thinks = 0;                                        // +0x38
-    std::unique_ptr<Goal> m_reaction;                                  // +0x3c
-    std::vector<std::unique_ptr<Goal>> m_goals;                        // +0x40, the top at the back
+    std::uint64_t m_lastUpdateMs = 0; // +0x30
+    std::uint64_t m_updates = 0;      // +0x34
+    std::uint64_t m_thinks = 0;       // +0x38
+    std::unique_ptr<Goal> m_reaction; // +0x3c
+    // The goal stack, the top at the back, which tells the run log of each goal pushed on it, so pushGoal() stays the
+    // original's push (docs/guides/run-log.md#events). It holds the vector privately and gives out only the reads and
+    // the pop, so push_back() is the one way a goal gets onto it and none lands without its log line.
+    // @coney-only the run log's line for a goal pushed
+    class GoalStack final : private std::vector<std::unique_ptr<Goal>> {
+      public:
+        using Base = std::vector<std::unique_ptr<Goal>>;
+        using Base::at;
+        using Base::back;
+        using Base::begin;
+        using Base::empty;
+        using Base::end;
+        using Base::pop_back;
+        using Base::rbegin;
+        using Base::rend;
+        using Base::size;
+        using Base::operator[];
+
+        // A stack of `owner`'s goals, whose log name the line carries.
+        explicit GoalStack(const Brain& owner) : m_owner(&owner) {}
+        // Pushes `goal` and notes it in the run log: the one way onto the stack, as the vector is private.
+        void push_back(std::unique_ptr<Goal> goal);
+
+      private:
+        const Brain* m_owner;
+    };
+    GoalStack m_goals{*this};                                          // +0x40, the top at the back
     std::array<std::unique_ptr<Action>, kActionQueueSize> m_actions{}; // +0x68, circular
     std::size_t m_actionCount = 0;                                     // +0x2e
     std::size_t m_actionFront = 0;                                     // +0x2f

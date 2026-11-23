@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <format>
 #include <limits>
 #include <utility>
 
@@ -21,6 +22,7 @@
 #include "ai/swap_prompt.h"
 #include "ai/tactic.h"
 #include "ai/tactic_confront.h"
+#include "core/log.h"
 #include "human/human.h"
 #include "human/human_flags.h"
 #include "human/locomotion.h"
@@ -269,6 +271,33 @@ bool Brain::onEvent(const BrainEvent& event) {
     return answerEvent(*this, event);
 }
 
+// The run log's line for a goal pushed or popped: who, which goal and at whom, and how deep the stack is after it.
+// @coney-only a line for the run log (docs/guides/run-log.md#events)
+void Brain::logGoal(std::string_view what, const Goal& goal, std::size_t depth) const {
+    const std::optional<double> target = goal.targetHandle();
+    logging::detail(logging::Category::Ai,
+                    std::format("goal: {}: {} {}{} ({} on the stack)", m_human->fighter().logName(), what,
+                                goalTypeName(goal.type()),
+                                target ? std::format(" at human {:.0f}", *target) : std::string(), depth));
+}
+
+// Pushes `goal` and notes it in the run log.
+// @coney-only the run log's line for a goal pushed
+void Brain::GoalStack::push_back(std::unique_ptr<Goal> goal) {
+    Base::push_back(std::move(goal));
+    m_owner->logGoal("push", *back(), size());
+}
+
+// The pop, noted in the run log before the goal ends, so what its end sets going follows it in the log.
+// @coney-only the run log's line around the original's pop
+void Brain::popGoal() {
+    if (m_goals.empty()) {
+        return;
+    }
+    logGoal("pop", *m_goals.back(), m_goals.size() - 1);
+    popOffStack();
+}
+
 bool Brain::pushGoal(std::unique_ptr<Goal> goal) {
     if (goal == nullptr || m_goals.size() >= kGoalStackSize) {
         return false;
@@ -281,7 +310,7 @@ bool Brain::pushGoal(std::unique_ptr<Goal> goal) {
     return true;
 }
 
-void Brain::popGoal() {
+void Brain::popOffStack() {
     if (m_goals.empty()) {
         return;
     }

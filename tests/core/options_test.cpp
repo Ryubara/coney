@@ -207,6 +207,23 @@ TEST_CASE("the input script option takes a file and may be given once", "[option
     CHECK(coney::usageText().find("--input-script FILE") != std::string_view::npos);
 }
 
+TEST_CASE("the record-input option takes a file, may be given once and is a developer's option", "[options]") {
+    // Expected: Coney's own debug option (docs/guides/run-log.md#input-recording), no counterpart in the original.
+    auto recorded = parse(std::array<std::string_view, 3>{"--record-input", "run.input.txt", "--headless"});
+    REQUIRE(recorded.has_value());
+    CHECK(recorded->recordInput == "run.input.txt");
+    CHECK_FALSE(parse(std::array<std::string_view, 1>{"--record-input"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--record-input", "a", "--record-input", "b"}).has_value());
+    // It does not put a run in test mode: a person's run records beside its log too.
+    auto alone = parse(std::array<std::string_view, 2>{"--record-input", "a"});
+    REQUIRE(alone.has_value());
+    CHECK_FALSE(coney::isTestMode(*alone));
+    // The release build's player options refuse it.
+    const std::array<std::string_view, 2> release{"--record-input", "a"};
+    CHECK_FALSE(parseOptions(std::span<const std::string_view>(release), coney::OptionSet::Player).has_value());
+    CHECK(coney::usageText().find("--record-input FILE") != std::string_view::npos);
+}
+
 TEST_CASE("the text viewer option takes a font and a text and needs a disc", "[options]") {
     auto viewer = parse(std::array<std::string_view, 5>{"--disc", "H:\\", "--view-text", "big_font", "@0x1f"});
     REQUIRE(viewer.has_value());

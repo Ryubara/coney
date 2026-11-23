@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "core/log.h"
 #include "gui/text_layout.h"
 
 namespace coney::hud {
@@ -175,7 +176,41 @@ std::string Hud::objectiveHeader(int slot) const {
     return icon + colour + read(m_services.hudString, kObjectiveHeaderStrings.at(index));
 }
 
+// The run log's line for an objective line set, cleared or marked: its slot and the text's length, never the text (a
+// line is the game's own words, which a log never holds).
+// @coney-only a line for the run log (docs/guides/run-log.md#events)
+void Hud::logObjective(int slot, int mode, std::size_t textLength) {
+    std::string_view what;
+    switch (mode) {
+    case kObjectiveSet:
+        what = "set";
+        break;
+    case kObjectiveClear:
+        what = "cleared";
+        break;
+    case kObjectiveMark:
+        what = "marked";
+        break;
+    case kObjectiveSetMarked:
+        what = "set and marked";
+        break;
+    default:
+        return; // a mode the checklist ignores
+    }
+    logging::info(logging::Category::World,
+                  std::format("objective: {} line {} ({} characters of text)", what, slot, textLength));
+}
+
+// The change, noted in the run log first (a slot the checklist does not have is no change and writes nothing).
+// @coney-only the run log's line around the original's call
 void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, std::uint32_t ms) {
+    if (slot >= 0 && static_cast<std::size_t>(slot) < m_checklist.slots.size()) {
+        logObjective(slot, mode, text.size());
+    }
+    applyObjective(slot, text, mode, silent, ms);
+}
+
+void Hud::applyObjective(int slot, std::string_view text, int mode, bool silent, std::uint32_t ms) {
     if (slot < 0 || static_cast<std::size_t>(slot) >= m_checklist.slots.size()) {
         return;
     }

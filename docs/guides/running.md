@@ -43,7 +43,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--bench FILE [--bench-fighters N] [--bench-allies N] [--bench-god] [--bench-spawn-step N] [--bench-warmup N]
         [--bench-measure N] [--bench-frames FILE] [--bench-real-time] [--bench-place X,Y,Z,H]
         [--bench-neutrals N] [--bench-fps]]
-      [--log-file FILE] [--log-verbose CATEGORIES]
+      [--log-file FILE] [--log-verbose CATEGORIES] [--record-input FILE]
       [--host [[ADDR:]PORT] | --join ADDR[:PORT] [--net-view]] [--net-name NAME] [--cpu-skinning]
       [--digest FILE] [--digest-net FILE] [--net-record FILE | --net-replay FILE]
 ```
@@ -237,6 +237,7 @@ command are in [Script patches](script-patches.md#command-line).
 * [`--trace`, `--trace-humans`, `--script-trace`](running-play-level.md#tracing): per-step traces.
   {#tracing}
 * [`--event-log`](running-play-level.md#event-log), [`--log-file`](running-play-level.md#run-log),
+  [`--record-input`](run-log.md#input-recording),
   [`--pad-pipe`](running-play-level.md#pad-pipe) and [matched views](running-play-level.md#matched-views).
 
 ### [Controls and input scripts](running-input.md)

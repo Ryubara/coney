@@ -11,6 +11,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/log.h"
 #include "graphics/font.h"
 #include "gui/text_layout.h"
 #include "hud/hud.h"
@@ -1087,4 +1088,29 @@ TEST_CASE("the HUD's standing state reads back as its parts hold it, and a guest
     guest.applyStanding(host.standing());
     CHECK_FALSE(guest.visible());
     CHECK_FALSE(guest.panel(1).shown());
+}
+
+TEST_CASE("an objective set, marked or cleared goes into the run log by slot, never with its text", "[hud][log]") {
+    // Expected: Coney's own debug tooling (docs/guides/run-log.md#events).
+    coney::logging::reset();
+    std::vector<std::string> lines;
+    coney::logging::setSink([&lines](const coney::logging::Record& record, std::string_view /*line*/) {
+        lines.push_back(std::string(record.text));
+    });
+    {
+        KeepingAudio audio;
+        Hud hud = makeHud(&audio);
+        hud.setObjective(1, "Find Ash", 0, true, 8000);
+        hud.setObjective(1, "Find Ash", 2, false, 4000);
+        hud.setObjective(0, "Done", 3, false, 8000);
+        hud.setObjective(1, "", 1, false, 8000);
+        // A slot the checklist does not have, and a mode it ignores, write nothing.
+        hud.setObjective(9, "Nowhere", 0, false, 8000);
+        hud.setObjective(0, "Odd", 7, false, 8000);
+    }
+    coney::logging::reset();
+    CHECK(lines == std::vector<std::string>{"objective: set line 1 (8 characters of text)",
+                                            "objective: marked line 1 (8 characters of text)",
+                                            "objective: set and marked line 0 (4 characters of text)",
+                                            "objective: cleared line 1 (0 characters of text)"});
 }

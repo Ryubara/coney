@@ -20,6 +20,7 @@ add_library(coney_core STATIC
     core/chunk_system.cpp
     core/chunk_types.cpp
     core/deferred_input.cpp
+    core/input_recording.cpp
     core/event_log.cpp
     core/game_events.cpp
     core/log.cpp
@@ -441,6 +442,7 @@ target_sources(coney_core PRIVATE
     ai/tactic_vandalize.cpp
     ai/fidget_action.cpp
     ai/fight_goal.cpp
+    ai/goal_names.cpp
     ai/fight_trace.cpp
     ai/fight_reactions.cpp
     ai/formations.cpp

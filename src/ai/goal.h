@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <limits>
+#include <optional>
+#include <string_view>
 
 // A brain's goal: a long-lived intention (fight this human, block for a while, lie down until the knockdown is over)
 // that a brain keeps on its stack of ten, or as its reaction goal. The brain drives it (ai::Brain): it starts the goal,
@@ -85,6 +87,10 @@ enum class GoalType : std::uint8_t {
     Boxer = 0x9e,             ///< BoxerGoal: boxes a target for ever.
 };
 
+/// A goal type's name as the code names it ("Fight", "MoveToFlag", ...), "?" for an id Coney does not build: the run
+/// log and the debug pages show it.
+[[nodiscard]] std::string_view goalTypeName(GoalType type);
+
 /// What a goal's process() returns (`Goal_Process`): stop for this update, process the stack's top again in the same
 /// update, or done (the brain pops it and processes the new top in the same update).
 enum class GoalStatus : std::uint8_t {
@@ -119,6 +125,10 @@ class Goal {
     virtual void end(Brain& /*brain*/) {}
     /// It is freed (`+0x1c`, the destroy): after end(), and also for a goal popped before it started.
     virtual void destroy(Brain& /*brain*/) {}
+    /// The script handle of the human the goal is aimed at, for the run log (`goal: push MoveToHuman on ... at human
+    /// 12`); none for a goal with no human target or one Coney has not given the accessor. Coney's own.
+    /// @coney-only a label for the run log
+    [[nodiscard]] virtual std::optional<double> targetHandle() const { return std::nullopt; }
     /// One update's work (`+0x44`).
     [[nodiscard]] virtual GoalStatus process(Brain& brain) = 0;
     /// Its adjustment of `scorer`'s score for an enemy it may pick (vtable `+0x54`, ai::pickBestEnemy()): by default

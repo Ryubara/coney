@@ -294,8 +294,9 @@ class Hud {
     void showPlayers();
 
     /// `HUDSetObjective(slot, text, mode, silent, ms)`: sets (0), clears (1), marks (2) or sets and marks (3) a line of
-    /// the checklist, with the messages and the first-objective hint the page describes.
-    /// @orig 0x001dad88 HUD_SetObjective (unknown)
+    /// the checklist, with the messages and the first-objective hint the page describes. The run log notes it by slot
+    /// and the text's length (docs/guides/run-log.md#events).
+    /// @coney-only the run log's line around the original's call
     void setObjective(int slot, std::string_view text, int mode, bool silent, std::uint32_t ms);
     /// `HUDRemoveAllGoalText`: clears objective slot 0.
     void removeGoalText();
@@ -573,6 +574,11 @@ class Hud {
     [[nodiscard]] static std::string read(const std::function<std::string(std::uint32_t)>& service, std::uint32_t id);
     // The objective message's header for `slot`: the icon, the HUD colour and the heading string.
     [[nodiscard]] std::string objectiveHeader(int slot) const;
+    // Writes the run log's line for an objective line set, cleared or marked: its slot and the text's length.
+    static void logObjective(int slot, int mode, std::size_t textLength);
+    // The checklist change of setObjective(): the line set, cleared or marked, with the messages and the hint.
+    // @orig 0x001dad88 HUD_SetObjective (unknown)
+    void applyObjective(int slot, std::string_view text, int mode, bool silent, std::uint32_t ms);
     // The radar's step: the view, the zoom's easing, the blips' blinking.
     void updateRadar(const HudFrame& frame);
     // The radar's map disc, its blips and the player's arrow.
