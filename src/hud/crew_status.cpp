@@ -82,7 +82,7 @@ const CrewMember* memberOf(const CrewFrame& frame, double handle) {
 // An unsigned count as a float (a wrapped "less one" stays huge). @orig 0x0019fda0 CrewStatus_Update (unknown)
 float unsignedFloat(std::uint32_t value) { return static_cast<float>(value); }
 
-// A sheet rectangle's shape: its texel width over its texel height (0 without a texture).
+// A rectangle's texel width over its height (0 without a texture). @orig 0x001a0c90 CrewStatusEntry_Render (unknown)
 float rectShape(const graphics::SpriteSheet& sheet, const graphics::UvRect& uv) {
     return squareTexelWidth(sheet, uv, 1.0F) * graphics::kLogicalWidth / graphics::kLogicalHeight;
 }
