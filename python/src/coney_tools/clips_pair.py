@@ -77,6 +77,7 @@ SCENARIO_KEYS = frozenset(
         "ai_seed",
         "skip_movies",
         "record_debug_draw",
+        "line_blend",
         "complete_levels",
         "host_input",
         "join_after",
@@ -110,6 +111,9 @@ class PairRun:
     #: Keep the Debug draw page's switches the run sets in the clips (Coney's `--record-debug-draw`: a clip drops them
     #: otherwise), for a scenario that shows the mesh views.
     record_debug_draw: bool = False
+    #: Draw the PS2 video output's line blend (Coney's `--line-blend on`), off otherwise: for a scenario that shows the
+    #: screen passes.
+    line_blend: bool = False
     #: The levels the played level's story save has complete (Coney's `--complete-levels`); none: a fresh save.
     complete_levels: tuple[int, ...] = ()
     #: The host's input script, an absolute path, for a run that records a **guest**: `level` is then the host's and
@@ -181,6 +185,7 @@ def load_scenario(path: Path, root: Path) -> PairRun:
         record_debug_draw=(
             _scenario_value(data, "record_debug_draw", bool, path) if "record_debug_draw" in data else False
         ),
+        line_blend=_scenario_value(data, "line_blend", bool, path) if "line_blend" in data else False,
         description=_scenario_value(data, "description", str, path),
         complete_levels=_level_list(data, path) if "complete_levels" in data else (),
         host_input=host_script,
@@ -248,6 +253,8 @@ def coney_arguments(executable: Path, disc: str, run: PairRun, out: Path, render
         args += ["--ai-seed", str(run.ai_seed)]
     if run.record_debug_draw:
         args.append("--record-debug-draw")
+    if run.line_blend:
+        args += ["--line-blend", "on"]
     if run.complete_levels:
         args += ["--complete-levels", ",".join(str(level) for level in run.complete_levels)]
     return [*args, *_record_arguments(run, out)]

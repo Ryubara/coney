@@ -128,10 +128,11 @@ reruns the same pair; `clips scenarios` lists them. Its keys are `description`, 
 input script, a path in the checkout, played from the level's first frame of play) and `seconds` (how long the clips
 show), and optionally `start_frame` (the frame of play the clips start at), `checkpoint`, `ai_seed`, `skip_movies`
 (default true), `record_debug_draw` (default false: `--record-debug-draw`, which keeps the Debug draw page's switches
-the run sets, as a clip drops them otherwise), `complete_levels` (a list of level numbers, Coney's
-[`--complete-levels`](running-play-level.md#complete-levels): the story save the level starts from), and, for
-[a guest's view](#clips-pair-guest), `host_input` and `join_after`; any other key is refused. Without a scenario,
-`--level` and `--input-script` give the same run (`--seconds` defaults to 10). The clips are at most
+the run sets, as a clip drops them otherwise), `line_blend` (default false: `--line-blend on`, the PS2 video output's
+softening, for a change to the [screen passes](../engine/gpu-renderer.md#screen-passes)), `complete_levels` (a list of
+level numbers, Coney's [`--complete-levels`](running-play-level.md#complete-levels): the story save the level starts
+from), and, for [a guest's view](#clips-pair-guest), `host_input` and `join_after`; any other key is refused. Without a
+scenario, `--level` and `--input-script` give the same run (`--seconds` defaults to 10). The clips are at most
 `workspace.clips.max_seconds` (10) long, but the run before them is not: Coney plays the script from the level's first
 frame of play and starts recording at `start_frame` through [`--record-from-frame`](running-options.md#record), so a
 scenario can punch a cabinet 70 s into the level (`level99-cabinet`) and still show 8 s of it. `start_frame` and the
