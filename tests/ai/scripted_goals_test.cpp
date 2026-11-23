@@ -20,8 +20,10 @@
 #include "ai/play_anim_action.h"
 #include "ai/play_dyn_animation_goal.h"
 #include "ai/script_services.h"
+#include "ai/sectors.h"
 #include "ai/story_goals.h"
 #include "ai/tactic_crowd.h"
+#include "human/human.h"
 #include "support/ai_fixtures.h"
 
 using coney::ai::Brain;
@@ -260,6 +262,37 @@ TEST_CASE("GoalFight from beyond the fight goal's range runs in with EngageEnemy
     CHECK(charged);
     CHECK(nearest <= coney::ai::kChargeRange);
     CHECK(brain.findGoal(GoalType::Melee) != nullptr);
+}
+
+TEST_CASE("a charger who has arrived as the near one in his approach sector attacks or stops, never waits for good",
+          "[ai][scripted]") {
+    // EngageEnemyGoal_Process (0x002afa48), the charge's sector test at 0x002b0088-0x002b0098: the near one in the
+    // sector of the target's record (Brain_GetSectors 0x0028fe90, 1000 ms) is compared with the runner; another man
+    // disarms the charge, while the runner himself, like nobody, goes on to the kind and the start test
+    // (docs/research/ai-fights.md#engage-charge). Issue #606: the run-in waited there for good.
+    AiScene scene;
+    Brain& brain = scene.add({40.0F, 49.0F, 0.0F}, 180.0F);
+    brain.startFight(scene.player());
+    scene.run(1);
+    REQUIRE(brain.topGoal() != nullptr);
+    REQUIRE(brain.topGoal()->type() == GoalType::EngageEnemy);
+    REQUIRE(static_cast<const coney::ai::EngageEnemyGoal*>(brain.topGoal())->chargeArmed());
+
+    // He arrives 1 m from the standing player, inside the 1.6 m run-in and the record's 1.5 m, alone on that side.
+    scene.humans.back()->place(scene.mesh.get(), {40.0F, 41.0F, 0.0F}, 180.0F);
+    brain.clearActions();
+    const int sector = coney::ai::sectorOf(scene.player().human(), brain.human().position());
+    REQUIRE(scene.player().sectors(0)[sector].nearest == &brain);
+    REQUIRE(brain.distanceTo(scene.player()) <= coney::ai::kChargeRange);
+
+    // Within a few updates: the charge's attack, or the run-in ends and Melee pushes the fight goal.
+    bool wentOn = false;
+    for (int k = 0; k < 15 && !wentOn; ++k) {
+        scene.run(1);
+        const coney::ai::Goal* top = brain.topGoal();
+        wentOn = brain.nextAttackMs() > 0 || (top != nullptr && top->type() == GoalType::Fight);
+    }
+    CHECK(wentOn);
 }
 
 TEST_CASE("the run-in stops within 0.75 of the far range of a standing target when the charge is not armed",
