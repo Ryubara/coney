@@ -650,8 +650,17 @@ Step 11 of `EngageEnemyGoal_Process` (`0x002afa48`) runs within the run-in dista
 T runs (gait > 2) or the charge is armed (`+0x35`). Confirmed (code).
 
 1. **A taken sector.** Take the sector of T's record that A approaches from (`Human_GetSectorOf`
-   `0x0029eb38` of A's bearing relative to T's heading). When another human is the near one there, the charge is
-   disarmed and A only moves (step 12). When A himself is that human, A waits this update.
+   `0x0029eb38` of A's bearing relative to T's heading), from T's record no older than 1000 ms
+   (`Brain_GetSectors(T, 1000)` `0x0028fe90`, [Neighbour sectors](ai-moving.md#neighbour-sectors)). When another
+   human is the near one there, the charge is disarmed and A only moves (step 12). When A himself is that human, or
+   nobody is, A goes on to the kind below. Confirmed (code) at `0x002b0088`-`0x002b0098`: a null handle branches to
+   the kind (`beql v0,zero,0x002b009c`), a human other than A's (`s4`) disarms and branches to the move (`bnel
+   v0,s4,0x002b01f0` with `sb zero,0x35(s1)` in its delay slot), and A's own falls through to the same kind test at
+   `0x002b009c`. The record lists every human within 1.5 m of T but T, so A, once within 1.5 m and alone on his side,
+   is that near one as soon as the record is rebuilt with him in it: the usual case for a lone charger who has
+   arrived. *Corrected 2026-11-23 (#606): this page read the A case as "A waits this update", and Coney's port
+   returned "wait" every update, so a charger who had arrived stood beside T for good; nothing else in the goal ends
+   that wait.*
 2. **The kind** (once; `+0x20`, 45 = none):
     - A **cop** (type 1) takes kind 0 (`X1`) with 50 % (80 % against a gang member, class `+0x11b` 10), else 21 (the
       tackle). It is forced to 0 when T's `+0xe0` has bit `0x40`.
