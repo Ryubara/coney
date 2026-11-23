@@ -273,15 +273,35 @@ bool Brain::onEvent(const BrainEvent& event) {
 
 // The run log's line for a goal pushed or popped: who, which goal and at whom, and how deep the stack is after it.
 // @coney-only a line for the run log (docs/guides/run-log.md#events)
-void Brain::logGoal(std::string_view what, const Goal& goal) const {
+void Brain::logGoal(std::string_view what, const Goal& goal, std::size_t depth) const {
     const std::optional<double> target = goal.targetHandle();
     logging::detail(logging::Category::Ai,
                     std::format("goal: {}: {} {}{} ({} on the stack)", m_human->fighter().logName(), what,
                                 goalTypeName(goal.type()),
-                                target ? std::format(" at human {:.0f}", *target) : std::string(), m_goals.size()));
+                                target ? std::format(" at human {:.0f}", *target) : std::string(), depth));
 }
 
+// The push, noted in the run log once it is on the stack.
+// @coney-only the run log's line around the original's push
 bool Brain::pushGoal(std::unique_ptr<Goal> goal) {
+    if (!pushOnStack(std::move(goal))) {
+        return false;
+    }
+    logGoal("push", *m_goals.back(), m_goals.size());
+    return true;
+}
+
+// The pop, noted in the run log before the goal ends, so what its end sets going follows it in the log.
+// @coney-only the run log's line around the original's pop
+void Brain::popGoal() {
+    if (m_goals.empty()) {
+        return;
+    }
+    logGoal("pop", *m_goals.back(), m_goals.size() - 1);
+    popOffStack();
+}
+
+bool Brain::pushOnStack(std::unique_ptr<Goal> goal) {
     if (goal == nullptr || m_goals.size() >= kGoalStackSize) {
         return false;
     }
@@ -290,11 +310,10 @@ bool Brain::pushGoal(std::unique_ptr<Goal> goal) {
     }
     clearActions();
     m_goals.push_back(std::move(goal));
-    logGoal("push", *m_goals.back());
     return true;
 }
 
-void Brain::popGoal() {
+void Brain::popOffStack() {
     if (m_goals.empty()) {
         return;
     }
@@ -302,7 +321,6 @@ void Brain::popGoal() {
     // (level99's `P1.ReachCenter` pushes GoalAddressPerson), which must stay above, not be popped in its place.
     std::unique_ptr<Goal> ended = std::move(m_goals.back());
     m_goals.pop_back();
-    logGoal("pop", *ended);
     retireGoal(ended);
     // The new top is taken up at once: started or resumed now when the queue is empty, else marked.
     if (Goal* top = topGoal(); top != nullptr) {

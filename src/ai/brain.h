@@ -347,15 +347,16 @@ class Brain {
 
     /// Pushes `goal`: the old top is suspended, the actions are cleared (but an action that refuses to abort) and
     /// `goal` becomes the top, started once the queue is empty. Refused (false, `goal` dropped) when the stack is full.
-    /// @orig 0x0028d758 Brain_PushGoal (unknown)
-    /// @orig 0x0029eea0 Goal_Suspend (unknown)
+    /// The run log notes a goal pushed (docs/guides/run-log.md#events); the push itself is pushOnStack().
+    /// @coney-only the run log's line around the original's push
     bool pushGoal(std::unique_ptr<Goal> goal);
     /// Takes the top goal off the stack, ends it when it had started and frees it, then resumes the new top at once
     /// (started, when it never was) if the action queue is empty, else before its next process. When the stack is
     /// then empty the human's goals ran out: he is sent event kEventGoalsRanOut about himself (deliverEvent()), which
     /// his script handlers and his gang's may answer, and it is counted (goalsRanOut()). Nothing on an empty stack
-    /// (**Coney's guard**: the original is never called on one).
-    /// @orig 0x0028d7d8 Brain_PopGoal (unknown)
+    /// (**Coney's guard**: the original is never called on one). The run log notes a goal popped; the pop itself is
+    /// popOffStack().
+    /// @coney-only the run log's line around the original's pop
     void popGoal();
     /// Pops every goal, then clears the goal base (−1).
     /// @orig 0x0028d910 Brain_ClearGoals (unknown)
@@ -705,8 +706,16 @@ class Brain {
     // freed after the update.
     // @orig 0x0029edd8 Goal_End (unknown)
     void retireGoal(std::unique_ptr<Goal>& slot);
-    // Writes the run log's line for a goal pushed or popped (`what` is "push" or "pop").
-    void logGoal(std::string_view what, const Goal& goal) const;
+    // Writes the run log's line for a goal pushed or popped (`what` is "push" or "pop"), `depth` goals being on the
+    // stack after it.
+    void logGoal(std::string_view what, const Goal& goal, std::size_t depth) const;
+    // The push of pushGoal(): the old top is suspended, the actions are cleared and `goal` becomes the top.
+    // @orig 0x0028d758 Brain_PushGoal (unknown)
+    // @orig 0x0029eea0 Goal_Suspend (unknown)
+    bool pushOnStack(std::unique_ptr<Goal> goal);
+    // The pop of popGoal(): the top goal ends and is freed, the new top resumes, and an emptied stack tells the human.
+    // @orig 0x0028d7d8 Brain_PopGoal (unknown)
+    void popOffStack();
     // The reaction goal's turn, before the stack's: an active one is run (runGoal()) and, done, ended; then, unless the
     // brain's type, its goals or its human's class hold reactions off, a new one is made from the human's state, the
     // stack's top suspended and the actions cleared. Returns whether the stack is held off this update: a reaction

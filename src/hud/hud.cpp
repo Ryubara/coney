@@ -201,12 +201,20 @@ void Hud::logObjective(int slot, int mode, std::size_t textLength) {
                   std::format("objective: {} line {} ({} characters of text)", what, slot, textLength));
 }
 
+// The change, noted in the run log first (a slot the checklist does not have is no change and writes nothing).
+// @coney-only the run log's line around the original's call
 void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, std::uint32_t ms) {
+    if (slot >= 0 && static_cast<std::size_t>(slot) < m_checklist.slots.size()) {
+        logObjective(slot, mode, text.size());
+    }
+    applyObjective(slot, text, mode, silent, ms);
+}
+
+void Hud::applyObjective(int slot, std::string_view text, int mode, bool silent, std::uint32_t ms) {
     if (slot < 0 || static_cast<std::size_t>(slot) >= m_checklist.slots.size()) {
         return;
     }
     std::optional<ChecklistLine>& line = m_checklist.slots.at(static_cast<std::size_t>(slot));
-    logObjective(slot, mode, text.size());
     // Not ported (#662): a text that starts with a tag other than <AUTOINDENT takes Objective_GetIconPrefix's prefix
     // instead of the standard header, and the first-objective hint also needs Tutorial_IsHintUnlocked(0x15).
     switch (mode) {
