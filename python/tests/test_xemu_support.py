@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from xemu_support import FakeGdbStub, FakeMonitor, fake_copies, spare_ports
 
-from coney_tools import xemu_copies
+from coney_tools.xemu_copies import discover_copies
 
 #: The monitor port the fixture of test_xemu_mcp used to give its second copy as a constant; the OS hands the fakes
 #: ports from this range too (Windows' dynamic range starts at 49152), which is how a run failed on `main`.
@@ -33,7 +33,7 @@ def test_a_fake_on_the_old_constant_port_does_not_clash_with_the_second_copy(tmp
     stub = FakeGdbStub()
     try:
         fake_copies(tmp_path / "root", stub, monitor)
-        copies = xemu_copies.discover_copies(tmp_path / "root")
+        copies = discover_copies(tmp_path / "root")
         assert [copy.name for copy in copies] == ["xemu", "xemu-b"]
         assert copies[0].monitor == OLD_CONSTANT_PORT and copies[1].monitor != OLD_CONSTANT_PORT
     finally:
