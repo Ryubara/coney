@@ -716,6 +716,32 @@ TEST_CASE("the run log notes a cast human made when the hold ends, and a brain l
     coney::logging::reset();
 }
 
+TEST_CASE("the spawn line says no position when the script gave none, not a place at the origin", "[ai][log]") {
+    // Expected: Coney's own debug tooling (docs/guides/run-log.md#events).
+    coney::logging::reset();
+    std::vector<std::string> lines;
+    coney::logging::setSink([&lines](const coney::logging::Record& record, std::string_view /*line*/) {
+        lines.push_back(std::string(record.text));
+    });
+    MoveScene scene;
+    coney::world_objects::WorldFlags flags;
+    flags.createPool(4);
+    coney::ai::ScriptedBrains scripted(scene.brains, flags);
+    scripted.hold();
+    coney::HumanCreation ash;
+    ash.type = 40;
+    ash.gang = 2;
+    ash.model = "warr_cl";
+    ash.handle = 9.0;
+    REQUIRE_FALSE(ash.position.has_value());
+    scripted.humanCreated(ash);
+    scripted.release(
+        [&](const coney::HumanCreation& /*human*/) -> Brain* { return &scene.add({0.0F, 0.0F, 0.0F}, 0.0F); });
+    REQUIRE(lines.size() == 1);
+    CHECK(lines[0] == "spawn: human 9 warr_cl type 40 gang 2 no position");
+    coney::logging::reset();
+}
+
 TEST_CASE("a teleport pops the brain's front move, keeps another front action, and only TeleportToFlag stops him",
           "[ai][placement]") {
     // Human_SetTransform (0x0023d440) pops the front action when it is a MoveTo (type 1); Object_TeleportToFlag
