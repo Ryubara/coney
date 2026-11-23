@@ -50,7 +50,7 @@ def trial_rules(rules: Claims) -> Claims:
 
 
 def limit_for(maintainer: bool, rules: Claims) -> int:
-    """How many open claims one account may hold: 3 for a maintainer, 2 for a contributor."""
+    """How many open claims one account may hold: 4 for a maintainer, 2 for a contributor."""
     return rules.limits.maintainer if maintainer else rules.limits.contributor
 
 

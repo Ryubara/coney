@@ -799,7 +799,7 @@ def test_the_gameplay_and_coney_only_folders_are_read() -> None:
 
 def test_the_real_claim_rules() -> None:
     claims = load_conventions(REPO).claims
-    assert claims.limits.maintainer == 3 and claims.limits.contributor == 2
+    assert claims.limits.maintainer == 4 and claims.limits.contributor == 2
     assert (claims.warn_hours, claims.deadline_hours) == (48, 72)
     assert claims.limits.issues_per_task == 3 and claims.closing_per_event == 10 and claims.scope_max_characters == 400
     assert claims.paused_labels == ("S-blocked", "S-needs-info", "S-on-hold")

@@ -198,7 +198,7 @@ def test_a_blocker_must_be_finished_by_a_merged_pull_request(engine: Engine, git
     assert github.view(12).assignees == ("alice",)
 
 
-def test_a_contributor_holds_two_claims_and_a_maintainer_three(engine: Engine, github: FakeGitHub) -> None:
+def test_a_contributor_holds_two_claims_and_a_maintainer_four(engine: Engine, github: FakeGitHub) -> None:
     for number in (11, 12, 13, 14):
         github.add_issue(number)
     for number in (10, 11, 12):
@@ -206,16 +206,16 @@ def test_a_contributor_holds_two_claims_and_a_maintainer_three(engine: Engine, g
         engine.reconcile(number)
     assert github.view(10).assignees == ("alice",) and github.view(11).assignees == ("alice",)
     assert github.view(12).assignees == () and "2 open claim(s) (2 at most for a contributor)" in reasons(github, 12)
-    for number in (13, 14, 15):
+    for number in (13, 14, 15, 16):
         github.add_issue(number)
-    for number in (13, 14, 15):
+    for number in (13, 14, 15, 16):
         claim(github, number, "Ryubara", association="OWNER")
         engine.reconcile(number)
-    assert [n for n in (13, 14, 15) if github.view(n).assignees == ("Ryubara",)] == [13, 14, 15]
-    github.add_issue(16)
-    claim(github, 16, "Ryubara", association="OWNER")
-    engine.reconcile(16)
-    assert "3 open claim(s) (3 at most for a maintainer)" in reasons(github, 16)
+    assert [n for n in (13, 14, 15, 16) if github.view(n).assignees == ("Ryubara",)] == [13, 14, 15, 16]
+    github.add_issue(17)
+    claim(github, 17, "Ryubara", association="OWNER")
+    engine.reconcile(17)
+    assert "4 open claim(s) (4 at most for a maintainer)" in reasons(github, 17)
 
 
 def test_issues_of_one_task_count_as_one_claim(engine: Engine, github: FakeGitHub) -> None:

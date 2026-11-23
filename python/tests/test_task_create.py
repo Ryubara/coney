@@ -196,13 +196,15 @@ def test_issues_of_one_task_share_its_id_and_count_once(world: World) -> None:
     assert {model.parse_card(c.body, RULES).task for n in (10, 11, 12) for c in world.github.cards(n)} == {"big-task"}  # type: ignore[union-attr]
     parsed = parse_task_file(world.task_path("big-task").read_text(encoding="utf-8"), CONVENTIONS.tasks)
     assert parsed.issues == (10, 11, 12)
-    # Three issues of one task are one claim, so a second task is still within the limit of three.
+    # Three issues of one task are one claim, so three more tasks are still within the limit of four.
     world.github.add_issue(14)
     world.github.add_issue(15)
+    world.github.add_issue(16)
     assert world.run(issues=(13,), name="second") == 0
     assert world.run(issues=(14,), name="third") == 0
-    assert world.run(issues=(15,), name="fourth") == 1
-    assert "3 open claim(s) (3 at most for a maintainer)" in world.said()
+    assert world.run(issues=(15,), name="fourth") == 0
+    assert world.run(issues=(16,), name="fifth") == 1
+    assert "4 open claim(s) (4 at most for a maintainer)" in world.said()
 
 
 # --- refusals: nothing is written -------------------------------------------------------------------------------------
