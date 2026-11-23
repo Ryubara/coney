@@ -394,7 +394,9 @@ A target limits his attackers twice. Confirmed (code) at the addresses cited.
     - A is T's own target and `+0x1ec` has passed, in which case A displaces the first holder.
 
   A holder is released when his fight goal next waits (`+0x28`, `Brain_ReleaseActiveAttacker` `0x00291178`), when he
-  blocks, and when the fight goal is suspended.
+  blocks, and when the fight goal is suspended. A displaced holder is not told: his goal's `+0x28` stays set until his
+  queued actions are over and `FightGoal_Process` (`0x002b3ab0`) next waits, so for that time two goals may both say
+  they hold the one place while T's list holds only the newcomer (confirmed (code)).
 - **When T may be attacked again** (`+0x1ec`, `Brain_SetAttackableTime` `0x00290e78`): the attack action's Start, when
   neither human is busy, adds `t` to max(`+0x1ec`, now).
     - `t` = `Attack_GetNextAttackDelay(A, kind)` (`0x00231590`) × 1.0 (`0x00510ad0`) / `s`, rounded. When `s` is 0,
