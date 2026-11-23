@@ -284,10 +284,11 @@ void ScriptedHumans::dropWeapon(double human) {
         if (script.heldObject == kNilHandle) {
             return;
         }
+        // Human_DropHeld. **Coney stand-in**: the hand is emptied and an AI's held object's move style comes off
+        // here, as Coney's objects have no weapon class yet; a player's hand is followed by the play mode, whose
+        // dropHeld() drops the object when it sees the hand empty.
         script.heldObject = kNilHandle;
         script.heldObjectName.clear();
-        // Human_DropHeld: an AI's held object's move style comes off here; a player's hand is followed by the play
-        // mode, whose dropHeld() does it when it sees the hand empty.
         if (brain.type() != BrainType::Player) {
             brain.human().letGoOfHeld(false);
         }

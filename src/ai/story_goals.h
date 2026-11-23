@@ -148,10 +148,10 @@ class FindEnemyGoal final : public Goal {
 [[nodiscard]] std::vector<Brain*> knownBrains(Brain& brain);
 
 /// `GoalThrowObject`'s goal (type 0x5d): beyond `range` of the target the human walks toward it; within it the human
-/// turns to it, then throws what it holds. **Coney stand-in** for the throw (Coney has no thrown objects yet): what
-/// it holds is let go, its move style popped as at a throw's release (human::Human::letGoOfHeld()). It ends at once,
-/// not completed, when the human holds nothing or the target is gone; its callback is scheduled with (human,
-/// completed).
+/// turns to it, then throws what it holds on a brain update that is a multiple of 30 (Virgil, class `0xb2`, at once).
+/// **Coney stand-in** for the throw (Coney has no thrown objects yet): what it holds is let go, its move style popped
+/// as at a throw's release (human::Human::letGoOfHeld()). It ends at once, not completed, when the human holds nothing
+/// or the target is gone; its callback is scheduled with (human, completed).
 /// @orig 0x002cf690 ThrowObjectGoal_Process (unknown)
 class ThrowObjectGoal final : public Goal {
   public:

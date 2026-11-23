@@ -1246,6 +1246,11 @@ opening molotov uses 20 m, [Boss Virgil](ai-code.md#t1-boss-virgil)). Confirmed 
 With a throwable in hand, cross is the throw, so the player's own throw code sends the object off. That it aims at the
 object target is inferred: the goal sets nothing else. Neither the arc nor any spread is set here.
 
+**In Coney** (`ai::ThrowObjectGoal`, `repo:src/ai/story_goals.h`): steps 1-5 as above, with two stand-ins marked in the
+code: any held object counts as throwable, and the throw lets go of the object at once in place of the object target
+and the queued cross, popping the holder's move style as `Human_ReleaseThrow` does
+([Two-handed objects](objects.md#two-handed)).
+
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x002cf480` | `Goal_ThrowObject` | binding | `Goal_ThrowObject`: pushes the goal on a human | confirmed (code) |
