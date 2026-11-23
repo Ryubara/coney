@@ -333,7 +333,11 @@ human::CarriedDrop LevelPickups::dropCarried(human::DropInput input, anim::Vec3 
     if (player >= 0) {
         input.playerMoney = carried(player, item::kMoney);
         if (const world_objects::ObjectType* type = m_types.find(input.carried); type != nullptr) {
-            input.carriedPrice = static_cast<std::int8_t>(type->value);
+            // The type's `+0x5a` is a byte read signed: 0x80 and up are negative.
+            constexpr int kByte = 0xff;
+            constexpr int kSignBit = 0x80;
+            const int byte = type->value & kByte;
+            input.carriedPrice = byte >= kSignBit ? byte - (kByte + 1) : byte;
         }
     }
     human::CarriedDrop drop = human::dropCarried(input, m_state.random, blocked);
@@ -363,7 +367,8 @@ human::CarriedDrop LevelPickups::dropCarried(human::DropInput input, anim::Vec3 
         record.money = object.money;
         static_cast<void>(m_records.add(std::move(record)));
     }
-    // A player's loss leaves his inventory, notifying.
+    // A player's loss leaves his inventory, notifying. Coney's choice: a loss of $0 is not added (the original adds
+    // it, notifying, when his draw or his inventory is 0; a player has flag 0x4 and never drops in play).
     if (player >= 0 && drop.playerMoneyTaken != 0) {
         script::addInventoryItem(m_scripts, m_state, player, item::kMoney, -drop.playerMoneyTaken, true);
     }

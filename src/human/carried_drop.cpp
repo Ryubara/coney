@@ -56,7 +56,8 @@ void dropPocket(const DropInput& input, int count, bool round, const SectorBlock
     for (int made = 0; made < count; ++made) {
         DroppedObject object{.type = input.pocketObject, .money = 0, .removalItem = 0, .sector = std::nullopt};
         if (round) {
-            while (blocked(sector) && sector < kSectors) {
+            // The original asks sector 8 too before it stops; its answer changes nothing, so it is not asked.
+            while (sector < kSectors && blocked(sector)) {
                 ++sector;
             }
             if (sector == kSectors) {
@@ -69,11 +70,11 @@ void dropPocket(const DropInput& input, int count, bool round, const SectorBlock
     }
 }
 
-// The money he drops: a civilian his class's share (at least 1), another AI all of it, a player a draw of his class's
-// range, at most what his inventory holds, taken from it.
+// The money he drops (`brain` his brain's type): a civilian his class's share (at least 1), another AI all of it, a
+// player a draw of his class's range, at most what his inventory holds, taken from it.
 // @orig 0x00232c60 Human_DropCarried (unknown)
-int moneyDropped(const DropInput& input, GameRandom& random, CarriedDrop& drop) {
-    if (*input.brainType == kCivilianBrain) {
+int moneyDropped(const DropInput& input, int brain, GameRandom& random, CarriedDrop& drop) {
+    if (brain == kCivilianBrain) {
         if (input.money <= 0) {
             return 0;
         }
@@ -143,7 +144,7 @@ CarriedDrop dropCarried(const DropInput& input, GameRandom& random, const Sector
     // 6. Otherwise his money: $1 or more makes a dyn_money holding it, and he has none left. Each object's removalItem
     // names the inventory duration of its removal time, which the play mode does not apply yet (a stand-in,
     // LevelPickups::dropCarried()).
-    const int amount = moneyDropped(input, random, drop);
+    const int amount = moneyDropped(input, brain, random, drop);
     if (amount < 1) {
         return drop;
     }

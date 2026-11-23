@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The humans' drops when their health runs out: PlayLevelSimulation's part of `Human_OnHealthOut`'s
 // `Human_DropCarried` call (docs/research/crimes.md#down-drop).
+#include <algorithm>
 #include <format>
 
 #include "ai/brain.h"
@@ -54,13 +55,14 @@ void PlayLevelSimulation::dropOnHealthOut(human::Human& human, int player) {
     input.player = player >= 0;
     input.pocketItem = script.pocketItem;
     input.pocketCount = script.pocketCount;
-    // Human_GetCuffCount: a player's from his inventory, a cop always one, any other AI his own.
+    // Human_GetCuffCount: a player's from his inventory, a cop always one, any other AI his own (a negative count
+    // read as none).
     if (input.player) {
         input.cuffs = m_pickups->carried(player, item::kHandcuffs);
     } else if (brain != nullptr && brain->type() == ai::BrainType::Cop) {
         input.cuffs = 1;
     } else {
-        input.cuffs = script.cuffs;
+        input.cuffs = std::max(script.cuffs, 0);
     }
     input.carried = script.carriedItem;
     input.carriedChance = script.carriedChance;
