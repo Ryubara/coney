@@ -177,10 +177,11 @@ inline bool windowAvailable() {
     return coney::platform::RenderEngine::start(coney::platform::RenderBackend::OpenGl, desc).has_value();
 }
 
-// Opens the yard from CONEY_DISC, on the Null renderer or (`window`) a hidden OpenGL window, with two fighters ahead of
-// the player so there are humans to look at. The Null renderer draws nothing: the play mode's frames then step the
-// world and ask the views' hook, and no model is drawn.
-inline Opened openYard(Yard& yard, bool window) {
+// Opens the yard from CONEY_DISC, on the Null renderer or (`window`) a hidden window of `windowed` (OpenGL unless
+// said), with two fighters ahead of the player so there are humans to look at. The Null renderer draws nothing: the
+// play mode's frames then step the world and ask the views' hook, and no model is drawn.
+inline Opened openYard(Yard& yard, bool window,
+                       coney::platform::RenderBackend windowed = coney::platform::RenderBackend::OpenGl) {
     const char* discPath = SDL_getenv("CONEY_DISC");
     if (discPath == nullptr || *discPath == '\0') {
         return Opened::NoDisc;
@@ -191,7 +192,7 @@ inline Opened openYard(Yard& yard, bool window) {
     REQUIRE(wad.has_value());
     yard.wad = std::move(*wad);
     const coney::platform::WindowDesc desc = testWindow();
-    auto engine = window ? coney::platform::RenderEngine::start(coney::platform::RenderBackend::OpenGl, desc)
+    auto engine = window ? coney::platform::RenderEngine::start(windowed, desc)
                          : coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     if (!engine) {
         return Opened::NoWindow;

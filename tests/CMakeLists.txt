@@ -671,6 +671,7 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_model_swap_test.cpp
         platform/disc_rise_counter_test.cpp
         platform/disc_ground_escape_test.cpp
+        platform/disc_gpu_effects_test.cpp
         platform/disc_sprint_attacks_test.cpp
         platform/disc_strike_contact_test.cpp
         platform/disc_tandem_test.cpp
