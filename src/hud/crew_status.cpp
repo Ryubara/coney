@@ -208,7 +208,7 @@ bool CrewStatusList::remove(double handle) {
     if (slot == m_entries.end()) {
         return false;
     }
-    const std::uint32_t gone = *slot->order;
+    const std::uint32_t gone = slot->order.value_or(0U); // the find above only takes a listed slot
     *slot = Entry{};
     --m_count;
     for (Entry& entry : m_entries) {
