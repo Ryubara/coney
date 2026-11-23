@@ -278,9 +278,11 @@ bool stepRadarBlips(RadarState& radar, const RadarStepContext& context) {
             blip.depth = kRadarTopBatchDepth;
             blip.dotShown = showing && blip.marked;
         }
-        // 2. Where it is: its fixed point, or the human a guest's blip follows (the host's step already gave its icon
-        // and colour, which travel), or its object, whose objective arrow follows the height.
+        // 2. Where it is: its fixed point, or its object, whose objective arrow follows the height.
         std::optional<anim::Vec3> at = blip.fixedPlace;
+        // **Coney's stand-in** for a guest's HUD in network play (Coney-only): a guest cannot resolve the host's script
+        // handles, so its blip finds the human it follows by network id (RadarBlip::follows), and the host's step has
+        // already given its icon and colour, which travel. The host never sets `follows`: it takes the original's path.
         if (!at && blip.follows != 0) {
             at = context.locateFollowed ? context.locateFollowed(blip.follows) : std::nullopt;
         } else if (!at && context.locate) {
