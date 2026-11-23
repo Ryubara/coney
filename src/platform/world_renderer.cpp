@@ -333,7 +333,7 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
         afterWorlds();
     }
     // The coronas of the visible lights, over the world.
-    if (!m_sceneOnly) { // Coney's --scene-only (debug): no coronas, which the GPU renderer does not draw yet.
+    if (!m_sceneOnly) { // Coney's --scene-only (debug): no coronas, an effect.
         lit.drawCoronas(engine);
     }
     draw::setRenderState(rw::FOGENABLE, 0);

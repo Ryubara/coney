@@ -253,11 +253,11 @@ those pixels have the other renderer's colour within a pixel of them (checked on
 pixel over where Direct3D and OpenGL rasterise a one-pixel line differently. These two are over the cross-renderer
 tolerance of 0.2 % and are listed here with that reason.
 
-The whole frame, without `--scene-only`, differs from GL3 by what the GPU renderer does not draw yet (the blob shadows,
-the health rings, the coronas): the street frame with every view off, 10,583 pixels over 4 (3.7 %, largest 161); with
-the humans' wireframe in a wireframe-only view and the selection's normals and bone axes on 13,862 (4.8 %), and with the
-normals and bone axes alone 10,570 (3.7 %). GL3's own frames, branch against base, are the same in all nine frames (the
-seven above and those two), and the GPU frame with every view off, 0 pixels over 2.
+The whole frame, without `--scene-only`, differed from GL3 by what the GPU renderer did not draw then (the blob shadows,
+the health rings, the coronas, drawn since [#1212](issue:1212)): the street frame with every view off, 10,583 pixels
+over 4 (3.7 %, largest 161); with the humans' wireframe in a wireframe-only view and the selection's normals and bone
+axes on 13,862 (4.8 %), and with the normals and bone axes alone 10,570 (3.7 %). GL3's own frames, branch against base,
+are the same in all nine frames (the seven above and those two), and the GPU frame with every view off, 0 pixels over 2.
 
 `tests/graphics/mesh_view_draw_test.cpp` checks the passes' colours, lighting and states and the frame description's
 colours and lines without a window; `tests/platform/mesh_view_scene_test.cpp` checks on the NULL backend, which records
@@ -281,6 +281,13 @@ force before each draw with it (`EffectDraw::inForce`, read from the draw layer 
 `RenderEngine::drawEffect()`). So that the draw layer holds what GL3 would leave there, the GL3 renderer sets each effect
 draw's states and its restores, and each scene draw's states, on every backend, and draws only where it has something to
 draw into.
+
+**Loaded for it.** The play mode draws its effects on every renderer that draws the scene (`drawsScene()`): the
+particles, the glints and the ground fog, the water, the panes, the throw arc, and the coronas, blob shadows and rings
+of `PlayLighting`, whose sprite sheets and texture dictionaries load for the GPU renderer too and are converted for
+librw on GL3 alone (`drawsPixels()`), as the HUD's sheets already were; the GPU renderer reads them as they are
+(`SheetTexture::toImage()`). The debug tools' scene lines reach it as the scene passes' lines ([The mesh
+views](#mesh-views)), not as effect draws.
 
 **The steps.** In `GpuScene::prepare()`, for each effect pass with a camera, each draw's corners become unlit vertices of
 the scene's format (`graphics::meshVertexOf()`: the corner's colour as the prelighting, its texture coordinate), and its
@@ -310,7 +317,9 @@ the part both drew before this item can be compared alone. `tests/graphics/effec
 blending, alpha test and vertices headless; `tests/platform/gpu_effect_test.cpp` draws sprites blended and added, a
 surface in the fog in force, a sprite behind a mesh, a texture with alpha and a line on a hidden GPU window and reads
 them back; `tests/platform/frame_recording_test.cpp` checks the states recorded in force; the `effects` [test
-card](../guides/running-viewers.md#test-cards) draws them on both renderers in CI's software pictures.
+card](../guides/running-viewers.md#test-cards) draws them on both renderers in CI's software pictures, and
+`tests/platform/disc_gpu_effects_test.cpp` checks with the disc that play records them, textured, on this renderer. How
+the frames compare with GL3's: [Renderer pictures](renderer-pictures.md#comparing), the Across renderers row.
 
 ## Skinning {#skinning}
 
