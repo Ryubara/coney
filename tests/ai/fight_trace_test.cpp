@@ -320,12 +320,15 @@ TEST_CASE("a tactic's start drops each AI member's target as an order", "[ai][tr
 }
 
 TEST_CASE("FollowAndAttack's clear of a pick beyond 60 m of the leader counts with the pick", "[ai][trace]") {
+    // Expected: ai-goals.md#goal-follow-and-attack, confirmed (code)
     using coney::ai::TargetCause;
     coney::test::AiScene scene;
     coney::ai::Brain& leader = scene.add(coney::anim::Vec3{2.0F, 2.0F, 0.0F}, 0.0F);
     coney::ai::Brain& member = scene.add(coney::anim::Vec3{75.0F, 75.0F, 0.0F}, 0.0F);
     coney::ai::Brain& enemy = scene.add(coney::anim::Vec3{77.0F, 75.0F, 0.0F}, 270.0F);
     member.addEnemy(enemy);
+    // Threat response 0, so his think starts no fight of its own on the enemy listed (ai-brain-types.md#think-gang).
+    member.setThreatResponse(0);
     REQUIRE(member.pushGoal(
         std::make_unique<coney::ai::FollowAndAttackGoal>(scene.services, scene.brains.formations(), leader.handle())));
     scene.run(10);

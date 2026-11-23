@@ -298,9 +298,12 @@ TEST_CASE("a charger who has arrived as the near one in his approach sector atta
 
 TEST_CASE("the run-in stops within 0.75 of the far range of a standing target when the charge is not armed",
           "[ai][scripted]") {
+    // Expected: ai-fights.md#engage-enemy and #engage-charge, confirmed (code)
     AiScene scene;
     Brain& brain = scene.add({40.0F, 44.5F, 0.0F}, 180.0F);
     brain.addEnemy(scene.player());
+    // Threat response 0, so his think starts no fight of its own on the enemy listed (ai-brain-types.md#think-gang).
+    brain.setThreatResponse(0);
     brain.setTarget(&scene.player());
     brain.pushGoal(std::make_unique<coney::ai::EngageEnemyGoal>());
     scene.run(1);

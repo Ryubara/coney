@@ -30,6 +30,8 @@ TEST_CASE("a stationary thrower faces the nearest enemy, plays its throw and wai
     Brain& thrower = scene.add(Vec3{20.0F, 20.0F, 0.0F}, 0.0F);
     Brain& enemy = scene.add(Vec3{20.0F, 26.0F, 0.0F}, 180.0F);
     thrower.addEnemy(enemy);
+    // Threat response 0, so his think starts no fight of its own on the enemy listed (ai-brain-types.md#think-gang).
+    thrower.setThreatResponse(0);
     REQUIRE(thrower.pushGoal(std::make_unique<coney::ai::StationaryThrowerGoal>(
         2, coney::ai::ThrowerObjects{7, 8, 0, 0, 0, 0, 0, 0}, scene.services)));
     const auto* goal = dynamic_cast<const coney::ai::StationaryThrowerGoal*>(thrower.topGoal());
