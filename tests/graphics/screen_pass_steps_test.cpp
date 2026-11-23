@@ -113,10 +113,10 @@ TEST_CASE("the blur pulse copies the view, halves it, passes it over itself and 
 
 TEST_CASE("the blur pulse covers a view away from the window's corner and has no steps for a sliver",
           "[graphics][screen-passes]") {
-    // Expected: src/platform/gl3_screen_passes.cpp, the GL3 renderer's drawBlurPulse(): the half-size image goes into
-    // the view's own top-left quarter (the whole picture the 3D view fills, which in a wide window starts left of the
-    // logical screen), its size halved rounding down; a view under 2 pixels either way draws nothing. With no passes,
-    // the image is copied once and stretched back.
+    // Expected: ../engine/gpu-renderer.md#screen-passes, the GL3 renderer's drawBlurPulse(): the half-size image goes
+    // into the view's own top-left quarter (the whole picture the 3D view fills, which in a wide window starts left of
+    // the logical screen), its size halved rounding down; a view under 2 pixels either way draws nothing. With no
+    // passes, the image is copied once and stretched back.
     const ScreenRect view{10, 20, 101, 51};
     const std::vector<ScreenStep> steps =
         coney::graphics::blurPulseSteps(coney::graphics::BlurPulse{0, 0.0F, 0.0F}, view);
@@ -141,7 +141,7 @@ TEST_CASE("the blur pulse covers a view away from the window's corner and has no
 
 TEST_CASE("the line blend lays the view's copy over itself at half strength one original line down",
           "[graphics][screen-passes]") {
-    // Expected: src/platform/gl3_screen_passes.cpp, the GL3 renderer's drawLineBlend()
+    // Expected: ../engine/gpu-renderer.md#screen-passes, the GL3 renderer's drawLineBlend()
     // (docs/research/rendering.md#output): the view copied, then laid over itself with alpha 128 (PMODE's ALP 0x80),
     // its texture coordinates moved down by the line's share of the view (DISPFB2's DBY 1), blended by alpha, sampled
     // linearly and clamped past the bottom edge.
@@ -165,7 +165,7 @@ TEST_CASE("the line blend lays the view's copy over itself at half strength one 
 
 TEST_CASE("the motion blur lays the kept frame over the view only while one is kept, then keeps the view",
           "[graphics][screen-passes]") {
-    // Expected: src/platform/gl3_screen_passes.cpp, the GL3 renderer's drawMotionBlur() (Coney's stand-in,
+    // Expected: ../engine/gpu-renderer.md#screen-passes, the GL3 renderer's drawMotionBlur() (Coney's stand-in,
     // platform/motion_blur_pass.h): the kept frame over the new one as the view's quad in the blur's colour, blended by
     // its alpha, texture (0, 0) at the view's top left; then the blended view copied into the kept frame for the next
     // frame. With no frame kept yet (the first blur, or the window resized) only the copy.
@@ -188,8 +188,8 @@ TEST_CASE("the motion blur lays the kept frame over the view only while one is k
 }
 
 TEST_CASE("a motion blur of no strength lays nothing and forgets the kept frame", "[graphics][screen-passes]") {
-    // Expected: src/platform/gl3_screen_passes.cpp, the GL3 renderer's drawMotionBlur(): an alpha of 0 draws nothing,
-    // copies nothing and marks the kept frame as not kept, so the next blur starts from a fresh frame
+    // Expected: ../engine/gpu-renderer.md#screen-passes, the GL3 renderer's drawMotionBlur(): an alpha of 0 draws
+    // nothing, copies nothing and marks the kept frame as not kept, so the next blur starts from a fresh frame
     // (graphics::MotionBlurOverlay).
     const ScreenPass pass{kView, coney::graphics::MotionBlurOverlay{3, Rgba{255, 255, 255, 0}}};
     const coney::graphics::ScreenSteps steps = coney::graphics::screenStepsOf(pass, true);
