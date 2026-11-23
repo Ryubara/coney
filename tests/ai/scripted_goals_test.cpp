@@ -270,6 +270,7 @@ TEST_CASE("a charger who has arrived as the near one in his approach sector atta
     // sector of the target's record (Brain_GetSectors 0x0028fe90, 1000 ms) is compared with the runner; another man
     // disarms the charge, while the runner himself, like nobody, goes on to the kind and the start test
     // (docs/research/ai-fights.md#engage-charge). Issue #606: the run-in waited there for good.
+    // Expected: ai-fights.md#engage-charge, confirmed (code)
     AiScene scene;
     Brain& brain = scene.add({40.0F, 49.0F, 0.0F}, 180.0F);
     brain.startFight(scene.player());

@@ -52,15 +52,6 @@ constexpr int kCopX1Percent = 50;
 constexpr int kCopX1GangPercent = 80;
 constexpr int kGangMemberClass = 10;
 
-// Whether another man than `brain` is the near human in the sector of `target`'s record that `brain` approaches from
-// (`Human_GetSectorOf` of A's bearing from T, the record no older than 1000 ms). Nobody there and A himself there are
-// the same to the charge (docs/research/ai-fights.md#engage-charge).
-bool approachTaken(const Brain& brain, Brain& target) {
-    const int k = sectorOf(target.human(), brain.human().position());
-    const Brain* nearest = target.sectors(kSectorAgeMs)[k].nearest;
-    return nearest != nullptr && nearest != &brain;
-}
-
 } // namespace
 
 GoalStatus MoveToHumanGoal::process(Brain& brain) {
@@ -239,7 +230,8 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
         // 11.1 Another man the near one in the sector A comes from disarms the charge (A only moves); with nobody
         // there, or A himself (the lone charger once the record holds him), A goes on to the kind: the branch at
         // 0x002b0090 falls through to 0x002b009c (docs/research/ai-fights.md#engage-charge).
-        if (approachTaken(brain, *target)) {
+        const Brain* nearest = target->sectors(kSectorAgeMs)[sectorOf(them, human.position())].nearest;
+        if (nearest != nullptr && nearest != &brain) {
             m_charge = false;
         } else {
             // 11.2 The kind, once: a cop's X1 or tackle; anyone else's pick, which must be a charge kind.

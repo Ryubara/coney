@@ -658,9 +658,8 @@ T runs (gait > 2) or the charge is armed (`+0x35`). Confirmed (code).
    v0,s4,0x002b01f0` with `sb zero,0x35(s1)` in its delay slot), and A's own falls through to the same kind test at
    `0x002b009c`. The record lists every human within 1.5 m of T but T, so A, once within 1.5 m and alone on his side,
    is that near one as soon as the record is rebuilt with him in it: the usual case for a lone charger who has
-   arrived. *Corrected 2026-11-23 (#606): this page read the A case as "A waits this update", and Coney's port
-   returned "wait" every update, so a charger who had arrived stood beside T for good; nothing else in the goal ends
-   that wait.*
+   arrived. Nothing else in the goal would end a wait there, so a port that waits on this case keeps a lone charger
+   standing beside T for good.
 2. **The kind** (once; `+0x20`, 45 = none):
     - A **cop** (type 1) takes kind 0 (`X1`) with 50 % (80 % against a gang member, class `+0x11b` 10), else 21 (the
       tackle). It is forced to 0 when T's `+0xe0` has bit `0x40`.
@@ -1144,7 +1143,7 @@ the weapon piles and the spawners hand to AI humans.
 
 ### Where Coney's run-in still differs {#q-engage-gaps}
 
-The side-by-side compare of `EngageEnemyGoal_Process` (`0x002afa48`, 2026-11-23, #606) left these pieces of
+The side-by-side compare of `EngageEnemyGoal_Process` (`0x002afa48`) left these pieces of
 `repo:src/ai/engage_goals.cpp` as marked stand-ins, each confirmed (code) at the address given and none yet compared
 with the original running:
 
