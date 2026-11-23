@@ -156,8 +156,12 @@ TEST_CASE("the client game's scene draws each human with the character his snaps
     REQUIRE(list.has_value());
     const auto cleonIndex = list->indexOf("warr_cl");
     const auto rembrandtIndex = list->indexOf("warr_re_cv");
-    REQUIRE(cleonIndex.has_value());
-    REQUIRE(rembrandtIndex.has_value());
+    if (!cleonIndex || !rembrandtIndex) {
+        FAIL("the character list names neither Cleon nor Rembrandt");
+        return;
+    }
+    const std::int32_t cleonId = coney::net::characterIdOf(*cleonIndex);
+    const std::int32_t rembrandtId = coney::net::characterIdOf(*rembrandtIndex);
     const std::uint32_t cleonHash = coney::characters::characterNameHash("warr_cl");
     const std::uint32_t rembrandtHash = coney::characters::characterNameHash("warr_re_cv");
 
@@ -181,8 +185,8 @@ TEST_CASE("the client game's scene draws each human with the character his snaps
     const auto run = [&](std::uint32_t from, std::uint32_t to, std::int32_t firstCharacter) {
         for (std::uint32_t step = from; step < to; ++step) {
             std::vector<coney::net::SnapshotHuman> humans;
-            const std::array<std::int32_t, 4> characters{firstCharacter, coney::net::characterIdOf(*rembrandtIndex),
-                                                         coney::net::kNoCharacter, coney::net::kMostCharacterId};
+            const std::array<std::int32_t, 4> characters{firstCharacter, rembrandtId, coney::net::kNoCharacter,
+                                                         coney::net::kMostCharacterId};
             // NOLINTNEXTLINE(bugprone-too-small-loop-variable): four slots
             for (std::uint16_t slot = 0; slot < characters.size(); ++slot) {
                 coney::net::HumanState human = humanAt(3.0F * static_cast<float>(slot), 388, 0.0F);
@@ -203,7 +207,7 @@ TEST_CASE("the client game's scene draws each human with the character his snaps
         return character != nullptr ? std::optional<std::uint32_t>(character->assets().record.nameHash) : std::nullopt;
     };
 
-    run(0, 10, coney::net::characterIdOf(*cleonIndex));
+    run(0, 10, cleonId);
     CHECK(drawn.humansPosed() == 4);
     CHECK(drawn.layersMissing() == 0);
     CHECK(hashOf(id(0)) == std::optional<std::uint32_t>{cleonHash});
@@ -217,7 +221,7 @@ TEST_CASE("the client game's scene draws each human with the character his snaps
           3); // the fallback, Cleon and Rembrandt by his index; the id past the list did not load
 
     // The first human takes Rembrandt's place: from the snapshot that says so, he is drawn as him.
-    run(10, 20, coney::net::characterIdOf(*rembrandtIndex));
+    run(10, 20, rembrandtId);
     CHECK(hashOf(id(0)) == std::optional<std::uint32_t>{rembrandtHash});
     CHECK(drawn.characterOf(id(0)) == drawn.characterOf(id(1)));
     std::printf("client scene characters: %zu humans posed, %zu meshes, %zu characters loaded\n", drawn.humansPosed(),

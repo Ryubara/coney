@@ -53,8 +53,12 @@ TEST_CASE("the host's play mode tells each human's character to network play", "
     REQUIRE(list.has_value());
     const auto rembrandt = list->indexOf("warr_re_cv");
     const auto cleon = list->indexOf("warr_cl");
-    REQUIRE(rembrandt.has_value());
-    REQUIRE(cleon.has_value());
+    if (!rembrandt || !cleon) {
+        FAIL("the character list names neither Rembrandt nor Cleon");
+        return;
+    }
+    const std::int32_t rembrandtId = coney::net::characterIdOf(*rembrandt);
+    const std::int32_t cleonId = coney::net::characterIdOf(*cleon);
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     REQUIRE(engine.has_value());
 
@@ -87,15 +91,14 @@ TEST_CASE("the host's play mode tells each human's character to network play", "
         }
         return characters;
     };
-    CHECK(charactersNow() == std::set<std::int32_t>{coney::net::characterIdOf(*rembrandt)});
+    CHECK(charactersNow() == std::set<std::int32_t>{rembrandtId});
 
     // A fighter spawned as Cleon is Cleon in the snapshots, the others still Rembrandt.
     const coney::anim::Vec3 feet = mode.playerFeet();
     REQUIRE(
         mode.spawnFighterAs(coney::anim::Vec3{feet.x + 6.0F, feet.y, feet.z}, mode.playerHeadingDegrees(), "warr_cl"));
     (void)modes.runUntilEmpty(timer, {}, 5);
-    CHECK(charactersNow() ==
-          std::set<std::int32_t>{coney::net::characterIdOf(*rembrandt), coney::net::characterIdOf(*cleon)});
+    CHECK(charactersNow() == std::set<std::int32_t>{rembrandtId, cleonId});
 
     // The player becomes Cleon (type 1): his own entry follows, as the mode draws him.
     REQUIRE(mode.changeCharacter(1));
@@ -110,9 +113,11 @@ TEST_CASE("the host's play mode tells each human's character to network play", "
             player = state;
         }
     }
-    REQUIRE(player.has_value());
-    CHECK(player->character == // NOLINT(bugprone-unchecked-optional-access): the REQUIRE above ends the test
-          coney::net::characterIdOf(*cleon));
+    if (!player) {
+        FAIL("no human stands where the player does");
+        return;
+    }
+    CHECK(player->character == cleonId);
     std::printf("host characters: %zu humans, %zu distinct characters\n", humans.holding().size(),
                 charactersNow().size());
 }
