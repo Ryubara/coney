@@ -11,6 +11,7 @@ import dataclasses
 import json
 import os
 import subprocess
+import sys
 from collections.abc import Sequence
 from fractions import Fraction
 from pathlib import Path
@@ -860,3 +861,194 @@ def test_a_before_and_a_without_together_are_refused(space: dict[str, Path]) -> 
     machine = FakeMachineBefore("c" * 40, {"before": "0x01", "after": "0x02"})
     with pytest.raises(clips.ClipError, match="name the before twice"):
         _pair(space, machine, before_ref="x", without="y")
+
+
+# --- a guest's view: a host and a guest over the loopback -----------------------------------------------------------
+
+
+GUEST_SCENARIO = (
+    'description = "a guest"\nlevel = "level99"\ninput = "tests/support/walk.txt"\nseconds = 5\nstart_frame = 150\n'
+    'host_input = "tests/support/host.txt"\njoin_after = "L99_IN skipped"\n'
+)
+GUEST_BASE = 'description = "d"\nlevel = "level99"\ninput = "tests/support/walk.txt"\nseconds = 5\n'
+
+
+@pytest.fixture
+def guest_checkout(checkout: Path) -> Path:
+    """The checkout with the host's input script beside the guest's."""
+    (checkout / "tests" / "support" / "host.txt").write_text("70 tap cross\n", encoding="utf-8")
+    return checkout
+
+
+def test_a_scenario_may_record_a_guest_whose_host_plays_its_own_script(guest_checkout: Path) -> None:
+    # `input` is the guest's pad and `host_input` the host's; `join_after` is what the host prints when its level plays.
+    path = _scenario(guest_checkout / "tools" / "clips", "guest", GUEST_SCENARIO)
+    run = clips_pair.load_scenario(path, guest_checkout)
+    assert run.host_input == (guest_checkout / "tests" / "support" / "host.txt").resolve()
+    assert run.join_after == "L99_IN skipped"
+    assert run.input_script == (guest_checkout / "tests" / "support" / "walk.txt").resolve()
+    # A scenario with no host records the one process, as before.
+    plain = clips_pair.load_scenario(_scenario(guest_checkout / "tools" / "clips", "plain", GUEST_BASE), guest_checkout)
+    assert plain.host_input is None
+    assert plain.join_after == ""
+
+
+@pytest.mark.parametrize(
+    ("extra", "message"),
+    [
+        ('join_after = "x"\n', "host_input"),  # a text to wait for needs a host to print it
+        ('host_input = "nope.txt"\n', "nope.txt"),  # the host's script must be in the checkout
+        ('host_input = "tests/support/host.txt"\njoin_after = 3\n', "join_after"),
+        ("host_input = 3\n", "host_input"),
+    ],
+)
+def test_a_guest_scenario_refuses_what_cannot_work(guest_checkout: Path, extra: str, message: str) -> None:
+    path = _scenario(guest_checkout / "tools" / "clips", "bad", GUEST_BASE + extra)
+    with pytest.raises(clips.ClipError, match=message):
+        clips_pair.load_scenario(path, guest_checkout)
+
+
+def test_the_guest_joins_the_host_and_draws_its_game_with_a_scripted_pad(guest_checkout: Path) -> None:
+    path = _scenario(guest_checkout / "tools" / "clips", "guest", GUEST_SCENARIO)
+    run = clips_pair.load_scenario(path, guest_checkout)
+    out = Path("/s/t/clips/after.mp4")
+    guest = clips_pair.coney_arguments(Path("coney.exe"), "H:/", run, out, renderer="gpu")
+    assert guest[:3] == ["coney.exe", "--disc", "H:/"]
+    # It joins the host on the loopback (the port is known only once the host says it) and draws the host's game from
+    # its snapshots; it plays no level of its own.
+    assert guest[guest.index("--join") + 1] == f"127.0.0.1:{clips_pair.HOST_PORT}"
+    assert "--net-view" in guest
+    assert "--play-level" not in guest
+    assert guest[guest.index("--input-script") + 1] == str(run.input_script)
+    assert guest[guest.index("--record") + 1] == str(out)
+    assert guest[guest.index("--record-seconds") + 1] == "5"
+    assert guest[guest.index("--record-from-frame") + 1] == "150"
+    assert guest[guest.index("--renderer") + 1] == "gpu"
+    assert "--headless" not in guest
+    # The host plays the level headless, on a free port of this machine, with its own script, and ends by itself well
+    # past the clip if nobody stops it.
+    host = clips_pair.host_arguments(Path("coney.exe"), "H:/", run)
+    assert host[:3] == ["coney.exe", "--disc", "H:/"]
+    assert "--headless" in host
+    assert host[host.index("--play-level") + 1] == "level99"
+    assert "--skip-movies" in host
+    assert host[host.index("--host") + 1] == "127.0.0.1:0"
+    assert host[host.index("--input-script") + 1] == str(run.host_input)
+    assert int(host[host.index("--frames") + 1]) > 150 + 5 * 30
+    assert "--record" not in host
+
+
+def test_a_run_with_no_host_has_no_host_command(checkout: Path) -> None:
+    script = checkout / "tests" / "support" / "walk.txt"
+    with pytest.raises(clips.ClipError, match="no host"):
+        clips_pair.host_arguments(Path("coney.exe"), "H:/", clips_pair.PairRun("w", "level99", script, seconds=5))
+
+
+class FakeSession(FakeMachine):
+    """The fakes, with a host and a guest: the guest records the clip as Coney does, and the host's command is kept."""
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+        self.hosts: list[list[str]] = []
+
+    def hosted(
+        self, host: Sequence[str], guest: Sequence[str], cwd: Path, env: dict[str, str], join_after: str
+    ) -> subprocess.CompletedProcess[str]:
+        side = "base" if cwd.name.startswith("clips-base-") else "task"
+        self.events.append(f"host {side} until {join_after!r}")
+        self.hosts.append(list(host))
+        return self.coney(guest, cwd, env)
+
+
+def _guest_pair(space: dict[str, Path], machine: FakeSession) -> int:
+    """Run the pair of a guest's 5 s from frame 150 on the fakes."""
+    host_script = space["task"] / "host.txt"
+    host_script.write_text("70 tap cross\n", encoding="utf-8")
+    run = clips_pair.PairRun(
+        "guest", "level99", space["script"], seconds=5, start_frame=150, host_input=host_script, join_after="READY"
+    )
+    env = clips_pair.PairEnv(
+        git=machine.git,
+        build=machine.build,
+        coney=machine.coney,
+        hosted=machine.hosted,
+        ffmpeg=machine.ffmpeg,
+        original=machine.original,
+    )
+    settings = clips_pair.PairSettings(
+        rules=RULES,
+        worktrees="../../worktrees/coney/<branch>/",
+        busy_file=".coney-busy",
+        scratch=space["scratch"],
+        main=space["main"],
+        ffmpeg=Path("ffmpeg"),
+    )
+    return clips_pair.run_pair(space["task"], "my-task", run, "me", "H:/", settings, env)
+
+
+def test_a_pair_of_a_guests_view_records_each_side_with_its_own_host(space: dict[str, Path]) -> None:
+    machine = FakeSession("c" * 40, {"before": "0x01", "after": "0x02"})
+    assert _guest_pair(space, machine) == 0
+    # Each side's host and guest are one build: the base's pair for the before, the task's for the after.
+    assert machine.events == [
+        "build task dev",
+        "worktree add",
+        "build base dev",
+        "host base until 'READY'",
+        "record before in base",
+        "host task until 'READY'",
+        "record after in task",
+        "ffmpeg compare.part.mp4",
+    ]
+    assert len(machine.hosts) == 2
+    assert all("--host" in host for host in machine.hosts)
+    record = json.loads((space["scratch"] / "my-task" / "clips" / "pair.json").read_text(encoding="utf-8"))
+    assert record["run"]["host_input"].endswith("host.txt")
+    assert record["run"]["join_after"] == "READY"
+
+
+# A stand-in for Coney whose host says its port and then, after a moment, that its level plays, and whose guest says
+# what it was given: the programs `run_hosted` starts, in place of the game.
+HOST_CODE = (
+    "import sys, time, pathlib\n"
+    "print('net: hosting on port 4242 as Host', flush=True)\n"
+    "time.sleep(0.5)\n"
+    "pathlib.Path(sys.argv[1]).write_text('up')\n"
+    "print('movie: L99_IN skipped', flush=True)\n"
+    "time.sleep(120)\n"
+)
+GUEST_CODE = "import sys, pathlib\nprint(sys.argv[1], pathlib.Path(sys.argv[2]).exists())\n"
+
+
+def _hosted_arguments(marker: Path) -> tuple[list[str], list[str]]:
+    """The stand-in host and guest, which share `marker`."""
+    host = [sys.executable, "-c", HOST_CODE, str(marker)]
+    guest = [sys.executable, "-c", GUEST_CODE, f"127.0.0.1:{clips_pair.HOST_PORT}", str(marker)]
+    return host, guest
+
+
+def test_the_guest_starts_once_the_host_says_its_port_and_its_level_plays(tmp_path: Path) -> None:
+    host, guest = _hosted_arguments(tmp_path / "level-plays")
+    done = clips_pair.run_hosted(host, guest, tmp_path, dict(os.environ), "L99_IN skipped", timeout=60)
+    # The guest was given the port the host said, and started after the host's level text (the marker is written just
+    # before it).
+    assert done.returncode == 0
+    assert done.stdout.strip() == "127.0.0.1:4242 True"
+
+
+def test_a_guest_starts_at_the_ports_line_when_no_text_is_asked_for(tmp_path: Path) -> None:
+    host, guest = _hosted_arguments(tmp_path / "level-plays")
+    done = clips_pair.run_hosted(host, guest, tmp_path, dict(os.environ), "", timeout=60)
+    assert done.stdout.strip() == "127.0.0.1:4242 False"
+
+
+def test_a_host_that_never_says_its_port_is_stopped_and_named(tmp_path: Path) -> None:
+    host = [sys.executable, "-c", "import time; print('loading', flush=True); time.sleep(120)"]
+    with pytest.raises(clips.ClipError, match="loading"):
+        clips_pair.run_hosted(host, [sys.executable, "-c", "pass"], tmp_path, dict(os.environ), "", timeout=2)
+
+
+def test_a_host_that_ends_before_its_port_is_named_with_its_output(tmp_path: Path) -> None:
+    host = [sys.executable, "-c", "print('no disc')"]
+    with pytest.raises(clips.ClipError, match="no disc"):
+        clips_pair.run_hosted(host, [sys.executable, "-c", "pass"], tmp_path, dict(os.environ), "", timeout=60)
