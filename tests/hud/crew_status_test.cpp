@@ -184,6 +184,26 @@ TEST_CASE("a listed human who is gone leaves the list and the others move up", "
     CHECK(list.find(12.0)->order == 0U);
 }
 
+// Expected: hud-functions-parts.md#crew-status, confirmed (code) for the removal; a free slot holds no one, so removing
+// a handle frees only the entry listing it (a brain no script bound has handle 0, as a free slot does)
+TEST_CASE("a listed crew member of handle 0 behind a free slot is the one removed", "[hud][crew]") {
+    CrewStatusList list;
+    CrewMember first = warrior(10.0);
+    first.cuffed = true;
+    CrewMember unbound = warrior(0.0);
+    unbound.cuffed = true;
+    step(list, {first, unbound}, 0);
+    REQUIRE(list.count() == 2);
+    // The first leaves, freeing slot 0; then the unbound one is gone too.
+    step(list, {unbound}, 33);
+    REQUIRE(list.count() == 1);
+    REQUIRE(list.find(0.0) != nullptr);
+    step(list, {}, 66);
+    CHECK(list.count() == 0);
+    CHECK(list.find(0.0) == nullptr);
+    CHECK_FALSE(list.remove(0.0));
+}
+
 // Expected: hud-functions-parts.md#crew-status, confirmed (code)
 TEST_CASE("nine crew members in trouble give eight entries", "[hud][crew]") {
     CrewStatusList list;
