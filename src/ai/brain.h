@@ -751,7 +751,7 @@ class Brain {
     std::unique_ptr<Goal> m_reaction; // +0x3c
     // The goal stack, the top at the back, which tells the run log of each goal pushed on it, so pushGoal() stays the
     // original's push (docs/guides/run-log.md#events). It holds the vector privately and gives out only the reads and
-    // the pop, so push() is the one way a goal gets onto it and none lands without its log line.
+    // the pop, so push_back() is the one way a goal gets onto it and none lands without its log line.
     // @coney-only the run log's line for a goal pushed
     class GoalStack final : private std::vector<std::unique_ptr<Goal>> {
       public:
@@ -769,8 +769,8 @@ class Brain {
 
         // A stack of `owner`'s goals, whose log name the line carries.
         explicit GoalStack(const Brain& owner) : m_owner(&owner) {}
-        // Pushes `goal` and notes it in the run log: the one entry point for a goal onto the stack.
-        void push(std::unique_ptr<Goal> goal);
+        // Pushes `goal` and notes it in the run log: the one way onto the stack, as the vector is private.
+        void push_back(std::unique_ptr<Goal> goal);
 
       private:
         const Brain* m_owner;

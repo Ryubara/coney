@@ -283,7 +283,7 @@ void Brain::logGoal(std::string_view what, const Goal& goal, std::size_t depth) 
 
 // Pushes `goal` and notes it in the run log.
 // @coney-only the run log's line for a goal pushed
-void Brain::GoalStack::push(std::unique_ptr<Goal> goal) {
+void Brain::GoalStack::push_back(std::unique_ptr<Goal> goal) {
     Base::push_back(std::move(goal));
     m_owner->logGoal("push", *back(), size());
 }
@@ -306,7 +306,7 @@ bool Brain::pushGoal(std::unique_ptr<Goal> goal) {
         top->suspend(*this);
     }
     clearActions();
-    m_goals.push(std::move(goal));
+    m_goals.push_back(std::move(goal));
     return true;
 }
 
