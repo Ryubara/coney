@@ -550,8 +550,11 @@ int main(int argc, char** argv) {
     // The AI's seed: `--ai-seed`, else the one an input recording's header names
     // (docs/guides/run-log.md#input-recording), so a recording plays the run it was made from without the seed being
     // passed again.
+    // (A local copy of the path: clang-tidy cannot prove that an optional inside `options` stays set between the check
+    // and the use.)
+    const std::optional<std::string> seedScript = options->inputScript;
     const std::optional<std::uint32_t> recordedSeed =
-        options->inputScript ? coney::loadInputScriptSeed(*options->inputScript) : std::nullopt;
+        seedScript ? coney::loadInputScriptSeed(*seedScript) : std::nullopt;
     sessionSettings.aiSeed = options->aiSeed.value_or(recordedSeed.value_or(0));
     if (!options->aiSeed && recordedSeed) {
         logText(std::format("input script: ai-seed {} from the recording's header\n", *recordedSeed));
