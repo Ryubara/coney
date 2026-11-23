@@ -95,9 +95,9 @@ void PlayLevelEffects::drawScreenEffects(RenderEngine& engine) {
         const effects::BlurPulse::Look& look = m_effects->blurPulse.look();
         engine.blurScreen(*passes, look.offsetU, look.offsetV);
     }
-    // Then the tint. Stand-in: the fade and the letterbox the original steps and draws here are the scene stage's
-    // (SceneStage::drawOverlay()), and the motion blur is drawn before the HUD from drawOverlay(), with no check of
-    // the Rumble menu or the pad's state.
+    // Then the tint. Stand-in: the original's fade and letterbox here are the scene stage's (drawOverlay()), and so is
+    // the motion blur, drawn before the HUD without the original's two checks: no Rumble menu open, and the profile
+    // manager done (PM_IsDone 0x00203fe8, flag 0x0050f5b0, set by the Load, Continue and Subtitles screens).
     drawTint(engine);
 }
 

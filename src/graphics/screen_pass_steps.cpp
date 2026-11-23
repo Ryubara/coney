@@ -102,7 +102,9 @@ std::vector<ScreenStep> blurPulseSteps(const BlurPulse& blur, const ScreenRect& 
     steps.emplace_back(half);
 
     // 2. The passes: the half-size image onto itself with one edge moved in by half the offset, the low edges for the
-    // offset as given and the high ones once its sign has flipped (0x0050ce64), flipping each pass. The offsets are
+    // offset as given and the high ones once its sign has flipped (0x0050ce64), flipping each pass. That order assumes
+    // non-negative offsets (look 5's, the only ones Coney passes): ScreenQuad_DrawOffset (0x00193c20) picks each
+    // axis's edge by the sign of its offset, so a negative one would move the other edge first. The offsets are
     // UV units of the original's 512 x 256 raster, whose half-size image is 320 x 224 (inferred: a 640 x 448 screen at
     // half size), so they are scaled to the same share of the copy here (stand-in, as the GL3 renderer's).
     const float stepU = blur.offsetU / 2.0F * (512.0F / 320.0F);
