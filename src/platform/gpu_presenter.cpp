@@ -133,6 +133,12 @@ void GpuPresenter::choosePresentMode(bool vsync, std::uint32_t fpsCap) {
 
 std::string GpuPresenter::sceneProblem() const { return m_renderer ? m_renderer->sceneProblem() : std::string(); }
 
+void GpuPresenter::releaseScreenCopy(graphics::ScreenCopyId id) {
+    if (m_renderer) {
+        m_renderer->releaseScreenCopy(id);
+    }
+}
+
 GpuPresenter::Presented GpuPresenter::present(const graphics::FrameDescription& frame, graphics::Extent size,
                                               bool capture, const graphics::AssetStore* store, bool game) {
     Presented presented;

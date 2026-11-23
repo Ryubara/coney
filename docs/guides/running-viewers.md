@@ -335,6 +335,9 @@ data). CI's
 | `triangles` | a fan of 24 triangles with a colour at each corner, the alpha ramp on triangles tested at a half (its left half dropped) and at 0 (all of it blended), and the checkerboard repeated on triangles |
 | `scene` | a small 3D scene through a camera of its own: a floor, a sign under the GS alpha test, a tinted crate, a dual-layer panel and a back wall that culling drops, lit by an ambient, a directional and a point light, in fog ([Drawing the scene passes](../engine/gpu-renderer.md#scene)) |
 | `effects` | the `scene` card, then an effect pass through its camera: a translucent sheen on the floor in the fog in force, a sprite blended by its vertex alpha, a glow added partly behind the crate, the alpha ramp as a sprite blended by its texture's alpha and a line list round the crate ([Drawing the effect passes](../engine/gpu-renderer.md#effects)) |
+| `blur-pulse` | the `scene` card, then the blur pulse's blur over the whole view at its full level, in its look's 28 passes and offsets ([Drawing the screen passes](../engine/gpu-renderer.md#screen-passes)) |
+| `line-blend` | the `scene` card, then the PS2 video output's line blend (`--line-blend`) over the whole view |
+| `motion-blur` | the `scene` card, then the motion blur in a warm colour at half strength, which from the second frame on lays the last frame over the new one |
 
 ```sh
 build/dev/src/platform/coney --test-card textures --renderer gpu --frames 3 --render-size 320x224 --screenshot ../../scratch/card.png

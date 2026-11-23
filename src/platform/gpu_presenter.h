@@ -110,6 +110,9 @@ class GpuPresenter {
     /// drawn, or when there is no drawing at all (drawingProblem()).
     [[nodiscard]] std::string sceneProblem() const;
 
+    /// Lets go of what the 2D drawing keeps of the motion blur's copy `id` (GpuRenderer::releaseScreenCopy()).
+    void releaseScreenCopy(graphics::ScreenCopyId id);
+
     /// Clears the window's next swapchain image to `colour` and presents it, waiting for one to be free as the present
     /// mode says. Returns whether an image was shown: none is while the window is minimised or hidden, which is not an
     /// error.

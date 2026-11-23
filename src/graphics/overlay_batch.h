@@ -69,7 +69,7 @@ struct OverlayBatch {
     /// between the 2D ones (the scene passes) draws each 2D pass's own in its place.
     std::vector<std::uint32_t> passDraws;
     /// The passes left out: the screen passes (the blur pulse, the line blend, the motion blur), which the GPU renderer
-    /// draws from item 20 of docs/engine/renderer.md#order, and any pass that is not 2D.
+    /// lays out with graphics::screenStepsOf() and draws in their place, and any pass that is not 2D.
     std::size_t skippedPasses = 0;
 };
 

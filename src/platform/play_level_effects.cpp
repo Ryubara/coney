@@ -88,7 +88,8 @@ void PlayLevelEffects::drawScreenEffects(RenderEngine& engine) {
     if (m_effects == nullptr) {
         return;
     }
-    if (const std::optional<int> passes = m_effects->blurPulse.passes(); passes && engine.drawsPixels()) {
+    // On every renderer that draws frames: GL3 and the GPU renderer, which draws it as GL3 does.
+    if (const std::optional<int> passes = m_effects->blurPulse.passes(); passes && engine.drawsFrames()) {
         const effects::BlurPulse::Look& look = m_effects->blurPulse.look();
         engine.blurScreen(*passes, look.offsetU, look.offsetV);
     }

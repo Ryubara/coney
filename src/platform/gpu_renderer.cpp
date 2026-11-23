@@ -169,10 +169,15 @@ std::expected<std::unique_ptr<GpuRenderer>, Error> GpuRenderer::create(SDL_GPUDe
     info.target_info.depth_stencil_format = static_cast<SDL_GPUTextureFormat>(renderer->m_depthFormat);
     info.target_info.has_depth_stencil_target = true;
     renderer->m_pipeline = SDL_CreateGPUGraphicsPipeline(device, &info);
-    // The pipeline holds what it needs of the shaders.
+    // The same with no blending, which writes what the shader gives as the GL3 renderer's opaque screen quads do
+    // (ONE / ZERO): the blur pulse's.
+    target.blend_state.enable_blend = false;
+    renderer->m_opaquePipeline =
+        renderer->m_pipeline != nullptr ? SDL_CreateGPUGraphicsPipeline(device, &info) : nullptr;
+    // The pipelines hold what they need of the shaders.
     SDL_ReleaseGPUShader(device, vertex);
     SDL_ReleaseGPUShader(device, fragment);
-    if (renderer->m_pipeline == nullptr) {
+    if (renderer->m_pipeline == nullptr || renderer->m_opaquePipeline == nullptr) {
         return failure("its pipeline");
     }
 
@@ -225,6 +230,9 @@ GpuRenderer::~GpuRenderer() {
     SDL_WaitForGPUIdle(m_device);
     m_scene.reset();
     m_textures.clear();
+    m_viewCopy = OwnedTexture();
+    m_halfCopy = OwnedTexture();
+    m_kept.clear();
     m_white = OwnedTexture();
     m_target = OwnedTexture();
     m_depth = OwnedTexture();
@@ -235,6 +243,9 @@ GpuRenderer::~GpuRenderer() {
     }
     if (m_pipeline != nullptr) {
         SDL_ReleaseGPUGraphicsPipeline(m_device, m_pipeline);
+    }
+    if (m_opaquePipeline != nullptr) {
+        SDL_ReleaseGPUGraphicsPipeline(m_device, m_opaquePipeline);
     }
     if (m_vertices != nullptr) {
         SDL_ReleaseGPUBuffer(m_device, m_vertices);
@@ -433,6 +444,102 @@ void GpuRenderer::forgetUploads(const std::vector<PendingUpload>& uploads) {
     }
 }
 
+void GpuRenderer::releaseScreenCopy(graphics::ScreenCopyId id) {
+    std::erase_if(m_kept, [id](const KeptFrame& frame) { return frame.id == id; });
+}
+
+GpuRenderer::KeptFrame& GpuRenderer::keptFrame(graphics::ScreenCopyId id) {
+    const auto found = std::ranges::find_if(m_kept, [id](const KeptFrame& frame) { return frame.id == id; });
+    if (found != m_kept.end()) {
+        return *found;
+    }
+    // A copy RenderEngine gave out (its numbers are the GL3 renderer's, on every backend), drawn here the first time.
+    KeptFrame& made = m_kept.emplace_back();
+    made.id = id;
+    return made;
+}
+
+SDL_GPUTexture* GpuRenderer::copyTexture(graphics::ScreenSlot slot, graphics::ScreenCopyId copy, int width,
+                                         int height) {
+    OwnedTexture* texture = &m_viewCopy;
+    switch (slot) {
+    case graphics::ScreenSlot::View:
+        break;
+    case graphics::ScreenSlot::Half:
+        texture = &m_halfCopy;
+        break;
+    case graphics::ScreenSlot::Kept:
+        texture = &keptFrame(copy).texture;
+        break;
+    }
+    if (texture->texture != nullptr && texture->width == width && texture->height == height) {
+        return texture->texture;
+    }
+    // Made again at the size asked for: SDL lets the old one go once the GPU has finished with it.
+    SDL_GPUTextureCreateInfo info{};
+    info.type = SDL_GPU_TEXTURETYPE_2D;
+    info.format = kTargetFormat;
+    info.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
+    info.width = static_cast<Uint32>(width);
+    info.height = static_cast<Uint32>(height);
+    info.layer_count_or_depth = 1;
+    info.num_levels = 1;
+    SDL_GPUTexture* made = SDL_CreateGPUTexture(m_device, &info);
+    *texture = made != nullptr ? OwnedTexture(m_device, made, width, height, true) : OwnedTexture();
+    return made;
+}
+
+std::vector<GpuRenderer::ScreenPlan> GpuRenderer::planScreenPasses(const graphics::FrameDescription& frame,
+                                                                   graphics::Extent size,
+                                                                   graphics::OverlayBatch& batch) {
+    std::vector<ScreenPlan> plans;
+    const std::span<const graphics::FramePass> passes = frame.passes();
+    for (std::size_t p = 0; p < passes.size(); ++p) {
+        const auto* screen = std::get_if<graphics::ScreenPass>(&passes[p]);
+        if (screen == nullptr) {
+            continue;
+        }
+        // A pass over more than the target has nothing it could copy there: left out.
+        const graphics::ScreenRect& area = screen->area;
+        if (area.x < 0 || area.y < 0 || area.x + area.width > size.width || area.y + area.height > size.height) {
+            continue;
+        }
+        ScreenPlan plan;
+        plan.pass = p;
+        // The motion blur lays its kept frame only when one of the view's size is kept, as the GL3 renderer does.
+        KeptFrame* kept = nullptr;
+        if (const auto* blur = std::get_if<graphics::MotionBlurOverlay>(&screen->effect); blur != nullptr) {
+            plan.copy = blur->copy;
+            kept = &keptFrame(blur->copy);
+        }
+        const bool keptReady = kept != nullptr && kept->kept && kept->texture.texture != nullptr &&
+                               kept->texture.width == area.width && kept->texture.height == area.height;
+        graphics::ScreenSteps steps = graphics::screenStepsOf(*screen, keptReady);
+        if (kept != nullptr && steps.forgetKept) {
+            kept->kept = false;
+        }
+        // Each draw's quad: four corners and two triangles (0, 1, 2 and 0, 2, 3), after the 2D draws'.
+        plan.firstIndex.assign(steps.steps.size(), 0);
+        for (std::size_t i = 0; i < steps.steps.size(); ++i) {
+            if (const auto* draw = std::get_if<graphics::ScreenDrawStep>(&steps.steps[i]); draw != nullptr) {
+                const auto base = static_cast<std::uint32_t>(batch.vertices.size());
+                plan.firstIndex[i] = static_cast<std::uint32_t>(batch.indices.size());
+                batch.vertices.insert(batch.vertices.end(), draw->corners.begin(), draw->corners.end());
+                for (const std::uint32_t corner : {0U, 1U, 2U, 0U, 2U, 3U}) {
+                    batch.indices.push_back(base + corner);
+                }
+            } else if (kept != nullptr) {
+                kept->kept = true; // the copy into the kept frame: the next blur lays it
+            }
+        }
+        plan.steps = std::move(steps.steps);
+        if (!plan.steps.empty()) {
+            plans.push_back(std::move(plan));
+        }
+    }
+    return plans;
+}
+
 std::uint32_t GpuRenderer::targetFormat() { return static_cast<std::uint32_t>(kTargetFormat); }
 
 SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphics::FrameDescription& frame,
@@ -443,9 +550,10 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
         return nullptr;
     }
 
-    // 1. The frame's 2D draws as one batch, and the texture each one samples (uploaded this frame when new); then the
-    // scene passes' draws, with their meshes and textures.
-    const graphics::OverlayBatch batch = graphics::batchOverlays(frame);
+    // 1. The frame's 2D draws as one batch, and the texture each one samples (uploaded this frame when new); the screen
+    // passes' quads after them; then the scene passes' draws, with their meshes and textures.
+    graphics::OverlayBatch batch = graphics::batchOverlays(frame);
+    const std::vector<ScreenPlan> screenPlans = planScreenPasses(frame, size, batch);
     std::vector<PendingUpload> uploads;
     if (!m_whiteUploaded) {
         uploads.push_back(PendingUpload{m_white.texture, {255, 255, 255, 255}, 1, 1});
@@ -474,11 +582,17 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     if (scene != nullptr) {
         total = scene->layUploads(total);
     }
-    // Forgets what this frame meant to upload, when nothing of it reached the GPU.
-    const auto forget = [this, &uploads, scene] {
+    // Forgets what this frame meant to upload, when nothing of it reached the GPU, and the frames the motion blur
+    // meant to keep, which it now never draws.
+    const auto forget = [this, &uploads, scene, &screenPlans] {
         forgetUploads(uploads);
         if (scene != nullptr) {
             scene->forgetUploads();
+        }
+        for (const ScreenPlan& plan : screenPlans) {
+            if (plan.copy != 0) {
+                keptFrame(plan.copy).kept = false;
+            }
         }
     };
     const bool drawsSomething = vertexBytes > 0 && indexBytes > 0;
@@ -539,7 +653,8 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
 
     // 3. One render pass: the window cleared as the frame starts and the depth buffer to the far plane, then every
     // pass in order, the 2D passes' draws and the scene passes' between them; a scene pass that clears the depth
-    // starts a render pass of its own.
+    // starts a render pass of its own, and a screen pass ends the render pass for each copy it makes, the next draw
+    // starting another that keeps the colour and the depth drawn so far.
     const graphics::Rgba clear = graphics::windowClearOf(frame.start());
     SDL_GPUColorTargetInfo target{};
     target.texture = m_target.texture;
@@ -552,7 +667,8 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     depth.texture = m_depth.texture;
     depth.clear_depth = 1.0F;
     depth.load_op = SDL_GPU_LOADOP_CLEAR;
-    depth.store_op = SDL_GPU_STOREOP_DONT_CARE;
+    // Kept across a screen pass's copies, for what is drawn after it.
+    depth.store_op = screenPlans.empty() ? SDL_GPU_STOREOP_DONT_CARE : SDL_GPU_STOREOP_STORE;
     depth.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
     depth.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
     depth.cycle = true;
@@ -560,8 +676,82 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     if (pass == nullptr) {
         return nullptr;
     }
+    // Starts a render pass that keeps the colour and, unless `clearDepth`, the depth drawn so far.
+    const auto resume = [&](bool clearDepth) {
+        target.load_op = SDL_GPU_LOADOP_LOAD;
+        target.cycle = false;
+        depth.load_op = clearDepth ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
+        depth.cycle = false;
+        pass = SDL_BeginGPURenderPass(commands, &target, 1, &depth);
+        return pass != nullptr;
+    };
+    // Binds the 2D pipeline (`opaque`: the one with no blending) and its buffers, since a scene pass may have bound
+    // its own.
+    const auto bind2d = [&](bool opaque) {
+        SDL_BindGPUGraphicsPipeline(pass, opaque ? m_opaquePipeline : m_pipeline);
+        const FrameUniform frameUniform{static_cast<float>(size.width), static_cast<float>(size.height), {0, 0}};
+        SDL_PushGPUVertexUniformData(commands, 0, &frameUniform, sizeof(frameUniform));
+        const SDL_GPUBufferBinding vertices{m_vertices, 0};
+        SDL_BindGPUVertexBuffers(pass, 0, &vertices, 1);
+        const SDL_GPUBufferBinding indices{m_indices, 0};
+        SDL_BindGPUIndexBuffer(pass, &indices, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+    };
+    std::size_t nextPlan = 0;
     const std::span<const graphics::FramePass> passes = frame.passes();
     for (std::size_t p = 0; p < passes.size(); ++p) {
+        // A screen pass: its copies and draws in order (the frame's last pass may leave the render pass ended).
+        if (std::holds_alternative<graphics::ScreenPass>(passes[p])) {
+            if (nextPlan < screenPlans.size() && screenPlans[nextPlan].pass == p) {
+                const ScreenPlan& plan = screenPlans[nextPlan++];
+                for (std::size_t i = 0; i < plan.steps.size(); ++i) {
+                    // A copy: the render pass ended, then the target's rectangle copied in a copy pass.
+                    if (const auto* copy = std::get_if<graphics::ScreenCopyStep>(&plan.steps[i]); copy != nullptr) {
+                        if (pass != nullptr) {
+                            SDL_EndGPURenderPass(pass);
+                            pass = nullptr;
+                        }
+                        SDL_GPUTexture* into = copyTexture(copy->into, plan.copy, copy->from.width, copy->from.height);
+                        if (into == nullptr) {
+                            break; // SDL refused the copy: the rest of the pass is left out
+                        }
+                        SDL_GPUTextureLocation from{};
+                        from.texture = m_target.texture;
+                        from.x = static_cast<Uint32>(copy->from.x);
+                        from.y = static_cast<Uint32>(copy->from.y);
+                        SDL_GPUTextureLocation to{};
+                        to.texture = into;
+                        SDL_GPUCopyPass* copying = SDL_BeginGPUCopyPass(commands);
+                        SDL_CopyGPUTextureToTexture(copying, &from, &to, static_cast<Uint32>(copy->from.width),
+                                                    static_cast<Uint32>(copy->from.height), 1, false);
+                        SDL_EndGPUCopyPass(copying);
+                        continue;
+                    }
+                    // A draw: its quad from the copy, sampled linearly and clamped, as the GL3 renderer's.
+                    const auto& draw = std::get<graphics::ScreenDrawStep>(plan.steps[i]);
+                    if (pass == nullptr && !resume(false)) {
+                        return nullptr;
+                    }
+                    SDL_GPUTexture* source = draw.from == graphics::ScreenSlot::View ? m_viewCopy.texture
+                                             : draw.from == graphics::ScreenSlot::Half
+                                                 ? m_halfCopy.texture
+                                                 : keptFrame(plan.copy).texture.texture;
+                    if (source == nullptr) {
+                        continue;
+                    }
+                    bind2d(draw.opaque);
+                    const SDL_GPUTextureSamplerBinding binding{source,
+                                                               samplerFor(true, graphics::TextureAddress::Clamp)};
+                    SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
+                    const AlphaUniform alpha{draw.alpha.low, draw.alpha.high, {0, 0}};
+                    SDL_PushGPUFragmentUniformData(commands, 0, &alpha, sizeof(alpha));
+                    SDL_DrawGPUIndexedPrimitives(pass, 6, 1, plan.firstIndex[i], 0, 0);
+                }
+            }
+            continue;
+        }
+        if (pass == nullptr && !resume(false)) {
+            return nullptr;
+        }
         // An effect pass: drawn by the scene drawing, in the depth the scene passes left.
         if (std::holds_alternative<graphics::EffectPass>(passes[p])) {
             if (scene != nullptr) {
@@ -574,12 +764,7 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
                 // The depth alone cleared to the far plane before the pass (the Z-only clear after the level's
                 // background): a render pass of its own that keeps the colour drawn so far.
                 SDL_EndGPURenderPass(pass);
-                target.load_op = SDL_GPU_LOADOP_LOAD;
-                target.cycle = false;
-                depth.load_op = SDL_GPU_LOADOP_CLEAR;
-                depth.cycle = false;
-                pass = SDL_BeginGPURenderPass(commands, &target, 1, &depth);
-                if (pass == nullptr) {
+                if (!resume(true)) {
                     return nullptr;
                 }
             }
@@ -593,14 +778,7 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
         if (!drawsSomething || first == end) {
             continue;
         }
-        // The 2D pipeline and its buffers again for each 2D pass, since a scene pass may have bound its own.
-        SDL_BindGPUGraphicsPipeline(pass, m_pipeline);
-        const FrameUniform frameUniform{static_cast<float>(size.width), static_cast<float>(size.height), {0, 0}};
-        SDL_PushGPUVertexUniformData(commands, 0, &frameUniform, sizeof(frameUniform));
-        const SDL_GPUBufferBinding vertices{m_vertices, 0};
-        SDL_BindGPUVertexBuffers(pass, 0, &vertices, 1);
-        const SDL_GPUBufferBinding indices{m_indices, 0};
-        SDL_BindGPUIndexBuffer(pass, &indices, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+        bind2d(false);
         for (std::uint32_t i = first; i < end; ++i) {
             const graphics::OverlayDraw& draw = batch.draws[i];
             const OwnedTexture* texture = drawTextures[i];
@@ -614,7 +792,9 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
             SDL_DrawGPUIndexedPrimitives(pass, draw.indexCount, 1, draw.firstIndex, 0, 0);
         }
     }
-    SDL_EndGPURenderPass(pass);
+    if (pass != nullptr) {
+        SDL_EndGPURenderPass(pass);
+    }
     return m_target.texture;
 }
 
