@@ -271,7 +271,7 @@ void PlayLevelMode::drawWorldObjects(float alpha) {
 }
 
 void PlayLevelMode::drawGlass() const {
-    if (m_objects == nullptr || !m_engine.drawsPixels()) {
+    if (m_objects == nullptr || !m_engine.drawsScene()) {
         return;
     }
     // The camera in the game's axes: RenderWare's (x, y, z) is the game's (x, -z, y).
@@ -348,7 +348,7 @@ void PlayLevelMode::poseCarriedProp(const human::Human& human, const human::Play
 // The original walks every player's arc (ThrowArcs_RenderAll's loop over the players' throw states); this draws the one
 // arc there is, stand-in: the local player's aim, until the game mode holds an aim for each player slot.
 void PlayLevelMode::drawThrowArc(float alpha) {
-    if (!m_engine.drawsPixels()) {
+    if (!m_engine.drawsScene()) {
         return;
     }
     const std::vector<graphics::ThrowArcVertex> ribbon = throwArcRibbon(alpha);
