@@ -1018,8 +1018,9 @@ class Human final : public Holdable {
     bool startPickUp(double handle, anim::Vec3 point, std::uint32_t clip, int heldSet = 0);
     /// The take's message 3 to the holder: the held object's anim set `set` goes on as his move style
     /// (HumanAnimator::carryStyle()) when it is not his top style already, so a two-handed object (set 4) is carried
-    /// with the barrel idle and walks. Research: docs/research/objects.md#two-handed
-    /// @orig 0x00245920 Human_HandleMessage (unknown)
+    /// with the barrel idle and walks; the test is message 3's (Human_HandleMessage at 0x002460ec). Research:
+    /// docs/research/objects.md#two-handed
+    /// @orig 0x00221ed0 Human_SetCarryMoveStyle (unknown)
     void takeHeldStyle(int set);
     /// His held object of anim set `set` let go, dropped or (`thrown`) thrown: its move style comes off
     /// (HumanAnimator::releaseStyle()). Research: docs/research/objects.md#two-handed
