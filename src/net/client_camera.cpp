@@ -63,13 +63,12 @@ camera::FollowTarget followTargetOf(const HumanState& now, const HumanState* bef
 
 ClientCamera::ClientCamera(const camera::FollowSettings& settings) : m_settings(settings) {}
 
-ClientCamera::Placed ClientCamera::placed() const {
-    CONEY_ASSERT(m_camera.has_value());
+ClientCamera::Placed ClientCamera::placedBy(const camera::FollowCamera& follow) {
     // The play mode's own reading of its follow camera (Player::capture()): the eye, the aim point as the target.
-    return Placed{.eye = m_camera->position(),
-                  .target = m_camera->aimPoint(),
-                  .fieldOfView = m_camera->fieldOfView(),
-                  .nearClip = m_camera->nearClip(),
+    return Placed{.eye = follow.position(),
+                  .target = follow.aimPoint(),
+                  .fieldOfView = follow.fieldOfView(),
+                  .nearClip = follow.nearClip(),
                   .farClip = camera::kPlayerCameraLens.farClip};
 }
 
@@ -86,21 +85,18 @@ void ClientCamera::step(const ClientWorld& world, std::optional<NetId> followed,
     const auto earlier = world.previousHumans().find(found->first);
     const HumanState* before = earlier != world.previousHumans().end() ? &earlier->second : nullptr;
     // A human not followed until now: the camera is made behind him, and drawn there from this step on (a cut).
-    const bool cut = !m_camera || m_followed != followed;
-    if (cut) {
+    bool cut = false;
+    if (!m_camera || m_followed != followed) {
         m_camera.emplace(now.position, now.heading, m_settings);
         m_followed = followed;
         ++m_cuts;
+        cut = true;
     }
-    m_camera->update(followTargetOf(now, before, input.speeds, input.seconds), input.rawRightX, input.rawRightY,
-                     input.mesh, input.seconds);
-    if (cut) {
-        m_current = placed();
-        m_previous = m_current;
-    } else {
-        m_previous = m_current;
-        m_current = placed();
-    }
+    camera::FollowCamera& follow = *m_camera;
+    follow.update(followTargetOf(now, before, input.speeds, input.seconds), input.rawRightX, input.rawRightY,
+                  input.mesh, input.seconds);
+    m_previous = cut ? placedBy(follow) : m_current;
+    m_current = placedBy(follow);
 }
 
 std::optional<camera::CameraView> ClientCamera::view(float alpha) const {

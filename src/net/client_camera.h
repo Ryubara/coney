@@ -92,8 +92,8 @@ class ClientCamera {
         float nearClip = 0.1F;
         float farClip = 115.0F;
     };
-    // The follow camera's placing now.
-    [[nodiscard]] Placed placed() const;
+    // How `follow` stands now.
+    [[nodiscard]] static Placed placedBy(const camera::FollowCamera& follow);
 
     camera::FollowSettings m_settings;
     std::optional<camera::FollowCamera> m_camera; // none while no human is followed
