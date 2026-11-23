@@ -382,3 +382,19 @@ TEST_CASE("an attacker waiting his turn on a man not fighting him backs off to t
     }
     CHECK(farthest > 2.75F);
 }
+
+TEST_CASE("an ended fight goal clears the actions it queued", "[ai]") {
+    // Expected: ai-goals.md#goal-fight, confirmed (code) at 0x002b2dd8 (FightGoal_End clears the actions when any are
+    // queued)
+    Scene scene;
+    Brain& gang = scene.add({40.0F, 44.0F, 0.0F}, 180.0F, BrainType::Gang, onlyKind(1));
+    gang.setTarget(&scene.playerBrain());
+    REQUIRE(gang.pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
+    // 4 m off, out of the kind's reach: the goal queues its move in.
+    for (int k = 0; k < 10 && gang.actionCount() == 0; ++k) {
+        scene.run(1);
+    }
+    REQUIRE(gang.actionCount() > 0);
+    gang.popGoal();
+    CHECK(gang.actionCount() == 0);
+}
