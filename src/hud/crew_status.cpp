@@ -301,4 +301,9 @@ const CrewStatusList::Entry* CrewStatusList::find(double handle) const {
     return found == m_entries.end() ? nullptr : &*found;
 }
 
+CrewEntrySprites crewEntrySprites(GuiPoint /*place*/, float /*portraitShape*/, float /*statusShape*/) {
+    // A stub for the test commit.
+    return {};
+}
+
 } // namespace coney::hud

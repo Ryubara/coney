@@ -367,3 +367,21 @@ TEST_CASE("crew entries stand four a row from (0.407, 0.07), shifted while fewer
     CHECK(CrewStatusList::captionPlaceFor(0, 0).x > 1.0e6F);
     CHECK(CrewStatusList::captionPlaceFor(0, 0).y > 1.0e6F);
 }
+
+// Expected: hud-functions-parts.md#crew-icon-anchors, confirmed (runtime), run r-20261123-crew-icon-anchor
+TEST_CASE("a crew portrait hangs left of its place and the status icon right of its corner", "[hud][crew]") {
+    // The first entry of one, placed at (0.517, 0.07), with the rectangles' shapes of the run (0.9927 and 0.984): the
+    // original drew the portrait's centre at 0.4806 of the width and the icon's at 0.4620, 0.0186 left of it, each
+    // sprite as wide as its height × its shape × 1.45 × 0.80357 in overlay units (0.7 of that in GUI widths).
+    const coney::hud::CrewEntrySprites sprites =
+        coney::hud::crewEntrySprites(CrewStatusList::entryPlace(0, 1), 0.9927F, 0.984F);
+    CHECK(sprites.portrait.centre.x == Approx(0.4806F).margin(0.0005F));
+    CHECK(sprites.portrait.centre.y == Approx(0.07F));
+    CHECK(sprites.portrait.width == Approx(0.0729F).margin(0.0005F));
+    CHECK(sprites.portrait.height == Approx(0.09F));
+    CHECK(sprites.status.centre.x == Approx(0.4620F).margin(0.0005F));
+    CHECK(sprites.status.centre.y == Approx(0.1114F).margin(0.0005F));
+    CHECK(sprites.status.width == Approx(0.0281F).margin(0.0005F));
+    CHECK(sprites.status.height == Approx(0.035F));
+    CHECK(sprites.portrait.centre.x - sprites.status.centre.x == Approx(0.0186F).margin(0.0005F));
+}

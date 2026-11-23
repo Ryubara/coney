@@ -135,6 +135,27 @@ inline constexpr graphics::Rgba kCrewPortraitColour{191, 191, 191, 255};
 /// The caption widget's colour (its colour tag replaces it for the text after the tag).
 inline constexpr graphics::Rgba kCrewCaptionColour{128, 128, 128, 255};
 
+/// One sprite of a crew entry as it is drawn: its centre and its size in GUI units.
+struct CrewSprite {
+    GuiPoint centre;
+    float width = 0.0F;
+    float height = 0.0F;
+};
+
+/// An entry's two sprites.
+struct CrewEntrySprites {
+    CrewSprite portrait;
+    CrewSprite status;
+};
+
+/// Where an entry placed at `place` draws its portrait and its status icon, given each rectangle's shape (texel width
+/// over texel height). Both widgets have the aspect fix, so each is its height × its shape × 1.45 × 0.80357 wide in
+/// overlay units. The portrait's anchor is its right edge, so it hangs left of `place`; the icon's is its left edge,
+/// at `place` + kCrewLayout's statusOffset, so it reaches right from there.
+/// Research: docs/research/hud-functions-parts.md#crew-icon-anchors
+/// @orig 0x001a0918 CrewStatusEntry_Setup (unknown)
+[[nodiscard]] CrewEntrySprites crewEntrySprites(GuiPoint place, float portraitShape, float statusShape);
+
 /// The crew status list: up to eight entries, each a crew member's handle and his place in the order the entries were
 /// added, and one caption for the whole list. add() runs every update for each member of player 1's gang; update()
 /// re-tests each listed member, places the live entries in a grid of four a row, hides an entry whose state cleared
