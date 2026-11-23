@@ -32,9 +32,11 @@ import contextlib
 import json
 import math
 import os
+import re
 import shutil
 import subprocess
 import sys
+import threading
 import tomllib
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import asdict, dataclass, field
@@ -55,6 +57,11 @@ GIF_RATES = (20, 10, 5, 4, 2, 1)
 GIF_MAX_RATE = 20
 #: How long a Coney run may take before it is taken for hung (the tests' hang guard, testing.md#no-wall-clock-limits).
 CONEY_TIMEOUT = 600
+#: What stands for the host's port in a guest's command line until the host says which it got (`run_hosted`).
+HOST_PORT = "{port}"
+#: Frames of play a host runs beyond its guest's clip before it stops by itself (a host nobody stopped); a guest that
+#: loads the level after it joins needs the time, and each frame takes a real 1/30 s in a networked test-mode run.
+HOST_MARGIN_FRAMES = 3600
 #: What names a base checkout with a change taken out (`<base_prefix><base>-without-<change>`, `clips pair
 #: --without`); `workspace clean` reads it too.
 WITHOUT = "-without-"
@@ -71,6 +78,8 @@ SCENARIO_KEYS = frozenset(
         "skip_movies",
         "record_debug_draw",
         "complete_levels",
+        "host_input",
+        "join_after",
     }
 )
 SCENARIO_REQUIRED = ("description", "level", "input", "seconds")
@@ -103,6 +112,13 @@ class PairRun:
     record_debug_draw: bool = False
     #: The levels the played level's story save has complete (Coney's `--complete-levels`); none: a fresh save.
     complete_levels: tuple[int, ...] = ()
+    #: The host's input script, an absolute path, for a run that records a **guest**: `level` is then the host's and
+    #: `input_script` the guest's pad. The guest joins that host on this machine and draws its game from the snapshots
+    #: (Coney's `--join ADDR --net-view`); none: a one-process run.
+    host_input: Path | None = None
+    #: Text the host prints when its level plays (a movie it skipped, say), which the guest waits for before it joins:
+    #: the load before it can outlast a guest that joined at once. Empty: join at the host's port line.
+    join_after: str = ""
 
 
 def _scenario_value(data: dict[str, Any], key: str, kind: type, path: Path) -> Any:
@@ -143,6 +159,13 @@ def load_scenario(path: Path, root: Path) -> PairRun:
     script = (root / _scenario_value(data, "input", str, path)).resolve()
     if not script.is_file():
         raise ClipError(f"{path}: input {data['input']} is not a file of the checkout")
+    host_script: Path | None = None
+    if "host_input" in data:
+        host_script = (root / _scenario_value(data, "host_input", str, path)).resolve()
+        if not host_script.is_file():
+            raise ClipError(f"{path}: host_input {data['host_input']} is not a file of the checkout")
+    elif "join_after" in data:
+        raise ClipError(f"{path}: join_after is what a host prints, so it needs a host_input")
     optional = {
         key: _scenario_value(data, key, int, path) for key in ("start_frame", "checkpoint", "ai_seed") if key in data
     }
@@ -160,6 +183,8 @@ def load_scenario(path: Path, root: Path) -> PairRun:
         ),
         description=_scenario_value(data, "description", str, path),
         complete_levels=_level_list(data, path) if "complete_levels" in data else (),
+        host_input=host_script,
+        join_after=_scenario_value(data, "join_after", str, path) if "join_after" in data else "",
     )
 
 
@@ -195,7 +220,23 @@ def coney_arguments(executable: Path, disc: str, run: PairRun, out: Path, render
     its start frame to `out` (`--record-from-frame`, none for a clip that starts with play), drawn by `renderer` (`gl3`
     or `gpu`; none for Coney's own choice, GL3 in test mode). `--record` puts Coney in test mode (one step and one
     render a frame, no clock), so the same line gives the same frames; it needs a window, so the run is never
-    `--headless` (test mode does not take the focus)."""
+    `--headless` (test mode does not take the focus). A run with a host (`run.host_input`) records the **guest**
+    instead: it joins the host on this machine, at the port `HOST_PORT` stands for until the host says it, and draws
+    the host's level from its snapshots with `input_script` as its pad; its frames count from the first it has the
+    host's level."""
+    if run.host_input is not None:
+        return [
+            str(executable),
+            "--disc",
+            disc,
+            "--join",
+            f"127.0.0.1:{HOST_PORT}",
+            "--net-view",
+            "--net-name",
+            "Guest",
+            *(["--renderer", renderer] if renderer is not None else []),
+            *_record_arguments(run, out),
+        ]
     args = [str(executable), "--disc", disc, "--play-level", run.level]
     if renderer is not None:
         args += ["--renderer", renderer]
@@ -209,8 +250,12 @@ def coney_arguments(executable: Path, disc: str, run: PairRun, out: Path, render
         args.append("--record-debug-draw")
     if run.complete_levels:
         args += ["--complete-levels", ",".join(str(level) for level in run.complete_levels)]
+    return [*args, *_record_arguments(run, out)]
+
+
+def _record_arguments(run: PairRun, out: Path) -> list[str]:
+    """The options that play `run`'s input script and record its clip, the same for a one-process run and a guest."""
     return [
-        *args,
         "--input-script",
         str(run.input_script),
         "--record",
@@ -218,6 +263,36 @@ def coney_arguments(executable: Path, disc: str, run: PairRun, out: Path, render
         "--record-seconds",
         str(run.seconds),
         *(["--record-from-frame", str(run.start_frame)] if run.start_frame else []),
+    ]
+
+
+def host_arguments(executable: Path, disc: str, run: PairRun) -> list[str]:
+    """Coney's command line for the **host** of a guest's run: the level headless (a host draws nothing the guest
+    sees), hosting on a free port of this machine, playing `run.host_input`. It stops by itself long past the clip
+    (`HOST_MARGIN_FRAMES` beyond it, counted in frames of play), in case nobody stops it. ClipError for a run with no
+    host."""
+    if run.host_input is None:
+        raise ClipError(f"{run.name}: no host to start (the scenario has no host_input)")
+    args = [str(executable), "--disc", disc, "--headless", "--play-level", run.level]
+    if run.checkpoint is not None:
+        args += ["--checkpoint", str(run.checkpoint)]
+    if run.skip_movies:
+        args.append("--skip-movies")
+    if run.ai_seed is not None:
+        args += ["--ai-seed", str(run.ai_seed)]
+    if run.complete_levels:
+        args += ["--complete-levels", ",".join(str(level) for level in run.complete_levels)]
+    frames = run.start_frame + run.seconds * FPS + HOST_MARGIN_FRAMES
+    return [
+        *args,
+        "--host",
+        "127.0.0.1:0",
+        "--net-name",
+        "Host",
+        "--input-script",
+        str(run.host_input),
+        "--frames",
+        str(frames),
     ]
 
 
@@ -615,6 +690,98 @@ def _coney(args: Sequence[str], cwd: Path, env: dict[str, str]) -> subprocess.Co
         raise ClipError(f"Coney ran past {CONEY_TIMEOUT} s and was stopped: {' '.join(args)}") from error
 
 
+def _tail(lines: Sequence[str]) -> str:
+    """The last few lines of a program's output, on one line for a message."""
+    return " | ".join(line.rstrip() for line in lines[-8:]) or "(no output)"
+
+
+def _stop(process: subprocess.Popen[str]) -> None:
+    """Stop `process` and wait for it: ask first, then insist, so nothing is left running beside the next run."""
+    process.terminate()
+    try:
+        process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+
+
+def run_hosted(
+    host: Sequence[str],
+    guest: Sequence[str],
+    cwd: Path,
+    env: dict[str, str],
+    join_after: str,
+    timeout: float = CONEY_TIMEOUT,
+) -> subprocess.CompletedProcess[str]:
+    """Run a host and, once it has said which port it listens on (its `hosting on port N` line) and, with `join_after`,
+    printed that text too, the `guest`, whose `HOST_PORT` becomes N; the guest's finished process. The host is stopped
+    when the guest ends, however it ends. ClipError when the host ends or says nothing within `timeout` seconds
+    before then, naming the end of its output, or when the guest runs past `timeout`."""
+    process = subprocess.Popen(
+        list(host),
+        cwd=cwd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    lines: list[str] = []
+    changed = threading.Condition()
+    ended = threading.Event()
+
+    def drain() -> None:
+        """Keep reading the host's output (a full pipe would stop the host) and tell the waiter of each line."""
+        stream = process.stdout
+        if stream is not None:
+            for line in stream:
+                with changed:
+                    lines.append(line)
+                    changed.notify_all()
+        with changed:
+            ended.set()
+            changed.notify_all()
+
+    reader = threading.Thread(target=drain, daemon=True)
+    reader.start()
+
+    def port_said() -> int | None:
+        """The port of the host's line, once it is there."""
+        for line in lines:
+            found = re.search(r"hosting on port (\d+)", line)
+            if found:
+                return int(found.group(1))
+        return None
+
+    def ready() -> bool:
+        """Whether the host has said its port and, when asked, the text; or has ended."""
+        return ended.is_set() or (
+            port_said() is not None and (not join_after or any(join_after in line for line in lines))
+        )
+
+    try:
+        with changed:
+            changed.wait_for(ready, timeout=timeout)
+            port = port_said()
+            said = not join_after or any(join_after in line for line in lines)
+            snapshot = list(lines)
+        if port is None or not said:
+            what = "its port" if port is None else f"{join_after!r}"
+            how = "ended" if ended.is_set() else f"did not say {what} within {timeout:g} s"
+            raise ClipError(f"the host {how}; its output ends: {_tail(snapshot)}")
+        arguments = [argument.replace(HOST_PORT, str(port)) for argument in guest]
+        try:
+            return subprocess.run(
+                arguments, cwd=cwd, env=env, capture_output=True, text=True, check=False, timeout=timeout
+            )
+        except subprocess.TimeoutExpired as error:
+            raise ClipError(f"the guest ran past {timeout:g} s and was stopped: {' '.join(arguments)}") from error
+    finally:
+        _stop(process)
+        reader.join(timeout=10)
+
+
 def _original(state: Path, seconds: int, out: Path, agent: str) -> None:
     """The original's clip, through `clips record` (PCSX2's own capture), under `agent`'s claim."""
     from coney_tools import pcsx2_clip
@@ -629,6 +796,11 @@ class PairEnv:
     git: Callable[[Path, Sequence[str]], str] = run_git
     build: Callable[[Path, str, str], int] = _build
     coney: Callable[[Sequence[str], Path, dict[str, str]], subprocess.CompletedProcess[str]] = _coney
+    #: A guest's run: the host's command line, the guest's, where, with which variables and what the host prints when
+    #: its level plays; the guest's finished process (`run_hosted`).
+    hosted: Callable[[Sequence[str], Sequence[str], Path, dict[str, str], str], subprocess.CompletedProcess[str]] = (
+        run_hosted
+    )
     ffmpeg: clips.Runner = clips._run
     original: Callable[[Path, int, Path, str], None] = _original
     say: Callable[[str], None] = field(default=print)
@@ -666,7 +838,12 @@ def _record(
     variables = dict(os.environ)
     if not variables.get("CONEY_FFMPEG"):
         variables["CONEY_FFMPEG"] = str(ffmpeg)
-    done = env.coney(coney_arguments(executable, disc, run, out, renderer), checkout, variables)
+    arguments = coney_arguments(executable, disc, run, out, renderer)
+    if run.host_input is not None:
+        # A guest's view: the host (this build's) plays the level and the guest records what it draws of it.
+        done = env.hosted(host_arguments(executable, disc, run), arguments, checkout, variables, run.join_after)
+    else:
+        done = env.coney(arguments, checkout, variables)
     if done.returncode != 0 or not out.is_file():
         tail = " | ".join((done.stdout + done.stderr).strip().splitlines()[-8:])
         raise ClipError(f"{side}: Coney failed (exit {done.returncode}): {tail}")
@@ -771,7 +948,11 @@ def run_pair(
     )
     same = same_frames(before, after)
     record = {
-        "run": {**asdict(run), "input_script": str(run.input_script)},
+        "run": {
+            **asdict(run),
+            "input_script": str(run.input_script),
+            "host_input": str(run.host_input) if run.host_input else None,
+        },
         "before": {
             "commit": commit,
             "frames": before.frames,

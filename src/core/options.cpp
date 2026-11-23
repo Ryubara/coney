@@ -557,9 +557,9 @@ std::expected<void, Error> checkRecord(const Options& options) {
     if (options.recordFromFrame.has_value() && !options.recordPath.has_value()) {
         return invalidArgument("--record-from-frame needs --record: it sets the frame the clip starts at");
     }
-    if (options.recordFromFrame.has_value() && !options.playLevel.has_value()) {
-        return invalidArgument("--record-from-frame needs --play-level: its frames count from the level's first frame "
-                               "of play");
+    if (options.recordFromFrame.has_value() && !options.playLevel.has_value() && !options.netView) {
+        return invalidArgument("--record-from-frame needs --play-level or --net-view: its frames count from the "
+                               "level's first frame of play (a guest's, from the first it has the host's level)");
     }
     if (!options.recordPath.has_value()) {
         return {};

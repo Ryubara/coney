@@ -1,0 +1,13 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): what a guest sees of a host's level99 street.
+# The host (headless) plays tests/support/play_walk_level99.txt: it skips the intro scene at frame 70, walks from 150
+# and runs from 270; the guest (`--join ... --net-view`, the one recorded) draws the host's game from its snapshots with
+# its own pad's right stick turning its view (tools/clips/level99-guest-camera.txt). Both count their frames from the
+# level's first frame of play (the host's loading barrier holds the host until the guest has the level). For a change
+# to the guest's view: its camera, its scene or what it draws of the host's humans.
+description = "level99 street: a guest's view of the host's player walking and running"
+level = "level99"
+input = "tools/clips/level99-guest-camera.txt"
+host_input = "tests/support/play_walk_level99.txt"
+join_after = "L99_IN skipped"
+start_frame = 150
+seconds = 8
