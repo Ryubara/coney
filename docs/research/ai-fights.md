@@ -1040,8 +1040,9 @@ chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#pow
   deadline a fight goal ends as [the deadline](#fight-durations) says, reading the target's active places, and a
   re-target ends that update with the kind kept (since 2026-10-21). `level99`'s sparring Warriors are sent from
   8.6-9.0 m ([the sparring fight](#level99-fight)) and run in this way: `coney_tests "the disc's level99: the sparring
-  Warriors*"` checks that all three run in with EngageEnemy, close in and attack, that exactly one charges (faster than
-  the run's 7.80 m/s) and that the other two stop short of the player, as in the original. The
+  Warriors*"` checks that all three run in with EngageEnemy, come within 3.75 m and that one attacks, and that a
+  charge, read as the run-in's queued attack of a charge kind (or its tackle hold), starts within the run-in distance;
+  how many charge and whether the other two stop short is the AI's draws, which it does not count. The
   [steering](ai-moving.md#steering)
   round each other puts those two a little behind the first, so his charge has made the player busy when their re-plan tests
   step 9; without it the three ran in abreast and all charged at once (clip 1, up to 9.6 m/s), ending 2.1-2.9 m past
@@ -1149,9 +1150,9 @@ with the original running:
 
 - the run-in's tests of "he runs" use gait 4 and up; the original's are gait 3 and up for arming the charge (step 9,
   `0x002aff38`) and for the charge itself (step 11, `0x002b0048`), and below 3 for "slowed from a run" (step 6,
-  `0x002afe04`), so a jogging target differs;
+  `0x002afe04`), so a jogging target differs (issue #1659);
 - the close-by stop of step 9 does not wait for the line of sight, which the original's does (`0x002aff48`-`0x002aff68`:
-  both stop reasons end in one `Human_HasLineOfSight` test);
+  both stop reasons end in one `Human_HasLineOfSight` test; issue #1659);
 - a cop does not take the X1 against an ungrabbable target (`+0xe0` bit `0x40`, `0x002b012c`);
 - the lead of step 12 applies only from the target's sectors 3-5, where the original leads from any sector (fanned only
   in 3-5) unless the runner stands in sector 0 within the target's speed (`0x002b0384`); its fan step is (index - 1) ×

@@ -185,7 +185,7 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
     // 0x0028c140) are not kept here.
     target->setAttackableAtMs(0);
     // 6. A new plan every 250 ms, or at once when he turned, came close or slowed from a run. Stand-in: the shout every
-    // 4-4.5 s (0x002af928) is not built, and a jog counts as slowed (the original's is below a jog).
+    // 4-4.5 s (0x002af928) is not built, and a jog counts as slowed (the original's is below a jog; issue #1659).
     const float distance = brain.distanceTo(*target);
     const bool running = them.gait() > human::Gait::Jog;
     const bool turned = std::fabs(human::wrapAngle(them.heading() - m_planHeading)) > kReplanTurn;
@@ -207,7 +207,7 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
     // 9. In sight, stop for a target this human may not attack now, at any distance; close by, stop for a busy target,
     // or for one who walks or stands when the charge is not armed. Stand-in: the close-by stop does not wait for the
     // line of sight as the original's does (0x002aff48), and a jogging target stops the run-in where the original
-    // arms the charge (gait 3 and up).
+    // arms the charge (gait 3 and up); both are issue #1659.
     const bool inSight = brain.hasLineOfSight(*target);
     if (inSight && !attackableBy(*target, &brain)) {
         return beginStop(brain);
@@ -225,7 +225,8 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
     if (!inSight && distance >= kEngageGiveUpRange) {
         return GoalStatus::Done;
     }
-    // 11. The charge: an attack out of the run. Stand-in: "he runs" is gait 4 and up; the original's is 3 and up.
+    // 11. The charge: an attack out of the run. Stand-in: "he runs" is gait 4 and up; the original's is 3 and up
+    // (issue #1659).
     if (distance <= m_runIn && (m_charge || running)) {
         // 11.1 Another man the near one in the sector A comes from disarms the charge (A only moves); with nobody
         // there, or A himself (the lone charger once the record holds him), A goes on to the kind: the branch at

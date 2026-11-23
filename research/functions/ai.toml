@@ -2798,11 +2798,13 @@ status = "compared"
 [[function.gaps]]
 what = "the run-in's gait tests read a jog as walking (the original's arming and charge take gait 3 and up)"
 relation = "stand-in"
+issue = 1659
 question = "ai-fights.md#q-engage-gaps"
 
 [[function.gaps]]
 what = "the close-by stop does not wait for the line of sight"
 relation = "stand-in"
+issue = 1659
 question = "ai-fights.md#q-engage-gaps"
 
 [[function.gaps]]
