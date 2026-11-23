@@ -14,6 +14,8 @@
 #include "graphics/render_device.h"
 #include "hud/hud.h"
 #include "hud/hud_owner.h"
+#include "human/locomotion.h"
+#include "net/client_camera.h"
 #include "net/client_world.h"
 #include "platform/net_levels.h"
 #include "scripting/sound_bindings.h"
@@ -38,12 +40,18 @@ class ClientScene {
     ClientScene(ClientScene&&) = delete;
     ClientScene& operator=(ClientScene&&) = delete;
 
-    /// The scene's part of a client step, after the world's (ClientWorld::step()) and the HUD's: streaming round its
-    /// camera, and the HUD's newest step queued for drawing.
-    virtual void step(const net::ClientWorld& world, const FrameTime& frame) = 0;
-    /// Draws a frame of `world` between its last two steps (ClientWorld::drawn() at the frame's alpha) with the HUD
-    /// over it, and presents it.
-    virtual void render(const net::ClientWorld& world, const RenderTime& time) = 0;
+    /// The scene's part of a client step, after the world's (ClientWorld::step()), the camera's and the HUD's:
+    /// streaming round the client's camera (`camera`, whose view is none while it follows nobody: the level's start
+    /// then), and the HUD's newest step queued for drawing.
+    virtual void step(const net::ClientWorld& world, const net::ClientCamera& camera, const FrameTime& frame) = 0;
+    /// Draws a frame of `world` between its last two steps (ClientWorld::drawn() at the frame's alpha) through the
+    /// client's camera (ClientCamera::view() at the same alpha) with the HUD over it, and presents it.
+    virtual void render(const net::ClientWorld& world, const net::ClientCamera& camera, const RenderTime& time) = 0;
+    /// The level's collision, which the client's camera pulls in by; null for none (the default).
+    [[nodiscard]] virtual const raycast::CollisionMesh* collision() const { return nullptr; }
+    /// The gait speeds of the human of character `character` (net::HumanState::character), which the client's camera
+    /// reads his gait by; the default, none of them, reads every move as the sneak (nearest of zeros).
+    [[nodiscard]] virtual human::Speeds speedsOf(std::int32_t /*character*/) { return human::Speeds{}; }
 };
 
 /// Loads what the client game draws of a level (its name as the host's LoadLevel gives it, and the checkpoint), with
@@ -114,6 +122,9 @@ class ClientGame final : public GameMode, public LevelGame {
     [[nodiscard]] const net::ClientWorld* world() const { return m_world.get(); }
     /// The scene of the level loaded; null with none.
     [[nodiscard]] const ClientScene* scene() const { return m_scene.get(); }
+    /// The client's own camera of the level loaded: the follow camera on the human its player slot follows
+    /// (net::ClientCamera); with no level, or none to follow, it has no view.
+    [[nodiscard]] const net::ClientCamera& camera() const { return m_camera; }
     /// The HUD of the level loaded, as the guest's own player slot has it; null with none.
     [[nodiscard]] const hud::Hud* hud() const { return m_hud ? &m_hud->hud() : nullptr; }
     /// How many of the host's events were presented on this machine.
@@ -127,6 +138,8 @@ class ClientGame final : public GameMode, public LevelGame {
     void dropLevel();
     // Presents the host's events the world's playback has reached (once each, in order).
     void presentEvents();
+    // Steps the client's camera one step on the human its slot follows, with this machine's own right stick.
+    void stepCamera(const GameModeStack& stack, const FrameTime& frame);
     // Steps the level's HUD one step: the guest's slot's panel state and the standing state of the newest snapshot.
     void stepHud(const FrameTime& frame);
 
@@ -143,6 +156,7 @@ class ClientGame final : public GameMode, public LevelGame {
     std::unique_ptr<hud::HudOwner> m_hud;         // the level's HUD; null with none; outlives m_scene, which draws it
     std::unique_ptr<ClientScene> m_scene;         // the level's; null with none, or when its load failed
     std::unique_ptr<net::ClientWorld> m_world;    // the level's; null with none
+    net::ClientCamera m_camera;                   // the level's: made afresh for each load
     ClientEventPlayer m_events;                   // presents the host's events on this machine's sound and the HUD
     std::uint64_t m_hudMs = 0;                    // the HUD's own game time: this level's steps counted
     int m_levelNumber = 0;                        // the level's number as the HUD reads it (`level99`: 99)

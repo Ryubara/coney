@@ -74,9 +74,9 @@ class ClientLevelScene final : public ClientScene {
 
     /// Streams the scenery round the camera on the world's newest humans, finds what it sees and queues the sprites of
     /// the HUD's newest step.
-    void step(const net::ClientWorld& world, const FrameTime& frame) override;
+    void step(const net::ClientWorld& world, const net::ClientCamera& camera, const FrameTime& frame) override;
     /// Draws the scenery with the world's humans among it, blended for the frame, and the HUD over it, and presents.
-    void render(const net::ClientWorld& world, const RenderTime& time) override;
+    void render(const net::ClientWorld& world, const net::ClientCamera& camera, const RenderTime& time) override;
 
     /// How many humans the last frame posed.
     [[nodiscard]] std::size_t humansPosed() const { return m_posed; }

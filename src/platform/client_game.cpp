@@ -91,7 +91,7 @@ ModeResult ClientGame::update(GameModeStack& /*stack*/, const FrameTime& frame) 
         m_world->step();
         presentEvents();
         stepHud(frame);
-        m_scene->step(*m_world, frame);
+        m_scene->step(*m_world, m_camera, frame);
     }
     // No copy of the host's movie plays here: each is over as soon as it is known, so the host waits for no copy.
     if (const std::optional<net::HostMovie> movie = m_net.hostMovie(); movie && movie->step != m_movieAnswered) {
@@ -103,7 +103,7 @@ ModeResult ClientGame::update(GameModeStack& /*stack*/, const FrameTime& frame) 
 
 void ClientGame::render(const RenderTime& time) {
     if (m_scene && m_world) {
-        m_scene->render(*m_world, time);
+        m_scene->render(*m_world, m_camera, time);
         return;
     }
     if (m_device != nullptr) {

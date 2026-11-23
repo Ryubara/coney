@@ -181,7 +181,8 @@ const human::PlayerCharacter* ClientLevelScene::characterOf(net::NetId id) const
                                                                          : nullptr;
 }
 
-void ClientLevelScene::step(const net::ClientWorld& world, const FrameTime& frame) {
+void ClientLevelScene::step(const net::ClientWorld& world, const net::ClientCamera& /*camera*/,
+                            const FrameTime& frame) {
     // The camera on the newest step's lowest id (the host's player 1), else the start; the scenery streams round it
     // and finds what it sees, as the play mode's step does.
     const net::ClientWorld::Humans& humans = world.humans();
@@ -198,7 +199,8 @@ void ClientLevelScene::step(const net::ClientWorld& world, const FrameTime& fram
     m_hudLayer->render();
 }
 
-void ClientLevelScene::render(const net::ClientWorld& world, const RenderTime& time) {
+void ClientLevelScene::render(const net::ClientWorld& world, const net::ClientCamera& /*camera*/,
+                              const RenderTime& time) {
     const std::map<net::NetId, net::DrawnHuman> drawn = world.drawn(time.alpha);
     // A human gone from the world loses his mesh; a new one gets one.
     std::erase_if(m_meshes, [&drawn](const auto& entry) { return !drawn.contains(entry.first); });

@@ -25,6 +25,7 @@
 #include "hud/hud.h"
 #include "hud/hud_owner.h"
 #include "net/character_id.h"
+#include "net/client_camera.h"
 #include "net/client_world.h"
 #include "net/net_id.h"
 #include "net/snapshot.h"
@@ -60,6 +61,18 @@ coney::net::HumanState humanAt(float x, std::int32_t clip, float gait) {
     return human;
 }
 
+// What the client game gives its camera each step in these tests: the level's collision, a player's gait speeds, the
+// pad at rest.
+coney::net::ClientCameraInput cameraInput(const coney::platform::ClientLevelScene& scene) {
+    return coney::net::ClientCameraInput{
+        .speeds =
+            coney::human::Speeds{.base = 1.0F, .sneak = 0.8F, .walk = 1.6F, .jog = 3.0F, .run = 4.6F, .sprint = 7.0F},
+        .rawRightX = coney::net::kClientStickRest,
+        .rawRightY = coney::net::kClientStickRest,
+        .mesh = scene.collision(),
+        .seconds = 1.0F / 30.0F};
+}
+
 } // namespace
 
 // Expected: unverified, #1603 (Coney's own: the stand-in model and camera of docs/guides/client-world.md#client-game;
@@ -88,6 +101,7 @@ TEST_CASE("the client game's scene of level99 draws a guest's humans posed with 
     coney::net::SnapshotSender sender;
     coney::net::SnapshotReceiver receiver;
     coney::net::ClientWorld world;
+    coney::net::ClientCamera camera;
     const auto send = [&](std::uint32_t step, bool both) {
         std::vector<coney::net::SnapshotHuman> humans{
             {.id = {.slot = 0, .generation = 1},
@@ -107,12 +121,13 @@ TEST_CASE("the client game's scene of level99 draws a guest's humans posed with 
     const auto clientStep = [&] {
         world.receive(receiver);
         world.step();
+        camera.step(world, coney::net::followedHuman(world.humans(), 1), cameraInput(drawn));
         // A default frame with only the clock set (a designated initializer would leave members out).
         coney::hud::HudFrame hudFrame;
         hudFrame.nowMs = 100 * (index + 1);
         hudOwner.hud().update(hudFrame);
-        drawn.step(world, coney::FrameTime{.index = index++, .seconds = 1.0 / 30.0});
-        drawn.render(world, coney::RenderTime{});
+        drawn.step(world, camera, coney::FrameTime{.index = index++, .seconds = 1.0 / 30.0});
+        drawn.render(world, camera, coney::RenderTime{});
     };
 
     for (std::uint32_t step = 0; step < 10; ++step) {
@@ -181,6 +196,7 @@ TEST_CASE("the client game's scene draws each human with the character his snaps
     coney::net::SnapshotSender sender;
     coney::net::SnapshotReceiver receiver;
     coney::net::ClientWorld world;
+    coney::net::ClientCamera camera;
     std::uint64_t index = 0;
     const auto run = [&](std::uint32_t from, std::uint32_t to, std::int32_t firstCharacter) {
         for (std::uint32_t step = from; step < to; ++step) {
@@ -198,8 +214,9 @@ TEST_CASE("the client game's scene draws each human with the character his snaps
             REQUIRE(sender.acknowledge(snapshot.sequence).has_value());
             world.receive(receiver);
             world.step();
-            drawn.step(world, coney::FrameTime{.index = index++, .seconds = 1.0 / 30.0});
-            drawn.render(world, coney::RenderTime{});
+            camera.step(world, coney::net::followedHuman(world.humans(), 1), cameraInput(drawn));
+            drawn.step(world, camera, coney::FrameTime{.index = index++, .seconds = 1.0 / 30.0});
+            drawn.render(world, camera, coney::RenderTime{});
         }
     };
     const auto hashOf = [&drawn](coney::net::NetId human) -> std::optional<std::uint32_t> {
