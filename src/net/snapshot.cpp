@@ -184,9 +184,10 @@ SnapshotSender::SnapshotSender(std::size_t budgetBytes) : m_budgetBytes(budgetBy
     const std::size_t fullHuman = kNetIdBits + 1 + kHumanFieldCount + fieldsBits(fieldTable(ReplicatedKind::Human));
     const std::size_t fullHud =
         kPlayerSlotBits + 1 + kHudFieldCount + fieldsBits(fieldTable(ReplicatedKind::PlayerHud));
-    // The HUD's standing state too: every element in full and one text of the longest, or a long text might never fit.
+    // The HUD's standing state too: every element in full and one text of the longest, or a long text might never fit;
+    // and the blips' whole share, which goes before the humans, or the blips could leave no room for a human.
     CONEY_ASSERT(budgetBytes * 8 >= kMostHeaderBits + (kMaxPlayerSlots * fullHud) + allHudElementsBits() +
-                                        kLongestHudTextBits + fullHuman);
+                                        kLongestHudTextBits + (budgetBytes * 8 / kSnapshotBlipShare) + fullHuman);
     // The radar's blips have a share of the packet, which must hold one in full or a new blip might never fit.
     CONEY_ASSERT(budgetBytes * 8 / kSnapshotBlipShare >= fullBlipBits());
 }

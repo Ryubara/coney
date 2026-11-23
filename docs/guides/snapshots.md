@@ -234,8 +234,11 @@ and a changed bit for each field. The two running counts (a new objective's 100 
 of mark) travel as whether they run, because each HUD counts them down itself: a guest's HUD takes them at their start
 every step the host's run, so its dot blinks while the host's does. The dot's settled state, its batch's depth and its
 place are each HUD's own, derived as `Radar_AddBlip` and the radar step derive them; the dot's shown state travels, since
-it depends on how the blip's history went. A blip has one set of words: one that follows a human has no place, and one
-with no place has the zero place's words, so a delta never sends a place nothing reads.
+it depends on how the blip's history went. An objective's up or down arrow (icons 74 and 75) and its colour travel as
+the host's icon and colour, so on a guest they show the objective above or below the **host's** player: the guest's step
+does not run the height test, where the original works it out per radar from that radar's own player (**stand-in**,
+until each player slot has a radar of its own). A blip has one set of words: one that follows a human has no place, and
+one with no place has the zero place's words, so a delta never sends a place nothing reads.
 
 **Deltas, the budget and the priority.** Blips are delta-compressed against the same acknowledged baseline as the rest:
 a slot the baseline does not hold comes in full (every field), a kept one with its changed fields only (an icon change is

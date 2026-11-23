@@ -302,8 +302,10 @@ keyed by their slots. Its view (where the player stands and which way he faces, 
 which way the camera looks) is the human the [client's camera](#client-camera) follows, as the world shows him now, and
 the guest's own camera (`ClientGame::radarView()`); with none to follow the radar draws nothing. A blip that follows a
 human is found through the world (`Hud::setRadarFollowLocator()`), by the network id the snapshot names, so it moves as
-the human is drawn; one with a place is where the snapshot puts it. The level's map is not on the guest's radar yet: it
-draws the blips and the player's arrow without the map disc.
+the human is drawn; one with a place is where the snapshot puts it. An objective's up or down arrow and its colour are
+the host's, worked out from the host player's height ([The radar's blips](snapshots.md#hud-blips)). **Planned**
+(#1670): the level's map on the guest's radar; until then it draws the blips and the player's arrow without the map
+disc.
 
 ## Testing {#testing}
 
