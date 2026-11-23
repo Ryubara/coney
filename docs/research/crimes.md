@@ -542,9 +542,9 @@ steps, every draw from the gameplay generator (`0x006eb880`), `rand(a, b)` `a` t
    neighbour sectors](ai-moving.md#neighbour-sectors)), 0.5 m up there, and his next object starts again from his feet
    (`0x00232e64`). Unless he is a dealer or his ped type (`+0x26c`) is 5, nothing more is dropped; a ped-type-5 human
    who is no dealer drops his next object 0.5 m above the last of the pocket's.
-3. **Power cuffs**: a human with cuffs (`Human_GetCuffCount` `0x00222908`: a cop always one, another AI `+0x378` (a
-   signed byte, below 0 read as 0), a player item 5) draws `rand(0, 100)`; below 51, with game state `+0x158` set or
-   unlock (6, 14), he drops `dyn_powercuffs` (item 5's removal time) and nothing else.
+3. **Power cuffs**: a human with cuffs (`Human_GetCuffCount` `0x00222908`, confirmed (code): a cop always one, another
+   AI `+0x378` (a signed byte, below 0 read as 0), a player item 5) draws `rand(0, 100)`; below 51, with game state
+   `+0x158` set or unlock (6, 14), he drops `dyn_powercuffs` (item 5's removal time) and nothing else.
 4. **The carried object** (`+0x257`, not `none`), and then nothing else: an AI human drops it unless `+0x278` is -1
    (then nothing at all), and carries `none` from then on. A player keeps it when `rand(0, 100)` is below 51;
    otherwise he drops it and loses money, the object type's `+0x5a` (a signed byte) × game state `+0x380`, from his
