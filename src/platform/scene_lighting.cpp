@@ -334,7 +334,8 @@ void SceneLighting::drawCarAtomic(rw::Atomic* atomic) {
 void SceneLighting::drawGroundRings(RenderEngine& engine, std::span<const hud::GroundRing> rings,
                                     std::span<const hud::TargetMarker> markers) const {
     const graphics::Texture* texture = textureOf(m_shadowSheet);
-    if (texture == nullptr) {
+    // The sheet is checked here too, not only through its texture, so the page read below is never an empty optional's.
+    if (!m_shadowSheet.has_value() || texture == nullptr) {
         return;
     }
     const graphics::ParticlePage& page = m_shadowSheet->page;
@@ -370,7 +371,8 @@ void SceneLighting::drawGroundRings(RenderEngine& engine, std::span<const hud::G
 
 void SceneLighting::drawCoronas(RenderEngine& engine) const {
     const graphics::Texture* texture = textureOf(m_coronaSheet);
-    if (texture == nullptr) {
+    // The sheet is checked here too, not only through its texture, so the page read below is never an empty optional's.
+    if (!m_coronaSheet.has_value() || texture == nullptr) {
         return;
     }
     const graphics::ParticlePage& page = m_coronaSheet->page;
@@ -390,7 +392,8 @@ void SceneLighting::drawCoronas(RenderEngine& engine) const {
 
 void SceneLighting::drawBlobShadows(RenderEngine& engine, std::span<const graphics::BlobShadow> shadows) const {
     const graphics::Texture* texture = textureOf(m_shadowSheet);
-    if (texture == nullptr) {
+    // The sheet is checked here too, not only through its texture, so the page read below is never an empty optional's.
+    if (!m_shadowSheet.has_value() || texture == nullptr) {
         return;
     }
     const graphics::ParticlePage& page = m_shadowSheet->page;
@@ -415,7 +418,8 @@ void SceneLighting::drawBlobShadows(RenderEngine& engine, std::span<const graphi
 
 void SceneLighting::drawGlass(RenderEngine& engine, std::span<const world_objects::GlassQuad> panes) const {
     const graphics::Texture* texture = textureOf(m_shadowSheet);
-    if (texture == nullptr) {
+    // The sheet is checked here too, not only through its texture, so the page read below is never an empty optional's.
+    if (!m_shadowSheet.has_value() || texture == nullptr) {
         return;
     }
     const graphics::ParticlePage& page = m_shadowSheet->page;

@@ -259,6 +259,44 @@ TEST_CASE("the sprite scene's draw stream has its expected hash", "[platform][dr
     CHECK(stream.hash() == 0x9643e3ff69a4bef9ULL);
 }
 
+TEST_CASE("a scene lighting with no sprite sheets draws no effects", "[platform][draw-stream][effects]") {
+    // Expected: unverified, #1649 (Coney's own: the sheets are optional, and a missing one draws nothing)
+    // The sheets are optional (a level may lack its lighting or part page): every effect draw must return early
+    // instead of reading the missing sheet's page.
+    auto engine = startHeadless();
+    engine->prepareDrawStreams();
+    coney::graphics::LevelLighting level;
+    level.lights.addLight(coney::graphics::LightDescriptor{.type = coney::graphics::LightType::Point,
+                                                           .position = {1.0F, 3.0F, 8.0F},
+                                                           .colour = {1.0F, 0.8F, 0.4F, 1.0F},
+                                                           .radius = 12.0F,
+                                                           .coronaSize = 1.5F,
+                                                           .lights = coney::graphics::kLightsWorld,
+                                                           .corona = 2});
+    coney::platform::SceneLighting lighting(level, std::nullopt, std::nullopt);
+    lighting.beginFrame(camera(), 0.1F, 200.0F, 0);
+    const std::array<coney::graphics::BlobShadow, 1> shadows{{{{1.0F, 5.0F, 0.05F}, {0.0F, 0.0F, 1.0F}, 1.0F}}};
+    const std::array<coney::world_objects::GlassQuad, 1> panes{{
+        {.corners = {Vec3{-1.0F, 4.0F, 0.0F}, Vec3{1.0F, 4.0F, 0.0F}, Vec3{-1.0F, 4.0F, 2.0F}, Vec3{1.0F, 4.0F, 2.0F}},
+         .rect = 10,
+         .colour = 0x80A0C0C0U},
+    }};
+    coney::hud::GroundRing ring;
+    ring.centre = Vec3{0.5F, 3.0F, 0.04F};
+    ring.radius = 0.54F;
+    ring.value = 70.0F;
+    ring.capacity = 90.0F;
+    const std::array<coney::hud::GroundRing, 1> rings{ring};
+    const std::array<coney::hud::TargetMarker, 1> markers{coney::hud::TargetMarker{}};
+    const DrawStream stream = drawFrame(*engine, [&] {
+        lighting.drawGlass(*engine, panes);
+        lighting.drawBlobShadows(*engine, shadows);
+        lighting.drawGroundRings(*engine, rings, markers);
+        lighting.drawCoronas(*engine);
+    });
+    CHECK(stream.counts().im3dDraws == 0);
+}
+
 TEST_CASE("the water scene's draw stream has its expected hash", "[platform][draw-stream][effects]") {
     // Expected: ../engine/renderer.md#comparing, Coney's own recording: taken from this scene before the effects
     // moved onto the frame description (#frame-description), which keeps it.
