@@ -20,6 +20,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -103,15 +104,20 @@ struct Chapter {
     }
     // Player 1's count of item `item`.
     [[nodiscard]] int carried(int item) { return run.session().flow().state().player.inventory.count(0, item); }
-    // Every `dyn_money` record ever made, taken or not.
-    [[nodiscard]] std::vector<const coney::world_objects::SpawnRecord*> moneyMade() {
-        std::vector<const coney::world_objects::SpawnRecord*> made;
+    // The handle of every `dyn_money` record ever made, taken or not. Handles, not pointers: the records live in a
+    // vector, and one added later (another gang member's drop) can move them.
+    [[nodiscard]] std::vector<double> moneyMade() {
+        std::vector<double> made;
         for (const coney::world_objects::SpawnRecord& record : run.session().flow().spawnRecords().all()) {
             if (record.typeName == "dyn_money") {
-                made.push_back(&record);
+                made.push_back(record.handle);
             }
         }
         return made;
+    }
+    // The record of `handle`, looked up afresh; null when none is.
+    [[nodiscard]] const coney::world_objects::SpawnRecord* recordOf(double handle) {
+        return std::as_const(run.session().flow()).spawnRecords().find(handle);
     }
 };
 
@@ -171,21 +177,30 @@ TEST_CASE("the disc's level87 checkpoint 3: the beaten early Destroyers' $5 each
         REQUIRE(destroyer->knockedOut());
         CHECK(destroyer->script().money == 0);
         // His money lies at his feet, half a metre up: one new pickup, which player 1 took already or walks onto.
-        const std::vector<const coney::world_objects::SpawnRecord*> made = chapter.moneyMade();
+        const std::vector<double> made = chapter.moneyMade();
         REQUIRE(made.size() == madeBefore + 1);
-        const coney::world_objects::SpawnRecord& drop = *made.back();
-        CHECK(drop.money == static_cast<std::uint32_t>(kDestroyerMoney));
-        if (drop.removed) {
-            taken += chapter.carried(coney::item::kMoney) - moneyBeforeFight;
+        const double dropHandle = made.back();
+        const coney::world_objects::SpawnRecord* drop = chapter.recordOf(dropHandle);
+        REQUIRE(drop != nullptr);
+        CHECK(drop->money == static_cast<std::uint32_t>(kDestroyerMoney));
+        int gained = 0;
+        if (drop->removed) {
+            gained = chapter.carried(coney::item::kMoney) - moneyBeforeFight;
         } else {
-            const coney::anim::Vec3 cash{drop.position[0], drop.position[1], drop.position[2]};
+            const coney::anim::Vec3 cash{drop->position[0], drop->position[1], drop->position[2]};
             chapter.mode().teleport(coney::human::Place{
                 .name = "cash", .feet = {cash.x, cash.y, chapter.mode().playerFeet().z}, .headingDegrees = 0.0F});
             const int beforeWalk = chapter.carried(coney::item::kMoney);
             chapter.play("0 tap square\n", 10);
-            taken += chapter.carried(coney::item::kMoney) - beforeWalk;
+            gained = chapter.carried(coney::item::kMoney) - beforeWalk;
         }
-        CHECK(drop.removed);
+        // The walk (or the fight) may have added records, so the drop is looked up again.
+        const coney::world_objects::SpawnRecord* after = chapter.recordOf(dropHandle);
+        REQUIRE(after != nullptr);
+        CHECK(after->removed);
+        // Each pickup's own gain, so a short one cannot hide behind the other's surplus.
+        CHECK(gained >= kDestroyerMoney);
+        taken += gained;
     }
     const int moneyAfter = chapter.carried(coney::item::kMoney);
     std::printf("level87 drop: player 1 took $%d from the two pickups; money $%d\n", taken, moneyAfter);
