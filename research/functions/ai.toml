@@ -1521,7 +1521,12 @@ page = "ai/index.md#update"
 role = "call handler B / handler A"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::think"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the scene gate, the perception update and the flee from hurt (the hurt clip, a cop's or a fleeing class's way back to the idle)"
+relation = "not-ported"
+issue = 1662
 
 [[function]]
 address = 0x0028f8b8
@@ -5617,7 +5622,12 @@ kind = "type 3 think"
 role = "[The Warriors' pick-ups](ai-gangs.md#warrior-pickups) and the fight push"
 level = "confirmed-code"
 coney = "src/ai/swap_prompt.h:thinkSwapPrompt"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "spotting players, the pick-ups, the weapon and loot drops, the hats, the pick-up window, timer +0x2dc and getting out of the way (steps 1 to 6, 8 and 9 but the fight push)"
+relation = "not-ported"
+issue = 1662
 
 [[function]]
 address = 0x00306040
