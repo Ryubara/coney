@@ -102,9 +102,7 @@ TEST_CASE("two attackers on a man with a spacing of one take turns at his one ac
         // Never both in the place at once, by the man's places: a goal's own flag (`+0x28`) can lag, as the man's
         // target may take the place from the other, whose flag FightGoal_Process (0x002b3ab0) clears only once his
         // queued actions are over.
-        const coney::ai::ActivePlaces& places = scene.playerBrain().fightBook().places;
-        CHECK_FALSE((places.holds(&front) && places.holds(&back)));
-        CHECK(places.held() <= 1);
+        CHECK(scene.playerBrain().fightBook().places.held() <= 1);
         frontPressed = frontPressed || front.human().record().command == coney::combat::command::kSquarePressed;
         backPressed = backPressed || back.human().record().command == coney::combat::command::kSquarePressed;
     }
