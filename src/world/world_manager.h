@@ -35,6 +35,7 @@ class WorldManager {
     /// Takes `other`'s reservations; `other` then holds none.
     WorldManager(WorldManager&& other) noexcept;
     /// Gives back this manager's reservations, then takes `other`'s; `other` then holds none.
+    /// @coney-only the original has one world manager for the whole game and never replaces it
     WorldManager& operator=(WorldManager&& other) noexcept;
 
     /// Reserves the `World Level Pool` for a level file of `levelFileSize` bytes (worldLevelPoolBytes()); none for a
@@ -55,6 +56,7 @@ class WorldManager {
 
   private:
     // Gives back every reservation and holds none: what the destructor and a move assignment do.
+    // @coney-only the original never gives back its global data
     void releaseAll();
 
     SectorBudget* m_budget;         // null once moved from
