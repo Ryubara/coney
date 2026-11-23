@@ -100,6 +100,7 @@ bool sameSample(const PadSample& a, const PadSample& b) {
 } // namespace
 
 TEST_CASE("a recording names each change on its step, in the script's own words", "[input_recording]") {
+    // Expected: Coney's own debug tooling, a recording is an input script (docs/guides/run-log.md#input-recording).
     InputRecorder recorder;
     // A pad that does not change is not written.
     CHECK(recorder.record(0, atRest()).empty());
@@ -124,6 +125,7 @@ TEST_CASE("a recording names each change on its step, in the script's own words"
 }
 
 TEST_CASE("a trigger's partial pressure is a pressure line, and goes back to auto", "[input_recording]") {
+    // Expected: Coney's own debug tooling, a recording is an input script (docs/guides/run-log.md#input-recording).
     InputRecorder recorder;
     PortSamples samples = atRest();
     samples[0].buttons = pad::kL2;
@@ -138,6 +140,7 @@ TEST_CASE("a trigger's partial pressure is a pressure line, and goes back to aut
 }
 
 TEST_CASE("playing a recording back gives the samples it was made from, step by step", "[input_recording]") {
+    // Expected: Coney's own debug tooling, a recording is an input script (docs/guides/run-log.md#input-recording).
     const std::vector<PortSamples> run = wildRun(400);
     InputRecorder recorder;
     std::string text;
@@ -157,6 +160,7 @@ TEST_CASE("playing a recording back gives the samples it was made from, step by 
 }
 
 TEST_CASE("a recording of a script replays to the script's own samples", "[input_recording]") {
+    // Expected: Coney's own debug tooling, a recording is an input script (docs/guides/run-log.md#input-recording).
     auto events = coney::parseInputScript("2 tap start\n"
                                           "4 stick left 0 100\n"
                                           "6 press cross\n"
@@ -186,6 +190,7 @@ TEST_CASE("a recording of a script replays to the script's own samples", "[input
 
 TEST_CASE("a recording that starts late counts its first step as 0 and leaves the earlier ones out",
           "[input_recording]") {
+    // Expected: Coney's own debug tooling, a recording is an input script (docs/guides/run-log.md#input-recording).
     PortSamples held = atRest();
     held[0].buttons = pad::kCircle;
     fullPressure(held[0]);
@@ -209,6 +214,7 @@ TEST_CASE("a recording that starts late counts its first step as 0 and leaves th
 }
 
 TEST_CASE("a recording's header carries the seed, and --input-script reads it back", "[input_recording]") {
+    // Expected: Coney's own debug tooling, a recording is an input script (docs/guides/run-log.md#input-recording).
     const coney::InputRecordingHeader header{.aiSeed = 42, .level = "level99", .checkpoint = 3};
     const std::string text = coney::inputRecordingHeader(header) + "5 tap cross\n";
     CHECK_THAT(text, Catch::Matchers::ContainsSubstring("# ai-seed 42\n"));
@@ -220,6 +226,7 @@ TEST_CASE("a recording's header carries the seed, and --input-script reads it ba
 }
 
 TEST_CASE("a header never carries a path or text in the level's place", "[input_recording]") {
+    // Expected: Coney's own debug tooling, a recording is an input script (docs/guides/run-log.md#input-recording).
     for (const std::string_view odd : {"C:\\Users\\someone\\level", "/home/someone/level", "a level", ""}) {
         const std::string text =
             coney::inputRecordingHeader({.aiSeed = 0, .level = std::string(odd), .checkpoint = std::nullopt});
@@ -231,6 +238,7 @@ TEST_CASE("a header never carries a path or text in the level's place", "[input_
 }
 
 TEST_CASE("the seed is read from the leading comments only", "[input_recording]") {
+    // Expected: Coney's own debug tooling, a recording is an input script (docs/guides/run-log.md#input-recording).
     CHECK(coney::inputScriptSeed("# ai-seed 7\n1 tap cross\n") == std::optional<std::uint32_t>(7));
     CHECK(coney::inputScriptSeed("# a note\n\n#ai-seed 2147483647\n") == std::optional<std::uint32_t>(2147483647U));
     // No header, a command first, a bad number, and a word that only starts like the key: none.
@@ -241,6 +249,7 @@ TEST_CASE("the seed is read from the leading comments only", "[input_recording]"
 }
 
 TEST_CASE("rawstick and pressure lines parse and are refused when malformed", "[input_recording]") {
+    // Expected: Coney's own debug tooling, a recording is an input script (docs/guides/run-log.md#input-recording).
     auto events = coney::parseInputScript("1 rawstick left 0 255\n"
                                           "2 p2 rawstick right 128 128\n"
                                           "3 pressure l2 90\n"
@@ -266,6 +275,7 @@ TEST_CASE("rawstick and pressure lines parse and are refused when malformed", "[
 }
 
 TEST_CASE("a pressure line holds until auto, and a raw stick reaches the pad as written", "[input_recording]") {
+    // Expected: Coney's own debug tooling, a recording is an input script (docs/guides/run-log.md#input-recording).
     auto events = coney::parseInputScript("1 press r2\n"
                                           "1 pressure r2 40\n"
                                           "1 rawstick left 101 3\n"

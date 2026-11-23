@@ -347,8 +347,8 @@ class Brain {
 
     /// Pushes `goal`: the old top is suspended, the actions are cleared (but an action that refuses to abort) and
     /// `goal` becomes the top, started once the queue is empty. Refused (false, `goal` dropped) when the stack is full.
-    /// The run log notes a goal pushed (docs/guides/run-log.md#events); the push itself is pushOnStack().
-    /// @coney-only the run log's line around the original's push
+    /// @orig 0x0028d758 Brain_PushGoal (unknown)
+    /// @orig 0x0029eea0 Goal_Suspend (unknown)
     bool pushGoal(std::unique_ptr<Goal> goal);
     /// Takes the top goal off the stack, ends it when it had started and frees it, then resumes the new top at once
     /// (started, when it never was) if the action queue is empty, else before its next process. When the stack is
@@ -709,10 +709,6 @@ class Brain {
     // Writes the run log's line for a goal pushed or popped (`what` is "push" or "pop"), `depth` goals being on the
     // stack after it.
     void logGoal(std::string_view what, const Goal& goal, std::size_t depth) const;
-    // The push of pushGoal(): the old top is suspended, the actions are cleared and `goal` becomes the top.
-    // @orig 0x0028d758 Brain_PushGoal (unknown)
-    // @orig 0x0029eea0 Goal_Suspend (unknown)
-    bool pushOnStack(std::unique_ptr<Goal> goal);
     // The pop of popGoal(): the top goal ends and is freed, the new top resumes, and an emptied stack tells the human.
     // @orig 0x0028d7d8 Brain_PopGoal (unknown)
     void popOffStack();
@@ -749,11 +745,24 @@ class Brain {
 
     human::Human* m_human;
     std::uint64_t m_nowMs = 0;
-    std::uint64_t m_lastUpdateMs = 0;                                  // +0x30
-    std::uint64_t m_updates = 0;                                       // +0x34
-    std::uint64_t m_thinks = 0;                                        // +0x38
-    std::unique_ptr<Goal> m_reaction;                                  // +0x3c
-    std::vector<std::unique_ptr<Goal>> m_goals;                        // +0x40, the top at the back
+    std::uint64_t m_lastUpdateMs = 0; // +0x30
+    std::uint64_t m_updates = 0;      // +0x34
+    std::uint64_t m_thinks = 0;       // +0x38
+    std::unique_ptr<Goal> m_reaction; // +0x3c
+    // The goal stack, the top at the back, which tells the run log of each goal pushed on it, so pushGoal() stays the
+    // original's push (docs/guides/run-log.md#events).
+    // @coney-only the run log's line for a goal pushed
+    class GoalStack final : public std::vector<std::unique_ptr<Goal>> {
+      public:
+        // A stack of `owner`'s goals, whose log name the line carries.
+        explicit GoalStack(const Brain& owner) : m_owner(&owner) {}
+        // Pushes `goal` and notes it in the run log.
+        void push_back(std::unique_ptr<Goal> goal);
+
+      private:
+        const Brain* m_owner;
+    };
+    GoalStack m_goals{*this};                                          // +0x40, the top at the back
     std::array<std::unique_ptr<Action>, kActionQueueSize> m_actions{}; // +0x68, circular
     std::size_t m_actionCount = 0;                                     // +0x2e
     std::size_t m_actionFront = 0;                                     // +0x2f

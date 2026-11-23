@@ -784,6 +784,7 @@ void ScriptedBrains::release(Spawner spawner) {
     }
 }
 
+// @coney-only the scripts' HuCreate made through Coney's hold and spawner (the original makes the human at once)
 void ScriptedBrains::humanCreated(const HumanCreation& human) {
     // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     if (held([this, human] { humanCreated(human); })) {

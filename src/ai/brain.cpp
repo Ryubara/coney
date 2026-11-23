@@ -281,14 +281,11 @@ void Brain::logGoal(std::string_view what, const Goal& goal, std::size_t depth) 
                                 target ? std::format(" at human {:.0f}", *target) : std::string(), depth));
 }
 
-// The push, noted in the run log once it is on the stack.
-// @coney-only the run log's line around the original's push
-bool Brain::pushGoal(std::unique_ptr<Goal> goal) {
-    if (!pushOnStack(std::move(goal))) {
-        return false;
-    }
-    logGoal("push", *m_goals.back(), m_goals.size());
-    return true;
+// Pushes `goal` and notes it in the run log.
+// @coney-only the run log's line for a goal pushed
+void Brain::GoalStack::push_back(std::unique_ptr<Goal> goal) {
+    std::vector<std::unique_ptr<Goal>>::push_back(std::move(goal));
+    m_owner->logGoal("push", *back(), size());
 }
 
 // The pop, noted in the run log before the goal ends, so what its end sets going follows it in the log.
@@ -301,7 +298,7 @@ void Brain::popGoal() {
     popOffStack();
 }
 
-bool Brain::pushOnStack(std::unique_ptr<Goal> goal) {
+bool Brain::pushGoal(std::unique_ptr<Goal> goal) {
     if (goal == nullptr || m_goals.size() >= kGoalStackSize) {
         return false;
     }
