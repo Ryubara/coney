@@ -1417,6 +1417,13 @@ shape is set from (confirmed (code)). The human body has its own
 The tie rule is therefore not "stable": a body lands after its equals when it is placed moving forward and before
 them when moving backward.
 
+**The live list** in `level99` matches these rules, confirmed (runtime), run r-20261123-body-list-sort: walked from
+the head of the IPhysics `0x00597198` points to, twice, about six seconds of play apart, all 146 bodies of the body
+vector are on the list, each `prev` names the node before it, each index names its own slot of the vector, min x
+never falls along the list (33 neighbours share a min x) and no box is inverted; `+0x14` equals the widest body's
+width (44.89) both times, the tick counter having passed its 120th tick between the reads. Coney's
+`PhysicsWorld` keeps the same invariants (`physics_world_test.cpp`).
+
 ### BodyList_Remove {#u7-remove}
 
 `0x003405d8`. `Body* BodyList_Remove(IPhysics* p, Body* b)`: returns `b`'s **old previous node** (0 for the head).

@@ -1,0 +1,46 @@
+version = 1
+id = "r-20261123-body-list-sort"
+date = "2026-11-23"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "bb5551f8f6c4a0a25fadf6979dad7a2cd4efda94aa3b4acb21406467a8c154dc"
+
+[who]
+agent = "a5a8d2355fdc9872a"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = []
+
+[run]
+name = ""
+method = "In level99 from the state, paused through the debug server, read the IPhysics pointer at 0x00597198 and walked its x-sorted body list from the head (+0x08) through each node's next (+0x28), checking each prev (+0x24), the vector index (+0x20) against the body vector (+0x4f450 begin/end), the order of min.x and each box; read twice, about six seconds of play apart"
+
+[values]
+bodies = 146
+listed = 146
+in_vector = 146
+prev_link_errors = 0
+out_of_order = 0
+equal_min_x_neighbours = 33
+index_errors = 0
+inverted_boxes = 0
+bound = 44.89
+widest = 44.89
+tick_first = 86
+tick_second = 4
+second_out_of_order = 0
+second_bound = 44.89
+second_widest = 44.89
+
+[addresses]
+iphysics_pointer = 0x00597198
+iphysics = 0x00e2a800
+head = 0x00e433b0
