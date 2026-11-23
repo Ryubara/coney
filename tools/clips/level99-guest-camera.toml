@@ -1,15 +1,19 @@
 # A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair-guest): what a guest sees of a host's level99
-# street. The host (headless) plays tests/support/play_walk_level99.txt: it skips the intro scene at frame 70, walks from
-# 150 and runs from 270; the guest (`--join ... --net-view`, the one recorded) draws the host's game from its snapshots,
-# and its own pad's right stick turns its view (tools/clips/level99-guest-camera.txt). Both count their frames from the
-# level's first frame of play, but the guest joins about 4 s (114 steps) into the host's, and the host's steps are held
-# only 24 for its load while its script keeps counting, so the guest's frame 0 is about the host's frame 140: the clip
-# starts at frame 20, which is about 160 of the host's script, in the middle of its walk and run. For a change to the
-# guest's view: its camera, its scene or what it draws of the host's humans.
+# street. The host (headless) plays tools/clips/level99-guest-camera-host.txt: it skips the intro scene (a hosted run
+# needs its own script: the host's steps are held for the guest's load while its script keeps counting), stands while
+# the view fades in, walks from frame 190 and runs from 310; the guest (`--join ... --net-view`, the one recorded)
+# draws the host's game from its snapshots, and its own pad's right stick turns its view
+# (tools/clips/level99-guest-camera.txt).
+# Both count their frames from the level's first frame of play, but the guest joins about 4 s into the host's, and the
+# host's steps are held about 24 for its load while its script keeps counting, so the guest's frame 0 is about the
+# host's frame 140: the clip starts at frame 20, about 160 of the host's script, a few steps before the walk, and
+# shows 6 s: the walk, then the start of the run, which goes toward the guest's own camera and out of its view (the
+# host's stick is read against the host's camera, not the guest's). The right stick turns the view from guest frame
+# 110. For a change to the guest's view: its camera, its scene or what it draws of the host's humans.
 description = "level99 street: a guest's view of the host's player walking and running"
 level = "level99"
 input = "tools/clips/level99-guest-camera.txt"
-host_input = "tests/support/play_walk_level99.txt"
+host_input = "tools/clips/level99-guest-camera-host.txt"
 join_after = "L99_IN skipped"
 start_frame = 20
-seconds = 8
+seconds = 6

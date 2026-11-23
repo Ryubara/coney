@@ -1,7 +1,8 @@
 # The guest's pad for tools/clips/level99-guest-camera.toml (frames count from the level's first frame of play, which
 # is about the host's frame 140). Its port 1 plays the host's port 2, which drives no human yet, so only the guest's own
-# view uses it: the right stick turns the guest's follow camera. While the host's player walks and runs, the view turns
-# right for a second, then left, then rests. Format: docs/guides/running-input.md#input-scripts
-100 stick right 60 0
-130 stick right -100 0
-160 stick right 0 0
+# view uses it: the right stick turns the guest's follow camera. For its first 3 s the clip only follows the host's
+# walking human; then the view turns right for a second, then left, then rests while he walks on and starts to run.
+# Format: docs/guides/running-input.md#input-scripts
+110 stick right 60 0
+140 stick right -100 0
+170 stick right 0 0

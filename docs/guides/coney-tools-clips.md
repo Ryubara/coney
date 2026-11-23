@@ -217,10 +217,15 @@ is the frame count, and the hashes differ even for no change: read the clips. A 
 base without `--record-from-frame` for `--net-view`) is `--before` a hand-made commit that adds those options to the
 merge base, as for any change the base lacks an option for.
 
-`level99-guest-camera` is the scenario for the guest's follow camera (#1333): the host's player skips the intro, walks
-and runs through the level99 street while the guest's right stick turns its own view. Its before is `--before` a commit
-of the merge base with the guest recording's options only, where the guest's view is the old stand-in behind the host's
-player.
+`level99-guest-camera` is the scenario for the guest's follow camera (#1333): the host's player skips the intro, stands
+while the view fades in, then walks and starts to run through the level99 street while the guest's right stick turns
+its own view. The host plays its own script (`tools/clips/level99-guest-camera-host.txt`), not the one the one-process
+scenarios use: the loading barrier holds the host's steps for the guest's load while its script keeps counting, so the
+intro scene has fewer updates than the script has frames, and a scene takes a skip only after 60 of its updates, so
+a skip tapped at frame 70 is refused and the host's player stands in the scene for the whole clip. Check a guest
+scenario's clips for a human who moves. Its before is `--before` a commit of the merge base with the guest recording's
+options only, where the guest's view is the old stand-in: a camera fixed behind the lowest-id human, which follows him
+but rigidly, turning with his heading and not lagging behind it.
 
 <!-- command-reference:begin clips -->
 ## Parameters of `clips` {#clips-parameters}
