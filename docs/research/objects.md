@@ -974,12 +974,13 @@ type `+0x87`), so the slots go back to the defaults or the style beneath (confir
 (`Human_ReleaseThrow`, `0x002586d8`) instead **pops** the top style when it is 1-6, whatever the held set is, and
 removes the held set (when it is not 0) only when the top style is anything else, such as the hidden style (confirmed
 (code) at `0x002586d8`). The script's `HuDropWeapon` (`Human_DropWeapon`, `0x002994b8`) drops through `Human_DropHeld`
-when the human holds anything, and `GoalThrowObject`'s throw (`0x002cf690`) queues the throw attack (`0x21`), whose
-release event is `Human_ReleaseThrow` (both confirmed (code)). The drop of a set 4 or 6 object also sets state
-`0x20000000`, which asks for the anim state again, so a standing human goes back to the plain idle at once (confirmed
-(code) at `0x00257f38`). Before a pick-up clip, a held object is dropped first when the new object's `pickupAnim` is 5
-or 6 or the human's style is 4 or 6 ([Combat](combat-throws.md#bat)). Hiding is refused while the held object's set is 4
-or 6 (`Human_EnterShadow`, `0x0022ff88`, through `Human_HoldsKind4Or6`; confirmed (code)).
+when the human holds anything, and `GoalThrowObject`'s throw (`0x002cf690`) queues attack kind 0 (cross;
+`Brain_QueueAttack`, `0x0028e248`), the throw with something in hand, whose release event is `Human_ReleaseThrow` (both
+confirmed (code)). The drop of a set 4 or 6 object also sets state `0x20000000`, which asks for the anim state again, so
+a standing human goes back to the plain idle at once (confirmed (code) at `0x00257f38`). Before a pick-up clip, a held
+object is dropped first when the new object's `pickupAnim` is 5 or 6 or the human's style is 4 or 6
+([Combat](combat-throws.md#bat)). Hiding is refused while the held object's set is 4 or 6 (`Human_EnterShadow`,
+`0x0022ff88`, through `Human_HoldsKind4Or6`; confirmed (code)).
 
 **5. The pick-up clip's follow-on.** `Human_PlayPickupClip` (`0x0025e5a8`) builds the loop the pick-up clip hands
 over to **before** the take: it pushes the new object's set as a style for the moment (unless the human is hidden in

@@ -65,7 +65,8 @@ std::uint8_t MoveStyles::replaceTop(std::uint8_t style) {
 }
 
 int MoveStyles::remove(std::uint8_t style) {
-    // The lowest entry holding it, searched from the base; past the top when it is not there.
+    // The lowest entry holding it, searched from the base; past the top when it is not there. The `depth >= 0` test is
+    // the original's signed check, kept as it is: Coney's depth (0-3) always passes it.
     int at = 0;
     if (depth >= 0 && entries[0] != style) {
         at = 1;
