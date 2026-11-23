@@ -193,3 +193,24 @@ TEST_CASE("an aborted band move with no stance turns to a live man, not to a dea
     REQUIRE(mover.clearActions());
     CHECK_FALSE(mover.human().record().move.has_value());
 }
+
+TEST_CASE("a re-target during a band move turns the fight stance to the new man, and a forgotten one leaves it",
+          "[ai][move]") {
+    // Expected: ai-moving.md#move-melee, confirmed (code): the stance is the human's state round the brain's target
+    // (+0x124), which the fight goal enters each update (Human_EnterFightStance 0x0022fe80)
+    AiScene scene;
+    Brain& first = scene.add(Vec3{40.0F, 44.0F, 0.0F}, 0.0F);
+    Brain& second = scene.add(Vec3{44.0F, 40.0F, 0.0F}, 0.0F);
+    Brain& mover = scene.add(Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
+    mover.setTarget(&first);
+    mover.setFightStance(true); // as the fight goal takes it
+    REQUIRE(queueBand(mover, 4.0F, 4.75F, 6000) != nullptr);
+    scene.run(1);
+    REQUIRE(mover.human().fighter().lockTarget() == &first.human());
+    // The re-target while the move runs: the stance walks round the new man at once.
+    mover.setTarget(&second);
+    CHECK(mover.human().fighter().lockTarget() == &second.human());
+    // The man leaves the scene: the stance holds no one.
+    mover.forget(second);
+    CHECK(mover.human().fighter().lockTarget() != &second.human());
+}
