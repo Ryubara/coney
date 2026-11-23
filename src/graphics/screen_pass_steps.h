@@ -61,6 +61,8 @@ struct ScreenSteps {
 ///   0 has no steps and forgets the kept frame.
 ///
 /// An empty view has no steps.
+/// @coney-only the GPU renderer's layout of the screen passes (docs/engine/gpu-renderer.md#screen-passes); the original
+/// draws through its device
 [[nodiscard]] ScreenSteps screenStepsOf(const ScreenPass& pass, bool keptReady);
 
 /// The blur pulse's steps over `view`, the blur pass of the original's device (device slot `+0x108`,

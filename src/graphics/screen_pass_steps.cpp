@@ -17,6 +17,7 @@ constexpr AlphaRange kQuadTest{kStartAlphaRef, 1000.0F};
 
 // A quad over the window rectangle (`x`, `y`, `width`, `height`) with texture coordinates `uv` in `colour`, its corners
 // clockwise from the top left, as the GL3 renderer's drawWindowQuads() makes them.
+// @coney-only the GPU renderer's layout of a screen quad; the original draws through its device
 std::array<Overlay2dVertex, 4> quadCorners(float x, float y, float width, float height, const UvRect& uv, Rgba colour) {
     return {{{x, y, uv.u0, uv.v0, colour},
              {x + width, y, uv.u1, uv.v0, colour},
@@ -25,12 +26,14 @@ std::array<Overlay2dVertex, 4> quadCorners(float x, float y, float width, float 
 }
 
 // A draw step from `from` over that rectangle.
+// @coney-only the GPU renderer's layout of a screen quad; the original draws through its device
 ScreenDrawStep quadFrom(ScreenSlot from, bool opaque, float x, float y, float width, float height, const UvRect& uv,
                         Rgba colour) {
     return ScreenDrawStep{from, opaque, quadCorners(x, y, width, height, uv, colour), kQuadTest};
 }
 
 // The line blend over `view`: the view copied, then laid over itself at half strength one original line down.
+// @coney-only the PS2 video output's softening (docs/research/rendering.md#output), done by its read circuits, not code
 std::vector<ScreenStep> lineBlendSteps(const LineBlend& blend, const ScreenRect& view) {
     if (view.width <= 0 || view.height <= 0) {
         return {};
@@ -44,6 +47,7 @@ std::vector<ScreenStep> lineBlendSteps(const LineBlend& blend, const ScreenRect&
 
 // The motion blur over `view` (Coney's stand-in): the kept frame laid over the view while one is kept, then the view
 // kept.
+// @coney-only the motion blur's stand-in (platform/motion_blur_pass.h), the GL3 renderer's drawMotionBlur() as steps
 ScreenSteps motionBlurSteps(const MotionBlurOverlay& blur, const ScreenRect& view, bool keptReady) {
     // No strength: nothing laid, and the next blur starts from a fresh frame.
     if (blur.colour.a == 0) {
@@ -64,6 +68,8 @@ ScreenSteps motionBlurSteps(const MotionBlurOverlay& blur, const ScreenRect& vie
 
 } // namespace
 
+// The steps of the pass's kind.
+// @coney-only the GPU renderer's layout of the screen passes; the original draws through its device
 ScreenSteps screenStepsOf(const ScreenPass& pass, bool keptReady) {
     if (const auto* blur = std::get_if<BlurPulse>(&pass.effect); blur != nullptr) {
         return ScreenSteps{blurPulseSteps(*blur, pass.area), false};
