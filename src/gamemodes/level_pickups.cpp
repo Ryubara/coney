@@ -365,7 +365,10 @@ human::CarriedDrop LevelPickups::dropCarried(human::DropInput input, anim::Vec3 
         record.typeName = object.type;
         record.position = {at.x, at.y, at.z};
         record.money = object.money;
-        static_cast<void>(m_records.add(std::move(record)));
+        // The record's object is made at once (the original resolves the new handle), not when streaming reaches it.
+        if (m_records.add(std::move(record)) != nullptr) {
+            static_cast<void>(m_records.resolve(handle));
+        }
     }
     // A player's loss leaves his inventory, notifying. Coney's choice: a loss of $0 is not added (the original adds
     // it, notifying, when his draw or his inventory is 0; a player has flag 0x4 and never drops in play).

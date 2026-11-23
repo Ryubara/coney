@@ -256,12 +256,12 @@ class LevelPickups {
     /// A human whose health ran out drops what he carries (`Human_OnHealthOut`'s `Human_DropCarried(human, 1, 1)`):
     /// `input` holds what the play mode knows of him, his brain and his class; this fills in the game's part (the
     /// pocket item's object, game state `+0x158`, unlocks (6, 14) and (6, 13), the money scale and a carried object's
-    /// price), decides the drop (human::dropCarried(), from the game's random numbers) and makes each object a spawn
-    /// record 0.5 m above `feet`, or above `sectorPoint(k)` for one dropped into sector `k`, a `dyn_money` holding its
-    /// dollars (`+0x124`). A player's loss (`player` 0 or 1; -1 for an AI human) is taken from his inventory,
-    /// notifying. Returns the drop, whose money and carried object the caller gives back to the human. **Coney's
-    /// stand-in**: the objects' removal times (each kind's inventory duration, `WorldObject_SetRespawnTimer`) are not
-    /// applied, so a dropped object stays until taken.
+    /// price), decides the drop (human::dropCarried(), from the game's random numbers) and makes each object at once
+    /// from a spawn record 0.5 m above `feet`, or above `sectorPoint(k)` for one dropped into sector `k`, a `dyn_money`
+    /// holding its dollars (`+0x124`). A player's loss (`player` 0 or 1; -1 for an AI human) is taken from his
+    /// inventory, notifying. Returns the drop, whose money and carried object the caller gives back to the human.
+    /// **Coney's stand-in**: the objects' removal times (each kind's inventory duration, `WorldObject_SetRespawnTimer`)
+    /// are not applied, so a dropped object stays until taken.
     /// @orig 0x00232c60 Human_DropCarried (unknown)
     human::CarriedDrop dropCarried(human::DropInput input, anim::Vec3 feet, const human::SectorBlocked& blocked,
                                    const SectorPoint& sectorPoint, int player = -1);
