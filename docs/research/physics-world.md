@@ -876,10 +876,10 @@ tables" is step 3 and the empty calls.
 unloading a level, and its small accessors. This unit settles the pool sizes, the heap-stack pairing, what an unload
 gives back and what it leaves behind. Confirmed (code) at the cited addresses unless a line says otherwise.
 
-- **Coney:** a platform-neutral `world::WorldManager` (`src/world/world_manager.*`, new) owning the level's budget
-  reservations, its streamed worlds' state and its level object, with `loadLevel(name, headerOnly)` and
-  `unload(keepLevelFile)`; `src/platform/world_viewer_mode.cpp` (`loadLevelScenery`), `play_scenery.*`,
-  `game_session.*` and `play_level_world.cpp` go through it ([What Coney changes](#u18-coney)).
+- **Coney:** `world::WorldManager` (`src/world/world_manager.*`) holds the level's budget reservations, with
+  `loadLevel` and `unload(keepLevelFile)`; `loadLevelScenery` (`src/platform/world_viewer_mode.cpp`) goes through it
+  and each `LevelScenery` owns one. Its streamed worlds' state and its level object are planned to follow
+  ([What Coney changes](#u18-coney)).
 - **Tests:** [Test ideas](#u18-tests): the pool sizes; load then `unload(0)` returns the budget to what it was;
   `unload(1)` keeps the level file's reservation; `ResetVisibility` clears the latch and both worlds' marks; the load
   priority stores its value as given (no clamp).
@@ -1052,10 +1052,20 @@ evictions, so it must come back exactly on unload.
   the [release](#u17-release) (glows, captions, level object), drop the path data and release the level pool's
   reservation. Coney clears the level pointer (where the original leaves it dangling, a marked Coney choice).
   `@orig 0x0040f5b8`.
-- **A leak to fix now.** `loadLevelScenery` (`src/platform/world_viewer_mode.cpp`) reserves the `Global Data` and
-  `World Level` pools on every level load and nothing releases them (`LevelPlayScenery` and `WorldSet` release only
-  the worlds and parts), so a session that plays a second level (the one budget made in `main.cpp`) streams with
-  less room than the original. The manager above fixes it; until then, release both when the scenery goes.
+- **The leak, fixed ([#381](issue:381)).** `loadLevelScenery` (`src/platform/world_viewer_mode.cpp`) used to reserve
+  the `Global Data` and `World Level` pools on every level load with nothing releasing them, so a session that played
+  a second level (the one budget made in `main.cpp`) streamed with less room than the original. `world::WorldManager`
+  (`src/world/world_manager.*`) now holds both reservations: its constructor makes the `Global Data` one, `loadLevel`
+  the level pool's, `unload(keepLevelFile)` gives the level pool back unless the level file is kept. Each
+  `LevelScenery` owns one manager, declared before its level object and worlds so that they go first, as in
+  `WorldManager_Unload`; the manager's destructor unloads keeping nothing and then gives the `Global Data` back.
+  So every place that replaces or leaves a level (the play mode's `UnloadLevel`, the network client's scene, the
+  world viewer, the front end) unloads it by dropping its scenery, and a load that fails part way gives back what it
+  reserved. **Coney's choice:** the original never frees the `Global Data Pool`, made once at boot; Coney's manager
+  lives as long as the scenery, so between levels the budget holds no global data. Nothing streams then, so no
+  eviction can differ. For now the manager holds only the reservations: the worlds stay in `platform::WorldSet`, the
+  level object in `LevelScenery`, and the load priority, visibility latch and pack queue wait for the resource
+  manager.
 - **`setLoadPriority(float)`** stores the value unchanged; it has no reader until the resource manager streams
   (a stand-in). `@orig 0x0040c938`.
 - **`queuePack(name)`** appends to a `std::deque<std::string>`; the preload consumes it (`world_streamer`'s preload).

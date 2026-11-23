@@ -6,6 +6,7 @@
 #include <cmath>
 #include <format>
 #include <limits>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -51,13 +52,12 @@ std::expected<LevelScenery, Error> loadLevelScenery(RenderEngine& engine, const 
         return std::unexpected(std::move(names.error()));
     }
     // What a running game holds in the Sector Pool before a level's worlds: the global data, then the level file's
-    // pool, which LoadLevel makes before the worlds (docs/research/level-loading.md#worldmanager-loadlevel).
-    if (auto glr = wad.lookup("warriors.glr"); glr) {
-        (void)budget.reserve(world::globalDataPoolBytes((*glr)->size));
-    }
-    if (auto lev = wad.lookup(std::string(name) + ".lev"); lev) {
-        (void)budget.reserve(world::worldLevelPoolBytes((*lev)->size));
-    }
+    // pool, which LoadLevel makes before the worlds (docs/research/physics-world.md#u18-load). The manager gives them
+    // back when the scenery goes, or here when a step below fails.
+    const auto glr = wad.lookup("warriors.glr");
+    world::WorldManager pools(budget, glr ? std::optional<std::uint64_t>((*glr)->size) : std::nullopt);
+    const auto lev = wad.lookup(std::string(name) + ".lev");
+    pools.loadLevel(lev ? std::optional<std::uint64_t>((*lev)->size) : std::nullopt);
     auto set = WorldSet::load(wad, *names, budget, engine.drawsPixels(), engine.sceneAssets());
     if (!set) {
         return std::unexpected(std::move(set.error()));
@@ -70,7 +70,7 @@ std::expected<LevelScenery, Error> loadLevelScenery(RenderEngine& engine, const 
     print(text + std::format("; sector budget {} of {} bytes in use\n", budget.used(), budget.capacity()));
     // The level file, read after the worlds as LoadLevel does.
     std::unique_ptr<world::LevelObject> level;
-    if (wad.lookup(std::string(name) + ".lev")) {
+    if (lev) {
         auto loaded = loadLevel(wad, name, engine.drawsPixels(), &engine.sceneAssets());
         if (!loaded) {
             return std::unexpected(std::move(loaded.error()));
@@ -81,7 +81,7 @@ std::expected<LevelScenery, Error> loadLevelScenery(RenderEngine& engine, const 
                           name, level->collision->triangles().size(), level->occluders.size(),
                           level->pathHeader.paths));
     }
-    return LevelScenery{.set = std::move(*set), .level = std::move(level)};
+    return LevelScenery{.pools = std::move(pools), .level = std::move(level), .set = std::move(*set)};
 }
 
 std::expected<std::unique_ptr<WorldViewerMode>, Error>
@@ -92,15 +92,14 @@ WorldViewerMode::create(RenderEngine& engine, const io::Wad& wad, std::string_vi
         return std::unexpected(std::move(scenery.error()));
     }
     const world::Vec3 start = viewerStartPosition(*scenery->set->worlds().front());
-    return std::unique_ptr<WorldViewerMode>(new WorldViewerMode(
-        engine, std::move(scenery->set), std::move(scenery->level), budget, start, std::move(print)));
+    return std::unique_ptr<WorldViewerMode>(
+        new WorldViewerMode(engine, std::move(*scenery), budget, start, std::move(print)));
 }
 
-WorldViewerMode::WorldViewerMode(RenderEngine& engine, std::unique_ptr<WorldSet> set,
-                                 std::unique_ptr<world::LevelObject> level, world::SectorBudget& budget,
+WorldViewerMode::WorldViewerMode(RenderEngine& engine, LevelScenery scenery, world::SectorBudget& budget,
                                  world::Vec3 start, std::function<void(std::string_view)> print)
-    : m_engine(engine), m_set(std::move(set)), m_level(std::move(level)), m_budget(budget),
-      m_camera(world::DebugCamera(start)), m_print(std::move(print)) {}
+    : m_engine(engine), m_pools(std::move(scenery.pools)), m_level(std::move(scenery.level)),
+      m_set(std::move(scenery.set)), m_budget(budget), m_camera(world::DebugCamera(start)), m_print(std::move(print)) {}
 
 WorldView WorldViewerMode::view(const world::DebugCamera& camera, float drawDistance) const {
     // The player camera's view window on the 4:3 picture; a window of another shape keeps its height and widens or
