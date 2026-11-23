@@ -622,3 +622,23 @@ TEST_CASE("a dealer's drop after his pocket starts again at his feet", "[level_p
     CHECK(money->position[0] == Catch::Approx(0.0F));
     CHECK(money->position[2] == Catch::Approx(1.5F));
 }
+
+TEST_CASE("a downed human's dropped money is made at once, whatever the camera's distance", "[level_pickups]") {
+    // Expected: crimes.md#down-drop, confirmed (code) at 0x00232c60: each ObjRecord_Add of the drop is followed by
+    // Handle_Resolve of the new record, which makes its object then (SpawnRecords::resolve()), not when streaming
+    // reaches it.
+    Harness h;
+    double next = 500.0;
+    h.scripts.setObjectHandles([&next] { return next++; });
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    coney::human::DropInput soldier;
+    soldier.brainType = 2;
+    soldier.money = 5;
+    soldier.carried = "none";
+    const auto noneBlocked = [](int /*k*/) { return false; };
+    const auto nowhere = [](int /*k*/) { return Vec3{}; };
+    static_cast<void>(pickups.dropCarried(soldier, Vec3{10.0F, 11.0F, 1.0F}, noneBlocked, nowhere));
+    const wo::SpawnRecord* money = h.records.find(500.0);
+    REQUIRE(money != nullptr);
+    CHECK(money->live);
+}
