@@ -13,7 +13,10 @@ standing state travel in the same snapshots ([HUD state](#hud-state), [The HUD's
 guest's HUD takes them (the client game's, [The HUD](client-world.md#client-hud)). The host's game fills the humans
 every step ([The game's humans](multiplayer.md#game-humans)), and a guest running [the client
 game](client-world.md#client-game) draws them. **Planned:** interest (which humans a client needs, and how fast each
-one's priority grows), and releasing a removed human's id once its removal is acknowledged.
+one's priority grows), and releasing a removed human's id once its removal is acknowledged. **Not in a snapshot, by
+decision:** a camera. A client runs its own follow camera on the human its player slot follows, from his replicated
+state ([The client's camera](multiplayer.md#client-camera-decision)), so the protocol version is unchanged by it; the
+host's scripted and scene cameras would get an entry, and a bump, when built.
 
 ## The model {#model}
 

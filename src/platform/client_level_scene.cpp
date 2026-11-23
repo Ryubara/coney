@@ -10,6 +10,7 @@
 #include <map>
 #include <memory>
 #include <numbers>
+#include <optional>
 #include <utility>
 
 #include <rw.h>
@@ -23,6 +24,7 @@
 #include "characters/character_rig.h"
 #include "core/chunk_system.h"
 #include "core/game_timer.h"
+#include "human/human_animator.h"
 #include "platform/draw_calls.h"
 #include "platform/perf_probes.h"
 
@@ -181,24 +183,38 @@ const human::PlayerCharacter* ClientLevelScene::characterOf(net::NetId id) const
                                                                          : nullptr;
 }
 
-void ClientLevelScene::step(const net::ClientWorld& world, const FrameTime& frame) {
-    // The camera on the newest step's lowest id (the host's player 1), else the start; the scenery streams round it
-    // and finds what it sees, as the play mode's step does.
-    const net::ClientWorld::Humans& humans = world.humans();
-    const WorldView before =
-        humans.empty() ? startView() : viewOn(humans.begin()->second.position, humans.begin()->second.heading);
-    m_scenery->step(before.pose.position, frame);
-    const WorldView after =
-        humans.empty() ? startView() : viewOn(humans.begin()->second.position, humans.begin()->second.heading);
-    const anim::Vec3 feet = humans.empty() ? m_scenery->start().position : humans.begin()->second.position;
-    m_lights->step(after, m_scenery->collision(), feet,
-                   static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
-    m_scenery->findVisible(after);
+WorldView ClientLevelScene::viewThrough(const std::optional<camera::CameraView>& view) const {
+    if (!view) {
+        return startView();
+    }
+    return worldViewOf(*view, m_engine.viewAspect(), std::min(m_scenery->drawDistance(), view->farClip));
+}
+
+const raycast::CollisionMesh* ClientLevelScene::collision() const { return &m_scenery->collision(); }
+
+human::Speeds ClientLevelScene::speedsOf(std::int32_t character) {
+    // The speeds of the character's own clips in the player's slots, as a human of it reads them (Human::speeds()).
+    return human::speedsOf(m_characters->of(character).character->anims(), human::AnimSlots::player());
+}
+
+void ClientLevelScene::step(const net::ClientWorld& world, const net::ClientCamera& camera, const FrameTime& frame) {
+    // The scenery streams round the client's camera (its newest view) and finds what it sees, as the play mode's step
+    // does; the lights follow the human the camera follows, else the level's start.
+    const WorldView view = viewThrough(camera.view(1.0F));
+    m_scenery->step(view.pose.position, frame);
+    anim::Vec3 feet = m_scenery->start().position;
+    if (const std::optional<net::NetId> followed = camera.followed()) {
+        if (const auto human = world.humans().find(*followed); human != world.humans().end()) {
+            feet = human->second.position;
+        }
+    }
+    m_lights->step(view, m_scenery->collision(), feet, static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
+    m_scenery->findVisible(view);
     // The sprites of the HUD's newest step, which the client game stepped before the scene.
     m_hudLayer->render();
 }
 
-void ClientLevelScene::render(const net::ClientWorld& world, const RenderTime& time) {
+void ClientLevelScene::render(const net::ClientWorld& world, const net::ClientCamera& camera, const RenderTime& time) {
     const std::map<net::NetId, net::DrawnHuman> drawn = world.drawn(time.alpha);
     // A human gone from the world loses his mesh; a new one gets one.
     std::erase_if(m_meshes, [&drawn](const auto& entry) { return !drawn.contains(entry.first); });
@@ -231,8 +247,8 @@ void ClientLevelScene::render(const net::ClientWorld& world, const RenderTime& t
         }
         m_lights->addShadow(m_scenery->collision(), human.state.position);
     }
-    m_lastView =
-        drawn.empty() ? startView() : viewOn(drawn.begin()->second.state.position, drawn.begin()->second.state.heading);
+    // The view through the client's camera at the frame's alpha, or the stand-in start while it has none.
+    m_lastView = viewThrough(camera.view(time.alpha));
     // The humans among the world's objects, lit as the play mode lights a human (a bare render of their atomics
     // crashes librw's lit pipeline); the blob shadows after the worlds.
     const auto drawObjects = [this] {

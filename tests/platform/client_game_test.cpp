@@ -6,25 +6,33 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <expected>
 #include <format>
 #include <map>
 #include <memory>
+#include <numbers>
 #include <optional>
 #include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "camera/camera_view.h"
+#include "camera/follow_camera.h"
 #include "core/error.h"
 #include "core/game_events.h"
+#include "core/pads.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/game_mode_stack.h"
 #include "hud/hud.h"
 #include "hud/hud_owner.h"
+#include "human/locomotion.h"
+#include "net/client_camera.h"
 #include "net/client_world.h"
 #include "net/jitter_buffer.h"
 #include "net/loopback_transport.h"
@@ -105,15 +113,44 @@ class RecordingSound final : public coney::script::SoundHost {
     void gameplayLeft() override {}
 };
 
+// What the fake scene saw of the client's camera on its last step and frame, and what the client game asked it.
+struct SceneSeen {
+    std::optional<NetId> followed;                      // the human the camera followed on the last step
+    std::optional<coney::camera::CameraView> stepView;  // the camera's view of the newest step, seen by step()
+    std::optional<coney::camera::CameraView> frameView; // the camera's view at the frame's alpha, seen by render()
+    std::uint32_t cuts = 0;                             // the camera's cuts
+    std::vector<std::int32_t> speedsAsked;              // the characters it was asked the speeds of, in order
+    int collisionAsked = 0;                             // how often the client game asked for the collision
+};
+
 // What the client game drew: a scene that counts its steps and frames and remembers the humans it was last given.
 struct FakeScene final : ClientScene {
     LevelAt level;
     int* steps;
     int* frames;
-    FakeScene(LevelAt at, int* stepCount, int* frameCount)
-        : level(std::move(at)), steps(stepCount), frames(frameCount) {}
-    void step(const ClientWorld& /*world*/, const FrameTime& /*frame*/) override { ++*steps; }
-    void render(const ClientWorld& /*world*/, const RenderTime& /*time*/) override { ++*frames; }
+    SceneSeen* seen;
+    FakeScene(LevelAt at, int* stepCount, int* frameCount, SceneSeen* seenOut)
+        : level(std::move(at)), steps(stepCount), frames(frameCount), seen(seenOut) {}
+    void step(const ClientWorld& /*world*/, const coney::net::ClientCamera& camera,
+              const FrameTime& /*frame*/) override {
+        ++*steps;
+        seen->followed = camera.followed();
+        seen->stepView = camera.view(1.0F);
+        seen->cuts = camera.cuts();
+    }
+    void render(const ClientWorld& /*world*/, const coney::net::ClientCamera& camera, const RenderTime& time) override {
+        ++*frames;
+        seen->frameView = camera.view(time.alpha);
+    }
+    [[nodiscard]] const coney::raycast::CollisionMesh* collision() const override {
+        ++seen->collisionAsked;
+        return nullptr;
+    }
+    [[nodiscard]] coney::human::Speeds speedsOf(std::int32_t character) override {
+        seen->speedsAsked.push_back(character);
+        return coney::human::Speeds{
+            .base = 1.0F, .sneak = 0.8F, .walk = 1.6F, .jog = 3.0F, .run = 4.6F, .sprint = 7.0F};
+    }
 };
 
 // The host's three humans at host step `step`: one standing, one walking along x, one turning, so every step moves.
@@ -125,6 +162,7 @@ std::vector<SnapshotHuman> hostHumans(std::uint32_t step) {
         human.position = coney::anim::Vec3{10.0F * slot, 5.0F, 0.0F};
         human.health = 150;
         human.healthMax = 150;
+        human.character = slot == 0 ? 7 : 0; // player 1 is character 7 (the camera asks for his gait speeds)
         human.grounded = true;
         human.layers[0] = coney::net::HumanAnimLayer{.clip = 388, .playhead = 0.0F, .gait = 0.0F, .fade = 1.0F};
         if (slot == 1) {
@@ -138,6 +176,19 @@ std::vector<SnapshotHuman> hostHumans(std::uint32_t step) {
     return humans;
 }
 
+// The guest's own pad on port 1: plugged in, its right stick wherever a test sets it (at rest at first).
+class GuestPad final : public coney::InputSource {
+  public:
+    std::uint8_t rightX = coney::net::kClientStickRest;
+    coney::PortSamples sample(std::uint64_t /*frame*/) override {
+        coney::PortSamples samples{};
+        samples.at(0).connected = true;
+        samples.at(0).sticks = {rightX, coney::net::kClientStickRest, coney::net::kClientStickRest,
+                                coney::net::kClientStickRest};
+        return samples;
+    }
+};
+
 // A host and a guest running the client game, stepped as their main loops would step them.
 struct HostAndClient {
     LoopbackNetwork network;
@@ -147,13 +198,14 @@ struct HostAndClient {
     std::vector<LevelAt> loads; // every scene the client game loaded
     int sceneSteps = 0;
     int sceneFrames = 0;
+    SceneSeen seen; // what the fake scene saw of the client camera
     std::vector<std::string> printed;
     RecordingSound sound; // the guest's sound
     ClientGame client{guest,
                       [this](const LevelAt& at, coney::hud::HudOwner& /*hud*/)
                           -> std::expected<std::unique_ptr<ClientScene>, coney::Error> {
                           loads.push_back(at);
-                          return std::make_unique<FakeScene>(at, &sceneSteps, &sceneFrames);
+                          return std::make_unique<FakeScene>(at, &sceneSteps, &sceneFrames, &seen);
                       },
                       [](std::string_view level) { return level != "nolevel"; },
                       [this](std::string_view line) { printed.emplace_back(line); },
@@ -162,12 +214,16 @@ struct HostAndClient {
     std::array<coney::hud::PlayerHudState, 2> hostPlayerHuds{}; // what the host's game hands over each step
     coney::hud::HudStanding hostStanding{};
     GameModeStack stack;
+    GuestPad pad;
     bool hostMoves = true;          // the host's game steps (its humans move) unless the barrier holds it
     std::uint32_t hostGameStep = 0; // the host's game's own steps run
     std::map<std::uint32_t, coney::net::SnapshotHumans> sent; // the humans the host handed over, by its step
     std::uint64_t frame = 0;
 
-    HostAndClient() { guestLevels.setGame(&client); }
+    HostAndClient() {
+        guestLevels.setGame(&client);
+        stack.setInput(&pad);
+    }
 
     // Runs `steps` steps on both games: receive, NetLevels, the host's game (unless held) and the client game, send.
     void run(int steps) {
@@ -189,6 +245,7 @@ struct HostAndClient {
             host.setGameHumans(humans);
             const coney::net::SnapshotHudStanding standing = coney::net::snapshotHudStanding(hostStanding);
             host.setGameHuds(coney::net::snapshotHuds(hostPlayerHuds), standing.elements, standing.texts);
+            stack.samplePads(frame);
             (void)client.update(stack, FrameTime{.index = frame, .seconds = 1.0 / 30.0});
             client.render(RenderTime{});
             ++frame;
@@ -459,4 +516,114 @@ TEST_CASE("client game: an event the host raised just before a level change is n
     REQUIRE(g.client.hud() != nullptr);
     CHECK_FALSE(g.client.hud()->centredAnnouncement().has_value());
     CHECK(g.client.eventsPresented() == presentedBefore);
+}
+
+namespace {
+
+// The camera's view direction on the ground, as an angle (radians, anticlockwise from +x seen from above).
+float yawOf(const coney::camera::CameraView& view) {
+    const coney::anim::Vec3 forward = coney::camera::viewForward(view);
+    return std::atan2(forward.y, forward.x);
+}
+
+// The newest step's view of the camera the fake scene was given; a failed check and the default view when none.
+coney::camera::CameraView stepViewOf(const HostAndClient& g) {
+    CHECK(g.seen.stepView.has_value());
+    return g.seen.stepView.value_or(coney::camera::CameraView{});
+}
+
+} // namespace
+
+// Expected: unverified, #1333 (Coney's own: docs/guides/client-world.md#client-camera; the host's player 1 is the
+// human with the lowest network id, whose character is 7 in these snapshots)
+TEST_CASE("client game: the guest's own camera follows the host's player 1 from the snapshots, behind him at the "
+          "follow camera's distance",
+          "[net][net_play][client_game][client_camera]") {
+    HostAndClient g;
+    g.host.loadLevel("level99", 1);
+    g.connect();
+    g.run(60);
+    REQUIRE(g.client.world() != nullptr);
+
+    // The camera follows the lowest id, not the human walking beside him, from the first step the world showed him, and
+    // the scene was asked his character's speeds and the level's collision for it.
+    const NetId player1{.slot = 0, .generation = 1};
+    CHECK(g.seen.followed == std::optional<NetId>{player1});
+    CHECK(g.client.camera().followed() == std::optional<NetId>{player1});
+    CHECK(g.seen.cuts == 1);
+    REQUIRE_FALSE(g.seen.speedsAsked.empty());
+    CHECK(std::ranges::all_of(g.seen.speedsAsked, [](std::int32_t character) { return character == 7; }));
+    CHECK(g.seen.collisionAsked > 0);
+
+    // He stands at (0, 5, 0) facing +y: the camera is behind him (lower y), above his feet, within the leash band.
+    const coney::camera::CameraView view = stepViewOf(g);
+    const coney::camera::FollowCamera* follow = g.client.camera().follow();
+    REQUIRE(follow != nullptr);
+    CHECK(view.position.y < 5.0F);
+    CHECK(view.position.x == Catch::Approx(0.0F).margin(0.1));
+    CHECK(view.position.z > 0.0F);
+    const float away = std::hypot(view.position.x - 0.0F, view.position.y - 5.0F);
+    CHECK(away >= follow->bandNear() * 0.8F);
+    CHECK(away <= follow->bandFar() + 0.5F);
+    CHECK(yawOf(view) == Catch::Approx(std::numbers::pi_v<float> / 2.0F).margin(0.05));
+
+    // A frame draws the camera at its own alpha: at 1, the newest step's view exactly.
+    REQUIRE(g.seen.frameView.has_value());
+    CHECK(g.seen.frameView.value_or(coney::camera::CameraView{}).position.y == view.position.y);
+}
+
+// Expected: unverified, #1333 (Coney's own: the guest's own right stick turns its own view, as the right stick turns
+// the follow camera, docs/research/camera.md#right-stick; the host's game never reads it)
+TEST_CASE("client game: the guest's own right stick turns the guest's own camera and nothing the host reads",
+          "[net][net_play][client_game][client_camera]") {
+    HostAndClient g;
+    g.host.loadLevel("level99", 1);
+    g.connect();
+    g.run(60);
+    const float before = yawOf(stepViewOf(g));
+    CHECK(before == Catch::Approx(std::numbers::pi_v<float> / 2.0F).margin(0.05));
+
+    // The stick pushed left for half a second turns the view anticlockwise, 0.94 radians as measured.
+    g.pad.rightX = 0;
+    g.run(15);
+    CHECK(std::remainder(yawOf(stepViewOf(g)) - before, 2.0F * std::numbers::pi_v<float>) > 0.8F);
+
+    // He did not move: the host's snapshots still have him where he stood.
+    REQUIRE(g.client.world() != nullptr);
+    const NetId player1{.slot = 0, .generation = 1};
+    const auto shown = g.client.world()->humans().find(player1);
+    REQUIRE(shown != g.client.world()->humans().end());
+    CHECK(shown->second.position.y == Catch::Approx(5.0F).margin(0.01));
+}
+
+// Expected: unverified, #1333 (Coney's own: a camera is the level's, made afresh for each load like its world)
+TEST_CASE("client game: a new level has a new camera that follows nobody until its world shows a human, and a quit "
+          "leaves none",
+          "[net][net_play][client_game][client_camera]") {
+    HostAndClient g;
+    g.host.loadLevel("level99", 1);
+    g.connect();
+    g.run(60);
+    REQUIRE(g.client.camera().followed().has_value());
+    CHECK(g.client.camera().cuts() == 1);
+
+    g.hostMoves = false;
+    g.host.loadLevel("level34", 2);
+    g.run(2);
+    REQUIRE(g.loads.size() == 2);
+    CHECK_FALSE(g.client.camera().followed().has_value());
+    CHECK(g.client.camera().cuts() == 0);
+    CHECK_FALSE(g.client.camera().view(1.0F).has_value());
+
+    // The new level's first human: the camera is made behind him, once.
+    g.hostMoves = true;
+    g.run(40);
+    CHECK(g.client.camera().followed().has_value());
+    CHECK(g.client.camera().cuts() == 1);
+
+    // The host quits: no level, and no camera view.
+    g.host.endMission(coney::net::MissionOutcome::Quit);
+    g.run(3);
+    CHECK_FALSE(g.client.inPlay());
+    CHECK_FALSE(g.client.camera().followed().has_value());
 }

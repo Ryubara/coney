@@ -204,6 +204,10 @@ def test_a_second_description_file_the_review_covers_is_a_second_event_that_name
     built = make(tmp_path / "unit", shape="tooling")
     second = built.unit.dir / "PR-2.md"
     second.write_text((built.unit.dir / "PR.md").read_text(encoding="utf-8"), encoding="utf-8")
+    # The events come in the order the files changed (a tie, within one second, falls to the names, where `PR-2.md`
+    # sorts first), so the second file is made a minute newer than the first.
+    first_changed = (built.unit.dir / "PR.md").stat().st_mtime
+    os.utime(second, (first_changed + 60, first_changed + 60))
     found = ready_events(built, tmp_path)
     assert [event["id"].split(":")[2] for event in found] == ["PR.md", "PR-2.md"]
     assert found[1]["do"] == f"coney-tools pr open work --text {second}"

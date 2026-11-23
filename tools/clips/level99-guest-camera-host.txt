@@ -1,0 +1,22 @@
+# The host's pad for tools/clips/level99-guest-camera.toml (docs/guides/coney-tools-clips.md#clips-pair-guest): the same
+# walk and run as tests/support/play_walk_level99.txt, timed for a host that holds its steps for a guest's load. The
+# host's script keeps counting through the hold (about 24 steps while the guest loads level99) but the intro scene,
+# l99_c1, does not update, and a scene takes a skip only after 60 of its updates, so the skip is tapped at frame 95
+# (play_walk_level99.txt taps at 70, which a hosted run refuses: the host then stands in the scene for the whole clip)
+# and again at 110, in case the hold is longer; the second tap, when the first was taken, makes the human take a short
+# step that is over before the clip. Frames are 1/30 s from the host's first frame of play; the guest's frame 0 is
+# about the host's frame 140.
+# Skip the intro scene.
+95 tap cross
+110 tap cross
+# Walk forward at 30 % for two seconds, then at 60 %, once the view has faded back in.
+190 stick left 0 30
+250 stick left 0 60
+# Run: full deflection, up and to the right, then a turning arc, then the run skids to a stop.
+310 stick left 50 87
+340 stick left 87 50
+355 stick left 100 0
+385 stick left 0 0
+# Walk again at 45 %, to the left.
+415 stick left -45 0
+490 stick left 0 0

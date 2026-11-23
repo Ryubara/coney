@@ -728,6 +728,13 @@ int main(int argc, char** argv) {
         modes.push(idle);
     }
 
+    // Whether the run's level is in play: its game session's, or with `--net-view` the client game's (the host's level
+    // loaded and drawn). A script and a clip that start at "the level's first frame of play" wait for it, whether the
+    // level is the run's own (`--play-level`) or the host's (`--net-view`).
+    const bool waitsForLevel = commandLineLevel.has_value() || options->netView;
+    const auto levelInPlay = [&session, &clientGame]() {
+        return (session && session->inPlay()) || (clientGame && clientGame->inPlay());
+    };
     // Pad input (docs/research/frontend.md#input): a script in test mode, otherwise SDL's gamepads and keyboard when
     // there is a window; a headless run without a script has no pads. Declared after the renderer, so it is destroyed
     // before SDL stops. With `--play-level` a script starts at the level's first frame of play (DeferredInput), so its
@@ -773,10 +780,9 @@ int main(int argc, char** argv) {
                 coney::debug::dropBelowWorld(*brain);
             }
         });
-        if (commandLineLevel) {
+        if (waitsForLevel) {
             levelScript = std::move(scripted);
-            auto deferred = std::make_unique<coney::DeferredInput>(*levelScript,
-                                                                   [&session] { return session && session->inPlay(); });
+            auto deferred = std::make_unique<coney::DeferredInput>(*levelScript, levelInPlay);
             input = std::move(deferred);
         } else {
             input = std::move(scripted);
@@ -1521,20 +1527,20 @@ int main(int argc, char** argv) {
         if (audio) {
             audio->setStepTap([&clip](std::span<const std::int16_t> samples) { clip->addSound(samples); });
         }
-        if (!commandLineLevel) {
+        if (!waitsForLevel) {
             clip->start();
         }
         const bool endsWithClip = !frameLimit && !playFrameLimit;
-        hooks.beginFrame = [inner = std::move(hooks.beginFrame), &clip, &clipDone, &debugSession, &session,
-                            endsWithClip, armed = !commandLineLevel, keepLines = options->recordDebugDraw,
+        hooks.beginFrame = [inner = std::move(hooks.beginFrame), &clip, &clipDone, &debugSession, levelInPlay,
+                            endsWithClip, armed = !waitsForLevel, keepLines = options->recordDebugDraw,
                             fromFrame = options->recordFromFrame.value_or(0), playFrames = std::uint64_t{0}]() mutable {
             // The debug menus' lines in the 3D scene stay off while recording: a clip shows the game only, unless
             // `--record-debug-draw` keeps the lines the run itself switched on (the world edits' wireframe).
             debugSession.debugDraw() = coney::debug::recordedDebugDraw(debugSession.debugDraw(), keepLines);
-            // With `--play-level` the clip starts at the `--record-from-frame` frame of play (0 unless given), counted
-            // from the first frame the level plays as an input script is, so a long scripted run is recorded at its
-            // end.
-            if (!armed && session && session->inPlay()) {
+            // With `--play-level` (or a guest's `--net-view`) the clip starts at the `--record-from-frame` frame of
+            // play (0 unless given), counted from the first frame the level plays as an input script is, so a long
+            // scripted run is recorded at its end.
+            if (!armed && levelInPlay()) {
                 if (playFrames++ >= fromFrame) {
                     armed = true;
                     clip->start();

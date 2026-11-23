@@ -129,7 +129,7 @@ flowchart TB
 | missions, checkpoints, flags, story progress, the save | its options, its display, its audio mix |
 | `GameRandom` and every gameplay draw | its own cosmetic random numbers, seeded per client |
 | physics, collision, thrown objects, doors, props, cars, spawns | particles and decals from the server's events |
-| **every player's camera** (the simulation reads cameras: spawners, scripted shots, the split decision) | drawing its player's view from the server's camera, smoothed; P2: its own camera predicted for feel |
+| **every player's camera** (the simulation reads cameras: spawners, scripted shots, the split decision) | drawing its player's view through its own follow camera on the human its slot follows, from the replicated human ([decision](multiplayer.md#client-camera-decision)); the host's scripted and scene cameras wait for a snapshot entry |
 | HUD state: messages, objectives, counters, radar blips, prompts | drawing the HUD from that state |
 | when a cutscene or movie starts and ends | playing it, and saying when it has finished or been skipped |
 
@@ -349,9 +349,12 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
 
 ### Cameras (`camera/`) {#sub-camera}
 
-- **Sync:** each player's current camera: kind, position, orientation, field of view, and the split decision.
-  **Owner:** server (the simulation reads cameras). **How:** per-player camera state in that player's snapshot,
-  interpolated; scene and scripted cameras are cameras like any other.
+- **Sync:** nothing of a follow camera travels: a client runs its own follow camera on the human its player slot follows
+  (`net::ClientCamera`, [decision](multiplayer.md#client-camera-decision), 2026-11-23, built). **Owner:** server (the
+  simulation reads every player's camera, so the host runs them all). **How, still to build:** a scripted, scene or
+  fixed camera, the camera's own set-up and the split decision as per-player camera state in that player's snapshot (kind,
+  position, orientation, field of view, split state), interpolated, with a protocol bump of its own; scene and scripted
+  cameras are cameras like any other.
 - **Today:** one `Cameras` per level holding one `FollowCamera` (owned by `Player`), the scripted cameras by handle,
   shake and slow motion. The camera feeds the simulation in four places: the stick's direction, slow motion's step,
   the world objects' streaming view, and the spawners' visibility test.
@@ -482,7 +485,9 @@ pad now possibly remote.
 | Story progress, unlockables, the save | the one profile on the memory card | the host's profile only ([Saves](#saves)) |
 
 **Scene and movie timing.** Both start on a server step; a client that joins mid-scene starts drawing it from the
-current snapshot (the roles are humans like any other, the scene camera is replicated as the player's camera), so
+current snapshot (the roles are humans like any other; the scene camera will be replicated as the player's camera once
+snapshots carry camera entries, [decision](multiplayer.md#client-camera-decision): until then a guest keeps its own follow
+shot through a scene), so
 there is no separate "cutscene sync".
 
 **P3 and beyond (Coney's rule set).** With more than two players, the original's two-player rules decide nothing for

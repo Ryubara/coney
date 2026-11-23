@@ -847,6 +847,20 @@ TEST_CASE("the record-from-frame option refuses what cannot work", "[options]") 
     }
 }
 
+TEST_CASE("the record-from-frame option starts a net-view guest's clip at a frame of the host's level", "[options]") {
+    // Expected: unverified, #1333 (debug tooling with no counterpart in the original; the guest's frames count from the
+    // frame its client game first has the host's level, as a played level's from its first frame of play)
+    auto framed = parse(std::array<std::string_view, 9>{"--disc", "x", "--join", "127.0.0.1:27615", "--net-view",
+                                                        "--record", "s/t/clips/a.mp4", "--record-from-frame", "150"});
+    REQUIRE(framed.has_value());
+    CHECK(framed->recordFromFrame == 150);
+    // A guest that draws its own game has no level's frames to count from, so it is still refused.
+    const auto own = parse(std::array<std::string_view, 6>{"--join", "127.0.0.1:27615", "--record", "s/t/clips/a.mp4",
+                                                           "--record-from-frame", "150"});
+    REQUIRE_FALSE(own.has_value());
+    CHECK(own.error().message.find("needs --play-level or --net-view") != std::string::npos);
+}
+
 TEST_CASE("the ai-player option hands player 1 to the AI in a Rumble match, and needs one", "[options]") {
     auto handed = parse(std::array<std::string_view, 9>{"--disc", "x", "--rumble", "1", "--arena", "102", "--gang-size",
                                                         "9", "--ai-player"});

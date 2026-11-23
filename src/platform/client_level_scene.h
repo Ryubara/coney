@@ -2,10 +2,12 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <vector>
 
@@ -51,10 +53,10 @@ struct DrawnCharacter {
 /// names no character, or one that does not load, is drawn as Rembrandt (`human::kPlayerModel`), **Coney's choice** as
 /// the play mode draws a cast human whose model fails to load. Presentation only.
 ///
-/// **Stand-in**, until the snapshots carry it: the camera follows the human with the lowest network id (the host's
-/// player 1, whose brain comes first) from 4 m behind and 2 m above his feet, looking at his chest, since the guest's
-/// own player and its follow camera are not in the snapshots (#1333). With no human, the camera stands at the level's
-/// start the same way.
+/// It draws through the client's own camera (net::ClientCamera, handed to step() and render()): the scenery streams,
+/// the lights and the visibility pass are placed by its newest view, and each frame is drawn through its view at the
+/// frame's alpha. **Stand-in** while the camera has no view (the world has no human yet): the level's start, 4 m behind
+/// it and 2 m above, looking at the height of a chest (**Coney's choice**).
 /// @coney-only network play; the original has none
 class ClientLevelScene final : public ClientScene {
   public:
@@ -72,11 +74,17 @@ class ClientLevelScene final : public ClientScene {
     ClientLevelScene(ClientLevelScene&&) = delete;
     ClientLevelScene& operator=(ClientLevelScene&&) = delete;
 
-    /// Streams the scenery round the camera on the world's newest humans, finds what it sees and queues the sprites of
+    /// Streams the scenery round the client's camera (its newest view), finds what it sees and queues the sprites of
     /// the HUD's newest step.
-    void step(const net::ClientWorld& world, const FrameTime& frame) override;
-    /// Draws the scenery with the world's humans among it, blended for the frame, and the HUD over it, and presents.
-    void render(const net::ClientWorld& world, const RenderTime& time) override;
+    void step(const net::ClientWorld& world, const net::ClientCamera& camera, const FrameTime& frame) override;
+    /// Draws the scenery through the client's camera at the frame's alpha with the world's humans among it, blended for
+    /// the frame, and the HUD over it, and presents.
+    void render(const net::ClientWorld& world, const net::ClientCamera& camera, const RenderTime& time) override;
+    /// The level's collision, which the camera's pull-in reads.
+    [[nodiscard]] const raycast::CollisionMesh* collision() const override;
+    /// The gait speeds of the character `character` names (human::speedsOf() over his clips as a player's are read),
+    /// loading him from the disc the first time; the fallback's for a character that is not named or does not load.
+    [[nodiscard]] human::Speeds speedsOf(std::int32_t character) override;
 
     /// How many humans the last frame posed.
     [[nodiscard]] std::size_t humansPosed() const { return m_posed; }
@@ -104,9 +112,12 @@ class ClientLevelScene final : public ClientScene {
         std::unique_ptr<CharacterMesh> mesh;
     };
 
-    // The stand-in camera's view on `feet` and `heading` (game axes), at the scenery's draw distance.
+    // The world view through the client camera's `view`, at the scenery's draw distance (at most the view's far clip);
+    // the level's start (startView()) when the camera has none.
+    [[nodiscard]] WorldView viewThrough(const std::optional<camera::CameraView>& view) const;
+    // The stand-in view on `feet` and `heading` (game axes), 4 m behind and 2 m above, at the scenery's draw distance.
     [[nodiscard]] WorldView viewOn(anim::Vec3 feet, float heading) const;
-    // The stand-in camera's view on the level's start, for a world with no human.
+    // The stand-in view on the level's start, for a camera with no view.
     [[nodiscard]] WorldView startView() const;
 
     RenderEngine& m_engine;

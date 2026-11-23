@@ -23,7 +23,8 @@ session's side of a level change, a checkpoint restart, a mid-level join and a m
 without a person: the [state digest](#digest),
 [two processes](#two-processes) over ENet in CI and [replays](#replays); and [the client
 game](client-world.md#client-game) (`--net-view`), a guest that runs no game of its own and draws the host's level and
-humans from the snapshots it decodes, presents the host's game events and draws the HUD of its own player slot.
+humans from the snapshots it decodes through its own follow camera, presents the host's game events and draws the HUD
+of its own player slot.
 **Next:** the layers under [The plan](#plan).
 
 ## The model {#model}
@@ -39,7 +40,8 @@ humans from the snapshots it decodes, presents the host's game events and draws 
   of the entities a client needs, quantized, delta-compressed against the last snapshot that client acknowledged,
   each entity named by a network id.
 - **The client shows the past, smoothly.** A client keeps a short jitter buffer of snapshots and draws the world
-  interpolated between two of them, slightly behind the newest, and runs its own follow camera. Client-side
+  interpolated between two of them, slightly behind the newest, and runs its own follow camera on the human its player
+  slot follows (snapshots carry no camera, [The client's camera](client-world.md#client-camera)). Client-side
   prediction of the local player comes later; until then the local player shows the server's round trip.
 - **Fixed steps, no clock.** The network code counts time in the game's fixed steps (30 a second,
   [The play tick](../research/tasks.md#tick)) and, where it needs nanoseconds (latency, round trip), in the elapsed
@@ -723,6 +725,35 @@ sequence is a protocol error.
 A command travels as its id and voice set: which of the set's lines says it is the guest's own sound's choice, as the
 host's sound chooses it outside the simulation.
 
+## The client's camera {#client-camera-decision}
+
+**Decision (#1333, 2026-11-23): a client draws its own player's view through its own follow camera, and snapshots
+carry no camera.** Task 555 asked for the view "from the replicated camera", while the snapshots hold humans only and
+the model above says the client runs its own follow camera; the two disagreed, and the second is what is built
+([The client's camera](client-world.md#client-camera) is how). The reasons, from the code:
+
+- **The follow camera runs from what a human replicates.** `camera::FollowCamera::update()` reads its target as a
+  `camera::FollowTarget`: his feet and heading, whether he is in the air, whether he counts for the cameras (not
+  knocked out, with health), his velocity and gait, and the right stick. A snapshot's human has each of them but two:
+  the velocity is the move between two steps of the world, and the gait is its nearest of his character's gait speeds,
+  as `Human::gait()` reads the velocity; the right stick is the client's own pad's. What the snapshots do not carry (the
+  nearest enemy, the lock-on, a grab) is what the camera's combat and sprint rules read, and the rules for a view of
+  one player work without it.
+- **What the host reads of cameras stays on the host.** It simulates every player's camera because the simulation reads
+  them (the spawners' unseen test, the split decision, the stick's frame: [Cameras](network-architecture.md#sub-camera)),
+  and keeps doing so unchanged. What a machine then shows is presentation, so a camera entry in every snapshot would
+  spend bytes on state the client rebuilds from what it already has, and would show a camera that turns with a player's
+  right stick only after the stick has gone to the host and the result has come back, where the client's own camera
+  answers its own stick on the step it is pushed.
+- **A snapshot camera stays the answer for what a client cannot rebuild:** the host's scripted, scene and fixed cameras
+  (the level's scripts run on the host only) and the camera's own set-up (`CfgFollowCamera`, `CamSetFollowZoom`). Each
+  needs the host's camera state in the snapshot, with its protocol bump (the field table in
+  [snapshots](snapshots.md), old versions refused in the handshake with its message), when built; an own camera for the
+  follow shot does not stand in its way. Until then a guest keeps its follow shot while the host plays a scene.
+
+The split-screen layout of two players on one display remains a presentation choice of each machine, as
+[Cameras](network-architecture.md#sub-camera) says; a client's camera is the one player's, full screen.
+
 ## Testing {#testing}
 
 Everything above `EnetTransport` is tested on the loopback, frame by frame with no real time, in `tests/net/`: the
@@ -746,7 +777,8 @@ the refusals, an infinite angle and the Exact encoding; `tests/net/snapshot_test
 `tests/net/player_huds_test.cpp` and `tests/net/hud_standing_test.cpp` cover snapshots and each player's HUD and the
 HUD's standing state in them ([Snapshots](snapshots.md#testing));
 `tests/net/jitter_buffer_test.cpp` and `tests/net/client_world_test.cpp` cover the client's world, and what a client
-draws against what the server had over a bad link ([The client's world](client-world.md#testing));
+draws against what the server had over a bad link, `tests/net/client_camera_test.cpp` the client's own follow camera
+on the human its slot follows (including over the same bad link, [The client's world](client-world.md#testing));
 `tests/net/protocol_test.cpp` pins
 InputCommands' and InputTiming's bytes; `tests/net/state_digest_test.cpp` covers the digest (pinned, in id order,
 moved by any change), the first difference, the digest lines and their comparison; `tests/net/game_humans_test.cpp`
@@ -790,8 +822,9 @@ Each step is a pull request that builds and is tested on its own.
    quantized, delta-compressed against acknowledged baselines, [Snapshots](snapshots.md)), the client's jitter buffer
    and interpolation (built: [The client's world](client-world.md)), the game's humans in them (built: [The game's
    humans](#game-humans)), a client game mode that draws them (built: [The client game](client-world.md#client-game),
-   each human with his own character, [A guest's characters](client-world.md#characters), and a stand-in camera until
-   its own follow camera, #1333). The state
+   each human with his own character, [A guest's characters](client-world.md#characters), and the guest's own follow
+   camera, [The client's camera](client-world.md#client-camera), which follows the host's player 1 until the snapshots
+   say which human each player slot drives). The state
    digest, two-process tests and replays (built: [Proof without a person](#proof)).
 6. **AI humans, events, mission state:** the rest of what a client must see and hear: the game events (built: [Game
    events](#events)), each player's panel state and the HUD's standing state in the snapshot (built: [HUD
