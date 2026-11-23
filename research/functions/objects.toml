@@ -135,7 +135,7 @@ status = "compared"
 [[function]]
 address = 0x00253e68
 name = "Human_SetMoveStyle"
-page = "objects.md#move-style-stack"
+page = "objects.md#two-handed"
 role = "replaces the top move style (a pop then a push)"
 level = "confirmed-code"
 coney = "src/human/move_styles.h:MoveStyles::replaceTop"
@@ -144,7 +144,7 @@ status = "compared"
 [[function]]
 address = 0x00253ed0
 name = "Human_PushMoveStyle"
-page = "objects.md#move-style-stack"
+page = "objects.md#two-handed"
 role = "pushes a move style on the three-deep stack (losing the lowest when full) and applies it"
 level = "confirmed-code"
 coney = "src/human/move_styles.h:MoveStyles::push"
@@ -153,7 +153,7 @@ status = "compared"
 [[function]]
 address = 0x00253f28
 name = "Human_PopMoveStyle"
-page = "objects.md#move-style-stack"
+page = "objects.md#two-handed"
 role = "pops the top move style and applies the one beneath"
 level = "confirmed-code"
 coney = "src/human/move_styles.h:MoveStyles::pop"
@@ -162,7 +162,7 @@ status = "compared"
 [[function]]
 address = 0x00253f78
 name = "Human_RemoveMoveStyle"
-page = "objects.md#move-style-stack"
+page = "objects.md#two-handed"
 role = "removes a move style from anywhere in the stack, applying only when the top changes"
 level = "confirmed-code"
 coney = "src/human/move_styles.h:MoveStyles::remove"
@@ -171,7 +171,7 @@ status = "compared"
 [[function]]
 address = 0x00254060
 name = "Human_GetMoveStyle"
-page = "objects.md#move-style-stack"
+page = "objects.md#two-handed"
 role = "the top move style"
 level = "confirmed-code"
 coney = "src/human/move_styles.h:MoveStyles::top"

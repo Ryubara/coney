@@ -7,8 +7,9 @@
 80 steer 100 54.5,50.2 54.5,50.9
 280 stick left 0 0
 300 tap square
-# Walk in through the broken window to just south of the register at (53.23, 57.26), ending facing it (+y).
-480 steer 100 54.5,52.6 53.23,55.6 53.23,56.45
+# Walk in through the broken window to just south of the register at (53.23, 57.26), ending facing it (+y): a
+# point reached within 1 m, so the last one is just past the register.
+480 steer 60 54.5,52.6 53.23,55.0 53.23,57.35
 680 stick left 0 0
 # Triangle lifts it (504, then the idle with it in hand); the stick at 60 % carries it south for 2 s, then he stands
 # with it and triangle drops it.
