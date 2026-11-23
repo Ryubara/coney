@@ -403,6 +403,26 @@ TEST_CASE("the HUD's gang counters show the standing members: a member knocked o
     CHECK(hud.numIndicator(1).count == 0);
 }
 
+TEST_CASE("the standing count leaves out only the knocked out, dead and wounded: a gang whose last members are knocked "
+          "down alive still counts them",
+          "[ai][gangs]") {
+    // Research: docs/research/characters.md#out-of-world (Gang_CountStanding 0x00166220: knocked out, dead, wounded)
+    AiScene scene;
+    std::vector<Brain*> members;
+    const int id = makeCountedGang(scene, members);
+    const coney::ai::Gang& gang = *scene.brains.gangs().find(id);
+    // The first and the one knocked down alive stand; the dead, the knocked out and the wounded do not.
+    CHECK(gang.standing() == 2);
+
+    // The one still up drops too, knocked out by a script: the member on the ground keeps the count at 1, so a
+    // fight that waits for none standing goes on until he is out as well.
+    members[0]->human().script().knockedOut = true;
+    REQUIRE(members[1]->human().fighter().victim().grounded());
+    CHECK(gang.standing() == 1);
+    members[1]->human().script().wounded = true;
+    CHECK(gang.standing() == 0);
+}
+
 TEST_CASE("a member whose human is deleted leaves the gang and drops the living count", "[ai][gangs]") {
     // The original's handle stops resolving at the delete; Coney's member leaves its gang (removeMember()).
     AiScene scene;
