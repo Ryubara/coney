@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <filesystem>
 #include <format>
 #include <functional>
 #include <memory>
@@ -46,7 +47,9 @@
 #include "platform/game_run.h"
 #include "platform/game_session.h"
 #include "platform/import_command.h"
+#include "platform/input_recording_file.h"
 #include "platform/install_command.h"
+#include "platform/log_output.h"
 #include "platform/net_play.h"
 #include "platform/render_engine.h"
 #include "platform/script_patch_command.h"
@@ -238,7 +241,31 @@ int main(int argc, char** argv) {
     coney::console::ConsolePad consolePad(input.get(), gameConsole.console());
     // The game reads its pads through network play: a guest sends what their game reads, and a host's pad port 2 is
     // the guest's pad (docs/guides/multiplayer.md#player-two).
-    coney::platform::NetInput netInput(testMode ? input.get() : &consolePad, netPlay);
+    // The input recording (docs/guides/run-log.md#input-recording): what the game reads from the pads, beside the log,
+    // so a bug report can say what the player pressed. It holds what the game saw, so after the console's gate.
+    std::unique_ptr<coney::platform::InputRecording> inputRecording;
+    if (coney::InputSource* played = testMode ? input.get() : static_cast<coney::InputSource*>(&consolePad);
+        played != nullptr) {
+        std::optional<std::filesystem::path> logPath;
+        if (runLog) {
+            logPath = runLog->file();
+        }
+        const coney::InputRecordingHeader header{.aiSeed = 0, .level = {}, .checkpoint = std::nullopt};
+        auto recording = coney::platform::InputRecording::start(*options, logPath, devices != nullptr, header, *played,
+                                                                std::function<bool()>());
+        if (!recording) {
+            logError(recording.error().message);
+            return 1;
+        }
+        inputRecording = std::move(*recording);
+        if (inputRecording) {
+            // The file's name only: a log never holds a path into a home folder (docs/guides/run-log.md#rules).
+            logText(std::format("input recording: writing to {}\n",
+                                coney::platform::logPathText(inputRecording->path().filename())));
+        }
+    }
+    coney::platform::NetInput netInput(
+        inputRecording ? &inputRecording->source() : (testMode ? input.get() : &consolePad), netPlay);
     netGame.setInner(&netInput);
     modes.setInput(&netGame);
 

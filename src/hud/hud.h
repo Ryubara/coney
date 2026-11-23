@@ -573,6 +573,8 @@ class Hud {
     [[nodiscard]] static std::string read(const std::function<std::string(std::uint32_t)>& service, std::uint32_t id);
     // The objective message's header for `slot`: the icon, the HUD colour and the heading string.
     [[nodiscard]] std::string objectiveHeader(int slot) const;
+    // Writes the run log's line for an objective line set, cleared or marked: its slot and the text's length.
+    static void logObjective(int slot, int mode, std::size_t textLength);
     // The radar's step: the view, the zoom's easing, the blips' blinking.
     void updateRadar(const HudFrame& frame);
     // The radar's map disc, its blips and the player's arrow.

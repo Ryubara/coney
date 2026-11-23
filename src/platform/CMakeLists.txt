@@ -17,7 +17,7 @@ target_sources(coney_platform PRIVATE play_level_character.cpp play_level_mode.c
 # The in-game HUD on screen: its sheets, batches and 2D pass (docs/research/hud.md#coneys-implementation).
 target_sources(coney_platform PRIVATE hud_layer.cpp humans_trace.cpp)
 # The run log's outputs: the console, the log file and the crash handlers (docs/guides/run-log.md).
-target_sources(coney_platform PRIVATE log_output.cpp)
+target_sources(coney_platform PRIVATE log_output.cpp input_recording_file.cpp)
 # Pad input from SDL3 gamepads and the keyboard (docs/research/frontend.md#coneys-implementation).
 target_sources(coney_platform PRIVATE sdl_input.cpp)
 # A driver program's pad and the frame's observation (`--pad-pipe`), and the humans for the event log
@@ -375,6 +375,15 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk_level99.txt")
     set_tests_properties(coney.plays_level PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD} PASS_REGULAR_EXPRESSION
                          "cutscene: end l99_c1 [^\n]*, skipped.*play: 511 frames, [^\n]* grounded [^\n]*travelled [1-9][0-9]*[.]")
+    # An input recording replays the run (docs/guides/run-log.md#input-recording): level99 played from the walk
+    # script with `--record-input`, then from the recording alone; the two traces must match on every step.
+    add_test(NAME coney.replays_recording
+             COMMAND ${CMAKE_COMMAND} -DCONEY_EXE=$<TARGET_FILE:coney> -DDISC=$ENV{CONEY_DISC}
+                     -DSCRIPT=${PROJECT_SOURCE_DIR}/tests/support/play_walk_level99.txt
+                     -DWORK=${CMAKE_CURRENT_BINARY_DIR}/replays_recording -DHANG_GUARD=${CONEY_TEST_HANG_GUARD}
+                     -P "${PROJECT_SOURCE_DIR}/tests/support/replay_recording_check.cmake")
+    set_tests_properties(coney.replays_recording PROPERTIES TIMEOUT ${CONEY_TEST_HANG_GUARD}
+                         PASS_REGULAR_EXPRESSION "replayed [1-9][0-9]* bytes of trace identically")
     # Levels played with the game's sound exit cleanly: a test with PASS_REGULAR_EXPRESSION ignores the exit code, so a
     # crash after the summary line (a destructor reading the freed sound output) passed unseen. These check the exit
     # code alone (docs/guides/conventions.md#shutdown-order). The intro movie, over before the first frame of play, is
@@ -411,7 +420,7 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
     # lists) them all, and `-LE disc` leaves them out.
     set_tests_properties(coney.reaches_main_menu coney.story_reaches_level99 coney.plays_movies coney.views_character
                          coney.bench_level coney.plays_level coney.exits_cleanly_level95 coney.exits_cleanly_level99
-                         coney.plays_sandbox
+                         coney.plays_sandbox coney.replays_recording
                          coney.freezes_level PROPERTIES LABELS disc)
 endif()
 

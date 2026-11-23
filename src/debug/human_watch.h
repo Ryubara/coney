@@ -45,8 +45,6 @@ struct HumanFacts {
 [[nodiscard]] std::string_view animStateName(human::AnimState state);
 /// A brain type's short name ("player", "gang", "civilian", ...).
 [[nodiscard]] std::string_view brainTypeName(ai::BrainType type);
-/// A goal type's name as the code names it ("Fight", "MoveToFlag", ...).
-[[nodiscard]] std::string_view goalTypeName(ai::GoalType type);
 /// The names of the human flags (human/human_flags.h) set in `flags`, separated by spaces; "-" for none, and any bit
 /// the code does not name as hex.
 [[nodiscard]] std::string humanFlagNames(std::uint64_t flags);

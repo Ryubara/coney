@@ -64,7 +64,7 @@ constexpr std::string_view kUsage =
     "                           [--bench-warmup N] [--bench-frames FILE] [--bench-real-time]\n"
     "                           [--bench-spawn-step N] [--bench-measure N]\n"
     "                           [--bench-place X,Y,Z,H] [--bench-neutrals N] [--bench-fps]]\n"
-    "             [--log-file FILE] [--log-verbose CATEGORIES]\n"
+    "             [--log-file FILE] [--log-verbose CATEGORIES] [--record-input FILE]\n"
     "             [--dev-overlay N] [--console-open N] [--mesh-view SPEC] [--world-edit FILE]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
     "             [--fps-cap N|vrr] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
@@ -156,6 +156,10 @@ constexpr std::string_view kUsage =
     "  --log-verbose CATEGORIES\n"
     "                     keep the detail lines of these run log categories too: player, ai,\n"
     "                     combat, script, world, engine, comma-separated, or all\n"
+    "  --record-input FILE\n"
+    "                     write the pad input the game read, step by step, and the AI seed, to FILE\n"
+    "                     as an input script; --input-script plays it back to the same run. A run\n"
+    "                     with live pads and a log file writes one beside the log by default\n"
     "  --pad-pipe         read player 1's pad from standard input, one line per frame, after\n"
     "                     writing what is on screen to standard output; for a driver program\n"
     "  --camera X,Y,Z,QX,QY,QZ,QW[,FOV]\n"
@@ -1189,6 +1193,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             }
         } else if (arg == "--log-file") {
             if (auto value = takeValue(args, i, options.logFile, "--log-file", "the path of a text file"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--record-input") {
+            if (auto value = takeValue(args, i, options.recordInput, "--record-input", "the path of a text file");
+                !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--log-verbose") {

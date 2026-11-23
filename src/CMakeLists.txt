@@ -442,6 +442,7 @@ target_sources(coney_core PRIVATE
     ai/tactic_vandalize.cpp
     ai/fidget_action.cpp
     ai/fight_goal.cpp
+    ai/goal_names.cpp
     ai/fight_trace.cpp
     ai/fight_reactions.cpp
     ai/formations.cpp

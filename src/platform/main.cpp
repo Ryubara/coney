@@ -95,6 +95,7 @@
 #include "platform/humans_trace.h"
 #include "platform/imgui_overlay.h"
 #include "platform/import_command.h"
+#include "platform/input_recording_file.h"
 #include "platform/install_command.h"
 #include "platform/log_output.h"
 #include "platform/mesh_views.h"
@@ -546,7 +547,15 @@ int main(int argc, char** argv) {
     std::optional<coney::platform::ClientGame> clientGame;
     coney::platform::GameSessionSettings sessionSettings = coney::platform::gameSessionSettings(*options);
     sessionSettings.rumble = options->rumble;
-    sessionSettings.aiSeed = options->aiSeed.value_or(0);
+    // The AI's seed: `--ai-seed`, else the one an input recording's header names
+    // (docs/guides/run-log.md#input-recording), so a recording plays the run it was made from without the seed being
+    // passed again.
+    const std::optional<std::uint32_t> recordedSeed =
+        options->inputScript ? coney::loadInputScriptSeed(*options->inputScript) : std::nullopt;
+    sessionSettings.aiSeed = options->aiSeed.value_or(recordedSeed.value_or(0));
+    if (!options->aiSeed && recordedSeed) {
+        logText(std::format("input script: ai-seed {} from the recording's header\n", *recordedSeed));
+    }
     // `--trace-humans`: the file every human of the run is traced to, opened before the first level loads.
     std::shared_ptr<coney::platform::HumansTrace> humansTrace;
     if (const std::optional<std::string> humansTracePath = options->humansTraceFile; humansTracePath) {
@@ -1141,7 +1150,37 @@ int main(int argc, char** argv) {
     // The game reads its pads through network play, after the gate: a guest sends what their game reads, and a host's
     // pad port 2 is the guest's pad (docs/guides/multiplayer.md#player-two).
     // `--net-replay` plays a recorded session's port 2 over it, and `--net-record` records what port 2 played.
-    coney::platform::NetInput netInput(&debugSession.gate(), netPlay);
+    // The input recording (docs/guides/run-log.md#input-recording): what the game reads from the pads, written beside
+    // the log for a person's pads and wherever `--record-input` says. After the gate, so it holds what the game saw
+    // (a menu that took the pad is a pad at rest); a `--play-level` run starts at its level's first step of play, as
+    // a script does.
+    std::unique_ptr<coney::platform::InputRecording> inputRecording;
+    {
+        const coney::InputRecordingHeader header{.aiSeed = sessionSettings.aiSeed,
+                                                 .level = commandLineLevel.value_or(std::string()),
+                                                 .checkpoint = commandLineLevel ? options->checkpoint : std::nullopt};
+        std::function<bool()> started;
+        if (commandLineLevel) {
+            started = [&session] { return session && session->inPlay(); };
+        }
+        std::optional<std::filesystem::path> logPath;
+        if (runLog) {
+            logPath = runLog->file();
+        }
+        auto recording = coney::platform::InputRecording::start(*options, logPath, devices != nullptr, header,
+                                                                debugSession.gate(), std::move(started));
+        if (!recording) {
+            logError(recording.error().message);
+            return 1;
+        }
+        inputRecording = std::move(*recording);
+        if (inputRecording) {
+            // The file's name only: a log never holds a path into a home folder (docs/guides/run-log.md#rules).
+            logText(std::format("input recording: writing to {}\n",
+                                coney::platform::logPathText(inputRecording->path().filename())));
+        }
+    }
+    coney::platform::NetInput netInput(inputRecording ? &inputRecording->source() : &debugSession.gate(), netPlay);
     netGame.setInner(&netInput);
     modes.setInput(&netGame);
     std::optional<coney::graphics::Font> debugFont;

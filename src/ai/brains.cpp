@@ -3,11 +3,13 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <format>
 #include <limits>
 #include <optional>
 #include <span>
 
 #include "combat/meters.h"
+#include "core/log.h"
 
 namespace coney::ai {
 
@@ -65,6 +67,11 @@ void Brains::remove(const human::Human& human) {
     }
     human::Human& owner = (*found)->human();
     const bool ownerLinked = linked(owner);
+    // The run log: who left, and how many brains are left (a script's delete, a hand-over's old body, a layout's
+    // fighter taken out).
+    // @coney-only a line for the run log (docs/guides/run-log.md#events)
+    logging::info(logging::Category::Engine, std::format("remove: {} leaves the brains ({} left)",
+                                                         owner.fighter().logName(), m_brains.size() - 1));
     m_gangs.removeMember(**found);
     m_gangs.forget(**found);
     m_formations.forget(**found);

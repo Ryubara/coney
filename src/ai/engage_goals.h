@@ -49,6 +49,7 @@ class MoveToHumanGoal final : public Goal {
         : Goal(GoalType::MoveToHuman), m_services(&services), m_target(target), m_gait(gait), m_radius(radius) {}
 
     [[nodiscard]] GoalStatus process(Brain& brain) override;
+    [[nodiscard]] std::optional<double> targetHandle() const override { return m_target; }
 
     /// The target's handle, the gait and the arrival radius.
     [[nodiscard]] double target() const { return m_target; }

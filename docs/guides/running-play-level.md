@@ -274,7 +274,8 @@ the Coney side of a [differential playthrough](research-traces.md#differential-p
 Everything Coney prints about a run is a line of the [run log](run-log.md), stamped `[step N | mm:ss.s | level
 cpK]` with a category: on the console, and in `coney.log` in your data folder (a test-mode run writes a file only
 with `--log-file FILE`). `--log-verbose ai,combat` keeps the `detail` lines of those categories too (`all` for every
-one). How to read it, attach it to a bug report and add lines: [The run log](run-log.md).
+one). How to read it, attach it to a bug report and add lines: [The run log](run-log.md). A run with a person's pads
+also writes its [input recording](run-log.md#input-recording) beside the log (`--record-input FILE` for any run).
 
 ### The pad pipe {#pad-pipe}
 

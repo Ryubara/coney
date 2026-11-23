@@ -28,6 +28,7 @@
 #include "ai/track_human_goal.h"
 #include "ai/turn_action.h"
 #include "combat/meters.h"
+#include "core/log.h"
 #include "human/human.h"
 #include "human/locomotion.h"
 #include "scripting/anim_callbacks.h"
@@ -802,6 +803,12 @@ void ScriptedBrains::humanCreated(const HumanCreation& human) {
         made->human().setLogName(std::format("{}human {:.0f}{}{}",
                                              human.playerIndex > 0 ? std::format("player {} ", human.playerIndex) : "",
                                              human.handle, human.model.empty() ? "" : " ", human.model));
+        // The run log: a human of the level's cast made (type, gang and place; the name is the script's handle).
+        // @coney-only a line for the run log (docs/guides/run-log.md#events)
+        const std::array<float, 3> at = human.position.value_or(std::array<float, 3>{});
+        logging::info(logging::Category::Engine,
+                      std::format("spawn: {} type {} gang {} at ({:.2f}, {:.2f}, {:.2f})",
+                                  made->human().fighter().logName(), human.type, human.gang, at[0], at[1], at[2]));
         // Player 1's human, now in his gang: his crew's follow is given at once, before what the script gives it next.
         // Not when the script gave his gang a tactic after creating him (the hold's choice, setPlayerMade()).
         const Gang* gang = m_owner->gangs().find(human.gang);

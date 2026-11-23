@@ -174,14 +174,46 @@ std::string parseArguments(std::string_view line, std::span<const std::string_vi
         event.y = *y;
         return {};
     }
+    case InputEvent::Action::RawStick: {
+        if (args.size() != 3 || (args[0] != "left" && args[0] != "right")) {
+            return "rawstick needs left or right, then the X and Y bytes";
+        }
+        event.stick = args[0] == "left" ? 0 : 1;
+        const std::optional<int> x = parseNumber<int>(args[1]);
+        const std::optional<int> y = parseNumber<int>(args[2]);
+        if (!x || !y || *x < 0 || *x > 255 || *y < 0 || *y > 255) {
+            return "rawstick X and Y must be whole numbers from 0 to 255";
+        }
+        event.x = *x;
+        event.y = *y;
+        return {};
+    }
+    case InputEvent::Action::Pressure: {
+        if (args.size() != 2) {
+            return "pressure needs a button, then a value from 0 to 255 or auto";
+        }
+        const std::optional<std::uint16_t> bit = buttonBit(args[0]);
+        const auto sensitive = std::ranges::find(pad::kPressureButtons, bit.value_or(0));
+        if (!bit || sensitive == pad::kPressureButtons.end()) {
+            return std::format("\"{}\" has no pressure", args[0]);
+        }
+        event.buttons = *bit;
+        if (args[1] == "auto") {
+            event.x = kPressureAuto;
+            return {};
+        }
+        const std::optional<int> value = parseNumber<int>(args[1]);
+        if (!value || *value < 0 || *value > 255) {
+            return "pressure VALUE must be a whole number from 0 to 255, or auto";
+        }
+        event.x = *value;
+        return {};
+    }
     case InputEvent::Action::Steer:
         return parseSteer(args, event);
     case InputEvent::Action::Connect:
     case InputEvent::Action::Disconnect:
         return args.empty() ? std::string() : "takes no arguments";
-    case InputEvent::Action::RawStick:
-    case InputEvent::Action::Pressure:
-        return "unknown action";
     case InputEvent::Action::Console: {
         // The words are views of `line`, so the text runs from the start of the first to the end of the last, as
         // written. The offsets come from pointer differences and the text is a substring of the line, so no bare
@@ -246,6 +278,10 @@ std::string parseLine(std::string_view line, std::span<const std::string_view> w
         event.action = InputEvent::Action::Console;
     } else if (action == "drop-ai") {
         event.action = InputEvent::Action::DropAi;
+    } else if (action == "rawstick") {
+        event.action = InputEvent::Action::RawStick;
+    } else if (action == "pressure") {
+        event.action = InputEvent::Action::Pressure;
     } else {
         return std::format("unknown action \"{}\"", action);
     }
@@ -298,13 +334,67 @@ std::expected<std::vector<InputEvent>, Error> loadInputScript(const std::string&
     return events;
 }
 
-std::optional<std::uint32_t> inputScriptSeed(std::string_view /*text*/) { return std::nullopt; }
+std::optional<std::uint32_t> inputScriptSeed(std::string_view text) {
+    constexpr std::string_view kKey = "ai-seed";
+    while (!text.empty()) {
+        const std::size_t newline = text.find('\n');
+        const std::string_view line = text.substr(0, newline);
+        text = newline == std::string_view::npos ? std::string_view() : text.substr(newline + 1);
+        // The header is the comment lines before the first command: a command line ends the search.
+        const std::size_t first = line.find_first_not_of(" \t\r");
+        if (first == std::string_view::npos) {
+            continue;
+        }
+        if (line[first] != '#') {
+            return std::nullopt;
+        }
+        std::string_view comment = line.substr(first + 1);
+        const std::size_t word = comment.find_first_not_of(" \t");
+        if (word == std::string_view::npos || !comment.substr(word).starts_with(kKey)) {
+            continue;
+        }
+        // The seed follows the key after at least one space.
+        comment = comment.substr(word + kKey.size());
+        const std::size_t number = comment.find_first_not_of(" \t");
+        if (number == std::string_view::npos || number == 0) {
+            continue;
+        }
+        comment = comment.substr(number);
+        return parseNumber<std::uint32_t>(comment.substr(0, comment.find_first_of(" \t\r")));
+    }
+    return std::nullopt;
+}
 
-std::optional<std::uint32_t> loadInputScriptSeed(const std::string& /*path*/) { return std::nullopt; }
+std::optional<std::uint32_t> loadInputScriptSeed(const std::string& path) {
+    std::ifstream file(path, std::ios::binary);
+    if (!file) {
+        return std::nullopt;
+    }
+    const std::string text{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+    return inputScriptSeed(text);
+}
 
-std::string_view inputScriptButtonName(std::uint16_t /*bit*/) { return {}; }
+std::string_view inputScriptButtonName(std::uint16_t bit) {
+    for (const ButtonName& button : kButtonNames) {
+        if (button.bit == bit) {
+            return button.name;
+        }
+    }
+    return {};
+}
 
-std::optional<int> percentFromStickByte(std::uint8_t /*raw*/) { return std::nullopt; }
+std::optional<int> percentFromStickByte(std::uint8_t raw) {
+    // Nearest to the centre first: about one byte in ten is given by two neighbouring values, and the rounder one
+    // is the one a person wrote.
+    for (int reach = 0; reach <= 100; ++reach) {
+        for (const int percent : {reach, -reach}) {
+            if (stickByteFromPercent(percent) == raw) {
+                return percent;
+            }
+        }
+    }
+    return std::nullopt;
+}
 
 std::uint8_t stickByteFromPercent(int value) {
     CONEY_ASSERT(value >= -100 && value <= 100);
@@ -361,6 +451,27 @@ void ScriptedInput::apply(const InputEvent& event) {
         port.sticks.at(first + 1) = stickByteFromPercent(-event.y);
         break;
     }
+    case InputEvent::Action::RawStick: {
+        // The bytes as written: what a recording of a real pad holds, which no script percentage may reach.
+        const std::size_t first = event.stick == 0 ? 2 : 0;
+        if (event.stick == 0) {
+            m_routes.at(event.port).reset();
+        }
+        port.sticks.at(first) = static_cast<std::uint8_t>(event.x);
+        port.sticks.at(first + 1) = static_cast<std::uint8_t>(event.y);
+        break;
+    }
+    case InputEvent::Action::Pressure: {
+        // The button's pressure byte; `buttons` is one bit of pad::kPressureButtons (the parser guarantees it).
+        const auto found = std::ranges::find(pad::kPressureButtons, event.buttons);
+        if (found != pad::kPressureButtons.end()) {
+            std::optional<std::uint8_t>& held =
+                m_pressure.at(event.port).at(static_cast<std::size_t>(found - pad::kPressureButtons.begin()));
+            held = event.x == kPressureAuto ? std::nullopt
+                                            : std::optional<std::uint8_t>(static_cast<std::uint8_t>(event.x));
+        }
+        break;
+    }
     case InputEvent::Action::Steer:
         m_routes.at(event.port) = Route{.points = event.route, .next = 0, .percent = event.x};
         break;
@@ -379,9 +490,6 @@ void ScriptedInput::apply(const InputEvent& event) {
         if (m_dropSink) {
             m_dropSink(event.handle);
         }
-        break;
-    case InputEvent::Action::RawStick:
-    case InputEvent::Action::Pressure:
         break;
     }
 }
@@ -435,11 +543,13 @@ PortSamples ScriptedInput::sample(std::uint64_t frame) {
         steer(port);
     }
 
-    // A digital button is either released (0) or fully pressed (255).
+    // A digital button is either released (0) or fully pressed (255), unless a `pressure` line set its byte.
     PortSamples samples = m_state;
-    for (PadSample& sample : samples) {
+    for (std::size_t port = 0; port < kPadPorts; ++port) {
+        PadSample& sample = samples.at(port);
         for (std::size_t i = 0; i < pad::kPressureCount; ++i) {
-            sample.pressure.at(i) = (sample.buttons & pad::kPressureButtons.at(i)) != 0 ? 255 : 0;
+            const std::optional<std::uint8_t>& set = m_pressure.at(port).at(i);
+            sample.pressure.at(i) = set ? *set : ((sample.buttons & pad::kPressureButtons.at(i)) != 0 ? 255 : 0);
         }
     }
     return samples;

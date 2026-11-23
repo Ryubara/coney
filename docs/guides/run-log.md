@@ -90,8 +90,11 @@ the same file, saying where), which waits for the F8 front end: until it is buil
 input script only.
 
 **Agents investigating a bug.** Start from the reporter's log: the last lines before the dump say where the run was
-(level, checkpoint, step), and the dump shows what led up to it at every level. To reproduce, run the same start with
-`--log-file` and the categories that matter verbose, and compare the lines step by step:
+(level, checkpoint, step), and the dump shows what led up to it at every level. Read it with `grep`, never by pasting
+it whole into a task or a pull request: `grep -n "combat:\|ai:" coney.log` for a category, `grep "step 4518 "` for a
+step, and the first and last lines of a dump (`bug report`, `crash`) for where it ends. A report with the
+[input recording](#input-recording) beside the log can be replayed: run the same start with `--input-script
+coney.input.txt`, `--log-file` and the categories that matter verbose, and compare the lines step by step:
 
 ```sh
 coney --disc I:/ --headless --play-level level2 --checkpoint 3 --frames 900 \
@@ -101,6 +104,56 @@ grep "combat:" ../../scratch/<branch>/run.log
 
 The log of a test-mode run is the same every time, so a change in it after a fix is the fix's effect. A log goes into
 the scratch folder, never the repository.
+
+## The input recording {#input-recording}
+
+A log says what the game decided; the input recording says what the player did. A run with a person's pads (a window,
+no script or driver program) and a log file writes it beside the log: `coney.input.txt` beside `coney.log` (the last
+run's is kept as `coney.input.prev.txt`, as `coney.prev.log` is), or `<name>.input.txt` beside the file `--log-file`
+names. `--record-input FILE` writes one for any run, a scripted run or a driver program's too. The release build writes
+the default one, so a player's bug report can attach both files; `--record-input` is a developer's option. The log
+names the file by its name only, never its folder.
+
+The file is an [input script](running-input.md#input-scripts), so nothing new is needed to play it:
+
+```text
+# coney input recording 1: play it with --input-script
+# ai-seed 0
+# play-level level2
+# checkpoint 3
+60 stick left 0 100
+62 press cross
+64 release cross
+75 rawstick left 101 17
+# frames 900
+```
+
+- **What it holds.** The pads as the game read them, port by port, from the first step: a line for every step on which a
+  button, a stick, a pressure or a pad's plug changed, and none for a step that held. A stick whose bytes a script
+  percentage can give is a `stick` line, any other (a real stick reaches all 256) a `rawstick`; a trigger pulled
+  part of the way is a `pressure` line. It is recorded after the debug menus and the console took what they take, so a
+  menu that held the pad is a pad at rest in it.
+- **What it leaves out.** Pads only: a console line typed into the F8 bar, a choice made in the debug menus (a spawned
+  fighter, a teleport) and what a network guest sends are not in it, so a run that used them replays without them. A
+  bug report from the release build has none of the first two.
+- **The header** is comments. `# ai-seed N` is what `--ai-seed` was (0 for the usual run) and `--input-script` takes it
+  from there; `# play-level` and `# checkpoint` say how a run from the command line started, so whoever replays it
+  can start the same way. Only names and numbers go in; a level name with anything but letters, digits and `_ : . -`
+  is left out. The last line, `# frames N`, says how many steps the run had.
+- **Its steps** count as `--input-script` counts them: from the first step of the run, or, with `--play-level`, from
+  the level's first step of play, so the loading screen and the intro movie do not shift it.
+
+To replay a bug report, start the run as the header says and give the recording to `--input-script`; the run, which
+is deterministic, reaches the same state, and its [log](#outputs) says the same lines at the same steps:
+
+```sh
+coney --disc I:/ --headless --play-level level2 --checkpoint 3 --frames 900 \
+      --input-script coney.input.txt --log-file ../../scratch/<branch>/replay.log --log-verbose combat,ai
+```
+
+`tests/platform/disc_input_recording_test.cpp` records a short level run from a pad that gives what a real one does
+and checks that its recording replays to the same player state, and `coney.replays_recording` does it through the
+executable (a script run recorded with `--record-input`, replayed from the recording alone, the traces identical).
 
 ## What a log may hold {#rules}
 
@@ -150,6 +203,12 @@ Logs are attached to public issues, so a line names things and gives numbers, no
 | `damage: A hit V with anim N for D, health H of M left` | combat, detail | the fighter taking a hit |
 | `knock-down: V by A` (or `by a hold`, `by his victim's escape`) | combat, info | the fighter's reaction, a hold putting him down, a grab broken |
 | `death: V by A` | combat, info | the fighter running out of health |
+| `goal: H: push GOAL [at human N] (D on the stack)`, `goal: H: pop GOAL ...` | ai, detail | a brain's goal stack (`Brain::pushGoal()`, `popGoal()`); the target is given for the goals that name a human |
+| `objective: set\|cleared\|marked\|set and marked line N (L characters of text)` | world, info | the HUD's objective checklist (`Hud::setObjective()`); the text itself is the game's, so only its length |
+| `spawn: H type T gang G at (X, Y, Z)` | engine, info | a human of the level's cast made when the scripts' hold ends |
+| `remove: H leaves the brains (N left)` | engine, info | a human's brain removed: a script's delete, a hand-over, a level torn down |
 
-Every subsystem adds its own as it is worked on (AI goals and targets, gangs, triggers and objectives, spawns, slow
-frames, ...); the list grows here.
+Every subsystem adds its own as it is worked on; the list grows here. Still to add (issue #617 stays open
+for them): grabs' and climbs' starts, cars, melee slots taken and lost, the gangs' enemy and friend changes,
+the targets of the goals other than the move to a human, triggers and the script calls that change state, fallbacks to
+stand-ins, and slow frames (which need a count of steps, never a clock reading).

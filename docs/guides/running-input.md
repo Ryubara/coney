@@ -66,6 +66,8 @@ comment and blank lines are skipped. Frames must not go down from one line to th
 | `connect`, `disconnect` | plug the pad in or pull it out |
 | `console LINE` | type `LINE`, the rest of the line as written, into the [console](console.md#input-script) for that port's player; a `#` still starts a comment |
 | `drop-ai [HANDLE]` | a build with the [debug tools](building.md#debug-tools) only: put the AI human whose script handle is `HANDLE`, or the one nearest player 1 who is not his friend (a crew stays), 200 m below where he stands, so the characters' step takes him away as one [fallen out of the world](../research/characters.md#out-of-world) (`src/debug/fighter_drop.h`); the release build's game ignores the line |
+| `rawstick left\|right X Y` | move a stick to raw bytes, 0 to 255 (0 is left and up, 128 at rest), as a real pad reports them; the two written by [an input recording](run-log.md#input-recording), where `stick` cannot say it |
+| `pressure BUTTON VALUE\|auto` | set the pressure byte (0 to 255) of a pressure-sensitive button (the d-pad, the face buttons, L1, R1, L2, R2) to hold until `auto` gives it back to what the button's state says (255 held, 0 released); written by a recording for a trigger pulled part of the way |
 
 Buttons are `cross`, `circle`, `triangle`, `square`, `l1`, `r1`, `l2`, `r2`, `l3`, `r3`, `start`, `select`, `up`,
 `down`, `left` and `right`. The port defaults to `p1`; port 1 starts connected and port 2 does not. A held button
@@ -84,3 +86,7 @@ build/dev/src/platform/coney --headless --frames 300 --input-script ../../scratc
 ```
 
 A script that cannot be read or has a bad line stops Coney at start-up with exit code 1 and the line's number.
+
+A script that starts with `# ai-seed N` among its first comment lines also sets the AI's seed to N, as `--ai-seed N`
+would, unless `--ai-seed` is given: it is how [an input recording](run-log.md#input-recording) carries the seed of the
+run it was made from. The other header comments (`# play-level`, `# checkpoint`) only say how the run started.

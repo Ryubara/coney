@@ -7,6 +7,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -704,6 +705,8 @@ class Brain {
     // freed after the update.
     // @orig 0x0029edd8 Goal_End (unknown)
     void retireGoal(std::unique_ptr<Goal>& slot);
+    // Writes the run log's line for a goal pushed or popped (`what` is "push" or "pop").
+    void logGoal(std::string_view what, const Goal& goal) const;
     // The reaction goal's turn, before the stack's: an active one is run (runGoal()) and, done, ended; then, unless the
     // brain's type, its goals or its human's class hold reactions off, a new one is made from the human's state, the
     // stack's top suspended and the actions cleared. Returns whether the stack is held off this update: a reaction

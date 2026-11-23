@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "core/log.h"
 #include "gui/text_layout.h"
 
 namespace coney::hud {
@@ -175,11 +176,37 @@ std::string Hud::objectiveHeader(int slot) const {
     return icon + colour + read(m_services.hudString, kObjectiveHeaderStrings.at(index));
 }
 
+// The run log's line for an objective line set, cleared or marked: its slot and the text's length, never the text (a
+// line is the game's own words, which a log never holds).
+// @coney-only a line for the run log (docs/guides/run-log.md#events)
+void Hud::logObjective(int slot, int mode, std::size_t textLength) {
+    std::string_view what;
+    switch (mode) {
+    case kObjectiveSet:
+        what = "set";
+        break;
+    case kObjectiveClear:
+        what = "cleared";
+        break;
+    case kObjectiveMark:
+        what = "marked";
+        break;
+    case kObjectiveSetMarked:
+        what = "set and marked";
+        break;
+    default:
+        return; // a mode the checklist ignores
+    }
+    logging::info(logging::Category::World,
+                  std::format("objective: {} line {} ({} characters of text)", what, slot, textLength));
+}
+
 void Hud::setObjective(int slot, std::string_view text, int mode, bool silent, std::uint32_t ms) {
     if (slot < 0 || static_cast<std::size_t>(slot) >= m_checklist.slots.size()) {
         return;
     }
     std::optional<ChecklistLine>& line = m_checklist.slots.at(static_cast<std::size_t>(slot));
+    logObjective(slot, mode, text.size());
     // Not ported (#662): a text that starts with a tag other than <AUTOINDENT takes Objective_GetIconPrefix's prefix
     // instead of the standard header, and the first-objective hint also needs Tutorial_IsHintUnlocked(0x15).
     switch (mode) {
