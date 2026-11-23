@@ -91,3 +91,19 @@ TEST_CASE("a world manager gives back everything it reserved when it goes", "[wo
     }
     CHECK(budget.used() == 0);
 }
+
+// Dropping the manager runs WorldManager_Unload's port keeping nothing, then gives back the global data; a moved-from
+// manager holds nothing, so dropping it gives nothing back twice (docs/research/physics-world.md#u18-coney).
+TEST_CASE("a dropped world manager unloads its level and a moved-from one gives nothing back", "[world_manager]") {
+    // Expected: physics-world.md#u18-unload, confirmed (code)
+    SectorBudget budget(10'000'000);
+    std::optional<WorldManager> kept;
+    {
+        WorldManager manager(budget, kGlrSize);
+        manager.loadLevel(kLevSize);
+        kept.emplace(std::move(manager));
+    } // the moved-from manager goes here
+    CHECK(budget.used() == 1'010'000 + 2'060'000);
+    kept.reset();
+    CHECK(budget.used() == 0);
+}
