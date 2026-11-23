@@ -1,0 +1,11 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level80 checkpoint 4, the twelve Destroyers
+# fighting Cochise and Swan on their own once the meeting's scene is skipped, from just after its end, the player
+# moved to 7 m from the fight and standing, no attack order given. For a change to how a gang with no tactic starts a
+# fight on the enemies its scan lists (the think step, docs/research/scripting.md#level80-think-fight) or to how the
+# scene's cast goes back to its idle.
+description = "level80 checkpoint 4: the Destroyers start their fight with Cochise and Swan after the scene"
+level = "level80"
+input = "tools/clips/level80-brawl.txt"
+checkpoint = 4
+start_frame = 1440
+seconds = 10
