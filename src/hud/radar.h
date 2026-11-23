@@ -47,6 +47,14 @@ struct RadarBlip {
     bool dotShown = false; ///< The dot's own shown state (its hide flag, messages `0x2a` and `0x29`).
     bool hasDot = true;    ///< Slot `+0x24` names a dot: every blip but one added as type 9 (the arrow widget).
     std::optional<anim::Vec3> place{}; ///< Where the last radar step found it.
+    /// A guest's HUD only (docs/guides/snapshots.md#hud-blips): the network id of the human the blip follows, as one
+    /// number (net::netIdNumber(); the HUD knows no more of it), 0 for none. The step finds its place through
+    /// Hud::setRadarFollowLocator() where `fixedPlace` is not set. The host's HUD never sets it: its blips follow their
+    /// object by handle.
+    /// @coney-only network play; the original has none
+    std::uint32_t follows = 0;
+
+    friend bool operator==(const RadarBlip&, const RadarBlip&) = default;
 };
 
 /// What the radar of player 0 is given each step: where the player stands and faces, how fast he moves and where the
@@ -213,6 +221,11 @@ inline constexpr std::array<int, 2> kRadarNoPoliceHintLevels{80, 99};
 /// @orig 0x001c4d00 Radar_AddBlip (RadarHUD.cpp)
 [[nodiscard]] int radarBatchDepth(int type);
 
+/// Whether `icon` draws in the radar's top batch: icons 25 and 26 (kRadarTopBatchDepth), as stepRadarBlips() moves
+/// them.
+/// @coney-only the step's own test, named for a guest's HUD, which takes a blip's batch from its icon
+[[nodiscard]] bool radarTopBatchIcon(int icon);
+
 /// `Radar_AddBlip`'s batch and first show: types 7, 10 and 12 are marked for good, and the dot shows only when marked
 /// while the radar is shown and not hidden; a type-9 slot is the player's arrow widget, unmarked and with no dot.
 /// @orig 0x001c4d00 Radar_AddBlip (RadarHUD.cpp)
@@ -242,6 +255,9 @@ void hideAllRadarDots(RadarState& radar);
 struct RadarStepContext {
     std::function<std::optional<anim::Vec3>(double handle)> locate{};
     std::function<std::optional<int>(double handle)> brainType{}; ///< Human_GetBrain `+0x04`; none for a non-human.
+    /// Where the human a guest's blip follows is now (RadarBlip::follows, a network id's number); nothing for one that
+    /// is not in the guest's world. Empty: no such blip is drawn.
+    std::function<std::optional<anim::Vec3>(std::uint32_t id)> locateFollowed{};
     bool policeHintAllowed = false;
 };
 

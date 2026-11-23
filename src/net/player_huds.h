@@ -50,12 +50,14 @@ struct SnapshotHudStanding {
 /// @coney-only network play; the original has none
 [[nodiscard]] SnapshotHudStanding snapshotHudStanding(const hud::HudStanding& standing);
 
-/// The standing state that `elements` and `texts` (what a client holds) stand for: an element not held is as a HUD
-/// with no such part has it (a panel released, a bar removed, a row cleared, the stopwatch hidden); the settings, when
-/// not held, are the HUD's defaults. Player elements past hud::kPlayers are left out. The cycles' running parts are at
-/// their start, and the counter panels have no hide time.
+/// The standing state that `elements`, `texts` and `blips` (what a client holds) stand for: an element not held is as a
+/// HUD with no such part has it (a panel released, a bar removed, a row cleared, the stopwatch hidden); the settings,
+/// when not held, are the HUD's defaults. Player elements past hud::kPlayers are left out. The cycles' running parts
+/// are at their start, and the counter panels have no hide time. The blips are hudBlips() of `blips`, none when none
+/// held.
 /// @coney-only network play; the original has none
-[[nodiscard]] hud::HudStanding hudStanding(const SnapshotHudElements& elements, const SnapshotHudTexts& texts);
+[[nodiscard]] hud::HudStanding hudStanding(const SnapshotHudElements& elements, const SnapshotHudTexts& texts,
+                                           const SnapshotBlips& blips = {});
 
 /// The HUD a guest in player slot `slot` draws, from the host's: the guest has one player, so his slot's standing state
 /// is the one HUD player's (player 0's, the panel and radar that draw with one player) and every other player's is

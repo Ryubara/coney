@@ -5,6 +5,7 @@
 #include "net/net_client.h"
 #include "net/net_server.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -24,6 +25,7 @@
 #include "net/loopback_transport.h"
 #include "net/player_huds.h"
 #include "net/protocol.h"
+#include "net/radar_blips.h"
 #include "net/snapshot.h"
 #include "net/transport.h"
 #include "support/net_fixtures.h"
@@ -935,5 +937,96 @@ TEST_CASE("the HUD's standing state reaches a joined client in every step's snap
         }
     }
     CHECK(mismatched == 0);
+    CHECK(checked > 100);
+}
+
+namespace {
+
+// The radar's blips a level's scripts would leave at `step`: 20 dealers and humans that stand still, a mission
+// objective whose place moves every 10 steps and then follows a human from step 100 on, and a blip that is there for
+// steps 50 to 149 only.
+std::map<double, coney::hud::RadarBlip> scriptedBlips(std::uint32_t step) {
+    std::map<double, coney::hud::RadarBlip> blips;
+    for (std::uint32_t i = 0; i < 20; ++i) {
+        blips.emplace(100.0 + i, coney::hud::RadarBlip{.type = 7,
+                                                       .icon = 365,
+                                                       .scale = 0.56F,
+                                                       .colour = coney::graphics::kWhite,
+                                                       .place = coney::anim::Vec3{static_cast<float>(i), 5.0F, 0.0F}});
+    }
+    blips.emplace(1.0, coney::hud::RadarBlip{
+                           .type = 10,
+                           .icon = 27,
+                           .flashCountdown = step < 100 ? 100 : 0,
+                           .place = coney::anim::Vec3{static_cast<float>(step - (step % 10)) / 10.0F, 0.0F, 0.0F}});
+    if (step >= 50 && step < 150) {
+        blips.emplace(2.0, coney::hud::RadarBlip{.type = 1});
+    }
+    return blips;
+}
+
+} // namespace
+
+// Expected: unverified, #1537 (Coney's own snapshots; the choice is written in snapshots.md#hud-blips)
+TEST_CASE("the radar's blips reach a joined client in the snapshots, whatever the link does to them",
+          "[net][sessions][snapshot][hud][radar]") {
+    Match match;
+    NetClient& client = match.join("Cochise");
+    match.run(3);
+    REQUIRE(client.state() == ClientState::Connected);
+
+    // The server sends each step's blips; the client holds, for each snapshot it decodes, what the server's record of
+    // it says. A blip that follows a human from step 100 on is named by an id that never changes.
+    BlipSlots slots;
+    const NetId human{.slot = 8, .generation = 2};
+    std::uint32_t step = 0;
+    std::uint32_t recordSeen = client.snapshots().newest();
+    std::size_t checked = 0;
+    std::size_t byId = 0;
+    const auto stepGame = [&] {
+        if (client.snapshots().newest() != recordSeen) {
+            recordSeen = client.snapshots().newest();
+            const SnapshotSender& sender = match.server.clients().at(0).snapshots;
+            REQUIRE(sender.holdingBlips(recordSeen) != nullptr);
+            CHECK(client.snapshots().blips() == *sender.holdingBlips(recordSeen));
+            for (const auto& [slot, blip] : hudBlips(client.snapshots().blips())) {
+                byId += blip.follows != 0 ? 1 : 0;
+            }
+            ++checked;
+        }
+        const bool following = step >= 100;
+        const std::vector<SnapshotBlip> blips = snapshotBlips(
+            scriptedBlips(step), slots, [&](double handle) { return following && handle == 1.0 ? human : NetId{}; });
+        match.server.sendSnapshots(step, {}, {}, {}, {}, blips);
+        ++step;
+    };
+
+    // A clean link: by the time the first snapshots are through the client holds every blip, the scripts' later changes
+    // follow, and the blip that goes is gone.
+    for (int i = 0; i < 200; ++i) {
+        match.run(1, kStepNs, stepGame);
+    }
+    CHECK(checked > 150);
+    CHECK(byId > 0);
+    const std::map<double, coney::hud::RadarBlip> held = hudBlips(client.snapshots().blips());
+    CHECK(held.size() == 21); // the 20 dealers and humans and the objective; the blip of steps 50 to 149 has gone
+    const auto objective = std::ranges::find_if(held, [](const auto& entry) { return entry.second.type == 10; });
+    REQUIRE(objective != held.end());
+    CHECK(objective->second.follows == netIdNumber(human));
+    CHECK_FALSE(objective->second.fixedPlace.has_value());
+
+    // A lossy, reordering link: whatever the client decodes is the server's record of that snapshot.
+    const LinkConditions bad{.latencyMs = 20,
+                             .jitterMs = 30,
+                             .lossFraction = 0.2F,
+                             .duplicateFraction = 0.1F,
+                             .reorderFraction = 0.2F,
+                             .reorderDelayMs = 50};
+    match.serverLink.setConditions(bad);
+    match.guests[0]->link.setConditions(bad);
+    checked = 0;
+    for (int i = 0; i < 300; ++i) {
+        match.run(1, kStepNs, stepGame);
+    }
     CHECK(checked > 100);
 }

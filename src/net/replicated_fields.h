@@ -99,13 +99,14 @@ enum class ReplicatedKind : std::uint8_t {
     HudScoreRow,  ///< A row of the text scoreboard (hud::TextProgressRow).
     HudStopWatch, ///< The stopwatch's display and its time.
     HudSettings,  ///< The HUD's own switches: shown, the prompt's place, the radars' script switch and range.
+    HudBlip,      ///< A radar blip (hud::RadarBlip), by its slot (docs/guides/snapshots.md#hud-blips).
 };
 
 /// Every replicated kind, in order.
-inline constexpr std::array<ReplicatedKind, 11> kReplicatedKinds{
-    ReplicatedKind::Human,       ReplicatedKind::WorldObject,  ReplicatedKind::Car,        ReplicatedKind::PlayerHud,
-    ReplicatedKind::HudPlayer,   ReplicatedKind::HudCounter,   ReplicatedKind::HudBar,     ReplicatedKind::HudGauge,
-    ReplicatedKind::HudScoreRow, ReplicatedKind::HudStopWatch, ReplicatedKind::HudSettings};
+inline constexpr std::array<ReplicatedKind, 12> kReplicatedKinds{
+    ReplicatedKind::Human,       ReplicatedKind::WorldObject,  ReplicatedKind::Car,         ReplicatedKind::PlayerHud,
+    ReplicatedKind::HudPlayer,   ReplicatedKind::HudCounter,   ReplicatedKind::HudBar,      ReplicatedKind::HudGauge,
+    ReplicatedKind::HudScoreRow, ReplicatedKind::HudStopWatch, ReplicatedKind::HudSettings, ReplicatedKind::HudBlip};
 
 /// A kind's name, for logs and test names.
 /// @coney-only network play; the original has none
@@ -290,6 +291,32 @@ enum class HudSettingsField : std::uint8_t {
     RadarRest,      ///< The radius shown at rest (`HUDRadarSetRange`).
     RadarFast,      ///< The radius shown at full speed.
     RadarZoomScale, ///< `HUDSetRadarZoomScale`.
+    Count,
+};
+
+/// A radar blip's fields, indexes into fieldTable(ReplicatedKind::HudBlip): hud::RadarBlip as network play carries it
+/// (docs/guides/snapshots.md#hud-blips). A blip names its place one of two ways: the human it follows (`Follows`, a
+/// network id) or a quantized place (`HasPlace` and the three coordinates); a blip with neither has no place yet.
+/// @coney-only network play; the original has none
+enum class HudBlipField : std::uint8_t {
+    Type,     ///< Slot `+0x2c`: 10 a mission objective, 1 a secondary one, 2-4 dealers, 6-9 humans, 12.
+    Icon,     ///< Slot `+0x18`: a `part_page0` rectangle.
+    Scale,    ///< The dot's size (`+0xc0`).
+    Red,      ///< Slot `+0x14`, the colour's red.
+    Green,    ///< Its green.
+    Blue,     ///< Its blue.
+    Alpha,    ///< Its alpha.
+    Flashing, ///< `HUDSetRadarObjectFlash`'s blinking.
+    Blinking, ///< A new objective's first 100 updates of blinking are running (slot `+0x32` above 0).
+    IconLock, ///< Slot `+0x34`: icon and size changes are ignored.
+    Marked,   ///< Slot `+0x30`.
+    Marking,  ///< The scanner's mark is running (slot `+0x2e` above 0).
+    DotShown, ///< The dot's own shown state.
+    Follows,  ///< The network id (netIdNumber()) of the human the blip follows; 0 for none.
+    HasPlace, ///< The blip has a quantized place: the three coordinates below mean something.
+    PlaceX,   ///< Metres.
+    PlaceY,   ///< Metres.
+    PlaceZ,   ///< Metres (up).
     Count,
 };
 

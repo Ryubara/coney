@@ -135,4 +135,7 @@ void Hud::applyStanding(const HudStanding& standing) {
     m_stopWatch = shared.stopWatch;
 }
 
+// Stub (the test commit's): the guest's HUD takes no blips yet.
+void Hud::applyBlips(const std::map<double, RadarBlip>& /*theirs*/) {}
+
 } // namespace coney::hud

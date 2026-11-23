@@ -601,6 +601,7 @@ void Hud::updateRadar(const HudFrame& frame) {
     RadarStepContext context;
     context.locate = m_locate;
     context.brainType = m_brainOf;
+    context.locateFollowed = m_locateFollowed;
     // The police hint's own conditions: the game's hints on, not an Armies of the Night level, not given yet (flag
     // 0x200), not levels 80 and 99. Not ported (#662): Tutorial_IsHintUnlocked(8), as for hint 0x15.
     context.policeHintAllowed = m_gameTutorialText && !isArmiesLevel(m_levelNumber) && !m_policeHintGiven &&

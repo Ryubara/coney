@@ -146,6 +146,8 @@ class ClientGame final : public GameMode, public LevelGame {
     void stepCamera(const GameModeStack& stack, const FrameTime& frame);
     // Steps the level's HUD one step: the guest's slot's panel state and the standing state of the newest snapshot.
     void stepHud(const FrameTime& frame);
+    // The view the guest's radar is given: the human its slot follows and its own camera (no view with none).
+    [[nodiscard]] hud::RadarView radarView(const FrameTime& frame) const;
 
     NetPlay& m_net;
     ClientSceneLoader m_load;

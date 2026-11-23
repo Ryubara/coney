@@ -195,6 +195,9 @@ void ClientGame::stepHud(const FrameTime& frame) {
     hud.updateHints(m_hudMs);
 }
 
+// Stub (the test commit's): the guest's radar has no view yet.
+hud::RadarView ClientGame::radarView(const FrameTime& /*frame*/) const { return {}; }
+
 void ClientGame::dropLevel() {
     // The scene draws the HUD, so it goes first; the sounds the host started in the level end with it.
     m_scene.reset();

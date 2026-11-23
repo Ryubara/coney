@@ -528,8 +528,15 @@ std::size_t snapshotHudTextEntryBits(const SnapshotHudTextEntry& entry) {
     return entry.removed ? bits : bits + varUintBits(entry.text.size()) + (entry.text.size() * 8);
 }
 
+// Stub (the test commit's): the radar's blips have no wire form yet.
+std::size_t snapshotBlipEntryBits(const SnapshotBlipEntry& /*entry*/) { return 0; }
+
+std::uint32_t blipNoPlaceWord() { return 0; }
+
+const char* blipWordsBroken(const BlipWords& /*words*/) { return nullptr; }
+
 std::size_t snapshotHeaderBits(const Snapshot& snapshot, std::size_t entries, std::size_t hudEntries,
-                               std::size_t elementEntries, std::size_t textEntries) {
+                               std::size_t elementEntries, std::size_t textEntries, std::size_t /*blipEntries*/) {
     return 8 + varUintBits(snapshot.sequence) +
            varUintBits(snapshot.baseline == 0 ? 0 : snapshot.sequence - snapshot.baseline) +
            varUintBits(snapshot.step) + varUintBits(entries) + varUintBits(hudEntries) + varUintBits(elementEntries) +

@@ -310,11 +310,12 @@ TEST_CASE("HUD standing: the elements' and texts' bytes are pinned, round-trip a
     // removed 0, fields 0 and 1 unchanged = 0x04; field 2 changed and its word's low 7 bits = 0x01; bits 7 to 22 =
     // 0x00 0x00; bits 23 to 30 = 0x80 (bit 30 set); bit 31, fields 3 and 4 unchanged, then one text (a varint 1 from
     // bit 3) = 0x08; the varint's top bits and key 0 = 0x00; removed 0 and the length 2 from bit 1 = 0x04; then "Go"
-    // from bit 1 = 0x8e 0xde 0x00.
-    const std::vector<std::byte> expected{
-        std::byte{0x0a}, std::byte{0x03}, std::byte{0x01}, std::byte{0x07}, std::byte{0x00}, std::byte{0x00},
-        std::byte{0x01}, std::byte{0x04}, std::byte{0x01}, std::byte{0x00}, std::byte{0x00}, std::byte{0x80},
-        std::byte{0x08}, std::byte{0x00}, std::byte{0x04}, std::byte{0x8e}, std::byte{0xde}, std::byte{0x00}};
+    // from bit 1 = 0x8e 0xde 0x00, and the count of radar blips (protocol 14), 0, = 0x00.
+    const std::vector<std::byte> expected{std::byte{0x0a}, std::byte{0x03}, std::byte{0x01}, std::byte{0x07},
+                                          std::byte{0x00}, std::byte{0x00}, std::byte{0x01}, std::byte{0x04},
+                                          std::byte{0x01}, std::byte{0x00}, std::byte{0x00}, std::byte{0x80},
+                                          std::byte{0x08}, std::byte{0x00}, std::byte{0x04}, std::byte{0x8e},
+                                          std::byte{0xde}, std::byte{0x00}, std::byte{0x00}};
     CHECK(encode(small) == expected);
     CHECK(overTheWire(small) == small);
     const std::size_t bits = snapshotHeaderBits(small, 0, 0, 1, 1) + snapshotHudElementEntryBits(small.hudElements[0]) +
@@ -362,6 +363,7 @@ TEST_CASE("HUD standing: the elements' and texts' bytes are pinned, round-trip a
               counter(out, 4, true);
               out.writeVarUint(1);
               text(out, 4, "Tags");
+              out.writeVarUint(0);
           })).has_value());
     // More elements than there are keys.
     refused(packet([&](BitWriter& out) {

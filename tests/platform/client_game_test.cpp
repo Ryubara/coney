@@ -40,10 +40,12 @@
 #include "net/net_id.h"
 #include "net/player_huds.h"
 #include "net/protocol.h"
+#include "net/radar_blips.h"
 #include "net/snapshot.h"
 #include "platform/net_levels.h"
 #include "platform/net_play.h"
 #include "scripting/sound_bindings.h"
+#include "support/optional_value.h"
 
 using coney::FrameTime;
 using coney::GameModeStack;
@@ -214,6 +216,7 @@ struct HostAndClient {
     std::array<coney::hud::PlayerHudState, 2> hostPlayerHuds{}; // what the host's game hands over each step
     std::array<NetId, 2> hostDrivers{}; // the human each of the host's player slots drives (none at first)
     coney::hud::HudStanding hostStanding{};
+    std::vector<coney::net::SnapshotBlip> hostBlips{}; // the host's radar blips, as its game hands them over each step
     GameModeStack stack;
     GuestPad pad;
     bool hostMoves = true;          // the host's game steps (its humans move) unless the barrier holds it
@@ -245,7 +248,8 @@ struct HostAndClient {
             sent[host.steps()] = holding;
             host.setGameHumans(humans);
             const coney::net::SnapshotHudStanding standing = coney::net::snapshotHudStanding(hostStanding);
-            host.setGameHuds(coney::net::snapshotHuds(hostPlayerHuds, hostDrivers), standing.elements, standing.texts);
+            host.setGameHuds(coney::net::snapshotHuds(hostPlayerHuds, hostDrivers), standing.elements, standing.texts,
+                             hostBlips);
             stack.samplePads(frame);
             (void)client.update(stack, FrameTime{.index = frame, .seconds = 1.0 / 30.0});
             client.render(RenderTime{});
@@ -663,4 +667,66 @@ TEST_CASE("client game: a new level has a new camera that follows nobody until i
     g.run(3);
     CHECK_FALSE(g.client.inPlay());
     CHECK_FALSE(g.client.camera().followed().has_value());
+}
+
+// Expected: unverified, #1537 (Coney's own: the guest's radar draws the host's blips,
+// docs/guides/snapshots.md#hud-blips)
+TEST_CASE("client game: the host's radar blips are the guest's HUD's, a human's by its id and a fixed one by its place",
+          "[net][net_play][client_game][hud][radar]") {
+    HostAndClient g;
+    g.host.loadLevel("level99", 1);
+    // The host's blips: a mission objective at a fixed place, and a human's blip that follows the host's walking human
+    // (id slot 1) by his id, whatever script handle the host's blip is keyed by.
+    std::map<double, coney::hud::RadarBlip> blips;
+    blips.emplace(41.0, coney::hud::RadarBlip{.type = 10, .icon = 27, .place = coney::anim::Vec3{3.0F, 40.0F, 5.0F}});
+    blips.emplace(77.0, coney::hud::RadarBlip{.type = 7, .icon = 365, .scale = 0.56F, .dotShown = true});
+    coney::net::BlipSlots slots;
+    const NetId walker{.slot = 1, .generation = 1};
+    g.hostBlips =
+        coney::net::snapshotBlips(blips, slots, [walker](double handle) { return handle == 77.0 ? walker : NetId{}; });
+    g.connect();
+    g.run(40);
+    REQUIRE(g.client.hud() != nullptr);
+    REQUIRE(g.client.world() != nullptr);
+    const coney::hud::Hud& hud = *g.client.hud();
+
+    // The guest's HUD holds both, keyed by their slots, with what the host's blips carry.
+    REQUIRE(hud.radar().blips.size() == 2);
+    const coney::hud::RadarBlip& objective = hud.radar().blips.at(0.0);
+    const coney::hud::RadarBlip& human = hud.radar().blips.at(1.0);
+    CHECK(objective.type == 10);
+    CHECK(objective.icon == 27);
+    CHECK(human.type == 7);
+    CHECK(human.icon == 365);
+    CHECK(human.dotShown);
+    CHECK(human.follows == coney::net::netIdNumber(walker));
+
+    // The guest's radar is given the view of the human its slot follows, so its blips are placed on it: the objective
+    // where the host had it, the human's blip where the guest's world shows the human now.
+    CHECK(hud.radar().view.known);
+    const coney::net::NetId followedId = g.client.camera().followed().value_or(coney::net::NetId{});
+    REQUIRE(followedId.valid());
+    const auto followed = g.client.world()->humans().find(followedId);
+    REQUIRE(followed != g.client.world()->humans().end());
+    CHECK(hud.radar().view.position == followed->second.position);
+    CHECK(hud.radar().view.heading == followed->second.heading);
+    CHECK(hud.radar().view.speed == 0.0F);
+    REQUIRE(objective.place.has_value());
+    CHECK(coney::test::got(objective.place).x == Catch::Approx(3.0F).margin(0.07F));
+    CHECK(coney::test::got(objective.place).y == Catch::Approx(40.0F).margin(0.07F));
+    const auto walking = g.client.world()->humans().find(walker);
+    REQUIRE(walking != g.client.world()->humans().end());
+    REQUIRE(human.place.has_value());
+    CHECK(coney::test::got(human.place) == walking->second.position);
+
+    // The human walks on, and so does the blip; a human the guest's world does not hold leaves a blip unplaced.
+    const coney::anim::Vec3 before = coney::test::got(human.place);
+    g.run(10);
+    CHECK(coney::test::got(human.place).x > before.x);
+    blips.at(77.0).type = 7;
+    const NetId absent{.slot = 40, .generation = 1};
+    g.hostBlips =
+        coney::net::snapshotBlips(blips, slots, [absent](double handle) { return handle == 77.0 ? absent : NetId{}; });
+    g.run(10);
+    CHECK_FALSE(hud.radar().blips.at(1.0).place.has_value());
 }

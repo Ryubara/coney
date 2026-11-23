@@ -173,7 +173,7 @@ TEST_CASE("snapshots: the first is full, and a still scene's next ones are empty
     CHECK(receiver.humans() == holdingOf(humans));
     // Header only: the id, the sequence, one back, the step, no entries, no HUD entries, no HUD elements and no HUD
     // texts, a byte each.
-    CHECK(encode(second).size() == 8);
+    CHECK(encode(second).size() == 9);
 }
 
 // Expected: unverified, #554 (Coney's own snapshots; the original has no network play)
@@ -380,11 +380,12 @@ TEST_CASE("snapshots: the packet is pinned, round-trips and refuses what breaks 
     // fields 1 to 8 unchanged = 0x00; fields 9 to 16 unchanged = 0x00; fields 17 to 20 unchanged (bits 0 to 3), field
     // 21 changed and its word 1 (bits 4 and 5), fields 22 and 23 unchanged = 0x30; field 24, the character, unchanged
     // (bit 0), then no HUD entries, a varint 0 from bit 1 (protocol 7); then no HUD elements and no HUD texts, two more
-    // varints 0 (protocol 9): 24 zero bits from bit 1, to the entry's bit 73, then the padding = 0x00 0x00 0x00.
+    // varints 0 (protocol 9), and no radar blips, one more (protocol 14): 32 zero bits from bit 1, to the entry's bit
+    // 81, then the padding = 0x00 0x00 0x00 0x00.
     const std::vector<std::byte> expected{std::byte{0x0a}, std::byte{0x03}, std::byte{0x01}, std::byte{0x07},
                                           std::byte{0x01}, std::byte{0x02}, std::byte{0x00}, std::byte{0x01},
                                           std::byte{0x00}, std::byte{0x00}, std::byte{0x30}, std::byte{0x00},
-                                          std::byte{0x00}, std::byte{0x00}, std::byte{0x00}};
+                                          std::byte{0x00}, std::byte{0x00}, std::byte{0x00}, std::byte{0x00}};
     CHECK(encode(small) == expected);
     CHECK(overTheWire(small) == small);
     CHECK(encode(SnapshotAck{.sequence = 300}) ==
@@ -517,20 +518,20 @@ TEST_CASE("snapshots: a busy scene's bytes per snapshot are pinned", "[net][snap
     }
     // A human in full: id 22 bits, removed 1, 25 changed bits and the fields' 267 bits (the character's 10 among them,
     // snapshots.md#character) = 315 bits. The header: the id byte and four one-byte varints, and the counts of HUD
-    // entries, HUD elements and HUD texts (0 each) = 64 bits. The first snapshot fits 30 of the 60: 64 + 30 x 315 =
-    // 9,514 bits, 1,190 bytes; a 31st would take it past 9,600 bits (1,200 bytes).
+    // entries, HUD elements, HUD texts and radar blips (0 each) = 72 bits. The first snapshot fits 30 of the 60: 72 +
+    // 30 x 315 = 9,522 bits, 1,191 bytes; a 31st would take it past 9,600 bits (1,200 bytes).
     CHECK(entries[0] == 30);
-    CHECK(bytes[0] == 1190);
+    CHECK(bytes[0] == 1191);
     // The second: the 30 left out, in full (their priority grew to 2), then the walkers among the first 30 (x, heading
-    // and playhead changed: 23 + 25 + 18 + 10 + 10 = 86 bits) while the room lasts: 64 + 30 x 315 = 9,514 bits leave
-    // 86, which takes one walker, 9,600 bits, 1,200 bytes.
-    CHECK(entries[1] == 31);
-    CHECK(bytes[1] == 1200);
-    // From then on, the 12 walkers alone: 64 + 12 x 86 = 1,096 bits, 137 bytes a snapshot, about 4 KB/s at 30 Hz.
+    // and playhead changed: 23 + 25 + 18 + 10 + 10 = 86 bits) while the room lasts: 72 + 30 x 315 = 9,522 bits leave
+    // 78, which takes no walker: 1,191 bytes again.
+    CHECK(entries[1] == 30);
+    CHECK(bytes[1] == 1191);
+    // From then on, the 12 walkers alone: 72 + 12 x 86 = 1,104 bits, 138 bytes a snapshot, about 4 KB/s at 30 Hz.
     CHECK(entries[2] == 12);
-    CHECK(bytes[2] == 137);
-    CHECK(bytes[3] == 137);
-    CHECK(bytes[4] == 137);
+    CHECK(bytes[2] == 138);
+    CHECK(bytes[3] == 138);
+    CHECK(bytes[4] == 138);
     CHECK(receiver.humans() == holdingOf(scene(60, 4, 5)));
 }
 
@@ -552,11 +553,11 @@ TEST_CASE("snapshots: the players' HUDs take their room in a full budget before 
     CHECK(snapshot.huds[0].slot == 0);
     CHECK(snapshot.huds[1].slot == 1);
     CHECK(receiver.huds().size() == 2);
-    // The humans have what is left: the header is still 64 bits (the HUD count, 2, is one byte), so 29 humans in full
-    // fit, 64 + 2 x 149 + 29 x 315 = 9,497 bits, 1,188 bytes; a 30th would take it past 9,600 bits. Humans taken
-    // first would fit 30 (9,514 bits) and leave room for no HUD.
+    // The humans have what is left: the header is 72 bits (the HUD count, 2, and the blip count, 0, are one byte each),
+    // so 29 humans in full fit, 72 + 2 x 149 + 29 x 315 = 9,505 bits, 1,189 bytes; a 30th would take it past 9,600
+    // bits. Humans taken first would fit 30 (9,522 bits) and leave room for no HUD.
     CHECK(snapshot.humans.size() == 29);
-    CHECK(encode(snapshot).size() == 1188);
+    CHECK(encode(snapshot).size() == 1189);
 }
 
 // Expected: unverified, #554 (Coney's own priority accumulator; the original has no network play)

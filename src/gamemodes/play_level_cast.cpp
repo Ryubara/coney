@@ -325,6 +325,9 @@ const ai::AiHuman* PlayLevelSimulation::castHumanOf(double handle) {
     return nullptr;
 }
 
+// Stub (the test commit's).
+const human::Human* PlayLevelSimulation::humanOfHandle(double /*handle*/) { return nullptr; }
+
 std::vector<characters::CharacterChoice> PlayLevelSimulation::characterChoices() const {
     // Every configured type a player can be drawn as: those whose record (or class record) names a model.
     std::vector<characters::CharacterChoice> choices;

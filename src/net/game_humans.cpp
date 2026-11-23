@@ -110,6 +110,9 @@ void GameHumans::captureHuds(std::span<const hud::PlayerHudState> slots, const h
     m_hudStanding = standing != nullptr ? snapshotHudStanding(*standing) : SnapshotHudStanding{};
 }
 
+// Stub (the test commit's): no blips are captured yet.
+void GameHumans::captureBlips(const hud::HudStanding& /*standing*/, const BlipHumanOf& /*followed*/) {}
+
 void GameHumans::clear() {
     std::vector<const human::Human*> all;
     m_table.forEach([&all](NetId, const human::Human* handle) { all.push_back(handle); });

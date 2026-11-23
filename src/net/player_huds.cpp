@@ -305,7 +305,8 @@ SnapshotHudStanding snapshotHudStanding(const hud::HudStanding& standing) {
     return parts;
 }
 
-hud::HudStanding hudStanding(const SnapshotHudElements& elements, const SnapshotHudTexts& texts) {
+hud::HudStanding hudStanding(const SnapshotHudElements& elements, const SnapshotHudTexts& texts,
+                             const SnapshotBlips& /*blips*/) {
     hud::HudStanding standing;
     // Element `key`'s words, or null when it is not held; text `key`, or empty.
     const auto element = [&elements](std::uint8_t key) -> const HudElementWords* {

@@ -172,7 +172,7 @@ SnapshotSender::SnapshotSender(std::size_t budgetBytes) : m_budgetBytes(budgetBy
 
 Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman> humans,
                                std::span<const SnapshotHud> huds, std::span<const SnapshotHudElement> elements,
-                               std::span<const SnapshotHudText> texts) {
+                               std::span<const SnapshotHudText> texts, std::span<const SnapshotBlip> /*blips*/) {
     CONEY_ASSERT(m_sequence < 0xffffffffU); // four and a half years of snapshots at 30 a second
     Snapshot snapshot;
     snapshot.sequence = ++m_sequence;
@@ -375,6 +375,18 @@ const SnapshotHuds* SnapshotSender::holdingHuds(std::uint32_t sequence) const {
     const Sent& sent = m_sent.at(sequence % kSnapshotHistory);
     return sequence != 0 && sent.sequence == sequence ? &sent.huds : nullptr;
 }
+
+// Stub (the test commit's): the radar's blips are not kept yet.
+const SnapshotBlips* SnapshotSender::holdingBlips(std::uint32_t /*sequence*/) const { return nullptr; }
+
+std::uint64_t SnapshotSender::blipPriority(std::uint8_t /*slot*/) const { return 0; }
+
+const SnapshotBlips& SnapshotReceiver::blips() const {
+    static const SnapshotBlips none;
+    return none;
+}
+
+const SnapshotBlips* SnapshotReceiver::holdingBlips(std::uint32_t /*sequence*/) const { return nullptr; }
 
 std::uint64_t SnapshotSender::priority(NetId id) const {
     const auto found = m_priority.find(id);

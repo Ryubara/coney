@@ -179,6 +179,9 @@ bool radarBlipShown(const RadarBlip& blip, std::uint64_t updates) {
     return true;
 }
 
+// Stub (the test commit's).
+bool radarTopBatchIcon(int /*icon*/) { return false; }
+
 int radarBatchDepth(int type) {
     switch (type) {
     case 10:
