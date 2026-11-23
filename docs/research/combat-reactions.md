@@ -767,6 +767,11 @@ at `0x00227e60`):
   it builds the death chain, on the update of the lethal hit ([When the knock-out comes](#knockout-timing)), and
   neither `Human_OnHealthOut` (`0x002674c0`) nor `Human_KnockOut` (`0x00230328`) writes the health. Confirmed (code)
   at those addresses.
+- **A death held back: 0, and not down.** `Human_ApplyPendingDamage` (`0x00265f70`) takes the health of a human whose
+  held flags have any of `0x1c16a40` (among them a tandem victim's `0x400000`) but plays no reaction, so a lethal
+  tandem leaves its victim at 0 health in none of the down states until his end clip is over and his death plays.
+  Confirmed (code) at `0x00265f70` and `Tandem_OnVictimIntroEnd` (`0x0026f780`, which deals the damage through
+  `Human_DealDamage` `0x0021d680` as pending damage).
 - **Wounded: a quarter of the maximum.** `Human_StartWounded` (`0x0022fa78`), which `Human_OnHealthOut` calls for a
   human with flag `0x8` not yet wounded, sets the health to the maximum / 4 (rounded towards 0), with state `0x10000`
   and record `+0xf0` = now + 14 s (`0x00510794`). Confirmed (code) at `0x0022fa78`. Its only other caller is
@@ -1264,8 +1269,12 @@ hit by an object of kind `0x1d` or `0x22`, which still takes health there. **Dif
 (`Health::set()`) gets a downed human up again, where `Human_SetHealthPercent` (`0x002378a8`, `HuSetHealthPercent`)
 writes only `+0x144` and leaves a knocked-out man down (confirmed (code) at `0x002378a8`). Every down-or-dead test reads
 `depleted()` (dying, knocked out) and the script's states (`Human::downOrDead()`, `ai::humanIsDownOrDead()`), never the
-value, as `Human_IsDownOrDead` (`0x00227e60`) reads the states. Tests: `repo:tests/human/knockout_test.cpp` (1 health
-from the hit through the knock-out), `repo:tests/human/human_grab_test.cpp` (a tackled player keeps all his health and
+value, as `Human_IsDownOrDead` (`0x00227e60`) reads the states; a health run out whose death a paired move still holds
+back (`Fighter::deathPending()`, a tandem's victim in his end clip) is not down yet (since 2026-11-22: the band move
+brought tandems into the WAR PARTY, and their victims counted down at 0 health). Tests:
+`repo:tests/human/knockout_test.cpp` (1 health from the hit through the knock-out),
+`repo:tests/human/human_tandem_test.cpp` (a lethal tandem's victim is not down
+while his end clip plays), `repo:tests/human/human_grab_test.cpp` (a tackled player keeps all his health and
 is never down by state, under the tackle or breaking free), `repo:tests/ai/gangs_test.cpp` (a lethal hit's event 1
 carries all the health it took, the 1 left counting as none) and `repo:tests/platform/disc_rumble_gang_count_test.cpp`
 (in the disc's WAR PARTY every fighter down by state has 1 health, and the HUD's count is the standing members on the

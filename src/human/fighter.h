@@ -460,7 +460,8 @@ class Fighter {
     /// player's lock-on movement starts only from his stance update (an enemy within 2 m, not running) or L1
     /// (`Player_LockOn` `0x00280158`), never from an attack's pick, and ends with the stance or the target; in it he
     /// walks in the combat walk (Human::combatWalk(), which faces the target within CombatTuning::stanceMid or while
-    /// l1Locked()). An AI human's is its target while the lock-on settings lock (combat::lockedOn()).
+    /// l1Locked()). An AI human's is its target while the lock-on settings lock (combat::lockedOn()), or the target of
+    /// its fight goal's stance (setAiStance()).
     /// @coney-only Coney's query for the movement the original's record holds (`+0x1c0`)
     [[nodiscard]] const Combatant* lockTarget() const;
     /// Whether L1 locks the target (`Human_IsLocked` `0x00227c88`: state `0x8` and `0x4`), which refuses a pad player's
@@ -478,6 +479,12 @@ class Fighter {
     /// but `Player_LockOn` is skipped, so it keeps its walk and never enters the fight stance by itself
     /// (docs/research/stealth.md#stealth-kill).
     void setLockBlocked(bool blocked) { m_lockBlocked = blocked; }
+    /// An AI human's fight stance, as its brain's fight goal enters it (`Human_EnterFightStance` `0x0022fe80`) round
+    /// `target`, or leaves it (null, `Human_LeaveFightStance` `0x0022fef0`): while it is on, lockTarget() is `target`,
+    /// so the AI control walks the stance (or stands in the fight idle) out of the lock-on settings' range too
+    /// (docs/research/ai-moving.md#move-melee). Never set for a player.
+    /// @coney-only the goals' stance kept as the target the AI's lock-on movement walks round
+    void setAiStance(const Combatant* target) { m_aiStance = target; }
     /// Whether the player entered the fight stance through an attack, a grab, a tackle, a miss or a tandem since the
     /// last call (`Player_EnterStance` `0x00280068`), which ends his hiding: the human clears it
     /// (Human::clearHiding()).
@@ -663,6 +670,11 @@ class Fighter {
     /// is taken forgets it.
     /// @orig 0x002674c0 Human_OnHealthOut (unknown)
     [[nodiscard]] bool takeHealthOut() { return std::exchange(m_healthOutBegan, false); }
+    /// A defeating hit taken while a paired move holds its death back (a tandem's victim during his end clip): its
+    /// health is gone but no reaction played, so it is in none of the down states yet (`Human_ApplyPendingDamage`
+    /// `0x00265f70` takes the health of a human holding `0x1c16a40` and plays nothing).
+    /// @coney-only the death held back, which the original leaves in its pending health and its state word
+    [[nodiscard]] bool deathPending() const { return m_deathPending.has_value(); }
     /// The player's reactions, stun and ground timers.
     [[nodiscard]] const Victim& victim() const { return m_victim; }
     /// The game time, ms, until which a hit keeps an AI busy (record `+0x108`, set to the time + the power class's
@@ -1271,18 +1283,19 @@ class Fighter {
     std::uint64_t m_busyUntilMs = 0;                // record +0x108: busyUntilMs()
     std::optional<std::uint64_t> m_busyReadAs;      // readBusyUntilAs(): what busyUntilMs() reads while event 1 is sent
     // The flags, together so the class packs.
-    bool m_player = true;              // FighterProfile::player
-    bool m_bossClass = false;          // FighterProfile::bossClass
-    bool m_warriorBrain = false;       // setWarriorBrain(): brain type 3
-    bool m_l1Held = false;             // L1 held this update
-    bool m_stanceOn = false;           // a player's fight stance (record +0x00 0x1)
-    bool m_stanceEntered = false;      // enterStance() ran since takeStanceEntered(): the hiding ends
-    bool m_lockOn = false;             // a player's lock (0x4) and lock-on movement (Human_FightStanceMove)
-    bool m_l1Lock = false;             // L1's lock bit (0x8)
-    bool m_lockBlocked = false;        // setLockBlocked(): hidden, the target does not lock
-    bool m_lockMoveFree = false;       // locked, but a throw put him on the free movement (0x00240e38)
-    bool m_tacklePending = false;      // the tackle's intro plays; the victim reacts when its hit clip starts
-    bool m_mountPending = false;       // the grab's mount (118) or the tackle plays; the mounter is seated at 210
+    bool m_player = true;                  // FighterProfile::player
+    bool m_bossClass = false;              // FighterProfile::bossClass
+    bool m_warriorBrain = false;           // setWarriorBrain(): brain type 3
+    bool m_l1Held = false;                 // L1 held this update
+    bool m_stanceOn = false;               // a player's fight stance (record +0x00 0x1)
+    bool m_stanceEntered = false;          // enterStance() ran since takeStanceEntered(): the hiding ends
+    bool m_lockOn = false;                 // a player's lock (0x4) and lock-on movement (Human_FightStanceMove)
+    bool m_l1Lock = false;                 // L1's lock bit (0x8)
+    bool m_lockBlocked = false;            // setLockBlocked(): hidden, the target does not lock
+    const Combatant* m_aiStance = nullptr; // setAiStance(): the fight goal's stance round this target
+    bool m_lockMoveFree = false;           // locked, but a throw put him on the free movement (0x00240e38)
+    bool m_tacklePending = false;          // the tackle's intro plays; the victim reacts when its hit clip starts
+    bool m_mountPending = false;           // the grab's mount (118) or the tackle plays; the mounter is seated at 210
     bool m_groundMount = false;        // this update's circle found its human lying where it mounts him (m_candidate)
     bool m_groundMountLanding = false; // the grounded mount's clip plays; its end is tested at 210
     int m_seatUpdates = 0;             // the updates of the seat's slide left; the victim is attached when it ends

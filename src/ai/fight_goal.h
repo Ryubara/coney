@@ -55,22 +55,27 @@ class FightGoal final : public Goal {
     /// 8. past the deadline, done for a class-13 fighter without `bossStays`, or once it holds none of T's active
     ///    places (it gave its place up after the press), T is attackable by no one, or a FollowAndDefend goal (`0x35`)
     ///    is on the stack;
-    /// 9. pick a kind when none is chosen (ai::pickAttackFor(), `Human_CanUseAttackKind`);
+    /// 9. pick a kind when none is chosen (ai::pickAttackFor(), `Human_CanUseAttackKind`), then the fight stance
+    ///    (Brain::setFightStance()): left for a charge or a dive (19, 20) and for a class with no stance
+    ///    (ai::fightsWithoutStance()), else taken (**Coney stand-in**: only while it waits, in the reposition);
     /// 10. may it attack now (ai::checkAttack())? If not, the reposition: once its taunt timer (first 750-1000 ms
     ///     after the start, then every 1000-2000 ms) has run, a taunt (a FidgetAction on anim `0x25b` saying `cheer2`)
-    ///     when ai::repositionTaunts() allows, and then hold the ring; out of the kind's reach, move in;
+    ///     when ai::repositionTaunts() allows, and then the band-keeping move (ai::MoveToHumanAction) between the
+    ///     ring's radii (ai::repositionRing()); out of the kind's reach, move in;
     ///     in reach, the grab and snap try (tryGrab()), the start test (picking again with `Human_CanStartAttack` when
     ///     it refuses), and the press (queueAttack(), with the stick angle the try set).
     ///
-    /// **Coney stand-ins**: the fight stance is not built (19 and 20 are the kinds out of it); the rows of
+    /// **Coney stand-ins**: the fight stance is kept on the brain (Brain::fightStance()); the rows of
     /// Brain_CheckAttack about held objects (4, 6, 8) never apply, as an AI holds none; the police row applies when
-    /// the target's own target is a cop; the reposition's move is a move to the ring's outer edge, standing within it
-    /// turned to him (the original's band-keeping move circles him facing him).
+    /// the target's own target is a cop; the grab try's step-in (tryGrab()) is a plain move to its outer distance (the
+    /// original's keeps a band too).
     /// @orig 0x002b3ab0 FightGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
     /// Gives up the active-attacker place (the goal's suspend, docs/research/ai-fights.md#attack-places).
     void suspend(Brain& brain) override;
-    /// Gives up the active-attacker place.
+    /// Gives up the active-attacker place, clears the actions it queued and leaves the fight stance
+    /// (Brain::setFightStance()).
+    /// @orig 0x002b2dd8 FightGoal_End (unknown)
     void end(Brain& brain) override;
 
     /// The kind chosen and not yet pressed (`+0x10`; kNoAttackKind for none).

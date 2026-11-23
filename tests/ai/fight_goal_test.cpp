@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/fight_goal.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -16,6 +17,7 @@
 #include "ai/gangs.h"
 #include "ai/idle_goals.h"
 #include "ai/melee_goal.h"
+#include "ai/move_to_human_action.h"
 #include "combat/commands.h"
 #include "combat/reactions.h"
 #include "human/human.h"
@@ -83,6 +85,7 @@ FightSettings onlyKind(int kind) {
 } // namespace
 
 TEST_CASE("two attackers on a man with a spacing of one take turns at his one active place", "[ai]") {
+    // Expected: ai-fights.md#attack-places, confirmed (code) at 0x00291008 and 0x002b3ab0
     Scene scene;
     const FightSettings square = onlyKind(1);
     Brain& front = scene.add({40.0F, 40.9F, 0.0F}, 180.0F, BrainType::Gang, square);
@@ -96,10 +99,9 @@ TEST_CASE("two attackers on a man with a spacing of one take turns at his one ac
     bool backPressed = false;
     for (int k = 0; k < 300; ++k) {
         scene.run(1);
-        const auto* a = dynamic_cast<const coney::ai::FightGoal*>(front.topGoal());
-        const auto* b = dynamic_cast<const coney::ai::FightGoal*>(back.topGoal());
-        // Never both in the place at once.
-        CHECK_FALSE((a != nullptr && b != nullptr && a->holdsPlace() && b->holdsPlace()));
+        // Never both in the place at once, by the man's places: a goal's own flag (`+0x28`) can lag, as the man's
+        // target may take the place from the other, whose flag FightGoal_Process (0x002b3ab0) clears only once his
+        // queued actions are over.
         CHECK(scene.playerBrain().fightBook().places.held() <= 1);
         frontPressed = frontPressed || front.human().record().command == coney::combat::command::kSquarePressed;
         backPressed = backPressed || back.human().record().command == coney::combat::command::kSquarePressed;
@@ -341,4 +343,58 @@ TEST_CASE("a stunned fighter stays stunned through 355 and 356 and fights on the
     // The reaction goal ends the update after, and the fight goal acts in that update.
     CHECK(goalEnded == cleared + 1);
     CHECK(actedAtGoalEnd);
+}
+
+TEST_CASE("an attacker waiting his turn on a man not fighting him backs off to the 4-4.75 m band", "[ai]") {
+    // Expected: ai-fights.md#fight-reposition, confirmed (code)
+    Scene scene;
+    const FightSettings square = onlyKind(1);
+    Brain& front = scene.add({40.0F, 40.9F, 0.0F}, 180.0F, BrainType::Gang, square);
+    Brain& back = scene.add({40.0F, 39.1F, 0.0F}, 0.0F, BrainType::Gang, square);
+    for (Brain* brain : {&front, &back}) {
+        brain->setTarget(&scene.playerBrain());
+        REQUIRE(brain->pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
+    }
+    // The man has no target, so the first in his slot list is close in; the other waits in the wide band: inner
+    // (near + far) / 2, outer 0.95 × far.
+    Brain* waiter = nullptr;
+    const coney::ai::MoveToHumanAction* band = nullptr;
+    for (int k = 0; k < 120 && band == nullptr; ++k) {
+        scene.run(1);
+        for (Brain* brain : {&front, &back}) {
+            const auto* move = dynamic_cast<const coney::ai::MoveToHumanAction*>(brain->frontAction());
+            if (move != nullptr && move->band() && move->bandNear() > 2.0F) {
+                waiter = brain;
+                band = move;
+            }
+        }
+    }
+    REQUIRE(band != nullptr);
+    REQUIRE(waiter != nullptr);
+    CHECK(band->bandNear() == (waiter->meleeNear() + waiter->meleeFar()) / 2.0F);
+    CHECK(band->bandFar() == 0.95F * waiter->meleeFar());
+    CHECK(band->limitMs() == 2000);
+    // He walks back out of the taunt's 2.75 m (a quarter of (1.1 x far) squared) within a few band moves.
+    float farthest = 0.0F;
+    for (int k = 0; k < 90; ++k) {
+        scene.run(1);
+        farthest = std::max(farthest, waiter->distanceTo(scene.playerBrain()));
+    }
+    CHECK(farthest > 2.75F);
+}
+
+TEST_CASE("an ended fight goal clears the actions it queued", "[ai]") {
+    // Expected: ai-goals.md#goal-fight, confirmed (code) at 0x002b2dd8 (FightGoal_End clears the actions when any are
+    // queued)
+    Scene scene;
+    Brain& gang = scene.add({40.0F, 44.0F, 0.0F}, 180.0F, BrainType::Gang, onlyKind(1));
+    gang.setTarget(&scene.playerBrain());
+    REQUIRE(gang.pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
+    // 4 m off, out of the kind's reach: the goal queues its move in.
+    for (int k = 0; k < 10 && gang.actionCount() == 0; ++k) {
+        scene.run(1);
+    }
+    REQUIRE(gang.actionCount() > 0);
+    gang.popGoal();
+    CHECK(gang.actionCount() == 0);
 }

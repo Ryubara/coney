@@ -718,6 +718,8 @@ void Brain::addEnemy(Brain& enemy) {
 }
 
 void Brain::setTarget(Brain* target, bool force) {
+    // Not ported (#649, research/functions/ai.toml): the original takes the target only when its slot claim succeeds
+    // and keeps the wanted state, spotter and last seen place; so here a target can be a man with no slot for him.
     if (m_target == target) {
         if (m_target != nullptr) {
             m_target->claimSlot(*this, force);
@@ -732,6 +734,7 @@ void Brain::setTarget(Brain* target, bool force) {
     if (m_target != nullptr) {
         m_target->claimSlot(*this, force);
     }
+    handFightStance();
 }
 
 bool Brain::hasAttackSlot() const {
@@ -757,6 +760,8 @@ void Brain::retarget() {
 }
 
 bool Brain::claimSlot(Brain& attacker, bool force) {
+    // Not ported (#649, research/functions/ai.toml): the spacing rules, a Warrior's spacing of 1 and the displaced
+    // holder's full Brain_SetTarget; he only loses the target and the stance it held.
     if (std::ranges::find(m_slots, &attacker) != m_slots.end()) {
         raiseSpacing(attacker);
         return true;
@@ -775,6 +780,7 @@ bool Brain::claimSlot(Brain& attacker, bool force) {
     if ((*farthest)->m_target == this) {
         (*farthest)->m_target = nullptr;
         ++(*farthest)->m_targetChanges.at(static_cast<std::size_t>(TargetCause::Displaced));
+        (*farthest)->handFightStance();
     }
     *farthest = &attacker;
     raiseSpacing(attacker);
@@ -893,6 +899,21 @@ void Brain::setMoveAim(anim::Vec3 point, float radius) {
     }
 }
 
+// Enters or leaves the fight stance round the brain's target, handed to its fighter, whose lock-on movement the
+// human's control walks.
+// @coney-only the stance kept as a flag (Brain::fightStance()); the original sets the human's state bits
+void Brain::setFightStance(bool on) {
+    m_fightStance = on;
+    handFightStance();
+}
+
+// The fighter's stance is the brain's current target, handed again at every change of either, so it never walks
+// round a man the brain no longer targets.
+// @coney-only the stance kept on the fighter as the brain's target (Brain::fightStance())
+void Brain::handFightStance() {
+    m_human->fighter().setAiStance(m_fightStance && m_target != nullptr ? &m_target->human() : nullptr);
+}
+
 void Brain::stopMove() { m_human->record().move.reset(); }
 
 // Coney's choice: a route leg's climb is handed to the human, who tries it in its update (the original, at once).
@@ -953,6 +974,7 @@ void Brain::forget(const Brain& other) {
     if (m_target == &other) {
         m_target = nullptr;
         ++m_targetChanges.at(static_cast<std::size_t>(TargetCause::Other)); // the target left the scene
+        handFightStance();
     }
     std::erase(m_enemies, &other);
     std::erase(m_slots, &other);

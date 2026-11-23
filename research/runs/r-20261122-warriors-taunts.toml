@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261122-warriors-taunts"
+date = "2026-11-22"
+kind = "trace"
+tool = "trace original"
+digest = "933bd0668804172cd01f3c332530daeee4aac250c644f3dcdeb745915e897eef"
+
+[who]
+agent = "a0fe8f7d0cc9c88fd"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["call-brains", "fight-reposition", "fight-retarget-due", "right-stick", "say-command", "scripted-pad", "set-target", "taunt-init"]
+
+[run]
+name = "warriors_taunts"
+method = ""
+
+[values]
+updates = 1701
+missed_updates = 0
+columns = 52
+
+[hashes]
+trace_csv = "6a8704c9bbd11d7ca5294e71769e4032b66e0157c3b290aa6af58d543546e9b5"

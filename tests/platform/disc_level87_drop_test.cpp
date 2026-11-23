@@ -20,6 +20,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -103,15 +104,20 @@ struct Chapter {
     }
     // Player 1's count of item `item`.
     [[nodiscard]] int carried(int item) { return run.session().flow().state().player.inventory.count(0, item); }
-    // The live, not taken `dyn_money` records.
-    [[nodiscard]] std::vector<const coney::world_objects::SpawnRecord*> moneyLying() {
-        std::vector<const coney::world_objects::SpawnRecord*> lying;
+    // The handle of every `dyn_money` record ever made, taken or not. Handles, not pointers: the records live in a
+    // vector, and one added later (another gang member's drop) can move them.
+    [[nodiscard]] std::vector<double> moneyMade() {
+        std::vector<double> made;
         for (const coney::world_objects::SpawnRecord& record : run.session().flow().spawnRecords().all()) {
-            if (record.typeName == "dyn_money" && !record.removed) {
-                lying.push_back(&record);
+            if (record.typeName == "dyn_money") {
+                made.push_back(record.handle);
             }
         }
-        return lying;
+        return made;
+    }
+    // The record of `handle`, looked up afresh; null when none is.
+    [[nodiscard]] const coney::world_objects::SpawnRecord* recordOf(double handle) {
+        return std::as_const(run.session().flow()).spawnRecords().find(handle);
     }
 };
 
@@ -145,8 +151,10 @@ TEST_CASE("the disc's level87 checkpoint 3: the beaten early Destroyers' $5 each
     }
     std::printf("level87 drop: %zu early Destroyers hold $%d\n", destroyers.size(), kDestroyerMoney);
     REQUIRE(destroyers.size() == 2);
-    // What player 1's walks onto the two pickups give him: the crew fights beside him and may down another of the
-    // gang, whose own drop he can walk over during the fight, so his whole money is not the measure.
+    // What player 1 gains from the two pickups: the crew fights beside him and may down another of the gang, whose
+    // own drop he can walk over during the fight, so his whole money is not the measure. A pickup he already stands
+    // on when its man goes down (the drop lies at the man's feet, a metre from where the fight puts him) is taken
+    // at once, so his gain counts from before the fight for it, and from before the walk for one that lies.
     int taken = 0;
 
     // Each one beaten with square (his health first cut to one hit's worth, so the fight is short), then his
@@ -154,6 +162,8 @@ TEST_CASE("the disc's level87 checkpoint 3: the beaten early Destroyers' $5 each
     for (coney::human::Human* destroyer : destroyers) {
         coney::ai::Brain* brain = chapter.mode().fighters().brainOf(*destroyer);
         REQUIRE(brain != nullptr);
+        const std::size_t madeBefore = chapter.moneyMade().size();
+        const int moneyBeforeFight = chapter.carried(coney::item::kMoney);
         const std::array<coney::script::Value, 2> health{coney::script::Value(brain->handle()),
                                                          coney::script::Value(1.0)};
         (void)run.session().flow().scripts().call("HuSetHealth", health);
@@ -166,21 +176,35 @@ TEST_CASE("the disc's level87 checkpoint 3: the beaten early Destroyers' $5 each
         std::printf("level87 drop: Destroyer down after %llu frames\n", static_cast<unsigned long long>(spent));
         REQUIRE(destroyer->knockedOut());
         CHECK(destroyer->script().money == 0);
-        // His money lies at his feet, half a metre up: player 1 walks onto it.
-        const std::vector<const coney::world_objects::SpawnRecord*> lying = chapter.moneyLying();
-        REQUIRE(lying.size() == 1);
-        CHECK(lying[0]->money == static_cast<std::uint32_t>(kDestroyerMoney));
-        const coney::anim::Vec3 cash{lying[0]->position[0], lying[0]->position[1], lying[0]->position[2]};
-        chapter.mode().teleport(coney::human::Place{
-            .name = "cash", .feet = {cash.x, cash.y, chapter.mode().playerFeet().z}, .headingDegrees = 0.0F});
-        const int beforeWalk = chapter.carried(coney::item::kMoney);
-        chapter.play("0 tap square\n", 10);
-        taken += chapter.carried(coney::item::kMoney) - beforeWalk;
-        CHECK(chapter.moneyLying().empty());
+        // His money lies at his feet, half a metre up: one new pickup, which player 1 took already or walks onto.
+        const std::vector<double> made = chapter.moneyMade();
+        REQUIRE(made.size() == madeBefore + 1);
+        const double dropHandle = made.back();
+        const coney::world_objects::SpawnRecord* drop = chapter.recordOf(dropHandle);
+        REQUIRE(drop != nullptr);
+        CHECK(drop->money == static_cast<std::uint32_t>(kDestroyerMoney));
+        int gained = 0;
+        if (drop->removed) {
+            gained = chapter.carried(coney::item::kMoney) - moneyBeforeFight;
+        } else {
+            const coney::anim::Vec3 cash{drop->position[0], drop->position[1], drop->position[2]};
+            chapter.mode().teleport(coney::human::Place{
+                .name = "cash", .feet = {cash.x, cash.y, chapter.mode().playerFeet().z}, .headingDegrees = 0.0F});
+            const int beforeWalk = chapter.carried(coney::item::kMoney);
+            chapter.play("0 tap square\n", 10);
+            gained = chapter.carried(coney::item::kMoney) - beforeWalk;
+        }
+        // The walk (or the fight) may have added records, so the drop is looked up again.
+        const coney::world_objects::SpawnRecord* after = chapter.recordOf(dropHandle);
+        REQUIRE(after != nullptr);
+        CHECK(after->removed);
+        // Each pickup's own gain, so a short one cannot hide behind the other's surplus.
+        CHECK(gained >= kDestroyerMoney);
+        taken += gained;
     }
     const int moneyAfter = chapter.carried(coney::item::kMoney);
     std::printf("level87 drop: player 1 took $%d from the two pickups; money $%d\n", taken, moneyAfter);
-    CHECK(taken == 2 * kDestroyerMoney);
+    CHECK(taken >= 2 * kDestroyerMoney);
 
     // A spray seller offering a can: triangle beside him buys it.
     const int paintBefore = chapter.carried(coney::item::kSprayPaint);

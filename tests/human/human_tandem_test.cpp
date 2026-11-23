@@ -365,6 +365,31 @@ TEST_CASE("a lethal tandem lets the victim finish his end clip before he dies", 
     CHECK(fight.ally().fighter().held() == nullptr);
 }
 
+TEST_CASE("a lethal tandem's victim is not down by state while his end clip holds his death back", "[human][tandem]") {
+    // Expected: combat-reactions.md#down-health, confirmed (code): Human_ApplyPendingDamage (0x00265f70) takes the
+    // health of a victim holding 0x400000 but plays no reaction, so none of Human_IsDownOrDead's states (0x00227e60)
+    // is set until his death plays after the end clip.
+    const FightCharacter character;
+    TandemFight fight(character, 1.8F, 0.0F, 1.0F, 300);
+    fight.allyHoldsFromBehind();
+    int heldBackDown = 0; // updates out of health with the death held back, counted down by state
+    int heldBack = 0;     // updates out of health with the death held back
+    bool downAfter = false;
+    fight.run("2 tap square\n", 200, [&](std::uint64_t /*frame*/) {
+        const Human& enemy = fight.enemy();
+        if (enemy.fighter().health().depleted() && enemy.fighter().deathPending()) {
+            ++heldBack;
+            heldBackDown += enemy.downOrDead() ? 1 : 0;
+        }
+        downAfter = enemy.downOrDead();
+    });
+    CHECK(heldBack > 0);
+    CHECK(heldBackDown == 0);
+    // Once his death plays he is down, at 1 health.
+    CHECK(downAfter);
+    CHECK(fight.enemy().fighter().health().value() == 1);
+}
+
 TEST_CASE("a hit from a fourth human on the tandem's victim takes health but plays no reaction", "[human][tandem]") {
     // Expected: combat-reactions.md#protected-moves, confirmed (code)
     // The victim holds 0x400000 and the other two 0x800000 (docs/research/combat-reactions.md#protected-moves): a
