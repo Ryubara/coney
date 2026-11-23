@@ -171,8 +171,8 @@ TEST_CASE("snapshots: the first is full, and a still scene's next ones are empty
     CHECK(second.baseline == 1);
     CHECK(second.humans.empty());
     CHECK(receiver.humans() == holdingOf(humans));
-    // Header only: the id, the sequence, one back, the step, no entries, no HUD entries, no HUD elements and no HUD
-    // texts, a byte each.
+    // Header only: the id, the sequence, one back, the step, no entries, no HUD entries, no HUD elements, no HUD texts
+    // and no radar blips, a byte each.
     CHECK(encode(second).size() == 9);
 }
 
