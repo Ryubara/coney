@@ -228,7 +228,9 @@ draw without librw's GL3 device as early as possible:
    passes ([#1646](issue:1646), built: [Drawing the screen passes](gpu-renderer.md#screen-passes)). Then
    each scene of the [benchmark](renderer-performance.md#benchmark) and the named `--play-level` frames are drawn by
    both renderers on the same machine and compared as [How pictures are compared](#comparing) says, with the
-   cross-renderer tolerance; differences are listed. librw's GL3 output stays the reference until the switch.
+   cross-renderer tolerance (built, [#1647](issue:1647): `coney-tools picture parity`,
+   [The GPU renderer's parity](renderer-pictures.md#parity)); every frame is within it, and what is left is
+   [listed below](#parity-differences). librw's GL3 output stays the reference until the switch.
 7. **The switch** (item 21). When parity holds for every scene, `gpu` becomes the default and `gl3` the fallback for
    machines with no Vulkan, D3D12 or Metal. When the GL3 renderer retires, and with it librw's GL3 platform (librw
    would then be built for its NULL platform, data only), is a maintainer question ([Questions](#questions)).
@@ -236,6 +238,35 @@ draw without librw's GL3 device as early as possible:
 Enhancements are written once, against the GPU renderer: a new option targets `gpu` only, and the GL3 renderer stays
 the *PS2* picture. The presets, the benchmark, the frame-rate gaps and the lighting frame do not depend on the
 backend, so they land beside the groundwork (items 15 to 19).
+
+#### What is left between the renderers {#parity-differences}
+
+The parity suite draws every benchmark scene that draws and the named `--play-level` frames whole on both renderers
+([the counts](renderer-pictures.md#parity)); each is within the cross-renderer tolerance. What remains, with its reason,
+is this list; the next item (the switch) reads it.
+
+- **Single pixels along the edges of polygons** (inferred): 0 to 24 pixels over 4 of 255 in every frame (largest
+  difference 21 to 38). In every frame the pixels over sit where their neighbours differ by 5 to 51 of 255 (the median
+  neighbour difference of those pictures is 3 to 4), so they are edges, where OpenGL's and Direct3D's rasterisation
+  and interpolation round a covered corner differently. Within the tolerance, not a defect.
+- **The debug views of lines alone** (confirmed (runtime), measured with item 14 and listed
+  [there](gpu-renderer.md#scene)): the wireframe-only view and the humans' wireframe in a wireframe-only view are over
+  the tolerance (0.8 % and 1.1 % of the pixels), because 95 % of those pixels have the other renderer's colour within a
+  pixel: a one-pixel line is rasterised a pixel over. Not a frame the game draws; the debug draw of a frame with a
+  fill is within the tolerance.
+- **A texture without mip levels** (stand-in, [Drawing the 2D passes](gpu-renderer.md#drawing)): no mip levels are
+  uploaded, so a texture seen far smaller than itself is sampled at level 0. No suite frame is over the tolerance
+  because of it; a frame that has distant, finely patterned scenery would show it first.
+- **The effects' sampler** (stand-in, [Drawing the effect passes](gpu-renderer.md#effects)): an effect that sets no
+  filter or addressing is sampled with its texture's own filter and clamped. The suite's frames carry the coronas, blob
+  shadows, rings and panes this concerns, within the tolerance.
+- **The frames the suite cannot compare.** `level95-hub` is black on both renderers in every build, so its row says
+  `blank` and proves nothing; the benchmark's `hub` scene looks at the same street and is compared in its place.
+  `hub-2560` is taken at the size its window can have on the machine (confirmed (code), `placeOnDisplay()` in
+  `render_engine.cpp` shrinks a window to the display's usable area: 1058x793 here), so it checks a larger frame than
+  `hub`, not 2560x1920. The blur pulse and the motion blur are not in a level
+  frame (a level's play lays neither without a mission), so they are compared on the `blur-pulse` and `motion-blur` test
+  cards of CI's software pictures, which are within the tolerance.
 
 ### The frame description {#frame-description}
 
@@ -430,6 +461,9 @@ bones). The GPU is nearly idle: 17 times the pixels cost no more, and a frame ma
 | The simulation thread (items 37 to 42) | the largest now: the step leaves the frames that carry one, so a frame is drawing only (1.4 ms in the hub, 3.6 with 50 fighters); the p99 frame and the frames over the display's period fall ([What it gains](render-threads.md#threads-gain)), and an uncapped rate rises by the steps' share of the second, about 6 % in the hub and 11 % in the crowd | item 42's real-time runs at a 240 cap, with and without the thread |
 
 The [Budget](renderer-performance.md#budget) turns these into the gates each item is held to.
+
+The backend switch's row is measured since item 20, by `perf bench --renderer gpu` beside GL3 on every scene:
+[The GPU renderer against GL3](renderer-performance.md#gpu-table).
 
 ### Spike {#spike}
 

@@ -12,7 +12,7 @@ from __future__ import annotations
 import shlex
 from pathlib import Path
 
-from coney_tools import picture_compare, picture_scenes
+from coney_tools import perf_cli, picture_compare, picture_parity, picture_scenes
 from coney_tools.config import ConfigError, find_repo_root
 
 
@@ -74,6 +74,42 @@ def run_scenes(
         max_share_percent=max_share_percent,
         timeout=timeout,
         only=only or [],
+    )
+
+
+def run_parity(
+    coney: str | None,
+    launcher: str,
+    disc: str | None,
+    out: Path,
+    only: list[str] | None,
+    channel_tolerance: int | None,
+    max_share_percent: float | None,
+    timeout: float,
+    diff_out: Path | None,
+) -> int:
+    """`picture parity`: draw the benchmark scenes and the named level frames with both renderers and compare them.
+
+    Like `picture scenes`, Coney runs in the repository root and a relative `coney` is read from it; the disc is the
+    one given or `game_dir` of `coney.local.toml`, and Coney the playtest build's (`perf bench`'s: `--bench` needs the
+    debug tools) when none is given."""
+    root = find_repo_root(Path.cwd())
+    if coney is None:
+        executable = str(perf_cli.coney_executable(None, "playtest"))
+    elif not Path(coney).is_absolute() and ("/" in coney or "\\" in coney):
+        executable = str(root / coney)
+    else:
+        executable = coney
+    return picture_parity.run_parity(
+        [*shlex.split(launcher), executable],
+        perf_cli.disc_for(disc),
+        out,
+        only=only or [],
+        cwd=root,
+        channel_tolerance=channel_tolerance,
+        max_share_percent=max_share_percent,
+        timeout=timeout,
+        diff_out=diff_out,
     )
 
 

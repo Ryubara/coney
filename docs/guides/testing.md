@@ -455,6 +455,10 @@ bullet beside the `Runtime:` line ([`pr text`](pr.md#file) keeps it, after the `
 - Pictures: 6 named frames, branch against base, 12 pixels over 2 of 255, largest difference 7, limit 0.1 % each: ok
 ```
 
+A change to the GPU renderer's drawing reports the [parity suite's](coney-tools-picture.md#parity) table instead:
+`coney-tools picture parity` draws every benchmark scene and the named frames whole on both renderers and counts the
+GPU renderer's pixels over the cross-renderer tolerance against GL3's (the line is the summary line it prints).
+
 The tool's output stays in the scratch folder while the pull request is open, because the reviewer opens it
 ([Description](review/text.md)); the frames are game pictures, so they are never committed. A change that moves no
 pixel says `Pictures: none (<reason>)`, for example a refactor whose draw-stream hashes are unchanged. Nothing checks

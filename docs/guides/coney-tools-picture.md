@@ -1,7 +1,8 @@
 # The coney-tools picture commands
 
-The commands that compare pictures with a tolerance: [`picture`](#picture) counts the pixels two pictures differ by and
-checks Coney's synthetic scenes against reference pictures. The other groups are listed in
+The commands that compare pictures with a tolerance: [`picture`](#picture) counts the pixels two pictures differ by,
+checks Coney's synthetic scenes against reference pictures and runs the GPU renderer's [parity suite](#parity) on the
+disc's frames. The other groups are listed in
 [the command line overview](coney-tools.md#groups).
 
 ## picture {#picture}
@@ -79,6 +80,41 @@ Disc frames are compared with `picture compare`: take the named frames from the 
 `--screenshot` at `--render-size 640x448` and a pinned camera ([Matched views](running-play-level.md#matched-views)),
 one machine, two folders, and keep the output in the scratch folder.
 
+### The parity suite {#parity}
+
+```sh
+uv run --project python coney-tools picture parity --out DIR [--coney EXE] [--launcher COMMAND] [--disc DISC]
+    [--only NAME]... [--diff-out DIR] [--channel-tolerance N] [--max-share PERCENT] [--timeout SECONDS]
+```
+
+The disc-backed half of the picture checks, run on a machine with the disc and a GPU: the SDL3 GPU renderer's whole
+frames against GL3's, which is its reference until the switch ([Migration](../engine/renderer.md#migration)). Each frame
+is drawn twice, with `--renderer gl3` and with `--renderer gpu`, saved with `--screenshot` as `NAME.gl3.png` and
+`NAME.gpu.png` in `--out` (with each run's output as `NAME.RENDERER.log`), and the GPU's picture compared with GL3's by
+the cross-renderer tolerance of `tests/pictures/scenes.toml` (`cross_channel_tolerance`, `cross_max_share_percent`;
+`--channel-tolerance` and `--max-share` override them). The frames are whole, effects and screen passes included, not
+`--scene-only`:
+
+| Frame | What it is |
+| --- | --- |
+| `hub`, `hub-crowd`, `street`, `hub-640`, `hub-2560` | each [benchmark scene](../engine/renderer-performance.md#benchmark) that draws (the two headless ones measure the simulation and draw nothing): `perf bench`'s own command, stopped at frame 300, after the crowd spawns and the 60 frames of warm-up, so a scene is the same work in both tools |
+| `level99-street`, `level95-hub` | the named `--play-level` frames of [the draw-stream hashes](../engine/renderer-pictures.md#comparing) (`--freeze-world`, 640x448, 90 frames) |
+| `level99-line-blend` | `level99-street` with `--line-blend on`, so a screen pass is in a level frame |
+
+It prints a Markdown table, one row each (the pixels over the tolerance, their share, the largest difference and `within`
+or `past the limit`), and a summary line, which is what a pull request pastes
+([Picture counts](testing.md#picture-counts)). A frame whose two pictures are each one colour all over says `blank`: two
+blank pictures match and prove nothing (`level95-hub` is black in every build). `--only NAME` (repeatable) draws just the
+frames it names and `--diff-out DIR` writes `NAME.diff.png` (the picture dimmed, the pixels over in magenta) for each
+frame with a pixel over.
+
+A run that fails, hangs or draws nothing, and a GPU run whose log does not say `renderer: gpu on` (Coney fell back to
+GL3), end the command with exit code 2, as in `picture scenes`: a comparison never passes by comparing GL3 with itself.
+It exits 0 when every frame is within the limit and 1 when one is past it. `--coney` defaults to the playtest build's
+(`--bench` needs its debug tools) and `--disc` to `game_dir` of `coney.local.toml`. The pictures are game frames: they
+stay in the scratch folder and are never committed. What the suite found, and the differences left with their reasons,
+are on [Renderer pictures](../engine/renderer-pictures.md#parity).
+
 <!-- command-reference:begin picture -->
 ## Parameters of `picture` {#picture-parameters}
 
@@ -124,4 +160,25 @@ coney-tools picture scenes [--coney CONEY] [--launcher COMMAND] [--scenes SCENES
 | `--max-share PERCENT` | number | none | override the scene list's share |
 | `--timeout SECONDS` | number | `180` | how long one run of coney may take before it counts as hung (default 180) |
 | `--only NAME` | text | none | draw only this scene (repeatable; default all) |
+
+### `picture parity` {#picture-parity-usage}
+
+Draw the benchmark scenes and the named play-level frames with both renderers and compare them whole.
+
+```text
+coney-tools picture parity [--coney CONEY] [--launcher COMMAND] [--disc DISC] --out OUT [--channel-tolerance N]
+    [--max-share PERCENT] [--timeout SECONDS] [--only NAME] [--diff-out DIR]
+```
+
+| Parameter | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `--coney CONEY` | text | none | the coney executable (default: the playtest build's, as perf bench: --bench needs the debug tools) |
+| `--launcher COMMAND` | text | none | a command put before coney, such as 'xvfb-run -a' |
+| `--disc DISC` | text | none | the disc; default: game_dir from coney.local.toml |
+| `--out OUT` | path | required | where the pictures and logs go (outside the repository) |
+| `--channel-tolerance N` | integer | none | override the cross-renderer tolerance |
+| `--max-share PERCENT` | number | none | override the cross-renderer share |
+| `--timeout SECONDS` | number | `600` | how long one run of coney may take before it counts as hung (default 600) |
+| `--only NAME` | text | none | draw only this frame (repeatable; default all) |
+| `--diff-out DIR` | path | none | write NAME.diff.png here for each frame that has pixels over |
 <!-- command-reference:end -->

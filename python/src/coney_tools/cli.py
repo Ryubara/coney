@@ -1158,6 +1158,36 @@ def _add_picture_commands(groups: Any) -> None:
     scenes.add_argument(
         "--only", action="append", default=[], metavar="NAME", help="draw only this scene (repeatable; default all)"
     )
+    parity = commands.add_parser(
+        "parity",
+        help="draw the benchmark scenes and the named play-level frames with both renderers and compare them whole",
+    )
+    parity.add_argument(
+        "--coney",
+        help="the coney executable (default: the playtest build's, as perf bench: --bench needs the debug tools)",
+    )
+    parity.add_argument(
+        "--launcher", default="", metavar="COMMAND", help="a command put before coney, such as 'xvfb-run -a'"
+    )
+    parity.add_argument("--disc", help="the disc; default: game_dir from coney.local.toml")
+    parity.add_argument(
+        "--out", type=Path, required=True, help="where the pictures and logs go (outside the repository)"
+    )
+    parity.add_argument("--channel-tolerance", type=int, metavar="N", help="override the cross-renderer tolerance")
+    parity.add_argument("--max-share", type=float, metavar="PERCENT", help="override the cross-renderer share")
+    parity.add_argument(
+        "--timeout",
+        type=float,
+        default=600,
+        metavar="SECONDS",
+        help="how long one run of coney may take before it counts as hung (default 600)",
+    )
+    parity.add_argument(
+        "--only", action="append", default=[], metavar="NAME", help="draw only this frame (repeatable; default all)"
+    )
+    parity.add_argument(
+        "--diff-out", type=Path, metavar="DIR", help="write NAME.diff.png here for each frame that has pixels over"
+    )
 
 
 def _run_picture(args: argparse.Namespace) -> int:
@@ -1166,6 +1196,18 @@ def _run_picture(args: argparse.Namespace) -> int:
 
     if args.command == "compare":
         return picture_cli.run_compare(args.first, args.second, args.channel_tolerance, args.max_share, args.diff_out)
+    if args.command == "parity":
+        return picture_cli.run_parity(
+            args.coney,
+            args.launcher,
+            args.disc,
+            args.out,
+            args.only,
+            args.channel_tolerance,
+            args.max_share,
+            args.timeout,
+            args.diff_out,
+        )
     return picture_cli.run_scenes(
         args.coney,
         args.launcher,
