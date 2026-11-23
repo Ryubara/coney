@@ -36,8 +36,8 @@ class ThrowArcRenderer {
     void draw(RenderEngine& engine, const std::vector<graphics::ThrowArcVertex>& strip);
 
   private:
-    // Loads the texture dictionary, once, and with `convert` converts it for librw's GL3 device to draw.
-    void loadTexture(bool convert);
+    // Loads and converts the texture dictionary, once.
+    void loadTexture();
 
     const io::Wad& m_wad;
     std::function<void(std::string_view)> m_print;

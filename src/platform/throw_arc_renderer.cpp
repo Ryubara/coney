@@ -2,13 +2,11 @@
 #include "platform/throw_arc_renderer.h"
 
 #include <cstdint>
-#include <expected>
 #include <format>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "core/error.h"
 #include "core/name_hash.h"
 #include "graphics/frame_description.h"
 #include "graphics/throw_arc.h"
@@ -21,7 +19,7 @@ ThrowArcRenderer::ThrowArcRenderer(const io::Wad& wad, std::function<void(std::s
     addTextureDictionaryHandlers(m_table);
 }
 
-void ThrowArcRenderer::loadTexture(bool convert) {
+void ThrowArcRenderer::loadTexture() {
     m_tried = true;
     const std::string fileName = std::to_string(crc32(graphics::kThrowArcTexture));
     const auto report = [this, &fileName](std::string_view why) {
@@ -40,9 +38,7 @@ void ThrowArcRenderer::loadTexture(bool convert) {
         report(dictionaries ? "the file holds no texture" : dictionaries.error().message);
         return;
     }
-    // Only GL3 draws the raster through librw; the GPU renderer reads it as it is (SheetTexture::toImage()).
-    if (auto converted = convert ? dictionaries->front().convertForDrawing() : std::expected<void, Error>{};
-        !converted) {
+    if (auto converted = dictionaries->front().convertForDrawing(); !converted) {
         report(converted.error().message);
         return;
     }
@@ -59,7 +55,7 @@ void ThrowArcRenderer::draw(RenderEngine& engine, const std::vector<graphics::Th
         return;
     }
     if (!m_tried) {
-        loadTexture(engine.drawsPixels());
+        loadTexture();
     }
     // The ribbon's vertices in RenderWare's axes: the game's (x, y, z) is RenderWare's (x, z, -y).
     std::vector<graphics::EffectVertex> vertices;

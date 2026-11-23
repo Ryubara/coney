@@ -256,6 +256,7 @@ add_executable(coney_tests
     platform/disc_level_test.cpp
     platform/disc_client_level_test.cpp
     platform/disc_movies_test.cpp
+    platform/disc_gpu_effects_test.cpp
     platform/disc_play_frame_rate_test.cpp
     platform/disc_play_level_simulation_test.cpp
     platform/disc_world_streaming_test.cpp
@@ -671,7 +672,6 @@ if(CONEY_DEBUG_TOOLS)
         platform/disc_model_swap_test.cpp
         platform/disc_rise_counter_test.cpp
         platform/disc_ground_escape_test.cpp
-        platform/disc_gpu_effects_test.cpp
         platform/disc_sprint_attacks_test.cpp
         platform/disc_strike_contact_test.cpp
         platform/disc_tandem_test.cpp

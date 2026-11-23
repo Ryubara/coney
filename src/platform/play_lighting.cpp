@@ -28,11 +28,10 @@ constexpr std::string_view kShadowSheet = "part_page1";
 std::optional<graphics::SpriteSheet> loadSheet(RenderEngine& engine, const io::Wad& wad,
                                                const chunk::ChunkHandlerTable& table, std::string_view name,
                                                const std::function<void(std::string_view)>& print) {
-    // Loaded for both renderers that draw the scene; only GL3 converts the sheet's raster for librw to draw.
-    if (!engine.drawsScene()) {
+    if (!engine.drawsPixels()) {
         return std::nullopt;
     }
-    auto sheet = loadSpriteSheetResource(wad, table, name, engine.drawsPixels());
+    auto sheet = loadSpriteSheetResource(wad, table, name, true);
     if (!sheet) {
         print(std::format("lighting: sheet {} not loaded: {}\n", name, sheet.error().message));
         return std::nullopt;
