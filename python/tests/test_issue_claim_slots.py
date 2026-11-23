@@ -70,10 +70,10 @@ class Scene:
 def test_a_maintainers_review_stops_counting_but_a_stage_is_still_a_stage() -> None:
     scene = Scene()
     github = scene.github
-    for number in (1, 2, 3):
+    for number in (1, 2, 3, 4):
         scene.say(number, "Ryubara", "/claim")
-    scene.say(4, "Ryubara", "/claim")
-    assert not scene.held(4) and "3 open claim(s)" in github.replies(4)[-1].body
+    scene.say(5, "Ryubara", "/claim")
+    assert not scene.held(5) and "4 open claim(s)" in github.replies(5)[-1].body
     # The tools post `/progress reviewed` as the maintainer's account: the claim stays held but no longer counts.
     scene.say(1, "Ryubara", "/progress reviewed")
     card = card_of(github, 1)
@@ -424,17 +424,17 @@ def test_the_trial_label_runs_the_over_limit_release_on_one_issue_before_the_cut
 def test_a_maintainers_claim_is_never_released_for_being_over_the_limit() -> None:
     scene = Scene(conventions=LIVE)
     github = scene.github
-    for number in (1, 2, 3):
+    for number in (1, 2, 3, 4):
         scene.say(number, "Ryubara", "/claim")
     scene.pull_request(1, 60, "Ryubara")
-    scene.say(4, "Ryubara", "/claim")
-    assert scene.held(4)
+    scene.say(5, "Ryubara", "/claim")
+    assert scene.held(5)
     scene.pull_request(1, 60, "Ryubara", state="closed")
     result = scene.engine().sweep()
     assert any("a maintainer's claim is never released for it" in line for line in result.lines)
     scene.clock.advance(hours=RULES.deadline_hours - RULES.warn_hours + 2)
     scene.engine().sweep()
-    assert all(scene.held(n) for n in (1, 2, 3, 4)) and github.others(4) == []
+    assert all(scene.held(n) for n in (1, 2, 3, 4, 5)) and github.others(5) == []
 
 
 def _regained_scene() -> Scene:

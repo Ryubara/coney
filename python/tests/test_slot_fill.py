@@ -639,10 +639,10 @@ def test_blockers_that_cannot_be_read_for_one_reason_make_one_warning(scene: Sce
 def test_the_claim_limit_reached_is_a_reason_for_an_issue_outside_the_gate_of_workflow(
     scene: Scene, sources: FakeSources
 ) -> None:
-    sources.claims = [claimed(n) for n in (1, 2, 3)]
+    sources.claims = [claimed(n) for n in (1, 2, 3, 4)]
     sources.ready_issues = [issue(5, "P-high")]
     result = check(scene, sources)
-    assert not result.blocked and "the open-claims limit is reached (3 of 3" in result.message
+    assert not result.blocked and "the open-claims limit is reached (4 of 4" in result.message
 
 
 def test_a_workflow_issue_is_not_work_for_a_place_so_the_game_issue_behind_it_is(
@@ -675,7 +675,7 @@ def test_a_workflow_issue_counts_as_work_while_workflow_units_hold_places(scene:
 
 
 def test_a_claim_whose_place_is_free_leaves_the_count(scene: Scene, sources: FakeSources) -> None:
-    sources.claims = [claimed(1), claimed(2), claimed(3, freed=True)]
+    sources.claims = [claimed(1), claimed(2), claimed(3), claimed(4, freed=True)]
     sources.ready_issues = [issue(5)]
     result = check(scene, sources)
     assert result.blocked and "#5 " in result.message
@@ -688,13 +688,13 @@ def test_a_claim_paused_by_a_label_still_counts_as_the_claim_action_counts_it(
     from coney_tools.issue_claim_rules import open_task_keys
 
     assert paused in RULES.paused_labels
-    sources.claims = [claimed(1), claimed(2), claimed(3, paused=paused)]
+    sources.claims = [claimed(1), claimed(2), claimed(3), claimed(4, paused=paused)]
     sources.ready_issues = [issue(5, "P-high")]
-    # The Action's own count of these cards is 3 of 3: it would refuse a fourth claim.
-    assert len(open_task_keys(sources.claims, USER, 0)) == 3
+    # The Action's own count of these cards is 4 of 4: it would refuse a fifth claim.
+    assert len(open_task_keys(sources.claims, USER, 0)) == 4
     result = check(scene, sources)
-    assert not result.blocked and "the open-claims limit is reached (3 of 3" in result.message
-    sources.claims[2] = claimed(3, freed=True)  # the same claim with its place free does not count
+    assert not result.blocked and "the open-claims limit is reached (4 of 4" in result.message
+    sources.claims[3] = claimed(4, freed=True)  # the same claim with its place free does not count
     assert check(scene, sources).blocked
 
 
@@ -709,7 +709,7 @@ def test_a_paused_claim_with_no_agent_is_not_work_to_start(scene: Scene, sources
 
 
 def test_a_studio_issue_is_outside_the_claim_limit(scene: Scene, sources: FakeSources) -> None:
-    sources.claims = [claimed(n) for n in (1, 2, 3)]
+    sources.claims = [claimed(n) for n in (1, 2, 3, 4)]
     sources.ready_issues = [issue(5, "studio")]
     assert check(scene, sources).blocked
     sources.ready_issues = [issue(5)]
@@ -729,14 +729,16 @@ def test_a_claim_in_the_workflow_or_studio_does_not_count_and_issues_of_one_task
         claimed(3),
     ]
     sources.ready_issues = [issue(5)]
-    assert check(scene, sources).blocked  # big + issue-3 = 2 of 3
+    assert check(scene, sources).blocked  # big + issue-3 = 2 of 4
     sources.claims.append(claimed(4))
-    assert not check(scene, sources).blocked  # 3 of 3
+    assert check(scene, sources).blocked  # 3 of 4
+    sources.claims.append(claimed(7))
+    assert not check(scene, sources).blocked  # 4 of 4
 
 
 def test_the_limit_leaves_room_for_the_rest_of_the_headroom_only(scene: Scene, sources: FakeSources) -> None:
     with_fill(scene, top=5)
-    sources.claims = [claimed(1), claimed(2)]
+    sources.claims = [claimed(1), claimed(2), claimed(3)]
     sources.ready_issues = [issue(5, "P-high"), issue(6, "P-medium"), issue(7, "studio", "P-low")]
     listed = [line.split()[1] for line in check(scene, sources).message.splitlines() if line.startswith("  - #")]
     assert listed == ["#5", "#7"]  # one claim of headroom for #5; #6 waits; the Studio issue is outside the limit

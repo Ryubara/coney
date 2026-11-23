@@ -76,15 +76,15 @@ def test_a_maintainer_at_the_limit_still_claims_a_workflow_unit(engine: Engine, 
 def test_workflow_claims_do_not_use_up_the_limit(engine: Engine, github: FakeGitHub) -> None:
     for number in range(1, 8):
         github.add_issue(number, labels=WORKFLOW)
-    for number in range(10, 14):
+    for number in range(10, 15):
         github.add_issue(number, labels=READY)
     for number in range(1, 8):
         take(engine, github, number)
     assert held_by(github, range(1, 8)) == list(range(1, 8))
-    for number in range(10, 14):
+    for number in range(10, 15):
         take(engine, github, number)
-    assert held_by(github, range(10, 14)) == [10, 11, 12]
-    assert "3 open claim(s) (3 at most for a maintainer)" in github.replies(13)[-1].body
+    assert held_by(github, range(10, 15)) == [10, 11, 12, 13]
+    assert "4 open claim(s) (4 at most for a maintainer)" in github.replies(14)[-1].body
 
 
 def test_a_contributor_is_exempt_too_on_a_labelled_issue(engine: Engine, github: FakeGitHub) -> None:
@@ -114,25 +114,25 @@ def test_the_sweep_never_releases_a_workflow_claim_for_the_limit(
 def test_the_flag_follows_the_label_and_a_claim_that_loses_it_counts_again(
     engine: Engine, github: FakeGitHub, clock: Clock
 ) -> None:
-    for number in (1, 2, 3):
+    for number in (1, 2, 3, 4):
         github.add_issue(number, labels=READY)
-    github.add_issue(4, labels=WORKFLOW)
-    take(engine, github, 4)
-    for number in (1, 2, 3):
+    github.add_issue(5, labels=WORKFLOW)
+    take(engine, github, 5)
+    for number in (1, 2, 3, 4):
         clock.advance(minutes=1)
         take(engine, github, number)
-    assert held_by(github, (1, 2, 3, 4)) == [1, 2, 3, 4]
-    # A maintainer takes the label off: the next pass makes the claim count, and it is the oldest of four.
-    github.items[4].view = replace(github.view(4), labels=tuple(x for x in github.view(4).labels if x != "workflow"))
+    assert held_by(github, (1, 2, 3, 4, 5)) == [1, 2, 3, 4, 5]
+    # A maintainer takes the label off: the next pass makes the claim count, and it is the oldest of five.
+    github.items[5].view = replace(github.view(5), labels=tuple(x for x in github.view(5).labels if x != "workflow"))
     clock.advance(hours=1)
     make_engine(github, clock).sweep()
-    assert not card_of(github, 4).exempt
-    # Ordered by the first claim, #3 is the late one and goes back.
-    assert held_by(github, (1, 2, 3, 4)) == [1, 2, 4]
+    assert not card_of(github, 5).exempt
+    # Ordered by the first claim, #4 is the late one and goes back.
+    assert held_by(github, (1, 2, 3, 4, 5)) == [1, 2, 3, 5]
     # The label goes back on: the flag follows on the next pass.
-    github.items[4].view = replace(github.view(4), labels=(*github.view(4).labels, "workflow"))
-    make_engine(github, clock).reconcile(4)
-    assert card_of(github, 4).exempt
+    github.items[5].view = replace(github.view(5), labels=(*github.view(5).labels, "workflow"))
+    make_engine(github, clock).reconcile(5)
+    assert card_of(github, 5).exempt
 
 
 def test_the_rules_leave_exempt_cards_out_of_the_count() -> None:
@@ -142,7 +142,7 @@ def test_the_rules_leave_exempt_cards_out_of_the_count() -> None:
     held = [card(1, True), card(2, True), card(3, False)]
     assert open_task_keys(held, "Ryubara", 0) == {"issue-3"}
     late = model.Card(issue=9, claimant="Ryubara", claimed_at=START.replace(hour=13), exempt=True)
-    many = [card(n, False) for n in range(1, 4)]
+    many = [card(n, False) for n in range(1, 5)]
     assert overrun(late, [*many, late], True, RULES) is None
     assert overrun(replace(late, exempt=False), [*many, replace(late, exempt=False)], True, RULES) is not None
 
