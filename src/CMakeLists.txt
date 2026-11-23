@@ -129,6 +129,7 @@ add_library(coney_core STATIC
     graphics/frame_stats.cpp
     graphics/overlay_batch.cpp
     graphics/effect_batch.cpp
+    graphics/screen_pass_steps.cpp
     graphics/scene_batch.cpp
     graphics/car_draw.cpp
     graphics/human_blood.cpp

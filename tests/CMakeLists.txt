@@ -122,6 +122,7 @@ add_executable(coney_tests
     graphics/overlay_batch_test.cpp
     graphics/mesh_view_draw_test.cpp
     graphics/effect_batch_test.cpp
+    graphics/screen_pass_steps_test.cpp
     graphics/scene_batch_test.cpp
     graphics/car_draw_test.cpp
     graphics/throw_arc_test.cpp
@@ -271,6 +272,8 @@ add_executable(coney_tests
     platform/ffmpeg_info_test.cpp
     platform/gpu_renderer_test.cpp
     platform/gpu_effect_test.cpp
+    platform/gpu_screen_pass_test.cpp
+    platform/gl3_frame_copy_test.cpp
     platform/gpu_scene_test.cpp
     platform/mesh_view_scene_test.cpp
     platform/pixel_texture_test.cpp

@@ -133,3 +133,34 @@ TEST_CASE("the effects card draws the scene card and then an effect pass", "[ren
     CHECK(lines == 1);
     CHECK(textured == 1);
 }
+
+// Expected: docs/guides/running-viewers.md#test-cards (the screen pass cards) and src/platform/test_card_mode.cpp.
+TEST_CASE("the screen pass cards draw the scene card and then their screen pass",
+          "[render][test-card][screen-passes]") {
+    // Each card is the scene card with one screen pass over the whole view after it: the blur pulse's blur, the line
+    // blend, or the motion blur with a copy of its own (docs/engine/gpu-renderer.md#screen-passes).
+    const auto lastScreenPass = [](std::string_view name) -> coney::graphics::ScreenPass {
+        auto engine = RenderEngine::start(RenderBackend::Null, {});
+        REQUIRE(engine.has_value());
+        auto card = TestCardMode::create(**engine, name);
+        REQUIRE(card.has_value());
+        (*card)->render(coney::RenderTime{});
+        const FrameDescription& frame = (*engine)->frame();
+        REQUIRE(!frame.passes().empty());
+        CHECK(std::holds_alternative<coney::graphics::ScenePass>(frame.passes().front()));
+        const auto* screen = std::get_if<coney::graphics::ScreenPass>(&frame.passes().back());
+        REQUIRE(screen != nullptr);
+        CHECK(screen->area == (*engine)->viewRect());
+        return *screen;
+    };
+    const coney::graphics::ScreenPass blur = lastScreenPass("blur-pulse");
+    const auto* pulse = std::get_if<coney::graphics::BlurPulse>(&blur.effect);
+    REQUIRE(pulse != nullptr);
+    CHECK(pulse->passes > 0);
+    CHECK(std::holds_alternative<coney::graphics::LineBlend>(lastScreenPass("line-blend").effect));
+    const coney::graphics::ScreenPass motion = lastScreenPass("motion-blur");
+    const auto* kept = std::get_if<coney::graphics::MotionBlurOverlay>(&motion.effect);
+    REQUIRE(kept != nullptr);
+    CHECK(kept->copy != 0);
+    CHECK(kept->colour.a > 0);
+}
