@@ -5313,6 +5313,11 @@ what = "the brain's +0x11c (no one-clip arrival) is not kept, as Coney builds no
 relation = "stand-in"
 question = "ai-moving.md#q-ai-stance"
 
+[[function.gaps]]
+what = "the turn boost's holding test reads a weapon's anim set, not the held object's kind"
+relation = "stand-in"
+question = "ai-fights.md#q-score-held-object"
+
 [[function]]
 address = 0x002fdb90
 name = "Action_TurnToHeading"

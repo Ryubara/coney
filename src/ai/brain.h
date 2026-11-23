@@ -641,7 +641,8 @@ class Brain {
     /// (docs/research/ai-moving.md#move-melee). **Coney stand-in**: the brain keeps the flag and hands its target to
     /// the fighter as the stance's (human::Fighter::setAiStance()), off when made and when the fight goal ends.
     [[nodiscard]] bool fightStance() const { return m_fightStance; }
-    /// Enters (true) or leaves the fight stance (fightStance()).
+    /// Enters (true) or leaves the fight stance (fightStance()). While it is on, the fighter's stance follows the
+    /// brain's target through every re-target, displacement and forget.
     void setFightStance(bool on);
     /// The scene's brains (every brain, this one included), which the sector record counts round this one; Brains
     /// gives it (null for none: the record stays empty).
@@ -693,6 +694,8 @@ class Brain {
     [[nodiscard]] bool refersTo(const Brain& other) const;
 
   private:
+    // Hands the fight stance to the fighter as the current target, or none (setFightStance()).
+    void handFightStance();
     // The peer standing at an announced attack's position (the warning's attacker); null when none.
     [[nodiscard]] Brain* announcer(anim::Vec3 position) const;
     // The goal stack's turn, Brain_UpdateGoals' loop: the top is run (runGoal()); done pops it and the new top runs in

@@ -134,6 +134,8 @@ ActionStatus MoveToHumanAction::keepBand(Brain& brain) {
             if (distance < brain.meleeFar()) {
                 const float cosine = anim::dot(forwardOf(brain.human()), forwardOf(target->human()));
                 const bool moving = target->human().gait() != human::Gait::Standing;
+                // **Coney stand-in** for Human_IsHoldingObject (0x00224060): a weapon's anim set, not the held
+                // object's kind (docs/research/ai-fights.md#q-score-held-object).
                 const bool armedOnBare =
                     brain.human().fighter().animSet() != 0 && target->human().fighter().animSet() == 0;
                 if (cosine >= kSameFacingCos || downOrOut(*target) || (moving && armedOnBare)) {

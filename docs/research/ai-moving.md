@@ -1037,6 +1037,7 @@ humans than points, else `0x00299b50`), then up to 5 passes swap pairs whose pat
   distance, since 2026-11-22): its radial and side counters, the side pick and the turn boosts as [above](#move-melee),
   facing the target while the stance strafes the feet toward the aim. The fight goal's stance (`Brain::setFightStance`,
   its step 11) hands the brain's target to the fighter as the target of its lock-on movement (`Fighter::setAiStance`),
+  handed again whenever the brain's target changes (a re-target, a displacement from a full slot list, a forget),
   so the AI control walks the stance, or stands in the fight idle with no move, whatever the lock-on settings' range,
   and the human counts as in the fight stance (`Fighter::inFightStance`); **stand-in**: only while the fighter waits
   (the reposition), an attacker's stance staying the lock-on settings' as before; before, a waiter beyond that range
