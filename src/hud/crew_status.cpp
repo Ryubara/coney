@@ -193,8 +193,8 @@ bool CrewStatusList::add(const CrewMember& member, const CrewFrame& frame, const
 }
 
 bool CrewStatusList::remove(double handle) {
-    // The listed slot holding the handle is freed, and every later order moves up one. Only a listed slot matches: a
-    // free one keeps handle 0, which an unbound brain also has, and freeing it would lower the count for no entry.
+    // The listed slot holding the handle is freed, and every later order moves up one. **Coney's stand-in**: the
+    // original matches any slot; only a listed one does here, as a free slot's handle 0 is also an unbound brain's.
     const auto slot = std::ranges::find_if(
         m_entries, [handle](const Entry& entry) { return entry.order.has_value() && entry.handle == handle; });
     if (slot == m_entries.end()) {
