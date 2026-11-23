@@ -6,8 +6,10 @@
 #include <cstdint>
 #include <memory>
 #include <numbers>
+#include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -29,6 +31,7 @@
 #include "combat/commands.h"
 #include "combat/reactions.h"
 #include "core/engine_limits.h"
+#include "core/log.h"
 #include "human/human.h"
 #include "human/human_flags.h"
 #include "human/humans.h"
@@ -1163,4 +1166,56 @@ TEST_CASE("the brains give their engine limits to the gangs and to every brain, 
     CHECK(before.engineLimits() == coney::EngineLimits::Original);
     const Brain& after = scene.add(coney::anim::Vec3{42.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);
     CHECK(after.engineLimits() == coney::EngineLimits::Original);
+}
+
+namespace {
+
+// A goal aimed at the human with script handle 12, so the run log can say whom it is at.
+class AimedGoal final : public coney::ai::Goal {
+  public:
+    AimedGoal() : Goal(coney::ai::GoalType::MoveToHuman) {}
+    coney::ai::GoalStatus process(Brain& /*brain*/) override { return coney::ai::GoalStatus::Stop; }
+    std::optional<double> targetHandle() const override { return 12.0; }
+};
+
+// Puts the run log back as it was at start-up when a test ends.
+struct FreshLog {
+    FreshLog() { coney::logging::reset(); }
+    ~FreshLog() { coney::logging::reset(); }
+    FreshLog(const FreshLog&) = delete;
+    FreshLog& operator=(const FreshLog&) = delete;
+    FreshLog(FreshLog&&) = delete;
+    FreshLog& operator=(FreshLog&&) = delete;
+};
+
+} // namespace
+
+TEST_CASE("the run log notes each goal pushed and popped, with its target and the depth of the stack", "[ai][log]") {
+    // Expected: Coney's own debug tooling (docs/guides/run-log.md#events).
+    const FreshLog fresh;
+    std::vector<std::string> lines;
+    coney::logging::setSink([&lines](const coney::logging::Record& record, std::string_view /*line*/) {
+        lines.push_back(std::string(record.text));
+    });
+    coney::logging::LogFilter filter;
+    filter.setVerbose(coney::logging::Category::Ai);
+    coney::logging::setFilter(filter);
+
+    Scene scene;
+    Brain& brain = scene.add({45.0F, 40.0F, 0.0F}, 0.0F, BrainType::Gang);
+    brain.human().setLogName("human 7 warr_cl");
+    std::vector<std::string> log;
+    REQUIRE(brain.pushGoal(std::make_unique<LoggingGoal>("g", log)));
+    REQUIRE(brain.pushGoal(std::make_unique<AimedGoal>()));
+    brain.popGoal();
+    brain.popGoal();
+    CHECK(lines == std::vector<std::string>{"goal: human 7 warr_cl: push Fight (1 on the stack)",
+                                            "goal: human 7 warr_cl: push MoveToHuman at human 12 (2 on the stack)",
+                                            "goal: human 7 warr_cl: pop MoveToHuman at human 12 (1 on the stack)",
+                                            "goal: human 7 warr_cl: pop Fight (0 on the stack)"});
+    // The lines are `detail` in the ai category: the log file leaves them out unless `--log-verbose ai` asks.
+    coney::logging::setFilter({});
+    lines.clear();
+    REQUIRE(brain.pushGoal(std::make_unique<LoggingGoal>("h", log)));
+    CHECK(lines.empty());
 }

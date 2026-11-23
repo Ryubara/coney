@@ -27,6 +27,7 @@ add_executable(coney_tests
     core/frame_rate_meter_test.cpp
     core/game_random_test.cpp
     core/game_timer_test.cpp
+    core/input_recording_test.cpp
     core/input_script_test.cpp
     core/json_test.cpp
     core/interpolation_test.cpp
@@ -261,6 +262,7 @@ add_executable(coney_tests
     platform/disc_movies_test.cpp
     platform/disc_gpu_effects_test.cpp
     platform/disc_play_frame_rate_test.cpp
+    platform/disc_input_recording_test.cpp
     platform/disc_play_level_simulation_test.cpp
     platform/disc_world_streaming_test.cpp
     platform/clip_recorder_test.cpp

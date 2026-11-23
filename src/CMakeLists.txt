@@ -20,6 +20,7 @@ add_library(coney_core STATIC
     core/chunk_system.cpp
     core/chunk_types.cpp
     core/deferred_input.cpp
+    core/input_recording.cpp
     core/event_log.cpp
     core/game_events.cpp
     core/log.cpp

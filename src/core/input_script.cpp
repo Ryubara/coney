@@ -179,6 +179,9 @@ std::string parseArguments(std::string_view line, std::span<const std::string_vi
     case InputEvent::Action::Connect:
     case InputEvent::Action::Disconnect:
         return args.empty() ? std::string() : "takes no arguments";
+    case InputEvent::Action::RawStick:
+    case InputEvent::Action::Pressure:
+        return "unknown action";
     case InputEvent::Action::Console: {
         // The words are views of `line`, so the text runs from the start of the first to the end of the last, as
         // written. The offsets come from pointer differences and the text is a substring of the line, so no bare
@@ -295,6 +298,14 @@ std::expected<std::vector<InputEvent>, Error> loadInputScript(const std::string&
     return events;
 }
 
+std::optional<std::uint32_t> inputScriptSeed(std::string_view /*text*/) { return std::nullopt; }
+
+std::optional<std::uint32_t> loadInputScriptSeed(const std::string& /*path*/) { return std::nullopt; }
+
+std::string_view inputScriptButtonName(std::uint16_t /*bit*/) { return {}; }
+
+std::optional<int> percentFromStickByte(std::uint8_t /*raw*/) { return std::nullopt; }
+
 std::uint8_t stickByteFromPercent(int value) {
     CONEY_ASSERT(value >= -100 && value <= 100);
     // 95 steps on each side of the dead zone, rounded to the nearest.
@@ -368,6 +379,9 @@ void ScriptedInput::apply(const InputEvent& event) {
         if (m_dropSink) {
             m_dropSink(event.handle);
         }
+        break;
+    case InputEvent::Action::RawStick:
+    case InputEvent::Action::Pressure:
         break;
     }
 }

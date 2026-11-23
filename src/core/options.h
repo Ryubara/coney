@@ -206,6 +206,11 @@ struct Options {
     /// `--log-file`: write the run log (core/log.h) to this file, in place of `coney.log` in the user's data folder
     /// (none in test mode without it) (docs/guides/run-log.md).
     std::optional<std::string> logFile;
+    /// `--record-input`: write the pad input the game reads, step by step, and the AI seed, to this file as an input
+    /// script (src/core/input_recording.h, docs/guides/run-log.md#input-recording), which `--input-script` plays back
+    /// to the same run. Any run can write one; a run with live pads and a log file writes one beside the log without
+    /// being asked.
+    std::optional<std::string> recordInput;
     /// `--log-verbose`: the run log categories whose detail lines the log file and the console keep too
     /// (`ai,combat`, or `all`); empty: info and up only.
     std::vector<logging::Category> logVerbose;

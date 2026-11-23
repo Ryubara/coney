@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <optional>
 
 // A brain's goal: a long-lived intention (fight this human, block for a while, lie down until the knockdown is over)
 // that a brain keeps on its stack of ten, or as its reaction goal. The brain drives it (ai::Brain): it starts the goal,
@@ -119,6 +120,9 @@ class Goal {
     virtual void end(Brain& /*brain*/) {}
     /// It is freed (`+0x1c`, the destroy): after end(), and also for a goal popped before it started.
     virtual void destroy(Brain& /*brain*/) {}
+    /// The script handle of the human the goal is aimed at, for the run log; none for a goal with no human target.
+    /// @coney-only a label for the run log
+    [[nodiscard]] virtual std::optional<double> targetHandle() const { return std::nullopt; }
     /// One update's work (`+0x44`).
     [[nodiscard]] virtual GoalStatus process(Brain& brain) = 0;
     /// Its adjustment of `scorer`'s score for an enemy it may pick (vtable `+0x54`, ai::pickBestEnemy()): by default

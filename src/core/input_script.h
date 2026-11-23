@@ -29,6 +29,8 @@ struct InputEvent {
         Steer,      ///< Push the left stick toward each point of `route` in turn, at `x` per cent.
         Console,    ///< Hand `text`, a console line, to the console (docs/guides/console.md#input-script).
         DropAi,     ///< Drop an AI human below the world: the one `handle` names, else the nearest (debug builds).
+        RawStick,   ///< Move a stick to raw bytes: `stick` 0 left, 1 right, to bytes `x`, `y` (0 to 255, y down).
+        Pressure,   ///< Set one button's pressure byte: `buttons` names it, `x` is 0 to 255 or kPressureAuto.
     };
 
     std::uint64_t frame = 0; ///< The frame (FrameTime::index) the line takes effect on.
@@ -36,8 +38,10 @@ struct InputEvent {
     Action action = Action::Press;
     std::uint16_t buttons = 0; ///< Press, Release, Tap: pad::kL2 ... pad::kLeft.
     std::uint8_t stick = 0;    ///< Stick: 0 the left stick, 1 the right.
-    int x = 0;                 ///< Stick: -100 (full left) to 100 (full right).
-    int y = 0;                 ///< Stick: -100 (full down) to 100 (full up).
+    /// Stick: -100 (full left) to 100 (full right). Steer: the per cent. RawStick: the x byte. Pressure: the value.
+    int x = 0;
+    /// Stick: -100 (full down) to 100 (full up). RawStick: the y byte.
+    int y = 0;
     /// Steer: the world points (metres, x and y) to reach one after the other.
     std::vector<std::array<float, 2>> route;
     /// Console: the line, as written after the action word.
@@ -45,6 +49,10 @@ struct InputEvent {
     /// DropAi: the script handle of the AI human to drop; none for the one nearest player 1.
     std::optional<double> handle;
 };
+
+/// An InputEvent::Action::Pressure value that gives the pressure back to what the button's state says (255 held, 0
+/// released), as every pad does until a `pressure` line sets one.
+inline constexpr int kPressureAuto = -1;
 
 /// Where a port's player stands and which way its camera faces, as a `steer` line needs them: the player's feet
 /// (world x and y, metres) and the camera's heading (degrees, the way its view faces; a heading `h` faces
@@ -80,13 +88,32 @@ inline constexpr float kSteerArrival = 1.0F;
 /// Y whole numbers from -100 to 100 (y up), `steer [PERCENT] X,Y...` (the left stick pushed toward each world point
 /// in turn, PERCENT 1 to 100, default 100), `connect`, `disconnect`, `console LINE` (LINE, the rest of the line, is
 /// typed into the console for that port's player) or `drop-ai [HANDLE]` (a debug build drops that AI human, or the
-/// nearest, below the world). The port defaults to p1. Frames must not
+/// nearest, below the world). Two more lines are what an input recording (input_recording.h)
+/// writes for a pad that is not a script's: `rawstick left|right X Y` (raw stick bytes, 0 to 255, y down) and
+/// `pressure BUTTON VALUE|auto` (one pressure-sensitive button's pressure byte, 0 to 255, or back to what the
+/// button's state says). The port defaults to p1. Frames must not
 /// decrease from one line to the next. Fails with ErrorCode::Invalid naming the line for anything else.
 [[nodiscard]] std::expected<std::vector<InputEvent>, Error> parseInputScript(std::string_view text);
 
 /// Reads and parses the input script at `path`. Fails with ErrorCode::NotFound or Io when the file cannot be read,
 /// and as parseInputScript does for its content.
 [[nodiscard]] std::expected<std::vector<InputEvent>, Error> loadInputScript(const std::string& path);
+
+/// The seed an input recording's header gives: the `N` of a `# ai-seed N` comment line before the first command, so a
+/// run started from the file plays the AI's random draws the same way (`--ai-seed`); nothing when the header has none
+/// or the file has no header. The comment lines are otherwise ignored by parseInputScript().
+[[nodiscard]] std::optional<std::uint32_t> inputScriptSeed(std::string_view text);
+
+/// Reads the file at `path` and returns inputScriptSeed() of it; nothing when it cannot be read (loadInputScript()
+/// reports that).
+[[nodiscard]] std::optional<std::uint32_t> loadInputScriptSeed(const std::string& path);
+
+/// The name a script gives the pad button of bit `bit` (`cross`, `l1`, ...); empty for anything but one button.
+[[nodiscard]] std::string_view inputScriptButtonName(std::uint16_t bit);
+
+/// The script deflection (-100 to 100) whose stickByteFromPercent() is `raw`, or nothing for a byte no script value
+/// gives (a real stick reaches all 256). Where two neighbouring values give the byte, the one nearer 0.
+[[nodiscard]] std::optional<int> percentFromStickByte(std::uint8_t raw);
 
 /// The raw stick byte for a script's deflection, -100 to 100 (CONEY_ASSERT otherwise): 0 at -100, 255 at 100 and
 /// pad::kStickCentre at 0, with the steps in between spread over the live range outside the dead zone so that
@@ -143,6 +170,8 @@ class ScriptedInput final : public InputSource {
     std::array<std::uint16_t, kPadPorts> m_tapped{};      // buttons to release before the next frame
     std::uint64_t m_nextFrame = 0;                        // the lowest frame the next sample() may ask for
     std::array<std::optional<Route>, kPadPorts> m_routes; // each port's `steer` line under way
+    // The pressure bytes a `pressure` line set, per port and pressure; none: the button's state decides.
+    std::array<std::array<std::optional<std::uint8_t>, pad::kPressureCount>, kPadPorts> m_pressure{};
     SteerSource m_steerSource;
     ConsoleSink m_consoleSink;
     DropSink m_dropSink;
