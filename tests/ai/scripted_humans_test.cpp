@@ -33,6 +33,7 @@
 #include "gui/global_strings.h"
 #include "human/human.h"
 #include "human/human_flags.h"
+#include "human/move_styles.h"
 #include "scripting/anim_callbacks.h"
 #include "scripting/binding_args.h"
 #include "scripting/lua_value.h"
@@ -206,6 +207,52 @@ TEST_CASE("a call on a human the level has not made yet waits for it", "[ai][scr
     CHECK(level.call("HuPlaceItemInHand", {Value(2.0), Value("dyn_pipe_a")}).number() == 0.0);
     level.call("HuDropWeapon", {Value(2.0)});
     CHECK(level.call("HuGetHeldObject", {Value(2.0)}).number() == 0.0);
+}
+
+namespace {
+
+// Puts a two-handed object (handle `object`, anim set 4) in `brain`'s hand as a take does: the hand, the anim set and
+// the take's carry style.
+void carryTwoHanded(Brain& brain, double object) {
+    coney::human::Human& human = brain.human();
+    human.script().heldObject = object;
+    human.script().heldObjectName = "dyn_cashreg";
+    human.takeHeldStyle(coney::human::kStyleCarry);
+    human.fighter().setAnimSet(coney::human::kStyleCarry);
+    human.fighter().setHoldingObject(true);
+}
+
+} // namespace
+
+TEST_CASE("an AI human who lets go of a two-handed object by script goes back to the plain move style",
+          "[ai][scripted][move_styles]") {
+    // Expected: objects.md#two-handed, confirmed (code): HuDropWeapon (0x002994b8) drops through Human_DropHeld
+    // (0x00257f38), which removes the held set's style; the throw goal's throw ends in Human_ReleaseThrow
+    // (0x002586d8), which pops it.
+    Level level;
+    Brain& dropper = level.add({44.0F, 40.0F, 0.0F});
+    Brain& destroyed = level.add({44.0F, 44.0F, 0.0F});
+    Brain& thrower = level.add({42.0F, 40.0F, 0.0F});
+    carryTwoHanded(dropper, 50.0);
+    carryTwoHanded(destroyed, 51.0);
+    carryTwoHanded(thrower, 52.0);
+    REQUIRE(dropper.human().animator().moveStyle() == coney::human::kStyleCarry);
+    level.call("HuDropWeapon", {Value(2.0)});
+    CHECK(dropper.human().animator().moveStyle() == coney::human::kStyleNone);
+    CHECK(dropper.human().fighter().animSet() == 0);
+    // ObjDestroy on a held object: its holder lets go as at HuDropWeapon.
+    level.call("ObjDestroy", {Value(51.0)});
+    CHECK(destroyed.human().script().heldObject == 0.0);
+    CHECK(destroyed.human().animator().moveStyle() == coney::human::kStyleNone);
+    CHECK(destroyed.human().fighter().animSet() == 0);
+    // The throw goal at the player: once the object has left his hands, his style is popped.
+    level.call("GoalThrowObject", {Value(4.0), Value(1.0), Value(16.0), Value(2.0), Value("")});
+    for (int k = 0; k < 120 && thrower.human().script().heldObject != 0.0; ++k) {
+        level.scene.run(1);
+    }
+    REQUIRE(thrower.human().script().heldObject == 0.0);
+    CHECK(thrower.human().animator().moveStyle() == coney::human::kStyleNone);
+    CHECK(thrower.human().fighter().animSet() == 0);
 }
 
 TEST_CASE("EnableCommand masks a player's commands; an AI human has no pad", "[ai][scripted]") {
