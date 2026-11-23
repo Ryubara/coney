@@ -123,7 +123,7 @@ class LimitEnforcement:
         sooner, so work in progress is not lost to a pull request that was closed.
 
         It follows the idle release: off until the cutover (`claims.release`, or the trial label on this issue), when
-        a sweep only says what it would do, and never for a maintainer's claim (the limit of 3 is theirs to keep).
+        a sweep only says what it would do, and never for a maintainer's claim (the limit of 4 is theirs to keep).
         A claim whose claimant's count changed since the warning (`flips`: a ready pull request toggled between two
         sweeps) gets a fresh notice, but never later than twice the notice after the first warning.
         """

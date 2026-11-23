@@ -457,9 +457,10 @@ claims:
   # decide, and then only the repository's OWNER counts: COLLABORATOR also covers read access.
   maintainer_permissions: [admin, write]
   maintainer_associations: [OWNER]
-  # Open claims per account: a maintainer 3, a contributor 2. Issues of one task count once, but a task holds at most
+  # Open claims per account: a maintainer 4 (maintainer decision 2026-11-22, up from 3: three game units in work left
+  # no claim for a fix of a broken main), a contributor 2. Issues of one task count once, but a task holds at most
   # `issues_per_task` issues, so a task id is no way round the limit. A fix task reuses its claim.
-  limits: {maintainer: 3, contributor: 2, issues_per_task: 3}
+  limits: {maintainer: 4, contributor: 2, issues_per_task: 3}
   # The claim of an issue that carries this label neither counts toward the open-claims limit nor is refused by it
   # (maintainer decision 2026-10-27): the units that build the new workflow for the cutover, which the engineer slots
   # do not count either. Only someone who may label issues (triage access or more) can set it; the cap of a task

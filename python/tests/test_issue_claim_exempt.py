@@ -59,17 +59,17 @@ def test_the_label_is_in_the_conventions_and_the_label_list() -> None:
 
 
 def test_a_maintainer_at_the_limit_still_claims_a_workflow_unit(engine: Engine, github: FakeGitHub) -> None:
-    for number in (1, 2, 3, 4):
+    for number in (1, 2, 3, 4, 5):
         github.add_issue(number, labels=READY)
-    github.add_issue(5, labels=WORKFLOW)
-    for number in (1, 2, 3):
+    github.add_issue(6, labels=WORKFLOW)
+    for number in (1, 2, 3, 4):
         take(engine, github, number)
-    take(engine, github, 4)
-    assert held_by(github, (1, 2, 3, 4)) == [1, 2, 3]
     take(engine, github, 5)
-    assert github.view(5).assignees == ("Ryubara",) and github.replies(5) == []
-    card = card_of(github, 5)
-    assert card.exempt and "not counted toward the open-claims limit (`workflow`)" in github.cards(5)[-1].body
+    assert held_by(github, (1, 2, 3, 4, 5)) == [1, 2, 3, 4]
+    take(engine, github, 6)
+    assert github.view(6).assignees == ("Ryubara",) and github.replies(6) == []
+    card = card_of(github, 6)
+    assert card.exempt and "not counted toward the open-claims limit (`workflow`)" in github.cards(6)[-1].body
     assert not card_of(github, 1).exempt
 
 
@@ -297,15 +297,15 @@ def test_the_networking_label_is_in_the_conventions_and_the_label_list() -> None
     assert RULES.networking_label == "networking" and RULES.networking_label in CONVENTIONS.labels.names()
 
 
-def test_a_networking_claim_is_accepted_beside_three_counted_ones(engine: Engine, github: FakeGitHub) -> None:
-    # The issue's test: the maintainer's limit of 3 is used up, and a claim of a networking issue still goes through.
-    for number in (1, 2, 3):
+def test_a_networking_claim_is_accepted_beside_four_counted_ones(engine: Engine, github: FakeGitHub) -> None:
+    # The issue's test: the maintainer's limit of 4 is used up, and a claim of a networking issue still goes through.
+    for number in (1, 2, 3, 4):
         github.add_issue(number, labels=READY)
     for number in (5, 6):
         github.add_issue(number, labels=NETWORKING)
-    for number in (1, 2, 3, 5, 6):
+    for number in (1, 2, 3, 4, 5, 6):
         take(engine, github, number)
-    assert held_by(github, (1, 2, 3, 5, 6)) == [1, 2, 3, 5, 6]
+    assert held_by(github, (1, 2, 3, 4, 5, 6)) == [1, 2, 3, 4, 5, 6]
     card = card_of(github, 5)
     assert card.exempt and card.networking and not card.studio and not card.in_workflow
     assert "not counted toward the open-claims limit (`networking`)" in github.cards(5)[-1].body
@@ -313,13 +313,13 @@ def test_a_networking_claim_is_accepted_beside_three_counted_ones(engine: Engine
     assert not counted.networking and not counted.exempt
 
 
-def test_a_fourth_counted_claim_is_still_refused_beside_a_networking_one(engine: Engine, github: FakeGitHub) -> None:
-    github.add_issue(5, labels=NETWORKING)
-    for number in (1, 2, 3, 4):
+def test_a_fifth_counted_claim_is_still_refused_beside_a_networking_one(engine: Engine, github: FakeGitHub) -> None:
+    github.add_issue(6, labels=NETWORKING)
+    for number in (1, 2, 3, 4, 5):
         github.add_issue(number, labels=READY)
-    for number in (5, 1, 2, 3, 4):
+    for number in (6, 1, 2, 3, 4, 5):
         take(engine, github, number)
-    assert held_by(github, (1, 2, 3, 4, 5)) == [1, 2, 3, 5]
+    assert held_by(github, (1, 2, 3, 4, 5, 6)) == [1, 2, 3, 4, 6]
 
 
 def test_the_networking_flag_follows_the_label(engine: Engine, github: FakeGitHub, clock: Clock) -> None:
@@ -379,15 +379,15 @@ def test_the_renderer_label_is_in_the_conventions_and_the_label_list() -> None:
     assert RULES.renderer_label == "renderer" and RULES.renderer_label in CONVENTIONS.labels.names()
 
 
-def test_a_renderer_claim_is_accepted_beside_three_counted_ones(engine: Engine, github: FakeGitHub) -> None:
-    # The issue's test: the maintainer's limit of 3 is used up, and a claim of a renderer issue still goes through.
-    for number in (1, 2, 3):
+def test_a_renderer_claim_is_accepted_beside_four_counted_ones(engine: Engine, github: FakeGitHub) -> None:
+    # The issue's test: the maintainer's limit of 4 is used up, and a claim of a renderer issue still goes through.
+    for number in (1, 2, 3, 4):
         github.add_issue(number, labels=READY)
     for number in (5, 6):
         github.add_issue(number, labels=RENDERER)
-    for number in (1, 2, 3, 5, 6):
+    for number in (1, 2, 3, 4, 5, 6):
         take(engine, github, number)
-    assert held_by(github, (1, 2, 3, 5, 6)) == [1, 2, 3, 5, 6]
+    assert held_by(github, (1, 2, 3, 4, 5, 6)) == [1, 2, 3, 4, 5, 6]
     card = card_of(github, 5)
     assert card.exempt and card.renderer and not card.studio and not card.networking and not card.in_workflow
     assert "not counted toward the open-claims limit (`renderer`)" in github.cards(5)[-1].body
@@ -395,13 +395,13 @@ def test_a_renderer_claim_is_accepted_beside_three_counted_ones(engine: Engine, 
     assert not counted.renderer and not counted.exempt
 
 
-def test_a_fourth_counted_claim_is_still_refused_beside_a_renderer_one(engine: Engine, github: FakeGitHub) -> None:
-    github.add_issue(5, labels=RENDERER)
-    for number in (1, 2, 3, 4):
+def test_a_fifth_counted_claim_is_still_refused_beside_a_renderer_one(engine: Engine, github: FakeGitHub) -> None:
+    github.add_issue(6, labels=RENDERER)
+    for number in (1, 2, 3, 4, 5):
         github.add_issue(number, labels=READY)
-    for number in (5, 1, 2, 3, 4):
+    for number in (6, 1, 2, 3, 4, 5):
         take(engine, github, number)
-    assert held_by(github, (1, 2, 3, 4, 5)) == [1, 2, 3, 5]
+    assert held_by(github, (1, 2, 3, 4, 5, 6)) == [1, 2, 3, 4, 6]
 
 
 def test_the_renderer_flag_follows_the_label(engine: Engine, github: FakeGitHub, clock: Clock) -> None:

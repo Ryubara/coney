@@ -314,7 +314,7 @@ hold back. `claims.trial` is no switch: it only lets one test issue try adoption
 <!-- conventions:begin claim-rules -->
 - An issue can be claimed only when it carries `S-ready-to-start`, whoever claims it. A claim sets `S-in-progress`
   (`S-pending-review` while its pull request is open); a release or `/unclaim` sets `S-ready-to-start`.
-- A maintainer (someone with `admin` or `write` permission on the repository) holds 3 open claims at most, a contributor
+- A maintainer (someone with `admin` or `write` permission on the repository) holds 4 open claims at most, a contributor
   2. Issues whose cards share a `task:` id count as one claim, and a task holds 3 issues at most.
 - The claim of an issue labelled `workflow` (a unit that builds the new workflow), `studio` (Coney Studio work, which
   has its own engineer track), `networking` (networking work, which has its own engineer track) or `renderer` (the SDL3
@@ -383,7 +383,7 @@ mentions the claimant (its title), and so does the 48-hour warning.
 5. Every issue in its "Blocked by" section is done: closed as completed by a merged pull request (a listed pull
    request must be merged). Work is never stacked on an unmerged task. A line there that starts with "Blocks" (`Blocks
    the release of #1102`) says what waits for this issue, so its references are not blockers.
-6. The claimant holds fewer open claims than the limit (3 for a maintainer, 2 for a contributor), and a `task:` id
+6. The claimant holds fewer open claims than the limit (4 for a maintainer, 2 for a contributor), and a `task:` id
    holds at most 3 issues. Issues that share a `task:` id count as one claim, so the id is no way round the limit; a
    fix task reuses its claim. A maintainer is whoever the repository gives write permission or more (asked of GitHub by
    login); only if GitHub will not say does the comment's own association decide, and then only the repository's OWNER
@@ -741,10 +741,10 @@ the `networking` label in the networking track, one with the `renderer` label in
 from the issue's claim card each time, not copied into the task file. Work in other repositories (Tether, Conclave's own
 plugin repository) has no unit here and is not counted.
 
-The open-claims limit follows the units in work: the maintainer's limit of 3 stands for the reimplementation work the
-old 3 task slots held (Studio, networking, renderer and workflow claims are outside it), so a claim stops counting
-toward it when the unit's place frees. The Action sees only GitHub, where a comment costs nothing, so it trusts two
-signs of a freed place and no more:
+The open-claims limit follows the units in work: the maintainer's limit of 4 stands for the reimplementation work (a
+maintainer decision of 2026-11-22, up from the 3 the task slots held; Studio, networking, renderer and workflow claims
+are outside it), so a claim stops counting toward it when the unit's place frees. The Action sees only GitHub, where a
+comment costs nothing, so it trusts two signs of a freed place and no more:
 
 - **A maintainer's stage.** The passing `reviewed` stamp posts `/progress reviewed` as the signed-in account, and a
   maintainer's `/progress` with a stage of `claims.limit_ends_at` (`reviewed`, `pr-opened`, `fix`, `finished`) frees the
@@ -783,7 +783,7 @@ waiting for CI never refuse a fourth claim.
 What risk remains, accepted:
 
 - A maintainer who writes the stage by hand frees a slot without a review, and one ready pull request of a maintainer
-  frees every claim it closes, and can be edited to close more: a maintainer is trusted with the limit of 3, and the
+  frees every claim it closes, and can be edited to close more: a maintainer is trusted with the limit of 4, and the
   stamp is how the tools do it.
 - A contributor with several ready pull requests, each freeing its own task, holds that many claims above the limit
   while they stand, at the cost of the pull requests the maintainers see in the list; when one is closed the extra claims

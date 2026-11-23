@@ -65,11 +65,11 @@ def test_a_task_holds_at_most_three_issues(engine: Engine, github: FakeGitHub) -
 
 
 def test_many_issues_without_a_task_are_still_held_to_the_limit(engine: Engine, github: FakeGitHub) -> None:
-    for number in (10, 11, 12, 13):
+    for number in (10, 11, 12, 13, 14):
         say(github, number, "Ryubara", f"/claim task: t{number}")
         engine.reconcile(number)
-    assert [n for n in (10, 11, 12, 13) if github.view(n).assignees] == [10, 11, 12]
-    assert "3 open claim(s)" in replies(github, 13)
+    assert [n for n in (10, 11, 12, 13, 14) if github.view(n).assignees] == [10, 11, 12, 13]
+    assert "4 open claim(s)" in replies(github, 14)
 
 
 def test_the_task_of_a_claim_cannot_change(engine: Engine, github: FakeGitHub) -> None:

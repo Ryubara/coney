@@ -492,9 +492,9 @@ def test_a_dry_run_makes_and_posts_nothing(world: World) -> None:
 def test_a_claimant_over_the_limit_of_open_claims_cannot_start(world: World) -> None:
     for number, task in ((20, "a"), (21, "b"), (22, "c"), (23, "d")):
         world.claim(number, task)
-    world.ready()  # a fifth open claim: more than the 3 a maintainer may hold
+    world.ready()  # a fifth open claim: more than the 4 a maintainer may hold
     assert world.run() == 1
-    assert "holds 5 open claim(s)" in world.said() and "3 at most for a maintainer" in world.said()
+    assert "holds 5 open claim(s)" in world.said() and "4 at most for a maintainer" in world.said()
     assert untouched(world)
 
 
@@ -508,8 +508,9 @@ def test_a_workflow_claim_whose_card_is_stale_does_not_refuse_the_start(world: W
 
 
 def test_a_claimant_at_the_limit_can_start(world: World) -> None:
-    world.claim(20, "a")
-    world.claim(21, "b")
+    """A maintainer's fourth open claim (the limit, a maintainer decision of 2026-11-22) is allowed."""
+    for number, task in ((20, "a"), (21, "b"), (22, "c")):
+        world.claim(number, task)
     world.ready()
     assert world.run() == 0
 
@@ -1059,8 +1060,8 @@ def test_a_fix_task_file_without_a_parent_is_refused(world: World) -> None:
 def test_a_fix_reuses_the_claim_so_the_limit_does_not_apply(world: World) -> None:
     started_parent(world)
     fix_file(world)
-    for number, task in ((20, "a"), (21, "b"), (22, "c")):
-        world.claim(number, task)  # four open claims now: over the limit of 3
+    for number, task in ((20, "a"), (21, "b"), (22, "c"), (23, "d")):
+        world.claim(number, task)  # with the parent's, five open claims now: over the limit of 4
     assert world.run(FIX) == 0
 
 
