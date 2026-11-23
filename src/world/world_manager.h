@@ -25,19 +25,20 @@ class WorldManager {
     /// @orig 0x0040d900 WorldManager_Construct (WorldManagerPS2.cpp)
     WorldManager(SectorBudget& budget, std::optional<std::uint64_t> globalDataSize);
 
-    /// Unloads the level (unload() keeping nothing) and gives back the `Global Data Pool`.
+    /// Gives back the `World Level Pool` if a level is still loaded, then the `Global Data Pool` (the members go in
+    /// reverse order).
     /// @coney-only the original's manager lives as long as the game and never frees its global data; Coney's lives as
     /// long as the level's scenery, so its reservation goes with it
-    ~WorldManager();
+    ~WorldManager() = default;
 
     WorldManager(const WorldManager&) = delete;
     WorldManager& operator=(const WorldManager&) = delete;
     /// Takes `other`'s reservations; `other` then holds none.
     /// @coney-only the original has one world manager for the whole game and never moves it
-    WorldManager(WorldManager&& other) noexcept;
+    WorldManager(WorldManager&& other) noexcept = default;
     /// Gives back this manager's reservations, then takes `other`'s; `other` then holds none.
     /// @coney-only the original has one world manager for the whole game and never replaces it
-    WorldManager& operator=(WorldManager&& other) noexcept;
+    WorldManager& operator=(WorldManager&& other) noexcept = default;
 
     /// Reserves the `World Level Pool` for a level file of `levelFileSize` bytes (worldLevelPoolBytes()); none for a
     /// level without a level file (the world viewer's world-only names). A reservation that does not fit is not made.
@@ -51,18 +52,41 @@ class WorldManager {
     void unload(bool keepLevelFile);
 
     /// Bytes reserved for the `Global Data Pool`; 0 for none.
-    [[nodiscard]] std::uint64_t globalDataBytes() const { return m_globalData; }
+    [[nodiscard]] std::uint64_t globalDataBytes() const { return m_globalData.bytes(); }
     /// Bytes reserved for the `World Level Pool`; 0 while no level is loaded.
-    [[nodiscard]] std::uint64_t levelPoolBytes() const { return m_levelPool; }
+    [[nodiscard]] std::uint64_t levelPoolBytes() const { return m_levelPool.bytes(); }
 
   private:
-    // Gives back every reservation and holds none: what the destructor and a move assignment do.
-    // @coney-only the original never gives back its global data
-    void releaseAll();
+    // Bytes held in a budget until they are given back or the holder goes; a move hands them over, so a moved-from
+    // manager holds nothing and gives nothing back twice.
+    class Reservation {
+      public:
+        Reservation() = default;
+        // @coney-only the pools' reservations stand for the original's clumps, which nothing moves
+        Reservation(Reservation&& other) noexcept;
+        // @coney-only the pools' reservations stand for the original's clumps, which nothing moves
+        Reservation& operator=(Reservation&& other) noexcept;
+        Reservation(const Reservation&) = delete;
+        Reservation& operator=(const Reservation&) = delete;
+        // @coney-only gives the bytes back with their holder
+        ~Reservation();
 
-    SectorBudget* m_budget;         // null once moved from
-    std::uint64_t m_globalData = 0; // the `Global Data Pool`'s reservation (WorldManager `+0x3c`)
-    std::uint64_t m_levelPool = 0;  // the `World Level Pool`'s reservation (`+0x38`)
+        // Reserves `bytes` in `budget` when they fit; holds nothing otherwise. Nothing must be held already.
+        // @coney-only the budget's bookkeeping for a clump the original makes
+        void take(SectorBudget& budget, std::uint64_t bytes);
+        // Gives the bytes back, if any, and holds nothing.
+        // @coney-only the budget's bookkeeping for a clump the original destroys
+        void giveBack();
+        [[nodiscard]] std::uint64_t bytes() const { return m_bytes; }
+
+      private:
+        SectorBudget* m_budget = nullptr; // null while nothing is held
+        std::uint64_t m_bytes = 0;
+    };
+
+    SectorBudget* m_budget;   // the budget both pools are reserved in
+    Reservation m_globalData; // the `Global Data Pool` (WorldManager `+0x3c`); declared first, so given back last
+    Reservation m_levelPool;  // the `World Level Pool` (`+0x38`)
 };
 
 } // namespace coney::world
