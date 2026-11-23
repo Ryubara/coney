@@ -103,11 +103,12 @@ void Brains::destroy(human::Human& human) {
     if (human.downOrDead()) {
         return;
     }
+    // Stand-in: event 18's foe is the brain's target he had, for the record's foe (Human_GetFoe, record +0xcc),
+    // which Coney does not keep.
     human.script().knockedOut = true;
     human.loseBlockHumans();
     human.endSlowMotion();
     brain->setDownReported(true);
-    // Stand-in: the brain's target for the record's foe (Human_GetFoe, record +0xcc), which Coney does not keep.
     Brain* foe = brain->knockOut();
     static_cast<void>(deliverEvent(*brain, BrainEvent{.id = kEventDown, .other = foe}));
 }
