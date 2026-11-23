@@ -28,8 +28,9 @@ using coney::graphics::kStartAlphaRef;
 using coney::graphics::Rgba;
 
 TEST_CASE("an effect draw keeps the states in force that it does not set", "[graphics][effects]") {
-    // Expected: the GL3 renderer's drawEffect() sets only the states the draw names; librw keeps the rest. The water
-    // sets no depth or fog state, so it is drawn in the world pass's: depth tested and written, fogged in its colour.
+    // Expected: ../engine/gpu-renderer.md#effects, the GL3 renderer's drawEffect() sets only the states the draw names;
+    // librw keeps the rest. The water sets no depth or fog state, so it is drawn in the world pass's: depth tested and
+    // written, fogged in its colour.
     EffectDraw water;
     water.states.cull = CullFaces::None;
     water.states.vertexAlpha = true;
@@ -64,9 +65,9 @@ TEST_CASE("an effect draw keeps the states in force that it does not set", "[gra
 }
 
 TEST_CASE("an effect draw blends only for vertex alpha or a texture with alpha", "[graphics][effects]") {
-    // Expected: librw turns blending and the alpha test on together when the vertex alpha is used or the raster has
-    // alpha, and off otherwise (setVertexAlpha, setRasterStage); off, a draw replaces what is below and keeps every
-    // fragment, whatever blend and alpha test are in force.
+    // Expected: ../engine/gpu-renderer.md#effects, librw turns blending and the alpha test on together when the vertex
+    // alpha is used or the raster has alpha, and off otherwise (setVertexAlpha, setRasterStage); off, a draw replaces
+    // what is below and keeps every fragment, whatever blend and alpha test are in force.
     EffectDraw draw;
     draw.inForce.blend = BlendInForce::Additive;
     draw.inForce.alphaTest = AlphaTest::GreaterEqual;
@@ -87,8 +88,8 @@ TEST_CASE("an effect draw blends only for vertex alpha or a texture with alpha",
 }
 
 TEST_CASE("an effect draw keeps the fragments the alpha test in force keeps", "[graphics][effects]") {
-    // Expected: librw's DoAlphaTest against the reference 10 of 255: "at least" keeps from it up, "less" below it,
-    // "always" every one (the bounds librw uses for none, -1000 and 1000).
+    // Expected: ../engine/gpu-renderer.md#effects, librw's DoAlphaTest against the reference 10 of 255: "at least"
+    // keeps from it up, "less" below it, "always" every one (the bounds librw uses for none, -1000 and 1000).
     EffectDraw draw;
     draw.states.vertexAlpha = true;
     draw.inForce.alphaTest = AlphaTest::Less;
@@ -98,8 +99,8 @@ TEST_CASE("an effect draw keeps the fragments the alpha test in force keeps", "[
 }
 
 TEST_CASE("an effect's corner becomes an unlit vertex of the scene's shaders", "[graphics][effects]") {
-    // Expected: librw's im3d.vert passes the corner's colour and texture coordinate through unlit; the scene's vertex
-    // shader does the same with a prelit vertex and no light.
+    // Expected: ../engine/gpu-renderer.md#effects, librw's im3d.vert passes the corner's colour and texture coordinate
+    // through unlit; the scene's vertex shader does the same with a prelit vertex and no light.
     const EffectVertex corner{1.0F, 2.0F, 3.0F, Rgba{40, 50, 60, 70}, 0.25F, 0.75F};
     const coney::graphics::MeshVertex vertex = coney::graphics::meshVertexOf(corner);
     CHECK(vertex.position == std::array<float, 3>{1.0F, 2.0F, 3.0F});
