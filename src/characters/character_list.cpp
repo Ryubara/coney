@@ -49,6 +49,17 @@ const CharacterRecord* CharacterList::find(std::string_view name) const {
     return found == m_records.end() ? nullptr : &*found;
 }
 
+// The index a snapshot names a character by.
+// @coney-only network play; the original keeps the index it finds at CfgChar (docs/research/characters.md)
+std::optional<std::size_t> CharacterList::indexOf(std::string_view name) const {
+    const std::uint32_t hash = characterNameHash(name);
+    const auto found = std::ranges::find(m_records, hash, &CharacterRecord::nameHash);
+    if (found == m_records.end()) {
+        return std::nullopt;
+    }
+    return static_cast<std::size_t>(found - m_records.begin());
+}
+
 std::uint32_t characterNameHash(std::string_view name) { return crc32(lowercaseAscii(name)); }
 
 std::string resourceFileName(std::uint32_t hash) { return std::format("{}", hash); }

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
 #include <expected>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -20,11 +22,12 @@ namespace coney::characters {
 
 /// A character's resources, loaded.
 struct CharacterAssets {
-    std::string name;               ///< The model name it was found by.
-    CharacterRecord record;         ///< Its Character List record.
-    CharacterModel model;           ///< From the model resource.
-    CharacterData data;             ///< From the character data resource.
-    const io::WadEntry* textures{}; ///< The texture dictionary resource; owned by the WAD's index.
+    std::string name;                     ///< The model name it was found by.
+    CharacterRecord record;               ///< Its Character List record.
+    std::optional<std::size_t> listIndex; ///< Its record's index in the Character List; none for a load by record.
+    CharacterModel model;                 ///< From the model resource.
+    CharacterData data;                   ///< From the character data resource.
+    const io::WadEntry* textures{};       ///< The texture dictionary resource; owned by the WAD's index.
 };
 
 /// Finds `name` in `list` and loads its model and character data from `wad`, the character data through the chunk
@@ -34,6 +37,12 @@ struct CharacterAssets {
 [[nodiscard]] std::expected<CharacterAssets, Error> loadCharacterAssets(const io::Wad& wad, const CharacterList& list,
                                                                         const chunk::ChunkHandlerTable& table,
                                                                         std::string_view name);
+
+/// As loadCharacterAssets(), for the record at `index` in `list` (a snapshot names a character by it). Fails with
+/// ErrorCode::NotFound for an index past the list.
+[[nodiscard]] std::expected<CharacterAssets, Error> loadCharacterAssetsAt(const io::Wad& wad, const CharacterList& list,
+                                                                          const chunk::ChunkHandlerTable& table,
+                                                                          std::size_t index);
 
 /// As loadCharacterAssets(), from a record rather than a name.
 [[nodiscard]] std::expected<CharacterAssets, Error>

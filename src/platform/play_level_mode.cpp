@@ -33,6 +33,7 @@
 #include "human/human_animator.h"
 #include "human/player_trace.h"
 #include "human/target_human.h"
+#include "net/character_id.h"
 #include "net/game_humans.h"
 #include "platform/draw_calls.h"
 #include "platform/human_posing.h"
@@ -463,9 +464,15 @@ void PlayLevelMode::traceStep() {
     if (m_humansTrace) {
         m_humansTrace->write(m_ai->brains());
     }
-    // Network play's view of the same humans: the host's snapshots and the state digest.
+    // Network play's view of the same humans: the host's snapshots and the state digest, each human with the character
+    // this mode draws him as (his Character List index, the id a guest's disc turns back into his model and clips).
     if (m_netHumans != nullptr) {
-        m_netHumans->capture(m_ai->brains());
+        m_netHumans->capture(m_ai->brains(), [this](const human::Human& human) {
+            const human::PlayerCharacter& character =
+                &human == &m_player->human() ? playerCharacter() : characterOf(human);
+            const std::optional<std::size_t>& index = character.assets().listIndex;
+            return index ? net::characterIdOf(*index) : net::kNoCharacter;
+        });
     }
 }
 

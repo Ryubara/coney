@@ -201,6 +201,48 @@ TEST_CASE("snapshots: a delta carries only the fields that changed", "[net][snap
     CHECK(exchange(sender, receiver, 2, humans).humans.empty());
 }
 
+// Expected: unverified, #1612 (Coney's own snapshots; snapshots.md#character)
+TEST_CASE("snapshots: a human's character comes with the human, then travels only when it changes", "[net][snapshot]") {
+    SnapshotSender sender;
+    SnapshotReceiver receiver;
+    const auto withCharacter = [](std::size_t index, std::int32_t character) {
+        SnapshotHuman human = humanAt(index);
+        std::array<FieldValue, kHumanFieldCount> values = humanValues(human.words);
+        values.at(at(HumanField::Character)) = character;
+        human.words = humanWords(values);
+        return human;
+    };
+    std::vector<SnapshotHuman> humans{withCharacter(0, 1), withCharacter(1, 543)};
+
+    // A human new to the client comes in full, his character with it, over the wire as the field's own 10 bits.
+    const Snapshot first = exchange(sender, receiver, 0, humans);
+    REQUIRE(first.humans.size() == 2);
+    CHECK((first.humans[0].changed & (1U << at(HumanField::Character))) != 0);
+    CHECK(first.humans[1].words.at(at(HumanField::Character)) == 543);
+    CHECK(std::get<std::int32_t>(humanValues(receiver.humans().at(idOf(0))).at(at(HumanField::Character))) == 1);
+    CHECK(std::get<std::int32_t>(humanValues(receiver.humans().at(idOf(1))).at(at(HumanField::Character))) == 543);
+
+    // While it stays the same it costs a bit in an entry that is sent anyway, and nothing in a snapshot of its own.
+    CHECK(exchange(sender, receiver, 1, humans).humans.empty());
+    humans[0] = withCharacter(0, 1);
+    std::array<FieldValue, kHumanFieldCount> moved = humanValues(humans[0].words);
+    moved.at(at(HumanField::PositionX)) = 5.0F;
+    humans[0].words = humanWords(moved);
+    const Snapshot walk = exchange(sender, receiver, 2, humans);
+    REQUIRE(walk.humans.size() == 1);
+    CHECK(walk.humans[0].changed == (1U << at(HumanField::PositionX)));
+    CHECK(snapshotEntryBits(walk.humans[0]) == kNetIdBits + 1 + kHumanFieldCount + 18);
+
+    // When it changes (he took another character's place) it is the one field sent: the changed bit and 10 bits.
+    moved.at(at(HumanField::Character)) = std::int32_t{200};
+    humans[0].words = humanWords(moved);
+    const Snapshot swap = exchange(sender, receiver, 3, humans);
+    REQUIRE(swap.humans.size() == 1);
+    CHECK(swap.humans[0].changed == (1U << at(HumanField::Character)));
+    CHECK(snapshotEntryBits(swap.humans[0]) == kNetIdBits + 1 + kHumanFieldCount + 10);
+    CHECK(receiver.humans() == holdingOf(humans));
+}
+
 // Expected: unverified, #554 (Coney's own snapshots; the original has no network play)
 TEST_CASE("snapshots: a removed human is removed, and its slot's next generation comes in full", "[net][snapshot]") {
     SnapshotSender sender;
@@ -336,12 +378,13 @@ TEST_CASE("snapshots: the packet is pinned, round-trips and refuses what breaks 
                                                   }()}}};
     // From bit 0: slot 2 (16 bits) = 0x02 0x00; generation 1 (6 bits), removed 0, field 0's changed bit 0 = 0x01;
     // fields 1 to 8 unchanged = 0x00; fields 9 to 16 unchanged = 0x00; fields 17 to 20 unchanged (bits 0 to 3), field
-    // 21 changed and its word 1 (bits 4 and 5), fields 22 and 23 unchanged = 0x30; then no HUD entries, a varint 0 from
-    // bit 7 (protocol 7) = 0x00; then no HUD elements and no HUD texts, two more varints 0 (protocol 9) = 0x00 0x00.
+    // 21 changed and its word 1 (bits 4 and 5), fields 22 and 23 unchanged = 0x30; field 24, the character, unchanged
+    // (bit 0), then no HUD entries, a varint 0 from bit 1 (protocol 7); then no HUD elements and no HUD texts, two more
+    // varints 0 (protocol 9): 24 zero bits from bit 1, to the entry's bit 73, then the padding = 0x00 0x00 0x00.
     const std::vector<std::byte> expected{std::byte{0x0a}, std::byte{0x03}, std::byte{0x01}, std::byte{0x07},
                                           std::byte{0x01}, std::byte{0x02}, std::byte{0x00}, std::byte{0x01},
                                           std::byte{0x00}, std::byte{0x00}, std::byte{0x30}, std::byte{0x00},
-                                          std::byte{0x00}, std::byte{0x00}};
+                                          std::byte{0x00}, std::byte{0x00}, std::byte{0x00}};
     CHECK(encode(small) == expected);
     CHECK(overTheWire(small) == small);
     CHECK(encode(SnapshotAck{.sequence = 300}) ==
@@ -472,22 +515,22 @@ TEST_CASE("snapshots: a busy scene's bytes per snapshot are pinned", "[net][snap
         bytes.push_back(encode(snapshot).size());
         entries.push_back(snapshot.humans.size());
     }
-    // A human in full: id 22 bits, removed 1, 24 changed bits and the fields' 257 bits = 304 bits. The header: the id
-    // byte and four one-byte varints, and the counts of HUD entries, HUD elements and HUD texts (0 each) = 64 bits.
-    // The first snapshot fits 31 of the 60: 64 + 31 x 304 = 9,488 bits, 1,186 bytes; a 32nd would take it past 9,600
-    // bits (1,200 bytes).
-    CHECK(entries[0] == 31);
-    CHECK(bytes[0] == 1186);
-    // The second: the 29 left out, in full (their priority grew to 2), and the 7 walkers among the first 31 (x,
-    // heading and playhead changed: 23 + 24 + 18 + 10 + 10 = 85 bits): 64 + 29 x 304 + 7 x 85 = 9,475 bits, 1,185
-    // bytes.
-    CHECK(entries[1] == 36);
-    CHECK(bytes[1] == 1185);
-    // From then on, the 12 walkers alone: 64 + 12 x 85 = 1,084 bits, 136 bytes a snapshot, about 4 KB/s at 30 Hz.
+    // A human in full: id 22 bits, removed 1, 25 changed bits and the fields' 267 bits (the character's 10 among them,
+    // snapshots.md#character) = 315 bits. The header: the id byte and four one-byte varints, and the counts of HUD
+    // entries, HUD elements and HUD texts (0 each) = 64 bits. The first snapshot fits 30 of the 60: 64 + 30 x 315 =
+    // 9,514 bits, 1,190 bytes; a 31st would take it past 9,600 bits (1,200 bytes).
+    CHECK(entries[0] == 30);
+    CHECK(bytes[0] == 1190);
+    // The second: the 30 left out, in full (their priority grew to 2), then the walkers among the first 30 (x, heading
+    // and playhead changed: 23 + 25 + 18 + 10 + 10 = 86 bits) while the room lasts: 64 + 30 x 315 = 9,514 bits leave
+    // 86, which takes one walker, 9,600 bits, 1,200 bytes.
+    CHECK(entries[1] == 31);
+    CHECK(bytes[1] == 1200);
+    // From then on, the 12 walkers alone: 64 + 12 x 86 = 1,096 bits, 137 bytes a snapshot, about 4 KB/s at 30 Hz.
     CHECK(entries[2] == 12);
-    CHECK(bytes[2] == 136);
-    CHECK(bytes[3] == 136);
-    CHECK(bytes[4] == 136);
+    CHECK(bytes[2] == 137);
+    CHECK(bytes[3] == 137);
+    CHECK(bytes[4] == 137);
     CHECK(receiver.humans() == holdingOf(scene(60, 4, 5)));
 }
 
@@ -509,11 +552,11 @@ TEST_CASE("snapshots: the players' HUDs take their room in a full budget before 
     CHECK(snapshot.huds[0].slot == 0);
     CHECK(snapshot.huds[1].slot == 1);
     CHECK(receiver.huds().size() == 2);
-    // The humans have what is left: the header is still 64 bits (the HUD count, 2, is one byte), so 30 humans in full
-    // fit, 64 + 2 x 126 + 30 x 304 = 9,436 bits, 1,180 bytes; a 31st would take it past 9,600 bits. Humans taken
-    // first would fit 31 (9,488 bits) and leave room for no HUD.
-    CHECK(snapshot.humans.size() == 30);
-    CHECK(encode(snapshot).size() == 1180);
+    // The humans have what is left: the header is still 64 bits (the HUD count, 2, is one byte), so 29 humans in full
+    // fit, 64 + 2 x 126 + 29 x 315 = 9,451 bits, 1,182 bytes; a 30th would take it past 9,600 bits. Humans taken
+    // first would fit 30 (9,514 bits) and leave room for no HUD.
+    CHECK(snapshot.humans.size() == 29);
+    CHECK(encode(snapshot).size() == 1182);
 }
 
 // Expected: unverified, #554 (Coney's own priority accumulator; the original has no network play)
@@ -539,7 +582,7 @@ TEST_CASE("snapshots: the budget holds every packet to its bytes, and the priori
     CHECK(lastSent.size() == 200);         // everyone has been sent
     CHECK(longestWait.at(idOf(150)) == 1); // the high-priority human goes in every snapshot
     // Nobody waits long: their priority grows until they go. The longest wait is the first one: a human in full is
-    // 304 bits, so a snapshot holds 31 ((9,600 - 48) / 304), and the 200 first go out over seven snapshots.
+    // 315 bits, so a snapshot holds 30 ((9,600 - 48) / 315), and the 200 first go out over seven snapshots.
     int longest = 0;
     for (const auto& [id, wait] : longestWait) {
         longest = std::max(longest, wait);

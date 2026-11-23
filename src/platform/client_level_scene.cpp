@@ -3,7 +3,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <format>
 #include <map>
 #include <memory>
@@ -19,6 +21,7 @@
 #include "camera/camera_view.h"
 #include "characters/character_data.h"
 #include "characters/character_rig.h"
+#include "core/chunk_system.h"
 #include "core/game_timer.h"
 #include "platform/draw_calls.h"
 #include "platform/perf_probes.h"
@@ -45,18 +48,12 @@ rw::Texture* textureOf(const std::vector<TextureDictionary>& dictionaries) {
     return textures.empty() ? nullptr : textures.front();
 }
 
-// The character `model` names and its textures from `wad`, converted for drawing when `engine` draws: as the play
-// mode loads its player's (PlayLevelMode::loadCharacter()).
-std::expected<std::pair<std::unique_ptr<human::PlayerCharacter>, std::vector<TextureDictionary>>, Error>
-loadDrawnCharacter(const RenderEngine& engine, const io::Wad& wad, std::string_view model) {
-    chunk::ChunkHandlerTable table = chunk::ChunkHandlerTable::withDefaults();
-    characters::addCharacterDataHandlers(table);
-    addTextureDictionaryHandlers(table);
-    auto character = human::PlayerCharacter::load(wad, table, model);
-    if (!character) {
-        return std::unexpected(std::move(character.error()));
-    }
-    auto dictionaries = loadTextureDictionaries(wad, *(*character)->assets().textures, table);
+// `character`'s textures from `wad`, converted for drawing when `engine` draws, and its clips: what the client game
+// draws a human of it with (as the play mode loads its player's, PlayLevelMode::loadCharacter()).
+std::expected<std::unique_ptr<DrawnCharacter>, Error>
+dressCharacter(const RenderEngine& engine, const io::Wad& wad, const chunk::ChunkHandlerTable& table,
+               std::unique_ptr<human::PlayerCharacter> character) {
+    auto dictionaries = loadTextureDictionaries(wad, *character->assets().textures, table);
     if (!dictionaries) {
         return std::unexpected(std::move(dictionaries.error()));
     }
@@ -67,7 +64,43 @@ loadDrawnCharacter(const RenderEngine& engine, const io::Wad& wad, std::string_v
             }
         }
     }
-    return std::pair{std::move(*character), std::move(*dictionaries)};
+    auto drawn = std::make_unique<DrawnCharacter>();
+    drawn->clips = std::make_unique<net::CharacterClips>(character->anims());
+    drawn->dictionaries = std::move(*dictionaries);
+    drawn->character = std::move(character);
+    return drawn;
+}
+
+// The chunk handlers a character's data and textures load through.
+chunk::ChunkHandlerTable characterHandlers() {
+    chunk::ChunkHandlerTable table = chunk::ChunkHandlerTable::withDefaults();
+    characters::addCharacterDataHandlers(table);
+    addTextureDictionaryHandlers(table);
+    return table;
+}
+
+// The character `model` names, dressed.
+std::expected<std::unique_ptr<DrawnCharacter>, Error> loadDrawnCharacter(const RenderEngine& engine, const io::Wad& wad,
+                                                                         std::string_view model) {
+    const chunk::ChunkHandlerTable table = characterHandlers();
+    auto character = human::PlayerCharacter::load(wad, table, model);
+    if (!character) {
+        return std::unexpected(std::move(character.error()));
+    }
+    return dressCharacter(engine, wad, table, std::move(*character));
+}
+
+// The character at `index` in `list`, dressed: what a snapshot's character id names.
+std::expected<std::unique_ptr<DrawnCharacter>, Error> loadDrawnCharacterAt(const RenderEngine& engine,
+                                                                           const io::Wad& wad,
+                                                                           const characters::CharacterList& list,
+                                                                           std::size_t index) {
+    const chunk::ChunkHandlerTable table = characterHandlers();
+    auto character = human::PlayerCharacter::loadAt(wad, table, list, index);
+    if (!character) {
+        return std::unexpected(std::move(character.error()));
+    }
+    return dressCharacter(engine, wad, table, std::move(*character));
 }
 
 } // namespace
@@ -79,28 +112,34 @@ ClientLevelScene::load(RenderEngine& engine, const io::Wad& wad, const LevelAt& 
     if (!scenery) {
         return std::unexpected(std::move(scenery.error()));
     }
-    // Stand-in: every human as Rembrandt, since a snapshot does not say which character a human is.
-    auto character = loadDrawnCharacter(engine, wad, human::kPlayerModel);
-    if (!character) {
-        return std::unexpected(std::move(character.error()));
+    // The Character List names each human's character by index, and Rembrandt is the fallback for a human whose
+    // snapshot names none (Coney's choice).
+    auto list = characters::loadCharacterList(wad);
+    if (!list) {
+        return std::unexpected(std::move(list.error()));
+    }
+    auto fallback = loadDrawnCharacter(engine, wad, human::kPlayerModel);
+    if (!fallback) {
+        return std::unexpected(std::move(fallback.error()));
     }
     // The HUD's sheets, which the client game's HUD is drawn with.
     std::unique_ptr<HudLayer> hudLayer = HudLayer::create(hud, wad, engine.drawsPixels(), print);
-    std::unique_ptr<ClientLevelScene> scene(
-        new ClientLevelScene(engine, wad, std::move(*scenery), std::move(character->first),
-                             std::move(character->second), std::move(hudLayer), std::move(print)));
+    std::unique_ptr<ClientLevelScene> scene(new ClientLevelScene(engine, wad, std::move(*scenery), std::move(*list),
+                                                                 std::move(*fallback), std::move(hudLayer),
+                                                                 std::move(print)));
     scene->m_scenery->preload(scene->startView().pose.position);
     return scene;
 }
 
-// The scene over what load() loaded: the character's clips and the stand-in lights made here.
+// The scene over what load() loaded: the roster of characters and the stand-in lights made here.
 ClientLevelScene::ClientLevelScene(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<LevelPlayScenery> scenery,
-                                   std::unique_ptr<human::PlayerCharacter> character,
-                                   std::vector<TextureDictionary> dictionaries, std::unique_ptr<HudLayer> hudLayer,
-                                   std::function<void(std::string_view)> print)
-    : m_engine(engine), m_scenery(std::move(scenery)), m_character(std::move(character)),
-      m_dictionaries(std::move(dictionaries)), m_hudLayer(std::move(hudLayer)), m_print(std::move(print)) {
-    m_clips = std::make_unique<net::CharacterClips>(m_character->anims());
+                                   characters::CharacterList list, std::unique_ptr<DrawnCharacter> fallback,
+                                   std::unique_ptr<HudLayer> hudLayer, std::function<void(std::string_view)> print)
+    : m_engine(engine), m_wad(wad), m_scenery(std::move(scenery)), m_list(std::move(list)),
+      m_hudLayer(std::move(hudLayer)), m_print(std::move(print)) {
+    m_characters = std::make_unique<net::CharacterRoster<DrawnCharacter>>(
+        std::move(fallback), [this](std::size_t index) { return loadDrawnCharacterAt(m_engine, m_wad, m_list, index); },
+        m_print);
     // The play mode's stand-in lights: the snapshots carry none of the level scripts' lighting.
     m_lights = std::make_unique<PlayLighting>(engine, wad, nullptr, m_scenery->lightDirection(), m_print);
     m_scenery->setLighting(&m_lights->scene());
@@ -108,7 +147,7 @@ ClientLevelScene::ClientLevelScene(RenderEngine& engine, const io::Wad& wad, std
 }
 
 ClientLevelScene::~ClientLevelScene() {
-    // The meshes hold the character's texture, and the scenery the lights: both go before what they point at.
+    // The meshes hold their character's texture, and the scenery the lights: both go before what they point at.
     m_meshes.clear();
     if (m_scenery) {
         m_scenery->setLighting(nullptr);
@@ -136,6 +175,12 @@ WorldView ClientLevelScene::startView() const {
     return viewOn(start.position, start.headingDegrees * std::numbers::pi_v<float> / 180.0F);
 }
 
+const human::PlayerCharacter* ClientLevelScene::characterOf(net::NetId id) const {
+    const auto found = m_meshes.find(id);
+    return found != m_meshes.end() && found->second.character != nullptr ? found->second.character->character.get()
+                                                                         : nullptr;
+}
+
 void ClientLevelScene::step(const net::ClientWorld& world, const FrameTime& frame) {
     // The camera on the newest step's lowest id (the host's player 1), else the start; the scenery streams round it
     // and finds what it sees, as the play mode's step does.
@@ -157,28 +202,32 @@ void ClientLevelScene::render(const net::ClientWorld& world, const RenderTime& t
     const std::map<net::NetId, net::DrawnHuman> drawn = world.drawn(time.alpha);
     // A human gone from the world loses his mesh; a new one gets one.
     std::erase_if(m_meshes, [&drawn](const auto& entry) { return !drawn.contains(entry.first); });
-    const characters::CharacterModel& model = m_character->assets().model;
     m_posed = 0;
     m_layersMissing = 0;
     for (const auto& [id, human] : drawn) {
-        auto& mesh = m_meshes[id];
-        if (!mesh) {
-            mesh = std::make_unique<CharacterMesh>(model, textureOf(m_dictionaries), Skinning::Gpu,
-                                                   &m_engine.sceneAssets());
+        // The character his snapshot names; a human who became another has his mesh made afresh.
+        const DrawnCharacter& drawnWith = m_characters->of(human.state.character);
+        HumanMesh& entry = m_meshes[id];
+        if (entry.character != &drawnWith) {
+            entry.character = &drawnWith;
+            entry.mesh =
+                std::make_unique<CharacterMesh>(drawnWith.character->assets().model, textureOf(drawnWith.dictionaries),
+                                                Skinning::Gpu, &m_engine.sceneAssets());
         }
         // A layer whose clip the character lacks is left out of the pose; counted for the tests.
         for (std::size_t layer = 0; layer < net::playingLayers(human.state); ++layer) {
-            if (m_clips->clip(human.state.layers.at(layer).clip) == nullptr) {
+            if (drawnWith.clips->clip(human.state.layers.at(layer).clip) == nullptr) {
                 ++m_layersMissing;
             }
         }
-        const anim::Pose pose = net::humanPose(human.state, *m_clips, anim::referenceRotations());
+        const anim::Pose pose = net::humanPose(human.state, *drawnWith.clips, anim::referenceRotations());
         ++m_posed;
         // Posed wherever the scene is drawn, as the play mode poses its humans.
         if (m_engine.drawsScene()) {
-            const auto bones = anim::boneTransforms(m_character->skeleton(), pose);
-            mesh->pose(characters::skinningMatrices(model, bones),
-                       characterPlacement(human.state.position, human.state.heading, 0.0F));
+            const characters::CharacterModel& model = drawnWith.character->assets().model;
+            const auto bones = anim::boneTransforms(drawnWith.character->skeleton(), pose);
+            entry.mesh->pose(characters::skinningMatrices(model, bones),
+                             characterPlacement(human.state.position, human.state.heading, 0.0F));
         }
         m_lights->addShadow(m_scenery->collision(), human.state.position);
     }
@@ -192,9 +241,9 @@ void ClientLevelScene::render(const net::ClientWorld& world, const RenderTime& t
         draw::setRenderState(rw::ZWRITEENABLE, 1);
         draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
         SceneLighting& scene = m_lights->scene();
-        for (auto& [id, mesh] : m_meshes) {
-            scene.setMeshLayer(mesh->bloodAtomic());
-            m_lights->drawHumanPasses(*mesh, false, nullptr);
+        for (auto& [id, entry] : m_meshes) {
+            scene.setMeshLayer(entry.mesh->bloodAtomic());
+            m_lights->drawHumanPasses(*entry.mesh, false, nullptr);
             scene.setMeshLayer(nullptr);
         }
     };

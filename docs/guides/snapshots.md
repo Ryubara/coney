@@ -46,7 +46,8 @@ machine.
 The fields: position (3 × 18 bits), heading (10), health and its maximum (16 each, the original's s16), and four
 animation layers: the newest's clip (12), playhead (10) and gait value (10), then for each of three older layers the
 same three and how far the layer above it has faded in over it (10 bits; 1 with no such layer, whose clip, playhead
-and gait value are then 0). Then grounded, knocked out and the hidden move style, a bit each: 257 bits in all.
+and gait value are then 0). Then grounded, knocked out and the hidden move style, a bit each, and [the
+character](#character) (10 bits): 267 bits in all.
 
 The **gait value** is for a layer that is the locomotion's walk or run, a `GaitBlendTask`: five clips (walk, jog, run,
 sprint, sprint) on a value from 0 to 4, of which the two either side of the value play in step and blend by its
@@ -66,6 +67,28 @@ Four layers is the most `AnimTaskStack` shows at once. It holds up to 12 tasks (
 counting as one, but `change()` finishes the newest fade early once more than six are held (`kEarlyFinishTasks`), so
 changes fading in over one another stack up to four layers and three fades, and never reach twelve. A static assert
 ties `kHumanAnimLayers` to that rule, and a test drives the stack to its most and checks the table carries every layer.
+
+## A human's character {#character}
+
+A snapshot says which character each human is, as one more field of his state (`character`): the **Character List
+index plus one** in 10 bits, 0 for none. The Character List of `warriors.glr` is the disc's own table of the characters'
+models, textures and clips (543 records), and the original keeps a human's index in it at `+0x37c` (the model index,
+[Characters](../research/characters.md), confirmed (code)). Coney sends that index as an id, never a pointer: a guest
+turns it back into the character's model, textures and clips from its own disc ([A guest's
+characters](client-world.md#characters)), so it needs no configuration scripts to know a character's model. The `+1` is
+so that 0, a state's default, means "no character named" (`net::kNoCharacter`; `characterIdOf()` and
+`characterListIndexOf()` in `src/net/character_id.h` convert). Ten bits are fixed by the original's data, with room
+to spare.
+
+The host's game says it: the play mode hands `GameHumans::capture()` a function that answers, for each human, the
+character the mode draws him as (the player's current character, whatever the debug menus or a script's hand-over
+made him; a cast human's model), as the Character List index its resources were found by. A human it cannot say
+(a test's, or a character loaded without the list) has none.
+
+It is a field like the others, so it is delta-encoded: it comes in full with a human new to the client (its changed bit
+and 10 bits), costs one bit in an entry that is sent anyway, and is sent again, alone, only when a human becomes another
+character. It joins the snapshot's budget as 11 bits on a human in full and 1 on a delta ([What a scene
+costs](#costs)). The field is Coney's own and was added in protocol 12 (#1612).
 
 ## A player's HUD state {#hud-state}
 
@@ -217,16 +240,16 @@ walking.
 
 | Snapshot | Entries | Bytes |
 | --- | --- | --- |
-| The first (full): 31 humans of 304 bits fit, the other 29 wait | 31 | 1,186 |
-| The second: the 29 in full, and the 7 walkers among the 31 (x, heading and playhead: 85 bits each) | 36 | 1,185 |
-| Every one after: the 12 walkers | 12 | 136 |
+| The first (full): 30 humans of 315 bits fit, the other 30 wait | 30 | 1,190 |
+| The second: the 30 in full, and the one walker among the first 30 that the room left (x, heading and playhead: 86 bits) | 31 | 1,200 |
+| Every one after: the 12 walkers | 12 | 137 |
 
-136 bytes at 30 snapshots a second is about 4 KB/s per client, under the [architecture's
+137 bytes at 30 snapshots a second is about 4 KB/s per client, under the [architecture's
 estimate](network-architecture.md#snapshots) of 340 bytes for a similar scene. Carrying four layers rather than two
 cost a human in full 70 bits more and a walker's delta 6 (the older layers' changed bits); the four gait values cost
 it 44 more and the walker 4; the move style, 2 more for a human in full (its changed bit and its word) and 1 for a
-walker (its changed bit). A fight where 20 humans each move, turn and change every animation field takes about 20 × 34
-bytes, under 60 % of the budget.
+walker (its changed bit); the character, 11 more and the walker 1. A fight where 20 humans each move, turn and change
+every animation field takes about 20 × 34 bytes, under 60 % of the budget.
 
 ## Testing {#testing}
 
@@ -234,11 +257,13 @@ bytes, under 60 % of the budget.
 removal and a slot's next generation, the baseline's choice (the newest acknowledged, full once it leaves the history),
 the client's Stale, NoBaseline and refusals, the packet's pinned bytes and the decoder's refusals, a human in chained
 fades with its four layers, a gait value on every layer, the budget and the priority accumulator (every packet within
-1,200 bytes, nobody waiting more than seven snapshots, the longest wait being the first full send of 200 humans at 31 a
+1,200 bytes, nobody waiting more than seven snapshots, the longest wait being the first full send of 200 humans at 30 a
 snapshot, a high-rate human in every one), the busy scene's bytes, the players' HUDs taking their room in a full budget
-before the humans (both in the first snapshot, 30 humans beside them), and a round trip by hand through loss, held-back
+before the humans (both in the first snapshot, 29 humans beside them), and a round trip by hand through loss, held-back
 and repeated snapshots and late acknowledgements, where every snapshot decoded leaves the client holding exactly the
-server's record of it. `tests/net/hud_standing_test.cpp` covers [the HUD's standing state](#hud-standing): its
+server's record of it, and a human's character coming with the human, then costing a bit, then sent alone when it
+changes. `tests/net/character_id_test.cpp` covers [the id](#character) both ways and the client's roster of characters.
+`tests/net/hud_standing_test.cpp` covers [the HUD's standing state](#hud-standing): its
 elements and texts and back (a number past its range held, a long text cut), the game's capture, the elements and
 texts in full first, then their changes, a part gone removed and a delta against an older baseline, their pinned bytes,
 the decoder's and the client's refusals, and the budget's order (elements with the HUDs, texts after them, the humans

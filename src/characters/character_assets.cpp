@@ -20,6 +20,8 @@ std::expected<const io::WadEntry*, Error> resourceEntry(const io::Wad& wad, std:
 
 } // namespace
 
+// Finds the character by name in the list and loads it, noting its list index for a snapshot to name it by.
+// @coney-only Coney's loader over the Character List's records (the original's resource manager loads by index)
 std::expected<CharacterAssets, Error> loadCharacterAssets(const io::Wad& wad, const CharacterList& list,
                                                           const chunk::ChunkHandlerTable& table,
                                                           std::string_view name) {
@@ -32,6 +34,23 @@ std::expected<CharacterAssets, Error> loadCharacterAssets(const io::Wad& wad, co
         return fail(assets.error().code, std::format("{}: {}", name, assets.error().message));
     }
     assets->name = std::string(name);
+    assets->listIndex = static_cast<std::size_t>(record - list.records().data());
+    return assets;
+}
+
+// Loads the record at `index`: a snapshot's character id names a character by its list index.
+// @coney-only network play; the original has none
+std::expected<CharacterAssets, Error> loadCharacterAssetsAt(const io::Wad& wad, const CharacterList& list,
+                                                            const chunk::ChunkHandlerTable& table, std::size_t index) {
+    if (index >= list.records().size()) {
+        return fail(ErrorCode::NotFound,
+                    std::format("character {} is past the Character List's {} records", index, list.records().size()));
+    }
+    auto assets = loadCharacterAssets(wad, list.records()[index], table);
+    if (!assets) {
+        return fail(assets.error().code, std::format("character {}: {}", index, assets.error().message));
+    }
+    assets->listIndex = index;
     return assets;
 }
 

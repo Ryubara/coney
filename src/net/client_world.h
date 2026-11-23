@@ -59,6 +59,7 @@ struct HumanState {
     bool grounded = false;                                 ///< on the ground
     bool knockedOut = false;                               ///< knocked out or wounded
     MoveStyle moveStyle = MoveStyle::Normal;               ///< the move style its gait blends are built in
+    std::int32_t character = 0; ///< which character he is (characterIdOf() of his Character List index); 0 for none
 
     friend bool operator==(const HumanState&, const HumanState&) = default;
 };

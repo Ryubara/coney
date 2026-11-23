@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstdint>
+#include <functional>
 #include <span>
 #include <vector>
 
@@ -25,13 +27,18 @@ class Human;
 
 namespace coney::net {
 
-/// `human`'s replicated state now: its feet and heading, health and maximum, its animation stack's layers (newest
-/// first, each one's clip, playhead and gait value, and how far the layer over it has faded in), on the ground (not
-/// airborne), knocked out or wounded, and its move style (hidden while its animator's stealth style is on). A layer the
+/// `human`'s replicated state now, with its `character` (characterIdOf(), kNoCharacter when not told): its feet and
+/// heading, health and maximum, its animation stack's layers (newest first, each one's clip, playhead and gait value,
+/// and how far the layer over it has faded in), on the ground (not airborne), knocked out or wounded, and its move
+/// style (hidden while its animator's stealth style is on). A layer the
 /// stack does not hold is "no such layer" (clip 0, fade 1). Clip ids over the field's range are held at its top (the
 /// field table's stand-in range, replicated_fields.cpp).
 /// @coney-only network play; the original has none
-[[nodiscard]] HumanState replicatedState(const human::Human& human);
+[[nodiscard]] HumanState replicatedState(const human::Human& human, std::int32_t character = 0);
+
+/// Which character a human is, as its snapshot field says it (characterIdOf() of its Character List index); the game
+/// that draws the humans answers it, since only it knows which model each one wears.
+using CharacterOf = std::function<std::int32_t(const human::Human&)>;
 
 /// The humans of the server's game, each step, as the snapshots and the digest take them. Each human gets a network id
 /// the first step it is seen (in brain order, so the same game gives the same ids) and keeps it; a human gone from the
@@ -45,8 +52,9 @@ namespace coney::net {
 /// @coney-only network play; the original has none
 class GameHumans {
   public:
-    /// This step's humans: every brain's human of `brains`, in slot order, with its id and its words.
-    void capture(const ai::Brains& brains);
+    /// This step's humans: every brain's human of `brains`, in slot order, with its id and its words; each one's
+    /// character is `characterOf`'s answer for it (none without one).
+    void capture(const ai::Brains& brains, const CharacterOf& characterOf = {});
 
     /// This step's HUD state of each player slot (slot i at index i, at most kMaxPlayerSlots), as the play mode's HUD
     /// step was given it, and the HUD's standing state after that step (`standing`; null for none): what the snapshots

@@ -18,6 +18,7 @@
 #include "core/assert.h"
 #include "core/error.h"
 #include "net/bit_stream.h"
+#include "net/character_id.h"
 
 namespace coney::net {
 
@@ -108,6 +109,14 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(HumanField::Count)> kHu
     // The move style: the jog, run and sprint are in the gait blends of both styles, so the clip field cannot say
     // which one a layer is (docs/guides/snapshots.md#human-state). A bit, as there are two styles.
     {.name = "moveStyle", .encoding = FieldEncoding::Bool, .bits = 1},
+    // Which character the human is: a Character List index plus one, 0 for none (character_id.h). The list the original
+    // keeps in its resource manager has 543 records, so 10 bits are fixed by its data
+    // (docs/research/characters.md#files).
+    {.name = "character",
+     .encoding = FieldEncoding::Integer,
+     .bits = 10,
+     .min = 0.0F,
+     .max = static_cast<float>(kMostCharacterId)},
 }};
 
 constexpr std::array<FieldSpec, static_cast<std::size_t>(WorldObjectField::Count)> kWorldObjectFields{{

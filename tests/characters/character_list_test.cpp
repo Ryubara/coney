@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "characters/character_list.h"
 
+#include <cstddef>
+#include <optional>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/name_hash.h"
@@ -38,6 +41,7 @@ TEST_CASE("the Character List's records are read and found by model name in any 
     CHECK(coney::characters::resourceFileName(3676172086U) == "3676172086");
 }
 
+// Expected: unverified, #1612 (Coney's own reader: a chunk shorter than its record count is Truncated)
 TEST_CASE("a Character List shorter than its count is refused", "[character_list]") {
     const Bytes chunk = twoRecords();
     auto cut = CharacterList::parse(chunk.span().first(chunk.size() - 4));
@@ -45,4 +49,13 @@ TEST_CASE("a Character List shorter than its count is refused", "[character_list
     CHECK(cut.error().code == ErrorCode::Truncated);
     auto empty = CharacterList::parse({});
     REQUIRE_FALSE(empty.has_value());
+}
+
+// Expected: unverified, #1612 (Coney's own: a snapshot names a character by its index in the list)
+TEST_CASE("the Character List finds a model's index, in any letter case", "[character_list]") {
+    auto list = CharacterList::parse(twoRecords().span());
+    REQUIRE(list.has_value());
+    CHECK(list->indexOf("hero_cv") == std::optional<std::size_t>{0});
+    CHECK(list->indexOf("VILLAIN") == std::optional<std::size_t>{1});
+    CHECK_FALSE(list->indexOf("nobody").has_value());
 }

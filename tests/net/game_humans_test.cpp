@@ -18,6 +18,7 @@
 #include "combat/power_class.h"
 #include "human/human.h"
 #include "human/humans.h"
+#include "net/character_id.h"
 #include "net/client_world.h"
 #include "net/net_id.h"
 #include "net/snapshot.h"
@@ -120,6 +121,34 @@ TEST_CASE("a human's replicated state carries its move style: normal, hidden whi
     human.clearHiding();
     REQUIRE_FALSE(human.animator().stealthStyle());
     CHECK(replicatedState(human).moveStyle == MoveStyle::Normal);
+}
+
+TEST_CASE("a human's character is told by the game that draws him, and is none when not told") {
+    // Expected: unverified, #1612 (snapshots.md#character: a Character List index plus one, 0 for none)
+    Scene scene;
+    Human& first = scene.add(0.0F, 0.0F, 0.0F);
+    scene.add(2.0F, 0.0F, 0.0F);
+    scene.run(1);
+
+    CHECK(replicatedState(first).character == kNoCharacter);
+    CHECK(replicatedState(first, characterIdOf(4)).character == 5);
+
+    GameHumans told;
+    told.capture(scene.brains, [&](const Human& human) { return characterIdOf(&human == &first ? 4 : 300); });
+    REQUIRE(told.humans().size() == 2);
+    const SnapshotHumans holding = told.holding();
+    std::vector<std::int32_t> characters;
+    for (const auto& [id, words] : holding) {
+        characters.push_back(humanState(words).character);
+    }
+    CHECK(characters == std::vector<std::int32_t>{5, 301});
+
+    // Not told, the humans have none.
+    GameHumans untold;
+    untold.capture(scene.brains);
+    for (const auto& [id, words] : untold.holding()) {
+        CHECK(humanState(words).character == kNoCharacter);
+    }
 }
 
 TEST_CASE("the game's humans get ids in brain order, keep them, and lose them when they go") {

@@ -5,6 +5,7 @@
 // each posed from its layers with the character's clips, the camera on the host's player 1. Headless, on librw's NULL
 // device. It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts
 // only (LEGAL.md).
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -17,11 +18,13 @@
 #include <SDL3/SDL_stdinc.h>
 #include <catch2/catch_test_macros.hpp>
 
+#include "characters/character_list.h"
 #include "fileio/disc.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
 #include "hud/hud.h"
 #include "hud/hud_owner.h"
+#include "net/character_id.h"
 #include "net/client_world.h"
 #include "net/net_id.h"
 #include "net/snapshot.h"
@@ -139,4 +142,88 @@ TEST_CASE("the client game's scene of level99 draws a guest's humans posed with 
     CHECK(drawn.meshes() == 1);
     std::printf("client scene of level99: %zu log lines, %zu humans posed, %zu meshes\n", log.size(),
                 drawn.humansPosed(), drawn.meshes());
+}
+
+// Expected: unverified, #1612 (Coney's own: docs/guides/client-world.md#characters; the characters are the Character
+// List's `warr_cl` (Cleon) and `warr_re_cv` (Rembrandt), the model names of docs/references/characters.md)
+TEST_CASE("the client game's scene draws each human with the character his snapshot names",
+          "[disc][net][client_game]") {
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto list = coney::characters::loadCharacterList(*wad);
+    REQUIRE(list.has_value());
+    const auto cleonIndex = list->indexOf("warr_cl");
+    const auto rembrandtIndex = list->indexOf("warr_re_cv");
+    if (!cleonIndex || !rembrandtIndex) {
+        FAIL("the character list names neither Cleon nor Rembrandt");
+        return;
+    }
+    const std::int32_t cleonId = coney::net::characterIdOf(*cleonIndex);
+    const std::int32_t rembrandtId = coney::net::characterIdOf(*rembrandtIndex);
+    const std::uint32_t cleonHash = coney::characters::characterNameHash("warr_cl");
+    const std::uint32_t rembrandtHash = coney::characters::characterNameHash("warr_re_cv");
+
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
+    std::vector<std::string> log;
+    coney::hud::HudOwner hudOwner;
+    auto scene =
+        coney::platform::ClientLevelScene::load(**engine, *wad, {.level = "level99", .checkpoint = 1}, budget, hudOwner,
+                                                [&log](std::string_view line) { log.emplace_back(line); });
+    REQUIRE(scene.has_value());
+    coney::platform::ClientLevelScene& drawn = **scene;
+
+    // Four humans: Cleon, Rembrandt, one with no character named and one whose id is past the list's records.
+    const auto id = [](std::uint16_t slot) { return coney::net::NetId{.slot = slot, .generation = 1}; };
+    coney::net::SnapshotSender sender;
+    coney::net::SnapshotReceiver receiver;
+    coney::net::ClientWorld world;
+    std::uint64_t index = 0;
+    const auto run = [&](std::uint32_t from, std::uint32_t to, std::int32_t firstCharacter) {
+        for (std::uint32_t step = from; step < to; ++step) {
+            std::vector<coney::net::SnapshotHuman> humans;
+            const std::array<std::int32_t, 4> characters{firstCharacter, rembrandtId, coney::net::kNoCharacter,
+                                                         coney::net::kMostCharacterId};
+            // NOLINTNEXTLINE(bugprone-too-small-loop-variable): four slots
+            for (std::uint16_t slot = 0; slot < characters.size(); ++slot) {
+                coney::net::HumanState human = humanAt(3.0F * static_cast<float>(slot), 388, 0.0F);
+                human.character = characters.at(slot);
+                humans.push_back({.id = id(slot), .words = coney::net::humanWords(human), .priority = 1});
+            }
+            const coney::net::Snapshot snapshot = sender.build(step, humans);
+            REQUIRE(receiver.apply(snapshot) == coney::net::SnapshotApplied::Applied);
+            REQUIRE(sender.acknowledge(snapshot.sequence).has_value());
+            world.receive(receiver);
+            world.step();
+            drawn.step(world, coney::FrameTime{.index = index++, .seconds = 1.0 / 30.0});
+            drawn.render(world, coney::RenderTime{});
+        }
+    };
+    const auto hashOf = [&drawn](coney::net::NetId human) -> std::optional<std::uint32_t> {
+        const coney::human::PlayerCharacter* character = drawn.characterOf(human);
+        return character != nullptr ? std::optional<std::uint32_t>(character->assets().record.nameHash) : std::nullopt;
+    };
+
+    run(0, 10, cleonId);
+    CHECK(drawn.humansPosed() == 4);
+    CHECK(drawn.layersMissing() == 0);
+    CHECK(hashOf(id(0)) == std::optional<std::uint32_t>{cleonHash});
+    CHECK(hashOf(id(1)) == std::optional<std::uint32_t>{rembrandtHash});
+    // No character named, or one that is not in the list: the fallback, Rembrandt.
+    CHECK(hashOf(id(2)) == std::optional<std::uint32_t>{rembrandtHash});
+    CHECK(hashOf(id(3)) == std::optional<std::uint32_t>{rembrandtHash});
+    CHECK(drawn.characterOf(id(0)) != drawn.characterOf(id(1)));
+    CHECK(drawn.meshes() == 4);
+    CHECK(drawn.charactersLoaded() ==
+          3); // the fallback, Cleon and Rembrandt by his index; the id past the list did not load
+
+    // The first human takes Rembrandt's place: from the snapshot that says so, he is drawn as him.
+    run(10, 20, rembrandtId);
+    CHECK(hashOf(id(0)) == std::optional<std::uint32_t>{rembrandtHash});
+    CHECK(drawn.characterOf(id(0)) == drawn.characterOf(id(1)));
+    std::printf("client scene characters: %zu humans posed, %zu meshes, %zu characters loaded\n", drawn.humansPosed(),
+                drawn.meshes(), drawn.charactersLoaded());
 }
