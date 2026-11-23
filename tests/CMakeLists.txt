@@ -307,6 +307,8 @@ add_executable(coney_tests
     platform/material_change_test.cpp
     physics/overlaps_test.cpp
     physics/sphere_box_sweep_test.cpp
+    physics/shapes_test.cpp
+    physics/physics_world_test.cpp
     raycast/collision_mesh_test.cpp
     physics/body_sweep_test.cpp
     physics/mesh_sweep_test.cpp
