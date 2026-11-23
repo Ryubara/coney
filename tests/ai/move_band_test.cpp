@@ -218,7 +218,7 @@ TEST_CASE("a re-target during a band move turns the fight stance to the new man,
 TEST_CASE("a holder displaced from a full slot list during a band move leaves the fight stance", "[ai][move]") {
     // Expected: ai-moving.md#move-melee, confirmed (code): the stance is the human's state round the brain's target
     // (+0x124); Brain_ClaimAttackSlot 0x0028df30 takes the farthest holder's slot and his target, so his stance holds
-    // no one (a Coney-only hand-off, Brain::handFightStance)
+    // no one (a Coney-only hand-off, Brain::handFightStance, called from Brain::claimSlot's displacement)
     AiScene scene;
     Brain& player = scene.player();
     player.setAttackSlotCount(1);

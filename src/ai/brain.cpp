@@ -780,7 +780,6 @@ bool Brain::claimSlot(Brain& attacker, bool force) {
     if ((*farthest)->m_target == this) {
         (*farthest)->m_target = nullptr;
         ++(*farthest)->m_targetChanges.at(static_cast<std::size_t>(TargetCause::Displaced));
-        (*farthest)->handFightStance();
     }
     *farthest = &attacker;
     raiseSpacing(attacker);
