@@ -806,10 +806,13 @@ void ScriptedBrains::humanCreated(const HumanCreation& human) {
                                              human.handle, human.model.empty() ? "" : " ", human.model));
         // The run log: a human of the level's cast made (type, gang and place; the name is the script's handle).
         // @coney-only a line for the run log (docs/guides/run-log.md#events)
-        const std::array<float, 3> at = human.position.value_or(std::array<float, 3>{});
+        // The place is the script's, when it gave one; else the line says so, not a made-up (0, 0, 0).
+        const std::string place = human.position ? std::format("at ({:.2f}, {:.2f}, {:.2f})", (*human.position)[0],
+                                                               (*human.position)[1], (*human.position)[2])
+                                                 : std::string("no position");
         logging::info(logging::Category::Engine,
-                      std::format("spawn: {} type {} gang {} at ({:.2f}, {:.2f}, {:.2f})",
-                                  made->human().fighter().logName(), human.type, human.gang, at[0], at[1], at[2]));
+                      std::format("spawn: {} type {} gang {} {}", made->human().fighter().logName(), human.type,
+                                  human.gang, place));
         // Player 1's human, now in his gang: his crew's follow is given at once, before what the script gives it next.
         // Not when the script gave his gang a tactic after creating him (the hold's choice, setPlayerMade()).
         const Gang* gang = m_owner->gangs().find(human.gang);

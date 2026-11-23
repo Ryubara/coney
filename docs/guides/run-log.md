@@ -205,7 +205,7 @@ Logs are attached to public issues, so a line names things and gives numbers, no
 | `death: V by A` | combat, info | the fighter running out of health |
 | `goal: H: push GOAL [at human N] (D on the stack)`, `goal: H: pop GOAL ...` | ai, detail | a brain's goal stack (`Brain::pushGoal()`, `popGoal()`); the target is given for the goals that name a human |
 | `objective: set\|cleared\|marked\|set and marked line N (L characters of text)` | world, info | the HUD's objective checklist (`Hud::setObjective()`); the text itself is the game's, so only its length |
-| `spawn: H type T gang G at (X, Y, Z)` | engine, info | a human of the level's cast made when the scripts' hold ends |
+| `spawn: H type T gang G at (X, Y, Z)` | engine, info | a human of the level's cast made when the scripts' hold ends (`no position` in place of `at (...)` when the script gave none) |
 | `remove: H leaves the brains (N left)` | engine, info | a human's brain removed: a script's delete, a hand-over, a level torn down |
 
 Every subsystem adds its own as it is worked on; the list grows here. Still to add (issue #617 stays open

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 # Plays level99 headless from a script with `--record-input`, then plays the recording back with `--input-script`
 # alone, and passes when both runs trace player 1 and the camera identically on every step: the recording is the run
 # (docs/guides/run-log.md#input-recording). The second run takes its AI seed from the recording's header, which its

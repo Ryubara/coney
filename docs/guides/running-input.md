@@ -88,5 +88,7 @@ build/dev/src/platform/coney --headless --frames 300 --input-script ../../scratc
 A script that cannot be read or has a bad line stops Coney at start-up with exit code 1 and the line's number.
 
 A script that starts with `# ai-seed N` among its first comment lines also sets the AI's seed to N, as `--ai-seed N`
-would, unless `--ai-seed` is given: it is how [an input recording](run-log.md#input-recording) carries the seed of the
-run it was made from. The other header comments (`# play-level`, `# checkpoint`) only say how the run started.
+would, unless `--ai-seed` is given. Only the debug tools' build applies it: the release build has no `--ai-seed`, so it
+ignores the header and plays with seed 0, which is the seed its own recordings carry. The header is how
+[an input recording](run-log.md#input-recording) carries the seed of the run it was made from. The other header comments
+(`# play-level`, `# checkpoint`) only say how the run started.
