@@ -33,6 +33,8 @@
 #include <SDL3/SDL_main.h>
 
 #include "ai/ai_config.h"
+#include "ai/ai_humans.h"
+#include "ai/brain.h"
 #include "audio/object_sounds.h"
 #include "characters/character_types.h"
 #include "console/command_spec.h"
@@ -52,6 +54,7 @@
 #include "core/options.h"
 #include "debug/combat_tunables.h"
 #include "debug/debug_session.h"
+#include "debug/fighter_drop.h"
 #include "debug/game_tunables.h"
 #include "debug/light_trace.h"
 #include "debug/tunables.h"
@@ -755,6 +758,19 @@ int main(int argc, char** argv) {
             return coney::SteerView{.x = feet.x,
                                     .y = feet.y,
                                     .cameraHeading = std::atan2(-(target.x - eye.x), target.y - eye.y) * kDegrees};
+        });
+        // `drop-ai` lines: this entry point is the debug tools' build, so it drops the AI human below the world in the
+        // level in play (debug/fighter_drop.h); the release build's sets no sink.
+        scripted->setDropSink([&playLevel, &sessionPlayMode](std::optional<double> handle) {
+            coney::platform::PlayLevelMode* mode = playLevel ? playLevel.get() : sessionPlayMode();
+            if (mode == nullptr) {
+                return;
+            }
+            coney::ai::AiHumans& fighters = mode->fighters();
+            if (coney::ai::Brain* brain = coney::debug::dropTarget(fighters.brains(), fighters.playerBrain(), handle);
+                brain != nullptr) {
+                coney::debug::dropBelowWorld(*brain);
+            }
         });
         if (commandLineLevel) {
             levelScript = std::move(scripted);

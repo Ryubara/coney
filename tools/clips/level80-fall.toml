@@ -1,0 +1,11 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level80 checkpoint 4, the twelve Destroyers
+# dropped below the world one after another (the input script's `drop-ai`, a build with the debug tools). Each is taken
+# away as one who fell out of the world: faded for 25 updates, then knocked out, so his gang's message 18 reaches the
+# level's DestroyerDied. For a change to the fall out of the world, Human_Destroy or a gang's standing count. Record
+# the before with `--without` the fix's commit, as main has no `drop-ai`.
+description = "level80 checkpoint 4: the Destroyers dropped below the world are counted out"
+level = "level80"
+input = "tools/clips/level80-fall.txt"
+checkpoint = 4
+start_frame = 1160
+seconds = 10
