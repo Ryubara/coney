@@ -197,9 +197,8 @@ void Brain::update(std::uint64_t nowMs) {
 
 void Brain::think(std::uint64_t nowMs) {
     m_nowMs = nowMs;
-    if (!m_dead) {
-        ++m_thinks;
-    }
+    // Every think counts, a dead brain's too (only its handler is a stub).
+    ++m_thinks;
     // The cop's, the gang soldier's and the Warrior's think handlers start a fight on an enemy listed, then keep the
     // tackle meter.
     if (!m_dead && (m_type == BrainType::Cop || m_type == BrainType::Gang || m_type == BrainType::Warrior)) {

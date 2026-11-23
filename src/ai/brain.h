@@ -331,10 +331,10 @@ class Brain {
     /// @orig 0x0028f8b8 Brain_Update (unknown)
     /// @orig 0x0028fbb0 Brain_UpdateGoals (unknown)
     void update(std::uint64_t nowMs);
-    /// One think (handler B), one update in five; nothing for a dead brain, whose handler B is a stub. A cop, a gang
-    /// soldier or a Warrior starts a fight on an enemy listed (thinkFightOnSight()) and keeps the tackle meter; a
-    /// Warrior offers the swap prompt. **Coney's stand-in**: the types' other think steps are not built (#635 lists
-    /// the update's).
+    /// One think (handler B), one update in five: it counts (a dead brain's too, whose handler B is a stub), then a
+    /// cop, a gang soldier or a Warrior starts a fight on an enemy listed (thinkFightOnSight()) and keeps the tackle
+    /// meter, and a Warrior offers the swap prompt. **Coney's stand-in**: the scene gate, the perception update, the
+    /// flee from hurt and the types' other think steps are not built (#1662).
     /// @orig 0x0028f6c0 Brain_Think (unknown)
     void think(std::uint64_t nowMs);
     /// Updates and thinks so far (`+0x34`, `+0x38`).
