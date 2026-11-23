@@ -135,6 +135,8 @@ GoalStatus EngageEnemyGoal::arrive(Brain& brain, const Brain& target) {
     return GoalStatus::Again;
 }
 
+// One update of the run-in; the steps are the research page's (docs/research/ai-fights.md#engage-enemy).
+// @orig 0x002afa48 EngageEnemyGoal_Process (unknown)
 GoalStatus EngageEnemyGoal::process(Brain& brain) {
     Brain* target = targetOf(brain);
     if (target == nullptr || target == &brain || target->human().outOfWorld() || !Brain::fightable(*target)) {
