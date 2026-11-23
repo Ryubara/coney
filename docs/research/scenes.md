@@ -837,10 +837,12 @@ A human the scene played goes back to his idle with the idle's fade, which keeps
 updates. Confirmed (runtime), run r-20261123-level80-help-call-held, unless a line says otherwise.
 
 - At `level80`'s scene `l80_c7`, played to its end, a Destroyer's record held `0x10000000` from the end
-  (`0x0039f450`) until a blend-out task let it go about five updates later (`AnimTaskBlendOut_Release` `0x00106ee8`,
-  from the humans' update `0x0024910c`), with no call of `Human_BuildIdleTasks` (`0x0025f770`) for him after the end.
+  (`0x0039f450`) until a blend-out task let it go about five updates later (`AnimTaskBlendOut_Release` `0x00106ee8`).
 - `0x10000000` held for 0.15 s is what the idle's fade holds ([Locomotion gate](tasks.md#locomotion-gate)), so the
-  idle was built as his last scene clip ended: inferred from that match and the missing call.
+  idle was built through `Human_BuildIdleTasks` (`0x0025f770`) as his last scene clip ended: inferred from that match
+  alone. The run set no breakpoint on `0x0025f770`, so when the builder ran (before or at the end) and which update
+  call (the humans' update `0x0024910c` or another) reached the blend-out are not observed; Coney's release settles
+  the cast at the end ([below](#release-idle)), which gives the original's timeline in the disc test.
 - While it holds he takes no side in a fight he hears of: a help call flagged "new enemy" reached him, passed the
   threat and target tests of `Brain_OnViolenceSeen` (`0x00291960`) and was refused at its held-flag test
   (`0x00291a94`), and his own think pushed the fight first (`0x00304760`). That keeps the Destroyers out of the
@@ -1172,6 +1174,9 @@ its end (inferred: the run played the scene out).
 
 ## Open questions
 
+- When the cast's idle is built at a scene's end: a breakpoint on `Human_BuildIdleTasks` (`0x0025f770`) for one of
+  `l80_c7`'s Destroyers, and on the humans' update (`0x0024910c`) to see who reaches `AnimTaskBlendOut_Release`,
+  would confirm or correct [The cast after the end](#cast-after-end) (its second bullet is inferred).
 - Which human state the start resets (answered: small resets, [Humans](#humans); a grab is never released by it).
   Messages `0x95` / `0x96` set the human's transform from the scene's space (`Human_HandleMessage`, `0x00245920`),
   which breaks a pair ([Combat](combat-grabs.md#pair-break)); the start's message 10 goes to the human's held object,

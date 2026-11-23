@@ -1671,7 +1671,7 @@ branch:
   one update later.
 - Why, in order:
     1. On `main`, only the members of a Scout tactic scan (`ScoutTactic::update`); `Brains::update` never does, so
-       `GangMakeEnemies` puts nobody in a list ([Attacking on sight](ai-gangs.md#aggro-on-sight), Coney status). PR #394
+       `GangMakeEnemies` puts nobody in a list ([Attacking on sight in Coney](ai-gangs.md#aggro-in-coney)). PR #394
        adds the scan to every brain's update and so fills the lists.
     2. Neither `main` nor PR #394 has `GangBrain_Think` step 3 or the Warrior think's step 1 (`Brain::think` keeps
        only the tackle meter and the swap prompt), so a listed enemy is fought only when something else calls
@@ -2912,10 +2912,13 @@ flag net (`PedNet_*`) between the boxes above, steps into `vSection3Gate`'s 1.8 
 How Coney starts [the fight at checkpoint 4](#level80-fight-start) since task 406 (checked 2026-11-23 against `main`
 at `e5d58e85`).
 
-- **Before.** The enemy scan ran from every brain's update (#394) and the lists filled, but every Destroyer fought at
-  update 1, all twelve at once with a HelpRespond goal on top. The scan's event `0xb` makes the shared handler send a
-  20 m help call flagged "new enemy" (`Brain_DefaultOnEvent` `0x00292d80`), and each Destroyer who heard one took
-  Cochise's or Swan's side through `Brain_OnViolenceSeen` (`0x00291960`). The original's first Destroyer has
+- **Before.** The enemy scan ran from every brain's update (#394) and the lists filled, but the Destroyers fought at
+  once through the help calls. The scan's event `0xb` makes the shared handler send a 20 m help call flagged "new
+  enemy" (`Brain_DefaultOnEvent` `0x00292d80`), and each Destroyer who heard one took Cochise's or Swan's side through
+  `Brain_OnViolenceSeen` (`0x00291960`). The release test (`repo:tests/platform/disc_level80_brawl_test.cpp`) run with
+  the release's settle taken out (its fails-first red run) prints it: none of the twelve holding the idle fade at the
+  scene's end, all twelve fighting at update 1, and all twelve with a HelpRespond goal before update 13, the first at
+  update 1. The original's first Destroyer has
   FindEnemy and Melee at update 1 or 2, its last at 7-9, and none has HelpRespond before update 13
   ([the timeline](#level80-fight-timeline)).
 - **Why the original differs.** Its Destroyers hear the same help calls and refuse them at the held-flag test
@@ -2925,10 +2928,12 @@ at `e5d58e85`).
 - **Now.** Coney has both halves: the think step (`Brain::thinkFightOnSight`, `repo:src/ai/brain.cpp`; [Attacking on
   sight in Coney](ai-gangs.md#aggro-in-coney)) and the cast's idle fade at a scene's release
   (`PlayLevelMode::placeReleased`, `repo:src/platform/play_level_scene.cpp`, [Scenes in
-  Coney](scenes.md#release-idle)). The disc test (`repo:tests/platform/disc_level80_brawl_test.cpp`, the scene
-  skipped) shows the last Destroyer fighting at update 7, all twelve targeting Cochise or Swan or spectating from
-  update 9, none failing from 12 to 30, none on the idle player, and after the attack order the checks of item 5 of
-  the list What Coney must do ([the timeline](#level80-fight-timeline)).
+  Coney](scenes.md#release-idle)). The disc tests (`repo:tests/platform/disc_level80_brawl_test.cpp`, the scene
+  skipped) print all twelve holding the idle fade at the scene's end, none fighting at update 1, the last fighting at
+  update 7, all twelve targeting Cochise or Swan or spectating from update 9 to 30, no HelpRespond in the first 30
+  updates, none on the idle player, and after the attack order the checks of item 5 of the list What Coney must do
+  ([the timeline](#level80-fight-timeline)). The release test fails below update 5 for the last fight and on any
+  HelpRespond before update 13.
 - **Still different: the ring** (#1663). Sixty updates after the scene's end 10 of the original's twelve Destroyers
   stand more than 0.5 m from their flags (run r-20261123-level80-block-breaks), Coney's 5. Coney's waiting attackers
   stand where they are inside the reposition's ring, a marked stand-in in its fight goal for the band-keeping move

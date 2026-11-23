@@ -5621,6 +5621,7 @@ page = "ai-brain-types.md#think-warrior"
 kind = "type 3 think"
 role = "[The Warriors' pick-ups](ai-gangs.md#warrior-pickups) and the fight push"
 level = "confirmed-code"
+note = "two ports: step 1, the fight push, is `Brain::thinkFightOnSight` (src/ai/brain.h); the swap prompt is the one below"
 coney = "src/ai/swap_prompt.h:thinkSwapPrompt"
 status = "compared"
 
