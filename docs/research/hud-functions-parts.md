@@ -169,15 +169,16 @@ checked.
 #### Open: where the status icon sits across {#q-crew-icon-x}
 
 The layout's numbers hold in the running game (confirmed (runtime), run r-20261122-crew-status-layout, with one
-Warrior cuffed): the floats `0x0050cfe4`-`0x0050d01c` keep their static values, the device flags at `*0x0050cdb4` are
-`0x01`, and the list's cell at `+0x12f0` is (0.03, 0, -0.018), its step at `+0x1310` (0.12, 0, 0.08). On the
-original's screen the portrait is 0.075 of the height tall and the icon 0.039 below its centre, as the layout gives,
-but the icon sits only about 0.018 of the width left of the portrait's centre, not 0.069, and the portrait about 0.48
-across, not 0.517 (measured from one capture). Coney draws the layout's numbers, so its icon is further left. How the
-original turns a widget's x into the screen's (an anchor, or a scale about the centre) was not found; Coney's action
-prompt sits right of the original's in the same capture, so it may be the HUD's x mapping in general rather than the
-list (speculative, [q-crew-icon-x](#q-crew-icon-x)). A test: draw a widget at a known x in PCSX2 (write a GO sign
-or prompt position) and measure where it lands.
+Warrior cuffed): the status scale `0x0050cfe4` is -2.3 and the origin `0x0050d000`-`0x0050d004` (0.407, 0.07), the
+device flags at `*0x0050cdb4` are `0x01`, and the list's cell at `+0x12f0` is (0.03, 0, -0.018), its step at `+0x1310`
+(0.12, 0, 0.08); the other floats of the block were not recorded in that run. On the original's screen, measured from
+one capture of the same state and not recorded (inferred), the portrait is 0.075 of the height tall and the icon 0.039
+below its centre, as the layout gives, but the icon sits only about 0.018 of the width left of the portrait's centre,
+not 0.069, and the portrait about 0.48 across, not 0.517. Coney draws the layout's numbers, so its icon is further
+left. How the original turns a widget's x into the screen's (an anchor, or a scale about the centre) was not found;
+Coney's action prompt sits right of the original's in the same capture, so it may be the HUD's x mapping in general
+rather than the list (speculative, [q-crew-icon-x](#q-crew-icon-x)). A test: draw a widget at a known x in PCSX2
+(write a GO sign or prompt position) and measure where it lands.
 
 ## After `GUI/BaseWidget.cpp` (no path string): mash meter and chase HUD {#fn-after-basewidget}
 

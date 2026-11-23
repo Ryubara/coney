@@ -112,18 +112,20 @@ inline constexpr std::uint64_t kCrewPulseMs = 800;
 /// factors), the shift of a short row and the caption's offsets (`0x0050cfe4`-`0x0050d01c`, CrewStatus_Setup's
 /// arguments from `HUD_LevelSetUp`).
 struct CrewLayout {
-    GuiPoint origin{0.407F, 0.07F};          ///< `0x0050d000`, `0x0050d004`.
-    std::size_t perRow = 4;                  ///< CrewStatus_Setup's last argument.
-    float columnStep = 0.12F * 0.6F;         ///< The step's x (0.12) times `0x0050cfec`.
-    float rowStep = 0.08F * 1.2F;            ///< The step's y (0.08) times `0x0050cff0`.
-    float shortRowShift = 0.11F;             ///< `0x0050d008`: added to x while fewer than four are listed ...
-    float shortRowStep = -0.025F;            ///< ... with `0x0050d00c` per entry after the first.
-    GuiPoint statusOffset{-0.069F, 0.0414F}; ///< The cell (0.03, -0.018) times `0x0050cfe4` (-2.3).
-    float portraitSize = 0.05F * 1.8F;       ///< The icon size (0.05) times `0x0050cfe8`.
-    float statusSize = 0.05F * 0.7F;         ///< The icon size times the aspect (0.7) and `0x0050cffc` (1.0).
-    float captionX = -0.05F + 0.13F;         ///< `0x0050cff4` plus `0x0050d010`, from the origin's x ...
-    float captionStep = 0.01F;  ///< ... with `0x0050d014` per entry (count mod 4, less one; 4 and 8 count 1).
-    float captionDrop = -0.01F; ///< `0x0050cff8`, added under the last row.
+    GuiPoint origin{0.407F, 0.07F};  ///< `0x0050d000`, `0x0050d004`.
+    std::size_t perRow = 4;          ///< CrewStatus_Setup's last argument.
+    float columnStep = 0.12F * 0.6F; ///< The step's x (0.12) times `0x0050cfec`.
+    float rowStep = 0.08F * 1.2F;    ///< The step's y (0.08) times `0x0050cff0`.
+    float shortRowShift = 0.11F;     ///< `0x0050d008`: added to x while fewer than four are listed ...
+    float shortRowStep = -0.025F;    ///< ... with `0x0050d00c` per entry after the first.
+    /// The cell (0.03, -0.018) times `0x0050cfe4` (-2.3). The original's screen shows the icon about 0.018 left, not
+    /// 0.069: an open question (docs/research/hud-functions-parts.md, q-crew-icon-x).
+    GuiPoint statusOffset{-0.069F, 0.0414F};
+    float portraitSize = 0.05F * 1.8F; ///< The icon size (0.05) times `0x0050cfe8`.
+    float statusSize = 0.05F * 0.7F;   ///< The icon size times the aspect (0.7) and `0x0050cffc` (1.0).
+    float captionX = -0.05F + 0.13F;   ///< `0x0050cff4` plus `0x0050d010`, from the origin's x ...
+    float captionStep = 0.01F;         ///< ... with `0x0050d014` per entry (count mod 4, less one; 4 and 8 count 1).
+    float captionDrop = -0.01F;        ///< `0x0050cff8`, added under the last row.
 };
 
 /// The list's layout in the default video mode (the 16:9, PAL and progressive values are not ported, #890).
@@ -168,7 +170,9 @@ class CrewStatusList {
     /// @orig 0x001b3960 HUD_TagAddHuman (unknown)
     bool add(const CrewMember& member, const CrewFrame& frame, const CrewTexts& texts, std::uint64_t nowMs);
 
-    /// Drops `handle`'s entry and moves every later one up a place. Returns whether he was listed.
+    /// Drops `handle`'s entry and moves every later one up a place. Returns whether he was listed. Only update() calls
+    /// it: the original's other callers, `Human_Destroy` and `Human_MakePlayer`, are not wired to it (a destroyed human
+    /// leaves at the next update; the hand-over keeps the entry, q-crew-remove on the research page).
     /// @orig 0x001a07f0 CrewStatus_Remove (unknown)
     bool remove(double handle);
 
