@@ -326,6 +326,31 @@ SDL_GPUSampler* GpuRenderer::samplerFor(bool linear, graphics::TextureAddress ad
     return m_samplers[(linear ? 2 : 0) + (repeat ? 1 : 0)];
 }
 
+std::vector<GpuScene::EffectTexture> GpuRenderer::effectTexturesOf(const graphics::FrameDescription& frame,
+                                                                   std::vector<PendingUpload>& uploads) {
+    std::vector<GpuScene::EffectTexture> textures(frame.textureCount() + 1);
+    std::vector<bool> asked(textures.size(), false);
+    for (const graphics::FramePass& pass : frame.passes()) {
+        const auto* effects = std::get_if<graphics::EffectPass>(&pass);
+        if (effects == nullptr) {
+            continue;
+        }
+        for (const graphics::EffectDraw& draw : effects->draws) {
+            const graphics::FrameTextureId id = draw.texture;
+            if (id == graphics::kNoFrameTexture || id >= textures.size() || asked[id]) {
+                continue;
+            }
+            asked[id] = true;
+            const graphics::Texture* texture = frame.textureOf(id);
+            if (const OwnedTexture* owned = texture != nullptr ? textureFor(texture, uploads) : nullptr;
+                owned != nullptr) {
+                textures[id] = GpuScene::EffectTexture{owned->texture, owned->alpha, owned->linear};
+            }
+        }
+    }
+    return textures;
+}
+
 const GpuRenderer::OwnedTexture* GpuRenderer::textureFor(const graphics::Texture* texture,
                                                          std::vector<PendingUpload>& uploads) {
     // What the texture is: a frame kept as pixels (a movie's, a test card's) or a sprite sheet read through librw.
@@ -382,6 +407,14 @@ const GpuRenderer::OwnedTexture* GpuRenderer::textureFor(const graphics::Texture
         entry->revision = revision;
         entry->value.linear = linear;
     }
+    // Whether a texel is not opaque, as librw reads an image when it makes a raster of it (Image::hasAlpha).
+    entry->value.alpha = false;
+    for (std::size_t at = 3; at < upload.pixels.size(); at += 4) {
+        if (upload.pixels[at] != 255) {
+            entry->value.alpha = true;
+            break;
+        }
+    }
     upload.texture = entry->value.texture;
     upload.serial = texture->serial();
     uploads.push_back(std::move(upload));
@@ -425,7 +458,7 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     }
     GpuScene* scene = store != nullptr ? m_scene.get() : nullptr;
     if (scene != nullptr) {
-        scene->prepare(frame, *store, m_frame, m_white.texture);
+        scene->prepare(frame, *store, m_frame, m_white.texture, effectTexturesOf(frame, uploads));
     }
 
     // 2. Everything uploaded through one transfer buffer: the vertices, the indices, each texture's pixels, then the
@@ -529,6 +562,13 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     }
     const std::span<const graphics::FramePass> passes = frame.passes();
     for (std::size_t p = 0; p < passes.size(); ++p) {
+        // An effect pass: drawn by the scene drawing, in the depth the scene passes left.
+        if (std::holds_alternative<graphics::EffectPass>(passes[p])) {
+            if (scene != nullptr) {
+                scene->draw(commands, pass, p);
+            }
+            continue;
+        }
         if (const auto* scenePass = std::get_if<graphics::ScenePass>(&passes[p]); scenePass != nullptr) {
             if (scenePass->clearDepth) {
                 // The depth alone cleared to the far plane before the pass (the Z-only clear after the level's

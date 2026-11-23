@@ -202,6 +202,9 @@ void Gl3Renderer::drawScene(const graphics::FrameDescription& frame, const graph
         return;
     }
     if ((target.camera == nullptr && !draw::recording()) || target.assets == nullptr) {
+        // Nothing to draw into (the NULL or GPU backend): the draw's states still reach the draw layer, so an effect
+        // draw after it reads the states GL3 would leave (EffectDraw::inForce).
+        applySceneStates(draw.states);
         return;
     }
     rw::Atomic* atomic = target.assets->atomic(draw.mesh);
@@ -296,9 +299,9 @@ rw::Raster* Gl3Renderer::bindTexture(const graphics::Texture* texture, graphics:
 
 void Gl3Renderer::drawEffect(const graphics::FrameDescription& frame, const graphics::EffectDraw& draw,
                              const Target& target) {
-    if (!drawing2d(target)) {
-        return; // NULL backend, not recording: nothing to draw
-    }
+    // NULL or GPU backend, not recording: nothing is drawn, but the states still reach the draw layer, so the draws
+    // after it read what GL3 would leave (the effect draws' EffectDraw::inForce, the scene draws' states in force).
+    const bool drawing = drawing2d(target);
     const graphics::EffectStates& states = draw.states;
     // The fog as it stands, for the draw that puts it back.
     const bool fogged = draw::getRenderState(rw::FOGENABLE) != 0;
@@ -326,14 +329,38 @@ void Gl3Renderer::drawEffect(const graphics::FrameDescription& frame, const grap
         draw::setRenderState(rw::TEXTUREADDRESS, rwAddress(*states.address));
     }
     // The texture's raster: none for flat colour.
-    const rw::Texture* rwTexture = rwTextureOf(frame.textureOf(draw.texture));
-    draw::setRenderStatePtr(rw::TEXTURERASTER, rwTexture != nullptr ? rwTexture->raster : nullptr);
+    if (drawing) {
+        const rw::Texture* rwTexture = rwTextureOf(frame.textureOf(draw.texture));
+        draw::setRenderStatePtr(rw::TEXTURERASTER, rwTexture != nullptr ? rwTexture->raster : nullptr);
+    }
     if (states.blend) {
         draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
         draw::setRenderState(rw::DESTBLEND,
                              *states.blend == graphics::EffectBlend::Additive ? rw::BLENDONE : rw::BLENDINVSRCALPHA);
     }
 
+    if (drawing) {
+        drawEffectPrimitives(frame, draw);
+    }
+
+    // What the draw puts back for the solid draws after it.
+    const graphics::EffectRestore& restore = draw.restore;
+    if (restore.fog) {
+        draw::setRenderState(rw::FOGENABLE, fogged ? 1 : 0);
+    }
+    if (restore.blend) {
+        draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+        draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    }
+    if (restore.depthWrite) {
+        draw::setRenderState(rw::ZWRITEENABLE, 1);
+    }
+    if (restore.cull) {
+        draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
+    }
+}
+
+void Gl3Renderer::drawEffectPrimitives(const graphics::FrameDescription& frame, const graphics::EffectDraw& draw) {
     // The corners in librw's vertex type, with the colour and texture coordinate a lit sprite has and no normal.
     const std::span<const graphics::EffectVertex> corners = frame.effectVerticesOf(draw);
     std::vector<rw::gl3::Im3DVertex> vertices(corners.size());
@@ -360,22 +387,6 @@ void Gl3Renderer::drawEffect(const graphics::FrameDescription& frame, const grap
         draw::im3dRenderIndexedPrimitive(primitive, indices.data(), static_cast<rw::int32>(indices.size()));
     }
     draw::im3dEnd();
-
-    // What the draw puts back for the solid draws after it.
-    const graphics::EffectRestore& restore = draw.restore;
-    if (restore.fog) {
-        draw::setRenderState(rw::FOGENABLE, fogged ? 1 : 0);
-    }
-    if (restore.blend) {
-        draw::setRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-        draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
-    }
-    if (restore.depthWrite) {
-        draw::setRenderState(rw::ZWRITEENABLE, 1);
-    }
-    if (restore.cull) {
-        draw::setRenderState(rw::CULLMODE, rw::CULLBACK);
-    }
 }
 
 void Gl3Renderer::set2dStates(rw::Raster* raster, bool opaque) {

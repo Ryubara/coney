@@ -105,6 +105,7 @@ class GpuRenderer {
         int width = 0;
         int height = 0;
         bool linear = true; // sampled blending the four nearest texels, else the nearest one
+        bool alpha = false; // a texel is not opaque (an effect draw blends for it: graphics::effectLookOf())
 
         OwnedTexture() = default;
         OwnedTexture(SDL_GPUDevice* owner, SDL_GPUTexture* made, int w, int h, bool blend)
@@ -138,6 +139,10 @@ class GpuRenderer {
     /// `uploads` when it is new or has a new revision; null when it cannot be drawn (a kind of texture the GPU renderer
     /// does not take, or SDL refused it).
     const OwnedTexture* textureFor(const graphics::Texture* texture, std::vector<PendingUpload>& uploads);
+    /// The textures the frame's effect draws sample, by the frame's texture ids (GpuScene::EffectTexture; index 0 and a
+    /// texture it cannot draw hold none), each uploaded through `uploads` when new as textureFor() does.
+    std::vector<GpuScene::EffectTexture> effectTexturesOf(const graphics::FrameDescription& frame,
+                                                          std::vector<PendingUpload>& uploads);
     /// Forgets what `uploads` meant to put on the GPU (a frame that failed before it could): the white texel and each
     /// texture's cache entry, so the next frame uploads them again.
     void forgetUploads(const std::vector<PendingUpload>& uploads);

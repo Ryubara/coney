@@ -708,7 +708,10 @@ ViewPasses RenderEngine::viewPassesOf(const graphics::Draw3d& draw) {
 void RenderEngine::drawEffect(const graphics::EffectDraw& draw, std::span<const graphics::EffectVertex> vertices,
                               std::span<const std::uint16_t> indices, const graphics::Texture* texture) {
     CONEY_ASSERT(m_inFrame);
-    m_frame.addEffectDraw(draw, vertices, indices, texture);
+    // The states in force before it, for the states it leaves as they stand: the GPU renderer draws it in them.
+    graphics::EffectDraw recorded = draw;
+    recorded.inForce = effectStatesInForce();
+    m_frame.addEffectDraw(recorded, vertices, indices, texture);
     drawDescribed();
 }
 

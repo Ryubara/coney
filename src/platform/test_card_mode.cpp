@@ -10,6 +10,7 @@
 #include <span>
 #include <utility>
 
+#include "graphics/frame_description.h"
 #include "graphics/screen.h"
 #include "platform/movie_screen.h"
 #include "platform/pixel_texture.h"
@@ -89,8 +90,10 @@ std::array<LogicalVertex, 6> rectangleTriangles(float x, float y, float w, float
 std::expected<std::unique_ptr<TestCardMode>, Error> TestCardMode::create(RenderEngine& engine, std::string_view name) {
     const auto found = std::ranges::find(kTestCardNames, name);
     if (found == kTestCardNames.end()) {
-        return fail(ErrorCode::NotFound,
-                    std::format("no test card \"{}\" (shapes, textures or triangles, or the 3D card scene)", name));
+        return fail(
+            ErrorCode::NotFound,
+            std::format("no test card \"{}\" (shapes, textures or triangles, or the 3D cards scene and effects)",
+                        name));
     }
     const auto card = static_cast<Card>(found - kTestCardNames.begin());
     return std::unique_ptr<TestCardMode>(new TestCardMode(engine, card));
@@ -103,7 +106,7 @@ TestCardMode::TestCardMode(RenderEngine& engine, Card card) : m_engine(engine), 
     m_textures.push_back(makeTexture(engine, checker, graphics::TextureFilter::Linear));
     m_textures.push_back(makeTexture(engine, checker, graphics::TextureFilter::Nearest));
     m_textures.push_back(makeTexture(engine, alphaRampTexels(), graphics::TextureFilter::Linear));
-    if (card == Card::Scene) {
+    if (card == Card::Scene || card == Card::Effects) {
         m_scene = std::make_unique<TestCardScene>(engine);
     }
 }
@@ -123,6 +126,10 @@ void TestCardMode::render(const RenderTime& /*time*/) {
         break;
     case Card::Scene:
         m_scene->draw();
+        break;
+    case Card::Effects:
+        m_scene->draw();
+        drawEffects();
         break;
     }
     m_engine.present();
@@ -231,6 +238,85 @@ void TestCardMode::drawTriangles() {
     // The checkerboard on triangles, repeated twice each way.
     const auto repeated = rectangleTriangles(320.0F, 288.0F, 256.0F, 128.0F, 2.0F, graphics::kWhite);
     m_engine.drawTriangles(m_textures[0].get(), repeated, graphics::TriangleStates{true, 0.0F});
+}
+
+// The effects card's effect pass, after the scene card through its camera (the screen's left is +x): each draw sets
+// the states the game's own effects set (platform/particle_renderer.cpp, water_renderer.cpp, line_list.cpp).
+void TestCardMode::drawEffects() {
+    using graphics::EffectBlend;
+    using graphics::EffectDraw;
+    using graphics::EffectVertex;
+    using Point = std::array<float, 3>;
+    // Two triangles over the corners as the camera sees them, texture coordinates 0 to 1 across, `colour` at each.
+    const auto quad = [](Point topLeft, Point topRight, Point bottomLeft, Point bottomRight, Rgba colour) {
+        const auto corner = [colour](Point p, float u, float v) {
+            return EffectVertex{p[0], p[1], p[2], colour, u, v};
+        };
+        return std::array<EffectVertex, 6>{corner(topLeft, 0.0F, 0.0F),    corner(bottomLeft, 0.0F, 1.0F),
+                                           corner(topRight, 1.0F, 0.0F),   corner(topRight, 1.0F, 0.0F),
+                                           corner(bottomLeft, 0.0F, 1.0F), corner(bottomRight, 1.0F, 1.0F)};
+    };
+    // A particle's states: depth tested, not written, unfogged, unculled, the vertex alpha used, then put back.
+    const auto particle = [](EffectBlend blend) {
+        EffectDraw draw;
+        draw.states.depthTest = true;
+        draw.states.depthWrite = false;
+        draw.states.fog = false;
+        draw.states.vertexAlpha = true;
+        draw.states.cull = graphics::CullFaces::None;
+        draw.states.blend = blend;
+        draw.restore = graphics::EffectRestore{.fog = true, .blend = true, .depthWrite = true, .cull = true};
+        return draw;
+    };
+
+    // A translucent sheen on the floor, which sets no depth or fog state (as the water does): drawn in the scene's.
+    EffectDraw sheen;
+    sheen.states.cull = graphics::CullFaces::None;
+    sheen.states.vertexAlpha = true;
+    sheen.states.blend = EffectBlend::Alpha;
+    sheen.restore.cull = true;
+    m_engine.drawEffect(sheen,
+                        quad({5.0F, 0.02F, 45.0F}, {-5.0F, 0.02F, 45.0F}, {5.0F, 0.02F, 18.0F}, {-5.0F, 0.02F, 18.0F},
+                             Rgba{120, 170, 255, 140}),
+                        {}, nullptr);
+    // A grey sprite blended by its vertex alpha, in front of the sign.
+    m_engine.drawEffect(
+        particle(EffectBlend::Alpha),
+        quad({3.5F, 3.0F, 8.0F}, {1.5F, 3.0F, 8.0F}, {3.5F, 1.0F, 8.0F}, {1.5F, 1.0F, 8.0F}, Rgba{200, 200, 200, 120}),
+        {}, nullptr);
+    // An orange glow added, its left edge behind the crate.
+    m_engine.drawEffect(particle(EffectBlend::Additive),
+                        quad({-1.0F, 4.0F, 12.0F}, {-3.0F, 4.0F, 12.0F}, {-1.0F, 1.0F, 12.0F}, {-3.0F, 1.0F, 12.0F},
+                             Rgba{255, 160, 40, 160}),
+                        {}, nullptr);
+    // The alpha ramp as a sprite, its vertex alpha off: its texture's alpha blends it.
+    EffectDraw ramp;
+    ramp.states.vertexAlpha = false;
+    ramp.states.fog = false;
+    ramp.states.filter = graphics::TextureFilter::Linear;
+    ramp.states.address = graphics::TextureAddress::Clamp;
+    m_engine.drawEffect(ramp,
+                        quad({-0.5F, 1.4F, 5.0F}, {-2.5F, 1.4F, 5.0F}, {-0.5F, 0.4F, 5.0F}, {-2.5F, 0.4F, 5.0F},
+                             Rgba{255, 255, 255, 255}),
+                        {}, m_textures[2].get());
+    // A line list round the crate, as the debug tools' lines set their states.
+    EffectDraw lines;
+    lines.shape = graphics::EffectShape::Lines;
+    lines.states.depthTest = true;
+    lines.states.depthWrite = false;
+    lines.states.vertexAlpha = false;
+    lines.restore.depthWrite = true;
+    const Rgba red{230, 40, 40, 255};
+    const std::array<Point, 4> box{
+        {{1.2F, 2.7F, 6.9F}, {-1.7F, 2.7F, 6.9F}, {-1.7F, 0.05F, 6.9F}, {1.2F, 0.05F, 6.9F}}};
+    std::array<EffectVertex, 8> edges{};
+    for (std::size_t i = 0; i < box.size(); ++i) {
+        const Point& from = box[i];
+        const Point& to = box[(i + 1) % box.size()];
+        edges[i * 2] = EffectVertex{from[0], from[1], from[2], red, 0.0F, 0.0F};
+        edges[(i * 2) + 1] = EffectVertex{to[0], to[1], to[2], red, 0.0F, 0.0F};
+    }
+    m_engine.drawEffect(lines, edges, {}, nullptr);
 }
 
 } // namespace coney::platform

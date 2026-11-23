@@ -245,6 +245,26 @@ graphics::SceneStates sceneStatesInForce() {
     return states;
 }
 
+graphics::EffectInForce effectStatesInForce() {
+    const graphics::SceneStates scene = sceneStatesInForce();
+    graphics::EffectInForce inForce;
+    inForce.depthTest = scene.depthTest;
+    inForce.depthWrite = scene.depthWrite;
+    inForce.cull = scene.cull;
+    inForce.fog = scene.fog;
+    inForce.fogColour = scene.fogColour;
+    inForce.alphaTest = scene.alphaTest;
+    inForce.vertexAlpha = draw::getRenderState(rw::VERTEXALPHA) != 0;
+    if (draw::getRenderState(rw::SRCBLEND) != rw::BLENDSRCALPHA) {
+        inForce.blend = graphics::BlendInForce::Replace;
+    } else if (draw::getRenderState(rw::DESTBLEND) == rw::BLENDONE) {
+        inForce.blend = graphics::BlendInForce::Additive;
+    } else {
+        inForce.blend = graphics::BlendInForce::Alpha;
+    }
+    return inForce;
+}
+
 MaterialChange::MaterialChange(rw::Atomic& atomic, const graphics::Material3d& material) : m_geometry(atomic.geometry) {
     rw::Geometry* geometry = m_geometry;
     switch (material.colour) {

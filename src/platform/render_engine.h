@@ -336,9 +336,10 @@ class RenderEngine final : public graphics::RenderDevice {
     /// Adds the effect draw `draw` (a sprite batch, a ribbon, a surface or lines in RenderWare's world axes) with its
     /// corners `vertices`, its `indices` into them (none: drawn in the order of the corners) and its `texture` (null:
     /// flat colour; it must outlive the frame) to the frame description (graphics::FrameDescription::addEffectDraw()),
-    /// and has the GL3 renderer draw it at once, in its place among the 3D drawing; the GPU renderer does not draw it
-    /// yet (item 20 of docs/engine/renderer.md#order). Only between beginFrame() and present() (checked by
-    /// CONEY_ASSERT).
+    /// with the render states in force before it (graphics::EffectDraw::inForce, effectStatesInForce()), and has the
+    /// GL3 renderer draw it at once, in its place among the 3D drawing; the GPU renderer draws it at present()
+    /// (docs/engine/gpu-renderer.md#effects). Its states and those it puts back reach the draw layer on every backend.
+    /// Only between beginFrame() and present() (checked by CONEY_ASSERT).
     void drawEffect(const graphics::EffectDraw& draw, std::span<const graphics::EffectVertex> vertices,
                     std::span<const std::uint16_t> indices, const graphics::Texture* texture);
 

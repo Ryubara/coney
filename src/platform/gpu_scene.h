@@ -41,6 +41,12 @@ namespace coney::platform {
 /// draws of the same meshes (Draw3d::view: flat unlit colours, or a wireframe) and as the scene passes' lines, a line
 /// list (docs/engine/gpu-renderer.md#mesh-views).
 ///
+/// Its effect passes (the particles, the glints, the ground fog, the water, the throw arc, the see-through panes, the
+/// blob shadows, the health rings, the coronas and the debug tools' lines: docs/engine/gpu-renderer.md#effects) are
+/// drawn with the same shaders in the same depth buffer: each corner an unlit vertex in its own colour
+/// (graphics::meshVertexOf()), each draw in the states graphics::effectLookOf() works out from the states it sets and
+/// those in force when it was recorded, and its texture one of the renderer's 2D textures (EffectTexture).
+///
 /// A frame is drawn in steps the renderer interleaves with its own: prepare() reads the frame, layUploads(),
 /// writeUploads() and recordUploads() put what is new on the GPU in the renderer's copy pass, and draw() draws one
 /// scene pass in its render pass. A mesh or texture no frame has drawn for kKeepFrames frames is let go; ids are never
@@ -51,6 +57,15 @@ class GpuScene {
   public:
     /// How many frames a mesh or texture no frame draws is kept: about ten seconds of frames at 60 a second.
     static constexpr std::uint64_t kKeepFrames = 600;
+
+    /// A texture of the frame's table (graphics::FrameTextureId) as the renderer holds it for the effect draws: the
+    /// GPU's texture (null when it cannot be drawn), whether a texel is not opaque (graphics::effectLookOf()'s
+    /// `textureAlpha`) and whether it is filtered linearly when the draw sets no filter.
+    struct EffectTexture {
+        SDL_GPUTexture* texture = nullptr;
+        bool alpha = false;
+        bool linear = true;
+    };
 
     /// Makes the shaders (in the format `device` takes) for a target of `colourFormat` with a depth buffer of
     /// `depthFormat` (`SDL_GPUTextureFormat`s); the pipelines are made as the states first need them.
@@ -70,9 +85,10 @@ class GpuScene {
     /// pass with no camera, a mesh the store does not hold and a sub-mesh SDL cannot make a buffer or pipeline for are
     /// left out, as a missing part of the picture; so is a posed draw whose mesh cannot be skinned by its pose
     /// (graphics::posingOf()). The frame's poses go into the bone palette (graphics::bonePaletteOf()) for the copy
-    /// pass.
+    /// pass. The effect passes' draws sample `effectTextures`, by the frame's texture ids (index 0, no texture,
+    /// samples `white`); a draw whose texture is past it or has no GPU texture is left out.
     void prepare(const graphics::FrameDescription& frame, const graphics::AssetStore& store, std::uint64_t frameNumber,
-                 SDL_GPUTexture* white);
+                 SDL_GPUTexture* white, std::span<const EffectTexture> effectTextures = {});
     /// Places prepare()'s uploads in the renderer's upload buffer from `offset` on and returns where they end.
     [[nodiscard]] std::uint32_t layUploads(std::uint32_t offset);
     /// Writes the uploads' bytes into the mapped upload buffer at their places.
@@ -147,8 +163,9 @@ class GpuScene {
         bool depthTest = true;
         bool depthWrite = true;
         graphics::CullFaces cull = graphics::CullFaces::Back;
-        bool wire = false;  // the mesh views' wireframe: lines filled, pulled towards the camera
-        bool lines = false; // the scene lines: a line list
+        bool wire = false;     // the mesh views' wireframe: lines filled, pulled towards the camera
+        bool lines = false;    // the scene lines and the effects' lines: a line list
+        bool additive = false; // blended by adding source alpha times the colour (SRCALPHA over ONE)
 
         friend auto operator<=>(const PipelineKey&, const PipelineKey&) = default;
     };
@@ -188,6 +205,7 @@ class GpuScene {
         SDL_GPUSampler* sampler = nullptr;
         VertexUniform vertex;
         FragmentUniform fragment;
+        std::int32_t vertexOffset = 0; // added to each index: an effect draw's first corner in the effects' buffer
     };
 
     explicit GpuScene(SDL_GPUDevice* device) : m_device(device), m_bones(device) {}
@@ -229,6 +247,13 @@ class GpuScene {
     void prepareLines(std::size_t pass, const graphics::ScenePass& scene, const graphics::SceneCamera& camera);
     /// Makes the line buffer big enough for m_lineVertices and queues their upload; drops the lines when SDL refuses.
     void uploadLines();
+    /// Adds the sub-draws of the frame's effect pass `effects` (seen through `camera`) to the list, their corners and
+    /// indices to m_effectVertices and m_effectIndices.
+    void prepareEffects(const graphics::EffectPass& effects, const graphics::SceneCamera& camera,
+                        const graphics::FrameDescription& frame, std::span<const EffectTexture> textures);
+    /// Makes the effects' buffers big enough and queues their upload, then points the effect sub-draws at them; drops
+    /// those sub-draws when SDL refuses.
+    void uploadEffects();
 
     SDL_GPUDevice* m_device;
     SDL_GPUShader* m_vertexShader = nullptr; // kept for the pipelines made later
@@ -251,6 +276,13 @@ class GpuScene {
     std::uint32_t m_lineCapacity = 0;                             // its size in bytes
     SDL_GPUTexture* m_white = nullptr;                            // the texture an untextured draw samples
     SDL_GPUSampler* m_lineSampler = nullptr;                      // its sampler
+    std::vector<graphics::MeshVertex> m_effectVertices;           // the frame's effect corners
+    std::vector<std::uint16_t> m_effectIndices;                   // and indices, each draw's from its first corner
+    std::vector<std::size_t> m_effectDraws;                       // which of m_draws are effect sub-draws
+    SDL_GPUBuffer* m_effectVertexBuffer = nullptr;                // m_effectVertices on the GPU, kept and grown
+    std::uint32_t m_effectVertexCapacity = 0;                     // its size in bytes
+    SDL_GPUBuffer* m_effectIndexBuffer = nullptr;                 // m_effectIndices on the GPU, kept and grown
+    std::uint32_t m_effectIndexCapacity = 0;                      // its size in bytes
 };
 
 } // namespace coney::platform

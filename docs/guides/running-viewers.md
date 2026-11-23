@@ -334,6 +334,7 @@ data). CI's
 | `textures` | a 16 x 16 checkerboard at its own size, enlarged eight times filtered linearly and to the nearest texel, repeated three times each way, its middle quarter tinted, and an alpha ramp over three coloured bars |
 | `triangles` | a fan of 24 triangles with a colour at each corner, the alpha ramp on triangles tested at a half (its left half dropped) and at 0 (all of it blended), and the checkerboard repeated on triangles |
 | `scene` | a small 3D scene through a camera of its own: a floor, a sign under the GS alpha test, a tinted crate, a dual-layer panel and a back wall that culling drops, lit by an ambient, a directional and a point light, in fog ([Drawing the scene passes](../engine/gpu-renderer.md#scene)) |
+| `effects` | the `scene` card, then an effect pass through its camera: a translucent sheen on the floor in the fog in force, a sprite blended by its vertex alpha, a glow added partly behind the crate, the alpha ramp as a sprite blended by its texture's alpha and a line list round the crate ([Drawing the effect passes](../engine/gpu-renderer.md#effects)) |
 
 ```sh
 build/dev/src/platform/coney --test-card textures --renderer gpu --frames 3 --render-size 320x224 --screenshot ../../scratch/card.png

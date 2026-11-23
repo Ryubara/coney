@@ -18,7 +18,7 @@ class RenderEngine;
 class TestCardScene;
 
 /// The test cards `--test-card` draws, by name.
-inline constexpr std::array<std::string_view, 4> kTestCardNames{"shapes", "textures", "triangles", "scene"};
+inline constexpr std::array<std::string_view, 5> kTestCardNames{"shapes", "textures", "triangles", "scene", "effects"};
 
 /// Coney's own test cards (`--test-card NAME`, docs/guides/running-viewers.md#test-cards): fixed pictures of the
 /// 2D drawing every renderer must draw alike, made of Coney's own shapes and textures generated in code (no game data),
@@ -32,6 +32,9 @@ inline constexpr std::array<std::string_view, 4> kTestCardNames{"shapes", "textu
 /// - `triangles`: a fan of triangles with a colour at each corner, and textured triangles alpha tested at 0 (every
 ///   fragment) and at a half, clamped and repeated;
 /// - `scene`: a small 3D scene through the frame description's scene pass (TestCardScene, test_card_scene.h).
+/// - `effects`: the scene card, then an effect pass through its camera: a translucent surface on the floor in the fog
+///   in force, a sprite blended by its vertex alpha, a glow added partly behind the crate, the alpha ramp as a sprite
+///   blended by its texture's alpha, and a line list round the crate (docs/engine/gpu-renderer.md#effects).
 ///
 /// A debug tool, in the debug tools' build only; Coney's own, with no counterpart in the original.
 class TestCardMode final : public GameMode {
@@ -60,7 +63,7 @@ class TestCardMode final : public GameMode {
 
   private:
     /// Which card.
-    enum class Card : std::uint8_t { Shapes, Textures, Triangles, Scene };
+    enum class Card : std::uint8_t { Shapes, Textures, Triangles, Scene, Effects };
 
     TestCardMode(RenderEngine& engine, Card card);
 
@@ -70,12 +73,14 @@ class TestCardMode final : public GameMode {
     void drawTextures();
     // The triangles card: coloured triangles and two alpha tests on triangles.
     void drawTriangles();
+    // The effects card's effect pass, drawn after the scene card through its camera.
+    void drawEffects();
 
     RenderEngine& m_engine;
     Card m_card;
     // The cards' textures, made for the engine's renderer (a librw raster for OpenGL, pixels for the GPU renderer).
     std::vector<std::unique_ptr<graphics::Texture>> m_textures;
-    // The scene card's meshes and textures, made for it alone.
+    // The scene card's meshes and textures, made for it and the effects card alone.
     std::unique_ptr<TestCardScene> m_scene;
 };
 
