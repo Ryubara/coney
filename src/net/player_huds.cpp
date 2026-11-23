@@ -41,7 +41,7 @@ bool flag(const std::array<FieldValue, kHudFieldCount>& values, HudField f) { re
 
 } // namespace
 
-HudWords playerHudWords(const hud::PlayerHudState& state) {
+HudWords playerHudWords(const hud::PlayerHudState& state, NetId human) {
     const hud::PanelValues& panel = state.panel;
     std::array<FieldValue, kHudFieldCount> values{};
     values.at(at(HudField::Rage)) = held(HudField::Rage, panel.rage);
@@ -57,6 +57,7 @@ HudWords playerHudWords(const hud::PlayerHudState& state) {
     values.at(at(HudField::SelectShows)) = panel.selectShows;
     values.at(at(HudField::KnockedOut)) = state.knockedOut;
     values.at(at(HudField::CameraIgnoresStick)) = state.cameraIgnoresStick;
+    values.at(at(HudField::Human)) = FieldValue{static_cast<std::int32_t>(netIdNumber(human))};
     return hudWords(values);
 }
 
@@ -78,12 +79,20 @@ hud::PlayerHudState playerHudState(const HudWords& words) {
     return state;
 }
 
-std::vector<SnapshotHud> snapshotHuds(std::span<const hud::PlayerHudState> slots) {
+NetId playerHudHuman(const HudWords& words) {
+    // The words a decoded snapshot holds are in their fields' ranges, so the number is one of a field of 22 bits.
+    return netIdFromNumber(static_cast<std::uint32_t>(integer(hudValues(words), HudField::Human)));
+}
+
+std::vector<SnapshotHud> snapshotHuds(std::span<const hud::PlayerHudState> slots, std::span<const NetId> humans) {
     CONEY_ASSERT(slots.size() <= kMaxPlayerSlots);
     std::vector<SnapshotHud> huds;
     huds.reserve(slots.size());
     for (std::size_t slot = 0; slot < slots.size(); ++slot) {
-        huds.push_back(SnapshotHud{.slot = static_cast<std::uint8_t>(slot), .words = playerHudWords(slots[slot])});
+        // A slot past the humans given drives none.
+        const NetId human = slot < humans.size() ? humans[slot] : NetId{};
+        huds.push_back(
+            SnapshotHud{.slot = static_cast<std::uint8_t>(slot), .words = playerHudWords(slots[slot], human)});
     }
     return huds;
 }

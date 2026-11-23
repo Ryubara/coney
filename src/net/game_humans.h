@@ -58,8 +58,11 @@ class GameHumans {
 
     /// This step's HUD state of each player slot (slot i at index i, at most kMaxPlayerSlots), as the play mode's HUD
     /// step was given it, and the HUD's standing state after that step (`standing`; null for none): what the snapshots
-    /// carry for each player's HUD. Nothing while capture is off.
-    void captureHuds(std::span<const hud::PlayerHudState> slots, const hud::HudStanding* standing = nullptr);
+    /// carry for each player's HUD. `drivers` is the human each player slot drives (slot i at index i, null for a slot
+    /// nobody plays), which each slot's HUD names by the id the human has now: capture() of the step comes first, and a
+    /// human with no id (not captured yet, or gone) is named as none. Nothing while capture is off.
+    void captureHuds(std::span<const hud::PlayerHudState> slots, const hud::HudStanding* standing = nullptr,
+                     std::span<const human::Human* const> drivers = {});
 
     /// No humans and no HUDs: the level has gone. The humans' ids are retired as the next capture() would.
     void clear();

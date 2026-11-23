@@ -131,7 +131,7 @@ the loopback; the Network page will put it in front of ENet.
 
 ## Protocol {#protocol}
 
-Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 11)
+Each message is one packet: a message id byte, its fields, zero padding to a whole byte. `kProtocolVersion` (now 13)
 changes with any change to a layout or a meaning; a test pins the encoding byte for byte so a change cannot slip in
 unnoticed.
 
@@ -146,7 +146,7 @@ unnoticed.
 | 7 | PadInput | retired: one step's pad (version 2 only); the id is never reused | | |
 | 8 | InputCommands | client to server | the newest step (varint, 32 bits at most), the number of pads less one (3 bits), the newest step's pad, then each older step's "same pad" bit or pad (below); since version 3 | unreliable |
 | 9 | InputTiming | server to client | the client's lead (zigzag varint, 32 bits at most), the target lead (8); since version 3 | unreliable |
-| 10 | Snapshot | server to client | the humans as a delta against an acknowledged snapshot ([The packet](snapshots.md#packet)); since version 4 (version 7 added each player slot's HUD entries, [HUD state](snapshots.md#hud-state); version 9 the HUD's standing state, [The HUD's standing state](snapshots.md#hud-standing)) | unreliable, sequenced |
+| 10 | Snapshot | server to client | the humans as a delta against an acknowledged snapshot ([The packet](snapshots.md#packet)); since version 4 (version 7 added each player slot's HUD entries, [HUD state](snapshots.md#hud-state); version 9 the HUD's standing state, [The HUD's standing state](snapshots.md#hud-standing); version 13 the human each player slot drives, a field of its HUD entry) | unreliable, sequenced |
 | 11 | SnapshotAck | client to server | the newest snapshot decoded (varint); since version 4 | unreliable |
 | 12 | EventBatch | server to client | a step's game events of one delivery ([The batch](#event-batch)); since version 5 (version 6 added a sound's instance, SoundStop and SoundMove) | reliable, or unreliable for one-shots |
 | 13 | LoadLevel | server to client | the load (varint, from 1), the reason (8: change, restart, join), the checkpoint (16), the level name (string, 32 bytes at most, only letters, digits, `_` and `-`); since version 8 ([Levels](#levels)) | reliable |
@@ -750,6 +750,10 @@ the model above says the client runs its own follow camera; the two disagreed, a
   needs the host's camera state in the snapshot, with its protocol bump (the field table in
   [snapshots](snapshots.md), old versions refused in the handshake with its message), when built; an own camera for the
   follow shot does not stand in its way. Until then a guest keeps its follow shot while the host plays a scene.
+- **Which human it follows is the one thing the snapshots add (#1654, protocol 13).** A client's camera needs to know
+  which human its player slot drives, which no field of a human says (a human does not know a slot), so each slot's HUD
+  entry names it ([HUD state](snapshots.md#hud-state), [The human followed](client-world.md#client-camera-human)); it
+  is the player's, like the rest of the entry, and not a thing in the world.
 
 The split-screen layout of two players on one display remains a presentation choice of each machine, as
 [Cameras](network-architecture.md#sub-camera) says; a client's camera is the one player's, full screen.

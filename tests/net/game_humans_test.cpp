@@ -16,11 +16,13 @@
 #include "ai/brains.h"
 #include "animation/anim_math.h"
 #include "combat/power_class.h"
+#include "hud/hud.h"
 #include "human/human.h"
 #include "human/humans.h"
 #include "net/character_id.h"
 #include "net/client_world.h"
 #include "net/net_id.h"
+#include "net/player_huds.h"
 #include "net/snapshot.h"
 #include "net/state_digest.h"
 #include "raycast/collision_mesh.h"
@@ -177,6 +179,66 @@ TEST_CASE("the game's humans get ids in brain order, keep them, and lose them wh
     // The new human never takes the gone one's id: its slot is retired, not free.
     CHECK(game.humans()[1].id == NetId{.slot = 2, .generation = 1});
     CHECK_FALSE(game.holding().contains(NetId{.slot = 1, .generation = 1}));
+}
+
+TEST_CASE("each player slot's HUD names the id of the human the game says it drives, none for a slot nobody drives") {
+    // Expected: unverified, #1654 (Coney's own: snapshots.md#hud-state; the ids are those of the humans' own entries)
+    Scene scene;
+    Human& first = scene.add(0.0F, 0.0F, 0.0F);
+    Human& second = scene.add(2.0F, 0.0F, 0.0F);
+    GameHumans game;
+    game.capture(scene.brains);
+    REQUIRE(game.humans().size() == 2);
+    const std::vector<coney::hud::PlayerHudState> slots(2);
+
+    // Both slots drive a human: each names the id that human has in the snapshot's humans, in either order.
+    const std::vector<const Human*> both{&second, &first};
+    game.captureHuds(slots, nullptr, both);
+    REQUIRE(game.huds().size() == 2);
+    CHECK(playerHudHuman(game.huds()[0].words) == game.humans()[1].id);
+    CHECK(playerHudHuman(game.huds()[1].words) == game.humans()[0].id);
+
+    // The second slot nobody plays: a null human, and a slot past the list, name none; the first is as it was.
+    const std::vector<const Human*> one{&second, nullptr};
+    game.captureHuds(slots, nullptr, one);
+    CHECK(playerHudHuman(game.huds()[0].words) == game.humans()[1].id);
+    CHECK_FALSE(playerHudHuman(game.huds()[1].words).valid());
+    const std::vector<const Human*> shorter{&first};
+    game.captureHuds(slots, nullptr, shorter);
+    CHECK(playerHudHuman(game.huds()[0].words) == game.humans()[0].id);
+    CHECK_FALSE(playerHudHuman(game.huds()[1].words).valid());
+    game.captureHuds(slots);
+    CHECK_FALSE(playerHudHuman(game.huds()[0].words).valid());
+    CHECK_FALSE(playerHudHuman(game.huds()[1].words).valid());
+}
+
+TEST_CASE("a slot's human with no id names none: one gone from the game, and one not captured yet") {
+    // Expected: unverified, #1654 (Coney's own: a slot never names an id the snapshot does not hold)
+    Scene scene;
+    Human& first = scene.add(0.0F, 0.0F, 0.0F);
+    Human& second = scene.add(2.0F, 0.0F, 0.0F);
+    GameHumans game;
+    const std::vector<coney::hud::PlayerHudState> slots(2);
+    const std::vector<const Human*> both{&first, &second};
+
+    // Before the first capture the humans have no ids.
+    game.captureHuds(slots, nullptr, both);
+    CHECK_FALSE(playerHudHuman(game.huds()[0].words).valid());
+    CHECK_FALSE(playerHudHuman(game.huds()[1].words).valid());
+
+    // The second goes: the next capture retires his id, and his slot names none while the first's stays.
+    game.capture(scene.brains);
+    const NetId firstId = game.humans()[0].id;
+    scene.remove(second);
+    game.capture(scene.brains);
+    game.captureHuds(slots, nullptr, both);
+    CHECK(playerHudHuman(game.huds()[0].words) == firstId);
+    CHECK_FALSE(playerHudHuman(game.huds()[1].words).valid());
+
+    // With capture off nothing is named, as nothing is held.
+    game.setCapturing(false);
+    game.captureHuds(slots, nullptr, both);
+    CHECK(game.huds().empty());
 }
 
 TEST_CASE("a snapshot's words hold the game's positions within quantization") {

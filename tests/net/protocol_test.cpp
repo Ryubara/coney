@@ -139,8 +139,9 @@ TEST_CASE("the encoding is pinned: a change to it must bump kProtocolVersion", "
     // Bye for a load that timed out (#557); version 9 the HUD's standing state in a Snapshot (pinned in
     // hud_standing_test.cpp); version 10 MovieBegan (pinned in level_sync_test.cpp, #1548); version 11 a human's move
     // style in a Snapshot (pinned in snapshot_test.cpp, #1613); version 12 a human's character in a Snapshot (pinned in
-    // snapshot_test.cpp and replicated_fields_test.cpp, #1612).
-    CHECK(kProtocolVersion == 12);
+    // snapshot_test.cpp and replicated_fields_test.cpp, #1612); version 13 the human each player slot drives, a field
+    // of its HUD entry (pinned in player_huds_test.cpp, #1654).
+    CHECK(kProtocolVersion == 13);
 }
 
 // Expected: unverified, #547 (Coney's own protocol; the original has no network play)

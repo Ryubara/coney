@@ -25,6 +25,8 @@ using coney::net::kNetIdMaxGeneration;
 using coney::net::kNetIdMaxSlots;
 using coney::net::NetId;
 using coney::net::NetIdAllocator;
+using coney::net::netIdFromNumber;
+using coney::net::netIdNumber;
 using coney::net::NetIdTable;
 
 namespace {
@@ -42,6 +44,31 @@ NetId mustAllocate(NetIdAllocator& ids) {
 }
 
 } // namespace
+
+// Expected: unverified, #1654 (Coney's own: an id as the one number a replicated field holds, the generation above the
+// slot, 0 for none)
+TEST_CASE("net ids: an id is one number of kNetIdBits bits, the generation above the slot, and none is 0",
+          "[net][net_id]") {
+    CHECK(netIdNumber(NetId{}) == 0);
+    CHECK(netIdFromNumber(0) == NetId{});
+    // The generation is above the 16 bits of the slot.
+    CHECK(netIdNumber(NetId{.slot = 5, .generation = 1}) == (1U << 16) + 5U);
+    CHECK(netIdNumber(NetId{.slot = 0, .generation = 3}) == 3U << 16);
+    CHECK(netIdFromNumber((2U << 16) + 9U) == NetId{.slot = 9, .generation = 2});
+    // The ends: the last slot of the last generation fills the bits and goes back.
+    const NetId last{.slot = 0xffff, .generation = kNetIdMaxGeneration};
+    CHECK(netIdNumber(last) == (1U << kNetIdBits) - 1U);
+    CHECK(netIdFromNumber(netIdNumber(last)) == last);
+    // Every id round-trips; an id with generation 0 names nothing, whatever its slot.
+    for (const NetId id : {NetId{.slot = 0, .generation = 1}, NetId{.slot = 700, .generation = 17},
+                           NetId{.slot = 65535, .generation = 1}}) {
+        CHECK(netIdFromNumber(netIdNumber(id)) == id);
+    }
+    CHECK(netIdNumber(NetId{.slot = 12, .generation = 0}) == 0);
+    CHECK(netIdFromNumber(12) == NetId{});
+    // A number past kNetIdBits bits is no id.
+    CHECK(netIdFromNumber(1U << kNetIdBits) == NetId{});
+}
 
 // Expected: unverified, #553 (Coney's own network ids; the original has no network play)
 TEST_CASE("net ids: fresh slots come in order, each with generation 1, and the default id is none", "[net][net_id]") {

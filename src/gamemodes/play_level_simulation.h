@@ -151,6 +151,12 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     /// plays in a level, and drives panel 1 as it is.
     /// @coney-only network play's per-slot HUD state; the original's panels read their players themselves
     [[nodiscard]] std::span<const hud::PlayerHudState> playerHuds() const { return m_playerHuds; }
+    /// The human each player slot drives, slot i at index i (null for a slot nobody plays): what network play names
+    /// beside playerHuds(). Slot 0 is player 1's; slot 1 has no human until a second player plays in a level.
+    /// @coney-only network play's view of the player slots; the original's players are not numbered so
+    [[nodiscard]] std::array<const human::Human*, hud::kPlayers> playerHumans() const {
+        return {&m_player->human(), nullptr};
+    }
     /// The HUD's standing state now: each player slot's panel flags, prompt and radar, and the shared counter panels,
     /// bars, scoreboard, stopwatch and settings the scripts set (docs/guides/snapshots.md#hud-standing). The play
     /// mode's HUD owns it as simulation state; network play carries it beside playerHuds().

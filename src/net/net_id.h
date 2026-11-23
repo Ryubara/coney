@@ -42,6 +42,26 @@ struct NetId {
     friend constexpr auto operator<=>(const NetId&, const NetId&) = default;
 };
 
+/// `id` as one number of kNetIdBits bits (the generation above the slot), for a field that names a thing: 0 for "no
+/// id" (any id that is not valid()).
+/// @coney-only network play; the original has none
+[[nodiscard]] constexpr std::uint32_t netIdNumber(NetId id) {
+    return id.valid() ? (static_cast<std::uint32_t>(id.generation) << kNetIdSlotBits) | id.slot : 0U;
+}
+
+/// The id a netIdNumber() stands for; "no id" for 0, for a number with generation 0 and for one past kNetIdBits bits.
+/// @coney-only network play; the original has none
+[[nodiscard]] constexpr NetId netIdFromNumber(std::uint32_t number) {
+    if (number >> kNetIdBits != 0) {
+        return NetId{};
+    }
+    const auto generation = static_cast<std::uint8_t>(number >> kNetIdSlotBits);
+    // Generation 0 is "no id", whatever the slot bits say.
+    return generation == 0
+               ? NetId{}
+               : NetId{.slot = static_cast<std::uint16_t>(number & (kNetIdMaxSlots - 1)), .generation = generation};
+}
+
 /// Writes `id` in kNetIdBits bits: the slot, then the generation. "No id" (NetId{}) may be written, for a field that
 /// names nothing. A generation over kNetIdMaxGeneration is a programmer error (CONEY_ASSERT).
 /// @coney-only network play; the original has none

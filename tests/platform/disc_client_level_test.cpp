@@ -121,7 +121,7 @@ TEST_CASE("the client game's scene of level99 draws a guest's humans posed with 
     const auto clientStep = [&] {
         world.receive(receiver);
         world.step();
-        camera.step(world, coney::net::followedHuman(world.humans(), 1), cameraInput(drawn));
+        camera.step(world, coney::net::followedHuman(world.humans(), receiver.huds(), 1), cameraInput(drawn));
         // A default frame with only the clock set (a designated initializer would leave members out).
         coney::hud::HudFrame hudFrame;
         hudFrame.nowMs = 100 * (index + 1);
@@ -214,7 +214,7 @@ TEST_CASE("the client game's scene draws each human with the character his snaps
             REQUIRE(sender.acknowledge(snapshot.sequence).has_value());
             world.receive(receiver);
             world.step();
-            camera.step(world, coney::net::followedHuman(world.humans(), 1), cameraInput(drawn));
+            camera.step(world, coney::net::followedHuman(world.humans(), receiver.huds(), 1), cameraInput(drawn));
             drawn.step(world, camera, coney::FrameTime{.index = index++, .seconds = 1.0 / 30.0});
             drawn.render(world, camera, coney::RenderTime{});
         }
