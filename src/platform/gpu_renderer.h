@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -183,6 +184,12 @@ class GpuRenderer {
     /// The copy `slot` names (`copy`: the kept frame's), made again when it is not `width` by `height`; null when SDL
     /// refuses it.
     SDL_GPUTexture* copyTexture(graphics::ScreenSlot slot, graphics::ScreenCopyId copy, int width, int height);
+    /// Records `plan`'s copies and draws (platform/gpu_screen_passes.cpp): each copy ends the render pass `pass` and
+    /// copies the target's rectangle in a copy pass, and the next draw starts another through `resume`, binding the 2D
+    /// pipeline through `bind2d` (its argument: opaque). A copy SDL refuses leaves the rest of the pass out. False when
+    /// SDL refused a render pass, which ends the frame.
+    bool recordScreenPass(SDL_GPUCommandBuffer* commands, const ScreenPlan& plan, SDL_GPURenderPass*& pass,
+                          const std::function<bool()>& resume, const std::function<void(bool)>& bind2d);
 
     SDL_GPUDevice* m_device;
     SDL_GPUGraphicsPipeline* m_pipeline = nullptr;

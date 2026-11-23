@@ -331,7 +331,8 @@ far, and a render pass cannot sample the target it draws into, so each pass is l
 (`graphics::screenStepsOf()`, `src/graphics/screen_pass_steps.h`), each draw reading only a copy made before it.
 
 **The steps.** In `GpuRenderer::record()`, before the uploads, each screen pass is laid out and its draws' quads (four
-corners and two triangles each) go into the 2D vertex and index buffers after the 2D draws'. Then, in the pass's place:
+corners and two triangles each) go into the 2D vertex and index buffers after the 2D draws'. Then, in the pass's place
+(`GpuRenderer::recordScreenPass()`, which with the layout and the copies lives in `src/platform/gpu_screen_passes.cpp`):
 a copy step ends the render pass and copies the view's rectangle of the target into a texture of its size
 (`SDL_CopyGPUTextureToTexture`); a draw step starts a render pass again that keeps the colour and the depth (the depth
 buffer is stored whenever the frame has a screen pass) and draws its quad with the 2D shaders, sampled linearly and
