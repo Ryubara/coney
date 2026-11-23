@@ -51,6 +51,7 @@
 #include "scripting/script_system.h"
 #include "support/disc_play_fixtures.h"
 #include "support/disc_session.h"
+#include "support/driven_pad.h"
 #include "world_objects/flags.h"
 #include "world_objects/volume_boxes.h"
 
@@ -69,49 +70,8 @@ constexpr std::array<std::string_view, 2> kHintKeys{"TT_8", "TANDEM"};
 constexpr std::array<std::string_view, 2> kObjectiveKeys{"MS_C4_1", "MS_C4_2"};
 constexpr std::array<std::string_view, 4> kSceneNames{"l80_c7", "l80_c3", "l80_c3_a", "l80_c3_b"};
 
-// Player 1's pad, set by the test each frame: the buttons held and the two sticks in [-1, 1] with y up.
-class DrivenPad final : public coney::InputSource {
-  public:
-    std::uint16_t buttons = 0;
-    float rightX = 0.0F;
-    float rightY = 0.0F;
-    float leftX = 0.0F;
-    float leftY = 0.0F;
-
-    coney::PortSamples sample(std::uint64_t /*frame*/) override {
-        coney::PortSamples samples{};
-        coney::PadSample& pad = samples[0];
-        pad.connected = true;
-        pad.buttons = buttons;
-        pad.sticks[0] = raw(rightX);
-        pad.sticks[1] = raw(-rightY);
-        pad.sticks[2] = raw(leftX);
-        pad.sticks[3] = raw(-leftY);
-        return samples;
-    }
-
-  private:
-    // The raw byte for `value` as an input script writes it, past each axis's dead zone (core/pad.h).
-    static std::uint8_t raw(float value) {
-        return coney::stickByteFromPercent(static_cast<int>(std::lround(std::clamp(value, -1.0F, 1.0F) * 100.0F)));
-    }
-};
-
-// The left stick, in [-1, 1] at `deflection`, that walks player 1 toward `to` under the camera shown: the stick is
-// read against the camera's forward, x to its right.
-std::array<float, 2> stickTowards(const coney::platform::PlayLevelMode& play, coney::anim::Vec3 to, float deflection) {
-    const coney::anim::Vec3 way = coney::anim::subtract(to, play.player().human().position());
-    coney::anim::Vec3 forward = coney::anim::subtract(play.cameraTarget(), play.cameraEye());
-    const float length = std::hypot(forward.x, forward.y);
-    const float along = std::hypot(way.x, way.y);
-    if (length <= 0.0F || along <= 0.0F) {
-        return {0.0F, 0.0F};
-    }
-    forward = {forward.x / length, forward.y / length, 0.0F};
-    const coney::anim::Vec3 right{forward.y, -forward.x, 0.0F};
-    return {deflection * ((way.x * right.x) + (way.y * right.y)) / along,
-            deflection * ((way.x * forward.x) + (way.y * forward.y)) / along};
-}
+using coney::test::DrivenPad;
+using coney::test::stickTowards;
 
 // The key among `keys` whose text a global of the level's scripts, or a field of one, holds; empty for none.
 std::string keyOf(coney::script::LuaVm& vm, std::string_view text, std::span<const std::string_view> keys) {
