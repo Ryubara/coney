@@ -25,11 +25,11 @@ class WorldManager {
     /// @orig 0x0040d900 WorldManager_Construct (WorldManagerPS2.cpp)
     WorldManager(SectorBudget& budget, std::optional<std::uint64_t> globalDataSize);
 
-    /// Gives back the `World Level Pool` if a level is still loaded, then the `Global Data Pool` (the members go in
-    /// reverse order).
+    /// Unloads the level keeping nothing (unload()), as the original's level exit does, then gives back the `Global
+    /// Data Pool`. A moved-from manager holds nothing and gives nothing back.
     /// @coney-only the original's manager lives as long as the game and never frees its global data; Coney's lives as
     /// long as the level's scenery, so its reservation goes with it
-    ~WorldManager() = default;
+    ~WorldManager();
 
     WorldManager(const WorldManager&) = delete;
     WorldManager& operator=(const WorldManager&) = delete;

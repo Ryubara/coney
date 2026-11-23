@@ -1043,17 +1043,17 @@ Coney allocates normally ([Memory](memory.md#what-a-reimplementation-must-keep))
 `world::SectorBudget` and the heap stack has no counterpart. What a player can see is the budget, which decides
 evictions, so it must come back exactly on unload.
 
-- **A `world::WorldManager`** (new, platform-neutral; the worlds' renderer objects stay in `platform::WorldSet`)
-  holding: the `Global Data` reservation, made **once** when the manager is made (`globalDataPoolBytes`, already
-  101 % truncated); the `World Level Pool` reservation (`worldLevelPoolBytes`); the streamed worlds; the level object;
-  the visibility latch (`+0x34`); the pack queue; the load priority (initially whatever the boot leaves; `LoadLevel`
-  sets 0.001). `@orig 0x0040d900 WorldManager::WorldManager (WorldManagerPS2.cpp)`.
-- **`loadLevel(name, headerOnly)`**: reserve the level pool first, then (unless header-only) the worlds in the order
-  above, then the level file; set the load priority to 0.001. `@orig 0x0040dbb8`.
-- **`unload(keepLevelFile)`**: release the worlds (and their parts) and the water always; with keep false, also run
-  the [release](#u17-release) (glows, captions, level object), drop the path data and release the level pool's
-  reservation. Coney clears the level pointer (where the original leaves it dangling, a marked Coney choice).
-  `@orig 0x0040f5b8`.
+- **`world::WorldManager`** (`src/world/world_manager.*`, platform-neutral) holds only the two reservations: the
+  `Global Data` one, made **once** when the manager is made (`globalDataPoolBytes`, 101 % truncated), and the `World
+  Level Pool` one (`worldLevelPoolBytes`). `@orig 0x0040d900 WorldManager_Construct (WorldManagerPS2.cpp)`. The
+  streamed worlds (in `platform::WorldSet`), the level object (in `LevelScenery`), the visibility latch (`+0x34`),
+  the pack queue and the load priority are not in it: the function database lists them as
+  the port's gaps, with the issue that moves them in.
+- **`loadLevel(levelFileSize)`** reserves the level pool; the worlds, then the level file, are loaded by
+  `loadLevelScenery` after it, and the header-only load and the load priority are gaps. `@orig 0x0040dbb8`.
+- **`unload(keepLevelFile)`** gives the level pool's reservation back unless the level file is kept. The worlds (and
+  their parts) and the level object, with its path data, are released by `LevelScenery`'s members as it goes, before
+  the manager; the water and the [release](#u17-release)'s glows and captions are gaps. `@orig 0x0040f5b8`.
 - **The leak, fixed.** `loadLevelScenery` (`src/platform/world_viewer_mode.cpp`) used to reserve
   the `Global Data` and `World Level` pools on every level load with nothing releasing them, so a session that played
   a second level (the one budget made in `main.cpp`) streamed with less room than the original. `world::WorldManager`

@@ -18,6 +18,11 @@ WorldManager::WorldManager(SectorBudget& budget, std::optional<std::uint64_t> gl
     // counts the pool here.
 }
 
+WorldManager::~WorldManager() {
+    // The level first, through the port of WorldManager_Unload; the global data's reservation goes with its member.
+    unload(false);
+}
+
 void WorldManager::loadLevel(std::optional<std::uint64_t> levelFileSize) {
     // The World Level Pool first, before the worlds and the level file: 103 % of the level file, at least 256 KB.
     // Coney's choice: a name without a level file (the world viewer's world-only names) reserves none, where the
