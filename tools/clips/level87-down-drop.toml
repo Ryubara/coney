@@ -1,0 +1,9 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level87 checkpoint 3, the two early
+# Destroyers' fight by the fence. The crew knocks both out, each one's $5 drops as a money pickup at his feet, and
+# player 1 walks over both. For a change to the drop on knock-out (Human_DropCarried) or the walk-over pick-up.
+description = "level87 checkpoint 3: the knocked-out early Destroyers drop their $5, which player 1 walks over"
+level = "level87"
+checkpoint = 3
+input = "tools/clips/level87-down-drop.txt"
+start_frame = 420
+seconds = 10

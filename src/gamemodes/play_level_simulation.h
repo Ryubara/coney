@@ -454,13 +454,23 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // running humans met last step take their strike (Human_OnContact, docs/research/objects.md#trash-props).
     // @orig 0x00391d48 Obj_CreatePhysicsBody (unknown)
     void stepObjectBodies();
-    // Player 1's pick-up that reached its clip's event this step: the object is taken.
-    // @coney-only the play step's hand-off of player 1's pick-ups, throws and drops to the level's objects
+    // Player 1's pick-up that reached its clip's event this step: the object is taken. The downed humans' drops come
+    // first (stepDownDrops()).
+    // @coney-only the play step's hand-off of player 1's pick-ups, throws, drops and the downed humans' drops
     void stepPickups();
     // Each AI human's throw whose release event passed this step lets go of his held object, thrown, as player 1's
     // does (Human_ReleaseThrow runs for any human on event 10); his anim set follows his empty hand.
     // @orig 0x002586d8 Human_ReleaseThrow (unknown)
     void stepAiThrows();
+    // The drops of the humans whose health ran out this step (Human::fighter()'s takeHealthOut()): player 1's, then
+    // the AI humans' (docs/research/crimes.md#down-drop).
+    // @orig 0x002674c0 Human_OnHealthOut (unknown)
+    void stepDownDrops();
+    // `human`'s drop, when his health ran out this step: nothing with flag 0x4 or already wounded; otherwise what
+    // he, his brain and his class hold goes to LevelPickups::dropCarried(), and his money and carried object follow
+    // it. `player` is his player (0 for player 1), -1 for an AI human.
+    // @orig 0x002674c0 Human_OnHealthOut (unknown)
+    void dropOnHealthOut(human::Human& human, int player);
     // A take from `object` when it is a weapon pile (world_objects::Props::takeFromPile()): the object made for the
     // hand, kNoObject when none was made; nothing when `object` is no pile, or a pile taken itself.
     [[nodiscard]] std::optional<double> takeFromPile(double object);

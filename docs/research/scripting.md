@@ -2010,9 +2010,9 @@ the player's money, so only the order means anything. Updates count from that ru
   counter (game state bits 30-31) is below 2, then 25 at 2; each adds 1 to the counter. Both need the hints on, no
   Armies stage, and `0x006092b8` at 0.
 
-#### Coney's run and the fix list {#level87-fixes}
+### `level87`: Coney's run and the fix list {#level87-fixes}
 
-Coney at `f325e018` (release build, the planner fixes of #271 included), started with `--play-level level87
+Coney at `f325e018` (release build, with the route planner's fixes), started with `--play-level level87
 --checkpoint N --pad-pipe` and played by a scratch course over the observation (markers, events and Coney's own log
 lines), the left stick at 25-90 %, climbs made by pushing at 90 % and tapping triangle along the level's path nodes.
 
@@ -2041,7 +2041,7 @@ lines), the left stick at 25-90 %, climbs made by pushing at 90 % and tapping tr
 
 Fixes, in the order to take them (each one implementer unit):
 
-1. **A spray cut short leaves its spot dead** (issue #330). Done: Coney's cut-short path now gives the tagger
+1. **A spray cut short leaves its spot dead**. Done: Coney's cut-short path now gives the tagger
    event 14 with (tag, 0). Played from checkpoint 1 into 2, triangle at chapter 2's first spot called `HuTag` and
    Coney logged that the spray was cut short on the next update; no event 14 followed, so `TagFinished` never put the
    spot's prompt back, and 30 later presses there did nothing. The original's
@@ -2050,7 +2050,7 @@ Fixes, in the order to take them (each one implementer unit):
    `0xe` with finished = `+0x3ba` (0 here). Confirmed (code). Fix: Coney's cut-short path delivers event 14 with
    (tag, 0) as its refusal does. Test: a spray whose intro is cut short runs the script's event-14 handler with 0, and
    a second press at the spot starts a new spray.
-2. **The fight stance cuts the spray's intro short** (why chapter 2's first spray ended, issue #331). Done (issue #353):
+2. **The fight stance cuts the spray's intro short** (why chapter 2's first spray ended). Done:
    Coney now makes the fix below. Before the press the player was already in the fight stance (the stance walk clips 380
    and 384, then the fight idle 358): chapter 2's first spot has a human within 2 m, whom [the
    stance](combat-targets.md#fight-stance) takes as its target; chapter 1's spots have none. `HuTag` started 334
@@ -2066,7 +2066,7 @@ Fixes, in the order to take them (each one implementer unit):
    while a spray runs (intro, loop and restart clips, and the stick game) the player's stance and anim-state choice do
    not run, and 334 holds `0x400`. Test: a player in the fight stance (an enemy 1.5 m away, stick at rest) presses
    triangle at a spot; 334 then 335 play and the stick game starts.
-3. **Spawned humans carry no money: withdrawn (2026-10-13, issue #354).** The original rolls the [starting
+3. **Spawned humans carry no money: withdrawn.** The original rolls the [starting
    money](crimes.md#starting-money) in `Human_Init` for every human: `Spawner_MakeHuman` (`0x0016d860`) calls it as
    `Human_Create` does. Confirmed (code). The first reading was that Coney rolls it only in `HuCreate`, but Coney's
    spawners make their human through the scripts' own `HuCreate` (`ScriptSpawnerWorld::spawn`), so a spawner's human
@@ -2082,28 +2082,28 @@ Fixes, in the order to take them (each one implementer unit):
    "$0 is not faithful" is not established. The original's sellers (428, 431) hold $0 and a type 197 soldier $5 in
    21 of 101 rolls and $0 otherwise, as Coney's roll gives
    ([level87's sellers and soldiers](crimes.md#starting-money)), so Coney needs no fix here.
-4. **A downed human drops no money.** The original's `Human_OnHealthOut` calls `Human_DropCarried` (`0x00232c60`)
-   when a human is knocked out or wounded, which leaves a `dyn_money` pickup of his money ([Dropped when
+4. **A downed human drops no money.** Done: Coney now runs `Human_DropCarried` (`0x00232c60`) when a
+   human's health runs out, so a beaten human leaves a `dyn_money` pickup of his money ([Dropped when
    down](crimes.md#down-drop)). Chapter 3's two early Destroyers get $5 each (`EDConstructor`, `HuSetMoney`), the
-   price of a can ([GoalDealer](ai-scripting.md#dealer)), so beating them is the chapter's first paint (inferred from the
-   script); Coney drops nothing. Fix and test on [Crimes](crimes.md#down-drop).
+   price of a can ([GoalDealer](ai-scripting.md#dealer)), so beating them is the chapter's first paint (inferred from
+   the script); `repo:tests/platform/disc_level87_drop_test.cpp` beats both, takes their money and buys a can.
 5. **A hidden player enters the fight stance.** The original's stance starts only when the state word lacks
-   `0x200000`, the hidden state ([Fight stance](combat-targets.md#fight-stance), step 3, `0x0027ce90`), and L1 while hidden
-   picks a target without the lock ([The stealth kill](stealth.md#stealth-kill)). Coney's stance ignores the hidden
-   state, so creeping up on a scout puts the player in the fight walk. Test: a hidden player walking to 1.5 m behind
-   an enemy keeps the stealth walk (633) and has no target until L1.
+   `0x200000`, the hidden state ([Fight stance](combat-targets.md#fight-stance), step 3, `0x0027ce90`, confirmed
+   (code)), and L1 while hidden picks a target without the lock ([The stealth kill](stealth.md#stealth-kill)).
+   Coney's stance ignores the hidden state, so creeping up on a scout puts the player in the fight walk. Test: a
+   hidden player walking to 1.5 m behind an enemy keeps the stealth walk (633) and has no target until L1.
 6. **The stealth kill** ([Stealth](stealth.md#stealth-kill); not in Coney yet): checkpoint 5's kill lesson needs it.
    Without it the guard is only hit, calls for help and the mission fails.
-7. **The game hints** 16, 22 and 24/25 above (issue #332): Coney queues only hint `0x15`. Add the three triggers with
+7. **The game hints** 16, 22 and 24/25 above: Coney queues only hint `0x15`. Add the three triggers with
    their counters and flags in the game state. Hints 22 and 24/25 serve every level ([HUD](hud.md)).
 8. **Attacking on sight**: the Destroyers of chapters 2-4 do not react to the player until hit ([AI: attacking on
-   sight](ai-gangs.md#aggro-on-sight), issue #73).
-9. **The tag's look**: the mist and the wall tag (fixes 6 and 7 of [Crimes](crimes.md#tag-coney-fixes), issue #70),
-   and the end clip 336 that removes the can (fix 9 there, issue #407; done for player 1).
+   sight](ai-gangs.md#aggro-on-sight)).
+9. **The tag's look**: the mist and the wall tag (fixes 6 and 7 of [Crimes](crimes.md#tag-coney-fixes)),
+   and the end clip 336 that removes the can (fix 9 there; done for player 1).
 10. **The spray sellers** after a hit ([GoalDealer](ai-scripting.md#dealer), items 7 and 15): chapter 2's first seller
     is the one the hints point at.
-11. **A playthrough test** per checkpoint asserting the order above, once 1-10 land (issue #333;
-    [Testing](../guides/testing.md#playthrough-tests); issue #135 for the rest of the reference order).
+11. **A playthrough test** per checkpoint asserting the order above, once 1-10 land
+    ([Testing](../guides/testing.md#playthrough-tests)); the rest of the reference order is tested separately.
 
 Open questions:
 

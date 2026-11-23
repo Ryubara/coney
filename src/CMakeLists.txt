@@ -109,6 +109,7 @@ add_library(coney_core STATIC
     gamemodes/play_level_hats.cpp
     gamemodes/play_level_held.cpp
     gamemodes/play_level_objects.cpp
+    gamemodes/play_level_drops.cpp
     gamemodes/play_level_props.cpp
     gamemodes/play_level_simulation.cpp
     gamemodes/play_level_step.cpp
@@ -367,6 +368,7 @@ target_sources(coney_core PRIVATE
     camera/failed_camera.cpp
     characters/anim_set.cpp
     human/body.cpp
+    human/carried_drop.cpp
     human/climb.cpp
     human/human.cpp
     human/human_contacts.cpp

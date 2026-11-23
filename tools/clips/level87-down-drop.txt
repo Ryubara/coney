@@ -1,0 +1,9 @@
+# The early Destroyers' money at level87 checkpoint 3, for the `level87-down-drop` clips pair scenario
+# (tools/clips/level87-down-drop.toml), played from checkpoint 3 (`--play-level level87 --checkpoint 3 --skip-movies`).
+# Cross skips the opening scene; the crew meets the two early Destroyers by the fence and knocks them out (about frames
+# 441 and 664), and each one's $5 drops at his feet (docs/research/crimes.md#down-drop). Player 1 pushes toward the
+# first body, gets through once the crew stands back, and walks over both (about frames 664 and 680). Frames are 1/30 s
+# from the level's first frame of play; the route comes from task 355's runs.
+100 tap cross
+480 steer 60 374.1,94.8
+760 stick left 0 0

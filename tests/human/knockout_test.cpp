@@ -80,3 +80,26 @@ TEST_CASE("a human beaten to 0 health keeps 1 health from the hit, and is down b
     CHECK(human.knockedOut());
     CHECK(human.fighter().health().value() == 1);
 }
+
+TEST_CASE("the health out is reported once, on the update the dying reaction's clip ends", "[human][combat]") {
+    // Expected: combat-reactions.md#knockout-timing, confirmed (code): Human_OnHealthOut (0x002674c0) runs once, as
+    // the end callback of the death chain's last clip, and its Human_DropCarried call (crimes.md#down-drop) with it.
+    const coney::test::FightCharacter character;
+    coney::test::Fight fight(character, 30.0F);
+    Human& human = fight.human();
+    human.setFlag(coney::human::flag::kDemiGod, false);
+    human.takeHit(coney::human::IncomingHit{
+        .damage = 900, .attackAnim = 12, .code = 0x0a, .flags = 0x800, .attacker = {40.0F, 41.0F, 0.0F}});
+    int reported = 0;
+    int reportedWhileDying = 0;
+    for (int update = 0; update < 120; ++update) {
+        fight.run("", 1);
+        if (human.fighter().takeHealthOut()) {
+            ++reported;
+            reportedWhileDying += human.knockedOut() ? 0 : 1;
+        }
+    }
+    REQUIRE(human.knockedOut());
+    CHECK(reported == 1);
+    CHECK(reportedWhileDying == 0);
+}

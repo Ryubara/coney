@@ -13,6 +13,7 @@
 
 #include "animation/anim_math.h"
 #include "combat/stick_games.h"
+#include "human/carried_drop.h"
 #include "scripting/message_handlers.h"
 #include "scripting/script_system.h"
 #include "warriors/game_state.h"
@@ -248,6 +249,22 @@ class LevelPickups {
     /// money. **Not yet**: a pocket item or carried object handed over first, the 1.5 times of ped type 5.
     /// @orig 0x002856b8 Player_UpdateMugging (unknown)
     void mugPaid(int player, int& victimMoney);
+
+    /// Where an object dropped into neighbour sector `k` of the dropping human goes: 1 m out toward it at his height
+    /// (ai::sectorPoint()).
+    using SectorPoint = std::function<anim::Vec3(int k)>;
+    /// A human whose health ran out drops what he carries (`Human_OnHealthOut`'s `Human_DropCarried(human, 1, 1)`):
+    /// `input` holds what the play mode knows of him, his brain and his class; this fills in the game's part (the
+    /// pocket item's object, game state `+0x158`, unlocks (6, 14) and (6, 13), the money scale and a carried object's
+    /// price), decides the drop (human::dropCarried(), from the game's random numbers) and makes each object at once
+    /// from a spawn record 0.5 m above `feet`, or above `sectorPoint(k)` for one dropped into sector `k`, a `dyn_money`
+    /// holding its dollars (`+0x124`). A player's loss (`player` 0 or 1; -1 for an AI human) is taken from his
+    /// inventory, notifying. Returns the drop, whose money and carried object the caller gives back to the human.
+    /// **Coney's stand-in**: the objects' removal times (each kind's inventory duration, `WorldObject_SetRespawnTimer`)
+    /// are not applied, so a dropped object stays until taken.
+    /// @orig 0x00232c60 Human_DropCarried (unknown)
+    human::CarriedDrop dropCarried(human::DropInput input, anim::Vec3 feet, const human::SectorBlocked& blocked,
+                                   const SectorPoint& sectorPoint, int player = -1);
 
     /// A mugging by `mugger` of a human no player controls ended (`success` or not): its mugger's `callback`
     /// (`HuSetMugCallback`) is called with the mugger and the success (1 or nil). The caller calls it when the
