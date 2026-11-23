@@ -810,6 +810,19 @@ State 7 (all clips done, or a part ended with no roles) calls the end (`0x0039f4
 8. Cinematic and not `final`: preload the world around the camera again, loading `<scene>_end.pak` when it exists.
 9. When skipped and `BlendCam` > 0: fade in over `BlendCam` seconds.
 
+**The cast goes back to its idle with the idle's fade.** At `level80`'s scene `l80_c7`, played to its end, a
+Destroyer's record held `0x10000000` from the end until a blend-out task let it go about five updates later
+(`AnimTaskBlendOut_Release` `0x00106ee8`, from the humans' update `0x0024910c`), with no call of
+`Human_BuildIdleTasks` (`0x0025f770`) for him after the end. Confirmed (runtime), run
+r-20261123-level80-help-call-held. `0x10000000` held for 0.15 s is what the idle's fade holds
+([Locomotion gate](tasks.md#locomotion-gate)), so the idle was built as his last scene clip ended (inferred). While it
+holds he takes no side in a fight he hears of (`Brain_OnViolenceSeen` refuses any held flag), which keeps the
+Destroyers out of the new-enemy help calls of the fight that follows ([level80](scripting.md#level80-fight-timeline)).
+In Coney the scene drives a puppet frame and the human keeps his own clip, so the release settles each AI cast member
+into the idle through its builder (`PlayLevelMode::placeReleased`); **Coney's stand-in**: the player is not, as
+whether his own fade gates his stick there was not checked, and a skipped scene is taken to end the same way
+(inferred).
+
 The **scene soundtrack** is stopped by the end only when the scene was skipped, and by the abort only for a
 cinematic; an unskipped scene's soundtrack plays on to its own end or until the next scene's preload stops it
 ([Sound: scene soundtracks](sound.md#scene-sound)). Confirmed (code) at `0x0039f450`, `0x0039ec60`; confirmed

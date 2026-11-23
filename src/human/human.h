@@ -439,6 +439,10 @@ class Human final : public Holdable {
     [[nodiscard]] const StickIntent& intent() const { return m_intent; }
     /// Its clips.
     [[nodiscard]] const HumanAnimator& animator() const { return m_animator; }
+    /// Back in the idle through the idle's builder (HumanAnimator::settleToIdle()), as a human whose scene clip has
+    /// ended is: the idle's fade holds `0x10000000` on the record `+0x08` for its 0.15 s, about five updates, and while
+    /// it does the human takes no side in a fight he hears of (docs/research/scenes.md#ending).
+    void settleToIdle() { m_animator.settleToIdle(); }
     /// `HuUseAnim`'s idle replacement, `name` loaded as `clip` (null for none: the own idle);
     /// HumanAnimator::setIdleClip(). The play mode applies ScriptState's override for the idle (`0x184`) through it.
     /// @orig 0x00221aa0 Human_SetAnimOverride (unknown)

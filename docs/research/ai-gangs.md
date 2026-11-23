@@ -396,27 +396,17 @@ line) → ATTACK at 2-3 m**; a hit at any point → ATTACK at once.
 fight it hears about; it does not stop code 3. No form holds a gang passive by its threat response; the passive ones
 are held by a short sight (`HuSetLOSRange` 1 or 4) or by `Halt`.
 
-**Coney status and fix** (checked 2026-10-11, `repo:src/ai`; item 5 of the user's list):
+**Coney status** (checked 2026-11-23, `repo:src/ai`):
 
-- Coney runs the enemy scan only for members under TacticScout (`ScoutTactic::update` →
-  `ScanSchedule::maybeScan`); `Brains::update` and `Brain::think` never scan. So no Destroyer under HANGINGOUT, IDLE,
-  WANDERWALK or HOMEIN ever gets event 11, no code 3 reaches `Strategy`, and the gang stays in its tactic until a hit
-  (codes 5 and 6) turns it to ATTACK. That is exactly "they see the player and do nothing until he attacks".
-- Nothing sends event 10 (`kEventSawPlayer` has no sender), so code 4 never fires; `level87`'s presets ignore it, but
-  other levels' may not.
-- A gang soldier with no tactic never fights an enemy in his list: Coney has no `GangBrain_Think` step 3.
-- The rest of the chain is in place: `codeOf` maps the events to codes, `StoryTactic::event` and
-  `Tactic::fireCallback` call the Lua callback, `Brain::pushFightGoals` refuses under a tactic, and the scan itself
-  (`scanEnemies`) sends event `0xb` to the human's handlers.
-
-Fix, in order:
-
-1. Call the scan (`ScanSchedule::maybeScan`) for every AI brain in the brain update, as `Brain_UpdateGoals` does,
-   with the 5-per-update budget and the 2 s / 8 s interval (detail level and fight stance), not only for scouts.
-2. Add `GangBrain_Think` step 3 (and the cop's and Warriors' equivalents, [Brain types](ai-brain-types.md)): with threat
-   response, no fight goal and a non-empty enemy list, `pushFightGoals`.
-3. HanginOut's awareness (× 0.75, − 20° unless `fullAware`) at its Start, undone at its End.
-4. Then `Brain_MaybeSpotPlayers` (event 10, code 4) for completeness.
+- Every AI brain runs the enemy scan in its update (`Brain::update` → `ScanSchedule::maybeScan`), with the 5-per-update
+  budget, the 2 s / 8 s interval and the gang-changed trigger (#394). So event 11 reaches the tactics and code 3 reaches
+  `Strategy`.
+- A gang soldier, a cop or a Warrior with no tactic fights an enemy in his list: `Brain::thinkFightOnSight`
+  (`repo:src/ai/brain.cpp`) is step 3 of `GangBrain_Think` and `CopBrain_Think` and step 1 of `WarriorBrain_Think`,
+  run at each think (task 406). Under a tactic `Brain::pushFightGoals` refuses, as in the original.
+- HanginOut's awareness (× 0.75, − 20° unless `fullAware`) is in `repo:src/ai/story_tactics.cpp`.
+- Nothing sends event 10 (`kEventSawPlayer` has no sender), so code 4 never fires: `Brain_MaybeSpotPlayers` is not
+  ported. `level87`'s presets ignore code 4, but other levels' may not.
 
 **Suggested tests** (synthetic unless named):
 

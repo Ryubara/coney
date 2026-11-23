@@ -1,0 +1,47 @@
+version = 1
+id = "r-20261123-level80-help-call-held"
+date = "2026-11-23"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "53e79d558984534913599481c69e7d4125a3571bb75f50a70da48b1090bee74f"
+
+[who]
+agent = "abe404a58828a246c"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level80 checkpoint 4 loaded from the state with the load-checkpoint recipe, the player teleported onto fCochiseSwan (-236.4, 176.6, 4.3); scene l80_c7 played to its end. Breakpoints by the debug server: the scene end, Gang_MakeEnemies, Gang_BroadcastHelpCall (t0 read: the new-enemy flag), Brain_OnViolenceSeen and its gate instructions for one Destroyer (brain 0x006d7440, human 0x00645770), GangBrain_Think's push of the fight goal; an on-change watch of that Destroyer's held flags (record +0x08). Cycle counts read at each stop; one update is about 9.8 million EE cycles at 30 Hz."
+
+[values]
+help_call_new_enemy_flag = 1
+destroyer_threat_response = 2
+destroyer_gang_kind = 19
+destroyer_hear_radius_m = 20
+held_flags_at_scene_end = 268435456
+held_flags_after_release = 0
+cycles_scene_end_to_held_release = 48859182
+destroyer_gate_passed_target_test = 1
+destroyer_gate_passed_held_flag_test = 0
+pick_side_reached_before_think_push = 0
+enemies_listed_at_think_push = 2
+
+[addresses]
+scene_end = 0x0039f450
+help_call = 0x00293640
+help_call_ra_shared_handler = 0x002934fc
+on_violence_seen = 0x00291960
+held_flag_test = 0x00291a94
+think_push = 0x00304760
+blend_out_release = 0x00106ee8
+held_flags_word = 0x0065b5c8

@@ -200,8 +200,10 @@ void Brain::think(std::uint64_t nowMs) {
     if (!m_dead) {
         ++m_thinks;
     }
-    // The cop's, the gang soldier's and the Warrior's think handlers keep the tackle meter.
+    // The cop's, the gang soldier's and the Warrior's think handlers start a fight on an enemy listed, then keep the
+    // tackle meter.
     if (!m_dead && (m_type == BrainType::Cop || m_type == BrainType::Gang || m_type == BrainType::Warrior)) {
+        thinkFightOnSight();
         thinkTackle(*this);
     }
     // A Warrior's step 7: the swap prompt beside a player. The original's Warrior still thinks while knocked out and
@@ -215,6 +217,14 @@ void Brain::think(std::uint64_t nowMs) {
         } else {
             thinkSwapPrompt(*this);
         }
+    }
+}
+
+void Brain::thinkFightOnSight() {
+    // Coney's stand-in: a cop also needs no Chase goal (0xc) and sets his flag +0x28f; Coney has no Chase goal, so that
+    // test always passes, and the flag has no reader yet (docs/research/ai-brain-types.md#q-event-senders).
+    if (m_threatResponse != 0 && !hasFightGoal() && !m_enemies.empty()) {
+        pushFightGoals(kNoFightLimit);
     }
 }
 

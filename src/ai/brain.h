@@ -331,9 +331,10 @@ class Brain {
     /// @orig 0x0028f8b8 Brain_Update (unknown)
     /// @orig 0x0028fbb0 Brain_UpdateGoals (unknown)
     void update(std::uint64_t nowMs);
-    /// One think (handler B), one update in five; nothing for a dead brain, whose handler B is a stub. **Coney
-    /// choice**: the types' think handlers are not traced, so a think only counts; a fight is started by its caller
-    /// (GoalFight, ai::AiHumans).
+    /// One think (handler B), one update in five; nothing for a dead brain, whose handler B is a stub. A cop, a gang
+    /// soldier or a Warrior starts a fight on an enemy listed (thinkFightOnSight()) and keeps the tackle meter; a
+    /// Warrior offers the swap prompt. **Coney's stand-in**: the types' other think steps are not built (#635 lists
+    /// the update's).
     /// @orig 0x0028f6c0 Brain_Think (unknown)
     void think(std::uint64_t nowMs);
     /// Updates and thinks so far (`+0x34`, `+0x38`).
@@ -379,6 +380,17 @@ class Brain {
     /// The goal of `type` on the stack, nearest the top; null when none.
     /// @orig 0x0028d960 Brain_FindGoal (unknown)
     [[nodiscard]] Goal* findGoal(GoalType type);
+    /// The think step that turns a list of enemies into a fight: with a threat response, no fight goal (hasFightGoal())
+    /// and an enemy listed, the fight's goals are pushed with no time limit (pushFightGoals()) and no target, so the
+    /// Melee goal picks one. It is the gang soldier's and the cop's step 3 and the Warrior's step 1, the "attack on
+    /// sight" of a gang with no tactic (under a tactic pushFightGoals() refuses). **Coney's stand-ins**: the cop's own
+    /// test for a Chase goal (`0xc`) always passes, as Coney has no Chase goal, and his flag `+0x28f` is not kept (its
+    /// reader is not found). Research: docs/research/ai-brain-types.md#think-gang,
+    /// docs/research/ai-gangs.md#aggro-on-sight
+    /// @orig 0x00304608 GangBrain_Think (unknown)
+    /// @orig 0x003052f0 WarriorBrain_Think (unknown)
+    /// @orig 0x00300678 CopBrain_Think (unknown)
+    void thinkFightOnSight();
     /// Whether a Melee (8) or LeftTurf (`0x3f`) goal is on the stack: despite the original's name, the fight goal
     /// (`0xf`) is not tested. Research: docs/research/ai-reimpl.md#unit-2
     /// @orig 0x00290348 Brain_HasFightGoal (unknown)
