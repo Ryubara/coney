@@ -57,8 +57,8 @@ the finding is one of any other: `path:line:column [clang-diagnostic-missing-fie
 closing brace, so a multi-line initializer to which a member was added but whose closing line is untouched is not
 caught. A member with a default member initializer may be left out, as in GCC and Clang, and so may all of them (`T{}`).
 To add a warning of this kind, put its name in the list: no more is needed.
-This is the clang-diagnostic case only: [#1628](issue:1628)'s unchecked optional `*` is a check's finding, not a
-warning, and stays [a difference](#differences).
+This is the clang-diagnostic case only: an unchecked optional `*` is a check's finding, not a warning, and is
+found through [a copy of Microsoft's header](#differences).
 
 **Measured** on 2026-11-22 with the pinned clang-tidy. A probe of an aggregate of three `int`s against a clang-cl
 compile command with `/W4`: `HudFrame{1}`, `{1, 2}`, `{.radar = 1}` and `{.radar = 1, .gangLiving = 2}` each reported
@@ -96,11 +96,32 @@ what CI reports, and the rest is of two kinds: a finding in the standard library
 shape (`bugprone-exception-escape` through an allocation, `bugprone-optional-value-conversion`), and a finding in
 code only Linux compiles. Those still arrive as CI annotations and are fixed on the branch.
 
-A third check misses part of what it finds in CI: `bugprone-unchecked-optional-access` here reports an unchecked
-`.value()` but not an unchecked `*` (Microsoft's `std::optional` declares its `operator*` where the check's model
-does not look). Measured with the pinned clang-tidy on a planted probe against the MSVC `ci` compile database:
-`return value.value();` on an unchecked parameter was reported, `return *value;` on a default-constructed optional or
-on a function's result was not. Libstdc++'s `operator*` is matched, so CI reports both.
+**An unchecked `*optional` is found here, through a copy of Microsoft's header.** `bugprone-unchecked-optional-access`
+finds an access by the class that declares the operator, and Microsoft's `std::optional` declares its `operator*` in a
+base class (`_Optional_construct_base`) and only brings it in with `using _Mybase::operator*;`, so the check saw an
+unchecked `.value()` and `->` but never `*` (measured with the pinned clang-tidy on a planted probe against the MSVC `ci`
+compile database: `return *value;` on a parameter, a default-constructed optional or a function's result, not reported;
+libstdc++'s `operator*` is in `std::optional`, so CI reported all of them; [#1620](issue:1620) and
+[#1627](issue:1627) failed CI on eight such lines after a clean local run). The local run therefore reads a copy of
+Microsoft's `<optional>` in which that one `using` is the four `operator*` overloads declared in `std::optional`, each
+calling the base class's (`python/src/coney_tools/tidy_msvc_optional.py`):
+
+1. before the sources, one clang-tidy run on an empty file, with the compiler of the build's compile database, prints
+   the include folders it uses (`-v`), and the first with an `optional` is Microsoft's;
+2. the copy is written to `tidy-optional/optional` in the build folder (not again while it is current), and every
+   clang-tidy command of the run gets `--extra-arg=-external:I<that folder>`, so each `#include <optional>`, the
+   library's own included, finds it first. It has to be a system folder: with a plain `-I` the copy is a user header,
+   and its sign-compare warnings became errors in five test files;
+3. nothing but clang-tidy reads the copy, and the check does not look into the call, so it models the dereference as it
+   does libstdc++'s. The cost is one 0.1-second run.
+
+Where the header has no such `using` (a toolset that changed it) the run goes on as before and prints a note saying
+that an unchecked `*` is not seen; the tests for the copy fail on such a machine (`test_tidy_msvc_optional.py`), so it
+is brought up to date. On Linux and macOS nothing is copied: their libraries declare `operator*` in `std::optional`.
+**A `REQUIRE(opt.has_value())` is not a guard to this check** (Catch2's macro reports to the runner and carries on, so
+the analysis follows the path where the optional is empty), here as in CI: a test that dereferences after one writes the
+`NOLINTNEXTLINE(bugprone-unchecked-optional-access)` with its reason, as the tests of `tests/camera/` do, or returns
+early on `if (!opt)` instead.
 
 **Advice.** `bugprone-exception-escape` differs both ways, so on Windows its findings are printed as advice
 (`advice, not a failure (may differ from CI): ...`) and fail nothing; on Linux, where the library is CI's, they fail

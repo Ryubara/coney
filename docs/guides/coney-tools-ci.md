@@ -193,8 +193,9 @@ prints each as `path:line:column [check] message` and a last line with the verdi
 clang-tidy of CI's major version (`ci.tidy.llvm_major`): `clang_tidy_program` of coney.local.toml, else the copy
 `workspace init --fetch clang-tidy` downloaded, else `clang-tidy-19` or `clang-tidy` on `PATH`. Exit 0 when clean, 1 on
 a finding or when clang-tidy failed on a source (it does not compile, or the compile database does not name it: build
-again), 2 when it cannot run (no clang-tidy of that version, no compile database). Where it can differ from CI:
-[clang-tidy here](clang-tidy.md#local).
+again), 2 when it cannot run (no clang-tidy of that version, no compile database). On Windows it first makes the copy
+of Microsoft's `<optional>` that lets the check see an unchecked `*optional` (in `tidy-optional/` of the build folder;
+[why](clang-tidy.md#differences)). Where it can differ from CI: [clang-tidy here](clang-tidy.md#local).
 
 ### ci disc-suite {#disc-suite}
 

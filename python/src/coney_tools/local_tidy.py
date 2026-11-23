@@ -23,6 +23,9 @@ Where it differs from CI, and why (docs/guides/clang-tidy.md#local has the measu
 * **Warnings MSVC lacks.** The warnings `ci.tidy.local_warnings` names (a member left out of an aggregate or designated
   initializer) are on in CI's GCC and Clang builds and not in MSVC's, so they are turned on here
   (`warning_arguments`) and reported on the changed lines like any finding.
+* **An unchecked `*optional`.** Microsoft's `std::optional` declares `operator*` in a base class, where
+  `bugprone-unchecked-optional-access` does not look, so on Windows the run reads a copy of `<optional>` that declares
+  it in `std::optional` (tidy_msvc_optional.py), and reports what CI's libstdc++ run reports.
 * **Advice.** On Windows the findings of the checks `ci.tidy.local_advisory` names (they follow the standard library's
   own code: `bugprone-exception-escape`) are printed as advice and fail nothing, as they differ from CI's both ways.
 
@@ -43,7 +46,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from coney_tools import build_root, ci_tidy, tidy_cache, workspace_fetch
+from coney_tools import build_root, ci_tidy, tidy_cache, tidy_msvc_optional, workspace_fetch
 from coney_tools.config import ConfigError, load_config, local_config_file, workspace_root
 from coney_tools.conventions import Conventions
 
@@ -205,9 +208,12 @@ def run_local(
     jobs: int,
     diff: str | None = None,
     windows: bool = sys.platform == "win32",
+    probe: ci_tidy.Runner | None = None,
 ) -> LocalResult:
     """clang-tidy on the lines the branch at `root` changes against `base` (or `diff`, when given), with `program`
-    against the compile database in `build_dir`, `jobs` at a time."""
+    against the compile database in `build_dir`, `jobs` at a time. On Windows, a `probe` (a runner of clang-tidy for the
+    one-off run that finds Microsoft's `<optional>`) makes the run see an unchecked `*optional` too
+    (tidy_msvc_optional.py)."""
     settings = conventions.ci.tidy
     text = branch_diff(root, base) if diff is None else diff
     plan = ci_tidy.make_plan(ci_tidy.changed_lines(text), root, settings, ci_tidy.touched_files(text))
@@ -222,7 +228,11 @@ def run_local(
         raise ConfigError(f"{config_file}: cannot be read ({error})") from error
     regex = header_filter(config, windows)
     header_arguments = (f"--header-filter={regex}",) if regex else ()
-    extra = (*header_arguments, *warning_arguments(settings.local_warnings))
+    extra: tuple[str, ...] = (*header_arguments, *warning_arguments(settings.local_warnings))
+    if windows and probe is not None:
+        model = tidy_msvc_optional.prepare(program, build_dir, probe)
+        extra += model.arguments()
+        notes += model.notes
     options = ci_tidy.RunOptions(extra_args=extra, line_filter=not windows)
     # A source the database does not know (the build is older than the branch) would be read with a guessed command,
     # which is not the build's: clang-tidy then reports compile errors that are not there, so it is not run.

@@ -271,6 +271,7 @@ def clang_tidy_step(context: StepContext) -> StepResult:
         program=program,
         build_dir=build_dir,
         jobs=local_tidy.default_jobs(root),
+        probe=run_command,
     )
     count = len(local.plan.units)
     checked = f"{count} source{'' if count == 1 else 's'} checked"

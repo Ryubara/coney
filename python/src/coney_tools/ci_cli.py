@@ -317,6 +317,7 @@ def _tidy_local(args: argparse.Namespace) -> int:
         program=program,
         build_dir=build_dir,
         jobs=args.jobs or local_tidy.default_jobs(root),
+        probe=run_command,
     )
     for line in local.lines():
         print(line)
