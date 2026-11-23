@@ -300,10 +300,12 @@ class HumanAnimator {
     /// (pickUpLoop()). Research: docs/research/objects.md#two-handed
     /// @orig 0x00221ed0 Human_SetCarryMoveStyle (unknown)
     void carryStyle(int set);
-    /// A held object of anim set `set` let go: its style is removed (`Human_RemoveMoveStyle`) and the slots and speeds
-    /// follow. A drop (`thrown` false) of a set 4 or 6 asks for the anim state again (state `0x20000000`), so standing
-    /// he goes back to the plain idle at once and moving his gait blend is rebuilt; a throw's clip plays on.
+    /// A held object of anim set `set` let go: its style is removed (`Human_RemoveMoveStyle`), or at a throw
+    /// (`thrown`) a held object's style on top (1-6) is popped, and the slots and speeds follow. A drop of a set 4 or 6
+    /// asks for the anim state again (state `0x20000000`), so standing he goes back to the plain idle at once and
+    /// moving his gait blend is rebuilt; a throw's clip plays on.
     /// @orig 0x00257f38 Human_DropHeld (unknown)
+    /// @orig 0x002586d8 Human_ReleaseThrow (unknown)
     void releaseStyle(int set, bool thrown);
     /// The loop a pick-up clip of an object of anim set `set` hands over to (`Human_PlayPickupClip`): the object's
     /// style pushed for the moment (unless `hidden` with a set other than 4 or 6), the idle (slot 0) read, or the

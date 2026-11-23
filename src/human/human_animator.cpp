@@ -219,7 +219,10 @@ void HumanAnimator::releaseStyle(int set, bool thrown) {
     if (set <= 0 || set > 0xff) {
         return;
     }
-    if (const int applied = m_styles.remove(static_cast<std::uint8_t>(set)); applied >= 0) {
+    // A throw pops a held object's style on top (styles 1-6); otherwise, and at a drop, the set is removed.
+    const std::uint8_t top = m_styles.top();
+    const bool popped = thrown && top >= 1 && top <= kStyleGhetto;
+    if (const int applied = popped ? m_styles.pop() : m_styles.remove(static_cast<std::uint8_t>(set)); applied >= 0) {
         applyStyle(applied);
     }
     // A dropped set 4 or 6 sets state 0x20000000: the anim state is chosen again on the plain slots.
