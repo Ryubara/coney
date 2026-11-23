@@ -1701,10 +1701,11 @@ branch:
   update 9 and none failing from 12 to 30, no Destroyer on the idle player, and after the order the checks of item 5
   below.
 - **Still different: the ring.** Sixty updates after the scene's end 10 of the original's twelve stand more than
-  0.5 m from their flags (run r-20261123-level80-block-breaks), Coney's 5. Coney's waiting attackers stand where they
-  are inside the reposition's ring, a marked stand-in in its fight goal for the band-keeping move
-  ([MoveMelee](ai-moving.md#move-melee)), where the original's back off to 4 m and circle. Confirmed (runtime) for
-  the original's count; the cause inferred from Coney's trace (eight holders waiting at 1-3 m with no action).
+  0.5 m from their flags, Coney's 5. Coney's waiting attackers stand where they are inside the reposition's ring, a
+  marked stand-in in its fight goal for the band-keeping move ([MoveMelee](ai-moving.md#move-melee)), where the
+  original's back off to 4 m and circle; #1663 ports that move. Confirmed (runtime), run
+  r-20261123-level80-block-breaks, for the original's count; the cause inferred from Coney's trace (eight holders
+  waiting at 1-3 m with no action).
 
 **What Coney must do** at this fight's start:
 
