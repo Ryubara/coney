@@ -751,7 +751,7 @@ name = "Human_TurnToFaceObject"
 page = "ai-fights.md#fight-facing"
 level = "confirmed-code"
 coney = "src/ai/engage_goals.cpp:EngageEnemyGoal::process"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x002221e0
