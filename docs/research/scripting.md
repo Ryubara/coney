@@ -1671,7 +1671,7 @@ branch:
   one update later.
 - Why, in order:
     1. On `main`, only the members of a Scout tactic scan (`ScoutTactic::update`); `Brains::update` never does, so
-       `GangMakeEnemies` puts nobody in a list ([Attacking on sight in Coney](ai-gangs.md#aggro-in-coney)). PR #394
+       `GangMakeEnemies` puts nobody in a list ([Attacking on sight](ai-gangs.md#aggro-on-sight), Coney status). PR #394
        adds the scan to every brain's update and so fills the lists.
     2. Neither `main` nor PR #394 has `GangBrain_Think` step 3 or the Warrior think's step 1 (`Brain::think` keeps
        only the tackle meter and the swap prompt), so a listed enemy is fought only when something else calls
