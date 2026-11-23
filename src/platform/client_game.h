@@ -76,6 +76,10 @@ struct ClientPresentation {
 /// frame the scene draws the world. With no level (before the host's first order, after a quit, or when the session
 /// ends) it clears the screen.
 ///
+/// It draws the guest's own view: each step, after the world's, its net::ClientCamera follows the human its player slot
+/// follows (net::followedHuman()) with the guest's own pad's right stick, and the scene draws through it. The camera is
+/// presentation only (docs/guides/client-world.md#client-camera); nothing it does reaches the host.
+///
 /// It presents the host's game events and draws the HUD of the guest's own player slot. Each step, once the world's
 /// playback has reached a host step, the events of the steps up to it are handed over once each, in the order the host
 /// raised them, and presented (ClientEventPlayer); then the level's HUD, made afresh for each level, takes the guest's

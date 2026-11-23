@@ -14,10 +14,11 @@ game](#client-game) (`--join ADDR --net-view`): `src/platform/client_game.h` (`C
 levels, steps a `ClientWorld` from the snapshots the session decodes, presents the host's game events and steps the
 guest's HUD, `src/gamemodes/client_event_player.h` (`ClientEventPlayer`), which applies an event to the guest's sound
 and HUD, and `src/platform/client_level_scene.h` (`ClientLevelScene`), which draws the level, the world's humans (each
-as the character his snapshot names) and the HUD through the renderer. The host fills its snapshots from its own humans
-every step ([The game's humans](multiplayer.md#game-humans)). **Planned**, with its issue: the guest's own player's
-camera (#1333), which the snapshots do not carry yet (drawn with a stand-in until then, [The client
-game](#client-game)).
+as the character his snapshot names) and the HUD through the renderer, and the guest's own camera, `src/net/client_camera.h`
+(`ClientCamera`, [The client's camera](#client-camera)). The host fills its snapshots from its own humans
+every step ([The game's humans](multiplayer.md#game-humans)). **Not built yet:** the human each player slot
+drives, which the snapshots do not say yet (the camera follows the host's player 1 until then, [The client's
+camera](#client-camera)).
 
 ## The model {#model}
 
@@ -182,11 +183,57 @@ in the log.
 **The scene.** `ClientLevelScene` loads the level's scenery as the play mode does (`LevelPlayScenery`), lights it with
 the play mode's stand-in lights, and draws each human of the world as a character mesh posed by
 [`humanPose()`](#pose) over its character's [clips](#clips), at its feet and heading, each human as [his own
-character](#characters). One **stand-in** waits for the snapshots to carry more:
+character](#characters). It draws through the client game's own [camera](#client-camera) (`ClientCamera::view()` at
+the frame's alpha; the newest step's view for streaming): the scenery streams round the camera, and the lights and the
+visibility pass are placed by it, round the human it follows. With no human to follow (the world has none yet) the
+camera has no view, and the scene stands at the level's start,
+4 m behind it and 2 m above (**Coney's choice**).
 
-- **The camera follows the human with the lowest network id**, the host's player 1, whose brain comes first, from 4 m
-  behind and 2 m above his feet, looking at his chest: the guest's own player and its follow camera are not in the
-  snapshots (#1333). With no human, it stands at the level's start the same way.
+### The client's camera {#client-camera}
+
+A client's view is **its own follow camera**, `camera::FollowCamera` (the original's `Cam_Follow`,
+[Cameras](../research/camera.md)), run by the client on the human its player slot follows. The snapshots carry no
+camera and the protocol does not change; why is [The client's camera](multiplayer.md#client-camera-decision) in the
+multiplayer design. What a snapshot cannot give a client rebuilt, and so still waits for a camera entry of its own, is
+the host's scripted, scene and fixed cameras: **while the host plays a scene, a guest keeps its follow shot**
+(**stand-in**, below).
+
+`ClientCamera` (`src/net/client_camera.h`, in `coney_net`, no display, clock or random) is stepped by the client game
+once per client step, **after** the world's step and with what the world shows, so the camera follows the jitter
+buffer's playback exactly as the humans are drawn, not the newest snapshot (a camera on the newest would swing ahead of
+the humans a blend of 3 steps behind). It keeps its last two views for the frames between, as the play mode keeps its
+player's (`view(alpha)`: the eye and look-at point lerped, the ends exact), and a human it follows anew gets a camera
+made behind him at once (a cut: `view(0)` is `view(1)`, no swing across the level; counted by `cuts()`). The inputs of
+a step:
+
+| Input | From | Why |
+| --- | --- | --- |
+| The human followed | `followedHuman(humans, slot)` over the world's humans | the player slot's human ([below](#client-camera-stand-ins)) |
+| His gait speeds | `ClientScene::speedsOf(character)`, `human::speedsOf()` over the character's clips (the roster's character, [A guest's characters](#characters)) | the gait is read from the speed, not replicated (the replicated `Gait` is a blend's value, not the locomotion's gait) |
+| The right stick | the guest's own pad on port 1 (`GameModeStack::pads()`, raw bytes) | the view turns with the guest's own right stick; the host's game never reads it (the guest's pad is what plays the host's port 2, [Player two](multiplayer.md#player-two), so the same stick also goes to the host as its player 2's input, as any second pad's does) |
+| The collision | `ClientScene::collision()`, the level's | the pull-in when the world is in the way |
+| The step | the client step's length, 1/30 s | the camera's clock is the sum of its updates |
+
+#### Stand-ins {#client-camera-stand-ins}
+
+Each is to be replaced by a faithful reading when the snapshots carry the state ([Stand-ins](testing.md#stand-ins)):
+
+- **The human followed**: the host's game has one player so far, the guest's pad plays port 2
+  and drives no human of its own ([Player two](multiplayer.md#player-two); `GameState_SyncPlayers` is not built), and
+  the snapshots do not say which human a player slot drives. Every slot therefore follows the host's player 1, the human
+  with the lowest network id (his brain comes first in the host's capture). When the second player is built, the
+  snapshot must name each slot's human (a field of the slot's HUD entry or a list beside the humans, a protocol bump of
+  its own); `followedHuman()` is the one place that changes, and the camera, the test and the scene do not.
+- **The camera's set-up** is `followDefaults()`: a level's `CfgFollowCamera` and the scripts' camera calls run on the
+  host only, so a level that sets its own band (the street's, [Cameras](../research/camera.md#level99-values)) is
+  followed with the default one.
+- **The target's other state**: no nearest enemy, no lock-on (L1 combat camera), no grab, the stick-back rule off, the
+  body point 1 m up (the aim point stays level), no long fall. The follow shot therefore differs from the host's own
+  camera for the same human in a fight and in a sprint near enemies; only the framing, never what the host reads.
+- **Scenes and scripted cameras**: the host's scene, scripted and fixed cameras are not replicated, so while the host
+  plays a scene (its roles are humans in the snapshots like any other) the guest's camera keeps its follow shot, and the
+  scene's shots are not seen. The movie, which the client game does not play either, is the host's alone.
+- **Slow motion** is not applied: the camera steps 1/30 s whatever the host's characters' step is.
 
 ### The host's events {#client-events}
 
@@ -232,8 +279,9 @@ everyone (its counters and bars, the scoreboard, the radar's settings, whether t
 
 Two things the HUD does not have yet, by choice: the HUD takes the newest snapshot's state, not the playback's
 (**Coney's choice**: it keeps no history to blend, so it is up to the jitter buffer's delay ahead of the humans, while
-its messages and sounds arrive with the humans), and the radar shows no blips, since its view (where the guest's player
-stands and which way the camera looks) is not in the snapshots (#1333), nor are its blips (#1537).
+its messages and sounds arrive with the humans), and the radar shows no blips: they are not in the snapshots (#1537).
+Its view (where the player stands and which way the camera looks) is the [client's camera](#client-camera)'s and the
+human it follows's now, and is given to the radar with the blips.
 
 ## Testing {#testing}
 
@@ -281,6 +329,14 @@ track the host raises in one step are presented on the guest once, none before i
 all in the step it does, in the order raised, on the guest's own sound and HUD; and the HUD: the guest's own slot's
 panel is panel 0 with its rage and money and its standing flags, the host's player's values are on no panel, what the
 host's HUD holds for everyone follows it, and a new level has a new HUD.
+`tests/net/client_camera_test.cpp` covers [the client's camera](#client-camera): the human each slot follows (the lowest
+id), what the follow camera reads of a replicated human (his velocity from the move between two steps, the gait nearest
+to it, in the air, out and down), the camera made behind a human it follows and looking at him, trailing a human running
+away within the leash band, the client's own right stick turning the view the way it turns the follow camera's, a cut to
+another human and the frames between two steps, and the whole of it over the loopback through the bad link of the
+"What a client sees" test: the camera follows the server's player round a circle within the follow camera's band. Its
+case in `client_game_test.cpp` has the client game hand the camera the guest's own pad's stick, the character's speeds
+and the level's collision, and a new level start with a new camera.
 `tests/platform/disc_client_level_test.cpp`, with the disc, loads the scene of `level99` headless and draws two humans a
-client's world was sent, both posed with every layer's clip found, the camera behind player 1, and a human gone from
+client's world was sent, both posed with every layer's clip found, the follow camera behind player 1, and a human gone from
 the snapshots losing his mesh.

@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/client_game.h"
 
+#include <array>
 #include <charconv>
 #include <cmath>
+#include <cstdint>
 #include <format>
+#include <optional>
 #include <string>
 #include <utility>
 
+#include "gamemodes/game_mode_stack.h"
 #include "net/event_channel.h"
 #include "net/jitter_buffer.h"
 #include "net/net_status.h"
@@ -39,7 +43,7 @@ ClientGame::ClientGame(NetPlay& net, ClientSceneLoader load, std::function<bool(
       m_levelExists(std::move(levelExists)), m_print(std::move(print)), m_device(device),
       m_events(m_presentation.sound, nullptr) {}
 
-ModeResult ClientGame::update(GameModeStack& /*stack*/, const FrameTime& frame) {
+ModeResult ClientGame::update(GameModeStack& stack, const FrameTime& frame) {
     // A session that ended takes the level with it: nothing more will come for it.
     if (m_net.role() != net::NetRole::Client && m_level) {
         m_leavePending = true;
@@ -65,6 +69,7 @@ ModeResult ClientGame::update(GameModeStack& /*stack*/, const FrameTime& frame) 
         if (scene) {
             m_scene = std::move(*scene);
             m_world = std::make_unique<net::ClientWorld>();
+            m_camera = net::ClientCamera();
             m_events.setHud(&m_hud->hud());
             // The receiver still keeps the last level's snapshots; this level's world takes none of them.
             if (const net::SnapshotReceiver* snapshots = m_net.clientSnapshots(); snapshots != nullptr) {
@@ -82,13 +87,15 @@ ModeResult ClientGame::update(GameModeStack& /*stack*/, const FrameTime& frame) 
     if (!m_world || !m_scene) {
         m_net.discardArrivedEvents();
     }
-    // The world takes what the session decoded and moves on a step; then the host's events its playback has reached
-    // and the HUD's step; the scene streams round the world and queues the HUD's sprites.
+    // The world takes what the session decoded and moves on a step; then the client's camera on the human its slot
+    // follows, the host's events its playback has reached and the HUD's step; the scene streams round the camera and
+    // queues the HUD's sprites.
     if (m_world && m_scene) {
         if (const net::SnapshotReceiver* snapshots = m_net.clientSnapshots(); snapshots != nullptr) {
             m_world->receive(*snapshots);
         }
         m_world->step();
+        stepCamera(stack, frame);
         presentEvents();
         stepHud(frame);
         m_scene->step(*m_world, m_camera, frame);
@@ -145,6 +152,27 @@ void ClientGame::presentEvents() {
     }
 }
 
+void ClientGame::stepCamera(const GameModeStack& stack, const FrameTime& frame) {
+    // The human its slot follows, as the world shows him this step, and his character's gait speeds.
+    const std::optional<net::NetId> followed = net::followedHuman(m_world->humans(), m_net.playerSlot());
+    human::Speeds speeds{};
+    if (followed) {
+        const auto human = m_world->humans().find(*followed);
+        if (human != m_world->humans().end()) {
+            speeds = m_scene->speedsOf(human->second.character);
+        }
+    }
+    // The guest's own pad, port 1 as its game reads it (the host's port 2 plays the same pad): its right stick turns
+    // its own view.
+    const std::array<std::uint8_t, 4>& sticks = stack.pads().port(0).rawSticks();
+    m_camera.step(*m_world, followed,
+                  net::ClientCameraInput{.speeds = speeds,
+                                         .rawRightX = sticks.at(0),
+                                         .rawRightY = sticks.at(1),
+                                         .mesh = m_scene->collision(),
+                                         .seconds = static_cast<float>(frame.seconds)});
+}
+
 void ClientGame::stepHud(const FrameTime& frame) {
     // Nothing to show until the first snapshot has said what the host's HUD holds.
     const net::SnapshotReceiver* snapshots = m_net.clientSnapshots();
@@ -173,6 +201,7 @@ void ClientGame::dropLevel() {
     m_events.stopAll();
     m_hud.reset();
     m_world.reset();
+    m_camera = net::ClientCamera();
     m_level.reset();
     // The events the playback had not reached belong to the level that ended: the next level's HUD and sound must not
     // show or play them (docs/guides/client-world.md#client-game).
