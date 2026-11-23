@@ -450,6 +450,7 @@ target_sources(coney_tests PRIVATE
     human/way_clear_test.cpp
     human/flight_test.cpp
     human/hiding_test.cpp
+    human/move_styles_test.cpp
     human/body_test.cpp
     human/climb_test.cpp
     human/combat_test.cpp

@@ -131,6 +131,9 @@ inline constexpr std::uint16_t kTakeEventLeft = 0x36;
 /// `(0, grip, 0)`), its rotation as is. Nothing when the clip has no such event.
 /// @orig 0x003fe490 melee_weapon_HandleMessage (unknown)
 [[nodiscard]] std::optional<HeldAttachment> heldAttachment(const anim::AnimClip& clip, float humanScale, float grip);
+/// Stub: the take by the object's class.
+[[nodiscard]] std::optional<HeldAttachment> takeAttachment(const anim::AnimClip& clip, float humanScale,
+                                                           const ObjectType& type, bool inScene);
 
 /// A pose in the game's axes.
 struct WorldPose {

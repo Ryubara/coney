@@ -1014,7 +1014,11 @@ class Human final : public Holdable {
     /// `0x00275d10`'s steer (inferred to be like the attack's, without its slide); the grab bit for what the clip
     /// holds.
     /// @orig 0x0025e5a8 Human_PickUpMessage (unknown)
-    bool startPickUp(double handle, anim::Vec3 point, std::uint32_t clip);
+    bool startPickUp(double handle, anim::Vec3 point, std::uint32_t clip, int heldSet = 0);
+    /// Stub: the take's move style.
+    void takeHeldStyle(int /*set*/) {}
+    /// Stub: the drop's move style.
+    void releaseHeldStyle(int /*set*/, bool /*thrown*/) {}
     /// Starts the stereo theft at the stereo at `point`: the human turns to it at once and the mini-game runs (mode 3)
     /// with `stageTurns` turns of the stick a stage (combat::stereoStageTurns()). **Coney stand-in**: the turn is made
     /// at once and he stays put, where the original's Human_AlignToObject turns and moves him over 0.1 s.

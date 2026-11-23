@@ -76,6 +76,7 @@ std::optional<PlayLevelSimulation::HeldDraw> PlayLevelSimulation::heldDrawOf(dou
     return HeldDraw{.holder = &human,
                     .handle = held,
                     .bone = attachment->bone,
+                    .local = *attachment,
                     .pose = world_objects::heldWorldPose(feet, heading, bones.at(attachment->bone), 1.0F, *attachment)};
 }
 

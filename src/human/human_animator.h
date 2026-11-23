@@ -13,6 +13,7 @@
 #include "animation/anim_task.h"
 #include "characters/anim_set.h"
 #include "human/locomotion.h"
+#include "human/move_styles.h"
 
 // A human's animation controller: each update it picks an anim state from what the human is doing and, when the state
 // changes, builds the animation tasks for it; while moving it keeps the gait blend's target on the speed. The human
@@ -40,6 +41,7 @@ inline constexpr std::size_t kSlotJog = 5;
 inline constexpr std::size_t kSlotRun = 6;
 inline constexpr std::size_t kSlotSprint = 7;
 inline constexpr std::size_t kSlotWalkStart = 10;
+inline constexpr std::size_t kSlotCombatIdle = 11;
 inline constexpr std::size_t kSlotCombatWalk = 14;
 inline constexpr std::size_t kSlotDropCycle = 26;
 inline constexpr std::size_t kSlotJumpLoop = 30;
@@ -283,6 +285,10 @@ class HumanAnimator {
     void setStealthStyle(bool on);
     /// Whether the hidden move style is on.
     [[nodiscard]] bool stealthStyle() const { return m_stealth; }
+    /// Stub: the move style on top.
+    [[nodiscard]] std::uint8_t moveStyle() const { return kStyleNone; }
+    /// The slots now in force.
+    [[nodiscard]] const AnimSlots& slots() const { return m_slots; }
 
     /// The blended pose.
     [[nodiscard]] anim::Pose pose(std::span<const anim::Quat, anim::kPoseBones> bindRotations) const {

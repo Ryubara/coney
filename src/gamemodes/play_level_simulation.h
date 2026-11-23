@@ -175,6 +175,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
         const human::Human* holder = nullptr;
         double handle = 0.0;
         std::size_t bone = 0;
+        world_objects::HeldAttachment local; // its pose in the bone's frame
         world_objects::WorldPose pose;
     };
     /// The objects in every human's hand at the newest step, player 1's and each AI human's, posed by his own hand

@@ -1211,7 +1211,7 @@ bool Human::tryContextAction() {
     return m_contextAction && m_contextAction(*this);
 }
 
-bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip) {
+bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip, int /*heldSet*/) {
     const anim::AnimClip* found = m_animator.clip(clip);
     if (found == nullptr) {
         return false;

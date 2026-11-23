@@ -112,6 +112,11 @@ std::optional<HeldAttachment> heldAttachment(const anim::AnimClip& clip, float h
     return std::nullopt;
 }
 
+std::optional<HeldAttachment> takeAttachment(const anim::AnimClip& clip, float humanScale, const ObjectType& type,
+                                             bool /*inScene*/) {
+    return heldAttachment(clip, humanScale, type.grip);
+}
+
 WorldPose heldWorldPose(anim::Vec3 feet, float heading, const anim::Mat34& bone, float boneScale,
                         const HeldAttachment& held) {
     // The bone in the human's frame: its rotation, its position scaled; then the local pose after it.
