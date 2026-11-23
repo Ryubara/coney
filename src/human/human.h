@@ -177,6 +177,9 @@ class Human final : public Holdable {
     static constexpr float kMaxSpeed = 50.0F;
     /// A human this far below the collision mesh's lowest vertex has fallen out of the world.
     static constexpr float kOutOfWorldDepth = 20.0F;
+    /// A whole human's fade (the character instance's colour alpha, `+0x2b`): 255 at runtime before a fall (run
+    /// r-20261122-fall-out-of-world, docs/research/characters.md#out-of-world).
+    static constexpr int kWholeFade = 255;
     /// After this many airborne updates with the body unable to move as long, the human is put back on its last
     /// ground.
     static constexpr std::uint32_t kStuckUpdates = 60;
@@ -382,8 +385,16 @@ class Human final : public Holdable {
     [[nodiscard]] Gait gait() const;
     /// Whether it is airborne (off the ground).
     [[nodiscard]] bool airborne() const { return m_airborne; }
-    /// The human fell more than kOutOfWorldDepth below the mesh; it stays put until spawned again.
+    /// The human fell more than kOutOfWorldDepth below the mesh: record state `0x200000000`, which has him taken away
+    /// (faded out, then destroyed: human::Humans::update()); not dead. It stays put until spawned or put back.
+    /// Research: docs/research/characters.md#out-of-world
     [[nodiscard]] bool outOfWorld() const { return m_outOfWorld; }
+    /// The fade of a human being taken away: his character instance's colour alpha (instance `+0x2b`), kWholeFade
+    /// until the characters' step lowers it (human::Humans::update()). **Coney stand-in**: kept, not drawn (the only
+    /// human that fades, one fallen out of the world, is far below the level).
+    [[nodiscard]] int fade() const { return m_fade; }
+    /// Sets the fade (fade()); the characters' step lowers it.
+    void setFade(int fade) { m_fade = fade; }
     /// Where it last stood on the ground (a creation's or a placement's point, or its feet on the last update it
     /// stood): where a human stuck in the air for two seconds lands.
     [[nodiscard]] anim::Vec3 lastGround() const { return m_lastGround; }
@@ -1312,6 +1323,7 @@ class Human final : public Holdable {
     TurnState m_turn;
     bool m_airborne = false;
     bool m_outOfWorld = false;
+    int m_fade = kWholeFade;       // the character instance's colour alpha (+0x2b): fade()
     bool m_blockHumansFlag = true; // body flag 0x4 BLOCKHUMANS, on with every new body
     bool m_aimTurning = false;     // a throw aim's turn clip (470) plays
     bool m_landingPending = false; // an airborne move passed a floor: land once the feet start kLandingDepth below it

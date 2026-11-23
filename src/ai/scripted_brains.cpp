@@ -448,6 +448,19 @@ void ScriptedBrains::humanDelete(double human) {
     }
 }
 
+void ScriptedBrains::humanDestroyed(const Brain& brain) {
+    const double handle = brain.handle();
+    const auto found = m_brains.find(handle);
+    if (found == m_brains.end() || found->second != &brain || &brain == m_player || brain.type() == BrainType::Player) {
+        return;
+    }
+    if (brain.gang() != nullptr) {
+        m_deletedGangs[handle] = brain.gang()->id();
+    }
+    m_priorities.erase(handle);
+    unbind(handle);
+}
+
 Brain* ScriptedBrains::switchTarget(const Brain& from, bool anyKindZero) const {
     // Not driven by a pad, and on its feet with health left.
     const auto canTake = [&from](const Brain* member) {

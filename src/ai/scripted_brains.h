@@ -238,6 +238,11 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// An AI human: unbound and handed to the remover (setRemover()), which takes it out of the world; its gang is
     /// kept for gangOf(). **Coney choice**: a player's human is not deleted.
     void humanDelete(double human) override;
+    /// An AI human destroyed by the characters' step (`Human_Destroy`, after a fall out of the world): unbound, so his
+    /// handle names no one (`HuIsAlive` is false), his gang kept for gangOf() as for humanDelete(); the remover is not
+    /// called, his removal being the caller's (ai::AiHumans::destroy()). Nothing for a human not bound, or a player's.
+    /// @coney-only Coney's handle table; the original's handle stops resolving when Human_Destroy frees it
+    void humanDestroyed(const Brain& brain);
     /// The id of the gang of the brain named by `human`, of the gang a human created while holding will join, or of
     /// the gang a deleted human was in: the original's handle still resolves after `HuDelete`, so `HuGetGang` still
     /// answers (docs/research/rumble.md, King of the hill after `GameOver`). **Coney stand-in**: when a deleted

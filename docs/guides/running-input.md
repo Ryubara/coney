@@ -65,6 +65,7 @@ comment and blank lines are skipped. Frames must not go down from one line to th
 | `steer [PERCENT] X,Y...` | push the left stick, at PERCENT (1 to 100, default 100) of its reach, toward each world point (metres) in turn as seen from player 1's feet and the camera's heading, recomputed every frame; a point counts as reached within 1 m, and the stick centres at the last one or at the next `stick left` line |
 | `connect`, `disconnect` | plug the pad in or pull it out |
 | `console LINE` | type `LINE`, the rest of the line as written, into the [console](console.md#input-script) for that port's player; a `#` still starts a comment |
+| `drop-ai [HANDLE]` | a build with the [debug tools](building.md#debug-tools) only: put the AI human whose script handle is `HANDLE`, or the one nearest player 1 who is not his friend (a crew stays), 200 m below where he stands, so the characters' step takes him away as one [fallen out of the world](../research/characters.md#out-of-world) (`src/debug/fighter_drop.h`); the release build's game ignores the line |
 
 Buttons are `cross`, `circle`, `triangle`, `square`, `l1`, `r1`, `l2`, `r2`, `l3`, `r3`, `start`, `select`, `up`,
 `down`, `left` and `right`. The port defaults to `p1`; port 1 starts connected and port 2 does not. A held button

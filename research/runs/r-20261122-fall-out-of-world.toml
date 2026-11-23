@@ -1,0 +1,40 @@
+version = 1
+id = "r-20261122-fall-out-of-world"
+date = "2026-11-22"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "e073889605fc9129c13e723522ed7e0a472e805b03354c64be4e7d0151c356b0"
+
+[who]
+agent = "aaef5902b159e70cb"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "PoizoCiv (level99 street) moved to z -300 by its transform with its object flags set airborne; record state, the character instance's colour byte +0x2b, a breakpoint on Human_Destroy (a0 = the human) and Lua message-18 handlers on the human (SetMsgHandler) and its gang (GangSetMsgHandler) watched"
+
+[values]
+record_state_high_word = 2
+alpha_before = 255
+alpha_at_destroy = 5
+destroy_second_argument = 0
+human_handler_calls = 1
+gang_handler_calls = 1
+gang_standing_argument = 0
+hu_is_alive_after = 0
+
+[addresses]
+human = 0x00641350
+record = 0x0065a6c0
+instance = 0x00cd8400
+destroy_caller_ra = 0x002495ac

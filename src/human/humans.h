@@ -84,6 +84,16 @@ class Humans {
     void remove(const Human& human);
     /// Sets what runs at the brains' place.
     void setBrains(BrainsHook brains) { m_brains = std::move(brains); }
+    /// What destroys a human taken away once he has faded out (`Human_Destroy(human, 0)`, `0x0021c7c8`): his knock-out,
+    /// what the scripts hold of him, and his leaving the step, which it must not do at once (it is called from inside
+    /// update()), only by the step's end. Called again on each later update while he is still in the step.
+    using Destroy = std::function<void(Human& human)>;
+    /// Sets what destroys a human taken away once faded out (update()); empty: nothing, and he stays faded.
+    void setDestroy(Destroy destroy) { m_destroy = std::move(destroy); }
+    /// A human taken away loses this much fade an update (docs/research/characters.md#out-of-world).
+    static constexpr int kFadeStep = 10;
+    /// While his fade is at least this he fades; below it he is destroyed.
+    static constexpr int kFadeFloor = 11;
     /// Sets what an airborne human's body touches (Human::BodyContact), given to every human it steps; empty: nothing.
     void setBodyContact(Human::BodyContact contact) { m_bodyContact = std::move(contact); }
     /// Sets what a walking human slides along beyond the walls (Human::ObjectPush), given to every human it steps;
@@ -102,8 +112,10 @@ class Humans {
     /// locomotion, then its strike test against the humans it is opposed to and setStrikeContact()'s objects); every
     /// human's actions (the dispatcher from its record, against the passive `targets` and the humans it is opposed to,
     /// as add() and setOpposition() say), the order alternating between first-to-last and last-to-first from one step
-    /// to the next. `mesh` is what they stand on (may be null). Every human advances by `stepSeconds`, the characters'
-    /// step, which slow motion shortens (docs/research/camera.md#slow-motion).
+    /// to the next. A human taken away (Human::outOfWorld()) acts not: his fade drops by kFadeStep while it is at least
+    /// kFadeFloor, else he is destroyed (setDestroy(); docs/research/characters.md#out-of-world). `mesh` is what they
+    /// stand on (may be null). Every human advances by `stepSeconds`, the characters' step, which slow motion shortens
+    /// (docs/research/camera.md#slow-motion).
     /// @orig 0x00249108 Humans_Update (unknown)
     void update(const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {},
                 float stepSeconds = kStepSeconds);
@@ -206,6 +218,7 @@ class Humans {
     SlotContacts m_slotContacts;
     std::unordered_map<const Combatant*, std::size_t> m_slotOf; // each human's slot, kept by add() and remove()
     BrainsHook m_brains;
+    Destroy m_destroy;
     Human::BodyContact m_bodyContact;
     Human::ObjectPush m_objectPush;
     Human::StrikeContact m_strikeContact;

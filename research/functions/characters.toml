@@ -129,6 +129,20 @@ relation = "not-ported"
 issue = 1008
 
 [[function]]
+address = 0x0021c7c8
+name = "Human_Destroy"
+page = "characters.md#destroy"
+role = "removes a human at once: knocked out if not dead (event 18), defeat credited, made dead, handle freed"
+level = "confirmed-code"
+coney = "src/ai/brains.h:Brains::destroy"
+status = "compared"
+
+[[function.gaps]]
+what = "only the knock-out with its event 18 and the removal are ported: the crew status tag, sounds, linked and held objects, props and gear, the defeat's statistics and event 2, the overhead icon, radar, heat effect, spawner and the player's record, panel and list are not"
+relation = "not-ported"
+issue = 1640
+
+[[function]]
 address = 0x0021cda8
 name = "Human_StoreName"
 page = "characters.md#original-structure"
@@ -2107,7 +2121,7 @@ coney = "src/human/humans.h:Humans::update"
 status = "compared"
 
 [[function.gaps]]
-what = "player 1's gang's attack-spacing bytes cleared near a pending world load, the burning human's heat distortion, hint 6, and the knocked-out and dead humans' steps (made dead unseen, the down path, taken away and faded out) are not ported"
+what = "player 1's gang's attack-spacing bytes cleared near a pending world load, the burning human's heat distortion, hint 6, and the knocked-out and dead humans' steps (made dead unseen, the down path, a dead human taken away unseen) are not ported"
 relation = "not-ported"
 issue = 1584
 

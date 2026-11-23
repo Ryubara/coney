@@ -179,7 +179,7 @@ std::string parseArguments(std::string_view line, std::span<const std::string_vi
     case InputEvent::Action::Connect:
     case InputEvent::Action::Disconnect:
         return args.empty() ? std::string() : "takes no arguments";
-    case InputEvent::Action::Console:
+    case InputEvent::Action::Console: {
         // The words are views of `line`, so the text runs from the start of the first to the end of the last, as
         // written. The offsets come from pointer differences and the text is a substring of the line, so no bare
         // data() pointer is handed to a callee without its size.
@@ -190,6 +190,19 @@ std::string parseArguments(std::string_view line, std::span<const std::string_vi
         const auto end = static_cast<std::size_t>(args.back().data() - line.data()) + args.back().size();
         event.text = std::string(line.substr(first, end - first));
         return {};
+    }
+    case InputEvent::Action::DropAi: {
+        // An optional handle, a number as the scripts give handles.
+        if (args.empty()) {
+            return {};
+        }
+        const std::optional<double> handle = args.size() == 1 ? parseNumber<double>(args.front()) : std::nullopt;
+        if (!handle) {
+            return "drop-ai takes at most one handle, a number";
+        }
+        event.handle = handle;
+        return {};
+    }
     }
     return "unknown action";
 }
@@ -228,6 +241,8 @@ std::string parseLine(std::string_view line, std::span<const std::string_view> w
         event.action = InputEvent::Action::Disconnect;
     } else if (action == "console") {
         event.action = InputEvent::Action::Console;
+    } else if (action == "drop-ai") {
+        event.action = InputEvent::Action::DropAi;
     } else {
         return std::format("unknown action \"{}\"", action);
     }
@@ -347,6 +362,11 @@ void ScriptedInput::apply(const InputEvent& event) {
     case InputEvent::Action::Console:
         if (m_consoleSink) {
             m_consoleSink(event.port, event.text);
+        }
+        break;
+    case InputEvent::Action::DropAi:
+        if (m_dropSink) {
+            m_dropSink(event.handle);
         }
         break;
     }

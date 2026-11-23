@@ -305,3 +305,38 @@ TEST_CASE("of two enemies the same distance and angle away, square takes the one
         CHECK(tiedPick(2, 70.0F, 39.0F, odd) == Picked::Left);
     }
 }
+
+TEST_CASE("a human more than 20 m below the mesh's lowest point fades by 10 an update and is destroyed once faded",
+          "[human][humans]") {
+    // Expected: characters.md#out-of-world, confirmed (code) at 0x0023fea8 (the bit) and 0x00249108 (the fade and the
+    // destroy), confirmed (runtime) run r-20261122-fall-out-of-world (255 before, 5 at Human_Destroy)
+    Pair pair;
+    std::vector<int> destroyedAt;
+    int step = 0;
+    pair.humans.setDestroy([&](Human& human) {
+        CHECK(&human == &pair.other);
+        destroyedAt.push_back(step);
+    });
+    CHECK(pair.other.fade() == 255);
+    // More than 20 m below the mesh's lowest point (the synthetic header's -50): the state pass flags him, the actions
+    // pass fades him.
+    pair.other.place(pair.mesh.get(), coney::anim::Vec3{45.0F, 40.0F, -100.0F}, 0.0F);
+    for (step = 1; step <= 25; ++step) {
+        pair.humans.update(pair.mesh.get());
+        REQUIRE(pair.other.outOfWorld());
+        CHECK(pair.other.fade() == 255 - (10 * step));
+    }
+    CHECK(destroyedAt.empty());
+    // Faded below 11: destroyed on the next update, his fade left as it was.
+    step = 26;
+    pair.humans.update(pair.mesh.get());
+    CHECK(destroyedAt == std::vector<int>{26});
+    CHECK(pair.other.fade() == 5);
+    // The player in the same step was neither faded nor destroyed.
+    CHECK_FALSE(pair.player.outOfWorld());
+    CHECK(pair.player.fade() == 255);
+    // Put back (Coney's choice for a player), he stands whole again.
+    pair.other.putBack(pair.mesh.get(), coney::anim::Vec3{45.0F, 40.0F, 0.0F}, 0.0F);
+    CHECK_FALSE(pair.other.outOfWorld());
+    CHECK(pair.other.fade() == 255);
+}

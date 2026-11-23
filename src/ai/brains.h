@@ -52,6 +52,16 @@ class Brains {
     /// has none.
     /// @coney-only Coney's table of brains; the original frees a fixed slot, in code not traced here
     void remove(const human::Human& human);
+    /// The brains' part of destroying `human` (`Human_Destroy(human, 0)`, once a human taken away has faded out): one
+    /// not already down or dead is knocked out (`Human_KnockOut`): state `0x40000` (his script knock-out), BLOCKHUMANS
+    /// and a player's slow motion gone, his brain's goals, actions, target and enemies dropped (Brain::knockOut()),
+    /// and event 18 about his foe sent to him (`Brain_OnKnockedOut`): his own message-18 handler, his gang's (which no
+    /// longer counts him standing) and his brain. His leaving the scripts, his gang and the world is the caller's
+    /// (ai::AiHumans::destroy()). Nothing for a human with no brain. **Not ported** (#1640): the rest of
+    /// `Human_Destroy` (`Human_CreditDefeat`'s statistics and event 2, the held object, sounds, icons, the spawner).
+    /// Research: docs/research/characters.md#out-of-world
+    /// @orig 0x0021c7c8 Human_Destroy (unknown)
+    void destroy(human::Human& human);
     /// `human`'s brain (his first in slot order, when he has two); null when he has none. Constant time: the slot is
     /// kept on the human (human::Human::brainSlot()), as the opposition test between every two humans asks it for both,
     /// many times a step (docs/guides/performance.md#brain-lookup). A human with brains in two tables at once (only
@@ -79,8 +89,9 @@ class Brains {
     /// brain whose human is in the world thinks when `index % 5 == step % 5` and updates; then every player brain's
     /// books (its enemies: the brains that target it); last, each human whose health has just run out tells its gang
     /// (event 18, the attacker unknown). **Coney choices**: the books are kept every step (the original counts
-    /// attackers every 300 updates); event 18 is sent at the brains' next step after the health runs out (who sends it
-    /// in the original is not traced) and gives no attacker.
+    /// attackers every 300 updates); event 18 is sent at the brains' next step after the health runs out (in the
+    /// original `Brain_OnKnockedOut`, `0x0028c3b0`, sends it from `Human_KnockOut` with the foe, as destroy() does;
+    /// docs/research/characters.md#out-of-world) and gives no attacker.
     /// @orig 0x00293b28 Brains_Update (unknown)
     void update();
     /// What human::Humans runs at the brains' place: update().
@@ -129,7 +140,7 @@ class Brains {
     void keepBooks(Brain& player);
 
     // Event 18 for each human whose health has run out since the last step.
-    // @coney-only stand-in for the event's sender, which is not traced (update() says so)
+    // @coney-only stand-in for the event's sender, Brain_OnKnockedOut from Human_KnockOut (update() says so)
     void reportDowns();
     // Event kEventPutDown for each human who has come to lie on the ground since the last step: a knockdown's
     // reaction over (`HitReact_OnSpecialEnd`) or a throw, grab or mount letting go of him (`Throw_ClearVictimLink`),

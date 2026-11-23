@@ -92,6 +92,27 @@ void Brains::remove(const human::Human& human) {
     }
 }
 
+void Brains::destroy(human::Human& human) {
+    Brain* brain = find(human);
+    if (brain == nullptr) {
+        return;
+    }
+    // Knocked out unless down or dead already (Human_KnockOut): the bit first, so his gang counts him down when it
+    // hears event 18 about his foe (Brain_OnKnockedOut, his brain cleared first). **Coney's choice**: Coney keeps no
+    // dead bit, so down or dead (Human::downOrDead()) stands for it.
+    if (human.downOrDead()) {
+        return;
+    }
+    // Stand-in: event 18's foe is the brain's target he had, for the record's foe (Human_GetFoe, record +0xcc),
+    // which Coney does not keep.
+    human.script().knockedOut = true;
+    human.loseBlockHumans();
+    human.endSlowMotion();
+    brain->setDownReported(true);
+    Brain* foe = brain->knockOut();
+    static_cast<void>(deliverEvent(*brain, BrainEvent{.id = kEventDown, .other = foe}));
+}
+
 Brain* Brains::find(const human::Human& human) {
     // A human another table holds the slot of is found by the walk; every other one by his slot, checked to be his.
     if (!linked(human)) {

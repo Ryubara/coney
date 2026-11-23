@@ -46,6 +46,7 @@ void AiHumans::install() {
         return a == nullptr || b == nullptr || isThreat(*a, *b);
     });
     m_player.humans().setBrains([this](std::span<human::Human* const> /*humans*/) { step(); });
+    m_player.humans().setDestroy([this](human::Human& human) { destroy(human); });
 }
 
 // @coney-only glue: hands a brain the callback that turns the pad off (the original's brain writes the player's record)
@@ -103,6 +104,7 @@ AiHumans::~AiHumans() {
         m_brains->remove(m_player.body());
     }
     m_player.humans().setBrains({});
+    m_player.humans().setDestroy({});
     m_player.humans().setOpposition({});
     m_player.humans().setThreat({});
     m_player.setPadControlled(true);
@@ -162,6 +164,24 @@ void AiHumans::remove(const human::Human& human) {
     if (std::ranges::find(m_removing, &human) == m_removing.end()) {
         m_removing.push_back(&human);
     }
+}
+
+// @coney-only glue: the brains' knock-out, the scripts' part and Coney's deferred removal of a destroyed human
+void AiHumans::destroy(human::Human& human) {
+    // **Coney's choice**: the pad's human is put back when he falls (human::Player), never destroyed, so the
+    // original's player branch (his record, panel and place on the player list) has nothing to do.
+    if (&human == &m_player.human()) {
+        return;
+    }
+    if (Brain* brain = m_brains->find(human); brain != nullptr) {
+        m_brains->destroy(human);
+        if (m_destroyed) {
+            m_destroyed(*brain);
+        }
+    }
+    // He leaves the world at the step's end (takeOutRemoved()). **Coney's choice**: no dead bit is set, nor the
+    // knock-out cleared, as nothing reads them once he is gone.
+    remove(human);
 }
 
 // @coney-only bookkeeping: Coney's deferred removal from its step and brains lists

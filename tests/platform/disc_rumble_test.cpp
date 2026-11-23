@@ -243,6 +243,49 @@ TEST_CASE("the disc's Battle royal kills the fighters rung out and gives the win
                 static_cast<unsigned long long>(game.frames()));
 }
 
+TEST_CASE("the disc's Fight Pen Brawl ends with the Furies' win when the Orphan falls out of the world",
+          "[disc][rumble]") {
+    // Expected: characters.md#out-of-world, confirmed (code) at 0x00249108 and 0x0021c7c8, confirmed (runtime) run
+    // r-20261122-fall-out-of-world; rumble.md#game-types (StandardGang2Dead ends the Brawl), inferred
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // One a side in the Fight Pen (issue 481): after the countdown the Orphan is put 200 m under where he stands.
+    coney::test::DiscGame game(*wad, coney::test::kQuickRumbleScript);
+    game.chooseRumble(1, 102, 1);
+    game.run(1000 - game.frames());
+    REQUIRE(game.stack().topId() == coney::GameplayMode::kId);
+    int dropped = 0;
+    for (const coney::HumanCreation& human : game.flow().humans().all()) {
+        if (!human.name.starts_with("P2") || !human.position) {
+            continue;
+        }
+        auto point = std::make_shared<coney::script::Table>();
+        for (std::size_t axis = 0; axis < 3; ++axis) {
+            const double value = static_cast<double>((*human.position)[axis]) - (axis == 2 ? 200.0 : 0.0);
+            REQUIRE(point->set(coney::script::Value(static_cast<double>(axis + 1)), coney::script::Value(value))
+                        .has_value());
+        }
+        const std::array<coney::script::Value, 2> args{coney::script::Value(human.handle),
+                                                       coney::script::Value(std::move(point))};
+        REQUIRE(game.flow().scripts().call("Teleport", args));
+        ++dropped;
+    }
+    REQUIRE(dropped == 1);
+
+    // He fades for 25 updates and is knocked out: his StandardGang2Dead ends the match for the Furies.
+    const bool ended = game.runUntilTop(coney::RumbleResultMode::kId, 900);
+    for (const std::string& line : game.log()) {
+        UNSCOPED_INFO(line);
+    }
+    REQUIRE(ended);
+    CHECK(game.flow().rumbleResult().winner().find("FURIES") != std::string::npos);
+    CHECK(game.flow().scripts().errors() == 0);
+    std::printf("  fall out of the world: result screen at frame %llu\n",
+                static_cast<unsigned long long>(game.frames()));
+}
+
 TEST_CASE("the disc's Survival sends spawned enemies at the player until he falls, the time his result",
           "[disc][rumble]") {
     // Expected: rumble.md#game-types, inferred
