@@ -13,6 +13,8 @@
 #include <vector>
 
 #include "ai/brain.h"
+#include "ai/brains.h"
+#include "ai/gangs.h"
 #include "animation/anim_math.h"
 #include "camera/cameras.h"
 #include "core/game_timer.h"
@@ -178,6 +180,16 @@ ModeResult PlayLevelSimulation::update(GameModeStack& stack, const FrameTime& fr
     }
     for (std::size_t slot = 0; slot < m_playerHuds.size(); ++slot) {
         hud::applyPlayerHud(hudFrame, slot, m_playerHuds.at(slot));
+    }
+    // The crew status list's humans and player slot 0's gang (docs/research/hud-functions-parts.md#crew-status); slot 1
+    // has no player yet. The list lives until the HUD's step below has read it.
+    std::vector<hud::CrewMember> crew;
+    if (m_ai) {
+        crew = feedCrewToHud(m_ai->brains(), m_cast.humans, m_player->camera().position());
+        hudFrame.crew.humans = crew;
+        if (const ai::Brain* chief = m_ai->brains().find(m_player->human()); chief != nullptr && chief->gang()) {
+            hudFrame.crew.playerGangs.at(0) = chief->gang()->id();
+        }
     }
     m_hud->hud().update(hudFrame);
     hudStepped();

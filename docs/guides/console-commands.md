@@ -14,7 +14,7 @@ may change), and whether it **runs at once** or **waits for the step boundary** 
 order lines were entered); **needs** is what must exist for it to run; **waits for** names the Coney feature without
 which the command is absent. Each example shows a line as typed (after `>`) and the lines it prints.
 
-19 commands.
+20 commands.
 
 | Command | Group | Access | Scope | Does |
 | --- | --- | --- | --- | --- |
@@ -37,6 +37,7 @@ which the command is absent. Each example shows a line as typed (after `>`) and 
 | [`host`](#host) | Network play | player | session | Hosts a network game. |
 | [`connect`](#connect) | Network play | player | session | Joins a network game. |
 | [`disconnect`](#disconnect) | Network play | player | local | Leaves the network session: on a guest as the Player 2 quit, on the host by ending the session. |
+| [`lua`](#lua) | Scripts | developer | session | Runs a line of Lua in the game's script state, as the Lua console page does. |
 
 ## help {#help}
 
@@ -397,4 +398,24 @@ Leaves the network session: on a guest as the Player 2 quit, on the host by endi
 ```text
 > disconnect
 left the network session
+```
+
+## lua {#lua}
+
+```text
+lua <line>
+```
+
+Runs a line of Lua in the game's script state, as the Lua console page does.
+
+| # | Argument | Type | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| 1 | `line` | text | required | A line of Lua 4.0; quote it when it holds spaces |
+
+- **Access:** developer; **scope:** session, waits for the step boundary
+- **Doubles:** The debug menus' Lua console page (Run line)
+
+```text
+> lua "= 40 + 2"
+= 42
 ```

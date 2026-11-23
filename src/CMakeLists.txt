@@ -517,6 +517,7 @@ target_sources(coney_core PRIVATE
     hud/armies_hud.cpp
     hud/counter_panels.cpp
     hud/credits.cpp
+    hud/crew_status.cpp
     hud/crime_panel.cpp
     hud/war_command_display.cpp
     hud/counting_number.cpp
@@ -606,6 +607,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/input_gate.cpp
         debug/light_trace.cpp
         debug/lighting_lab.cpp
+        debug/console_lua.cpp
         debug/lua_console.cpp
         debug/menu_model.cpp
         debug/menu_navigator.cpp

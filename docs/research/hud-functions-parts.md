@@ -7,13 +7,14 @@ Every claim keeps the evidence level it had there.
 
 This page covers the function index for the files from `GUI/BaseWidget.cpp` to `GUI/HUDInterface.cpp`.
 
-## Before `GUI/BaseWidget.cpp` (no path string): HUD parts {#fn-pre-basewidget}
+## Map {#fn-pre-basewidget}
 
-`0x0019dfb0`-`0x001a1f10`, the stretch the [Source map](source-map.md#position) gives to `GUI/` before
-`BaseWidget.cpp`'s path string: the Armies of the Night **GO sign** (HUD `+0xe650`), the UI string and colour-tag
-tables, the **action prompts** (HUD `+0x6b40`, vtable `0x00539270`), the **crew status list** (HUD `+0x10`, vtable
-`0x00539370`, entries vtable `0x00539408`, `0x250` bytes each) and the `HudBar` meter. Files not named; evidence for
-the behaviour is confirmed (code) unless a row says otherwise.
+Before `GUI/BaseWidget.cpp` (no path string), the HUD parts: `0x0019dfb0`-`0x001a1f10`, the stretch the [Source
+map](source-map.md#position) gives to `GUI/` before `BaseWidget.cpp`'s path string: the Armies of the Night **GO
+sign** (HUD `+0xe650`), the UI string and colour-tag tables, the **action prompts** (HUD `+0x6b40`, vtable
+`0x00539270`), the **crew status list** (HUD `+0x10`, vtable `0x00539370`, entries vtable `0x00539408`, `0x250` bytes
+each) and the `HudBar` meter. Files not named; evidence for the behaviour is confirmed (code) unless a row says
+otherwise.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -42,9 +43,9 @@ the behaviour is confirmed (code) unless a row says otherwise.
 | `0x0019faf0` | `CrewStatus_Init` | eight order slots (`+0x44`) = -1, entries hidden, count `+0x40` = 0, layout `+0x1310`-`+0x1324` | confirmed (code) |
 | `0x0019fbb0` | `CrewStatus_Setup(iconSize, aspect, list, position, cell, step, columns, rows)` | from the HUD's level set-up (0.05, 0.7, columns 2, rows 4): the grid, and the caption markup text `+0x13b0` (size 0.1, grey 128) | confirmed (code) |
 | `0x0019fd00` | `CrewStatus_Shutdown` | slot `+0x68`: releases the eight entries | confirmed (code) |
-| `0x0019fda0` | `CrewStatus_Update` | slot `+0x30`, from `HUD_Update` while the statistics game mode is below 100: each live entry at its grid cell (order index modulo the columns, rows below); an entry that is hidden or whose human no longer resolves is removed; the caption under the last row | confirmed (code); removal confirmed (runtime) |
-| `0x001a03a8` | `CrewStatus_Render` | slot `+0x38`: the entries and the caption | confirmed (code) |
-| `0x001a0420` | `CrewStatus_Add(list, human)` | from `0x001b3960` (`HUD_TagAddHuman`, called by `Humans_Update` for every member of player 1's gang every update): a member who is **knocked out** (`0x00227dd8`), **cuffed** (`Human_IsCuffed`, `0x00223b70`, state `0x20000`) or **fighting far off** (brain `+0x152` set, an attacker in brain `+0x1a4`, over 50 m from the camera) gets one entry (eight at most); the caption becomes the 2.5 s format, colour tag 5, the human's name (capitalised) and string `0xe1`, `0xe2` or `0xe3` ([The crew status list](#crew-status)) | confirmed (code); cuffed and knocked out confirmed (runtime) |
+| `0x0019fda0` | `CrewStatus_Update` | slot `+0x30`, from `HUD_Update` while the level's number (level record `+0x04`) is below 100 (the call at `0x001b02d4` in `HUD_Update`; the page had read the test as a statistics game mode): each live entry at its grid cell (order index modulo the columns, rows below); an entry that is hidden or whose human no longer resolves is removed; the caption under the last row | confirmed (code) |
+| `0x001a03a8` | `CrewStatus_Render` | slot `+0x38`: the entries and the caption; `HUD_Render` (`0x001b1688`, call at `0x001b1c44`) calls it only outside the Armies levels (`+0x225d5` clear) and below level 100, after the announcement and before the Warrior command menus | confirmed (code) |
+| `0x001a0420` | `CrewStatus_Add(list, human)` | from `0x001b3960` (`HUD_TagAddHuman`, called by `Humans_Update` for every member of player 1's gang every update): a member who is **knocked out** (`0x00227dd8`), **cuffed** (`Human_IsCuffed`, `0x00223b70`, state `0x20000`) or **fighting far off** (brain `+0x152` set, an attacker in brain `+0x1a4`, over 50 m from the camera) gets one entry (eight at most); the caption becomes the 2.5 s format, colour tag 5, the human's name (capitalised) and string `0xe1`, `0xe2` or `0xe3` ([The crew status list](#crew-status)) | confirmed (code) |
 | `0x001a07f0` | `CrewStatus_Remove(list, human)` | from `Human_Destroy` and `Human_MakePlayer` (`0x001b39a0`): drops the human's entry and renumbers the rest | confirmed (code) |
 | `0x001a08c8`, `0x001a0918` | `CrewStatusEntry_Init`, `_Setup` | portrait sprite `+0x40` (`(191, 191, 191, 255)`, `CrewStatus_GetIcon`) and status sprite `+0x140` (rectangle `0x19`, grey 128); 0.035 further left in 16:9 | confirmed (code) |
 | `0x001a0b00` | `CrewStatusEntry_Shutdown` | slot `+0x68`: both sprites released, the human handle cleared | confirmed (code) |
@@ -55,7 +56,11 @@ the behaviour is confirmed (code) unless a row says otherwise.
 | `0x001a1138` | `HudBar_Draw(flashBelow, bar, flash, trail)` | the end caps (rectangles +2, +3), back (+0), fill (+1) and an optional second fill `+0x3c`; a flash below `flashBelow` and a fading trail, both unused: every caller passes 0 for both ([The rage meter](hud.md#the-rage-meter)) | confirmed (code) |
 | `0x001a1be8` | `HudBar_SetFillGradient(bar, on, low, high)` | `+0x60` on: the fill colour is lerped from `+0x30` to `+0x34` by the fill | confirmed (code) |
 
+## Behaviour {#behaviour}
+
 ### The crew status list {#crew-status}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 The HUD's only alert about the crew: a portrait for each member of the player's gang who is in trouble, with a
 pulsing status icon under it, and a one-line caption naming the member when an entry appears. It lives at HUD
@@ -98,6 +103,35 @@ replaces the previous caption. It shows for **2.5 s**, the fade included: full f
 the last second (the `<DISPLAYTIME>` rule, [Markup tags](gui.md#markup)). **No sound** plays: `CrewStatus_Add` calls
 no sound function. Confirmed (code) at `0x001a0420`, `0x0019fda0`, `0x001a03a8`.
 
+**The layout** (default video mode, device flags `0x01`). `HUD_InitLevel` (`0x001ad588`) calls `CrewStatus_Setup`
+with icon size 0.05, aspect 0.7, a cell of (0.03, -0.018), a step of (0.12, 0.08) and 2 and 4; the last, 4, is the
+number of entries a row (the divisor `+0x1324` of `CrewStatus_Update`), so the grid is two rows of four. The update
+ignores the position it was given and starts from the floats `0x0050d000`, `0x0050d004` = (0.407, 0.07); its
+video-mode branches write the floats only in modes other than the default, so the default keeps their static values
+(`0x0050cfe4`-`0x0050d01c`: -2.3, 1.8, 0.6, 1.2, -0.05, -0.01, 1.0, 0.407, 0.07, 0.11, -0.025, 0.13, 0.01, 0, 0).
+Confirmed (code) at `0x0019fda0`, `0x001a0b60`, `0x001a0918`, and the floats read from the executable:
+
+- the entry of order *o* while *n* are listed: x = 0.407 + (*o* mod 4) × 0.12 × 0.6, y = 0.07 + (*o* div 4) × 0.08 ×
+  1.2; while fewer than four are listed, x + 0.11 − 0.025 × (*n* − 1), so a short row moves toward the middle;
+- the portrait is 0.05 × 1.8 = 0.09 tall, colour (191, 191, 191, 255), and the place is its **right edge** (anchor
+  2), so it hangs left of it; the status icon is 0.05 × 0.7 = 0.035 tall, and its **left edge** (anchor 1) is at the
+  place plus the cell × -2.3 = (-0.069, +0.041), so it reaches right from there and overlaps the portrait's lower
+  left. Both have the aspect fix: each is its height × its rectangle's shape × 1.45 × 0.80357 wide in overlay units,
+  0.7 of that in screen widths. Confirmed (code) at `0x001a0918` (anchors 2 and 1 in `t3`, the aspect fix on the
+  stack), `0x001a21e8` (the shift, half the width, negative for anchor 2) and `0x001a2690` (applied when drawing);
+- the caption: x = 0.407 − 0.05 + 0.13 + 0.01 × ((*n* mod 4) − 1), where 4 and 8 count as 1; y = 0.07 + ((*p* − 1)
+  div 4 + 1) × 0.096 − 0.01, *p* the entries placed this update. Both counts are unsigned (`divu`, and the
+  unsigned-to-float pattern at `0x001a0300`), so with no entry listed "less one" wraps and the caption is placed
+  billions of units off the screen: a caption still in its 2.5 s when the list empties stops showing.
+
+**Where the sprites land**{#crew-icon-anchors} (confirmed (runtime), run r-20261123-crew-icon-anchor: `level80`
+checkpoint 2 with Vermin cuffed, the first entry's widgets read over the debug server). The portrait widget
+(`0x00600900`) held the place (0.517, 0.07), size 0.09, anchor 2 and a shift of -0.0521 overlay units; the status
+widget (`0x00600a00`) held (0.448, 0.111), size 0.035, anchor 1 and a shift of +0.0201; the view aspect `0x0050b208`
+was 1.45. With an overlay x of (GUI x − 0.5) × 640 / 448, as both widgets' `+0x80` showed, the portrait's centre is at
+0.4806 of the width and the icon's at 0.4620, 0.0186 left of it, which is where the picture of the same moment shows
+them. An earlier reading took both positions as centres, which put the icon 0.069 left of the portrait.
+
 **Runtime check** (PCSX2 2.9.94; a copy of a `level80` checkpoint state with the player and two Warriors, humans 1
 and 2; the record flags at `*(human + 0xd4)` written over PINE): setting `0x20000` on human 1 added one entry (list
 count `+0x40` = 1, order slot 0) with a blue badge under his portrait and the caption built as above with the
@@ -121,6 +155,31 @@ tally](hud-functions-lua.md#gang-count-what) counts members who are not down (a 
 see him, gets no HUD cue. In the runtime check above, the knocked-out member's radar blip also changed look; that was
 not traced. When a crew member is arrested, the other cues are not the HUD's: he says 25 `arrested`, and the
 `dyn_cuffs` icon floats over his head in the world ([Arrest](crimes.md#arrest), step 6).
+
+**In Coney** the list is `hud::CrewStatusList` (`src/hud/crew_status.h`), held by the HUD and drawn in the HUD's
+render. The play mode builds a `hud::CrewMember` for each human with a brain each step, by handle (`feedCrewToHud`,
+`src/gamemodes/hud_feed.h`), and the HUD's step adds the members of player slot 0's gang, then updates the list below
+level 100. Coney's readings, marked in the code: the hostile count `+0x152` is read as "another brain lists him as an
+enemy" (Coney keeps no count, as `ai::huntersOf` does), and the camera distance `+0x334` is measured to player 1's
+camera, the only one Coney has (the original measures to the nearest). The 16:9, PAL and progressive layouts are
+not ported. `CrewStatus_Remove`'s callers `Human_Destroy` and `Human_MakePlayer` are not wired: a destroyed
+human leaves the list at the next update anyway, as his handle no longer resolves.
+
+#### Open: the camera the fight alert measures from {#q-crew-camera}
+
+`+0x334` is the distance to the nearest of the cameras `Human_UpdateLod` (`0x0023d660`) walks; with one player that is
+player 1's, which Coney uses. Whether a second camera (split screen, a scene camera) can be nearer and change the
+alert was not checked (speculative that it can, [q-crew-camera](#q-crew-camera)). To find out: in a two-player
+PCSX2 run, keep a crew member in a fight near player 2 and far from player 1, and read his human's `+0x334` against
+each camera's distance to him, and whether the entry appears.
+
+#### Open: an entry when a human becomes the player {#q-crew-remove}
+
+`Human_MakePlayer` (`0x00229c40`) removes the human's entry when he is made a player (confirmed (code)). Coney's
+hand-over does not, so a listed member handed the player keeps his entry while his state holds; whether the original
+then lists him again at the next update (he is in player 1's gang and the code does not exclude the player) was not
+checked. To find out: in PCSX2, hand the player to a listed (knocked-out or cuffed) Warrior and watch the list's count
+`+0x40` and order slots `+0x44` over the next updates.
 
 ## After `GUI/BaseWidget.cpp` (no path string): mash meter and chase HUD {#fn-after-basewidget}
 

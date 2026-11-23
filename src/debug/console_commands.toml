@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The Coney console's developer set: the built-in commands only builds with the debug tools have (dev, playtest, ci,
+# asan) and Studio, never the release build (docs/guides/studio/console.md#developer-set). The keys are the player
+# set's (src/console/commands.toml); `coney-tools console render` writes them into docs/guides/console-commands.md.
+# The specifications and handlers are in src/debug (console_lua.cpp for `lua`), registered by the debug tools' entry
+# point.
+
+[[command]]
+name = "lua"
+group = "Scripts"
+access = "developer"
+scope = "session"
+summary = "Runs a line of Lua in the game's script state, as the Lua console page does."
+doubles = "The debug menus' Lua console page (Run line)"
+args = [
+  { name = "line", type = "text", help = "A line of Lua 4.0; quote it when it holds spaces" },
+]
+examples = [
+  { line = "lua \"= 40 + 2\"", output = ["= 42"] },
+]

@@ -567,7 +567,7 @@ page = "characters.md#code-core"
 role = "The crew-portrait kind for the character id `+0xcc` (kinds 0-11)."
 level = "confirmed-code"
 coney = "src/hud/player_panel.h:bannerRecord"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00229c40

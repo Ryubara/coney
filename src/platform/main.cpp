@@ -53,6 +53,7 @@
 #include "core/language.h"
 #include "core/options.h"
 #include "debug/combat_tunables.h"
+#include "debug/console_lua.h"
 #include "debug/debug_session.h"
 #include "debug/fighter_drop.h"
 #include "debug/game_tunables.h"
@@ -1117,6 +1118,11 @@ int main(int argc, char** argv) {
     // reach the console first and port 1 is the console's while it is open. Not in test mode, which reads no device.
     coney::console::ConsolePad consolePad(input.get(), gameConsole.console());
     coney::debug::DebugSession debugSession(tunables, debugServices, testMode ? input.get() : &consolePad, logText);
+    // The console's developer set (docs/guides/studio/console.md#developer-set): `lua <line>`, in the debug session's
+    // script state.
+    if (auto lua = coney::debug::registerLuaCommand(gameConsole.console().registry(), debugSession); !lua) {
+        std::fprintf(stderr, "console: %s\n", lua.error().message.c_str());
+    }
     // The display preset (docs/engine/renderer.md#presets-built): test mode draws PS2, or the preset `--preset` names,
     // whatever the file saved; outside test mode `--preset` is chosen over the file once its values land. The settings
     // settle after each batch of tunable changes, so a preset chosen in the menus writes its values for the next frame.

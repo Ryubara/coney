@@ -1,0 +1,24 @@
+# Level80 checkpoint 2 for the `level80-crew-cuffed` clips pair scenario (tools/clips/level80-crew-cuffed.toml):
+# cross every second to skip the opening scene, then Vermin cuffed through the developer console's lua command.
+# Frames are 1/30 s from the level's first frame of play.
+30 tap cross
+60 tap cross
+90 tap cross
+120 tap cross
+150 tap cross
+180 tap cross
+210 tap cross
+240 tap cross
+270 tap cross
+300 tap cross
+330 tap cross
+360 tap cross
+390 tap cross
+420 tap cross
+450 tap cross
+480 tap cross
+510 tap cross
+540 tap cross
+570 tap cross
+600 tap cross
+720 console lua "HuSetArrested(Warriors2.Vermin, 1)"
