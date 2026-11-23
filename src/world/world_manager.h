@@ -33,6 +33,7 @@ class WorldManager {
     WorldManager(const WorldManager&) = delete;
     WorldManager& operator=(const WorldManager&) = delete;
     /// Takes `other`'s reservations; `other` then holds none.
+    /// @coney-only the original has one world manager for the whole game and never moves it
     WorldManager(WorldManager&& other) noexcept;
     /// Gives back this manager's reservations, then takes `other`'s; `other` then holds none.
     /// @coney-only the original has one world manager for the whole game and never replaces it
