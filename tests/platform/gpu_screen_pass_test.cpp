@@ -44,6 +44,7 @@ constexpr double kMaxShare = 0.002;
 // to soften. `shift` moves the bars, for a second frame that differs from the first.
 void drawPicture(RenderEngine& engine, float shift) {
     std::vector<LogicalQuad> quads;
+    quads.reserve(4 + (kWidth / 40) + (kHeight / 7) + 1); // the bands, the bars and the rows
     const Rgba bands[] = {{220, 40, 40, 255}, {40, 200, 60, 255}, {40, 60, 220, 255}, {230, 210, 40, 255}};
     for (int i = 0; i < 4; ++i) {
         quads.push_back(LogicalQuad{0.0F, static_cast<float>(i * 60), kWidth, 60.0F, {}, bands[i]});
