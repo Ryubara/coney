@@ -96,8 +96,13 @@ class ScriptedHumans final : public script::HumanBindingHost {
     /// Only for a human a pad drives (player 1's brain, not dead): a command's bit, or every one with `command` 0.
     void enableCommand(double human, int command, bool enabled) override;
     void setIcon(double human, std::string_view object, int param) override;
-    /// **Coney stand-in**: Coney's objects have no weapon class yet, so whatever it holds is let go.
+    /// Drops what the human holds, when he holds anything (Human_DropHeld): the hand is emptied and an AI's held
+    /// object's move style comes off (human::Human::letGoOfHeld()). **Coney stand-in**: Coney's objects have no weapon
+    /// class yet, so whatever it holds is let go.
+    /// @orig 0x002994b8 Human_DropWeapon (unknown)
     void dropWeapon(double human) override;
+    /// Whoever holds `object` lets go of it, as at dropWeapon(), for `ObjDestroy`.
+    /// @coney-only stand-in for Obj_Destroy's release of a held object by its class (objects.md#q-objdestroy-held)
     void releaseObject(double object) override;
     /// While calls are held the handle is given at once and the object put in the hand when the human is made.
     double placeItemInHand(double human, std::string_view object, const std::function<double()>& nextHandle) override;
@@ -170,8 +175,6 @@ class ScriptedHumans final : public script::HumanBindingHost {
     // Runs `body` on the brain named by `handle` now, or when the level makes it while calls are held; nothing when
     // no brain has the handle.
     void onBrain(double handle, const std::function<void(Brain&)>& body);
-    // A script's drop from `brain`'s hand, its hand already cleared: an AI's held object's move style comes off.
-    static void letGo(Brain& brain);
     // The rage meter as runRageHandlers() last saw it on one human.
     struct RageSeen {
         bool full = false;

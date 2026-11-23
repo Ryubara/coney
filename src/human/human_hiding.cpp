@@ -2,15 +2,15 @@
 // The hidden state of a human (state `0x200000`): entering it in the shadow, the grace after leaving it with a target,
 // and what ends it on the human's side (a sprint, the fight stance). Who may hide and when is the ground rule's
 // (ai/hiding.h).
+// **Coney stand-in** in enterHiding(): Human_EnterShadow (0x0022ff88) also refuses while the held object's set is 4 or
+// 6 (Human_HoldsKind4Or6); not built, so a carrier can hide (docs/research/objects.md#two-handed).
 // Research: docs/research/stealth.md#hidden, docs/research/stealth.md#sneaking
 #include "human/human.h"
 
 namespace coney::human {
 
 void Human::enterHiding() {
-    // Not while already hidden or sprinting (state 0x1000000). **Coney stand-in**: Human_EnterShadow (0x0022ff88) also
-    // refuses while the held object's set is 4 or 6 (Human_HoldsKind4Or6); not built, so a carrier can hide
-    // (docs/research/objects.md#two-handed).
+    // Not while already hidden or sprinting (state 0x1000000).
     if (m_hidden || m_sprinting) {
         return;
     }

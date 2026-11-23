@@ -190,6 +190,7 @@ TEST_CASE("the getters answer for a human and their defaults for a handle that n
 }
 
 TEST_CASE("a call on a human the level has not made yet waits for it", "[ai][scripted]") {
+    // Expected: ../references/bindings/character.md#husetmoney, confirmed (code): the money is clamped to 999
     Level level;
     Brain& thug = level.add({44.0F, 40.0F, 0.0F});
     level.scripted->hold();

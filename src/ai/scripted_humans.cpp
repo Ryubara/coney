@@ -286,17 +286,12 @@ void ScriptedHumans::dropWeapon(double human) {
         }
         script.heldObject = kNilHandle;
         script.heldObjectName.clear();
-        letGo(brain);
+        // Human_DropHeld: an AI's held object's move style comes off here; a player's hand is followed by the play
+        // mode, whose dropHeld() does it when it sees the hand empty.
+        if (brain.type() != BrainType::Player) {
+            brain.human().letGoOfHeld(false);
+        }
     });
-}
-
-// A script's drop (HuDropWeapon's Human_DropHeld): human::Human::letGoOfHeld() with the drop's rule.
-void ScriptedHumans::letGo(Brain& brain) {
-    // An AI's drop takes the held object's move style off here; a player's hand is followed by the play mode, whose
-    // dropHeld() does it when it sees the hand empty.
-    if (brain.type() != BrainType::Player) {
-        brain.human().letGoOfHeld(false);
-    }
 }
 
 void ScriptedHumans::releaseObject(double object) {
@@ -309,7 +304,10 @@ void ScriptedHumans::releaseObject(double object) {
         if (script.heldObject == object) {
             script.heldObject = kNilHandle;
             script.heldObjectName.clear();
-            letGo(*brain);
+            // Its move style comes off as at HuDropWeapon's drop (a player's, in the play mode's dropHeld()).
+            if (brain->type() != BrainType::Player) {
+                brain->human().letGoOfHeld(false);
+            }
         }
     }
 }

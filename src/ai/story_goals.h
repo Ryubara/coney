@@ -158,6 +158,8 @@ class ThrowObjectGoal final : public Goal {
     /// At `target` (found through `locate`) from within `range`, approaching at `gait`; `callback` may be empty.
     ThrowObjectGoal(std::function<std::optional<anim::Vec3>(double)> locate, double target, float range, int gait,
                     std::string callback, ScriptServices* services);
+    /// The walk, the turn and the throw (the stand-in let-go above, the move style popped).
+    /// @orig 0x002cf690 ThrowObjectGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
     /// Schedules the callback.
     void end(Brain& brain) override;
