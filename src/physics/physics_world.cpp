@@ -31,6 +31,8 @@ constexpr std::uint16_t kPoolTaken = kShapeEnabled | kShapeFlag2 | kShapeAllocat
 constexpr std::uint16_t kRefreshTicks = 120;
 
 // Whether `node`'s bound meets `box` in y and z, touching included: the box queries' last test.
+// @orig 0x0033feb0 IPhysics_QueryBox (unknown)
+// @orig 0x00340120 IPhysics_QueryBoxFiltered (unknown)
 bool meetsYZ(const WorldBody& node, const Aabb& box) {
     return node.box.min.y <= box.max.y && box.min.y <= node.box.max.y && node.box.min.z <= box.max.z &&
            box.min.z <= node.box.max.z;
@@ -46,6 +48,7 @@ void growByMove(Aabb& box, Vec3 d) {
 }
 
 // One entry of the overlap table: the pair test `Test` for an own shape `A` against another shape `B`.
+// @coney-only the overlap table's entries, filled by the world's constructor (Unit 15, #379)
 template <typename A, typename B, bool (*Test)(Contact&, const A&, const B&)>
 bool pairTest(Contact& contact, const Shape& own, const Shape& other) {
     return Test(contact, std::get<A>(own), std::get<B>(other));
@@ -53,6 +56,7 @@ bool pairTest(Contact& contact, const Shape& own, const Shape& other) {
 
 // The overlap table as the original's constructor fills it (docs/research/physics.md#unit-4): a segment and a box
 // have no entry either way round.
+// @coney-only the overlap table as the IPhysics constructor fills it (Unit 15, #379)
 std::array<std::array<PhysicsWorld::PairTest, 5>, 5> defaultOverlaps() {
     std::array<std::array<PhysicsWorld::PairTest, 5>, 5> table{};
     auto at = [&table](ShapeType own, ShapeType other) -> PhysicsWorld::PairTest& {
@@ -76,6 +80,7 @@ std::array<std::array<PhysicsWorld::PairTest, 5>, 5> defaultOverlaps() {
 }
 
 // The index of a ShapeType in the tables.
+// @coney-only table indexing
 std::size_t index(ShapeType type) { return static_cast<std::size_t>(type); }
 
 } // namespace

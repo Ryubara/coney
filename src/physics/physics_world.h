@@ -149,6 +149,7 @@ class PhysicsWorld {
 
     /// An empty world whose pools and ignore slots are built as the original's constructor builds them; `limits`
     /// says whether they may grow past the original's counts.
+    /// @coney-only the world's stores and tables; porting IPhysics_Construct (0x0033c288) is Unit 15's (#379)
     explicit PhysicsWorld(EngineLimits limits = EngineLimits::Coney);
 
     /// Adds a shape record to the store and returns its id.
@@ -300,6 +301,7 @@ class PhysicsWorld {
     template <typename Keep>
     std::size_t walkBox(std::vector<BodyId>& out, const Aabb& box, BodyId start, const Keep& keeps) const;
     // Builds one pool shape as the constructor does and adds it to `pool`.
+    // @coney-only one pool shape as IPhysics_Construct builds it (Unit 15, #379)
     ShapeId buildPoolShape(ShapePool pool);
     // The allocators' scan from index 0 for the first free shape of `pool`.
     // @orig 0x0033d1a0 IPhysics_AllocObjectSphere (unknown)

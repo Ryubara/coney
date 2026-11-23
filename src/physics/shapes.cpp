@@ -32,7 +32,8 @@ constexpr float kCuffedHeight = 0.35F;
 constexpr int kHeadBone = 6;
 
 // The rows of `Quat_ToMatrix(q)` (`0x00336500`): row i is the image of axis i
-// (docs/research/physics-bodies.md#u6-transforms).
+// (docs/research/physics-bodies.md#u6-transforms). The quaternion is taken as it is, not normalised.
+// @orig 0x00336500 Quat_ToMatrix (unknown)
 std::array<Vec3, 3> rows(Quat q) {
     return {
         Vec3{1.0F - 2.0F * (q.y * q.y + q.z * q.z), 2.0F * (q.x * q.y + q.z * q.w), 2.0F * (q.x * q.z - q.y * q.w)},
@@ -41,11 +42,13 @@ std::array<Vec3, 3> rows(Quat q) {
 }
 
 // A vector through a rotation's rows: `r0 v.x + r1 v.y + r2 v.z`, the VU0 product every matrix pose uses.
+// @coney-only vector arithmetic the poses share
 Vec3 apply(const std::array<Vec3, 3>& r, Vec3 v) {
     return add(add(scale(r[0], v.x), scale(r[1], v.y)), scale(r[2], v.z));
 }
 
 // The sphere's no-bone rotation, straight from the quaternion: `(w² − |u|²) v + 2 (u·v) u + 2 w (u × v)`.
+// @orig 0x00342b08 PhysicsSphere_Pose (unknown)
 Vec3 rotateDirect(Quat q, Vec3 v) {
     const Vec3 u{q.x, q.y, q.z};
     const float uv = anim::dot(u, v);
@@ -54,11 +57,15 @@ Vec3 rotateDirect(Quat q, Vec3 v) {
 
 // The bone's transform as a pose reads it: the owner's answer, or, when the owner has no model and writes nothing,
 // the body transform the same buffer already holds (docs/research/physics-bodies.md#u6-transforms).
+// @coney-only the poses' shared read of the owner's bone slot
 Transform boneOrBody(const ShapeOwner& owner, int bone, const Transform& body) {
     return owner.boneTransform(bone).value_or(body);
 }
 
 // The flag 0x10 rule's first step: with kShapeReset clear, the previous position is the position before this pose.
+// @orig 0x00342b08 PhysicsSphere_Pose (unknown)
+// @orig 0x00342df8 PhysicsBox_Pose (unknown)
+// @orig 0x00343810 PhysShapeSegment_Pose (unknown)
 void keepPrevious(ShapeRecord& shape, Vec3 position) {
     if ((shape.flags & kShapeReset) == 0) {
         shape.previous = position;
@@ -67,6 +74,9 @@ void keepPrevious(ShapeRecord& shape, Vec3 position) {
 
 // The flag 0x10 rule's last step: with kShapeReset set, the previous position is the new one (no move); then the flag
 // is cleared, always.
+// @orig 0x00342b08 PhysicsSphere_Pose (unknown)
+// @orig 0x00342df8 PhysicsBox_Pose (unknown)
+// @orig 0x00343810 PhysShapeSegment_Pose (unknown)
 void resetPrevious(ShapeRecord& shape, Vec3 position) {
     if ((shape.flags & kShapeReset) != 0) {
         shape.previous = position;
@@ -75,14 +85,18 @@ void resetPrevious(ShapeRecord& shape, Vec3 position) {
 }
 
 // The record's posed shape as `T`; a pose of the wrong type is a broken invariant.
+// @coney-only the variant access of Coney's shape record
 template <typename T> T& posedAs(ShapeRecord& shape) {
     T* posed = std::get_if<T>(&shape.posed);
     CONEY_ASSERT(posed != nullptr);
     return *posed;
 }
 
-// Per-axis min and max of two vectors.
+// The per-axis min of two vectors.
+// @coney-only vector arithmetic the bounds share
 Vec3 minOf(Vec3 a, Vec3 b) { return Vec3{std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z)}; }
+// The per-axis max of two vectors.
+// @coney-only vector arithmetic the bounds share
 Vec3 maxOf(Vec3 a, Vec3 b) { return Vec3{std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z)}; }
 
 } // namespace
