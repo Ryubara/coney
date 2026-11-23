@@ -256,6 +256,22 @@ TEST_CASE("an AI human who lets go of a two-handed object by script goes back to
     CHECK(thrower.human().fighter().animSet() == 0);
 }
 
+TEST_CASE("Virgil's throw goal throws as soon as he faces the target, off the 30-update beat", "[ai][scripted]") {
+    // Expected: ai-goals.md#goal-throw-object, confirmed (code): class 0xb2 (Virgil) throws at once, not only on a
+    // brain update that is a multiple of 30
+    Level level;
+    // He faces the player, 4 m to his south.
+    Brain& virgil = level.scene.add({40.0F, 44.0F, 0.0F}, 180.0F);
+    level.scripted->bind(virgil.handle(), virgil);
+    virgil.setCharacterClass(0xb2);
+    virgil.human().script().heldObject = 61.0;
+    virgil.human().script().heldObjectName = "dyn_molotv";
+    level.call("GoalThrowObject", {Value(2.0), Value(1.0), Value(16.0), Value(2.0), Value("")});
+    level.scene.run(1);
+    CHECK(virgil.human().script().heldObject == 0.0);
+    CHECK(virgil.updates() % 30 != 0);
+}
+
 TEST_CASE("EnableCommand masks a player's commands; an AI human has no pad", "[ai][scripted]") {
     Level level;
     Brain& thug = level.add({44.0F, 40.0F, 0.0F});
@@ -756,4 +772,25 @@ TEST_CASE("an AI human who falls out of the world is knocked out once faded: his
     CHECK(level.call("HuIsAlive", {Value(handle)}).isNil());
     CHECK(level.scripted->brain(handle) == nullptr);
     CHECK(level.call("HuIsAlive", {Value(mate.handle())}).number() == 1.0);
+}
+
+TEST_CASE("the throw goal throws only on a brain update that is a multiple of 30", "[ai][scripted]") {
+    // Expected: ai-goals.md#goal-throw-object, confirmed (code): facing the target within range, the throw waits for
+    // a brain update whose counter is a multiple of 30 (Virgil, class 0xb2, at once)
+    Level level;
+    // He faces the player, 4 m to his south.
+    Brain& thrower = level.scene.add({40.0F, 44.0F, 0.0F}, 180.0F);
+    level.scripted->bind(thrower.handle(), thrower);
+    thrower.human().script().heldObject = 60.0;
+    thrower.human().script().heldObjectName = "dyn_bottle";
+    level.call("GoalThrowObject", {Value(2.0), Value(1.0), Value(16.0), Value(2.0), Value("")});
+    std::uint64_t thrownAt = 0;
+    for (int k = 0; k < 90 && thrownAt == 0; ++k) {
+        level.scene.run(1);
+        if (thrower.human().script().heldObject == 0.0) {
+            thrownAt = thrower.updates();
+        }
+    }
+    REQUIRE(thrownAt != 0);
+    CHECK(thrownAt % 30 == 0);
 }
