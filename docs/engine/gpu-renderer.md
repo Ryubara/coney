@@ -353,6 +353,11 @@ again when the view changes size (the next blur then starts afresh) and let go o
 GL3's copies of its frame buffer do: the 2D and scene pipelines blend the alpha channel by the same factors as librw's
 `glBlendFunc`, so the two frames' alpha agree where their colours do.
 
+**A GL3 fault it found.** Comparing the motion blur with GL3's showed GL3's frame copies leaving the copy's texture
+bound behind librw's back, so the next draw with no texture (librw's white texture, as librw believed) sampled the copy:
+the next frame's flat quads came out in their colour times the kept frame. `draw::copyFrameToRaster` now binds back the
+texture librw had there (`tests/platform/gl3_frame_copy_test.cpp`).
+
 **What is not mirrored.** The states the GL3 renderer's screen passes set on librw (the blur pulse puts the depth test
 and write and the blending by alpha back after it; the motion blur sets culling) are set only where GL3 draws, as the
 2D passes' are: the next frame's scene draws set their own before any effect reads them ([Drawing the effect
