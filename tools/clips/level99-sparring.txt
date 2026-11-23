@@ -1,0 +1,11 @@
+# Level99's combat tutorial, its last lesson (the sparring fight), for the `level99-sparring` clips pair scenario
+# (tools/clips/level99-sparring.toml), played from checkpoint 1 (`--play-level level99 --checkpoint 1`). The lesson is
+# reached in the story by finishing the ones before it, so the script calls its set-up through the developer console's
+# `lua` (a build with the debug tools), as the sparring disc test does (tests/platform/disc_level99_sparring_test.cpp):
+# the fence Warriors, their gang made friends with the Warriors', then `P1.SetupWarriors`, whose scene `l99_c5` sends
+# the three sparring Warriors at the player, who stands still. Frames are 1/30 s from the level's first frame of play.
+0 stick left 0 0
+100 tap cross
+300 console lua AddFenceWarriors1()
+301 console lua GangMakeFriends(0,GangFenceWarriors1)
+302 console lua P1.SetupWarriors()

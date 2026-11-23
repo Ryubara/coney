@@ -650,8 +650,16 @@ Step 11 of `EngageEnemyGoal_Process` (`0x002afa48`) runs within the run-in dista
 T runs (gait > 2) or the charge is armed (`+0x35`). Confirmed (code).
 
 1. **A taken sector.** Take the sector of T's record that A approaches from (`Human_GetSectorOf`
-   `0x0029eb38` of A's bearing relative to T's heading). When another human is the near one there, the charge is
-   disarmed and A only moves (step 12). When A himself is that human, A waits this update.
+   `0x0029eb38` of A's bearing relative to T's heading), from T's record no older than 1000 ms
+   (`Brain_GetSectors(T, 1000)` `0x0028fe90`, [Neighbour sectors](ai-moving.md#neighbour-sectors)). When another
+   human is the near one there, the charge is disarmed and A only moves (step 12). When A himself is that human, or
+   nobody is, A goes on to the kind below. Confirmed (code) at `0x002b0088`-`0x002b0098`: a null handle branches to
+   the kind (`beql v0,zero,0x002b009c`), a human other than A's (`s4`) disarms and branches to the move (`bnel
+   v0,s4,0x002b01f0` with `sb zero,0x35(s1)` in its delay slot), and A's own falls through to the same kind test at
+   `0x002b009c`. The record lists every human within 1.5 m of T but T, so A, once within 1.5 m and alone on his side,
+   is that near one as soon as the record is rebuilt with him in it: the usual case for a lone charger who has
+   arrived. Nothing else in the goal would end a wait there, so a port that waits on this case keeps a lone charger
+   standing beside T for good.
 2. **The kind** (once; `+0x20`, 45 = none):
     - A **cop** (type 1) takes kind 0 (`X1`) with 50 % (80 % against a gang member, class `+0x11b` 10), else 21 (the
       tackle). It is forced to 0 when T's `+0xe0` has bit `0x40`.
@@ -1032,13 +1040,15 @@ chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#pow
   deadline a fight goal ends as [the deadline](#fight-durations) says, reading the target's active places, and a
   re-target ends that update with the kind kept (since 2026-10-21). `level99`'s sparring Warriors are sent from
   8.6-9.0 m ([the sparring fight](#level99-fight)) and run in this way: `coney_tests "the disc's level99: the sparring
-  Warriors*"` checks that all three run in with EngageEnemy, close in and attack, that exactly one charges (faster than
-  the run's 7.80 m/s) and that the other two stop short of the player, as in the original. The
+  Warriors*"` checks that all three run in with EngageEnemy, come within 3.75 m and that one attacks, and that a
+  charge, read as the run-in's queued attack of a charge kind (or its tackle hold), starts within the run-in distance;
+  how many charge and whether the other two stop short is the AI's draws, which it does not count. The
   [steering](ai-moving.md#steering)
   round each other puts those two a little behind the first, so his charge has made the player busy when their re-plan tests
   step 9; without it the three ran in abreast and all charged at once (clip 1, up to 9.6 m/s), ending 2.1-2.9 m past
   him. Their run-ins end at 2.5 and 4.0 m from the player; the original's ended at 2.1-2.6 m, and why one of Coney's
-  ends farther is not traced.
+  ends farther is not traced. Two of the run-in's [stand-ins](#q-engage-gaps) wait on #1659: the gait 3 tests (a jogging
+  target arms the charge, takes it and is not "slowed from a run") and the line of sight the close-by stop waits for.
 - **Sight and targeting** (`repo:src/ai/perception.h`, `repo:src/ai/targeting.h`, [Sight](#sight),
   [the score](#enemy-score)): the line of sight is the two rays (1.7 m, then 1.0 m) through the level's collision mesh,
   passing the six see-through materials; the field of view and `Human_CanSeeHuman` (range, the shadow's rule, then
@@ -1133,7 +1143,43 @@ a human who has a weapon's anim set with no object (a spawner's item, which Cone
 any object an AI can hold has kind 0 decides whether the first ever differs: list the kinds of the objects the scripts,
 the weapon piles and the spawners hand to AI humans.
 
+### Where Coney's run-in still differs {#q-engage-gaps}
+
+The side-by-side compare of `EngageEnemyGoal_Process` (`0x002afa48`) left these pieces of
+`repo:src/ai/engage_goals.cpp` as marked stand-ins, each confirmed (code) at the address given and none yet compared
+with the original running:
+
+- the run-in's tests of "he runs" use gait 4 and up; the original's are gait 3 and up for arming the charge (step 9,
+  `0x002aff38`) and for the charge itself (step 11, `0x002b0048`), and below 3 for "slowed from a run" (step 6,
+  `0x002afe04`), so a jogging target differs;
+- the close-by stop of step 9 does not wait for the line of sight, which the original's does (`0x002aff48`-`0x002aff68`:
+  both stop reasons end in one `Human_HasLineOfSight` test);
+- a cop does not take the X1 against an ungrabbable target (`+0xe0` bit `0x40`, `0x002b012c`);
+- the lead of step 12 applies only from the target's sectors 3-5, where the original leads from any sector (fanned only
+  in 3-5) unless the runner stands in sector 0 within the target's speed (`0x002b0384`); its fan step is (index - 1) ×
+  9° (`0x002b023c`), equal to Coney's paired steps up to the fourth slot;
+- the move is queued again each plan instead of re-aimed in place (`0x002b040c`), a refused clear does not wait, and
+  the move carries no class-13 flag;
+- the wanted, spotter and last-seen notes (`0x0028ff78`, `0x0028c0c8`, `0x0028c140`), the shout (`0x002af928`), the
+  fight stance (`0x0022fef0`), blocked actions (`0x00228228`, `0x00228428`) and the class-13 exception to the re-target
+  are not built, and an invalid target ends the goal at once instead of a stop first.
+
+Which of these a player can see (the jog and the sight test most likely) is the question: each wants a scenario run on
+both games before it is ported.
+
 ## How this was checked
+
+### The charger in his own sector {#runtime-charge-sector}
+
+Ghidra, 2026-11-23 (#606): the charge's sector test (step 1 of [The charge in EngageEnemy](#engage-charge)) read in the
+disassembly at `0x002b0074`-`0x002b009c`, confirmed (code). Until then this page read the runner's own case as "A waits
+this update", and Coney's port waited on it every update, so a lone charger within 1.5 m of a standing target stood
+beside him for good (seen on the gang-combat stack in a QUICK RUMBLE, 0.81 m from the player from update 6529 to
+9000). A runtime read was tried on the library's `l99-warriors-before-fight` state with the `warriors_passive`
+scenario, 2026-11-23: the state now starts with the three Warriors already in the fight (`Generic1` 1.8 m from the
+player at the first update, the other two never beyond 5 m in 1,700 updates), so it holds no run-in to break on; the
+state wants making again as [Reaching the fight without a playthrough](#level99-save) says before the case can be
+watched.
 
 ### The re-target's timing {#runtime-retarget}
 

@@ -7,10 +7,10 @@
 // function `P1.SendWarriors` gives each of the three sparring Warriors `GoalFight` on a player who stands still
 // (the recording `warriors_passive`, docs/research/ai-fights.md#level99-fight). Then each Warrior must close on the
 // player and attack him, running in with the EngageEnemy goal the Melee goal pushes
-// (docs/research/ai-fights.md#fight-approach), and exactly one must charge (faster than the run); the sparring gang
-// must be id 4 with no tactic and threat response 2, the two fence gangs under a cheering crowd. It runs only when the
-// environment variable CONEY_DISC names the disc and skips otherwise; it prints counts, distances and speeds only
-// (LEGAL.md).
+// (docs/research/ai-fights.md#fight-approach), and a charge (its run-in's attack of a charge kind) starts within the
+// run-in distance; the sparring gang must be id 4 with no tactic and threat response 2, the two fence gangs under a
+// cheering crowd. It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints
+// counts, distances and speeds only (LEGAL.md).
 //
 // Only the first Warrior charges, as in the original: his charge makes the player busy, and the other two, a little
 // behind him because they steer round each other, stop at the first re-plan that finds the player busy within 3.75 m
@@ -36,6 +36,8 @@
 
 #include "ai/ai_config.h"
 #include "ai/ai_humans.h"
+#include "ai/attack_action.h"
+#include "ai/attack_choice.h"
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "ai/fidget_action.h"
@@ -88,8 +90,6 @@ constexpr int kTauntLine = 0x11;
 // may stop for a busy target (EngageEnemy step 9, `0x002afa48`, docs/research/ai-fights.md#engage-enemy). Beyond it the
 // run-in stops only for a target this Warrior may not attack, and step 5 has just made the player attackable.
 constexpr float kCloseRange = 3.75F;
-// The run's top speed, m/s: a Warrior faster than this is charging (docs/research/ai-fights.md#level99-fight).
-constexpr float kRunSpeed = 7.8F;
 // The run-in distance, m: the charge starts only within it (EngageEnemy step 11, `0x002afa48`,
 // docs/research/ai-fights.md#engage-charge).
 constexpr float kRunIn = 1.6F;
@@ -339,12 +339,16 @@ void playSparringFight(std::uint32_t seed) {
             watched.nearest = std::min(watched.nearest, distance);
             const coney::ai::Goal* top = watched.brain->topGoal();
             const bool engagedNow = top != nullptr && top->type() == coney::ai::GoalType::EngageEnemy;
-            // The run-in's speed tells a charge from a stop short; an attack's steer afterwards may slide faster.
+            // A charge is the run-in's own attack action of a charge kind (EngageEnemy step 11.3), or the tackle's
+            // hold; the speed is only printed. Speed alone misreads a runner going fast for another reason: once a
+            // charger who used to stall beside the player attacks on arrival (#606), a run-in Warrior still 4.5-5.3 m
+            // off, in the run gait 4, reads 8.87 m/s for an update (seeds 5 and 7).
             if (engagedNow) {
                 watched.fastest = std::max(watched.fastest, watched.brain->human().speed());
                 watched.tackled =
                     watched.tackled || watched.brain->human().fighter().held() == &play()->player().human();
-                const bool charging = watched.fastest > kRunSpeed + 0.5F || watched.tackled;
+                const auto* attack = dynamic_cast<const coney::ai::AttackAction*>(watched.brain->frontAction());
+                const bool charging = (attack != nullptr && coney::ai::isChargeKind(attack->kind())) || watched.tackled;
                 if (charging && watched.chargeAt < 0.0F) {
                     watched.chargeAt = distance;
                 }

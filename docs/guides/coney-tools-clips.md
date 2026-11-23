@@ -144,6 +144,14 @@ and square at frame 680 plays the kill (clips 637 and 638). Its before for the s
 that change's commit, or `--before` a hand-made commit where later commits edit its lines. `level87-hide` is the same
 route without the kill.
 
+`level99-sparring` is the scenario for a fighter's run-in and charge: the last lesson of level99's combat tutorial,
+which the story reaches only by finishing the lessons before it, so its input script calls the lesson's set-up through
+the developer console's [`lua`](console.md#catalog) (`300 console lua P1.SetupWarriors()`), as the sparring disc test
+does. Its before needs that command too: a merge base older than it is given as `--before` a commit of the merge base
+with the command's commit put on top. At AI seed 4 the three sparring Warriors run in at the player, who stands still,
+and the first to arrive stands beside him about 4 s into the clip: where a change to the run-in shows (the charge on
+arrival, #606).
+
 `level5-full-ring` is the scenario for a full health ring: at level5's boss fight (checkpoint 4) cross skips the
 opening scene, the debug menu's Player page makes the player Diego's character type (120) and SELECT shows his rings.
 Only a power class whose ring byte is 100 fills the whole circle (Rembrandt's stops at 35 %), and type 120's class 6

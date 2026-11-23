@@ -71,9 +71,9 @@ class MoveToHumanGoal final : public Goal {
 /// away at its start, or he runs), it attacks out of the run within 1.6 m: a cop's X1 (50 %, 80 % at a gang member) or
 /// tackle, anyone else's pick (ai::pickAttackFor()), which ends the run-in when it is not a charge kind; it presses
 /// once the kind can start, as one attack action (the X1 along the runner's heading); another human the near one in the
-/// sector of the target's record the runner comes from disarms the charge (the runner himself there waits). It gives up
-/// only far off and out of sight, and has no time limit. It clears the target's `+0x1ec`, so the fight may attack him
-/// at once. The re-target takes the nearest enemy it can see within 9 m; out of sight is the line of sight
+/// sector of the target's record the runner comes from disarms the charge (the runner himself there charges). It gives
+/// up only far off and out of sight, and has no time limit. It clears the target's `+0x1ec`, so the fight may attack
+/// him at once. The re-target takes the nearest enemy it can see within 9 m; out of sight is the line of sight
 /// (ai::lineOfSight()); it sprints only with more than half its stamina. **Coney stand-ins**: the target is busy while
 /// not standing or while his record holds an attack's flags (kAttackWaitFlags); the lead applies while the runner
 /// stands in his sectors 3-5, fanned 9° per attack slot index; "actions blocked" ends nothing (a human down waits); the

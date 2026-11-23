@@ -52,18 +52,6 @@ constexpr int kCopX1Percent = 50;
 constexpr int kCopX1GangPercent = 80;
 constexpr int kGangMemberClass = 10;
 
-// Who is the near human in the sector of `target`'s record that `brain` approaches from (`Human_GetSectorOf` of A's
-// bearing from T): nobody, A himself, or another man.
-enum class ApproachSector : std::uint8_t { Free, Mine, Taken };
-ApproachSector approachSector(const Brain& brain, Brain& target) {
-    const int k = sectorOf(target.human(), brain.human().position());
-    const Brain* nearest = target.sectors(kSectorAgeMs)[k].nearest;
-    if (nearest == nullptr) {
-        return ApproachSector::Free;
-    }
-    return nearest == &brain ? ApproachSector::Mine : ApproachSector::Taken;
-}
-
 } // namespace
 
 GoalStatus MoveToHumanGoal::process(Brain& brain) {
@@ -138,11 +126,17 @@ GoalStatus EngageEnemyGoal::arrive(Brain& brain, const Brain& target) {
     return GoalStatus::Again;
 }
 
+// One update of the run-in; the steps are the research page's (docs/research/ai-fights.md#engage-enemy).
+// @orig 0x002afa48 EngageEnemyGoal_Process (unknown)
 GoalStatus EngageEnemyGoal::process(Brain& brain) {
     Brain* target = targetOf(brain);
+    // Stand-in: a target no longer valid ends the goal at once (the original stops first and ends the next update);
+    // fightable() stands for the shadow test (brain +0x2d4) and 0x00290588.
     if (target == nullptr || target == &brain || target->human().outOfWorld() || !Brain::fightable(*target)) {
         return GoalStatus::Done;
     }
+    // Stand-in: blocked actions (0x00228228) and 0x00228428 end or hold nothing here, a human down waits; Coney has
+    // no fight stance to leave (0x0022fef0).
     if (down(brain)) {
         return GoalStatus::Stop;
     }
@@ -155,6 +149,7 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
     const human::Human& human = brain.human();
     // 2. The stop: once standing, turn to him and end.
     if (m_stopping) {
+        // Stand-in: standing is a speed below kStoppedSpeed, where the original waits for the gait word +0x1a8 at 0.
         if (human.speed() > kStoppedSpeed) {
             return GoalStatus::Stop;
         }
@@ -164,7 +159,8 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
         brain.human().turnToFace(target->human().position(), kStopTurnSeconds);
         return arrive(brain, *target);
     }
-    // 4. Every 2 s, the nearest enemy close by instead of a target beyond the far range.
+    // 4. Every 2 s, the nearest enemy close by instead of a target beyond the far range. Stand-in: class 13 is not
+    // left out, and the binding's goal never re-targets.
     if (m_services == nullptr && brain.nowMs() >= m_nextRetargetMs) {
         m_nextRetargetMs = brain.nowMs() + kEngageRetargetMs;
         if (brain.distanceTo(*target) > brain.meleeFar()) {
@@ -185,9 +181,11 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
         }
     }
     const human::Human& them = target->human();
-    // 5. He may be attacked at once.
+    // 5. He may be attacked at once. Stand-in: the wanted, spotter and last-seen notes (0x0028ff78, 0x0028c0c8,
+    // 0x0028c140) are not kept here.
     target->setAttackableAtMs(0);
-    // 6. A new plan every 250 ms, or at once when he turned, came close or slowed from a run.
+    // 6. A new plan every 250 ms, or at once when he turned, came close or slowed from a run. Stand-in: the shout every
+    // 4-4.5 s (0x002af928) is not built, and a jog counts as slowed (the original's is below a jog; issue #1659).
     const float distance = brain.distanceTo(*target);
     const bool running = them.gait() > human::Gait::Jog;
     const bool turned = std::fabs(human::wrapAngle(them.heading() - m_planHeading)) > kReplanTurn;
@@ -207,7 +205,9 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
     const bool fresh = stamina.maximum() > 0 && stamina.value() * 100 / stamina.maximum() > kEngageSprintStamina;
     const int gait = running && fresh ? kSprintGait : kRunGait;
     // 9. In sight, stop for a target this human may not attack now, at any distance; close by, stop for a busy target,
-    // or for one who walks or stands when the charge is not armed.
+    // or for one who walks or stands when the charge is not armed. Stand-in: the close-by stop does not wait for the
+    // line of sight as the original's does (0x002aff48), and a jogging target stops the run-in where the original
+    // arms the charge (gait 3 and up); both are issue #1659.
     const bool inSight = brain.hasLineOfSight(*target);
     if (inSight && !attackableBy(*target, &brain)) {
         return beginStop(brain);
@@ -220,23 +220,24 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
         }
         m_charge = m_charge || running;
     }
-    // 10. Give up when he is out of sight and far off (**Coney choice**: brain `+0x28d` and the gang's `+0xdc` are
+    // 10. Give up when he is out of sight and far off (**Coney's choice**: brain `+0x28d` and the gang's `+0xdc` are
     // taken as clear, so 20 m).
     if (!inSight && distance >= kEngageGiveUpRange) {
         return GoalStatus::Done;
     }
-    // 11. The charge: an attack out of the run.
+    // 11. The charge: an attack out of the run. Stand-in: "he runs" is gait 4 and up; the original's is 3 and up
+    // (issue #1659).
     if (distance <= m_runIn && (m_charge || running)) {
-        // 11.1 Another man the near one in the sector A comes from disarms the charge (A only moves); A himself waits.
-        const ApproachSector sector = approachSector(brain, *target);
-        if (sector == ApproachSector::Mine) {
-            return GoalStatus::Stop;
-        }
-        if (sector == ApproachSector::Taken) {
+        // 11.1 Another man the near one in the sector A comes from disarms the charge (A only moves); with nobody
+        // there, or A himself (the lone charger once the record holds him), A goes on to the kind: the branch at
+        // 0x002b0090 falls through to 0x002b009c (docs/research/ai-fights.md#engage-charge).
+        const Brain* nearest = target->sectors(kSectorAgeMs)[sectorOf(them, human.position())].nearest;
+        if (nearest != nullptr && nearest != &brain) {
             m_charge = false;
         } else {
             // 11.2 The kind, once: a cop's X1 or tackle; anyone else's pick, which must be a charge kind.
             if (m_chargeKind == kNoAttackKind) {
+                // Stand-in: an ungrabbable target (+0xe0 0x40) does not force the cop's X1.
                 if (brain.type() == BrainType::Cop) {
                     const int x1Percent =
                         target->characterClass() == kGangMemberClass ? kCopX1GangPercent : kCopX1Percent;
@@ -265,14 +266,16 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
             }
         }
     }
-    // 12. The move: at him, led by his facing and speed while he faces away, fanned out by attack slot.
+    // 12. The move: at him, led by his facing and speed while he faces away, fanned out by attack slot. Stand-in: the
+    // original leads from any sector (fanned only from 3-5) unless A is in sector 0 within his speed, and its fan is
+    // (index - 1) x 9 degrees from the fifth slot on, where Coney's pairs the slots.
     anim::Vec3 aim = them.position();
     const int behindHim = sectorOf(them, human.position());
     if (them.speed() > 0.0F && behindHim >= 3 && behindHim <= 5) {
         const std::vector<Brain*>& slots = target->attackSlots();
         const auto index = static_cast<int>(std::ranges::find(slots, &brain) - slots.begin());
         const float side = index % 2 == 0 ? -1.0F : 1.0F;
-        const int pair = (index + 1) / 2; // whole pairs: 0, 1, 1, 2, 2, ...
+        const int pair = (index + 1) / 2; // whole pairs: 0, 1, 1, 2, 2, ... (stand-in, above)
         const float fan = side * static_cast<float>(pair) * kEngageFanDegrees * kDegrees;
         const anim::Vec3 led =
             anim::add(them.position(), anim::scale(human::facing(them.heading() + fan), them.speed()));
@@ -282,6 +285,7 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
         }
     }
     const bool slowStart = !m_moved && m_startSlowly;
+    // Stand-in: the move is queued again, not re-aimed in place (0x002fbbe8), and carries no class-13 flag.
     brain.clearActions();
     brain.queueAction(std::make_unique<MoveAction>(MoveRequest{.point = aim,
                                                                .radius = kEngageMoveRadius,
