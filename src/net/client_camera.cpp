@@ -3,6 +3,7 @@
 
 #include "camera/camera_lens.h"
 #include "core/assert.h"
+#include "net/player_huds.h"
 #include "world_objects/drawn_poses.h"
 
 namespace coney::net {
@@ -17,12 +18,19 @@ bool isJump(anim::Vec3 from, anim::Vec3 to) {
 
 } // namespace
 
-std::optional<NetId> followedHuman(const ClientWorld::Humans& humans, const SnapshotHuds& /*huds*/,
-                                   std::uint8_t /*slot*/) {
-    // The ids are walked in order, so the first is the lowest; the host's player 1 (**stand-in**, see the header).
+std::optional<NetId> followedHuman(const ClientWorld::Humans& humans, const SnapshotHuds& huds, std::uint8_t slot) {
     if (humans.empty()) {
         return std::nullopt;
     }
+    // The human the slot's HUD entry names, when it names one: followed once the world shows him, never swapped for
+    // another meanwhile (the entry is the newest snapshot's, the humans a few steps behind it).
+    if (const auto entry = huds.find(slot); entry != huds.end()) {
+        if (const NetId driven = playerHudHuman(entry->second); driven.valid()) {
+            return humans.contains(driven) ? std::optional<NetId>{driven} : std::nullopt;
+        }
+    }
+    // A slot that drives no human watches the host's player 1: the ids are walked in order, so the first is the lowest
+    // (**Coney's choice** until the host has a second player, docs/guides/client-world.md#client-camera-human).
     return humans.begin()->first;
 }
 

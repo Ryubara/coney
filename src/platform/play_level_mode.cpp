@@ -494,7 +494,8 @@ void PlayLevelMode::hudStepped() {
     // built only while it captures (a session, `--digest` or `--net-replay`).
     if (m_netHumans != nullptr && m_netHumans->capturing()) {
         const hud::HudStanding standing = hudStanding();
-        m_netHumans->captureHuds(playerHuds(), &standing);
+        const std::array<const human::Human*, hud::kPlayers> drivers = playerHumans();
+        m_netHumans->captureHuds(playerHuds(), &standing, drivers);
     }
     m_hudLayer->render();
     recordIconPoses();

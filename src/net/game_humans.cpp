@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -94,11 +95,18 @@ void GameHumans::capture(const ai::Brains& brains, const CharacterOf& characterO
 }
 
 void GameHumans::captureHuds(std::span<const hud::PlayerHudState> slots, const hud::HudStanding* standing,
-                             std::span<const human::Human* const> /*drivers*/) {
+                             std::span<const human::Human* const> drivers) {
     if (!m_capturing) {
         return;
     }
-    m_huds = snapshotHuds(slots);
+    // The id each slot's human has now: ids, never pointers, name him on the wire.
+    std::vector<NetId> humans;
+    humans.reserve(drivers.size());
+    for (const human::Human* driver : drivers) {
+        const std::optional<NetId> id = driver != nullptr ? m_table.idOf(driver) : std::nullopt;
+        humans.push_back(id.value_or(NetId{}));
+    }
+    m_huds = snapshotHuds(slots, humans);
     m_hudStanding = standing != nullptr ? snapshotHudStanding(*standing) : SnapshotHudStanding{};
 }
 

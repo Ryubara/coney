@@ -14,9 +14,9 @@ guest's HUD takes them (the client game's, [The HUD](client-world.md#client-hud)
 every step ([The game's humans](multiplayer.md#game-humans)), and a guest running [the client
 game](client-world.md#client-game) draws them. **Planned:** interest (which humans a client needs, and how fast each
 one's priority grows), and releasing a removed human's id once its removal is acknowledged. **Not in a snapshot, by
-decision:** a camera. A client runs its own follow camera on the human its player slot follows, from his replicated
-state ([The client's camera](multiplayer.md#client-camera-decision)), so the protocol version is unchanged by it; the
-host's scripted and scene cameras would get an entry, and a bump, when built.
+decision:** a camera. A client runs its own follow camera on the human its player slot drives, from his replicated
+state ([The client's camera](multiplayer.md#client-camera-decision)); which human that is travels in the slot's HUD
+entry ([HUD state](#hud-state)). The host's scripted and scene cameras would get an entry, and a bump, when built.
 
 ## The model {#model}
 
@@ -117,12 +117,17 @@ loopback test steps a client's HUD from what it decodes and finds its panels the
 **The fields** ([field table](multiplayer.md#field-tables), `HudField`): rage and its maximum (16 bits each, the s16
 range of the original's meter and class), raging and the blue-grey banner (a bit each), the score (25 bits, past the
 panel's seven digits), the money (16 bits, an s16), the four item counts (8 bits each, 0 to 255), SELECT shows, knocked
-out and the camera's stick (a bit each): 110 bits in full. The money's and the counts' ranges are Coney's choices; the
+out and the camera's stick (a bit each), and **the human the slot drives** (22 bits, protocol 13, #1654): 132 bits in
+full. The human is a network id as one number
+(`netIdNumber()`, the id's generation above its 16-bit slot), 0 for a slot that drives none; the host fills it from the
+game mode's player slots, so the same id names the human in the snapshot's humans, and a client holds an id, never a
+pointer ([The human followed](client-world.md#client-camera-human)). The host's game has one player so far, so slot 0
+names his human and the others none. The money's and the counts' ranges are Coney's choices; the
 panel clamps them tighter still (-99 to 9,999 and 9), and a value beyond a range is held at its end, so what a panel
 shows is the same. The panel's `promptWakes` does not travel: the HUD works it out from the prompt.
 
 **Deltas.** A HUD is delta-compressed against the same acknowledged baseline as the humans: a slot the baseline does
-not hold comes in full, a kept one with its changed fields only (a money pickup is 2 + 1 + 13 + 16 bits, 4 bytes), an
+not hold comes in full, a kept one with its changed fields only (a money pickup is 2 + 1 + 14 + 16 bits, 5 bytes), an
 unchanged one costs nothing, and a slot gone is removed. The HUDs go in the budget before the humans' changes, and the
 sender keeps room for every slot's in full, so a panel is never a step behind for want of room.
 
@@ -181,7 +186,7 @@ them, then their changed fields only (a counter counting is 5 + 1 + 5 + 32 bits,
 and removed when gone. The elements go in the budget with the HUDs, and the sender keeps room for every element in
 full and one 255-byte text. The texts go next, in key order, each where it fits (the room left always takes the
 longest, so none waits for ever), then the humans' removals and changes. A first snapshot in a mission (two players,
-two counter panels, two bars, the gauge, two rows, the stopwatch and their seven texts) takes about 190 bytes of the
+two counter panels, two bars, the gauge, two rows, the stopwatch and their seven texts) takes about 196 bytes of the
 1,200 before the humans.
 
 ## The packet {#packet}
@@ -197,7 +202,7 @@ Message 10, Snapshot, server to client, UnreliableSequenced:
 | The number of entries | varint |
 | Each entry, in rising id order: the `NetId`; a removed bit; when not removed, for each field a changed bit and, when set, the field's word | 22 + 1 + 23 + the words |
 | The number of HUD entries, at most 4 (protocol 7) | varint |
-| Each HUD entry, in rising slot order: the slot; a removed bit; when not removed, for each HUD field a changed bit and, when set, the field's word | 2 + 1 + 13 + the words |
+| Each HUD entry, in rising slot order: the slot; a removed bit; when not removed, for each HUD field (14 since protocol 13, the last the slot's human) a changed bit and, when set, the field's word | 2 + 1 + 14 + the words |
 | The number of HUD elements, at most 22 (protocol 9) | varint |
 | Each HUD element, in rising key order: the key; a removed bit; when not removed, for each of its fields a changed bit and, when set, the field's word | 5 + 1 + its fields + the words |
 | The number of HUD texts, at most 22 (protocol 9) | varint |

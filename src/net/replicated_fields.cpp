@@ -19,6 +19,7 @@
 #include "core/error.h"
 #include "net/bit_stream.h"
 #include "net/character_id.h"
+#include "net/net_id.h"
 
 namespace coney::net {
 
@@ -307,6 +308,9 @@ std::size_t fieldsBits(std::span<const FieldSpec> fields) {
     return bits;
 }
 
+// The largest number a network id makes (netIdNumber()): every bit of kNetIdBits set; a float holds it exactly.
+constexpr float kMostNetIdNumber = static_cast<float>((1U << kNetIdBits) - 1U);
+
 // A player's HUD fields. The rage, its maximum and the money carry an s16's whole range, as the original's rage meter
 // and class do (docs/research/hud.md#the-rage-meter); the score 25 bits, past the panel's seven digits either way.
 // **Coney's choice**: the money's s16 (the panel clamps it to -99..9999, docs/research/hud.md#score-and-money) and the
@@ -325,6 +329,9 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(HudField::Count)> kHudF
     {.name = "selectShows", .encoding = FieldEncoding::Bool, .bits = 1},
     {.name = "knockedOut", .encoding = FieldEncoding::Bool, .bits = 1},
     {.name = "cameraIgnoresStick", .encoding = FieldEncoding::Bool, .bits = 1},
+    // A network id as one number: the generation above the 16-bit slot (net_id.h's netIdNumber()), 0 for none. Not the
+    // original's: it is the player's slot named by the server, not the player's state.
+    {.name = "human", .encoding = FieldEncoding::Integer, .bits = kNetIdBits, .min = 0.0F, .max = kMostNetIdNumber},
 }};
 
 // The HUD's standing state (docs/guides/snapshots.md#hud-standing). Every range is Coney's choice: a number the

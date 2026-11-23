@@ -15,9 +15,10 @@
 
 namespace coney::net {
 
-/// `state`'s fields as words (fieldTable(ReplicatedKind::PlayerHud)). A number beyond its field's range is held at the
-/// range's end (**Coney's choice**: the panel clamps the money and the counts tighter still, so what it shows is the
-/// same); the panel's `promptWakes`, which the HUD works out from the prompt itself, does not travel.
+/// `state`'s fields as words (fieldTable(ReplicatedKind::PlayerHud)), with `human` the human the slot drives (none for
+/// a slot that drives none). A number beyond its field's range is held at the range's end (**Coney's choice**: the
+/// panel clamps the money and the counts tighter still, so what it shows is the same); the panel's `promptWakes`,
+/// which the HUD works out from the prompt itself, does not travel.
 /// @coney-only network play; the original has none
 [[nodiscard]] HudWords playerHudWords(const hud::PlayerHudState& state, NetId human = {});
 
@@ -29,7 +30,8 @@ namespace coney::net {
 /// @coney-only network play; the original has none
 [[nodiscard]] hud::PlayerHudState playerHudState(const HudWords& words);
 
-/// The HUDs of `slots` (slot i at index i, at most kMaxPlayerSlots) as a snapshot takes them, in slot order.
+/// The HUDs of `slots` (slot i at index i, at most kMaxPlayerSlots) as a snapshot takes them, in slot order, each
+/// naming the human the slot drives: `humans[i]` (slot i drives none when `humans` has no i, or its id is not valid()).
 /// @coney-only network play; the original has none
 [[nodiscard]] std::vector<SnapshotHud> snapshotHuds(std::span<const hud::PlayerHudState> slots,
                                                     std::span<const NetId> humans = {});

@@ -195,6 +195,8 @@ enum class HudField : std::uint8_t {
     KnockedOut,         ///< Knocked out (`Human_IsKnockedOut`), which drops an Armies panel.
     CameraIgnoresStick, ///< His camera ignores the right stick: the fixed-camera icon
                         ///< (docs/research/hud.md#hud-fixed-cam-icon).
+    Human,              ///< The human the slot drives: his NetId as one number (netIdNumber()), 0 for none
+                        ///< (docs/guides/snapshots.md#hud-state; a client's camera follows him).
     Count,
 };
 
