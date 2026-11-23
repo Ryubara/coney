@@ -118,8 +118,8 @@ struct CrewLayout {
     float rowStep = 0.08F * 1.2F;    ///< The step's y (0.08) times `0x0050cff0`.
     float shortRowShift = 0.11F;     ///< `0x0050d008`: added to x while fewer than four are listed ...
     float shortRowStep = -0.025F;    ///< ... with `0x0050d00c` per entry after the first.
-    /// The cell (0.03, -0.018) times `0x0050cfe4` (-2.3). The original's screen shows the icon about 0.018 left, not
-    /// 0.069: an open question (docs/research/hud-functions-parts.md, q-crew-icon-x).
+    /// The cell (0.03, -0.018) times `0x0050cfe4` (-2.3): where the icon's left edge sits from the portrait's right
+    /// edge, which is the entry's place (crewEntrySprites()).
     GuiPoint statusOffset{-0.069F, 0.0414F};
     float portraitSize = 0.05F * 1.8F; ///< The icon size (0.05) times `0x0050cfe8`.
     float statusSize = 0.05F * 0.7F;   ///< The icon size times the aspect (0.7) and `0x0050cffc` (1.0).
@@ -149,11 +149,12 @@ struct CrewEntrySprites {
 };
 
 /// Where an entry placed at `place` draws its portrait and its status icon, given each rectangle's shape (texel width
-/// over texel height). Both widgets have the aspect fix, so each is its height × its shape × 1.45 × 0.80357 wide in
-/// overlay units. The portrait's anchor is its right edge, so it hangs left of `place`; the icon's is its left edge,
-/// at `place` + kCrewLayout's statusOffset, so it reaches right from there.
+/// over texel height). CrewStatusEntry_Setup (`0x001a0918`) gives both widgets the aspect fix, so each is its height ×
+/// its shape × 1.45 × 0.80357 wide in overlay units, and gives the portrait anchor 2, its right edge, so it hangs left
+/// of `place`, and the icon anchor 1, its left edge, at `place` + kCrewLayout's statusOffset, so it reaches right from
+/// there. The entry's render draws the two widgets with those anchors applied.
 /// Research: docs/research/hud-functions-parts.md#crew-icon-anchors
-/// @orig 0x001a0918 CrewStatusEntry_Setup (unknown)
+/// @orig 0x001a0c90 CrewStatusEntry_Render (unknown)
 [[nodiscard]] CrewEntrySprites crewEntrySprites(GuiPoint place, float portraitShape, float statusShape);
 
 /// The crew status list: up to eight entries, each a crew member's handle and his place in the order the entries were
@@ -168,7 +169,8 @@ struct CrewEntrySprites {
 /// @orig 0x0019faf0 CrewStatus_Init (unknown)
 class CrewStatusList {
   public:
-    /// The most entries the list holds.
+    /// The most entries the list holds: the original's eight slots, kept because the layout has room for two rows of
+    /// four (CrewStatus_Setup's 2 and 4) and a ninth would land below them.
     static constexpr std::size_t kEntries = 8;
 
     /// One entry slot.
@@ -178,7 +180,7 @@ class CrewStatusList {
         bool shown = false;                     ///< Not hidden: the last update found a state.
         std::uint32_t portrait = 0;             ///< The portrait rectangle (crewPortraitRect()).
         std::uint32_t status = kCrewCuffedRect; ///< The status rectangle.
-        GuiPoint place;                         ///< The portrait's centre, as the last update placed it.
+        GuiPoint place;                         ///< The portrait's right edge and centre height, as last placed.
 
         friend bool operator==(const Entry&, const Entry&) = default;
     };
@@ -222,7 +224,7 @@ class CrewStatusList {
     /// Where the last update placed the caption.
     [[nodiscard]] GuiPoint captionPlace() const { return m_captionPlace; }
 
-    /// The portrait's centre of the entry at `order` while `count` are listed.
+    /// The place (the portrait's right edge, at its centre height) of the entry at `order` while `count` are listed.
     /// @orig 0x0019fda0 CrewStatus_Update (unknown)
     [[nodiscard]] static GuiPoint entryPlace(std::uint32_t order, std::size_t count);
     /// The caption's place after an update placed `placed` entries with `count` listed.

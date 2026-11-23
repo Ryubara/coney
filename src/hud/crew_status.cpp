@@ -5,6 +5,9 @@
 #include <format>
 #include <ranges>
 
+#include "graphics/overlay_camera.h"
+#include "graphics/screen.h"
+#include "gui/base_widget.h"
 #include "gui/text_layout.h"
 #include "hud/messages.h"
 
@@ -78,6 +81,11 @@ const CrewMember* memberOf(const CrewFrame& frame, double handle) {
 
 // An unsigned count as a float (a wrapped "less one" stays huge). @orig 0x0019fda0 CrewStatus_Update (unknown)
 float unsignedFloat(std::uint32_t value) { return static_cast<float>(value); }
+
+// A sheet rectangle's shape: its texel width over its texel height (0 without a texture).
+float rectShape(const graphics::SpriteSheet& sheet, const graphics::UvRect& uv) {
+    return squareTexelWidth(sheet, uv, 1.0F) * graphics::kLogicalWidth / graphics::kLogicalHeight;
+}
 
 } // namespace
 
@@ -276,13 +284,13 @@ void CrewStatusList::render(const HudCanvas& canvas, std::uint64_t nowMs) const 
                 continue;
             }
             const graphics::UvRect portrait = parts->sheet().page.rect(entry.portrait);
-            parts->addSprite(guiSprite(entry.place.x, entry.place.y,
-                                       squareTexelWidth(parts->sheet(), portrait, kCrewLayout.portraitSize),
-                                       kCrewLayout.portraitSize, portrait, kCrewPortraitColour));
             const graphics::UvRect icon = parts->sheet().page.rect(entry.status);
-            const GuiPoint at{entry.place.x + kCrewLayout.statusOffset.x, entry.place.y + kCrewLayout.statusOffset.y};
-            parts->addSprite(guiSprite(at.x, at.y, squareTexelWidth(parts->sheet(), icon, kCrewLayout.statusSize),
-                                       kCrewLayout.statusSize, icon, status));
+            const CrewEntrySprites at =
+                crewEntrySprites(entry.place, rectShape(parts->sheet(), portrait), rectShape(parts->sheet(), icon));
+            parts->addSprite(guiSprite(at.portrait.centre.x, at.portrait.centre.y, at.portrait.width,
+                                       at.portrait.height, portrait, kCrewPortraitColour));
+            parts->addSprite(
+                guiSprite(at.status.centre.x, at.status.centre.y, at.status.width, at.status.height, icon, status));
         }
     }
     // The caption, timed from when it was set: its own `<DISPLAYTIME>` fades it and ends it.
@@ -301,9 +309,23 @@ const CrewStatusList::Entry* CrewStatusList::find(double handle) const {
     return found == m_entries.end() ? nullptr : &*found;
 }
 
-CrewEntrySprites crewEntrySprites(GuiPoint /*place*/, float /*portraitShape*/, float /*statusShape*/) {
-    // A stub for the test commit.
-    return {};
+CrewEntrySprites crewEntrySprites(GuiPoint place, float portraitShape, float statusShape) {
+    // A sprite's width in GUI units: the height × the rectangle's shape × the aspect fix in overlay units, and an
+    // overlay width is H / W GUI widths.
+    constexpr float kWidthPerShape = graphics::OverlayCamera::kViewAspect * gui::BaseWidget::kAspectFix *
+                                     graphics::kLogicalHeight / graphics::kLogicalWidth;
+    const float portraitWidth = kCrewLayout.portraitSize * portraitShape * kWidthPerShape;
+    const float statusWidth = kCrewLayout.statusSize * statusShape * kWidthPerShape;
+    // The portrait's right edge is at the place (anchor 2); the icon's left edge at the place + the offset (anchor 1).
+    return CrewEntrySprites{
+        .portrait = {.centre = {place.x - (portraitWidth / 2.0F), place.y},
+                     .width = portraitWidth,
+                     .height = kCrewLayout.portraitSize},
+        .status = {.centre = {place.x + kCrewLayout.statusOffset.x + (statusWidth / 2.0F),
+                              place.y + kCrewLayout.statusOffset.y},
+                   .width = statusWidth,
+                   .height = kCrewLayout.statusSize},
+    };
 }
 
 } // namespace coney::hud

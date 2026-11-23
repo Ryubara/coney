@@ -1,0 +1,45 @@
+version = 1
+id = "r-20261123-crew-icon-anchor"
+date = "2026-11-23"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "63ddf32d514935caf68bbcc877b834c83b8330bddd37fa45b2f2ec1ccae6b0f4"
+
+[who]
+agent = "ad604ad869e1ff7bf"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "level80 checkpoint 2 state with Vermin cuffed (the same state as r-20261122-crew-status-layout); read over the debug server while running the first crew entry's two sprite widgets (list 0x00600850, entry +0x70; portrait widget +0x40 = 0x00600900, status widget +0x140 = 0x00600a00): GUI position +0x30, overlay position +0x80, size +0x90, anchor +0xc0, anchor shift +0xd0; and the view aspect 0x0050b208. Screen picture taken at the same moment: portrait centre about 0.486 and icon centre about 0.467 of the width."
+
+[values]
+portrait_gui_x = 0.517
+portrait_gui_y = 0.07
+portrait_overlay_x = 0.02429
+portrait_size = 0.09
+portrait_anchor = 2
+portrait_anchor_shift = -0.05205
+status_gui_x = 0.448
+status_gui_y = 0.1114
+status_overlay_x = -0.07429
+status_size = 0.035
+status_anchor = 1
+status_anchor_shift = 0.02007
+view_aspect = 1.45
+
+[addresses]
+crew_list = 0x00600850
+portrait_widget = 0x00600900
+status_widget = 0x00600a00
+view_aspect = 0x0050b208

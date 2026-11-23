@@ -113,12 +113,24 @@ Confirmed (code) at `0x0019fda0`, `0x001a0b60`, `0x001a0918`, and the floats rea
 
 - the entry of order *o* while *n* are listed: x = 0.407 + (*o* mod 4) × 0.12 × 0.6, y = 0.07 + (*o* div 4) × 0.08 ×
   1.2; while fewer than four are listed, x + 0.11 − 0.025 × (*n* − 1), so a short row moves toward the middle;
-- the portrait is 0.05 × 1.8 = 0.09 tall, colour (191, 191, 191, 255); the status icon 0.05 × 0.7 = 0.035 tall, at
-  the portrait's centre plus the cell × -2.3 = (-0.069, +0.041), its lower left;
+- the portrait is 0.05 × 1.8 = 0.09 tall, colour (191, 191, 191, 255), and the place is its **right edge** (anchor
+  2), so it hangs left of it; the status icon is 0.05 × 0.7 = 0.035 tall, and its **left edge** (anchor 1) is at the
+  place plus the cell × -2.3 = (-0.069, +0.041), so it reaches right from there and overlaps the portrait's lower
+  left. Both have the aspect fix: each is its height × its rectangle's shape × 1.45 × 0.80357 wide in overlay units,
+  0.7 of that in screen widths. Confirmed (code) at `0x001a0918` (anchors 2 and 1 in `t3`, the aspect fix on the
+  stack), `0x001a21e8` (the shift, half the width, negative for anchor 2) and `0x001a2690` (applied when drawing);
 - the caption: x = 0.407 − 0.05 + 0.13 + 0.01 × ((*n* mod 4) − 1), where 4 and 8 count as 1; y = 0.07 + ((*p* − 1)
   div 4 + 1) × 0.096 − 0.01, *p* the entries placed this update. Both counts are unsigned (`divu`, and the
   unsigned-to-float pattern at `0x001a0300`), so with no entry listed "less one" wraps and the caption is placed
   billions of units off the screen: a caption still in its 2.5 s when the list empties stops showing.
+
+**Where the sprites land**{#crew-icon-anchors} (confirmed (runtime), run r-20261123-crew-icon-anchor: `level80`
+checkpoint 2 with Vermin cuffed, the first entry's widgets read over the debug server). The portrait widget
+(`0x00600900`) held the place (0.517, 0.07), size 0.09, anchor 2 and a shift of -0.0521 overlay units; the status
+widget (`0x00600a00`) held (0.448, 0.111), size 0.035, anchor 1 and a shift of +0.0201; the view aspect `0x0050b208`
+was 1.45. With an overlay x of (GUI x − 0.5) × 640 / 448, as both widgets' `+0x80` showed, the portrait's centre is at
+0.4806 of the width and the icon's at 0.4620, 0.0186 left of it, which is where the picture of the same moment shows
+them. An earlier reading took both positions as centres, which put the icon 0.069 left of the portrait.
 
 **Runtime check** (PCSX2 2.9.94; a copy of a `level80` checkpoint state with the player and two Warriors, humans 1
 and 2; the record flags at `*(human + 0xd4)` written over PINE): setting `0x20000` on human 1 added one entry (list
@@ -157,28 +169,17 @@ human leaves the list at the next update anyway, as his handle no longer resolve
 
 `+0x334` is the distance to the nearest of the cameras `Human_UpdateLod` (`0x0023d660`) walks; with one player that is
 player 1's, which Coney uses. Whether a second camera (split screen, a scene camera) can be nearer and change the
-alert was not checked (speculative that it can, [q-crew-camera](#q-crew-camera)).
+alert was not checked (speculative that it can, [q-crew-camera](#q-crew-camera)). To find out: in a two-player
+PCSX2 run, keep a crew member in a fight near player 2 and far from player 1, and read his human's `+0x334` against
+each camera's distance to him, and whether the entry appears.
 
 #### Open: an entry when a human becomes the player {#q-crew-remove}
 
 `Human_MakePlayer` (`0x00229c40`) removes the human's entry when he is made a player (confirmed (code)). Coney's
 hand-over does not, so a listed member handed the player keeps his entry while his state holds; whether the original
 then lists him again at the next update (he is in player 1's gang and the code does not exclude the player) was not
-checked.
-
-#### Open: where the status icon sits across {#q-crew-icon-x}
-
-The layout's numbers hold in the running game (confirmed (runtime), run r-20261122-crew-status-layout, with one
-Warrior cuffed): the status scale `0x0050cfe4` is -2.3 and the origin `0x0050d000`-`0x0050d004` (0.407, 0.07), the
-device flags at `*0x0050cdb4` are `0x01`, and the list's cell at `+0x12f0` is (0.03, 0, -0.018), its step at `+0x1310`
-(0.12, 0, 0.08); the other floats of the block were not recorded in that run. On the original's screen, measured from
-one capture of the same state and not recorded (inferred), the portrait is 0.075 of the height tall and the icon 0.039
-below its centre, as the layout gives, but the icon sits only about 0.018 of the width left of the portrait's centre,
-not 0.069, and the portrait about 0.48 across, not 0.517. Coney draws the layout's numbers, so its icon is further
-left. How the original turns a widget's x into the screen's (an anchor, or a scale about the centre) was not found;
-Coney's action prompt sits right of the original's in the same capture, so it may be the HUD's x mapping in general
-rather than the list (speculative, [q-crew-icon-x](#q-crew-icon-x)). A test: draw a widget at a known x in PCSX2
-(write a GO sign or prompt position) and measure where it lands.
+checked. To find out: in PCSX2, hand the player to a listed (knocked-out or cuffed) Warrior and watch the list's count
+`+0x40` and order slots `+0x44` over the next updates.
 
 ## After `GUI/BaseWidget.cpp` (no path string): mash meter and chase HUD {#fn-after-basewidget}
 
