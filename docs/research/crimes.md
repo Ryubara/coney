@@ -535,16 +535,16 @@ steps, every draw from the gameplay generator (`0x006eb880`), `rand(a, b)` `a` t
 1. No brain: nothing.
 2. **The pocket** (`+0x250`, an item): pickups of that item's object (its inventory entry's name,
    `InventoryBlock_GetEntry` `0x0041e3c0`, confirmed (code)), `+0x254` of them (a signed byte), with no removal time.
-   The drop keeps one point, his feet at first, and raises it 0.5 m before every object it makes (`0x00232dc0`), so
-   the pocket's objects stack at his feet 0.5 m, 1 m, 1.5 m ... up. A **dealer** (brain type 5) drops one instead
-   (the call's second argument), 1 m out into the first neighbour sector that is not blocked (`Sectors_IsBlocked`,
-   `Sectors_GetPoint` at 1 m; all eight blocked: sector 0; [AI: neighbour sectors](ai-moving.md#neighbour-sectors)),
-   0.5 m up there, and his next object starts again from his feet (`0x00232e64`). Unless he is a dealer or his ped
-   type (`+0x26c`) is 5, nothing more is dropped; a ped-type-5 human who is no dealer drops his next object 0.5 m above
-   the last of the pocket's.
-3. **Power cuffs**: a human with cuffs (`Human_GetCuffCount`: a cop always one, another AI `+0x378`, a player item 5)
-   draws `rand(0, 100)`; below 51, with game state `+0x158` set or unlock (6, 14), he drops `dyn_powercuffs` (item 5's
-   removal time) and nothing else.
+   The drop keeps one point, his feet at first, and raises it 0.5 m before every object it makes (`0x00232dc0`), so the
+   pocket's objects stack at his feet 0.5 m, 1 m, 1.5 m ... up. A **dealer** (brain type 5) drops one instead (the
+   call's second argument), 1 m out into the first neighbour sector that is not blocked (`Sectors_IsBlocked`,
+   `Sectors_GetPoint` at 1 m; all eight blocked: sector 0, after asking sector 8 too, whose answer changes nothing; [AI:
+   neighbour sectors](ai-moving.md#neighbour-sectors)), 0.5 m up there, and his next object starts again from his feet
+   (`0x00232e64`). Unless he is a dealer or his ped type (`+0x26c`) is 5, nothing more is dropped; a ped-type-5 human
+   who is no dealer drops his next object 0.5 m above the last of the pocket's.
+3. **Power cuffs**: a human with cuffs (`Human_GetCuffCount` `0x00222908`: a cop always one, another AI `+0x378` (a
+   signed byte, below 0 read as 0), a player item 5) draws `rand(0, 100)`; below 51, with game state `+0x158` set or
+   unlock (6, 14), he drops `dyn_powercuffs` (item 5's removal time) and nothing else.
 4. **The carried object** (`+0x257`, not `none`), and then nothing else: an AI human drops it unless `+0x278` is -1
    (then nothing at all), and carries `none` from then on. A player keeps it when `rand(0, 100)` is below 51;
    otherwise he drops it and loses money, the object type's `+0x5a` (a signed byte) × game state `+0x380`, from his
@@ -564,6 +564,9 @@ Watched in the original (confirmed (runtime), run r-20261119-down-drop-money): i
 type 2 given $5, made to run `Human_OnHealthOut`, stored 5 in the new object's `+0x124` (`0x00233474`), was left with
 $0, and the object stood at his feet's height + 0.5 m with its removal time set.
 
+Each object is made at once: every `ObjRecord_Add` of the drop is followed by `Handle_Resolve` of the new record,
+confirmed (code) at `0x00232c60`.
+
 The removal time (`WorldObject_SetRespawnTimer`, [Objects](objects.md)) is now + the item's inventory duration
 (`InventoryBlock_GetDuration` `0x0041e348`), confirmed (code); once it passes the object can no longer be taken
 and vanishes.
@@ -571,15 +574,16 @@ and vanishes.
 So `level87` chapter 3's early Destroyers, given $5 each by their constructor (`EDConstructor`, `HuSetMoney`), leave
 $5 each when beaten: the price of one can of paint ([GoalDealer](ai-scripting.md#dealer)).
 
-**Coney**: the update a human's dying reaction hands over to its loop (`Fighter::takeHealthOut()`, the
-moment `Human_OnHealthOut` runs), the play mode runs the drop for player 1 and every AI human
+**Coney**: the update a human's dying reaction hands over to its loop (`Fighter::takeHealthOut()`, the moment
+`Human_OnHealthOut` runs), the play mode runs the drop for player 1 and every AI human
 (`PlayLevelSimulation::dropOnHealthOut()`, `repo:src/gamemodes/play_level_drops.cpp`): the decision is
 `human::dropCarried()` (`repo:src/human/carried_drop.h`), the objects become spawn records through
-`LevelPickups::dropCarried()`, and the walk-over takes the money ([Walk-over](player-state.md#walk-over)). The class's
-record comes from the recorded `CfgChar` and `CfgCharClassAttribs` calls (`script::recordedDropClass()`). **Coney's
-stand-ins**: the removal times are not applied, so a dropped object stays until taken; Coney's health out never
-wounds a human, so only a script's `HuSetWounded` stops the drop at the knock-out; an empty carried name counts as
-`none`; a pocket count of 0 or less drops nothing.
+`LevelPickups::dropCarried()`, each made at once as the original's `Handle_Resolve` of the new record makes it, and the
+walk-over takes the money ([Walk-over](player-state.md#walk-over)). The class's record comes from the recorded `CfgChar`
+and `CfgCharClassAttribs` calls (`script::recordedDropClass()`). **Coney's stand-ins**: the removal times are not
+applied, so a dropped object stays until taken; Coney's health out never wounds a human, so only a script's
+`HuSetWounded` stops the drop at the knock-out; an empty carried name counts as `none`; a pocket count of 0 or less
+drops nothing.
 
 ### Interrogation {#interrogation}
 
