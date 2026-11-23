@@ -98,11 +98,13 @@ std::vector<ScreenStep> blurPulseSteps(const BlurPulse& blur, const ScreenRect& 
     // 2. The passes: the half-size image onto itself with one edge moved in by half the offset, the low edges for the
     // offset as given and the high ones once its sign has flipped (0x0050ce64), flipping each pass. The offsets are
     // UV units of the original's 512 x 256 raster, whose half-size image is 320 x 224 (inferred: a 640 x 448 screen at
-    // half size), so they are scaled to the same share of the copy here.
+    // half size), so they are scaled to the same share of the copy here (stand-in, as the GL3 renderer's).
     const float stepU = blur.offsetU / 2.0F * (512.0F / 320.0F);
     const float stepV = blur.offsetV / 2.0F * (256.0F / 224.0F);
     bool lowEdge = true;
     for (int pass = 0; pass < blur.passes; ++pass) {
+        // Stand-in: a copy of the half-size image for the pass to read, where the original draws its raster onto
+        // itself through the effects camera.
         steps.emplace_back(ScreenCopyStep{ScreenSlot::Half, halfRect});
         ScreenDrawStep moved = half;
         moved.from = ScreenSlot::Half;
@@ -117,6 +119,8 @@ std::vector<ScreenStep> blurPulseSteps(const BlurPulse& blur, const ScreenRect& 
         moved.corners =
             quadCorners(left, top, static_cast<float>(halfWidth), static_cast<float>(halfHeight), uv, white);
         steps.emplace_back(moved);
+        // The sign flipped for the next pass. Stand-in: the depth and blending states the original puts back after
+        // each step are not, as every step is drawn in its own.
         lowEdge = !lowEdge;
     }
 
@@ -128,6 +132,8 @@ std::vector<ScreenStep> blurPulseSteps(const BlurPulse& blur, const ScreenRect& 
     steps.emplace_back(quadFrom(ScreenSlot::Half, true, left, top, static_cast<float>(view.width),
                                 static_cast<float>(view.height), UvRect{texelU, texelV, 1.0F - texelU, 1.0F - texelV},
                                 white));
+    // Stand-in: the original then puts the depth test and write and the blending by alpha back, ends the camera's
+    // update and lets its raster go; the steps leave nothing set, as the renderer draws each in its own states.
     return steps;
 }
 
