@@ -815,9 +815,13 @@ helpers. `repo:src/physics/physics_world.h` holds `PhysicsWorld` ([Unit 7](physi
 [Unit 8](physics-bodies.md#unit-8)): the body vector, the x-sorted list, the `+0x14` bound and its refresh in the
 step, the two box queries and the overlap query, the ignore slots and the shape pools. Bodies and shapes are ids into
 the world's stores (`BodyId`, `ShapeId`). The queries' lists grow with no cap, as the original's callers' 512 is
-checked by nothing. The pools and the ignore slots keep the original's counts and "first free" scans, and Coney lifts
-both: when all are taken one more is built (`shapePoolCap`, `ignoreSlotCap`,
-[Beyond the original](../engine/beyond-the-original.md)), and the engine limits preset keeps the original's counts.
+checked by nothing and past it the original writes over its own stack, so there is no behaviour to keep
+([The 512 candidates](physics-bodies.md#u7-cap)); Coney's pools may also pass the original's counts. The tests keep
+the invariants the live body list shows in PCSX2 ([BodyList_Insert](physics-bodies.md#u7-insert)): order by min x,
+consistent links and the widest-body bound, on bodies the tests make. The pools and the ignore slots keep the
+original's counts and "first free" scans, and Coney lifts both: when all are taken one more is built (`shapePoolCap`,
+`ignoreSlotCap`, [Beyond the original](../engine/beyond-the-original.md)), and the engine limits preset keeps the
+original's counts.
 `PhysicsWorld::updateBody` hands back the update sweep's box and move; the sweep against the bodies is Unit 11's
 (#377). The overlap query's candidates answer their own shape chain; a human body's capsule chain, and moving
 `Human::struckCapsule` and `world_objects/object_bodies.*` onto the shape record, are Units 9 and 10 (#376); a level

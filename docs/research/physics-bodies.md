@@ -1413,8 +1413,7 @@ them when moving backward.
 the head of the IPhysics `0x00597198` points to, twice, about six seconds of play apart, all 146 bodies of the body
 vector are on the list, each `prev` names the node before it, each index names its own slot of the vector, min x
 never falls along the list (33 neighbours share a min x) and no box is inverted; `+0x14` equals the widest body's
-width (44.89) both times, the tick counter having passed its 120th tick between the reads. Coney's
-`PhysicsWorld` keeps the same invariants (`physics_world_test.cpp`).
+width (44.89) both times, the tick counter having passed its 120th tick between the reads.
 
 ### BodyList_Remove {#u7-remove}
 
@@ -1580,9 +1579,7 @@ Neither query has a cap, and neither is told the size of `out`. Every caller pro
 `Human_TestStrikes` the list is at `sp+0x130` and the next local at `sp+0x990` (room for 536). Confirmed (code) for
 the four frames; past 512 the original writes over its own stack (whatever lies after the list), which is undefined
 behaviour, not a rule to reproduce. The pools allow 60 + 1 + 416 + 255 + 18 = 750 bodies, so a level-sized box could
-pass 512 (inferred; no caller asks for one). Coney: a growable list with no cap (`PhysicsWorld::queryBox`), since
-past 512 the original has no behaviour to keep and Coney's pools may pass the original's counts
-([Unit 8](#u8-pools)).
+pass 512 (inferred; no caller asks for one).
 
 ### The callers' arguments {#u7-callers}
 
@@ -1746,8 +1743,7 @@ previous user's values until the caller sets them.
 | ignore slots | `+0xf4e0` | 60 × 12 | `IPhysics_FindFreeIgnoreSlot` `0x00340890` | `+0x04` == 0 | nothing; `Ignore` fills it |
 
 The counts are the loop limits `0x1a0`, `0x1a0`, `0x24`, `0x1e`, `0x3c`, `0x3c` (signed compares for the shape
-pools). Coney lifts them past these counts (rule: one more shape or slot each time all are taken), and keeps them
-under the engine limits preset ([Unit 8](#unit-8)). `0xb` = enabled `0x1`, `0x2`, allocated `0x8`.
+pools). `0xb` = enabled `0x1`, `0x2`, allocated `0x8`.
 The strike spheres are switched off and given `0x2` by the
 constructor (`0x0033c7e0`-`0x0033c814`), so they start free; a strike sphere stays taken while it is enabled, and the
 same one is returned again until its caller enables it.
