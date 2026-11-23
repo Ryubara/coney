@@ -269,10 +269,9 @@ GoalStatus ThrowObjectGoal::process(Brain& brain) {
     if (brain.updates() % kThrowEveryUpdates != 0 && brain.human().characterClass() != kThrowAtOnceClass) {
         return GoalStatus::Stop;
     }
-    // **Coney stand-in** for the object target and the queued attack of kind 0 (cross, Brain_QueueAttack): what it
-    // holds leaves its hands at once, and its move style is popped as Human_ReleaseThrow pops it at the throw clip's
-    // release (a player's hand is followed by the play mode's dropHeld()). The next update finds the hands empty and
-    // ends the goal.
+    // **Coney stand-in** for the object target and the queued cross (attack kind 0): what it holds leaves its hands
+    // at once, its move style popped as Human_ReleaseThrow pops it (a player's hand is followed by the play mode's
+    // dropHeld()). The next update finds the hands empty and ends the goal.
     script.heldObject = 0.0;
     script.heldObjectName.clear();
     if (brain.type() != BrainType::Player) {
