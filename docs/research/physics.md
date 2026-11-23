@@ -760,6 +760,10 @@ hit, so it cannot give the see-through material a clear ray crossed
   ([Coney's implementation](#coneys-implementation)). The airborne body's landing still uses Coney's own segment, not
   `Human_LandingTest`'s contact (#369).
 - Humans meet humans before walls in a pass (a marked Coney choice); Unit 11 sorts both together (#371).
+- Units 6 to 8 are written and tested (`repo:src/physics/shapes.h`, `repo:src/physics/physics_world.h`, issue
+  #375): posed shapes and bounds, the x-sorted body world with its queries, the ignore slots and the shape pools.
+  Nothing in play builds a `PhysicsWorld` yet: the bodies come with Unit 9 (#376) and the level's world with Unit 15
+  (#379).
 - Strikes test only the square's aimed object attack against a car (issue #72); Unit 5 and the strike loop
   ([How Human_TestStrikes builds the sweep](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0)) let any
   punch or kick
