@@ -139,6 +139,16 @@ def test_the_display_preset_and_renderer_are_passed_through() -> None:
     assert passed[passed.index("--display-preset") + 1] == "enhanced"
 
 
+def test_a_headless_scene_is_not_given_a_renderer() -> None:
+    # `coney --renderer gpu --headless` is refused (the GPU renderer opens a window), and a headless scene draws
+    # nothing, so `perf bench --scene all --renderer gpu` runs it as GL3's table does, with no renderer named.
+    headless = next(scene for scene in SCENES if scene.headless)
+    command = scene_bench_command(CONEY, "disc.iso", headless, Path("out.json"), renderer="gpu")
+    assert "--renderer" not in command
+    drawn = scene_bench_command(CONEY, "disc.iso", SCENES[0], Path("out.json"), renderer="gpu")
+    assert drawn[drawn.index("--renderer") + 1] == "gpu"
+
+
 # -- the runs
 
 
