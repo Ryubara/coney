@@ -69,6 +69,7 @@ struct Feed {
     // The server's step with `humans`, then the client's.
     void run(const std::map<NetId, HumanState>& humans) {
         std::vector<SnapshotHuman> sent;
+        sent.reserve(humans.size());
         for (const auto& [id, human] : humans) {
             sent.push_back(SnapshotHuman{.id = id, .words = humanWords(human), .priority = 1});
         }
