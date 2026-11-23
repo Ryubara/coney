@@ -381,6 +381,8 @@ void Human::standAfresh(bool keepMeters) {
     m_velocity = anim::Vec3{};
     m_airborne = false;
     m_outOfWorld = false;
+    // Not Human_Init's: the original's human gets a new character instance, whose alpha starts whole; Coney reuses
+    // the human, so a fade a fall left is undone here.
     m_fade = kWholeFade;
     m_airborneUpdates = 0;
     m_blockedUpdates = 0;
