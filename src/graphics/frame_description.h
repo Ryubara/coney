@@ -349,6 +349,30 @@ struct EffectRestore {
     friend bool operator==(const EffectRestore&, const EffectRestore&) = default;
 };
 
+/// How the colour a draw makes joins what is below it, as the render states in force say (RenderWare's SRCBLEND and
+/// DESTBLEND).
+enum class BlendInForce : std::uint8_t {
+    Replace,  ///< ONE over ZERO: what is below is replaced.
+    Alpha,    ///< SRCALPHA over INVSRCALPHA.
+    Additive, ///< SRCALPHA over ONE.
+};
+
+/// The render states in force when an effect draw is recorded, before it sets its own (RenderEngine::drawEffect() reads
+/// them from the draw layer): what a state the draw leaves unset is drawn in. The defaults are librw's GL3 device's
+/// after its start (`resetRenderState` in its `gl3device.cpp`, platform/draw_calls.cpp's gl3StartStates()).
+struct EffectInForce {
+    bool depthTest = true;
+    bool depthWrite = true;
+    CullFaces cull = CullFaces::None;
+    bool fog = false;
+    Rgba fogColour = kWhite;
+    bool vertexAlpha = false;
+    BlendInForce blend = BlendInForce::Alpha;
+    AlphaTest alphaTest = AlphaTest::GreaterEqual;
+
+    friend bool operator==(const EffectInForce&, const EffectInForce&) = default;
+};
+
 /// One corner of an effect's triangle or line: a place in RenderWare's world axes, a colour and a texture coordinate
 /// (RenderWare's 0-255 colour, as the original's sprite vertices give it: docs/research/gui.md#sprite-colours).
 struct EffectVertex {
@@ -378,6 +402,8 @@ struct EffectDraw {
     FrameTextureId texture = kNoFrameTexture;
     EffectStates states;
     EffectRestore restore;
+    /// The states in force before the draw, which those it leaves unset keep (set when the engine records it).
+    EffectInForce inForce;
     std::uint32_t firstVertex = 0;
     std::uint32_t vertexCount = 0;
     std::uint32_t firstIndex = 0;
