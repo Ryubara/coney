@@ -1681,32 +1681,6 @@ branch:
        do not attack unless I hit one first". Whether the two `GoalFight` Destroyers take Cleon depends on the
        slots ([After the order](#level80-after-order)).
 
-**Coney, checked again 2026-11-23** (`main` at `e5d58e85`, task 406):
-
-- The scan was on `main` (#394), and the lists filled; but then every Destroyer fought at **update 1**, all twelve at
-  once with a HelpRespond goal on top, where the original's first has FindEnemy and Melee at update 1 or 2 and its last
-  at 7-9, with no HelpRespond before update 13. The cause is the scan's own event `0xb`: the shared handler answers it
-  with a 20 m help call flagged "new enemy" (`Brain_DefaultOnEvent` `0x00292d80`, the call returning to
-  `0x002934fc`), and each Destroyer who hears it takes Cochise's or Swan's side through `Brain_OnViolenceSeen`.
-  Confirmed (runtime), run r-20261123-level80-help-call-held: the original sends the same help calls (new-enemy flag
-  1), and a Destroyer hearing one passes the threat and target tests and is refused at the held-flag test
-  (`Human_HasHeldFlag` at `0x00291a94`): his record holds `0x10000000` from the scene's end until a blend-out task
-  lets it go about five updates later (`AnimTaskBlendOut_Release` `0x00106ee8`). That is the idle's fade a human
-  takes when his scene clip ends ([Ending](scenes.md#ending)). His own think pushes the fight first
-  (`0x00304760`, before any help call got past the gates).
-- So the fight starts from the think, as above. Coney now has both: the think step (`Brain::thinkFightOnSight`,
-  `repo:src/ai/brain.cpp`) and the cast's idle fade at a scene's release (`PlayLevelMode::placeReleased`,
-  `repo:src/platform/play_level_scene.cpp`). Its disc test (`repo:tests/platform/disc_level80_brawl_test.cpp`, the
-  scene skipped) shows the last Destroyer fighting at update 7, all twelve targeting Cochise or Swan or spectating from
-  update 9 and none failing from 12 to 30, no Destroyer on the idle player, and after the order the checks of item 5
-  below.
-- **Still different: the ring.** Sixty updates after the scene's end 10 of the original's twelve stand more than
-  0.5 m from their flags, Coney's 5. Coney's waiting attackers stand where they are inside the reposition's ring, a
-  marked stand-in in its fight goal for the band-keeping move ([MoveMelee](ai-moving.md#move-melee)), where the
-  original's back off to 4 m and circle; #1663 ports that move. Confirmed (runtime), run
-  r-20261123-level80-block-breaks, for the original's count; the cause inferred from Coney's trace (eight holders
-  waiting at 1-3 m with no action).
-
 **What Coney must do** at this fight's start:
 
 1. Run the enemy scan from every AI brain's update, five brains an update, on the gang-changed trigger (gang `+0x34`
@@ -2932,6 +2906,35 @@ flag net (`PedNet_*`) between the boxes above, steps into `vSection3Gate`'s 1.8 
 `fFinalGate` for the crew, sprints to `vSubwayExit` (item 15), and asserts the `SetCheckPoint` calls 2-5 and
 `HUDLaunchMissionComplete`. Waypoint routes that already play checkpoints 2, 4 and 5 in Coney are those of items 7,
 11 and 15.
+
+### level80 checkpoint 4: the fight from the think {#level80-think-fight}
+
+How Coney starts [the fight at checkpoint 4](#level80-fight-start) since task 406 (checked 2026-11-23 against `main`
+at `e5d58e85`).
+
+- **Before.** The enemy scan ran from every brain's update (#394) and the lists filled, but every Destroyer fought at
+  update 1, all twelve at once with a HelpRespond goal on top. The scan's event `0xb` makes the shared handler send a
+  20 m help call flagged "new enemy" (`Brain_DefaultOnEvent` `0x00292d80`), and each Destroyer who heard one took
+  Cochise's or Swan's side through `Brain_OnViolenceSeen` (`0x00291960`). The original's first Destroyer has
+  FindEnemy and Melee at update 1 or 2, its last at 7-9, and none has HelpRespond before update 13
+  ([the timeline](#level80-fight-timeline)).
+- **Why the original differs.** Its Destroyers hear the same help calls and refuse them at the held-flag test
+  (`0x00291a94`): the cast still holds the idle's fade from the scene's end ([The cast after the
+  end](scenes.md#cast-after-end)), and each one's own think pushes the fight first (`0x00304760`). Run
+  r-20261123-level80-help-call-held.
+- **Now.** Coney has both halves: the think step (`Brain::thinkFightOnSight`, `repo:src/ai/brain.cpp`; [Attacking on
+  sight in Coney](ai-gangs.md#aggro-in-coney)) and the cast's idle fade at a scene's release
+  (`PlayLevelMode::placeReleased`, `repo:src/platform/play_level_scene.cpp`, [Scenes in
+  Coney](scenes.md#release-idle)). The disc test (`repo:tests/platform/disc_level80_brawl_test.cpp`, the scene
+  skipped) shows the last Destroyer fighting at update 7, all twelve targeting Cochise or Swan or spectating from
+  update 9, none failing from 12 to 30, none on the idle player, and after the attack order the checks of item 5 of
+  the list What Coney must do ([the timeline](#level80-fight-timeline)).
+- **Still different: the ring** (#1663). Sixty updates after the scene's end 10 of the original's twelve Destroyers
+  stand more than 0.5 m from their flags (run r-20261123-level80-block-breaks), Coney's 5. Coney's waiting attackers
+  stand where they are inside the reposition's ring, a marked stand-in in its fight goal for the band-keeping move
+  ([MoveMelee](ai-moving.md#move-melee)), where the original's back off to 4 m and circle; the cause in Coney is read
+  from its trace (eight holders waiting at 1-3 m with no action). The disc test prints the count and does not check
+  it.
 
 ## Open questions
 
