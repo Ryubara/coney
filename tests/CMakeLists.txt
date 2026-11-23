@@ -618,6 +618,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/entity_edit_test.cpp
         debug/entity_editor_page_test.cpp
         debug/entity_inspector_test.cpp
+        debug/fighter_drop_test.cpp
         debug/fighter_spawn_test.cpp
         debug/human_shapes_test.cpp
         debug/input_gate_test.cpp

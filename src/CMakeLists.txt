@@ -598,6 +598,7 @@ if(CONEY_DEBUG_TOOLS)
         debug/debug_session.cpp
         debug/entity_edit.cpp
         debug/entity_inspect.cpp
+        debug/fighter_drop.cpp
         debug/fighter_spawn.cpp
         debug/game_tunables.cpp
         debug/human_shapes.cpp

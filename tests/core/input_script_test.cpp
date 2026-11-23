@@ -263,3 +263,27 @@ TEST_CASE("console lines without a sink are dropped and leave the pads alone", "
     CHECK(samples[0].buttons == 0);
     CHECK(samples[0].connected);
 }
+
+TEST_CASE("a drop-ai line takes an optional handle and reaches the drop sink on its frame", "[input_script]") {
+    // Expected: Coney's own format, docs/guides/running-input.md#input-scripts
+    const std::vector<InputEvent> events = parsed("10 drop-ai\n12 drop-ai 7\n");
+    REQUIRE(events.size() == 2);
+    CHECK(events[0].action == InputEvent::Action::DropAi);
+    CHECK_FALSE(events[0].handle.has_value());
+    REQUIRE(events[1].handle.has_value());
+    CHECK(events[1].handle == 7.0);
+    using Catch::Matchers::ContainsSubstring;
+    CHECK_THAT(refusal("10 drop-ai seven\n"), ContainsSubstring("handle"));
+    CHECK_THAT(refusal("10 drop-ai 1 2\n"), ContainsSubstring("handle"));
+
+    ScriptedInput input(parsed("0 drop-ai\n2 drop-ai 7\n"));
+    std::vector<std::optional<double>> dropped;
+    input.setDropSink([&dropped](std::optional<double> handle) { dropped.push_back(handle); });
+    (void)input.sample(1);
+    CHECK(dropped == std::vector<std::optional<double>>{std::nullopt});
+    (void)input.sample(2);
+    CHECK(dropped == std::vector<std::optional<double>>{std::nullopt, 7.0});
+    // Without a sink (the release build's game) the line does nothing.
+    ScriptedInput none(parsed("0 drop-ai\n"));
+    CHECK(none.sample(0)[0].connected);
+}
