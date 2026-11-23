@@ -2162,8 +2162,8 @@ page = "ai-code.md#ai-pools"
 kind = "helper"
 role = "drops what a human holds"
 level = "confirmed-code"
-coney = "src/scripting/human_bindings.cpp:makeDropWeapon"
-status = "legacy"
+coney = "src/ai/scripted_humans.h:ScriptedHumans::dropWeapon"
+status = "compared"
 
 [[function]]
 address = 0x00299510
@@ -3798,8 +3798,8 @@ page = "ai-goals.md#goal-throw-object"
 kind = "Process"
 role = "done unless he holds something throwable; walks to within range of the flag, turns to it (15°), makes the flag his object target and queues kind 0 (cross) every 30th update (above)"
 level = "confirmed-code"
-coney = "src/ai/story_goals.h:ThrowObjectGoal"
-status = "legacy"
+coney = "src/ai/story_goals.h:ThrowObjectGoal::process"
+status = "compared"
 
 [[function]]
 address = 0x002d0e98
