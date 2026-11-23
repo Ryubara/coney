@@ -65,10 +65,13 @@ int Gang::countLiving(bool standingOnly) const {
 }
 
 int Gang::standing() const {
-    // Not knocked out (Human_IsKnockedOut: a script's or a destroy's knock-out, which leaves the health), and
-    // **Coney's choice** for the dead and wounded tests: not down or dead in Coney's reading (downOrDead()).
-    return static_cast<int>(std::ranges::count_if(
-        m_members, [](const Brain* member) { return !downOrDead(*member) && !member->human().knockedOut(); }));
+    // The original's three tests, in its order: not knocked out (Human_IsKnockedOut 0x00227dd8: a fight's, a script's
+    // or a destroy's knock-out), not dead (0x00227eb0, state 0x100000000: Coney's dead is the health run out, as
+    // HuIsDead reads it) and not wounded (0x00227d98, state 0x10000). Knocked down alive is none of them: he stands.
+    return static_cast<int>(std::ranges::count_if(m_members, [](const Brain* member) {
+        const human::Human& human = member->human();
+        return !human.knockedOut() && !human.fighter().health().depleted() && !human.script().wounded;
+    }));
 }
 
 void Gang::setAlertState(int state) {

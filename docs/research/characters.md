@@ -1673,7 +1673,7 @@ hear of it as of any knock-out. In order:
    r-20261122-fall-out-of-world).
 
 So the fall ends a fight the scripts wait on as a knock-out would: a Brawl fighter's `StandardGang1Dead` /
-`StandardGang2Dead` ([Rumble](rumble.md#behaviour)) runs about a second after he passes the limit (inferred from the
+`StandardGang2Dead` ([Rumble](rumble.md#game-types)) runs about a second after he passes the limit (inferred from the
 code above; the Brawl itself was not run with a fall).
 
 **A player outside a mission** gets the same bit and the same fade, and nothing in the path tests for a player, so he

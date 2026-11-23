@@ -257,7 +257,9 @@ class Brain {
     /// The knock-out (`Brain_OnKnockedOut`, from `Human_KnockOut` when his health runs out): the reaction goal ended,
     /// every goal popped, the actions cleared, the target dropped (his attack slot and active place on it released)
     /// and the enemies cleared; the brain then stops (enabled byte `+0x08` cleared) until wakeUp(). Returns the target
-    /// he had (the event `0x12`'s foe).
+    /// he had, which the callers send as event `0x12`'s other.
+    /// Stand-in: the original sends `Human_GetFoe`, his record's foe (`+0xcc`), read after the target was dropped;
+    /// Coney keeps no record foe, so the brain's target stands in for it.
     /// @orig 0x0028c3b0 Brain_OnKnockedOut (unknown)
     Brain* knockOut();
     /// Back up (`Human_WakeUp` → `Brain_EnableAndResume`): the brain runs again.
