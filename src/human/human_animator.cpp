@@ -52,6 +52,7 @@ bool isAction(AnimState state) {
 
 } // namespace
 
+// @coney-only the default slot table (0x005105d8, copied by Human_ResetAnimSlots) as data: the ids Coney plays
 AnimSlots AnimSlots::player() {
     AnimSlots slots;
     slots.ids[kSlotIdle] = 388;
@@ -94,6 +95,7 @@ std::size_t HumanAnimator::clipsMissing(const characters::AnimSet& anims, const 
     return missing;
 }
 
+// @coney-only Coney's controller set-up: the slots given are the defaults every style is written over
 HumanAnimator::HumanAnimator(const characters::AnimSet& anims, const AnimSlots& slots)
     : m_anims(&anims), m_slots(slots), m_defaults(slots), m_speeds(speedsOf(anims, slots)) {
     CONEY_ASSERT(clipsMissing(anims, slots) == 0);
@@ -102,6 +104,7 @@ HumanAnimator::HumanAnimator(const characters::AnimSet& anims, const AnimSlots& 
     m_state = AnimState::Idle;
 }
 
+// @coney-only Coney's change of a human's anim set (a script's new character), the style on top kept
 void HumanAnimator::changeAnims(const characters::AnimSet& anims) {
     CONEY_ASSERT(clipsMissing(anims, m_defaults) == 0);
     m_anims = &anims;
@@ -142,10 +145,12 @@ anim::GaitClip HumanAnimator::slotClip(std::size_t slot) const {
     return anim::GaitClip{.clip = clip(id), .animId = id};
 }
 
+// @coney-only Coney's reading of the run start: the walk start's next id, or the stealth walk start itself
 std::uint32_t HumanAnimator::runStartId() const {
     return stealthStyle() ? m_slots.ids[kSlotWalkStart] : m_slots.ids[kSlotWalkStart] + kRunStartOffset;
 }
 
+// @orig 0x00253688 Human_ApplyMoveStyle (unknown)
 void HumanAnimator::applyStyle(int style) {
     // Coney's guard: a slot whose clip this anim set lacks (a synthetic set, a character without the barrel clips)
     // keeps its default, and so does the walk start when its run start (the next id) is missing outside the hidden
@@ -166,6 +171,7 @@ void HumanAnimator::applyStyle(int style) {
     m_speeds = speedsOf(*m_anims, m_slots);
 }
 
+// @coney-only Coney's controller choosing its anim state again (the original's state 0x20000000)
 void HumanAnimator::rebuildOnSlots() {
     if (m_state == AnimState::Idle) {
         m_tasks.change(idleLoop(), kIdleFade);

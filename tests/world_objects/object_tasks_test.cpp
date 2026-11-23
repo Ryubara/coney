@@ -193,6 +193,7 @@ TEST_CASE("the size cull, the ObjShow distance and the alpha floor", "[object_ta
 }
 
 TEST_CASE("a held object hangs from its bone at the take event's offset, slid to its grip", "[object_tasks]") {
+    // Expected: objects.md#held, confirmed (code)
     // A take event on bone 25 at (0.1, 0, 0), no turn; a grip of 0.39 m along the object's y.
     coney::anim::AnimClip clip;
     clip.events.push_back(coney::anim::ClipEvent{

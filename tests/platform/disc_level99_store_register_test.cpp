@@ -228,6 +228,8 @@ TEST_CASE("the disc's level99 store: the cash register breaks, opens its drawer 
 
 TEST_CASE("the disc's level99 store: triangle takes the cash register's drawer away and lifts the register",
           "[disc][story][objects]") {
+    // Expected: script-types.md#dyn-cashreg, confirmed (code); objects.md#two-handed for the clip 504, confirmed
+    // (runtime)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

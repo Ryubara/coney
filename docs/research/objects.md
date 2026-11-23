@@ -989,15 +989,15 @@ ordinary ones, so on a full stack they lose its lowest style (below).
 (code):
 
 - **Push** (`0x00253ed0`): one deeper, or on a full stack the two upper styles move down over the lowest; the style is
-  written on top and applied.
-- **Pop** (`0x00253f28`): clears the top, one shallower (never below the base), and applies the new top.
-- **Set** (`0x00253e68`): a pop then a push, except style 0 on an empty stack, which only applies style 0.
+  written on top and applied (confirmed (code)).
+- **Pop** (`0x00253f28`): clears the top, one shallower (never below the base), and applies the new top (confirmed (code)).
+- **Set** (`0x00253e68`): a pop then a push, except style 0 on an empty stack, which only applies style 0 (confirmed (code)).
 - **Remove** (`0x00253f78`): finds the lowest entry holding the style; on top it is a pop (the new top applied); under
   the top the entries above it move down and nothing is applied, the top being unchanged; a style not on the stack
-  changes nothing.
+  changes nothing (confirmed (code)).
 - **Apply** (`Human_ApplyMoveStyle`, `0x00253688`): writes the style over the top entry when anything is pushed (a
   no-op from the four calls above, which apply the top), resets the slots to the default table, writes the style's
-  ids and recomputes the gait speeds. Styles 1-3 also give a player (record `+0x1b0` not −1) slot 14 = 380.
+  ids and recomputes the gait speeds. Styles 1-3 also give a player (record `+0x1b0` not −1) slot 14 = 380 (confirmed (code)).
 
 Message 3 itself (`Human_HandleMessage` at `0x002460c0`-`0x002460f8`) reads the held object's type `+0x87`, calls
 `0x00227080(human, 0)` (not traced) and calls `Human_SetCarryMoveStyle` only when the set differs from the top style
@@ -1017,7 +1017,7 @@ per update):
 | 121-190 | **515** | 4 | the barrel walk, gait 1, 1.46 m/s |
 | 191 | 509 | 4 | stick released: back to the barrel idle (no run stop from a walk) |
 
-Run again on 2026-11-23 from the `glass-shelf-loot` library state with the same scenario (confirmed (runtime), run
+Run again from the `glass-shelf-loot` library state with the same scenario (confirmed (runtime), run
 r-20261123-cashreg-carry): the same clips at the same updates, the same styles, slots and attachment.
 
 The register's attachment through all of it: bone **25** (the right hand), local position **(0.3075, 0.1306,

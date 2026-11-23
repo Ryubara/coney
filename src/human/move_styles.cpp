@@ -21,6 +21,7 @@ using SlotId = std::pair<std::size_t, std::uint32_t>;
 constexpr std::uint32_t kPlayerCombatWalk = 380;
 
 // Writes each of `ids` into `slots`.
+// @coney-only a helper of styledSlots(), which ports Human_ApplyMoveStyle
 void write(AnimSlots& slots, std::initializer_list<SlotId> ids) {
     for (const auto& [slot, id] : ids) {
         slots.ids.at(slot) = id;
@@ -28,6 +29,7 @@ void write(AnimSlots& slots, std::initializer_list<SlotId> ids) {
 }
 
 // Styles 1-3 (knife, baton, bat) end alike: the strike in `slot` and the four block slots.
+// @coney-only a helper of styledSlots(), the switch's shared tail of cases 2 and 3
 void armedBlocks(AnimSlots& slots, std::size_t slot, std::uint32_t id) {
     write(slots, {{slot, id}, {21, 621}, {23, 622}, {24, 623}, {22, 624}});
 }

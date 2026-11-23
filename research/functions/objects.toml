@@ -2,12 +2,28 @@
 # The fields: docs/guides/research-function-database.md; `research render --check`.
 
 [[function]]
+address = 0x00221ed0
+name = "Human_SetCarryMoveStyle"
+page = "objects.md#two-handed"
+role = "human message 3: the held object's anim set goes on as a move style (over the hidden style, pushed, or under the top)"
+level = "confirmed-code"
+coney = "src/human/move_styles.h:MoveStyles::carry"
+status = "compared"
+
+[[function]]
 address = 0x00227b30
 name = "Human_EnterThrowAim"
 page = "objects.md#throws"
 level = "confirmed-code"
 coney = "src/combat/throw_aim.h:ThrowAimState::enter"
 status = "legacy"
+
+[[function]]
+address = 0x00231a80
+name = "Human_GetHeldObjectSet"
+page = "objects.md#two-handed"
+role = "the held object's type `+0x87` (its anim set), 0 with nothing in hand"
+level = "confirmed-code"
 
 [[function]]
 address = 0x00238540
@@ -50,7 +66,7 @@ name = "Human_PlaceObjectInHandByPickupClip"
 page = "objects.md#held"
 level = "confirmed-code"
 coney = "src/gamemodes/play_level_held.cpp:PlayLevelSimulation::heldDrawOf"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00250100
@@ -114,6 +130,51 @@ role = "a move style's anim slot overrides; style 4 is the two-handed carry"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/human/move_styles.h:styledSlots"
+status = "compared"
+
+[[function]]
+address = 0x00253e68
+name = "Human_SetMoveStyle"
+page = "objects.md#move-style-stack"
+role = "replaces the top move style (a pop then a push)"
+level = "confirmed-code"
+coney = "src/human/move_styles.h:MoveStyles::replaceTop"
+status = "compared"
+
+[[function]]
+address = 0x00253ed0
+name = "Human_PushMoveStyle"
+page = "objects.md#move-style-stack"
+role = "pushes a move style on the three-deep stack (losing the lowest when full) and applies it"
+level = "confirmed-code"
+coney = "src/human/move_styles.h:MoveStyles::push"
+status = "compared"
+
+[[function]]
+address = 0x00253f28
+name = "Human_PopMoveStyle"
+page = "objects.md#move-style-stack"
+role = "pops the top move style and applies the one beneath"
+level = "confirmed-code"
+coney = "src/human/move_styles.h:MoveStyles::pop"
+status = "compared"
+
+[[function]]
+address = 0x00253f78
+name = "Human_RemoveMoveStyle"
+page = "objects.md#move-style-stack"
+role = "removes a move style from anywhere in the stack, applying only when the top changes"
+level = "confirmed-code"
+coney = "src/human/move_styles.h:MoveStyles::remove"
+status = "compared"
+
+[[function]]
+address = 0x00254060
+name = "Human_GetMoveStyle"
+page = "objects.md#move-style-stack"
+role = "the top move style"
+level = "confirmed-code"
+coney = "src/human/move_styles.h:MoveStyles::top"
 status = "compared"
 
 [[function]]
@@ -453,7 +514,7 @@ role = "vtable function words `+0x9c` / `+0xa4` (slots `+0x98` / `+0xa0` of `0x0
 level = "confirmed-code"
 note = "confirmed (code), runtime"
 coney = "src/gamemodes/play_level_held.cpp:PlayLevelSimulation::heldDrawOf"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003a46c8
@@ -566,6 +627,16 @@ name = "DoorFence_Update"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/doors.h:Doors::tick"
+status = "compared"
+
+[[function]]
+address = 0x003c0108
+name = "DynCashreg_OnPickUp"
+page = "objects.md#two-handed"
+role = "the register's take (message `0x1b`): attached at the event's bone with its type's hold pose, then message 3 to the holder"
+level = "confirmed-code"
+note = "confirmed (code); the pose confirmed (runtime)"
+coney = "src/world_objects/object_tasks.h:takeAttachment"
 status = "compared"
 
 [[function]]
@@ -954,86 +1025,6 @@ coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::dropHeld"
 status = "compared"
 
 [[function]]
-address = 0x0041d4f8
-name = "Cfg_SetGlobalTimeToLive"
-page = "objects.md#warriors-functions"
-role = "`CfgSetGlobalTimeToLive`: `+0x26c`"
-level = "confirmed-code"
-coney = "src/scripting/human_bindings.cpp:makeCfgSetGlobalTimeToLive"
-status = "legacy"
-
-[[function]]
-address = 0x00221ed0
-name = "Human_SetCarryMoveStyle"
-page = "objects.md#two-handed"
-role = "human message 3: the held object's anim set goes on as a move style (over the hidden style, pushed, or under the top)"
-level = "confirmed-code"
-coney = "src/human/move_styles.h:MoveStyles::carry"
-status = "compared"
-
-[[function]]
-address = 0x00253ed0
-name = "Human_PushMoveStyle"
-page = "objects.md#move-style-stack"
-role = "pushes a move style on the three-deep stack (losing the lowest when full) and applies it"
-level = "confirmed-code"
-coney = "src/human/move_styles.h:MoveStyles::push"
-status = "compared"
-
-[[function]]
-address = 0x00253f28
-name = "Human_PopMoveStyle"
-page = "objects.md#move-style-stack"
-role = "pops the top move style and applies the one beneath"
-level = "confirmed-code"
-coney = "src/human/move_styles.h:MoveStyles::pop"
-status = "compared"
-
-[[function]]
-address = 0x00253e68
-name = "Human_SetMoveStyle"
-page = "objects.md#move-style-stack"
-role = "replaces the top move style (a pop then a push)"
-level = "confirmed-code"
-coney = "src/human/move_styles.h:MoveStyles::replaceTop"
-status = "compared"
-
-[[function]]
-address = 0x00253f78
-name = "Human_RemoveMoveStyle"
-page = "objects.md#move-style-stack"
-role = "removes a move style from anywhere in the stack, applying only when the top changes"
-level = "confirmed-code"
-coney = "src/human/move_styles.h:MoveStyles::remove"
-status = "compared"
-
-[[function]]
-address = 0x00254060
-name = "Human_GetMoveStyle"
-page = "objects.md#move-style-stack"
-role = "the top move style"
-level = "confirmed-code"
-coney = "src/human/move_styles.h:MoveStyles::top"
-status = "compared"
-
-[[function]]
-address = 0x00231a80
-name = "Human_GetHeldObjectSet"
-page = "objects.md#two-handed"
-role = "the held object's type `+0x87` (its anim set), 0 with nothing in hand"
-level = "confirmed-code"
-
-[[function]]
-address = 0x003c0108
-name = "DynCashreg_OnPickUp"
-page = "objects.md#two-handed"
-role = "the register's take (message `0x1b`): attached at the event's bone with its type's hold pose, then message 3 to the holder"
-level = "confirmed-code"
-note = "confirmed (code); the pose confirmed (runtime)"
-coney = "src/world_objects/object_tasks.h:takeAttachment"
-status = "compared"
-
-[[function]]
 address = 0x003ff918
 name = "OverheadWeapon_OnPickedUp"
 page = "objects.md#two-handed"
@@ -1041,3 +1032,12 @@ role = "an `overhead_weapon`'s take (message `0x1b`): as the register's, plus pa
 level = "confirmed-code"
 coney = "src/world_objects/object_tasks.h:takeAttachment"
 status = "compared"
+
+[[function]]
+address = 0x0041d4f8
+name = "Cfg_SetGlobalTimeToLive"
+page = "objects.md#warriors-functions"
+role = "`CfgSetGlobalTimeToLive`: `+0x26c`"
+level = "confirmed-code"
+coney = "src/scripting/human_bindings.cpp:makeCfgSetGlobalTimeToLive"
+status = "legacy"

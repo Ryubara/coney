@@ -5592,7 +5592,7 @@ kind = "type 3 helper"
 role = "triangle on a Warrior: when both are free and in reach (`0x0021c0a8`), faces him; line `0x92` as the player's"
 level = "confirmed-code"
 coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::trySwap"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003063b0
