@@ -5,7 +5,8 @@
 // attack order turns the fight on the crew. Checkpoint 4 is played in the game session as `coney --play-level level80
 // --checkpoint 4` plays it (support/disc_session.h): player 1 is put 1 m outside Cochise and Swan's volume and walked
 // into it with the left stick at 70 %, the scene is skipped with cross, and from the scene's end every Destroyer's
-// goals, target and place are read once an update. The pad then rests (the player stands still and presses nothing),
+// goals, target and place are read once an update (in the release case also each one's held flags at the scene's end
+// and his HelpRespond goals). The pad then rests (the player stands still and presses nothing),
 // except for the attack order in the second case (R2 held, the right stick up-left at 95 %). It runs only when the
 // environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only (LEGAL.md).
 
@@ -242,6 +243,83 @@ TEST_CASE("the disc's level80 checkpoint 4: the Destroyers break their block and
     // #1663 ports that move and adds the check.
     // Nobody goes for the idle player before the order: the Warriors are not their enemies yet.
     CHECK(playerTargeted == 0);
+}
+
+TEST_CASE("the disc's level80 checkpoint 4: the released Destroyers hold their idle fade and answer no help call "
+          "before update 13",
+          "[disc][story][level80-brawl]") {
+    // Expected: scenes.md#cast-after-end, confirmed (runtime)
+    // Expected: scripting.md#level80-fight-timeline, confirmed (runtime)
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    coney::test::DrivenPad pad;
+    coney::test::DiscSession run(*wad, pad);
+    const Cast cast = playToSceneEnd(run, pad);
+    REQUIRE(cast.destroyers.size() == 12);
+
+    // At the scene's end each released Destroyer is back in his idle with its fade, which holds 0x10000000 on his
+    // record (the original's: from SceneTask_End until the blend-out lets it go about five updates later).
+    constexpr std::uint32_t kIdleFade = 0x10000000;
+    const auto holding = static_cast<std::size_t>(std::ranges::count_if(
+        cast.destroyers, [](const Brain* brain) { return (brain->human().heldFlags() & kIdleFade) != 0; }));
+
+    // Once an update for 30 updates: the first update each has a fight pushed and the first he has a HelpRespond
+    // goal, how many fight at update 1, and the first update from which all twelve target Cochise or Swan or watch.
+    constexpr std::uint64_t kWatch = 30;
+    std::vector<std::uint64_t> firstFight(cast.destroyers.size(), 0);
+    std::vector<std::uint64_t> firstHelp(cast.destroyers.size(), 0);
+    std::size_t fightingAt1 = 0;
+    std::uint64_t allEngagedFrom = 0;
+    for (std::uint64_t update = 1; update <= kWatch; ++update) {
+        run.run(1);
+        std::size_t engaged = 0;
+        for (std::size_t i = 0; i < cast.destroyers.size(); ++i) {
+            Brain& brain = *cast.destroyers[i];
+            if (firstFight[i] == 0 && fighting(brain)) {
+                firstFight[i] = update;
+            }
+            if (firstHelp[i] == 0 && brain.findGoal(GoalType::HelpRespond) != nullptr) {
+                firstHelp[i] = update;
+            }
+            const bool onPair = brain.target() == cast.cochise || brain.target() == cast.swan ||
+                                brain.findGoal(GoalType::Spectate) != nullptr;
+            engaged += onPair ? 1 : 0;
+        }
+        if (update == 1) {
+            fightingAt1 = static_cast<std::size_t>(std::ranges::count(firstFight, std::uint64_t{1}));
+        }
+        if (engaged == cast.destroyers.size() && allEngagedFrom == 0) {
+            allEngagedFrom = update;
+        } else if (engaged != cast.destroyers.size()) {
+            allEngagedFrom = 0;
+        }
+    }
+    const std::uint64_t lastFight = std::ranges::max(firstFight);
+    std::uint64_t earliestHelp = 0;
+    for (const std::uint64_t at : firstHelp) {
+        if (at != 0 && (earliestHelp == 0 || at < earliestHelp)) {
+            earliestHelp = at;
+        }
+    }
+    const auto helpBefore13 =
+        static_cast<std::size_t>(std::ranges::count_if(firstHelp, [](std::uint64_t at) { return at != 0 && at < 13; }));
+    std::printf("  level80 release: %zu of 12 holding the idle fade at the scene's end, %zu fighting at update 1, last "
+                "fighting at update %llu, all twelve engaged from update %llu to 30, first HelpRespond at update %llu "
+                "(%zu before 13)\n",
+                holding, fightingAt1, static_cast<unsigned long long>(lastFight),
+                static_cast<unsigned long long>(allEngagedFrom), static_cast<unsigned long long>(earliestHelp),
+                helpBefore13);
+    // Every Destroyer holds the idle fade's 0x10000000 at the scene's end.
+    CHECK(holding == 12);
+    // No HelpRespond before update 13 (the original's runs): the help calls of the first updates are refused while
+    // the fade holds, and each one's own think starts the fight.
+    CHECK(helpBefore13 == 0);
+    // The fight comes from the thinks, one step in five, not all at once: the last Destroyer goes in at update 5 or
+    // later (the original: 7 to 9), not with the rest at update 1 as the help calls would send them.
+    CHECK(lastFight >= 5);
+    CHECK(fightingAt1 < 12);
 }
 
 TEST_CASE("the disc's level80 checkpoint 4: after the attack order the Destroyers turn on the crew",
