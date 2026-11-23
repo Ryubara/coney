@@ -85,14 +85,19 @@ void PlayLevelEffects::drawOverlay(RenderEngine& engine, bool cardHeld) {
 }
 
 void PlayLevelEffects::drawScreenEffects(RenderEngine& engine) {
+    // Stand-in: one view, player 1's. The original loops over its views, and with two views and a split screen
+    // picks whose blur pulse, tint and motion blur to draw by their states; Coney has one set of screen effects.
     if (m_effects == nullptr) {
         return;
     }
-    // On every renderer that draws frames: GL3 and the GPU renderer, which draws it as GL3 does.
+    // The blur pulse, on every renderer that draws frames: GL3 and the GPU renderer, which draws it as GL3 does.
     if (const std::optional<int> passes = m_effects->blurPulse.passes(); passes && engine.drawsFrames()) {
         const effects::BlurPulse::Look& look = m_effects->blurPulse.look();
         engine.blurScreen(*passes, look.offsetU, look.offsetV);
     }
+    // Then the tint. Stand-in: the fade and the letterbox the original steps and draws here are the scene stage's
+    // (SceneStage::drawOverlay()), and the motion blur is drawn before the HUD from drawOverlay(), with no check of
+    // the Rumble menu or the pad's state.
     drawTint(engine);
 }
 
