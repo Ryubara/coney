@@ -26,9 +26,9 @@ namespace coney::net {
 inline constexpr std::uint8_t kClientStickRest = 128;
 
 /// The human the client of player slot `slot` follows, of the humans a step shows: **stand-in** until the snapshots
-/// name the human each player slot drives. The host's game has one player so far (the guest's pad plays port 2 but
-/// drives no human of its own, docs/guides/multiplayer.md#player-two), so every slot follows the host's player 1, the
-/// human with the lowest network id (his brain comes first in the host's capture). None with no human.
+/// name the human each player slot drives (#1654). The host's game has one player so far (the guest's pad plays port 2
+/// but drives no human of its own, docs/guides/multiplayer.md#player-two), so every slot follows the host's player 1,
+/// the human with the lowest network id (his brain comes first in the host's capture). None with no human.
 /// @coney-only network play; the original has none
 [[nodiscard]] std::optional<NetId> followedHuman(const ClientWorld::Humans& humans, std::uint8_t slot);
 

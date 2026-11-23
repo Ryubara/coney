@@ -222,8 +222,8 @@ Each is to be replaced by a faithful reading when the snapshots carry the state 
   and drives no human of its own ([Player two](multiplayer.md#player-two); `GameState_SyncPlayers` is not built), and
   the snapshots do not say which human a player slot drives. Every slot therefore follows the host's player 1, the human
   with the lowest network id (his brain comes first in the host's capture). When the second player is built, the
-  snapshot must name each slot's human (a field of the slot's HUD entry or a list beside the humans, a protocol bump of
-  its own); `followedHuman()` is the one place that changes, and the camera, the test and the scene do not.
+  snapshot must name each slot's human (#1654; a field of the slot's HUD entry or a list beside the humans, a protocol
+  bump of its own); `followedHuman()` is the one place that changes, and the camera, the test and the scene do not.
 - **The camera's set-up** is `followDefaults()`: a level's `CfgFollowCamera` and the scripts' camera calls run on the
   host only, so a level that sets its own band (the street's, [Cameras](../research/camera.md#level99-values)) is
   followed with the default one.

@@ -128,14 +128,14 @@ reruns the same pair; `clips scenarios` lists them. Its keys are `description`, 
 input script, a path in the checkout, played from the level's first frame of play) and `seconds` (how long the clips
 show), and optionally `start_frame` (the frame of play the clips start at), `checkpoint`, `ai_seed`, `skip_movies`
 (default true), `record_debug_draw` (default false: `--record-debug-draw`, which keeps the Debug draw page's switches
-the run sets, as a clip drops them otherwise) and `complete_levels` (a list of level numbers, Coney's
-[`--complete-levels`](running-play-level.md#complete-levels): the story save the level starts from); any other key is
-refused. Without a scenario, `--level` and `--input-script` give the same run (`--seconds` defaults to 10). The clips
-are at most `workspace.clips.max_seconds` (10) long, but the run before them is not: Coney plays the script from the
-level's first frame of play and starts recording at `start_frame` through
-[`--record-from-frame`](running-options.md#record), so a scenario can punch a cabinet 70 s into the level
-(`level99-cabinet`) and still show 8 s of it. `start_frame` and the input script's frames count the same way, from the
-level's first frame of play.
+the run sets, as a clip drops them otherwise), `complete_levels` (a list of level numbers, Coney's
+[`--complete-levels`](running-play-level.md#complete-levels): the story save the level starts from), and, for
+[a guest's view](#clips-pair-guest), `host_input` and `join_after`; any other key is refused. Without a scenario,
+`--level` and `--input-script` give the same run (`--seconds` defaults to 10). The clips are at most
+`workspace.clips.max_seconds` (10) long, but the run before them is not: Coney plays the script from the level's first
+frame of play and starts recording at `start_frame` through [`--record-from-frame`](running-options.md#record), so a
+scenario can punch a cabinet 70 s into the level (`level99-cabinet`) and still show 8 s of it. `start_frame` and the
+input script's frames count the same way, from the level's first frame of play.
 
 `level87-stealth-kill` is the scenario for the stealth kill and for hiding: from level87's checkpoint 5 it takes the
 player into the tutorial's hint volume, which warps him behind the first guard (S01), where he hides. The tutorial
@@ -196,6 +196,31 @@ Watch out for:
   after the change, or whose input script no longer reaches the spot, shows nothing useful even when the hashes differ.
 * **The base is the merge base.** A before taken from `origin/main` after other merges shows their changes as part of
   this one (GD Studio's pairs did, before they used the merge base).
+
+### A guest's view: a host and a guest {#clips-pair-guest}
+
+A change to what a guest draws of a host's game (its camera, its scene, the humans it draws from the snapshots) cannot
+be recorded by one process, so a scenario with a `host_input` records two on this machine. `level` is the host's level,
+`host_input` the host's input script (a path in the checkout) and `input` the **guest's** pad. For each side the tools
+start that build's host, headless, on a free port of the loopback (`--host 127.0.0.1:0`, with `--play-level LEVEL`, its
+script and a frame limit far past the clip, as a guard), read the port from its `hosting on port N` line and wait, when
+`join_after` is given, for the host to print that text too (the first frame of its level: a guest that joins during the
+host's load can time out, as the [two-process checks](multiplayer.md#two-processes) found). Then they start the guest,
+`--join 127.0.0.1:N --net-view` with `--record`, the clip's seconds and its `start_frame`, and stop the host when the
+guest ends.
+
+The guest's frames and its input script count from the first frame its client game has the host's level
+([`--record-from-frame`](running-options.md#record)), and the host's loading barrier holds the host's steps until the
+guest has the level, so the two scripts start close together. The two runs are not frame for frame the same as a
+one-process run is (which of the host's steps a guest draws depends on the real time the two take), so the pair's check
+is the frame count, and the hashes differ even for no change: read the clips. A before that cannot record a guest (a
+base without `--record-from-frame` for `--net-view`) is `--before` a hand-made commit that adds those options to the
+merge base, as for any change the base lacks an option for.
+
+`level99-guest-camera` is the scenario for the guest's follow camera (#1333): the host's player skips the intro, walks
+and runs through the level99 street while the guest's right stick turns its own view. Its before is `--before` a commit
+of the merge base with the guest recording's options only, where the guest's view is the old stand-in behind the host's
+player.
 
 <!-- command-reference:begin clips -->
 ## Parameters of `clips` {#clips-parameters}
