@@ -131,7 +131,14 @@ inline constexpr std::uint16_t kTakeEventLeft = 0x36;
 /// `(0, grip, 0)`), its rotation as is. Nothing when the clip has no such event.
 /// @orig 0x003fe490 melee_weapon_HandleMessage (unknown)
 [[nodiscard]] std::optional<HeldAttachment> heldAttachment(const anim::AnimClip& clip, float humanScale, float grip);
-/// Stub: the take by the object's class.
+
+/// The take of an object of type `type` from the pick-up clip `clip` by a human of scale `humanScale`, `inScene` or
+/// not, as the object's class handles message `0x1b`: the two-handed classes (`overhead_weapon`, `dyn_cashreg`) attach
+/// at the event's bone with the type's held pose (`CfgObj` `holdPos` / `holdRot`, `+0x00` / `+0x0c`) as given, not
+/// scaled and not slid, or in a scene with the event's position × `humanScale` and rotation; every other class as
+/// heldAttachment() places it. Nothing when the clip has no take event. Research: docs/research/objects.md#two-handed
+/// @orig 0x003c0108 DynCashreg_OnPickUp (unknown)
+/// @orig 0x003ff918 OverheadWeapon_OnPickedUp (unknown)
 [[nodiscard]] std::optional<HeldAttachment> takeAttachment(const anim::AnimClip& clip, float humanScale,
                                                            const ObjectType& type, bool inScene);
 

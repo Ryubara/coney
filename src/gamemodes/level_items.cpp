@@ -154,7 +154,7 @@ bool LevelItems::startPickUp(ai::Brain& brain, double handle) {
     const anim::Vec3 at{record->position[0], record->position[1], record->position[2]};
     human::Human& human = brain.human();
     const int clip = world_objects::pickupClip(type != nullptr ? type->pickupAnim : 0, at.z - human.position().z);
-    return human.startPickUp(handle, at, static_cast<std::uint32_t>(clip));
+    return human.startPickUp(handle, at, static_cast<std::uint32_t>(clip), type != nullptr ? type->animSet : 0);
 }
 
 bool LevelItems::smashable(const world_objects::ObjectType& type) {
@@ -275,9 +275,11 @@ void LevelItems::collectTakes(ai::Brains& brains) {
         if (m_pickups.takeByAi(*taken, brain.handle()) == TakeResult::InHand) {
             brain.human().script().heldObject = *taken;
             brain.human().script().heldObjectName = m_pickups.typeOf(*taken);
-            // The take's message 3 to the holder applies the object's anim set, so he fights armed from now on (as
-            // the player's take and HuPlaceItemInHand do).
-            brain.human().fighter().setAnimSet(m_pickups.animSetOf(brain.human().script().heldObjectName));
+            // The take's message 3 to the holder applies the object's anim set, so he fights armed from now on and
+            // carries it in its move style (as the player's take and HuPlaceItemInHand do).
+            const int set = m_pickups.animSetOf(brain.human().script().heldObjectName);
+            brain.human().takeHeldStyle(set);
+            brain.human().fighter().setAnimSet(set);
         }
     }
 }

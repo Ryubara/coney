@@ -56,9 +56,11 @@ std::optional<PlayLevelSimulation::HeldDraw> PlayLevelSimulation::heldDrawOf(dou
                                                                              const anim::Pose& pose, anim::Vec3 feet,
                                                                              float heading) const {
     // The pick-up clip's take event in his own animations gives the bone and the local pose, at his scale, as the
-    // swap and HuPlaceItemInHand place it for any human (docs/research/objects.md#given-weapon); composed with the
-    // bone of his pose and the body's placement (the lean left out). **Coney's reading**: the bone's position is not
-    // scaled by the human's scale, as Coney draws the body unscaled.
+    // swap and HuPlaceItemInHand place it for any human (docs/research/objects.md#given-weapon), or for a two-handed
+    // class the type's held pose at that bone (docs/research/objects.md#two-handed); composed with the bone of his
+    // pose and the body's placement (the lean left out). **Coney's reading**: the bone's position is not scaled by the
+    // human's scale, as Coney draws the body unscaled. **Coney's stand-in**: the take is taken as out of a scene
+    // (Human_IsInSceneState at the take is not kept), so a two-handed object always has its type's held pose.
     const world_objects::SpawnRecord* record =
         held != world_objects::kNoObject && m_records != nullptr ? m_records->find(held) : nullptr;
     const world_objects::ObjectType* type =
@@ -68,7 +70,7 @@ std::optional<PlayLevelSimulation::HeldDraw> PlayLevelSimulation::heldDrawOf(dou
             ? character.anims().clip(static_cast<std::size_t>(world_objects::pickupClip(type->pickupAnim, 0.0F)))
             : nullptr;
     const std::optional<world_objects::HeldAttachment> attachment =
-        clip != nullptr ? world_objects::heldAttachment(*clip, human.scale(), type->grip) : std::nullopt;
+        clip != nullptr ? world_objects::takeAttachment(*clip, human.scale(), *type, false) : std::nullopt;
     if (!attachment || attachment->bone >= anim::kPoseBones) {
         return std::nullopt;
     }
@@ -140,8 +142,11 @@ void PlayLevelSimulation::placeItemInHand(human::Human& human, double holder) {
     }
     static_cast<void>(m_pickups->placeInHand(held, holder));
     // The take's message 3 to the holder (Human_HandleMessage, the call at 0x002460f4) applies the object's anim set,
-    // so he fights as armed from now on (his attack pick, grabs and goals read it), as the swap's receiver does.
-    human.fighter().setAnimSet(m_pickups->animSetOf(script.heldObjectName));
+    // so he fights as armed from now on (his attack pick, grabs and goals read it), as the swap's receiver does, and
+    // carries it in its move style.
+    const int set = m_pickups->animSetOf(script.heldObjectName);
+    human.takeHeldStyle(set);
+    human.fighter().setAnimSet(set);
     m_print(std::format("held: {} made as object {:.0f} in the hand of the human at ({:.2f}, {:.2f}, {:.2f})\n",
                         script.heldObjectName, held, at.x, at.y, at.z));
 }

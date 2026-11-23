@@ -292,7 +292,8 @@ void PlayLevelSimulation::bindPickups(LevelPickups* pickups) {
             break;
         }
         const PickupChoice& choice = outcome.choice;
-        if (!human.startPickUp(choice.handle, choice.position, static_cast<std::uint32_t>(choice.clip))) {
+        if (!human.startPickUp(choice.handle, choice.position, static_cast<std::uint32_t>(choice.clip),
+                               m_pickups->animSetOf(m_pickups->typeOf(choice.handle)))) {
             return false;
         }
         m_print(std::format("pickup: object {:.0f} with clip {}\n", choice.handle, choice.clip));
@@ -436,9 +437,23 @@ bool PlayLevelSimulation::trySwap(human::Human& human, const world_objects::Sigh
         for (const double object : outcome.dropped) {
             m_pickups->drop(object, object == presserHad ? feet : from);
         }
-        // Player 1's hand changed by the swap, not by a drop: stepPickups() must not drop the old object.
+        // Player 1's hand changed by the swap, not by a drop: stepPickups() must not drop the old object. Each hand's
+        // move style follows its new object: the old one's comes off, the new one's goes on as a take puts it.
+        // **Coney's reading**: the swap's own messages are not traced; a take's are used.
         m_heldObject = human.script().heldObject;
-        receiver.fighter().setAnimSet(m_pickups->animSetOf(receiver.script().heldObjectName));
+        const int receiverHad = receiver.fighter().animSet();
+        const int receiverHas = m_pickups->animSetOf(receiver.script().heldObjectName);
+        if (receiverHad != receiverHas) {
+            receiver.releaseHeldStyle(receiverHad, false);
+            receiver.takeHeldStyle(receiverHas);
+        }
+        const int presserSetHad = human.fighter().animSet();
+        const int presserHas = m_pickups->animSetOf(human.script().heldObjectName);
+        if (presserSetHad != presserHas) {
+            human.releaseHeldStyle(presserSetHad, false);
+            human.takeHeldStyle(presserHas);
+        }
+        receiver.fighter().setAnimSet(receiverHas);
         // His line when he now holds something and is not hidden in shadow.
         if (human.script().heldObject != world_objects::kNoObject && !human.hidden() && m_sound != nullptr) {
             static_cast<void>(m_sound->sayCommand(
@@ -842,6 +857,9 @@ void PlayLevelSimulation::stepPickups() {
         if (result == TakeResult::InHand) {
             script.heldObject = *taken;
             script.heldObjectName = m_pickups->typeOf(*taken);
+            // The take's message 3: the object's anim set goes on as his move style
+            // (docs/research/objects.md#two-handed).
+            human.takeHeldStyle(m_pickups->animSetOf(script.heldObjectName));
         }
         m_print(std::format("pickup: took object {:.0f}{}{}\n", *taken,
                             result == TakeResult::Gone     ? " (gone)"
@@ -976,6 +994,10 @@ void PlayLevelSimulation::dropHeld(human::Human& human, double held, bool thrown
         m_print(std::format("pickup: dropped object {:.0f}{}\n", held, heldObjectLogText(held)));
     }
     world_objects::SpawnRecord* record = m_records != nullptr ? m_records->find(held) : nullptr;
+    // The held object's set (Human_GetHeldObjectSet) comes off his move styles first, at a drop as at a throw's
+    // release.
+    human.releaseHeldStyle(record != nullptr ? m_pickups->animSetOf(record->typeName) : human.fighter().animSet(),
+                           thrown);
     if (record == nullptr || m_objectTypes == nullptr) {
         m_pickups->drop(held, human.position());
         return;

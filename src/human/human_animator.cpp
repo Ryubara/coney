@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <utility>
 
@@ -59,6 +61,7 @@ AnimSlots AnimSlots::player() {
     slots.ids[kSlotRun] = 410;
     slots.ids[kSlotSprint] = 411;
     slots.ids[kSlotWalkStart] = 413;
+    slots.ids[kSlotCombatIdle] = 358;
     slots.ids[kSlotCombatWalk] = 380;
     slots.ids[kSlotDropCycle] = 428;
     slots.ids[kSlotJumpLoop] = 434;
@@ -92,7 +95,7 @@ std::size_t HumanAnimator::clipsMissing(const characters::AnimSet& anims, const 
 }
 
 HumanAnimator::HumanAnimator(const characters::AnimSet& anims, const AnimSlots& slots)
-    : m_anims(&anims), m_slots(slots), m_normalSlots(slots), m_speeds(speedsOf(anims, slots)) {
+    : m_anims(&anims), m_slots(slots), m_defaults(slots), m_speeds(speedsOf(anims, slots)) {
     CONEY_ASSERT(clipsMissing(anims, slots) == 0);
     // A human is made standing: its idle, with nothing to fade from.
     m_tasks.change(idleLoop(), 0.0F);
@@ -100,9 +103,10 @@ HumanAnimator::HumanAnimator(const characters::AnimSet& anims, const AnimSlots& 
 }
 
 void HumanAnimator::changeAnims(const characters::AnimSet& anims) {
-    CONEY_ASSERT(clipsMissing(anims, m_slots) == 0);
+    CONEY_ASSERT(clipsMissing(anims, m_defaults) == 0);
     m_anims = &anims;
-    m_speeds = speedsOf(anims, m_slots);
+    // The style on top again, over the new set's clips.
+    applyStyle(m_styles.top());
     // The clips the scripts gave came from the old set's level; the new character stands in its own idle.
     m_idleClip = nullptr;
     m_overrides.clear();
@@ -139,26 +143,53 @@ anim::GaitClip HumanAnimator::slotClip(std::size_t slot) const {
 }
 
 std::uint32_t HumanAnimator::runStartId() const {
-    return m_stealth ? m_slots.ids[kSlotWalkStart] : m_slots.ids[kSlotWalkStart] + kRunStartOffset;
+    return stealthStyle() ? m_slots.ids[kSlotWalkStart] : m_slots.ids[kSlotWalkStart] + kRunStartOffset;
+}
+
+void HumanAnimator::applyStyle(int style) {
+    // Coney's guard: a slot whose clip this anim set lacks (a synthetic set, a character without the barrel clips)
+    // keeps its default, and so does the walk start when its run start (the next id) is missing outside the hidden
+    // style, so the controller always has every clip it plays.
+    AnimSlots styled = styledSlots(m_defaults, style, true);
+    for (std::size_t slot = 0; slot < AnimSlots::kCount; ++slot) {
+        const std::uint32_t id = styled.ids.at(slot);
+        if (id == m_defaults.ids.at(slot)) {
+            continue;
+        }
+        const bool runStartMissing =
+            slot == kSlotWalkStart && style != kStyleHidden && clip(id + kRunStartOffset) == nullptr;
+        if (clip(id) == nullptr || runStartMissing) {
+            styled.ids.at(slot) = m_defaults.ids.at(slot);
+        }
+    }
+    m_slots = styled;
+    m_speeds = speedsOf(*m_anims, m_slots);
+}
+
+void HumanAnimator::rebuildOnSlots() {
+    if (m_state == AnimState::Idle) {
+        m_tasks.change(idleLoop(), kIdleFade);
+    } else if (m_state == AnimState::Move && gaitBlendPlaying()) {
+        buildMove(false);
+    }
 }
 
 void HumanAnimator::setStealthStyle(bool on) {
-    if (on == m_stealth) {
-        return;
-    }
-    if (on && (!hasClip(kAnimStealthIdle) || !hasClip(kAnimStealthWalk) || !hasClip(kAnimStealthWalkStart))) {
-        return;
-    }
-    // The style's slots (the original's slots 0 and 11, 3 and 4, 9 and 10), and the speeds from the clips again.
-    m_stealth = on;
-    m_slots = m_normalSlots;
     if (on) {
-        m_slots.ids[kSlotIdle] = kAnimStealthIdle;
-        m_slots.ids[kSlotSneak] = kAnimStealthWalk;
-        m_slots.ids[kSlotWalk] = kAnimStealthWalk;
-        m_slots.ids[kSlotWalkStart] = kAnimStealthWalkStart;
+        // Pushed unless on top already, and only when the set has the stealth clips.
+        if (stealthStyle() || !hasClip(kAnimStealthIdle) || !hasClip(kAnimStealthWalk) ||
+            !hasClip(kAnimStealthWalkStart)) {
+            return;
+        }
+        applyStyle(m_styles.push(kStyleHidden));
+    } else {
+        // Removed wherever it is; under the top it changes no slot.
+        const int applied = m_styles.remove(kStyleHidden);
+        if (applied < 0) {
+            return;
+        }
+        applyStyle(applied);
     }
-    m_speeds = speedsOf(*m_anims, m_slots);
     // Standing, the idle's builder plays the transition first (`Human_BuildIdleTasks`, 0x0025f770): 634 going in, 394
     // coming out of 630. Moving, a new gait blend on the new clips carries on the old one.
     constexpr HeldFlags kTransitionHeld{.held = kFlagNormalFromFight, .set = kFlagNormalFromFight};
@@ -173,6 +204,42 @@ void HumanAnimator::setStealthStyle(bool on) {
     } else if (m_state == AnimState::Move && gaitBlendPlaying()) {
         buildMove(false);
     }
+}
+
+void HumanAnimator::carryStyle(int set) {
+    if (set <= 0 || set > 0xff) {
+        return;
+    }
+    if (const int applied = m_styles.carry(static_cast<std::uint8_t>(set)); applied >= 0) {
+        applyStyle(applied);
+    }
+}
+
+void HumanAnimator::releaseStyle(int set, bool thrown) {
+    if (set <= 0 || set > 0xff) {
+        return;
+    }
+    if (const int applied = m_styles.remove(static_cast<std::uint8_t>(set)); applied >= 0) {
+        applyStyle(applied);
+    }
+    // A dropped set 4 or 6 sets state 0x20000000: the anim state is chosen again on the plain slots.
+    if (!thrown && (set == kStyleCarry || set == kStyleGhetto)) {
+        rebuildOnSlots();
+    }
+}
+
+std::uint32_t HumanAnimator::pickUpLoop(int set, bool hidden, bool inStance) {
+    // The object's style for the moment, as the original pushes it around reading the loop's slot.
+    const auto style = static_cast<std::uint8_t>(set);
+    const bool pushed = !hidden || style == kStyleGhetto || style == kStyleCarry;
+    if (pushed) {
+        applyStyle(m_styles.push(style));
+    }
+    const std::uint32_t loop = m_slots.ids.at(inStance ? kSlotCombatIdle : kSlotIdle);
+    if (pushed) {
+        applyStyle(m_styles.pop());
+    }
+    return loop;
 }
 
 std::unique_ptr<anim::GaitBlendTask> HumanAnimator::gaitBlend(float value, float phase) const {

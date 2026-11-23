@@ -28,8 +28,9 @@ struct AnimSlots {
     static constexpr std::size_t kCount = 35;
     std::array<std::uint32_t, kCount> ids{};
 
-    /// The player's slots as read from Rembrandt at runtime: the default table's locomotion ids, with slot 14 = 380.
-    /// Only the slots Coney uses are filled; the rest are 0.
+    /// The player's slots as read from Rembrandt at runtime: the default table's locomotion ids and combat idle (slot
+    /// 11, which a pick-up in the fight stance returns to), with slot 14 = 380. Only the slots Coney uses are filled;
+    /// the rest are 0.
     [[nodiscard]] static AnimSlots player();
 };
 
@@ -275,20 +276,40 @@ class HumanAnimator {
     [[nodiscard]] bool settling() const;
     /// Whether the anim set has a clip for `id`.
     [[nodiscard]] bool hasClip(std::uint32_t id) const { return clip(id) != nullptr; }
-    /// Puts the hidden move style (`0x14`) on or takes it off: the idle, sneak, walk and both start slots play the
-    /// stealth clips (kAnimStealthIdle, kAnimStealthWalk, kAnimStealthWalkStart) and the speeds are taken from the
-    /// clips again, so the walk goes at 633's speed. Standing idle, the idle is rebuilt through 634 going in, or
-    /// through 394 coming out while 630 plays (each holding `0x40000000`); moving, the gait blend is rebuilt on the new
-    /// clips. Nothing when the style is already so, or (going in) when the anim set lacks a stealth clip. Research:
-    /// docs/research/stealth.md#sneaking
-    /// @orig 0x00253688 Human_ApplyAnimSet (unknown)
+    /// Puts the hidden move style (`0x14`) on or takes it off: pushed when it is not on top already (as
+    /// `Human_EnterShadow` pushes it), removed from wherever it is in the stack (`Human_ClearHiddenState`). On top, the
+    /// idle, sneak, walk and both start slots play the stealth clips (kAnimStealthIdle, kAnimStealthWalk,
+    /// kAnimStealthWalkStart) and the speeds are taken from the clips again, so the walk goes at 633's speed. When the
+    /// top changes, standing idle, the idle is rebuilt through 634 going in, or through 394 coming out while 630 plays
+    /// (each holding `0x40000000`); moving, the gait blend is rebuilt on the new clips. Nothing going in when the anim
+    /// set lacks a stealth clip. The rest of those two functions is Human::enterHiding() and Human::clearHiding().
+    /// Research: docs/research/stealth.md#sneaking
+    /// @orig 0x00253688 Human_ApplyMoveStyle (unknown)
     void setStealthStyle(bool on);
-    /// Whether the hidden move style is on.
-    [[nodiscard]] bool stealthStyle() const { return m_stealth; }
-    /// Stub: the move style on top.
-    [[nodiscard]] std::uint8_t moveStyle() const { return kStyleNone; }
-    /// The slots now in force.
+    /// Whether the hidden move style is on top.
+    [[nodiscard]] bool stealthStyle() const { return m_styles.top() == kStyleHidden; }
+    /// The move style on top of the stack (`Human_GetMoveStyle`): 0 for none, 4 carrying a two-handed object.
+    [[nodiscard]] std::uint8_t moveStyle() const { return m_styles.top(); }
+    /// The move style stack, for the tests and the Entity editor.
+    [[nodiscard]] const MoveStyles& moveStyles() const { return m_styles; }
+    /// The slots now in force (the defaults with the top style's ids).
     [[nodiscard]] const AnimSlots& slots() const { return m_slots; }
+    /// The take's message 3 for a held object of anim set `set`: the style goes on as `Human_SetCarryMoveStyle` puts it
+    /// (over the hidden style for 4 and 6, pushed on an empty stack, otherwise under the top), the slots and speeds
+    /// follow. The tasks playing are not rebuilt: a pick-up clip's follow-on was built under the style already
+    /// (pickUpLoop()). Research: docs/research/objects.md#two-handed
+    /// @orig 0x00221ed0 Human_SetCarryMoveStyle (unknown)
+    void carryStyle(int set);
+    /// A held object of anim set `set` let go: its style is removed (`Human_RemoveMoveStyle`) and the slots and speeds
+    /// follow. A drop (`thrown` false) of a set 4 or 6 asks for the anim state again (state `0x20000000`), so standing
+    /// he goes back to the plain idle at once and moving his gait blend is rebuilt; a throw's clip plays on.
+    /// @orig 0x00257f38 Human_DropHeld (unknown)
+    void releaseStyle(int set, bool thrown);
+    /// The loop a pick-up clip of an object of anim set `set` hands over to (`Human_PlayPickupClip`): the object's
+    /// style pushed for the moment (unless `hidden` with a set other than 4 or 6), the idle (slot 0) read, or the
+    /// combat idle (slot 11) `inStance`, and the style popped again, so lifting a two-handed object ends in 509.
+    /// @orig 0x0025e5a8 Human_PlayPickupClip (unknown)
+    [[nodiscard]] std::uint32_t pickUpLoop(int set, bool hidden, bool inStance);
 
     /// The blended pose.
     [[nodiscard]] anim::Pose pose(std::span<const anim::Quat, anim::kPoseBones> bindRotations) const {
@@ -384,9 +405,16 @@ class HumanAnimator {
     const characters::AnimSet* m_anims;
     const anim::AnimClip* m_idleClip = nullptr;                 // setIdleClip()
     std::map<std::uint32_t, const anim::AnimClip*> m_overrides; // setOverride()
+    // The slots of `style` over the defaults (styledSlots()), with every slot whose clip this anim set lacks kept at
+    // its default; then the speeds from the clips again (Human_ApplyMoveStyle's reset, switch and
+    // Human_ComputeGaitSpeeds, the switch being styledSlots()).
+    void applyStyle(int style);
+    // Rebuilds the idle or the gait blend on the slots now in force (state 0x20000000's new anim state).
+    void rebuildOnSlots();
+
     AnimSlots m_slots;
-    AnimSlots m_normalSlots; // the slots without the hidden style
-    bool m_stealth = false;  // setStealthStyle()
+    AnimSlots m_defaults; // the slots with no style (the default table, Human_ResetAnimSlots)
+    MoveStyles m_styles;  // the move style stack (human record +0x0c, +0x10)
     Speeds m_speeds;
     Speeds m_factors{1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F}; // setSpeedFactors()
     Speeds m_applied;                                     // what setSpeedFactors() last put in m_speeds

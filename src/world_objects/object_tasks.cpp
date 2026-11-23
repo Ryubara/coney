@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "core/name_hash.h"
+#include "world_objects/props.h"
 
 namespace coney::world_objects {
 
@@ -113,8 +114,19 @@ std::optional<HeldAttachment> heldAttachment(const anim::AnimClip& clip, float h
 }
 
 std::optional<HeldAttachment> takeAttachment(const anim::AnimClip& clip, float humanScale, const ObjectType& type,
-                                             bool /*inScene*/) {
-    return heldAttachment(clip, humanScale, type.grip);
+                                             bool inScene) {
+    if (type.className != kOverheadWeaponClass && type.className != kCashRegisterClass) {
+        return heldAttachment(clip, humanScale, type.grip);
+    }
+    // The event gives the bone (and, in a scene, the pose: its position × the human's scale, unslid).
+    std::optional<HeldAttachment> held = heldAttachment(clip, humanScale, 0.0F);
+    if (!held || inScene) {
+        return held;
+    }
+    // Out of a scene the type's own held pose, as the objects file gives it (properties 11 and 12).
+    held->position = type.holdPosition;
+    held->rotation = type.holdRotation;
+    return held;
 }
 
 WorldPose heldWorldPose(anim::Vec3 feet, float heading, const anim::Mat34& bone, float boneScale,
