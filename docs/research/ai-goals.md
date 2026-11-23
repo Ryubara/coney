@@ -1251,6 +1251,16 @@ code: any held object counts as throwable, and the throw lets go of the object a
 and the queued cross, popping the holder's move style as `Human_ReleaseThrow` does
 ([Two-handed objects](objects.md#two-handed)).
 
+**At runtime** (confirmed (runtime), run r-20261123-molotov-throw-beat: PCSX2 2.9.129, `level34` checkpoint 2 loaded
+from the `pedestrian-grab` state, `P1.ThrowMolotov` run from Lua): the molotov thrower (class `0x18e`) first reached
+the beat's test (`0x002cf860`) on brain update 233, queued the cross on update 240, the next multiple of 30
+(`0x002cf8b8`), and let go of the Molotov in `Human_ReleaseThrow` on update 254, 14 updates into the throw clip.
+Coney's thrower, from the same checkpoint with player 1 put in `vNearMolotovCar`, first stood within range and facing
+on brain update 305 and threw on 330, also the next multiple of 30
+(`repo:tests/platform/disc_level34_molotov_test.cpp`). The wait differs (7 against 25 updates) because the two brains'
+counters stand at different points of the beat when the goal starts, not by rule. Coney lets go on the beat itself
+rather than 14 updates later, the throw's stand-in above.
+
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x002cf480` | `Goal_ThrowObject` | binding | `Goal_ThrowObject`: pushes the goal on a human | confirmed (code) |

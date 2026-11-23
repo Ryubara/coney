@@ -1,0 +1,35 @@
+version = 1
+id = "r-20261123-molotov-throw-beat"
+date = "2026-11-23"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "e41f8ec4820367497eb694e2d4b6f4b7967de14102c208549bc6e7b7d4432906"
+
+[who]
+agent = "a4a27099611e747cf"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level34 checkpoint 2 loaded with the load-checkpoint recipe; P1.ThrowMolotov(vNearMolotovCar, HuGetPlayer(0)) run with the lua recipe; breakpoints at 0x002cf860 (the beat test, first reached), 0x002cf8b8 (Brain_QueueAttack call) and 0x002586d8 (Human_ReleaseThrow for MolotovPed); brain +0x34 read at each"
+
+[values]
+gate_first_update = 233
+attack_queued_update = 240
+release_update = 254
+thrower_class = 398
+
+[addresses]
+throw_goal_beat = 0x002cf860
+queue_attack_call = 0x002cf8b8
+release_throw = 0x002586d8
