@@ -1240,12 +1240,12 @@ the count). With the band move ported they wait at a median 4.1-4.3 m, but half 
 `FidgetAction_Start`'s `Human_IsFreeForFidget` (`0x00225f58`): a waiter beyond the fighter's lock dropped out of the
 fight stance whenever no move was written and went back to the locomotion's idle, whose fade holds `0x10000000` for
 5 updates. With the fight goal's stance kept while the goal holds it (the original keeps it as the human's state,
-`0x1`/`0x2`; [the band move](ai-moving.md#move-melee)), the disc test counts 8, 8, 7, 9, 8, 13, 2 and 10 taunts for AI
-sequences 0-7, around the
-original's 11, and checks at least 2. The close-in test still differs: Coney's player counts as facing whichever
-Warrior his fighter holds, so a waiter is sometimes close in, where the original's player brain holds a target only
-while a pair links him (a grab or a mount, `Pair_LinkMount` `0x0022bfd0`, `Grab_Link` `0x0022c730`) and the first
-slot holder is close in otherwise; inferred, not yet ported ([Open questions](#q-close-in-target)).
+`0x1`/`0x2`; [the band move](ai-moving.md#move-melee)), the disc test counts 7, 7, 2, 8, 13, 7, 6 and 6 taunts for AI
+sequences 0-7 (measured 2026-11-23 with the stance following each re-target), around the original's 11, and checks at
+least 2: sequence 2 sits exactly at that bound, with no margin. The close-in test still differs: Coney's player
+counts as facing whichever Warrior his fighter holds, so a waiter is sometimes close in, where the original's player
+brain holds a target only while a pair links him (a grab or a mount, `Pair_LinkMount` `0x0022bfd0`, `Grab_Link`
+`0x0022c730`) and the first slot holder is close in otherwise; inferred, not yet ported ([Open questions](#q-close-in-target)).
 
 ### Melee ranges {#runtime-melee-range}
 
