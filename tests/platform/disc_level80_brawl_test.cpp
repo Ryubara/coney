@@ -186,6 +186,7 @@ TEST_CASE("the disc's level80 checkpoint 4: the Destroyers break their block and
 
     // The flags: where each stands at the scene's end.
     std::vector<coney::anim::Vec3> flags;
+    flags.reserve(cast.destroyers.size());
     for (const Brain* brain : cast.destroyers) {
         flags.push_back(brain->human().position());
     }
