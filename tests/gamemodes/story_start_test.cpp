@@ -52,6 +52,7 @@
 #include "support/recording_device.h"
 #include "support/test_paths.h"
 #include "warriors/disk_profile_store.h"
+#include "warriors/level_table.h"
 
 using coney::GameModeStack;
 using coney::GameplayMode;
@@ -652,4 +653,96 @@ TEST_CASE("story: a level's intro movie plays before the level's first step", "[
     CHECK(run.stack.topId() == GameplayMode::kId);
     run.frames(1);
     CHECK(run.levelUpdates == 1);
+}
+
+namespace {
+
+// The level table's scripts alone: enum_preload.lua sets SUBWAY_BLUE = 3; config_preload3.lua configures an object
+// (CfgObj, a binding the table's read skips) and then two levels the way CfgLevels does, with all 18 arguments:
+// level99 on the world level99 with the map floats -1, 61 and 95 (whole numbers: the hand-built bytecode pushes
+// integers), the colour SUBWAY_BLUE; and a test level on another level's world (as `combatselect` is on level5's).
+std::map<std::string, std::vector<std::byte>, std::less<>> levelTableScripts() {
+    using coney::test::LuaAsm;
+    std::map<std::string, std::vector<std::byte>, std::less<>> files;
+    LuaAsm enums;
+    enums.pushInt(3).setGlobal("SUBWAY_BLUE");
+    files["enum_preload.lua"] = coney::test::luaChunk(enums.end());
+    LuaAsm config;
+    config.getGlobal("CfgObj").pushString("barrel").call(1);
+    config.getGlobal("CfgLevelName").pushInt(1).pushString("level99").pushString("1:Title").pushString("level99");
+    config.pushString("Coney").pushInt(99).pushInt(3).pushInt(1).pushInt(0).pushInt(1).pushInt(0).pushInt(0);
+    config.pushInt(-1).pushInt(61).pushInt(95).pushInt(1638411).getGlobal("SUBWAY_BLUE").pushInt(1441803).call(18);
+    config.getGlobal("CfgLevelName").pushInt(90).pushString("combatselect").pushString("").pushString("level5");
+    config.pushString("").pushInt(422).pushInt(0).pushInt(0).pushInt(0).pushInt(0).pushInt(0).pushInt(0);
+    config.pushInt(191).pushInt(326).pushInt(560).pushInt(0).pushInt(0).pushInt(0).call(18);
+    files["config_preload3.lua"] = coney::test::luaChunk(config.end());
+    return files;
+}
+
+// A script source over `files`.
+coney::script::ScriptSource sourceOver(const std::map<std::string, std::vector<std::byte>, std::less<>>& files) {
+    return [&files](std::string_view name) -> std::expected<std::vector<std::byte>, coney::Error> {
+        const auto found = files.find(name);
+        if (found == files.end()) {
+            return coney::fail(coney::ErrorCode::NotFound, "no such script");
+        }
+        return found->second;
+    };
+}
+
+} // namespace
+
+TEST_CASE("the level table read alone holds each level's record as the preloads fill it", "[story_start][radar]") {
+    // Expected: frontend.md#the-level-table, confirmed (code) (CfgLevelName's 18 arguments, LevelRecord's reading of
+    // their order); the guest's read of it is Coney's own (docs/guides/client-world.md#client-hud)
+    const auto files = levelTableScripts();
+    const auto table = coney::loadLevelTable(sourceOver(files));
+    REQUIRE(table.has_value());
+    CHECK(table->count() == 2);
+    const std::optional<std::size_t> index = table->find("level99");
+    REQUIRE(index.has_value());
+    const coney::LevelRecord* record = table->at(index.value_or(0));
+    REQUIRE(record != nullptr);
+    CHECK(record->worldName == "level99");
+    CHECK(record->number == 99.0);
+    CHECK(record->values.at(coney::LevelRecord::kRadarOffsetXValue) == -1.0);
+    CHECK(record->values.at(coney::LevelRecord::kRadarOffsetYValue) == 61.0);
+    CHECK(record->values.at(coney::LevelRecord::kRadarScaleValue) == 95.0);
+    // The enumerations ran first: the colour is enum_preload.lua's SUBWAY_BLUE.
+    CHECK(record->values.at(coney::LevelRecord::kSubwayValue) == 3.0);
+    const coney::LevelRecord* test = table->at(90);
+    REQUIRE(test != nullptr);
+    CHECK(test->name == "combatselect");
+    CHECK(test->worldName == "level5");
+}
+
+TEST_CASE("the level table read alone fails without config_preload3.lua", "[story_start][radar]") {
+    // Expected: unverified, #1670 (Coney's own: a guest with no level table says why; docs/guides/client-world.md)
+    auto files = levelTableScripts();
+    files.erase("config_preload3.lua");
+    CHECK_FALSE(coney::loadLevelTable(sourceOver(files)).has_value());
+}
+
+TEST_CASE("a level's radar map is its record's world sheet and map floats, and no record has none",
+          "[story_start][radar]") {
+    // Expected: hud-radar.md#the-radar-on-screen, confirmed (code) (Radar_Setup 0x001c3de0 names the sheet after the
+    // record's world +0x39; Radar_Render 0x001c60b0 reads +0x6c, +0x70, +0x74; level99's -1.33, 61.55 and 95
+    // confirmed (runtime))
+    coney::LevelRecord record;
+    record.name = "combatselect";
+    record.worldName = "level5";
+    record.values.at(coney::LevelRecord::kRadarOffsetXValue) = -1.33;
+    record.values.at(coney::LevelRecord::kRadarOffsetYValue) = 61.55;
+    record.values.at(coney::LevelRecord::kRadarScaleValue) = 95.0;
+    const coney::hud::RadarMap map = coney::radarMapOf(&record);
+    CHECK(map.usable());
+    CHECK(map.sheet == "level5");
+    CHECK(map.offsetX == -1.33F);
+    CHECK(map.offsetY == 61.55F);
+    CHECK(map.scale == 95.0F);
+    CHECK_FALSE(coney::radarMapOf(nullptr).usable());
+    // A record with no map floats (a mod's level, modLevelRecord()) names its world but draws no disc.
+    coney::LevelRecord mod;
+    mod.worldName = "level140";
+    CHECK_FALSE(coney::radarMapOf(&mod).usable());
 }

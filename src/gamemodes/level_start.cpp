@@ -288,4 +288,12 @@ LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::stri
     return run;
 }
 
+// Stub until the change: no map.
+// @orig 0x001c3de0 Radar_Setup (RadarHUD.cpp)
+hud::RadarMap radarMapOf(const LevelRecord* /*record*/) { return {}; }
+
+// Stub until the change: an empty table.
+// @coney-only runs the level table's scripts alone, for a network guest
+std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& /*source*/) { return LevelTable{}; }
+
 } // namespace coney

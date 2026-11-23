@@ -3,12 +3,14 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <functional>
 #include <optional>
 #include <span>
 #include <string>
 #include <string_view>
 
+#include "core/error.h"
 #include "effects/particles.h"
 #include "gui/global_strings.h"
 #include "gui/rumble_mode_gui/rumble_data.h"
@@ -19,6 +21,7 @@
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
+#include "warriors/level_table.h"
 #include "world_objects/flags.h"
 #include "world_objects/object_types.h"
 #include "world_objects/spawn_records.h"
@@ -229,5 +232,26 @@ void applyTurnConfig(const script::RecordedCalls& recorded);
 [[nodiscard]] LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::string_view level,
                                                  int checkpoint, const std::function<void(std::string_view)>& log,
                                                  const LevelScriptOptions& options = {});
+
+/// The level's map on the radar from its level record (`Radar_Setup`): the sheet named after the record's world
+/// (`+0x39`) and the record's three map floats (`+0x6c`, `+0x70`, `+0x74`, `CfgLevelName` arguments 13-15), which
+/// `Radar_Render` reads from the record. No record gives no map (RadarMap::usable() false), and a record whose scale is
+/// 0 (a mod's level) gives an unusable one. GameplayMode gives it to its HUD as the level is set up, and a network
+/// guest (platform::ClientGame) to the HUD it draws the host's level with, so both draw the same disc.
+///
+/// Research: docs/research/hud-radar.md#the-radar-on-screen
+/// @orig 0x001c3de0 Radar_Setup (RadarHUD.cpp)
+[[nodiscard]] hud::RadarMap radarMapOf(const LevelRecord* record);
+
+/// The level table as the legal screen's preloads fill it, read from `source` alone: `enum_preload.lua` (the
+/// enumerations the records use), then `config_preload3.lua`, whose `CfgLevels` passes every level to the real
+/// `CfgLevelName`; every other binding is skipped. For a run that plays no game of its own, a network guest, which
+/// still needs each level's record (its radar map) and runs none of the preloads. Fails as `source` does when
+/// `config_preload3.lua` is missing, and when either script fails to run.
+///
+/// Research: docs/research/frontend.md#the-level-table, docs/guides/client-world.md#client-hud
+/// @coney-only runs the level table's scripts alone, outside the game, for a network guest; the original runs them in
+/// its boot preload with every binding
+[[nodiscard]] std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& source);
 
 } // namespace coney
