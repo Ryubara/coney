@@ -1459,7 +1459,7 @@ What Coney has of [the attack on sight](#aggro-on-sight) (checked 2026-11-23, `r
 - HanginOut's awareness (× 0.75, − 20° unless `fullAware`) is in `repo:src/ai/story_tactics.cpp`.
 - Nothing sends event 10 (`kEventSawPlayer` has no sender), so code 4 never fires: `Brain_MaybeSpotPlayers` is not
   ported. `level87`'s presets ignore code 4, but other levels' may not.
-- How this plays at `level80` checkpoint 4, and where it still differs (the fight's ring, #1663): [Scripts in
+- How this plays at `level80` checkpoint 4, and the fight's ring there (#1663): [Scripts in
   Coney](scripting.md#level80-think-fight).
 
 ## Open questions

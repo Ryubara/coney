@@ -2930,16 +2930,15 @@ at `e5d58e85`).
   (`PlayLevelMode::placeReleased`, `repo:src/platform/play_level_scene.cpp`, [Scenes in
   Coney](scenes.md#release-idle)). The disc tests (`repo:tests/platform/disc_level80_brawl_test.cpp`, the scene
   skipped) print all twelve holding the idle fade at the scene's end, none fighting at update 1, the last fighting at
-  update 7, all twelve targeting Cochise or Swan or spectating from update 9 to 30, no HelpRespond in the first 30
-  updates, none on the idle player, and after the attack order the checks of item 5 of the list What Coney must do
-  ([the timeline](#level80-fight-timeline)). The release test fails below update 5 for the last fight and on any
-  HelpRespond before update 13.
-- **Still different: the ring** (#1663). Sixty updates after the scene's end 10 of the original's twelve Destroyers
-  stand more than 0.5 m from their flags (run r-20261123-level80-block-breaks), Coney's 5. Coney's waiting attackers
-  stand where they are inside the reposition's ring, a marked stand-in in its fight goal for the band-keeping move
-  ([MoveMelee](ai-moving.md#move-melee)), where the original's back off to 4 m and circle; the cause in Coney is read
-  from its trace (eight holders waiting at 1-3 m with no action). The disc test prints the count and does not check
-  it.
+  update 7, all twelve targeting Cochise or Swan or spectating at update 12 and at most one at a time off them to
+  update 30, the first HelpRespond at update 21 (none before 13), none on the idle player, and after the attack
+  order the checks of item 5 of the list What Coney must do ([the timeline](#level80-fight-timeline)). The release
+  test fails below update 5 for the last fight and on any HelpRespond before update 13.
+- **The ring.** Sixty updates after the scene's end 10 of the original's twelve Destroyers stand more than 0.5 m
+  from their flags (run r-20261123-level80-block-breaks), Coney's 11 now that its fight goal queues the band-keeping
+  move ([MoveMelee](ai-moving.md#move-melee)): its waiting attackers back off to the ring and circle as the
+  original's do. Before that move, Coney's waiters stood inside the ring and only 5 left their flags. The disc test
+  prints the count and does not check it (#1663).
 
 ## Open questions
 

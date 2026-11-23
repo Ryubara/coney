@@ -238,9 +238,8 @@ TEST_CASE("the disc's level80 checkpoint 4: the Destroyers break their block and
     CHECK(failingAt12 == 0);
     CHECK(mostFailing <= 1);
     // How many have left their flags by more than 0.5 m within 60 updates is printed, not checked: the original's 10
-    // (run r-20261123-level80-block-breaks) needs the fight's band-keeping move, which Coney stands in for: its
-    // waiting attackers stand inside the ring instead of backing off to it (scripting.md#level80-think-fight);
-    // #1663 ports that move and adds the check.
+    // (run r-20261123-level80-block-breaks) come from the fight's band-keeping move, whose waiters back off to the
+    // ring and circle (scripting.md#level80-think-fight); #1663 adds the check.
     // Nobody goes for the idle player before the order: the Warriors are not their enemies yet.
     CHECK(playerTargeted == 0);
 }
