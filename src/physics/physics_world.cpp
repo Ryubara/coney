@@ -177,8 +177,8 @@ std::optional<UpdateSweep> PhysicsWorld::updateBody(BodyId id, const ShapeOwner&
     if ((b.flags & (kBodyFlagSweepBodies | kBodyFlagAlwaysUpdate)) != (kBodyFlagSweepBodies | kBodyFlagAlwaysUpdate)) {
         return std::nullopt;
     }
-    // 3. The update sweep's box: the new bound grown forward by the first shape's move. The sweep against the bodies
-    // and the resolution of its contacts are Unit 11's (#377): the caller is handed the box and the move.
+    // 3. Stand-in: the update sweep's box, the new bound grown forward by the first shape's move. The sweep against
+    // the bodies and the resolution of its contacts are Unit 11's (#377): the caller is handed the box and the move.
     const ShapeRecord& swept = shape(first);
     const Vec3 at = shapePosition(swept);
     const Vec3 move{at.x - swept.previous.x, at.y - swept.previous.y, at.z - swept.previous.z};

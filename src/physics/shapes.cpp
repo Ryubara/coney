@@ -31,8 +31,8 @@ constexpr float kCuffedHeight = 0.35F;
 // The bone a human's capsule reads its top from: the head.
 constexpr int kHeadBone = 6;
 
-// The rows of `Quat_ToMatrix(q)` (`0x00336500`): row i is the image of axis i
-// (docs/research/physics-bodies.md#u6-transforms). The quaternion is taken as it is, not normalised.
+// The rows of Quat_ToMatrix(q), row i the image of axis i. Coney's choice: row 3, (0, 0, 0, 1), is not built.
+// Research: docs/research/physics-bodies.md#u6-transforms. The quaternion is taken as it is, not normalised.
 // @orig 0x00336500 Quat_ToMatrix (unknown)
 std::array<Vec3, 3> rows(Quat q) {
     return {
