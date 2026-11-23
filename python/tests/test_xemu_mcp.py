@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 from PIL import Image
-from xemu_support import FakeGdbStub, FakeMonitor, eventually, fake_xemu, make_copy
+from xemu_support import FakeGdbStub, FakeMonitor, eventually, fake_copies, fake_xemu
 
 from coney_tools import xemu_claims, xemu_debug
 from coney_tools.config import ConfigError
@@ -26,8 +26,7 @@ def rig(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[Serve
     monkeypatch.setattr(xemu_claims, "xemu_processes", dict)
     monkeypatch.setattr(xemu_claims, "is_xemu", lambda pid: False)
     with fake_xemu() as (stub, monitor):
-        make_copy(tmp_path / "root", "xemu", stub.port, monitor.port)
-        make_copy(tmp_path / "root", "xemu-b", 61001, 61002)
+        fake_copies(tmp_path / "root", stub, monitor)  # spare ports for xemu-b: a constant could be a fake's port
         registry = Registry(tmp_path / "root", tmp_path / "claims")
         # Claimed before "starting": a copy that serves its ports with no claim is someone's, and is not handed out.
         monkeypatch.setattr(xemu_claims, "port_open", lambda port: False)
