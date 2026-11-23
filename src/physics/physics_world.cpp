@@ -468,7 +468,7 @@ IgnoreSlotId PhysicsWorld::findFreeIgnoreSlot() {
             return static_cast<IgnoreSlotId>(i);
         }
     }
-    // Past the original's sixty, Coney adds a slot (ignoreSlotCap()).
+    // Coney's choice, a lifted limit: past the original's sixty, Coney adds a slot (ignoreSlotCap()).
     if (m_ignoreSlots.size() < ignoreSlotCap(m_limits)) {
         m_ignoreSlots.emplace_back();
         return static_cast<IgnoreSlotId>(m_ignoreSlots.size() - 1);
@@ -537,7 +537,7 @@ ShapeId PhysicsWorld::takeFromPool(ShapePool pool) {
             break;
         }
     }
-    // Past the original's count, Coney builds one more shape (shapePoolCap()).
+    // Coney's choice, a lifted limit: past the original's count, one more shape (shapePoolCap()).
     if (taken == kNoShape && poolSize(pool) < shapePoolCap(pool, m_limits)) {
         taken = buildPoolShape(pool);
     }
