@@ -266,7 +266,7 @@ class Hud {
 
     /// The HUD's per-level set-up, before the level's script runs: the radars come back on their own again
     /// (RadarState::scriptOn), and it ends with hideAll(), so a level starts with the HUD hidden.
-    /// @orig 0x001ad588 HUD_LevelSetUp (HUDInterface.cpp)
+    /// @orig 0x001ad588 HUD_InitLevel (HUDInterface.cpp)
     void levelSetUp();
     /// The HUD's per-level shut-down, from the level's unload: every part a level set up or a script filled goes
     /// (the hints queued and showing, the tutorial callback, the objectives and their messages, the announcements,

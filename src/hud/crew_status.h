@@ -110,7 +110,7 @@ inline constexpr std::uint64_t kCrewPulseMs = 800;
 
 /// The default video mode's layout of the list: the grid's origin, the cell step (the grid's step times its
 /// factors), the shift of a short row and the caption's offsets (`0x0050cfe4`-`0x0050d01c`, CrewStatus_Setup's
-/// arguments from `HUD_LevelSetUp`).
+/// arguments from `HUD_InitLevel`).
 struct CrewLayout {
     GuiPoint origin{0.407F, 0.07F};  ///< `0x0050d000`, `0x0050d004`.
     std::size_t perRow = 4;          ///< CrewStatus_Setup's last argument.

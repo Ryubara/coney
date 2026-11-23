@@ -103,7 +103,7 @@ replaces the previous caption. It shows for **2.5 s**, the fade included: full f
 the last second (the `<DISPLAYTIME>` rule, [Markup tags](gui.md#markup)). **No sound** plays: `CrewStatus_Add` calls
 no sound function. Confirmed (code) at `0x001a0420`, `0x0019fda0`, `0x001a03a8`.
 
-**The layout** (default video mode, device flags `0x01`). `HUD_LevelSetUp` (`0x001ad588`) calls `CrewStatus_Setup`
+**The layout** (default video mode, device flags `0x01`). `HUD_InitLevel` (`0x001ad588`) calls `CrewStatus_Setup`
 with icon size 0.05, aspect 0.7, a cell of (0.03, -0.018), a step of (0.12, 0.08) and 2 and 4; the last, 4, is the
 number of entries a row (the divisor `+0x1324` of `CrewStatus_Update`), so the grid is two rows of four. The update
 ignores the position it was given and starts from the floats `0x0050d000`, `0x0050d004` = (0.407, 0.07); its

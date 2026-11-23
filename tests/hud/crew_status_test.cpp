@@ -14,7 +14,7 @@
 // The crew status list against synthetic humans (docs/research/hud-functions-parts.md#crew-status): the states, the
 // icons and the caption of CrewStatus_Add (0x001a0420) and CrewStatusEntry_Update (0x001a0d28), the removal of
 // CrewStatus_Update (0x0019fda0) and CrewStatus_Remove (0x001a07f0), the portraits of CrewStatus_GetIcon (0x0019f988)
-// and the default video mode's layout (0x0050cfe4-0x0050d01c, HUD_LevelSetUp's CrewStatus_Setup arguments).
+// and the default video mode's layout (0x0050cfe4-0x0050d01c, HUD_InitLevel's CrewStatus_Setup arguments).
 
 using Catch::Approx;
 using coney::hud::CrewFrame;
