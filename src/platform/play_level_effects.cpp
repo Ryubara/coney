@@ -85,13 +85,19 @@ void PlayLevelEffects::drawOverlay(RenderEngine& engine, bool cardHeld) {
 }
 
 void PlayLevelEffects::drawScreenEffects(RenderEngine& engine) {
+    // Stand-in: one view, player 1's. The original loops over its views, and with two views and a split screen
+    // picks whose blur pulse, tint and motion blur to draw by their states; Coney has one set of screen effects.
     if (m_effects == nullptr) {
         return;
     }
-    if (const std::optional<int> passes = m_effects->blurPulse.passes(); passes && engine.drawsPixels()) {
+    // The blur pulse, on every renderer that draws frames: GL3 and the GPU renderer, which draws it as GL3 does.
+    if (const std::optional<int> passes = m_effects->blurPulse.passes(); passes && engine.drawsFrames()) {
         const effects::BlurPulse::Look& look = m_effects->blurPulse.look();
         engine.blurScreen(*passes, look.offsetU, look.offsetV);
     }
+    // Then the tint. Stand-in: the original's fade, letterbox and motion blur here are the scene stage's (drawOverlay),
+    // the blur without its two checks: no Rumble menu open, and the profile manager done (PM_IsDone 0x00203fe8, flag
+    // 0x0050f5b0, set by PM_SetDone from the Load, Continue and Subtitles screens and from Gm_Mode11_Exit).
     drawTint(engine);
 }
 

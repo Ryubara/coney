@@ -10,6 +10,8 @@
 #include <span>
 #include <utility>
 
+#include "effects/blur_pulse.h"
+#include "effects/motion_blur.h"
 #include "graphics/frame_description.h"
 #include "graphics/screen.h"
 #include "platform/movie_screen.h"
@@ -90,10 +92,10 @@ std::array<LogicalVertex, 6> rectangleTriangles(float x, float y, float w, float
 std::expected<std::unique_ptr<TestCardMode>, Error> TestCardMode::create(RenderEngine& engine, std::string_view name) {
     const auto found = std::ranges::find(kTestCardNames, name);
     if (found == kTestCardNames.end()) {
-        return fail(
-            ErrorCode::NotFound,
-            std::format("no test card \"{}\" (shapes, textures or triangles, or the 3D cards scene and effects)",
-                        name));
+        return fail(ErrorCode::NotFound,
+                    std::format("no test card \"{}\" (shapes, textures or triangles, or the 3D cards scene, effects, "
+                                "blur-pulse, line-blend and motion-blur)",
+                                name));
     }
     const auto card = static_cast<Card>(found - kTestCardNames.begin());
     return std::unique_ptr<TestCardMode>(new TestCardMode(engine, card));
@@ -106,7 +108,7 @@ TestCardMode::TestCardMode(RenderEngine& engine, Card card) : m_engine(engine), 
     m_textures.push_back(makeTexture(engine, checker, graphics::TextureFilter::Linear));
     m_textures.push_back(makeTexture(engine, checker, graphics::TextureFilter::Nearest));
     m_textures.push_back(makeTexture(engine, alphaRampTexels(), graphics::TextureFilter::Linear));
-    if (card == Card::Scene || card == Card::Effects) {
+    if (card != Card::Shapes && card != Card::Textures && card != Card::Triangles) {
         m_scene = std::make_unique<TestCardScene>(engine);
     }
 }
@@ -131,8 +133,39 @@ void TestCardMode::render(const RenderTime& /*time*/) {
         m_scene->draw();
         drawEffects();
         break;
+    case Card::BlurPulse:
+    case Card::LineBlend:
+    case Card::MotionBlur:
+        drawScreenPassCard();
+        return; // presented there
     }
     m_engine.present();
+}
+
+// A screen pass card: the scene card with its screen pass over the whole view, as the play mode draws them after its
+// 3D frame (the motion blur's from PlayLevelEffects::drawOverlay(), the blur pulse's from drawScreenEffects(), the
+// line blend's at present()).
+void TestCardMode::drawScreenPassCard() {
+    m_scene->draw();
+    const bool lineBlend = m_engine.lineBlend();
+    switch (m_card) {
+    case Card::BlurPulse: {
+        // The pulse at its full level, in its look's passes and offsets (`CfgScrFx`'s look 5).
+        const effects::BlurPulse::Look look;
+        m_engine.blurScreen(look.passes, look.offsetU, look.offsetV);
+        break;
+    }
+    case Card::LineBlend:
+        m_engine.setLineBlend(true);
+        break;
+    case Card::MotionBlur:
+        m_motionBlur.apply(m_engine, effects::MotionBlur::Colour{255, 200, 160, 128});
+        break;
+    default:
+        break;
+    }
+    m_engine.present();
+    m_engine.setLineBlend(lineBlend);
 }
 
 // The shapes card: opaque bars, blended quads, one quad too faint for the alpha test, a wash and window rectangles.

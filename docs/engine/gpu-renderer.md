@@ -26,8 +26,8 @@ offscreen. It takes `--screenshot` and `--record` ([The capture](#capture)).
 The GPU renderer draws the 2D layers, the pad's debug menus among them, and the developer overlay ([below](#overlay)),
 so the Tunables page that sets `Display/Renderer` is reachable on it and a saved 1 starts it at the next start (a guard
 that started GL3 instead, while it could not, is gone). It draws a level's background, world, objects, cars and humans
-([below](#scene)), but not yet its effects (item 20 of [Order](renderer.md#order)). The release build has no overlay and
-no overrides file, so there `--renderer gpu` is the only way to it.
+([below](#scene)), its effects ([below](#effects)) and its screen passes ([below](#screen-passes)). The release
+build has no overlay and no overrides file, so there `--renderer gpu` is the only way to it.
 
 To go back to GL3 for good, set *Display / Renderer* to 0 on the Tunables page and *Save overrides*, or delete the
 `Display/Renderer = 1` line from the overrides file (`coney-tunables.ini` in your config folder, or the file
@@ -53,9 +53,9 @@ present.
 ## librw for data only {#librw}
 
 The GPU backend opens librw exactly as the NULL backend does, so texture dictionaries, streams and PS2 rasters load and
-the game runs; `drawsPixels()` is false, so nothing converts textures for librw's GL3 device, and the effects,
-which the frame description holds as effect passes ([renderer](renderer.md#frame-description)), are not drawn (item 20
-of [Order](renderer.md#order)): the GPU renderer reads none of them yet. The humans come through the description and
+the game runs; `drawsPixels()` is false, so nothing converts textures for librw's GL3 device; the effects, which the
+frame description holds as effect passes ([renderer](renderer.md#frame-description)), are drawn from their sheets as
+read ([Drawing the effect passes](#effects)). The humans come through the description and
 are skinned by the GPU renderer ([Skinning](#skinning)).
 `drawsScene()` is true, as on GL3 (`drawsSceneOn()`), so play loads the world objects and parked cars, their textures
 held as read, for the scene passes ([below](#scene)). What draws the 2D layers runs on either windowed backend; the
@@ -70,7 +70,8 @@ with the GPU backend, `present()` hands the whole description to `GpuPresenter`,
 1. **The batch.** `graphics::batchOverlays()` (`src/graphics/overlay_batch.h`) turns the overlay passes into one vertex
    and index buffer and a list of draws, in the frame's order: a quad as four corners clockwise from its top left and
    two triangles, as the GL3 renderer's screen quads; a list of triangles as its corners. Screen passes (the blur
-   pulse, the line blend, the motion blur) are left out and counted, until item 20.
+   pulse, the line blend, the motion blur) are left out of the batch and counted; their quads are added after it
+   ([below](#screen-passes)).
 2. **The uploads.** The vertices, the indices and any texture new to the GPU (or with new pixels) go up through one
    transfer buffer, in a copy pass.
 3. **The pass.** One render pass into a target of the renderer's own at the frame's size (8 bits a channel, as GL3's
@@ -91,12 +92,12 @@ the 2D quads is not known). Each texture is sampled with its own filter, nearest
 `MIPNEAREST`, linear for the rest, clamped or repeated as the draw says. No mip levels are uploaded (stand-in: GL3 would
 sample a sheet's own levels for a mip filter; 2D draws are near their textures' sizes, where level 0 is the one taken).
 
-**Not yet:** the screen passes and `--line-blend` ([#1646](issue:1646)), and the texture viewer's
-`RenderEngine::drawTexture`, which is not in the description. The renderer also has no `gpu.frame` measure: GL3 takes it
-from OpenGL timer queries ([GPU time](../guides/performance.md#gpu-time)), and SDL3's GPU API has no timer or timestamp
-queries, so a bench of `--renderer gpu` reports `gpu.frame none` (its CPU zones are all there). Its GPU time can be read
-only with a platform's own tools until SDL adds them. A frame the GPU renderer cannot draw part of misses that part; it
-never fails.
+The screen passes are drawn in their places between the 2D passes ([Drawing the screen passes](#screen-passes)). **Not
+yet:** the texture viewer's `RenderEngine::drawTexture`, which is not in the description. The renderer also has no
+`gpu.frame` measure: GL3 takes it from OpenGL timer queries ([GPU time](../guides/performance.md#gpu-time)), and SDL3's
+GPU API has no timer or timestamp queries, so a bench of `--renderer gpu` reports `gpu.frame none` (its CPU zones are
+all there). Its GPU time can be read only with a platform's own tools until SDL adds them. A frame the GPU renderer
+cannot draw part of misses that part; it never fails.
 
 ## Drawing the scene passes {#scene}
 
@@ -312,14 +313,63 @@ that sample a texture set both, except the coronas, the blob shadows, the panes 
 (`SceneLighting`'s sprites), whose textures' own filters are used. The states a 2D pass sets before an effect are not
 mirrored on the draw layer (the effects come before the 2D layers in a frame).
 
-**Not yet:** the screen passes ([#1646](issue:1646)). `--scene-only` still leaves the effects out on both renderers, so
-the part both drew before this item can be compared alone. `tests/graphics/effect_batch_test.cpp` checks the states,
+`--scene-only` still leaves the effects out on both renderers, so the part both drew before this item can be compared
+alone. `tests/graphics/effect_batch_test.cpp` checks the states,
 blending, alpha test and vertices headless; `tests/platform/gpu_effect_test.cpp` draws sprites blended and added, a
 surface in the fog in force, a sprite behind a mesh, a texture with alpha and a line on a hidden GPU window and reads
 them back; `tests/platform/frame_recording_test.cpp` checks the states recorded in force; the `effects` [test
 card](../guides/running-viewers.md#test-cards) draws them on both renderers in CI's software pictures, and
 `tests/platform/disc_gpu_effects_test.cpp` checks with the disc that play records them, textured, on this renderer. How
 the frames compare with GL3's: [Renderer pictures](renderer-pictures.md#comparing), the Across renderers row.
+
+## Drawing the screen passes {#screen-passes}
+
+Item 20's second slice ([#1646](issue:1646)): the frame description's screen passes (`ScreenPass`: the blur pulse, the
+line blend of `--line-blend` and the motion blur with its kept frame), each drawn over the whole 3D view where the frame
+puts it, as the GL3 renderer draws them (`src/platform/gl3_screen_passes.cpp`). A screen pass reads what is drawn so
+far, and a render pass cannot sample the target it draws into, so each pass is laid out headless as copies and draws
+(`graphics::screenStepsOf()`, `src/graphics/screen_pass_steps.h`), each draw reading only a copy made before it.
+
+**The steps.** In `GpuRenderer::record()`, before the uploads, each screen pass is laid out and its draws' quads (four
+corners and two triangles each) go into the 2D vertex and index buffers after the 2D draws'. Then, in the pass's place
+(`GpuRenderer::recordScreenPass()`, which with the layout and the copies lives in `src/platform/gpu_screen_passes.cpp`):
+a copy step ends the render pass and copies the view's rectangle of the target into a texture of its size
+(`SDL_CopyGPUTextureToTexture`); a draw step starts a render pass again that keeps the colour and the depth (the depth
+buffer is stored whenever the frame has a screen pass) and draws its quad with the 2D shaders, sampled linearly and
+clamped. A pass over more than the target is left out.
+
+| Pass | Steps, as the GL3 renderer draws it | Where |
+| --- | --- | --- |
+| Blur pulse | the view copied and drawn at half size into its top-left quarter; each of the passes, the half-size image copied and drawn onto itself with one edge moved in by half the offset (low edges, then high, in turn); copied once more and stretched back over the view, inset by one texel; every draw opaque (a pipeline with no blending, as GL3's ONE / ZERO) | `graphics::blurPulseSteps()`, the port of the blur pass `0x00193d80` ([Blur pulse](../research/graphics.md#blur-pulse)) |
+| Line blend | the view copied, then laid over itself at alpha 128, its texture coordinates moved down by one original line's share of the view | `screenStepsOf()` ([Output](../research/rendering.md#output)) |
+| Motion blur | while a frame of the view's size is kept for the pass's copy, the kept frame laid over the view in the blur's colour, blended by its alpha; then the view copied into the kept frame; an alpha of 0 lays nothing and forgets it | `screenStepsOf()`, Coney's stand-in (`platform/motion_blur_pass.h`) |
+
+Every draw meets the alpha test GL3's screen quads meet, librw's after its start (10 of 255). The kept frames are the
+renderer's, one per copy `RenderEngine::newScreenCopy()` gave out (the GL3 renderer's numbers, on either backend), made
+again when the view changes size (the next blur then starts afresh) and let go of by `releaseScreenCopy()`, which
+`RenderEngine` passes to the GPU renderer too. The play mode draws the blur pulse on every renderer that draws frames
+(`drawsFrames()`), where it drew it on GL3 alone.
+
+**The copies' alpha.** Each copy holds the target's alpha as the frame's blending left it, and the draws use it as
+GL3's copies of its frame buffer do: the 2D and scene pipelines blend the alpha channel by the same factors as librw's
+`glBlendFunc`, so the two frames' alpha agree where their colours do.
+
+**A GL3 fault it found.** Comparing the motion blur with GL3's showed GL3's frame copies leaving the copy's texture
+bound behind librw's back, so the next draw with no texture (librw's white texture, as librw believed) sampled the copy:
+the next frame's flat quads came out in their colour times the kept frame. `draw::copyFrameToRaster` now binds back the
+texture librw had there (`tests/platform/gl3_frame_copy_test.cpp`).
+
+**What is not mirrored.** The states the GL3 renderer's screen passes set on librw (the blur pulse puts the depth test
+and write and the blending by alpha back after it; the motion blur sets culling) are set only where GL3 draws, as the
+2D passes' are: the next frame's scene draws set their own before any effect reads them ([Drawing the effect
+passes](#effects)).
+
+`tests/graphics/screen_pass_steps_test.cpp` checks each pass's steps headless; `tests/platform/gpu_screen_pass_test.cpp`
+draws each over a Coney-made picture on GL3 and on the GPU renderer on hidden windows and compares the frames by the
+cross-renderer tolerance; the `blur-pulse`, `line-blend` and `motion-blur` [test
+cards](../guides/running-viewers.md#test-cards) draw them over the `scene` card on both renderers in CI's software
+pictures. How the frames compare with GL3's: [Renderer pictures](renderer-pictures.md#comparing), the Across renderers
+row.
 
 ## Skinning {#skinning}
 

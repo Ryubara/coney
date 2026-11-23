@@ -901,6 +901,13 @@ void RenderEngine::blurScreen(int passes, float offsetU, float offsetV) {
     drawDescribed();
 }
 
+void RenderEngine::releaseScreenCopy(graphics::ScreenCopyId id) {
+    m_gl3.releaseScreenCopy(id);
+    if (m_gpu) {
+        m_gpu->releaseScreenCopy(id);
+    }
+}
+
 void RenderEngine::addMotionBlur(graphics::ScreenCopyId copy, graphics::Rgba colour) {
     CONEY_ASSERT(m_inFrame);
     // The whole picture the 3D view fills, as the original lays its whole last frame over the new one: in a wide

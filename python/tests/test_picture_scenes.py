@@ -134,13 +134,22 @@ def test_the_shipped_scene_list_is_valid_and_has_a_reference_for_each_scene() ->
 
 @pytest.mark.reads("engine")
 def test_the_shipped_scene_list_draws_the_test_cards_on_both_renderers() -> None:
-    # Expected: guides/testing.md#software-pictures, the test cards (the 2D ones, the 3D scene and its effects) drawn by
-    # GL3 and the GPU renderer and compared by the cross-renderer tolerance, which is looser than one renderer's
-    # (engine/renderer.md#comparing).
+    # Expected: guides/testing.md#software-pictures, the test cards (the 2D ones, the 3D scene, its effects and its
+    # screen passes) drawn by GL3 and the GPU renderer and compared by the cross-renderer tolerance, which is looser
+    # than one renderer's (engine/renderer.md#comparing).
     root = find_repo_root(Path(__file__))
     scene_list = picture_scenes.load_scenes(root / picture_scenes.DEFAULT_SCENES)
     cards = [scene for scene in scene_list.scenes if scene.renderers]
-    assert {scene.args[1] for scene in cards} == {"shapes", "textures", "triangles", "scene", "effects"}
+    assert {scene.args[1] for scene in cards} == {
+        "shapes",
+        "textures",
+        "triangles",
+        "scene",
+        "effects",
+        "blur-pulse",
+        "line-blend",
+        "motion-blur",
+    }
     assert all(scene.renderers == ("gl3", "gpu") and scene.args[0] == "--test-card" for scene in cards)
     assert scene_list.cross_channel_tolerance >= scene_list.channel_tolerance
     assert scene_list.cross_max_share_percent >= scene_list.max_share_percent

@@ -11,6 +11,7 @@
 #include "core/error.h"
 #include "gamemodes/game_mode.h"
 #include "graphics/render_device.h"
+#include "platform/motion_blur_pass.h"
 
 namespace coney::platform {
 
@@ -18,7 +19,8 @@ class RenderEngine;
 class TestCardScene;
 
 /// The test cards `--test-card` draws, by name.
-inline constexpr std::array<std::string_view, 5> kTestCardNames{"shapes", "textures", "triangles", "scene", "effects"};
+inline constexpr std::array<std::string_view, 8> kTestCardNames{"shapes",  "textures",   "triangles",  "scene",
+                                                                "effects", "blur-pulse", "line-blend", "motion-blur"};
 
 /// Coney's own test cards (`--test-card NAME`, docs/guides/running-viewers.md#test-cards): fixed pictures of the
 /// 2D drawing every renderer must draw alike, made of Coney's own shapes and textures generated in code (no game data),
@@ -35,6 +37,10 @@ inline constexpr std::array<std::string_view, 5> kTestCardNames{"shapes", "textu
 /// - `effects`: the scene card, then an effect pass through its camera: a translucent surface on the floor in the fog
 ///   in force, a sprite blended by its vertex alpha, a glow added partly behind the crate, the alpha ramp as a sprite
 ///   blended by its texture's alpha, and a line list round the crate (docs/engine/gpu-renderer.md#effects).
+/// - `blur-pulse`, `line-blend`, `motion-blur`: the scene card, then one screen pass over the whole view
+///   (docs/engine/gpu-renderer.md#screen-passes): the blur pulse's blur at its full level; the PS2 video output's line
+///   blend; or the motion blur in a warm colour at half strength, which from the second frame on lays the last frame
+///   over the new one.
 ///
 /// A debug tool, in the debug tools' build only; Coney's own, with no counterpart in the original.
 class TestCardMode final : public GameMode {
@@ -63,7 +69,7 @@ class TestCardMode final : public GameMode {
 
   private:
     /// Which card.
-    enum class Card : std::uint8_t { Shapes, Textures, Triangles, Scene, Effects };
+    enum class Card : std::uint8_t { Shapes, Textures, Triangles, Scene, Effects, BlurPulse, LineBlend, MotionBlur };
 
     TestCardMode(RenderEngine& engine, Card card);
 
@@ -75,13 +81,17 @@ class TestCardMode final : public GameMode {
     void drawTriangles();
     // The effects card's effect pass, drawn after the scene card through its camera.
     void drawEffects();
+    // A screen pass card: the scene card, then its screen pass, then the frame presented.
+    void drawScreenPassCard();
 
     RenderEngine& m_engine;
     Card m_card;
     // The cards' textures, made for the engine's renderer (a librw raster for OpenGL, pixels for the GPU renderer).
     std::vector<std::unique_ptr<graphics::Texture>> m_textures;
-    // The scene card's meshes and textures, made for it and the effects card alone.
+    // The scene card's meshes and textures, made for it and the cards drawn over it.
     std::unique_ptr<TestCardScene> m_scene;
+    // The motion blur card's kept frame. Declared last, so it gives its copy back first.
+    MotionBlurPass m_motionBlur;
 };
 
 } // namespace coney::platform

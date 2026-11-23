@@ -715,10 +715,13 @@ void copyFrameToRaster(rw::Raster* raster, int x, int y, int width, int height, 
     if (!forwarding()) {
         return;
     }
-    // GL counts the frame buffer's rows from the bottom.
+    // GL counts the frame buffer's rows from the bottom. The texture bound for the copy is bound back to what librw
+    // had there: librw keeps which raster each stage draws with apart from what is bound, so a copy left bound made
+    // the next draw with no texture (librw's white texture, it believed) sample the copy.
     auto* native = PLUGINOFFSET(rw::gl3::Gl3Raster, raster, rw::gl3::nativeRasterOffset);
-    rw::gl3::bindTexture(native->texid);
+    const rw::uint32 previous = rw::gl3::bindTexture(native->texid);
     glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, x, frameHeight - (y + height), width, height);
+    rw::gl3::bindTexture(previous);
 }
 
 namespace {

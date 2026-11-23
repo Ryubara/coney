@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -13,6 +14,7 @@
 #include "graphics/asset_store.h"
 #include "graphics/frame_description.h"
 #include "graphics/overlay_batch.h"
+#include "graphics/screen_pass_steps.h"
 #include "graphics/texture_grid.h"
 #include "graphics/upload_cache.h"
 #include "platform/gpu_scene.h"
@@ -38,9 +40,11 @@ namespace coney::platform {
 ///
 /// Its scene passes (the streamed world's sectors, the world objects and the parked cars: item 13 of
 /// docs/engine/renderer.md#order) are drawn between the 2D passes in their order by GpuScene (gpu_scene.h), from the
-/// asset store's meshes and textures, with a depth buffer the target's size. Not yet: the screen passes (the blur
-/// pulse, the line blend, the motion blur) and the humans, which come with items 14 and 20. The developer overlay (item
-/// 12) draws over the target afterwards, through GpuPresenter (GpuOverlayDraw).
+/// asset store's meshes and textures, with a depth buffer the target's size; the effect passes in the same depth. Its
+/// screen passes (the blur pulse, the line blend, the motion blur: item 20) are drawn as graphics::screenStepsOf()
+/// lays them out, each step that reads the frame from a copy of the target made just before it, the motion blur's
+/// kept frame lasting from one frame to the next (docs/engine/gpu-renderer.md#screen-passes). The developer overlay
+/// (item 12) draws over the target afterwards, through GpuPresenter (GpuOverlayDraw).
 ///
 /// Textures are uploaded the first time a frame draws them and kept by Texture::serial(): a sprite sheet's pixels once
 /// (SheetTexture::toImage()), a PixelTexture's again at each new revision (a movie's frame), and a texture no frame has
@@ -97,6 +101,13 @@ class GpuRenderer {
     /// Why the scene passes are not drawn (SDL refused their shaders or pipeline); empty when they are.
     [[nodiscard]] const std::string& sceneProblem() const { return m_sceneProblem; }
 
+    /// Lets go of the kept frame of the motion blur's copy `id` (graphics::MotionBlurOverlay::copy), as
+    /// RenderEngine::releaseScreenCopy() does on GL3; does nothing for a copy it keeps nothing of.
+    void releaseScreenCopy(graphics::ScreenCopyId id);
+
+    /// How many motion blur copies it keeps a frame of: one for each copy drawn and not yet released.
+    [[nodiscard]] std::size_t keptCopyCount() const { return m_kept.size(); }
+
   private:
     /// A texture the renderer made, released through the device when it goes.
     struct OwnedTexture {
@@ -126,6 +137,22 @@ class GpuRenderer {
         std::uint64_t serial = 0; // the cache's key, forgotten when the upload fails (0 for the white texture)
     };
 
+    /// A screen pass's steps, laid out before the frame's uploads, with where each draw's quad starts in the index
+    /// buffer.
+    struct ScreenPlan {
+        std::size_t pass = 0;            // the frame's pass it draws
+        graphics::ScreenCopyId copy = 0; // the motion blur's kept frame (0 for the other passes)
+        std::vector<graphics::ScreenStep> steps;
+        std::vector<std::uint32_t> firstIndex; // one per step: a draw's first index (0 for a copy)
+    };
+
+    /// The motion blur's frame kept for one copy, from one frame to the next.
+    struct KeptFrame {
+        graphics::ScreenCopyId id = 0;
+        OwnedTexture texture;
+        bool kept = false; // the texture holds a frame to lay over the next
+    };
+
     explicit GpuRenderer(SDL_GPUDevice* device) : m_device(device) {}
 
     /// Makes (or keeps) the target and its depth buffer at `size`; false when SDL refuses them.
@@ -148,11 +175,27 @@ class GpuRenderer {
     void forgetUploads(const std::vector<PendingUpload>& uploads);
     /// The sampler for `linear` filtering (else nearest) and `address`.
     SDL_GPUSampler* samplerFor(bool linear, graphics::TextureAddress address) const;
+    /// Lays out the frame's screen passes (graphics::screenStepsOf()) at `size`, adding each draw's quad to `batch`,
+    /// and marks each motion blur's kept frame as it will stand once they have run.
+    std::vector<ScreenPlan> planScreenPasses(const graphics::FrameDescription& frame, graphics::Extent size,
+                                             graphics::OverlayBatch& batch);
+    /// The kept frame of copy `id`, made empty the first time.
+    KeptFrame& keptFrame(graphics::ScreenCopyId id);
+    /// The copy `slot` names (`copy`: the kept frame's), made again when it is not `width` by `height`; null when SDL
+    /// refuses it.
+    SDL_GPUTexture* copyTexture(graphics::ScreenSlot slot, graphics::ScreenCopyId copy, int width, int height);
+    /// Records `plan`'s copies and draws (platform/gpu_screen_passes.cpp): each copy ends the render pass `pass` and
+    /// copies the target's rectangle in a copy pass, and the next draw starts another through `resume`, binding the 2D
+    /// pipeline through `bind2d` (its argument: opaque). A copy SDL refuses leaves the rest of the pass out. False when
+    /// SDL refused a render pass, which ends the frame.
+    bool recordScreenPass(SDL_GPUCommandBuffer* commands, const ScreenPlan& plan, SDL_GPURenderPass*& pass,
+                          const std::function<bool()>& resume, const std::function<void(bool)>& bind2d);
 
     SDL_GPUDevice* m_device;
     SDL_GPUGraphicsPipeline* m_pipeline = nullptr;
-    SDL_GPUSampler* m_samplers[4] = {}; // nearest clamp, nearest repeat, linear clamp, linear repeat
-    OwnedTexture m_white;               // one white texel: flat colour
+    SDL_GPUGraphicsPipeline* m_opaquePipeline = nullptr; // the same with no blending: the blur pulse's quads
+    SDL_GPUSampler* m_samplers[4] = {};                  // nearest clamp, nearest repeat, linear clamp, linear repeat
+    OwnedTexture m_white;                                // one white texel: flat colour
     bool m_whiteUploaded = false;
     OwnedTexture m_target;             // what record() draws into
     OwnedTexture m_depth;              // its depth buffer, the same size
@@ -173,7 +216,10 @@ class GpuRenderer {
     };
     std::array<Download, 2> m_downloads; // one for each ReadBack
     graphics::UploadCache<OwnedTexture> m_textures;
-    std::uint64_t m_frame = 0; // record()s so far: the cache's clock
+    OwnedTexture m_viewCopy;       // the screen passes' copy of the view (graphics::ScreenSlot::View)
+    OwnedTexture m_halfCopy;       // the blur pulse's copy of its half-size image (graphics::ScreenSlot::Half)
+    std::vector<KeptFrame> m_kept; // the motion blur's kept frames, by copy
+    std::uint64_t m_frame = 0;     // record()s so far: the cache's clock
 };
 
 } // namespace coney::platform

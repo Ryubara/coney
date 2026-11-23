@@ -225,7 +225,7 @@ draw without librw's GL3 device as early as possible:
    screens, movies, HUD); Dear ImGui (its `sdlgpu3` backend is in the pinned Dear ImGui); the world (prelit colour,
    dual layer, fog), objects and cars (item 13, built: [Drawing the scene passes](gpu-renderer.md#scene)); humans,
    skinned on the GPU; particles, coronas and the rest of the effects (item 20, [#1212](issue:1212)) and the screen
-   passes ([#1646](issue:1646)). Then
+   passes ([#1646](issue:1646), built: [Drawing the screen passes](gpu-renderer.md#screen-passes)). Then
    each scene of the [benchmark](renderer-performance.md#benchmark) and the named `--play-level` frames are drawn by
    both renderers on the same machine and compared as [How pictures are compared](#comparing) says, with the
    cross-renderer tolerance; differences are listed. librw's GL3 output stays the reference until the switch.
@@ -352,8 +352,8 @@ and rings; the water and the throw arc hold their texture as a `SheetTexture`, t
 sprite sheet. **Drawn by the GPU renderer since item 20 ([#1212](issue:1212)):** each effect draw also carries the
 render states in force when it was recorded (`EffectInForce`, read from the draw layer), which the states it leaves
 unset keep, and the GPU renderer draws the passes with the scene's shaders in the scene's depth ([Drawing the effect
-passes](gpu-renderer.md#effects)); the screen passes follow ([#1646](issue:1646)), then the comparison of every scene
-with GL3 ([#1647](issue:1647)).
+passes](gpu-renderer.md#effects)); the screen passes since its second slice ([#1646](issue:1646), [Drawing the screen
+passes](gpu-renderer.md#screen-passes)); then the comparison of every scene with GL3 ([#1647](issue:1647)).
 
 **What still sets render states beside the description.** After item 10, [one check](#librw-check) keeps librw's drawing
 in the GL3 renderer. What it still excludes, each to leave when its code moves onto the description: the states the

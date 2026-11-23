@@ -14,6 +14,7 @@
 
 #include "platform/gpu_scene.h"
 #include "platform/gpu_shader.h"
+#include "platform/gpu_uniforms.h"
 #include "platform/pixel_texture.h"
 #include "platform/sprite_sheets.h"
 
@@ -62,20 +63,6 @@ graphics::TextureFilter filterOf(rw::Texture& texture) {
         return graphics::TextureFilter::Linear;
     }
 }
-
-// The vertex shader's uniform: the target's size in pixels.
-struct FrameUniform {
-    float width;
-    float height;
-    float unused[2];
-};
-
-// The fragment shader's uniform: the alpha a draw keeps.
-struct AlphaUniform {
-    float low;
-    float high;
-    float unused[2];
-};
 
 } // namespace
 
@@ -169,10 +156,15 @@ std::expected<std::unique_ptr<GpuRenderer>, Error> GpuRenderer::create(SDL_GPUDe
     info.target_info.depth_stencil_format = static_cast<SDL_GPUTextureFormat>(renderer->m_depthFormat);
     info.target_info.has_depth_stencil_target = true;
     renderer->m_pipeline = SDL_CreateGPUGraphicsPipeline(device, &info);
-    // The pipeline holds what it needs of the shaders.
+    // The same with no blending, which writes what the shader gives as the GL3 renderer's opaque screen quads do
+    // (ONE / ZERO): the blur pulse's.
+    target.blend_state.enable_blend = false;
+    renderer->m_opaquePipeline =
+        renderer->m_pipeline != nullptr ? SDL_CreateGPUGraphicsPipeline(device, &info) : nullptr;
+    // The pipelines hold what they need of the shaders.
     SDL_ReleaseGPUShader(device, vertex);
     SDL_ReleaseGPUShader(device, fragment);
-    if (renderer->m_pipeline == nullptr) {
+    if (renderer->m_pipeline == nullptr || renderer->m_opaquePipeline == nullptr) {
         return failure("its pipeline");
     }
 
@@ -225,6 +217,9 @@ GpuRenderer::~GpuRenderer() {
     SDL_WaitForGPUIdle(m_device);
     m_scene.reset();
     m_textures.clear();
+    m_viewCopy = OwnedTexture();
+    m_halfCopy = OwnedTexture();
+    m_kept.clear();
     m_white = OwnedTexture();
     m_target = OwnedTexture();
     m_depth = OwnedTexture();
@@ -235,6 +230,9 @@ GpuRenderer::~GpuRenderer() {
     }
     if (m_pipeline != nullptr) {
         SDL_ReleaseGPUGraphicsPipeline(m_device, m_pipeline);
+    }
+    if (m_opaquePipeline != nullptr) {
+        SDL_ReleaseGPUGraphicsPipeline(m_device, m_opaquePipeline);
     }
     if (m_vertices != nullptr) {
         SDL_ReleaseGPUBuffer(m_device, m_vertices);
@@ -443,9 +441,10 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
         return nullptr;
     }
 
-    // 1. The frame's 2D draws as one batch, and the texture each one samples (uploaded this frame when new); then the
-    // scene passes' draws, with their meshes and textures.
-    const graphics::OverlayBatch batch = graphics::batchOverlays(frame);
+    // 1. The frame's 2D draws as one batch, and the texture each one samples (uploaded this frame when new); the screen
+    // passes' quads after them; then the scene passes' draws, with their meshes and textures.
+    graphics::OverlayBatch batch = graphics::batchOverlays(frame);
+    const std::vector<ScreenPlan> screenPlans = planScreenPasses(frame, size, batch);
     std::vector<PendingUpload> uploads;
     if (!m_whiteUploaded) {
         uploads.push_back(PendingUpload{m_white.texture, {255, 255, 255, 255}, 1, 1});
@@ -474,11 +473,17 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     if (scene != nullptr) {
         total = scene->layUploads(total);
     }
-    // Forgets what this frame meant to upload, when nothing of it reached the GPU.
-    const auto forget = [this, &uploads, scene] {
+    // Forgets what this frame meant to upload, when nothing of it reached the GPU, and the frames the motion blur
+    // meant to keep, which it now never draws.
+    const auto forget = [this, &uploads, scene, &screenPlans] {
         forgetUploads(uploads);
         if (scene != nullptr) {
             scene->forgetUploads();
+        }
+        for (const ScreenPlan& plan : screenPlans) {
+            if (plan.copy != 0) {
+                keptFrame(plan.copy).kept = false;
+            }
         }
     };
     const bool drawsSomething = vertexBytes > 0 && indexBytes > 0;
@@ -539,7 +544,8 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
 
     // 3. One render pass: the window cleared as the frame starts and the depth buffer to the far plane, then every
     // pass in order, the 2D passes' draws and the scene passes' between them; a scene pass that clears the depth
-    // starts a render pass of its own.
+    // starts a render pass of its own, and a screen pass ends the render pass for each copy it makes, the next draw
+    // starting another that keeps the colour and the depth drawn so far.
     const graphics::Rgba clear = graphics::windowClearOf(frame.start());
     SDL_GPUColorTargetInfo target{};
     target.texture = m_target.texture;
@@ -552,7 +558,8 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     depth.texture = m_depth.texture;
     depth.clear_depth = 1.0F;
     depth.load_op = SDL_GPU_LOADOP_CLEAR;
-    depth.store_op = SDL_GPU_STOREOP_DONT_CARE;
+    // Kept across a screen pass's copies, for what is drawn after it.
+    depth.store_op = screenPlans.empty() ? SDL_GPU_STOREOP_DONT_CARE : SDL_GPU_STOREOP_STORE;
     depth.stencil_load_op = SDL_GPU_LOADOP_DONT_CARE;
     depth.stencil_store_op = SDL_GPU_STOREOP_DONT_CARE;
     depth.cycle = true;
@@ -560,8 +567,42 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
     if (pass == nullptr) {
         return nullptr;
     }
+    // Starts a render pass that keeps the colour and, unless `clearDepth`, the depth drawn so far.
+    const auto resume = [&](bool clearDepth) {
+        target.load_op = SDL_GPU_LOADOP_LOAD;
+        target.cycle = false;
+        depth.load_op = clearDepth ? SDL_GPU_LOADOP_CLEAR : SDL_GPU_LOADOP_LOAD;
+        depth.cycle = false;
+        pass = SDL_BeginGPURenderPass(commands, &target, 1, &depth);
+        return pass != nullptr;
+    };
+    // Binds the 2D pipeline (`opaque`: the one with no blending) and its buffers, since a scene pass may have bound
+    // its own.
+    const auto bind2d = [&](bool opaque) {
+        SDL_BindGPUGraphicsPipeline(pass, opaque ? m_opaquePipeline : m_pipeline);
+        const FrameUniform frameUniform{static_cast<float>(size.width), static_cast<float>(size.height), {0, 0}};
+        SDL_PushGPUVertexUniformData(commands, 0, &frameUniform, sizeof(frameUniform));
+        const SDL_GPUBufferBinding vertices{m_vertices, 0};
+        SDL_BindGPUVertexBuffers(pass, 0, &vertices, 1);
+        const SDL_GPUBufferBinding indices{m_indices, 0};
+        SDL_BindGPUIndexBuffer(pass, &indices, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+    };
+    std::size_t nextPlan = 0;
     const std::span<const graphics::FramePass> passes = frame.passes();
     for (std::size_t p = 0; p < passes.size(); ++p) {
+        // A screen pass: its copies and draws in order (the frame's last pass may leave the render pass ended).
+        if (std::holds_alternative<graphics::ScreenPass>(passes[p])) {
+            if (nextPlan < screenPlans.size() && screenPlans[nextPlan].pass == p) {
+                const ScreenPlan& plan = screenPlans[nextPlan++];
+                if (!recordScreenPass(commands, plan, pass, [&] { return resume(false); }, bind2d)) {
+                    return nullptr;
+                }
+            }
+            continue;
+        }
+        if (pass == nullptr && !resume(false)) {
+            return nullptr;
+        }
         // An effect pass: drawn by the scene drawing, in the depth the scene passes left.
         if (std::holds_alternative<graphics::EffectPass>(passes[p])) {
             if (scene != nullptr) {
@@ -574,12 +615,7 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
                 // The depth alone cleared to the far plane before the pass (the Z-only clear after the level's
                 // background): a render pass of its own that keeps the colour drawn so far.
                 SDL_EndGPURenderPass(pass);
-                target.load_op = SDL_GPU_LOADOP_LOAD;
-                target.cycle = false;
-                depth.load_op = SDL_GPU_LOADOP_CLEAR;
-                depth.cycle = false;
-                pass = SDL_BeginGPURenderPass(commands, &target, 1, &depth);
-                if (pass == nullptr) {
+                if (!resume(true)) {
                     return nullptr;
                 }
             }
@@ -593,14 +629,7 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
         if (!drawsSomething || first == end) {
             continue;
         }
-        // The 2D pipeline and its buffers again for each 2D pass, since a scene pass may have bound its own.
-        SDL_BindGPUGraphicsPipeline(pass, m_pipeline);
-        const FrameUniform frameUniform{static_cast<float>(size.width), static_cast<float>(size.height), {0, 0}};
-        SDL_PushGPUVertexUniformData(commands, 0, &frameUniform, sizeof(frameUniform));
-        const SDL_GPUBufferBinding vertices{m_vertices, 0};
-        SDL_BindGPUVertexBuffers(pass, 0, &vertices, 1);
-        const SDL_GPUBufferBinding indices{m_indices, 0};
-        SDL_BindGPUIndexBuffer(pass, &indices, SDL_GPU_INDEXELEMENTSIZE_32BIT);
+        bind2d(false);
         for (std::uint32_t i = first; i < end; ++i) {
             const graphics::OverlayDraw& draw = batch.draws[i];
             const OwnedTexture* texture = drawTextures[i];
@@ -614,7 +643,9 @@ SDL_GPUTexture* GpuRenderer::record(SDL_GPUCommandBuffer* commands, const graphi
             SDL_DrawGPUIndexedPrimitives(pass, draw.indexCount, 1, draw.firstIndex, 0, 0);
         }
     }
-    SDL_EndGPURenderPass(pass);
+    if (pass != nullptr) {
+        SDL_EndGPURenderPass(pass);
+    }
     return m_target.texture;
 }
 

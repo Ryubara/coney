@@ -72,3 +72,21 @@ renderers = ["gl3", "gpu"]
 name = "test-card-effects"
 args = ["--test-card", "effects"]
 renderers = ["gl3", "gpu"]
+
+# The screen pass cards: the 3D card, then one screen pass over the whole view (the blur pulse's blur, the line blend,
+# the motion blur laying the last frame over the new one from the second frame on), drawn by both renderers and
+# compared the same way (docs/engine/gpu-renderer.md#screen-passes).
+[[scene]]
+name = "test-card-blur-pulse"
+args = ["--test-card", "blur-pulse"]
+renderers = ["gl3", "gpu"]
+
+[[scene]]
+name = "test-card-line-blend"
+args = ["--test-card", "line-blend"]
+renderers = ["gl3", "gpu"]
+
+[[scene]]
+name = "test-card-motion-blur"
+args = ["--test-card", "motion-blur"]
+renderers = ["gl3", "gpu"]

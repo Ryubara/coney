@@ -224,6 +224,30 @@ def test_a_scenario_refuses_a_record_debug_draw_that_is_not_a_bool(checkout: Pat
         clips_pair.load_scenario(path, checkout)
 
 
+def test_a_scenario_can_turn_the_line_blend_on(checkout: Path) -> None:
+    # The PS2 video output's line blend is Coney's `--line-blend`, off by default, so a scenario for a screen pass asks
+    # for it (engine/gpu-renderer.md#screen-passes); every other scenario leaves it off.
+    path = _scenario(
+        checkout / "tools" / "clips",
+        "lines",
+        'description = "lines"\nlevel = "level99"\ninput = "tests/support/walk.txt"\nseconds = 5\nline_blend = true\n',
+    )
+    run = clips_pair.load_scenario(path, checkout)
+    assert run.line_blend is True
+    args = clips_pair.coney_arguments(Path("coney.exe"), "H:/", run, Path("/s/t/clips/after.mp4"))
+    assert args[args.index("--line-blend") + 1] == "on"
+    plain = clips_pair.PairRun("w", "level99", run.input_script, seconds=5)
+    assert plain.line_blend is False
+    assert "--line-blend" not in clips_pair.coney_arguments(Path("coney.exe"), "H:/", plain, Path("/s/a.mp4"))
+    bad = _scenario(
+        checkout / "tools" / "clips",
+        "bad-lines",
+        'description = "d"\nlevel = "level99"\ninput = "tests/support/walk.txt"\nseconds = 5\nline_blend = 1\n',
+    )
+    with pytest.raises(clips.ClipError, match="line_blend"):
+        clips_pair.load_scenario(bad, checkout)
+
+
 def test_the_record_line_gives_the_frames_and_their_hash() -> None:
     text = "loading\n" + RECORD_LINE.format(path="C:/s/clips/after.mp4", frames=300, seconds=10, digest="0x00ab")
     recording = clips_pair.parse_record_line(text)

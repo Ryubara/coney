@@ -415,7 +415,7 @@ page = "graphics.md#code-screen-effects"
 role = "device slot `+0x128`: each view's blur pulse, tint, fade, letterbox and motion blur, in that order"
 level = "confirmed-code"
 coney = "src/platform/play_level_effects.h:PlayLevelEffects::drawScreenEffects"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0018e070

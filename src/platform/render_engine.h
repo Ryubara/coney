@@ -250,13 +250,13 @@ class RenderEngine final : public graphics::RenderDevice {
     /// the side flipping each pass, then stretched back over the screen, opaque. 0 passes still leaves the half-size
     /// copy. Only between beginFrame() and present(); draws nothing with the NULL backend.
     /// Recorded as a screen pass (graphics::BlurPulse) and drawn by Gl3Renderer::drawBlurPulse(), the port of the
-    /// original's blur pass.
+    /// original's blur pass, or by the GPU renderer from graphics::blurPulseSteps().
     void blurScreen(int passes, float offsetU, float offsetV);
 
     /// A new copy of the view for a screen pass to keep from frame to frame (MotionBlurPass's last frame).
     [[nodiscard]] graphics::ScreenCopyId newScreenCopy() { return m_gl3.newScreenCopy(); }
-    /// Gives the copy `id` back; before the engine stops.
-    void releaseScreenCopy(graphics::ScreenCopyId id) { m_gl3.releaseScreenCopy(id); }
+    /// Gives the copy `id` back, on the renderer that draws it (GL3 or the GPU renderer); before the engine stops.
+    void releaseScreenCopy(graphics::ScreenCopyId id);
     /// Adds the motion blur's screen pass over the whole view (viewRect()): the copy `copy` laid over it in `colour`,
     /// then the view kept in it (graphics::MotionBlurOverlay). Only between beginFrame() and present().
     void addMotionBlur(graphics::ScreenCopyId copy, graphics::Rgba colour);

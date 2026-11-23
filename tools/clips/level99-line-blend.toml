@@ -1,0 +1,10 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): the level99 street from the play mode with the
+# PS2 video output's line blend on (`--line-blend on`), the walk of level99-walk. For a change to the screen passes
+# (docs/engine/gpu-renderer.md#screen-passes): record it on `--renderer gpu`, where the line blend was not drawn before
+# the screen passes were, or against `--before-renderer gl3`, the reference.
+description = "level99 street with the line blend: the walk at 30 % and 60 %, then the run"
+level = "level99"
+input = "tests/support/play_walk_level99.txt"
+start_frame = 150
+seconds = 5
+line_blend = true
