@@ -1142,6 +1142,30 @@ a human who has a weapon's anim set with no object (a spawner's item, which Cone
 any object an AI can hold has kind 0 decides whether the first ever differs: list the kinds of the objects the scripts,
 the weapon piles and the spawners hand to AI humans.
 
+### Where Coney's run-in still differs {#q-engage-gaps}
+
+The side-by-side compare of `EngageEnemyGoal_Process` (`0x002afa48`, 2026-11-23, #606) left these pieces of
+`repo:src/ai/engage_goals.cpp` as marked stand-ins, each confirmed (code) at the address given and none yet compared
+with the original running:
+
+- the run-in's tests of "he runs" use gait 4 and up; the original's are gait 3 and up for arming the charge (step 9,
+  `0x002aff38`) and for the charge itself (step 11, `0x002b0048`), and below 3 for "slowed from a run" (step 6,
+  `0x002afe04`), so a jogging target differs;
+- the close-by stop of step 9 does not wait for the line of sight, which the original's does (`0x002aff48`-`0x002aff68`:
+  both stop reasons end in one `Human_HasLineOfSight` test);
+- a cop does not take the X1 against an ungrabbable target (`+0xe0` bit `0x40`, `0x002b012c`);
+- the lead of step 12 applies only from the target's sectors 3-5, where the original leads from any sector (fanned only
+  in 3-5) unless the runner stands in sector 0 within the target's speed (`0x002b0384`); its fan step is (index - 1) ×
+  9° (`0x002b023c`), equal to Coney's paired steps up to the fourth slot;
+- the move is queued again each plan instead of re-aimed in place (`0x002b040c`), a refused clear does not wait, and
+  the move carries no class-13 flag;
+- the wanted, spotter and last-seen notes (`0x0028ff78`, `0x0028c0c8`, `0x0028c140`), the shout (`0x002af928`), the
+  fight stance (`0x0022fef0`), blocked actions (`0x00228228`, `0x00228428`) and the class-13 exception to the re-target
+  are not built, and an invalid target ends the goal at once instead of a stop first.
+
+Which of these a player can see (the jog and the sight test most likely) is the question: each wants a scenario run on
+both games before it is ported.
+
 ## How this was checked
 
 ### The re-target's timing {#runtime-retarget}

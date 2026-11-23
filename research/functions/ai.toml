@@ -2792,8 +2792,38 @@ page = "ai-fights.md#engage-enemy"
 kind = "Process"
 role = "[the run-in](ai-fights.md#engage-enemy)"
 level = "confirmed-code"
-coney = "src/ai/engage_goals.h:EngageEnemyGoal::process"
-status = "legacy"
+coney = "src/ai/engage_goals.cpp:EngageEnemyGoal::process"
+status = "compared"
+
+[[function.gaps]]
+what = "the run-in's gait tests read a jog as walking (the original's arming and charge take gait 3 and up)"
+relation = "stand-in"
+question = "ai-fights.md#q-engage-gaps"
+
+[[function.gaps]]
+what = "the close-by stop does not wait for the line of sight"
+relation = "stand-in"
+question = "ai-fights.md#q-engage-gaps"
+
+[[function.gaps]]
+what = "a cop's X1 is not forced against an ungrabbable target"
+relation = "stand-in"
+question = "ai-fights.md#q-engage-gaps"
+
+[[function.gaps]]
+what = "the lead applies only from sectors 3-5, and the fan pairs the slots"
+relation = "stand-in"
+question = "ai-fights.md#q-engage-gaps"
+
+[[function.gaps]]
+what = "the move is queued again, not re-aimed in place; no class-13 move flag"
+relation = "stand-in"
+question = "ai-fights.md#q-engage-gaps"
+
+[[function.gaps]]
+what = "the wanted, spotter and last-seen notes, the shout, the fight stance and blocked actions are not built"
+relation = "stand-in"
+question = "ai-fights.md#q-engage-gaps"
 
 [[function]]
 address = 0x002b2b90
