@@ -146,7 +146,7 @@ unnoticed.
 | 7 | PadInput | retired: one step's pad (version 2 only); the id is never reused | | |
 | 8 | InputCommands | client to server | the newest step (varint, 32 bits at most), the number of pads less one (3 bits), the newest step's pad, then each older step's "same pad" bit or pad (below); since version 3 | unreliable |
 | 9 | InputTiming | server to client | the client's lead (zigzag varint, 32 bits at most), the target lead (8); since version 3 | unreliable |
-| 10 | Snapshot | server to client | the humans as a delta against an acknowledged snapshot ([The packet](snapshots.md#packet)); since version 4 (version 7 added each player slot's HUD entries, [HUD state](snapshots.md#hud-state); version 9 the HUD's standing state, [The HUD's standing state](snapshots.md#hud-standing); version 13 the human each player slot drives, a field of its HUD entry) | unreliable, sequenced |
+| 10 | Snapshot | server to client | the humans as a delta against an acknowledged snapshot ([The packet](snapshots.md#packet)); since version 4 (version 7 added each player slot's HUD entries, [HUD state](snapshots.md#hud-state); version 9 the HUD's standing state, [The HUD's standing state](snapshots.md#hud-standing); version 13 the human each player slot drives, a field of its HUD entry; version 14 the radar's blips, [The radar's blips](snapshots.md#hud-blips)) | unreliable, sequenced |
 | 11 | SnapshotAck | client to server | the newest snapshot decoded (varint); since version 4 | unreliable |
 | 12 | EventBatch | server to client | a step's game events of one delivery ([The batch](#event-batch)); since version 5 (version 6 added a sound's instance, SoundStop and SoundMove) | reliable, or unreliable for one-shots |
 | 13 | LoadLevel | server to client | the load (varint, from 1), the reason (8: change, restart, join), the checkpoint (16), the level name (string, 32 bytes at most, only letters, digits, `_` and `-`); since version 8 ([Levels](#levels)) | reliable |
@@ -394,6 +394,7 @@ one definition, as Quake 3's `netField_t` tables do. `writeField()` and `readFie
 | HUD score row (elements 14 to 19) | score (24 bits), the colour (4 x 8 bits) | 56 |
 | HUD stopwatch (element 20) | the time, ms (24 bits) | 24 |
 | HUD settings (element 21) | the HUD shown, the prompt at the clubhouse's place, the radars' script switch, their rest and full-speed radius and zoom scale (Exact) | 99 |
+| HUD blip (by slot, 0 to 127) | type (4 bits, 0 to 12), icon (10 bits), size (16 bits, 0 to 16), the colour (4 x 8 bits), flashing, blinking, icon lock, marked, marking, dot shown, the human it follows (22 bits, a network id's number), has place and the place (3 x 14 bits) ([The radar's blips](snapshots.md#hud-blips)) | 133 |
 
 The ranges are Coney's choices. Four are stand-ins, marked in the code, for the game's side of snapshots to settle: the
 positions' fixed bounds around the origin (in place of each level's own), the clip as an anim id under 4,096 (or the
@@ -832,6 +833,6 @@ Each step is a pull request that builds and is tested on its own.
    digest, two-process tests and replays (built: [Proof without a person](#proof)).
 6. **AI humans, events, mission state:** the rest of what a client must see and hear: the game events (built: [Game
    events](#events)), each player's panel state and the HUD's standing state in the snapshot (built: [HUD
-   state](snapshots.md#hud-state), [The HUD's standing state](snapshots.md#hud-standing); the radar's blips: #1537),
+   state](snapshots.md#hud-state), [The HUD's standing state](snapshots.md#hud-standing); [The radar's blips](snapshots.md#hud-blips)),
    the AI humans and the mission state; level loads, checkpoints and the loading barrier (built: [Levels](#levels)).
 7. **Prediction:** the local player predicted and corrected from the server's snapshots.

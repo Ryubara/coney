@@ -15,6 +15,7 @@
 #include "graphics/render_device.h"
 #include "hud/hud.h"
 #include "net/protocol.h"
+#include "net/radar_blips.h"
 #include "net/replicated_fields.h"
 #include "net/snapshot.h"
 
@@ -306,8 +307,9 @@ SnapshotHudStanding snapshotHudStanding(const hud::HudStanding& standing) {
 }
 
 hud::HudStanding hudStanding(const SnapshotHudElements& elements, const SnapshotHudTexts& texts,
-                             const SnapshotBlips& /*blips*/) {
+                             const SnapshotBlips& blips) {
     hud::HudStanding standing;
+    standing.shared.blips = hudBlips(blips);
     // Element `key`'s words, or null when it is not held; text `key`, or empty.
     const auto element = [&elements](std::uint8_t key) -> const HudElementWords* {
         const auto found = elements.find(key);

@@ -92,6 +92,7 @@ HudStanding Hud::standing() const {
     shared.scores = m_progress;
     shared.stopWatch = m_stopWatch;
     shared.stopWatchMs = m_stopWatch.shown && m_services.stopWatchTime ? m_services.stopWatchTime() : 0;
+    shared.blips = m_radar.blips;
     return standing;
 }
 
@@ -133,9 +134,34 @@ void Hud::applyStanding(const HudStanding& standing) {
     m_bars.restoreGauge(shared.gauge);
     m_progress = shared.scores;
     m_stopWatch = shared.stopWatch;
+    applyBlips(shared.blips);
 }
 
-// Stub (the test commit's): the guest's HUD takes no blips yet.
-void Hud::applyBlips(const std::map<double, RadarBlip>& /*theirs*/) {}
+// The radar's blips the host holds, as a guest's HUD keeps them: each takes what the standing state carries of it, and
+// keeps what its own radar step found. A blip the host no longer holds goes.
+// @coney-only network play; the original has none
+void Hud::applyBlips(const std::map<double, RadarBlip>& theirs) {
+    std::erase_if(m_radar.blips, [&theirs](const auto& entry) { return !theirs.contains(entry.first); });
+    for (const auto& [key, blip] : theirs) {
+        RadarBlip& mine = m_radar.blips[key];
+        mine.type = blip.type;
+        mine.icon = blip.icon;
+        mine.scale = blip.scale;
+        mine.colour = blip.colour;
+        mine.flashing = blip.flashing;
+        mine.iconLock = blip.iconLock;
+        mine.flashCountdown = blip.flashCountdown;
+        mine.marked = blip.marked;
+        mine.markTimer = blip.markTimer;
+        mine.dotShown = blip.dotShown;
+        mine.fixedPlace = blip.fixedPlace;
+        mine.follows = blip.follows;
+        // What Radar_AddBlip and the step make of a blip, from its type and icon: the host's dot state travels, so a
+        // new blip is settled and has no first show or hide to redo. A type-9 slot has no dot.
+        mine.settled = true;
+        mine.hasDot = blip.type != 9;
+        mine.depth = radarTopBatchIcon(mine.icon) ? kRadarTopBatchDepth : radarBatchDepth(mine.type);
+    }
+}
 
 } // namespace coney::hud

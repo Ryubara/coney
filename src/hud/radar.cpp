@@ -179,8 +179,7 @@ bool radarBlipShown(const RadarBlip& blip, std::uint64_t updates) {
     return true;
 }
 
-// Stub (the test commit's).
-bool radarTopBatchIcon(int /*icon*/) { return false; }
+bool radarTopBatchIcon(int icon) { return isTopBatchIcon(icon); }
 
 int radarBatchDepth(int type) {
     switch (type) {
@@ -279,9 +278,12 @@ bool stepRadarBlips(RadarState& radar, const RadarStepContext& context) {
             blip.depth = kRadarTopBatchDepth;
             blip.dotShown = showing && blip.marked;
         }
-        // 2. Where it is: its fixed point, or its object, whose objective arrow follows the height.
+        // 2. Where it is: its fixed point, or the human a guest's blip follows (the host's step already gave its icon
+        // and colour, which travel), or its object, whose objective arrow follows the height.
         std::optional<anim::Vec3> at = blip.fixedPlace;
-        if (!at && context.locate) {
+        if (!at && blip.follows != 0) {
+            at = context.locateFollowed ? context.locateFollowed(blip.follows) : std::nullopt;
+        } else if (!at && context.locate) {
             at = context.locate(handle);
             if (at && blip.type == 10) {
                 stepObjectiveHeight(blip, radar.view.position, *at);

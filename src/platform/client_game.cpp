@@ -10,9 +10,13 @@
 #include <string>
 #include <utility>
 
+#include "animation/anim_math.h"
+#include "camera/camera_view.h"
 #include "gamemodes/game_mode_stack.h"
+#include "net/client_camera.h"
 #include "net/event_channel.h"
 #include "net/jitter_buffer.h"
+#include "net/net_id.h"
 #include "net/net_status.h"
 #include "net/player_huds.h"
 #include "platform/net_play.h"
@@ -63,6 +67,14 @@ ModeResult ClientGame::update(GameModeStack& stack, const FrameTime& frame) {
         // The level's HUD, as its scene draws it: a fresh one for each level, with the services the run gave.
         m_hud = std::make_unique<hud::HudOwner>();
         m_hud->hud().setServices(m_presentation.hud);
+        // The humans its radar's blips follow, found in this level's world by the id the host's snapshots name them by.
+        m_hud->hud().setRadarFollowLocator([this](std::uint32_t id) -> std::optional<anim::Vec3> {
+            if (!m_world) {
+                return std::nullopt;
+            }
+            const auto human = m_world->humans().find(net::netIdFromNumber(id));
+            return human != m_world->humans().end() ? std::optional(human->second.position) : std::nullopt;
+        });
         m_hudMs = 0;
         m_levelNumber = levelNumberOf(at.level);
         auto scene = m_load(at, *m_hud);
@@ -191,12 +203,45 @@ void ClientGame::stepHud(const FrameTime& frame) {
     hudFrame.nowMs = m_hudMs;
     hudFrame.levelNumber = m_levelNumber;
     hud::applyPlayerHud(hudFrame, 0, net::playerHudForSlot(m_net.arrivedHuds(), slot));
+    hudFrame.radar = radarView(frame);
     hud.update(hudFrame);
     hud.updateHints(m_hudMs);
 }
 
-// Stub (the test commit's): the guest's radar has no view yet.
-hud::RadarView ClientGame::radarView(const FrameTime& /*frame*/) const { return {}; }
+hud::RadarView ClientGame::radarView(const FrameTime& frame) const {
+    // The radar is centred on the human the guest's slot follows, as the world shows him now: where he stands and
+    // faces, how fast he moved over the last step, and the way the guest's own camera looks (the humans' convention: 0
+    // faces +y, positive to the left). With none to follow, or none in the world, there is no view and the radar draws
+    // none.
+    hud::RadarView view;
+    if (!m_world) {
+        return view;
+    }
+    // The same human the guest's camera follows (net::followedHuman(), the slot's driven human the host names).
+    const std::optional<net::NetId> followed =
+        net::followedHuman(m_world->humans(), m_net.arrivedHuds(), m_net.playerSlot());
+    if (!followed) {
+        return view;
+    }
+    const auto now = m_world->humans().find(*followed);
+    const std::optional<camera::CameraView> look = m_camera.view(1.0F);
+    if (now == m_world->humans().end() || !look) {
+        return view;
+    }
+    view.known = true;
+    view.position = now->second.position;
+    view.heading = now->second.heading;
+    const anim::Vec3 forward = camera::viewForward(*look);
+    view.cameraHeading = std::atan2(-forward.x, forward.y);
+    // The speed from the step before's place, when he was in the world then.
+    const auto before = m_world->previousHumans().find(*followed);
+    if (before != m_world->previousHumans().end() && frame.seconds > 0.0) {
+        const float moved = std::hypot(now->second.position.x - before->second.position.x,
+                                       now->second.position.y - before->second.position.y);
+        view.speed = moved / static_cast<float>(frame.seconds);
+    }
+    return view;
+}
 
 void ClientGame::dropLevel() {
     // The scene draws the HUD, so it goes first; the sounds the host started in the level end with it.

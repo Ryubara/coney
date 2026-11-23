@@ -28,7 +28,7 @@ namespace coney::net {
 
 /// The protocol's version. Bump it with any change to a message's layout or meaning: a client and a server of
 /// different versions refuse each other in the handshake rather than misread each other.
-inline constexpr std::uint16_t kProtocolVersion = 13;
+inline constexpr std::uint16_t kProtocolVersion = 14;
 /// The first field of Hello, "CONY" read as a little-endian number: a packet from another program is refused.
 inline constexpr std::uint32_t kProtocolMagic = 0x594e4f43U;
 /// The UDP port a server listens on unless told otherwise.
@@ -300,7 +300,7 @@ struct SnapshotBlipEntry {
 /// varint, at most kHudElements) and each: its key (kHudElementBits), a removed bit and, when not removed, the text (a
 /// varint length of 1 to kMaxHudTextBytes, then its bytes) (protocol 9). Then the number of radar blips (a varint, at
 /// most kMaxRadarBlips) and each: its slot (kRadarBlipSlotBits), a removed bit and, when not removed, for each of its
-/// fields a changed bit followed by the word when set (protocol 13).
+/// fields a changed bit followed by the word when set (protocol 14).
 struct Snapshot {
     std::uint32_t sequence = 1;           ///< 1 for a client's first, one more for each after
     std::uint32_t baseline = 0;           ///< the sequence it is a delta against; 0 for none (a full snapshot)
