@@ -85,6 +85,7 @@ FightSettings onlyKind(int kind) {
 } // namespace
 
 TEST_CASE("two attackers on a man with a spacing of one take turns at his one active place", "[ai]") {
+    // Expected: ai-fights.md#attack-places, confirmed (code) at 0x00291008 and 0x002b3ab0
     Scene scene;
     const FightSettings square = onlyKind(1);
     Brain& front = scene.add({40.0F, 40.9F, 0.0F}, 180.0F, BrainType::Gang, square);
@@ -98,11 +99,12 @@ TEST_CASE("two attackers on a man with a spacing of one take turns at his one ac
     bool backPressed = false;
     for (int k = 0; k < 300; ++k) {
         scene.run(1);
-        const auto* a = dynamic_cast<const coney::ai::FightGoal*>(front.topGoal());
-        const auto* b = dynamic_cast<const coney::ai::FightGoal*>(back.topGoal());
-        // Never both in the place at once.
-        CHECK_FALSE((a != nullptr && b != nullptr && a->holdsPlace() && b->holdsPlace()));
-        CHECK(scene.playerBrain().fightBook().places.held() <= 1);
+        // Never both in the place at once, by the man's places: a goal's own flag (`+0x28`) can lag, as the man's
+        // target may take the place from the other, whose flag FightGoal_Process (0x002b3ab0) clears only once his
+        // queued actions are over.
+        const coney::ai::ActivePlaces& places = scene.playerBrain().fightBook().places;
+        CHECK_FALSE((places.holds(&front) && places.holds(&back)));
+        CHECK(places.held() <= 1);
         frontPressed = frontPressed || front.human().record().command == coney::combat::command::kSquarePressed;
         backPressed = backPressed || back.human().record().command == coney::combat::command::kSquarePressed;
     }
