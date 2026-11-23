@@ -1,9 +1,9 @@
 # A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level99's combat tutorial, its last lesson, the
 # sparring fight (docs/research/ai-fights.md#level99-fight). The input script skips the intro and calls the lesson's
 # set-up through the developer console's `lua` (a build with the debug tools), as the sparring disc test does; the scene
-# `l99_c5` sends the three sparring Warriors at the player, who stands still. At AI seed 4 the first arrives within
-# 1.5 m of him at about frame 765: the clip starts just before. For a change to how a fighter runs in and charges
-# (EngageEnemy).
+# `l99_c5` sends the three sparring Warriors at the player, who stands still. The clip starts in the scene's last
+# second; at AI seed 4 the first Warrior to arrive stands beside the player about 4 s in (frame 865). For a change to
+# how a fighter runs in and charges (EngageEnemy).
 description = "level99 combat tutorial: the three sparring Warriors run in at a player standing still"
 level = "level99"
 input = "tools/clips/level99-sparring.txt"
