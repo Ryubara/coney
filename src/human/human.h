@@ -1032,6 +1032,8 @@ class Human final : public Holdable {
     /// object's style comes off as at any drop or throw (releaseHeldStyle(), with the fighter's anim set as the held
     /// set) and he holds nothing: anim set 0. The caller clears the script's hand. Research:
     /// docs/research/objects.md#two-handed
+    /// @orig 0x00257f38 Human_DropHeld (unknown)
+    /// @orig 0x002586d8 Human_ReleaseThrow (unknown)
     void letGoOfHeld(bool thrown);
     /// Starts the stereo theft at the stereo at `point`: the human turns to it at once and the mini-game runs (mode 3)
     /// with `stageTurns` turns of the stick a stage (combat::stereoStageTurns()). **Coney stand-in**: the turn is made

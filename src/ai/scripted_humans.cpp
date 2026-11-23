@@ -290,7 +290,7 @@ void ScriptedHumans::dropWeapon(double human) {
     });
 }
 
-// @orig 0x00257f38 Human_DropHeld (unknown)
+// A script's drop (HuDropWeapon's Human_DropHeld): human::Human::letGoOfHeld() with the drop's rule.
 void ScriptedHumans::letGo(Brain& brain) {
     // An AI's drop takes the held object's move style off here; a player's hand is followed by the play mode, whose
     // dropHeld() does it when it sees the hand empty.
