@@ -890,15 +890,9 @@ the disassembly, 2026-10-12), unless a line says otherwise.
 
 - **Specified by:** this section; background in [Shapes](physics.md#shapes), [The human body](physics.md#human-body) and
   [Combat: moving strikes](combat/index.md#moving-strikes).
-- **Coney:** `repo:src/physics/shapes.h` (done, issue #375): the shape record (`ShapeRecord`) with a pose function
-  per type that reads the owner's transforms and bone through `ShapeOwner`, the set-from-a-matrix functions, the
-  corners, the bound and the two AABB helpers. Still to move onto it: `Human::struckCapsule` (`src/human/human.h`,
-  the capsule height) and `world_objects/object_bodies.*`'s box and sphere (Units 9 and 10, #376). The three small
-  vtable entries Coney ports had no function in Ghidra and now do (2026-11-23): `PhysicsShape_SetEnabled`
-  (`0x004f11c8`), `PhysicsSphere_SetMatrix` (`0x00342d08`), `PhysicsCapsule_SetMatrix` (`0x00343798`). Coney's
-  choice: a human with no model writes no head bone, and the original's capsule pose then reads a stack word nothing
-  wrote (its bone buffer at `sp+0x80` is not the one the body transform went into); Coney takes 0 for the head's
-  height there.
+- **Coney:** a new `src/physics/shapes.{h,cpp}` (posed shapes as values, with a pose function per type that takes
+  the owner's transform and bone transform as inputs); `src/human/human.h` capsule height moves here;
+  `world_objects/object_bodies.*` builds its box and sphere from it.
 - **Tests:** [Test ideas](#u6-tests): each shape posed from a synthetic body and bone transform; the flag `0x10`
   sequence; a rotated box's corners and bound against a brute-force corner bound; the segment bound quirk; the
   capsule's height rules (0.61, 0.7 and its cap, 0.35 cuffed, never under 0.2 × scale).
@@ -1252,15 +1246,9 @@ unless said; the bone `(b, qb) = ((0.2, 0, 1.5), qy)`.
 widest-body bound, and the box queries every shape, sweep, strike and ray test starts from. Read in the disassembly
 on 2026-10-12; every claim is confirmed (code) at the cited address unless it says otherwise.
 
-- **Coney:** `repo:src/physics/physics_world.h` (done, issue #375: body vector, x-sorted list, `+0x14` bound, the
-  two box queries, the overlap query, the bound refresh of the step); a level owning one is Unit 15's (#379). Bodies
-  and shapes are ids into the world's stores (`BodyId`, `ShapeId`). The queries have **no** 512 cap of their own: the
-  callers' lists hold 512 and nothing checks it ([below](#u7-cap)); Coney uses a growable list and marks the
-  difference. `PhysicsWorld::updateBody` hands back the update sweep's box and move; the sweep against the bodies is
-  Unit 11's (#377). The overlap query's candidates answer their own shape chain; a human body's capsule chain is
-  Unit 10's (#376). Coney's choices, each marked in the code: an ownerless candidate of the filtered query has state 0
-  (the original calls through its null owner), and a free ignore slot is never "forgotten" (the original would call
-  through its null body).
+- **Coney:** `src/physics/physics_world.{h,cpp}` (body vector, x-sorted list, `+0x14` bound, the two box queries, the
+  overlap query); `play_level_mode` owns one per level. The queries have **no** 512 cap of their own: the callers'
+  lists hold 512 and nothing checks it ([below](#u7-cap)); Coney uses a growable list and marks the difference.
 - **Tests:** [Test ideas](#u7-tests): the tie order of insert and reinsert, the backward walk's order and its missing
   upper x test, the filters, the bound refresh on the 120th tick, the overlap query's option bits.
 
@@ -1390,16 +1378,20 @@ this update (inferred from step 4.2; which bodies carry `0x801` is [Unit 9](#uni
 
 ### PhysicsBody_Moved {#u7-moved}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 `0x00341e40`, vtable `+0x18`. `void (Body* b, const mat4* m)`: sets the **first** shape from the matrix `m` (shape
 vtable `+0x30`, [the shape vtable](#u6-record): a box or capsule keeps its old position as the previous one, a sphere
 only moves), `b`'s AABB = that shape's bounds only (`PhysicsBody_ComputeBounds`), then
 `BodyList_Reinsert(0x00597198's IPhysics, b)`. Other shapes are neither set nor bounded, the dirty flag is not
-touched. Correction (2026-11-23): this section read the function as taking the body alone; it never writes `a1`
+touched. The function never writes `a1`
 before the call through the slot (`0x00341e50`-`0x00341e60`), so its caller's second argument is the matrix the
 shape is set from (confirmed (code)). The human body has its own
 (`0x00342828`, [The human body](physics.md#human-body)).
 
 ### BodyList_Insert {#u7-insert}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 `0x003404a8`. `void BodyList_Insert(IPhysics* p, Body* b, Body* hint)`:
 
@@ -1537,6 +1529,8 @@ which `keep` functions exist, is [Unit 11](#unit-11)'s (callers not traced here)
 
 ### IPhysics_OverlapShape {#u7-overlapshape}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 `0x0033ebb8`, 0x328 bytes. `int IPhysics_OverlapShape(IPhysics* p, Contact* out, const OverlapQuery* q)` → contacts
 written to `out`. The record and the contact it fills are on [Unit 4](physics-kernels.md#overlapshape); here, every bit
 and limit.
@@ -1569,7 +1563,7 @@ on: the push sphere's `0x2000` (`0x2012`) and the climb's `0x4` and `0x8` (`0xd`
    `0x0033ee84`-`0x0033eea8`). Return `k`. The box handed on is the **stack node** (`a2 = sp`, `0x0033eea4`), not the
    box of step 1: with `0x400` the node was never filled (the given box only feeds the body query, `0x0033ec10`), so
    the mesh is asked about the zero box `PhysicsNode_Init` left at the origin (confirmed (code); whether a caller
-   sets both `0x400` and `0x1` is Unit 11's). Correction (2026-11-23): this step read `&box`.
+   sets both `0x400` and `0x1` is Unit 11's).
 
 **Limits, none checked** (`0x0033ec44`, `0x0033ed10`, `0x0033ed8c`): 512 candidates, 50 contact slots, 52 sorted
 pointers (`sp+0x2db0`-`sp+0x2e7f`). A 51st hit writes its contact over the sorted list, and the insert writes
@@ -1577,6 +1571,8 @@ pointers past it; a 513th candidate writes over the contact slots. Inferred: not
 use small boxes and max 1 to 32).
 
 ### The 512 candidates {#u7-cap}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 Neither query has a cap, and neither is told the size of `out`. Every caller provides 512 entries:
 `IPhysics_OverlapShape` (`sp+0x30`, 0x800 bytes), `IPhysics_CollideShape` (`sp+0x26a0`-`sp+0x2e9f`),
@@ -1648,12 +1644,8 @@ numbers come from a model of this spec (computed 2026-10-12).
 and the fixed shape pools with their allocators. Read in the disassembly on 2026-10-12; all confirmed (code) at the
 cited addresses unless marked.
 
-- **Coney:** `repo:src/physics/physics_world.h` (done, issue #375): the pools with the original's counts and "first
-  free" scans, so reuse behaves the same, and the ignore slots as one array of 60. Coney lifts both past the
-  original's counts (rule: when every shape of a pool, or every slot, is taken, one more is built and taken; the
-  engine limits preset pins the original's counts, so running out behaves as on the PS2 there; `shapePoolCap`,
-  `ignoreSlotCap`, [Beyond the original](../engine/beyond-the-original.md)). The human body's grab partner is
-  passed in by the caller (`Human_GetGrabOther` is the human's).
+- **Coney:** `src/physics/physics_world.*`: fixed pools with the original's counts and "first free" scans, so running
+  out and reuse behave the same; the ignore slots as one array of 60.
 - **Tests:** [Test ideas](#u8-tests): the 61st `Ignore`, slot reuse, pointer matching, the grab partner, the pool
   limits and the flags a freed shape keeps.
 
@@ -1736,6 +1728,8 @@ Who asks `IsIgnoring` (body vtable `+0x30`) is not traced here: the static calls
 (`0x00342204`); the owners' `+0x110` answers are the likely askers ([Unit 11](#unit-11)). Inferred.
 
 ### The shape pools {#u8-pools}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 Every shape is built once by the IPhysics constructor (flags `0x1`, enabled, by `PhysicsShape_Construct`
 `0x00342a30`; `0x8` clear). The allocators scan from index 0 and take the **first** shape whose test passes; past the

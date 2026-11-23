@@ -253,8 +253,8 @@ name = "IPhysics_Step"
 page = "physics-world.md#u15-step"
 level = "confirmed-code"
 note = "the level is from [physics.md#step](physics.md#step)"
-coney = "src/world_objects/loose_objects.h:SettleTurn::tick"
-status = "legacy"
+coney = "src/physics/physics_world.h:PhysicsWorld::refreshBound"
+status = "compared"
 
 [[function]]
 address = 0x00340b38
@@ -328,8 +328,8 @@ address = 0x00341840
 name = "AABB_ExtendByMove"
 page = "physics-bodies.md#u3-extend"
 level = "confirmed-code"
-coney = "src/physics/body_sweep.h:extendByMove"
-status = "legacy"
+coney = "src/physics/physics_world.cpp:growByMove"
+status = "compared"
 
 [[function]]
 address = 0x00341970
@@ -502,8 +502,8 @@ name = "PhysicsCapsule_Pose"
 page = "physics-bodies.md#u6-capsule-pose"
 level = "confirmed-code"
 note = "the level is from [combat/index.md#capsule-strike](combat/index.md#capsule-strike)"
-coney = "src/human/human.h:Human::struckCapsule"
-status = "legacy"
+coney = "src/physics/shapes.h:poseCapsule"
+status = "compared"
 
 [[function]]
 address = 0x00343798
