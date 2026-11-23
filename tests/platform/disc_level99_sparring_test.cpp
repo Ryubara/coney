@@ -87,7 +87,7 @@ constexpr int kTauntFrames = 1198;
 // The taunt's line, `cheer2`.
 constexpr int kTauntLine = 0x11;
 // The fewest taunts every AI sequence gives over those updates. The original's three said 11 (10 in a recording that
-// started 6 updates later), the two waiters 5 each from the band 4-4.75 m out; Coney's eight sequences give 7, 7, 2,
+// started 6 updates later), the two waiters 8 and 3 from the band 4-4.75 m out; Coney's eight sequences give 7, 7, 2,
 // 8, 13, 7, 6 and 6 with the band-keeping move (sequence 2 exactly at this bound), and gave 0-8 while its waiters
 // stood where their last attack left them, inside the taunt's 2.75 m (docs/research/ai-fights.md#runtime-taunts).
 constexpr int kLeastTaunts = 2;

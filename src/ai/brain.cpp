@@ -718,6 +718,8 @@ void Brain::addEnemy(Brain& enemy) {
 }
 
 void Brain::setTarget(Brain* target, bool force) {
+    // Not ported (#649, research/functions/ai.toml): the original takes the target only when its slot claim succeeds
+    // and keeps the wanted state, spotter and last seen place; so here a target can be a man with no slot for him.
     if (m_target == target) {
         if (m_target != nullptr) {
             m_target->claimSlot(*this, force);
@@ -758,6 +760,8 @@ void Brain::retarget() {
 }
 
 bool Brain::claimSlot(Brain& attacker, bool force) {
+    // Not ported (#649, research/functions/ai.toml): the spacing rules, a Warrior's spacing of 1 and the displaced
+    // holder's full Brain_SetTarget; he only loses the target and the stance it held.
     if (std::ranges::find(m_slots, &attacker) != m_slots.end()) {
         raiseSpacing(attacker);
         return true;

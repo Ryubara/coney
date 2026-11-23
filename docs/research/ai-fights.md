@@ -1215,12 +1215,12 @@ ahead. Four times a goal started or resumed twice in one update, and the second 
 PCSX2-MCP fork 2.9.129, 2026-10-21, scenario `warriors_taunts` with the `say-command` hook on
 `Human_SayCommand` `0x002205e0`: in level99's sparring fight against a still player, the
 three Warriors said `cheer2` from `FidgetAction_Start` (return address `0x002fa090`) 11 times in the 1,198 updates
-from their run-in (updates 502-1700): one Warrior once, the other two five times each, each one's taunts 37 to
-582 updates apart (the 1000-2000 ms timer allows one every 30-60 updates at most). Two earlier recordings of the
-same state end 12 updates sooner, before the eleventh taunt, and hold 10 each: the first ten, at the same game
-ticks, so the fight is deterministic from that state. Coney's count
-over the same span, printed by the level99 sparring disc test for its eight AI sequences (2026-10-21, two runs), was
-0-2: 2 or 1, 0, 0, 0, 1, 0, 1, 0.
+from their run-in (updates 502-1700). The later recording below shows whose they are: two Warriors taunt, 8 times
+and 3 times, and the one the player faces never does; each one's taunts are 65 to 511 updates apart (the
+1000-2000 ms timer allows one every 30-60 updates at most). Two earlier recordings of the same state end 12 updates
+sooner, before the eleventh taunt, and hold 10 each: the first ten, at the same game ticks, so the fight is
+deterministic from that state. Coney's count over the same span, printed by the level99 sparring disc test for its
+eight AI sequences (2026-10-21, two runs), was 0-2: 2 or 1, 0, 0, 0, 1, 0, 1, 0.
 
 **What made the difference: where the waiters wait** (2026-11-22). The same scenario with a hook on
 `FightGoal_Reposition` at its taunt timer test (`fight-reposition`, `0x002b31bc`: the brain, the squared distance it
@@ -1229,7 +1229,8 @@ was called with, the reason and the close-in flag), from a state made again as [
 updates later and holds the last 10 of them, at the same spacing). Of the three Warriors, the one the player faces is
 close in on 278 of his 308 reposition calls and stands 0.8-2.7 m off (median 1.1 m), never at the taunt's 2.75 m, so
 he never taunts. The other two are never close in: they are called 63 and 105 times, at a median 4.2 and 4.1 m, and
-62 and 100 of those calls are at 2.75 m or more; each passes the taunt timer about 9 times and taunts about 5 times.
+62 and 100 of those calls are at 2.75 m or more; each passes the taunt timer about 9 times, and one taunts 8 times,
+the other 3.
 So the taunts come from the waiters standing in the ring's band of 4-4.75 m, which the band-keeping move
 ([MoveMelee](ai-moving.md#move-melee), `0x002fd4e8`) holds them in: one that comes nearer than 4 m backs off over 10
 updates. Confirmed (runtime) for the distances, confirmed (code) at `0x002b2fc8` for the band.
