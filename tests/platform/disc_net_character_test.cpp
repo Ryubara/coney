@@ -31,6 +31,7 @@
 #include "net/character_id.h"
 #include "net/client_world.h"
 #include "net/game_humans.h"
+#include "net/player_huds.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
 #include "platform/sandbox_play_scenery.h"
@@ -120,4 +121,54 @@ TEST_CASE("the host's play mode tells each human's character to network play", "
     CHECK(player->character == cleonId);
     std::printf("host characters: %zu humans, %zu distinct characters\n", humans.holding().size(),
                 charactersNow().size());
+}
+
+// Expected: unverified, #1654 (Coney's own: snapshots.md#hud-state; the host's play mode has one player, in slot 0, and
+// nobody in slot 1 until a second player is built, docs/guides/multiplayer.md#player-two)
+TEST_CASE("the host's play mode names the human its player slot drives to network play", "[disc][net][character]") {
+    const char* discPath = SDL_getenv("CONEY_DISC");
+    if (discPath == nullptr || *discPath == '\0') {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto disc = coney::io::Disc::open(discPath);
+    REQUIRE(disc.has_value());
+    auto wad = coney::io::Wad::open(std::move(*disc));
+    REQUIRE(wad.has_value());
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+
+    // The sandbox's setup as main makes it, as the test above does.
+    const coney::LevelScriptRun run =
+        coney::runLevelScriptAlone(coney::script::wadScriptSource(*wad), "level99", 1, {});
+    coney::platform::PlayerSetup setup;
+    setup.ai = coney::ai::aiConfigFrom(run.recorded);
+    setup.types = coney::characters::CharacterTypes::fromRecorded(run.recorded);
+    coney::net::GameHumans humans;
+    auto world = coney::sandbox::SandboxWorld::load(coney::test::assetsDir() / "sandbox", "combat");
+    REQUIRE(world.has_value());
+    auto made = coney::platform::createPlayInSandbox(
+        **engine, *wad, std::move(*world), std::nullopt, [](std::string_view) {}, setup);
+    REQUIRE(made.has_value());
+    coney::platform::PlayLevelMode& mode = **made;
+    mode.shareHumansWith(&humans);
+
+    coney::GameModeStack modes;
+    coney::GameTimer timer;
+    timer.setFixedStep(true);
+    modes.push(mode);
+    (void)modes.runUntilEmpty(timer, {}, 5);
+
+    // Slot 0's HUD entry names the human standing where the player does; slot 1, which nobody plays, names none.
+    REQUIRE(humans.huds().size() >= 2);
+    const coney::net::NetId driven = coney::net::playerHudHuman(humans.huds()[0].words);
+    CHECK_FALSE(coney::net::playerHudHuman(humans.huds()[1].words).valid());
+    REQUIRE(driven.valid());
+    const coney::net::SnapshotHumans holding = humans.holding();
+    REQUIRE(holding.contains(driven));
+    const coney::anim::Vec3 feet = mode.playerFeet();
+    const coney::net::HumanState state = coney::net::humanState(holding.at(driven));
+    CHECK(std::abs(state.position.x - feet.x) < 0.5F);
+    CHECK(std::abs(state.position.y - feet.y) < 0.5F);
+    std::printf("host player slots: slot 0 names human %u of %zu\n", static_cast<unsigned>(driven.slot),
+                holding.size());
 }

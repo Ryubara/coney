@@ -41,7 +41,7 @@ bool flag(const std::array<FieldValue, kHudFieldCount>& values, HudField f) { re
 
 } // namespace
 
-HudWords playerHudWords(const hud::PlayerHudState& state) {
+HudWords playerHudWords(const hud::PlayerHudState& state, NetId /*human*/) {
     const hud::PanelValues& panel = state.panel;
     std::array<FieldValue, kHudFieldCount> values{};
     values.at(at(HudField::Rage)) = held(HudField::Rage, panel.rage);
@@ -78,7 +78,9 @@ hud::PlayerHudState playerHudState(const HudWords& words) {
     return state;
 }
 
-std::vector<SnapshotHud> snapshotHuds(std::span<const hud::PlayerHudState> slots) {
+NetId playerHudHuman(const HudWords& /*words*/) { return NetId{}; } // STUB: replaced by the change
+
+std::vector<SnapshotHud> snapshotHuds(std::span<const hud::PlayerHudState> slots, std::span<const NetId> /*humans*/) {
     CONEY_ASSERT(slots.size() <= kMaxPlayerSlots);
     std::vector<SnapshotHud> huds;
     huds.reserve(slots.size());

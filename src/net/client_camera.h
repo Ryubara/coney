@@ -10,6 +10,7 @@
 #include "human/locomotion.h"
 #include "net/client_world.h"
 #include "net/net_id.h"
+#include "net/snapshot.h"
 
 // The client's own camera: Coney's follow camera (camera::FollowCamera, the original's Cam_Follow) run on the human the
 // client's player slot follows, from what the snapshots replicate of him. Coney's own; the original has no network
@@ -30,7 +31,8 @@ inline constexpr std::uint8_t kClientStickRest = 128;
 /// but drives no human of its own, docs/guides/multiplayer.md#player-two), so every slot follows the host's player 1,
 /// the human with the lowest network id (his brain comes first in the host's capture). None with no human.
 /// @coney-only network play; the original has none
-[[nodiscard]] std::optional<NetId> followedHuman(const ClientWorld::Humans& humans, std::uint8_t slot);
+[[nodiscard]] std::optional<NetId> followedHuman(const ClientWorld::Humans& humans, const SnapshotHuds& huds,
+                                                 std::uint8_t slot);
 
 /// What the follow camera reads of a human from his replicated state, `now` at this step and `before` at the step
 /// before (null when he is new: no velocity), `seconds` apart, with `speeds` his gaits' speeds: his feet, heading,

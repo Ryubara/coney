@@ -20,6 +20,7 @@
 #include "animation/anim_math.h"
 #include "camera/camera_view.h"
 #include "camera/follow_camera.h"
+#include "hud/hud.h"
 #include "human/locomotion.h"
 #include "net/client_world.h"
 #include "net/link_conditioner.h"
@@ -27,6 +28,7 @@
 #include "net/net_client.h"
 #include "net/net_id.h"
 #include "net/net_server.h"
+#include "net/player_huds.h"
 #include "net/snapshot.h"
 #include "support/optional_value.h"
 
@@ -66,14 +68,15 @@ struct Feed {
     ClientWorld world;
     std::uint32_t step = 0;
 
-    // The server's step with `humans`, then the client's.
-    void run(const std::map<NetId, HumanState>& humans) {
+    // The server's step with `humans` and the HUD entries `huds` (each player slot's, naming its human), then the
+    // client's.
+    void run(const std::map<NetId, HumanState>& humans, const std::vector<SnapshotHud>& huds = {}) {
         std::vector<SnapshotHuman> sent;
         sent.reserve(humans.size());
         for (const auto& [id, human] : humans) {
             sent.push_back(SnapshotHuman{.id = id, .words = humanWords(human), .priority = 1});
         }
-        const Snapshot snapshot = sender.build(step++, sent);
+        const Snapshot snapshot = sender.build(step++, sent, huds);
         REQUIRE(receiver.apply(snapshot) == SnapshotApplied::Applied);
         REQUIRE(sender.acknowledge(snapshot.sequence).has_value());
         world.receive(receiver);
@@ -96,21 +99,115 @@ float yawOf(const coney::camera::CameraView& view) {
     return std::atan2(forward.y, forward.x);
 }
 
+// The HUD entries of a host whose slot 0 drives `first` and slot 1 `second` (none for a default id).
+std::vector<SnapshotHud> hudsNaming(NetId first, NetId second) {
+    const coney::hud::PlayerHudState state;
+    return {SnapshotHud{.slot = 0, .words = playerHudWords(state, first)},
+            SnapshotHud{.slot = 1, .words = playerHudWords(state, second)}};
+}
+
+// The HUD entries a client holds of `huds`: the words the host sent for each slot.
+SnapshotHuds heldHuds(const std::vector<SnapshotHud>& huds) {
+    SnapshotHuds held;
+    for (const SnapshotHud& hud : huds) {
+        held.emplace(hud.slot, hud.words);
+    }
+    return held;
+}
+
 } // namespace
 
-// Expected: unverified, #1333 (Coney's own: the stand-in of docs/guides/client-world.md#client-camera, the host's
-// player 1 being the human with the lowest network id)
-TEST_CASE("client camera: every player slot follows the host's player 1, the lowest network id, until the snapshots "
-          "name the human of each",
-          "[net][client_camera]") {
+// Expected: unverified, #1654 (Coney's own: docs/guides/client-world.md#client-camera, the human a player slot drives
+// is the one its HUD entry names)
+TEST_CASE("client camera: a player slot follows the human the snapshot says it drives", "[net][client_camera]") {
     ClientWorld::Humans humans;
-    CHECK_FALSE(followedHuman(humans, 1).has_value());
     humans.emplace(idOf(7), humanAt(Vec3{1.0F, 0.0F, 0.0F}));
     humans.emplace(idOf(2), humanAt(Vec3{2.0F, 0.0F, 0.0F}));
     humans.emplace(idOf(4), humanAt(Vec3{3.0F, 0.0F, 0.0F}));
-    for (const std::uint8_t slot : {std::uint8_t{0}, std::uint8_t{1}, std::uint8_t{3}}) {
-        CHECK(followedHuman(humans, slot) == std::optional<NetId>{idOf(2)});
+    // Slot 0 drives the human of id 4 and slot 1 the human of id 7: neither is the lowest id.
+    const SnapshotHuds huds = heldHuds(hudsNaming(idOf(4), idOf(7)));
+    CHECK(followedHuman(humans, huds, 0) == std::optional<NetId>{idOf(4)});
+    CHECK(followedHuman(humans, huds, 1) == std::optional<NetId>{idOf(7)});
+    // The two slots swap their humans: each follows the other's.
+    const SnapshotHuds swapped = heldHuds(hudsNaming(idOf(7), idOf(4)));
+    CHECK(followedHuman(humans, swapped, 0) == std::optional<NetId>{idOf(7)});
+    CHECK(followedHuman(humans, swapped, 1) == std::optional<NetId>{idOf(4)});
+}
+
+// Expected: unverified, #1654 (Coney's choice: a guest whose slot drives no human yet watches the host's player 1, as
+// it did before the snapshots named the humans; docs/guides/client-world.md#client-camera)
+TEST_CASE("client camera: a slot that drives no human follows the lowest network id, the host's player 1",
+          "[net][client_camera]") {
+    ClientWorld::Humans humans;
+    CHECK_FALSE(followedHuman(humans, {}, 1).has_value());
+    humans.emplace(idOf(7), humanAt(Vec3{1.0F, 0.0F, 0.0F}));
+    humans.emplace(idOf(2), humanAt(Vec3{2.0F, 0.0F, 0.0F}));
+    humans.emplace(idOf(4), humanAt(Vec3{3.0F, 0.0F, 0.0F}));
+    // No HUD entries at all (nothing has said which human drives which slot).
+    CHECK(followedHuman(humans, {}, 1) == std::optional<NetId>{idOf(2)});
+    // Slot 0 drives a human and slot 1 none: slot 1 watches the lowest id, slot 0 its own.
+    const SnapshotHuds onlyFirst = heldHuds(hudsNaming(idOf(4), NetId{}));
+    CHECK(followedHuman(humans, onlyFirst, 0) == std::optional<NetId>{idOf(4)});
+    CHECK(followedHuman(humans, onlyFirst, 1) == std::optional<NetId>{idOf(2)});
+    // A slot with no HUD entry (the host has fewer players than slots) is the same.
+    for (const std::uint8_t slot : {std::uint8_t{2}, std::uint8_t{3}}) {
+        CHECK(followedHuman(humans, onlyFirst, slot) == std::optional<NetId>{idOf(2)});
     }
+}
+
+// Expected: unverified, #1654 (Coney's own: the HUDs arrive with the newest snapshot and the humans a few steps behind,
+// so a named human the client does not show yet is waited for, never swapped for another)
+TEST_CASE("client camera: a human the slot drives but the world does not show yet is followed once it is shown",
+          "[net][client_camera]") {
+    ClientWorld::Humans humans;
+    humans.emplace(idOf(2), humanAt(Vec3{2.0F, 0.0F, 0.0F}));
+    // Id 9 is not shown; neither is the slot of id 2 in another generation.
+    CHECK_FALSE(followedHuman(humans, heldHuds(hudsNaming(NetId{}, idOf(9))), 1).has_value());
+    CHECK_FALSE(followedHuman(humans, heldHuds(hudsNaming(NetId{}, NetId{.slot = 2, .generation = 2})), 1).has_value());
+    // Once he is shown he is followed.
+    humans.emplace(idOf(9), humanAt(Vec3{9.0F, 0.0F, 0.0F}));
+    CHECK(followedHuman(humans, heldHuds(hudsNaming(NetId{}, idOf(9))), 1) == std::optional<NetId>{idOf(9)});
+}
+
+// Expected: unverified, #1654 (Coney's own: two player slots, each client's camera follows its own slot's human,
+// through the snapshot's encoding; docs/guides/client-world.md#client-camera)
+TEST_CASE("client camera: two clients over the same host each follow their own slot's human, and cut when the host "
+          "swaps them",
+          "[net][client_camera]") {
+    // Two clients' worlds, fed the same host steps: two humans far apart, slot 0 driving the first, slot 1 the second.
+    Feed client0;
+    Feed client1;
+    ClientCamera camera0;
+    ClientCamera camera1;
+    const Vec3 at0{0.0F, 0.0F, 0.0F};
+    const Vec3 at1{100.0F, 100.0F, 0.0F};
+    const auto runBoth = [&](const std::vector<SnapshotHud>& huds) {
+        const std::map<NetId, HumanState> humans{{idOf(0), humanAt(at0)}, {idOf(1), humanAt(at1)}};
+        client0.run(humans, huds);
+        client1.run(humans, huds);
+        camera0.step(client0.world, followedHuman(client0.world.humans(), client0.receiver.huds(), 0), restInput());
+        camera1.step(client1.world, followedHuman(client1.world.humans(), client1.receiver.huds(), 1), restInput());
+    };
+    for (int i = 0; i < 60; ++i) {
+        runBoth(hudsNaming(idOf(0), idOf(1)));
+    }
+    REQUIRE(camera0.followed() == std::optional<NetId>{idOf(0)});
+    REQUIRE(camera1.followed() == std::optional<NetId>{idOf(1)});
+    CHECK(groundDistance(coney::test::got(camera0.view(1.0F)).position, at0) < 7.0F);
+    CHECK(groundDistance(coney::test::got(camera1.view(1.0F)).position, at1) < 7.0F);
+    CHECK(camera0.cuts() == 1);
+    CHECK(camera1.cuts() == 1);
+
+    // The host's slots drive each other's humans: each camera is made behind its slot's new human, once.
+    for (int i = 0; i < 60; ++i) {
+        runBoth(hudsNaming(idOf(1), idOf(0)));
+    }
+    REQUIRE(camera0.followed() == std::optional<NetId>{idOf(1)});
+    REQUIRE(camera1.followed() == std::optional<NetId>{idOf(0)});
+    CHECK(groundDistance(coney::test::got(camera0.view(1.0F)).position, at1) < 7.0F);
+    CHECK(groundDistance(coney::test::got(camera1.view(1.0F)).position, at0) < 7.0F);
+    CHECK(camera0.cuts() == 2);
+    CHECK(camera1.cuts() == 2);
 }
 
 // Expected: unverified, #1333 (Coney's own: what the follow camera reads of a human, Human::gait() and
@@ -166,7 +263,7 @@ TEST_CASE("client camera: with no human it has no view, and with one it stands b
     Feed feed;
     ClientCamera camera;
     // Before the buffer's clock runs the world shows nobody.
-    camera.step(feed.world, followedHuman(feed.world.humans(), 1), restInput());
+    camera.step(feed.world, followedHuman(feed.world.humans(), feed.receiver.huds(), 1), restInput());
     CHECK_FALSE(camera.followed().has_value());
     CHECK_FALSE(camera.view(1.0F).has_value());
     CHECK(camera.cuts() == 0);
@@ -175,7 +272,7 @@ TEST_CASE("client camera: with no human it has no view, and with one it stands b
     const Vec3 feet{10.0F, 20.0F, 0.0F};
     for (int i = 0; i < 20; ++i) {
         feed.run({{idOf(3), humanAt(feet)}});
-        camera.step(feed.world, followedHuman(feed.world.humans(), 1), restInput());
+        camera.step(feed.world, followedHuman(feed.world.humans(), feed.receiver.huds(), 1), restInput());
     }
     REQUIRE(camera.followed() == std::optional<NetId>{idOf(3)});
     CHECK(camera.cuts() == 1);
@@ -210,7 +307,7 @@ TEST_CASE("client camera: a human running away is trailed within the leash band 
             feet.y += 4.6F * kStep;
         }
         feed.run({{idOf(0), humanAt(feet)}});
-        camera.step(feed.world, followedHuman(feed.world.humans(), 1), restInput());
+        camera.step(feed.world, followedHuman(feed.world.humans(), feed.receiver.huds(), 1), restInput());
         // The human as the world shows him this step: the camera's own target.
         const auto shown = feed.world.humans().find(idOf(0));
         if (i < 60 || shown == feed.world.humans().end()) {
@@ -247,7 +344,7 @@ TEST_CASE("client camera: the client's own right stick turns its own view and th
             // The stick is held for the last fifteen steps: half a second.
             input.rawRightX = i >= 75 ? rawRightX : kClientStickRest;
             feed.run({{idOf(0), humanAt(Vec3{0.0F, 0.0F, 0.0F})}});
-            camera.step(feed.world, followedHuman(feed.world.humans(), 1), input);
+            camera.step(feed.world, followedHuman(feed.world.humans(), feed.receiver.huds(), 1), input);
         }
         const float yaw = yawOf(coney::test::got(camera.view(1.0F)));
         // He stays where the world has him, wherever the camera looks.
@@ -276,7 +373,7 @@ TEST_CASE("client camera: a human followed after another cuts to behind him, and
                                            {idOf(2), humanAt(Vec3{100.0F, 100.0F, 0.0F}, 1.0F)}};
     for (int i = 0; i < 20; ++i) {
         feed.run(both);
-        camera.step(feed.world, followedHuman(feed.world.humans(), 1), restInput());
+        camera.step(feed.world, followedHuman(feed.world.humans(), feed.receiver.huds(), 1), restInput());
     }
     REQUIRE(camera.followed() == std::optional<NetId>{idOf(1)});
     CHECK(camera.cuts() == 1);
@@ -287,7 +384,7 @@ TEST_CASE("client camera: a human followed after another cuts to behind him, and
     // frame before it is the same view (no swing across the level).
     for (int i = 0; i < 20; ++i) {
         feed.run({{idOf(2), humanAt(Vec3{100.0F, 100.0F, 0.0F}, 1.0F)}});
-        camera.step(feed.world, followedHuman(feed.world.humans(), 1), restInput());
+        camera.step(feed.world, followedHuman(feed.world.humans(), feed.receiver.huds(), 1), restInput());
     }
     REQUIRE(camera.followed() == std::optional<NetId>{idOf(2)});
     CHECK(camera.cuts() == 2);
@@ -301,7 +398,7 @@ TEST_CASE("client camera: a human followed after another cuts to behind him, and
     for (int i = 0; i < 60; ++i) {
         feet.y += 4.6F * kStep;
         other.run({{idOf(0), humanAt(feet)}});
-        moving.step(other.world, followedHuman(other.world.humans(), 1), restInput());
+        moving.step(other.world, followedHuman(other.world.humans(), other.receiver.huds(), 1), restInput());
     }
     const Vec3 older = coney::test::got(moving.view(0.0F)).position;
     const Vec3 newer = coney::test::got(moving.view(1.0F)).position;
@@ -381,7 +478,7 @@ TEST_CASE("client camera: over a bad link the client's own camera follows its pl
         // human of its slot as the world shows him.
         world.receive(session.client.snapshots());
         world.step();
-        camera.step(world, followedHuman(world.humans(), 1), restInput());
+        camera.step(world, followedHuman(world.humans(), session.client.snapshots().huds(), 1), restInput());
         const std::optional<NetId> followed = camera.followed();
         if (step >= 90 && followed) {
             const HumanState& human = world.humans().at(*followed);

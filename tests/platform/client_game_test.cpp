@@ -212,6 +212,7 @@ struct HostAndClient {
                       nullptr,
                       ClientPresentation{.sound = &sound, .hud = {}}};
     std::array<coney::hud::PlayerHudState, 2> hostPlayerHuds{}; // what the host's game hands over each step
+    std::array<NetId, 2> hostDrivers{}; // the human each of the host's player slots drives (none at first)
     coney::hud::HudStanding hostStanding{};
     GameModeStack stack;
     GuestPad pad;
@@ -244,7 +245,7 @@ struct HostAndClient {
             sent[host.steps()] = holding;
             host.setGameHumans(humans);
             const coney::net::SnapshotHudStanding standing = coney::net::snapshotHudStanding(hostStanding);
-            host.setGameHuds(coney::net::snapshotHuds(hostPlayerHuds), standing.elements, standing.texts);
+            host.setGameHuds(coney::net::snapshotHuds(hostPlayerHuds, hostDrivers), standing.elements, standing.texts);
             stack.samplePads(frame);
             (void)client.update(stack, FrameTime{.index = frame, .seconds = 1.0 / 30.0});
             client.render(RenderTime{});
@@ -570,6 +571,42 @@ TEST_CASE("client game: the guest's own camera follows the host's player 1 from 
     // A frame draws the camera at its own alpha: at 1, the newest step's view exactly.
     REQUIRE(g.seen.frameView.has_value());
     CHECK(g.seen.frameView.value_or(coney::camera::CameraView{}).position.y == view.position.y);
+}
+
+// Expected: unverified, #1654 (Coney's own: docs/guides/client-world.md#client-camera; the guest holds player slot 1,
+// and the host's snapshots say which human that slot drives)
+TEST_CASE("client game: the guest's camera follows the human its player slot drives, and cuts to another when the host "
+          "gives the slot another",
+          "[net][net_play][client_game][client_camera]") {
+    HostAndClient g;
+    g.host.loadLevel("level99", 1);
+    // The host's slot 0 drives its player 1 (id 0) and the guest's slot 1 the human walking beside him (id 1).
+    const NetId player1{.slot = 0, .generation = 1};
+    const NetId walker{.slot = 1, .generation = 1};
+    const NetId turner{.slot = 2, .generation = 1};
+    g.hostDrivers = {player1, walker};
+    g.connect();
+    g.run(60);
+    REQUIRE(g.client.world() != nullptr);
+    REQUIRE(g.guest.playerSlot() == 1);
+    CHECK(g.seen.followed == std::optional<NetId>{walker});
+    CHECK(g.client.camera().followed() == std::optional<NetId>{walker});
+    CHECK(g.seen.cuts == 1);
+    // The camera is made behind him, where he walks: well along x from the host's player 1, who stands at x 0.
+    CHECK(stepViewOf(g).position.x > 8.0F);
+
+    // The host gives the slot another human: the camera is made behind him, once.
+    g.hostDrivers = {player1, turner};
+    g.run(60);
+    CHECK(g.client.camera().followed() == std::optional<NetId>{turner});
+    CHECK(g.seen.followed == std::optional<NetId>{turner});
+    CHECK(g.seen.cuts == 2);
+
+    // The slot drives none (its player is gone): the guest watches the host's player 1 again.
+    g.hostDrivers = {player1, NetId{}};
+    g.run(60);
+    CHECK(g.client.camera().followed() == std::optional<NetId>{player1});
+    CHECK(g.seen.cuts == 3);
 }
 
 // Expected: unverified, #1333 (Coney's own: the guest's own right stick turns its own view, as the right stick turns

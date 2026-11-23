@@ -154,7 +154,8 @@ void ClientGame::presentEvents() {
 
 void ClientGame::stepCamera(const GameModeStack& stack, const FrameTime& frame) {
     // The human its slot follows, as the world shows him this step, and his character's gait speeds.
-    const std::optional<net::NetId> followed = net::followedHuman(m_world->humans(), m_net.playerSlot());
+    const std::optional<net::NetId> followed =
+        net::followedHuman(m_world->humans(), m_net.arrivedHuds(), m_net.playerSlot());
     human::Speeds speeds{};
     if (followed) {
         const auto human = m_world->humans().find(*followed);

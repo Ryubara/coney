@@ -42,6 +42,15 @@ struct NetId {
     friend constexpr auto operator<=>(const NetId&, const NetId&) = default;
 };
 
+/// `id` as one number of kNetIdBits bits (the generation above the slot), for a field that names a thing: 0 for "no
+/// id" (any id that is not valid()).
+/// @coney-only network play; the original has none
+[[nodiscard]] constexpr std::uint32_t netIdNumber(NetId /*id*/) { return 0; } // STUB: replaced by the change
+
+/// The id a netIdNumber() stands for; "no id" for 0, for a number with generation 0 and for one past kNetIdBits bits.
+/// @coney-only network play; the original has none
+[[nodiscard]] constexpr NetId netIdFromNumber(std::uint32_t /*number*/) { return NetId{}; } // STUB: replaced
+
 /// Writes `id` in kNetIdBits bits: the slot, then the generation. "No id" (NetId{}) may be written, for a field that
 /// names nothing. A generation over kNetIdMaxGeneration is a programmer error (CONEY_ASSERT).
 /// @coney-only network play; the original has none

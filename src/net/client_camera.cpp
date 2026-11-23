@@ -17,7 +17,8 @@ bool isJump(anim::Vec3 from, anim::Vec3 to) {
 
 } // namespace
 
-std::optional<NetId> followedHuman(const ClientWorld::Humans& humans, std::uint8_t /*slot*/) {
+std::optional<NetId> followedHuman(const ClientWorld::Humans& humans, const SnapshotHuds& /*huds*/,
+                                   std::uint8_t /*slot*/) {
     // The ids are walked in order, so the first is the lowest; the host's player 1 (**stand-in**, see the header).
     if (humans.empty()) {
         return std::nullopt;

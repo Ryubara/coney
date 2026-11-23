@@ -5,6 +5,7 @@
 #include "net/player_huds.h"
 
 #include <array>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <variant>
@@ -16,6 +17,7 @@
 #include "hud/hud.h"
 #include "net/bit_stream.h"
 #include "net/game_humans.h"
+#include "net/net_id.h"
 #include "net/protocol.h"
 #include "net/replicated_fields.h"
 #include "net/snapshot.h"
@@ -116,6 +118,83 @@ TEST_CASE("player HUDs: a slot's state round-trips through its words, a number p
     CHECK(hudValues(words).at(at(HudField::Money)) == FieldValue{std::int32_t{7}});
 }
 
+// Expected: unverified, #1654 (Coney's own: snapshots.md#hud-state, the human a slot drives is a field of its entry)
+TEST_CASE("player HUDs: the human a slot drives is a field of its words, none when it drives none",
+          "[net][hud][snapshot]") {
+    const NetId driven{.slot = 41, .generation = 3};
+    // Without a human the words name none, and the state is as it was.
+    CHECK_FALSE(playerHudHuman(playerHudWords(firstPlayer())).valid());
+    // With one, the words name it, whatever else the slot's HUD holds; the state the HUD is given does not change.
+    const HudWords words = playerHudWords(secondPlayer(), driven);
+    CHECK(playerHudHuman(words) == driven);
+    CHECK(playerHudState(words) == secondPlayer());
+    CHECK(words != playerHudWords(secondPlayer()));
+    // The field's word is the human's id as one number (net_id.h's netIdNumber()), the last field of the table.
+    const auto values = hudValues(words);
+    CHECK(std::get<std::int32_t>(values.at(kHudFieldCount - 1)) == static_cast<std::int32_t>(netIdNumber(driven)));
+    // The last id of the last generation fits the field.
+    const NetId last{.slot = 0xffff, .generation = kNetIdMaxGeneration};
+    CHECK(playerHudHuman(playerHudWords(firstPlayer(), last)) == last);
+}
+
+// Expected: unverified, #1654 (Coney's own: snapshots.md#hud-state)
+TEST_CASE("player HUDs: each listed slot names the human given for it, and none past the humans given",
+          "[net][hud][snapshot]") {
+    const std::vector<PlayerHudState> slots{firstPlayer(), secondPlayer()};
+    const NetId first{.slot = 3, .generation = 1};
+    const NetId second{.slot = 9, .generation = 2};
+    const std::vector<NetId> both{first, second};
+    const std::vector<SnapshotHud> listed = snapshotHuds(slots, both);
+    REQUIRE(listed.size() == 2);
+    CHECK(playerHudHuman(listed[0].words) == first);
+    CHECK(playerHudHuman(listed[1].words) == second);
+    CHECK(listed[1].words == playerHudWords(slots[1], second));
+    // Only the first slot has a human: the other names none.
+    const std::vector<NetId> one{first};
+    const std::vector<SnapshotHud> partial = snapshotHuds(slots, one);
+    REQUIRE(partial.size() == 2);
+    CHECK(playerHudHuman(partial[0].words) == first);
+    CHECK_FALSE(playerHudHuman(partial[1].words).valid());
+    // Given none, every slot names none, as before.
+    for (const SnapshotHud& hud : snapshotHuds(slots)) {
+        CHECK_FALSE(playerHudHuman(hud.words).valid());
+    }
+}
+
+// Expected: unverified, #1654 (Coney's own: snapshots.md#hud-state)
+TEST_CASE("player HUDs: a slot's human travels in full first and then alone when it changes, and the client holds it",
+          "[net][hud][snapshot]") {
+    SnapshotSender sender;
+    SnapshotReceiver receiver;
+    const std::vector<PlayerHudState> slots{firstPlayer(), secondPlayer()};
+    std::vector<NetId> humans{NetId{.slot = 3, .generation = 1}, NetId{.slot = 9, .generation = 2}};
+
+    const Snapshot first = exchange(sender, receiver, 0, snapshotHuds(slots, humans));
+    REQUIRE(first.huds.size() == 2);
+    CHECK(first.huds[0].changed == kAllHudFields);
+    CHECK(playerHudHuman(receiver.huds().at(0)) == humans[0]);
+    CHECK(playerHudHuman(receiver.huds().at(1)) == humans[1]);
+
+    // Still: nothing is sent.
+    CHECK(exchange(sender, receiver, 1, snapshotHuds(slots, humans)).huds.empty());
+
+    // Slot 1's player is made afresh (a new id): that one field of that one slot, 22 bits.
+    humans[1] = NetId{.slot = 9, .generation = 3};
+    const Snapshot changed = exchange(sender, receiver, 2, snapshotHuds(slots, humans));
+    REQUIRE(changed.huds.size() == 1);
+    CHECK(changed.huds[0].slot == 1);
+    CHECK(std::popcount(changed.huds[0].changed) == 1);
+    CHECK(snapshotHudEntryBits(changed.huds[0]) == 2 + 1 + kHudFieldCount + 22);
+    CHECK(playerHudHuman(receiver.huds().at(1)) == humans[1]);
+    CHECK(playerHudHuman(receiver.huds().at(0)) == humans[0]);
+
+    // He drives none for a while (he is gone): the slot names none, and its other fields are as they were.
+    humans[1] = NetId{};
+    exchange(sender, receiver, 3, snapshotHuds(slots, humans));
+    CHECK_FALSE(playerHudHuman(receiver.huds().at(1)).valid());
+    CHECK(playerHudState(receiver.huds().at(1)) == slots[1]);
+}
+
 // Expected: unverified, #1447 (Coney's own snapshots; the original has no network play)
 TEST_CASE("player HUDs: the game's slots are listed in slot order, and kept only while capture is on", "[net][hud]") {
     const std::vector<PlayerHudState> slots{firstPlayer(), secondPlayer()};
@@ -211,16 +290,20 @@ TEST_CASE("player HUDs: the HUD entries' bytes are pinned, round-trip and refuse
         .step = 7,
         .humans = {},
         .huds = {SnapshotHudEntry{.slot = 1, .removed = false, .changed = 1U << at(HudField::Money), .words = money}}};
-    // Id 10; sequence 3; baseline 1 back; step 7; no humans; one HUD entry. From its first bit: slot 1 (2 bits),
-    // removed 0, fields 0 to 4 unchanged = 0x01; money's changed bit and its word's low 7 bits (0x19) = 0x33; the
-    // word's next 8 bits = 0x00; its top bit, then fields 6 to 12 unchanged = 0x01; no HUD elements and no HUD texts
-    // (protocol 9) = 0x00 0x00.
+    // Id 10; sequence 3; baseline 1 back; step 7; no humans; one HUD entry of 14 fields (protocol 13 added the human
+    // the slot drives as the 14th). From its first bit: slot 1 (2 bits), removed 0, fields 0 to 4 unchanged = 0x01;
+    // money's changed bit and its word's low 7 bits (0x19) = 0x33; the word's next 8 bits = 0x00; its top bit, then
+    // fields 6 to 12 unchanged = 0x01; field 13 unchanged and the zero bits of the HUD element count and the HUD text
+    // count (protocol 9), which fill the last bytes = 0x00 0x00 0x00.
     const std::vector<std::byte> expected{std::byte{0x0a}, std::byte{0x03}, std::byte{0x01}, std::byte{0x07},
                                           std::byte{0x00}, std::byte{0x01}, std::byte{0x01}, std::byte{0x33},
-                                          std::byte{0x00}, std::byte{0x01}, std::byte{0x00}, std::byte{0x00}};
+                                          std::byte{0x00}, std::byte{0x01}, std::byte{0x00}, std::byte{0x00},
+                                          std::byte{0x00}};
+    CHECK(kHudFieldCount == 14);
     CHECK(encode(small) == expected);
     CHECK(overTheWire(small) == small);
-    CHECK(snapshotHeaderBits(small, 0, 1) + snapshotHudEntryBits(small.huds[0]) == expected.size() * 8);
+    // The entry's 33 bits and the zero counts after them fill whole bytes.
+    CHECK((snapshotHeaderBits(small, 0, 1) + snapshotHudEntryBits(small.huds[0]) + 7) / 8 == expected.size());
 
     const auto refused = [](const std::vector<std::byte>& packet) {
         const auto decoded = decode(packet);

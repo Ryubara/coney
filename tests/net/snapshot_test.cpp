@@ -546,17 +546,17 @@ TEST_CASE("snapshots: the players' HUDs take their room in a full budget before 
     const auto applied = receiver.apply(overTheWire(snapshot));
     REQUIRE(applied.has_value());
     REQUIRE(*applied == SnapshotApplied::Applied);
-    // Both HUDs are in the first snapshot, in full: slot 2 bits, removed 1, 13 changed bits and the fields' 110 bits
-    // = 126 bits each.
+    // Both HUDs are in the first snapshot, in full: slot 2 bits, removed 1, 14 changed bits and the fields' 132 bits
+    // (the human the slot drives is the 14th, 22 bits) = 149 bits each.
     REQUIRE(snapshot.huds.size() == 2);
     CHECK(snapshot.huds[0].slot == 0);
     CHECK(snapshot.huds[1].slot == 1);
     CHECK(receiver.huds().size() == 2);
     // The humans have what is left: the header is still 64 bits (the HUD count, 2, is one byte), so 29 humans in full
-    // fit, 64 + 2 x 126 + 29 x 315 = 9,451 bits, 1,182 bytes; a 30th would take it past 9,600 bits. Humans taken
+    // fit, 64 + 2 x 149 + 29 x 315 = 9,497 bits, 1,188 bytes; a 30th would take it past 9,600 bits. Humans taken
     // first would fit 30 (9,514 bits) and leave room for no HUD.
     CHECK(snapshot.humans.size() == 29);
-    CHECK(encode(snapshot).size() == 1182);
+    CHECK(encode(snapshot).size() == 1188);
 }
 
 // Expected: unverified, #554 (Coney's own priority accumulator; the original has no network play)

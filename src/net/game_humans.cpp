@@ -93,7 +93,8 @@ void GameHumans::capture(const ai::Brains& brains, const CharacterOf& characterO
     }
 }
 
-void GameHumans::captureHuds(std::span<const hud::PlayerHudState> slots, const hud::HudStanding* standing) {
+void GameHumans::captureHuds(std::span<const hud::PlayerHudState> slots, const hud::HudStanding* standing,
+                             std::span<const human::Human* const> /*drivers*/) {
     if (!m_capturing) {
         return;
     }
