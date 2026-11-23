@@ -214,3 +214,25 @@ TEST_CASE("a re-target during a band move turns the fight stance to the new man,
     mover.forget(second);
     CHECK(mover.human().fighter().lockTarget() != &second.human());
 }
+
+TEST_CASE("a holder displaced from a full slot list during a band move leaves the fight stance", "[ai][move]") {
+    // Expected: ai-moving.md#move-melee, confirmed (code): the stance is the human's state round the brain's target
+    // (+0x124); Brain_ClaimAttackSlot 0x0028df30 takes the farthest holder's slot and his target, so his stance holds
+    // no one (a Coney-only hand-off, Brain::handFightStance)
+    AiScene scene;
+    Brain& player = scene.player();
+    player.setAttackSlotCount(1);
+    Brain& holder = scene.add(Vec3{40.0F, 44.5F, 0.0F}, 180.0F);
+    holder.setTarget(&player);
+    REQUIRE(holder.hasAttackSlot());
+    holder.setFightStance(true); // as the fight goal takes it
+    REQUIRE(queueBand(holder, 4.0F, 4.75F, 6000) != nullptr);
+    scene.run(1);
+    REQUIRE(holder.human().fighter().lockTarget() == &player.human());
+    // A nearer attacker takes the one slot: the holder loses his target, and his stance goes with it.
+    Brain& nearer = scene.add(Vec3{41.5F, 40.0F, 0.0F}, 270.0F);
+    nearer.setTarget(&player);
+    REQUIRE(nearer.hasAttackSlot());
+    REQUIRE(holder.target() == nullptr);
+    CHECK(holder.human().fighter().lockTarget() != &player.human());
+}
