@@ -35,10 +35,14 @@
 
 namespace {
 
-// Updates of play looked at: about two minutes of the match after the menus, long enough for an Orphan to be knocked
-// out (with the waiters keeping the band round their man, docs/research/ai-fights.md#fight-reposition, the first falls
-// at about game frame 3,930; 2,700 updates ended at about 3,700).
-constexpr int kUpdates = 3500;
+// Updates of play looked at: about a minute and a half of the match after the menus.
+constexpr int kUpdates = 2700;
+// The AI's seed (`--ai-seed`, StartUpFlow::setAiSeed()). Which side wins is the AI's draw, and the counter's test needs
+// an Orphan down by state with health left: under seed 3 the first falls at about game frame 3,260, inside the window,
+// while under seed 0 the Orphans now win with none down (since the fight stance follows each re-target,
+// docs/research/ai-fights.md#fight-reposition). A later AI change may move the draw again; a survey of seeds 0-6
+// (the first fall's frame under each) finds a new one.
+constexpr std::uint32_t kAiSeed = 3;
 
 } // namespace
 
@@ -54,6 +58,7 @@ TEST_CASE("the disc's WAR PARTY gang counter shows the standing Orphans, not tho
     }
     coney::test::DiscGame game(*wad, coney::test::kQuickRumbleScript,
                                coney::RumbleLaunch{.gameType = 14, .arena = 102, .gangSize = 5, .aiPlayer = true});
+    game.flow().setAiSeed(kAiSeed); // before the first update
     game.run(1000);
     REQUIRE(game.stack().topId() == coney::GameplayMode::kId);
     const coney::platform::PlayLevelMode* play = game.play();
