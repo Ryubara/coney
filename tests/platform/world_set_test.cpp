@@ -53,8 +53,10 @@ Bytes stripAtomic(const std::string& texture = {}) {
 }
 
 // A synthetic disc holding one streamed world, `test`: two sectors side by side (x 0..10 and 10..20), each the only
-// sector of its part, with the manifest and both part files (`part1` and `part2`, untextured strips when empty).
-std::vector<std::byte> buildWorldDisc(Bytes part1 = {}, Bytes part2 = {}) {
+// sector of its part, with the manifest and both part files (`part1` and `part2`, untextured strips when empty), and
+// the files of `extra` (name and contents) after them.
+std::vector<std::byte> buildWorldDisc(Bytes part1 = {}, Bytes part2 = {},
+                                      const std::vector<std::pair<std::string, Bytes>>& extra = {}) {
     std::vector<Bytes> leaves{coney::test::worldSector({0, 0, 0}, {10, 10, 10}, 0, 1, {5, 5, 5}),
                               coney::test::worldSector({10, 0, 0}, {20, 10, 10}, 1, 2, {15, 5, 5})};
     const Bytes stream = coney::test::worldStream(2, leaves, 1, 2);
@@ -69,13 +71,15 @@ std::vector<std::byte> buildWorldDisc(Bytes part1 = {}, Bytes part2 = {}) {
     manifest.u32(2).u32(static_cast<std::uint32_t>(part1.size())).u32(300);
     manifest.u32(static_cast<std::uint32_t>(part2.size())).u32(400);
 
+    std::vector<std::pair<std::string, const Bytes*>> files{
+        {"test_sec.mem", &manifest}, {"test_sec.wld", &stream}, {"test_ms1.sec", &part1}, {"test_ms2.sec", &part2}};
+    for (const auto& [name, data] : extra) {
+        files.emplace_back(name, &data);
+    }
     Bytes wad;
     Bytes dir;
-    dir.header(4, 0, 0, 0);
-    for (const auto& [name, data] :
-         {std::pair<const char*, const Bytes*>{"test_sec.mem", &manifest}, std::pair{"test_sec.wld", &stream},
-          std::pair<const char*, const Bytes*>{"test_ms1.sec", &part1},
-          std::pair<const char*, const Bytes*>{"test_ms2.sec", &part2}}) {
+    dir.header(static_cast<std::uint32_t>(files.size()), 0, 0, 0);
+    for (const auto& [name, data] : files) {
         dir.u32(static_cast<std::uint32_t>(wad.size()))
             .u32(static_cast<std::uint32_t>(data->size()))
             .u32(coney::nameHash(std::string("./ee_files/") + name));
@@ -85,9 +89,11 @@ std::vector<std::byte> buildWorldDisc(Bytes part1 = {}, Bytes part2 = {}) {
     return coney::test::buildIso({{"WARRIORS.DIR;1", dir.data()}, {"WARRIORS.WAD;1", wad.data()}});
 }
 
-// Writes the synthetic disc (with `part1` and `part2` as buildWorldDisc() takes them) into `dir` and opens its WAD.
-coney::io::Wad openWorldDisc(const TempDir& dir, Bytes part1 = {}, Bytes part2 = {}) {
-    const auto image = dir.write("disc.iso", buildWorldDisc(std::move(part1), std::move(part2)));
+// Writes the synthetic disc (with `part1`, `part2` and `extra` as buildWorldDisc() takes them) into `dir` and opens
+// its WAD.
+coney::io::Wad openWorldDisc(const TempDir& dir, Bytes part1 = {}, Bytes part2 = {},
+                             const std::vector<std::pair<std::string, Bytes>>& extra = {}) {
+    const auto image = dir.write("disc.iso", buildWorldDisc(std::move(part1), std::move(part2), extra));
     auto disc = coney::io::Disc::open(image);
     REQUIRE(disc.has_value());
     auto wad = coney::io::Wad::open(std::move(*disc));
@@ -355,4 +361,39 @@ TEST_CASE("the world viewer preloads, streams and flies under a script in test m
     CHECK(budget.used() <= budget.capacity());
     CHECK(output.find("freed test part 1") != std::string::npos);
     CHECK(output.find("read test part 2") != std::string::npos);
+}
+
+// The pools a running game holds before a level's worlds, the Global Data Pool for warriors.glr (101 % of its 1000
+// bytes) and the World Level Pool, go back to the budget with the scenery, as WorldManager_Unload gives the level's
+// back (docs/research/physics-world.md#u18-coney): a second level then streams with the room the first had.
+TEST_CASE("a level's scenery gives back the pools it reserved when it goes", "[world_viewer]") {
+    auto engine = RenderEngine::start(RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    TempDir dir;
+    Bytes glr;
+    glr.fill(1000, 0);
+    const coney::io::Wad wad = openWorldDisc(dir, {}, {}, {{"warriors.glr", glr}});
+    coney::world::SectorBudget budget(10'000);
+    for (int load = 0; load < 2; ++load) {
+        auto scenery = coney::platform::loadLevelScenery(**engine, wad, "test", budget, [](std::string_view) {});
+        REQUIRE(scenery.has_value());
+        CHECK(budget.used() == 1000 + 1010); // the world's heap and the global data
+    }
+    CHECK(budget.used() == 0);
+}
+
+// A level whose level file does not read gives back what loadLevelScenery() reserved before it: the global data
+// (1010 bytes) and the World Level Pool (its 256 KB minimum for a 16-byte file).
+TEST_CASE("a level's scenery that fails to load gives back the pools it reserved", "[world_viewer]") {
+    auto engine = RenderEngine::start(RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    TempDir dir;
+    Bytes glr;
+    glr.fill(1000, 0);
+    Bytes lev;
+    lev.fill(16, 0xFF);
+    const coney::io::Wad wad = openWorldDisc(dir, {}, {}, {{"warriors.glr", glr}, {"test.lev", lev}});
+    coney::world::SectorBudget budget(1'000'000);
+    CHECK_FALSE(coney::platform::loadLevelScenery(**engine, wad, "test", budget, [](std::string_view) {}).has_value());
+    CHECK(budget.used() == 0);
 }

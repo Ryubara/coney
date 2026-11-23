@@ -282,6 +282,7 @@ add_library(coney_core STATIC
     world/sector_budget.cpp
     world/streamed_world.cpp
     world/view_frustum.cpp
+    world/world_manager.cpp
     world/world_manifest.cpp
     world/world_streamer.cpp
     world/world_streams.cpp
