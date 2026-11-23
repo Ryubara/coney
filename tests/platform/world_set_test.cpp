@@ -330,6 +330,7 @@ TEST_CASE("textures are found by name across every registered dictionary, newest
 }
 
 TEST_CASE("the world viewer preloads, streams and flies under a script in test mode", "[world_viewer]") {
+    // Expected: world.md#streaming, confirmed (code)
     auto engine = RenderEngine::start(RenderBackend::Null, {});
     REQUIRE(engine.has_value());
     TempDir dir;
@@ -367,6 +368,8 @@ TEST_CASE("the world viewer preloads, streams and flies under a script in test m
 // bytes) and the World Level Pool, go back to the budget with the scenery, as WorldManager_Unload gives the level's
 // back (docs/research/physics-world.md#u18-coney): a second level then streams with the room the first had.
 TEST_CASE("a level's scenery gives back the pools it reserved when it goes", "[world_viewer]") {
+    // Expected: physics-world.md#u18-construct, confirmed (code)
+    // Expected: physics-world.md#u18-coney, confirmed (code)
     auto engine = RenderEngine::start(RenderBackend::Null, {});
     REQUIRE(engine.has_value());
     TempDir dir;
@@ -385,6 +388,8 @@ TEST_CASE("a level's scenery gives back the pools it reserved when it goes", "[w
 // A level whose level file does not read gives back what loadLevelScenery() reserved before it: the global data
 // (1010 bytes) and the World Level Pool (its 256 KB minimum for a 16-byte file).
 TEST_CASE("a level's scenery that fails to load gives back the pools it reserved", "[world_viewer]") {
+    // Expected: physics-world.md#u18-load, confirmed (code)
+    // Expected: physics-world.md#u18-coney, confirmed (code)
     auto engine = RenderEngine::start(RenderBackend::Null, {});
     REQUIRE(engine.has_value());
     TempDir dir;
