@@ -988,8 +988,7 @@ std::string PlayLevelSimulation::heldObjectLogText(double handle) const {
 
 void PlayLevelSimulation::dropHeld(human::Human& human, double held, bool thrown) {
     // Coney stand-in (Human_DropHeld): a drop does not cancel the throw aim, name its holder (+0x11c), set kind 10's
-    // hit counter for a brain of type 1, set the state flag 0x20000000 or update the hidden loop sound; no drop sets a
-    // respawn timer.
+    // hit counter for a brain of type 1 or update the hidden loop sound; no drop sets a respawn timer.
     if (!thrown) {
         m_print(std::format("pickup: dropped object {:.0f}{}\n", held, heldObjectLogText(held)));
     }
