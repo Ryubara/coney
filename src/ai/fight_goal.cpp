@@ -220,7 +220,11 @@ void FightGoal::resume(Brain& brain) {
 void FightGoal::suspend(Brain& brain) { releasePlace(brain); }
 
 void FightGoal::end(Brain& brain) {
+    // The goal's suspend (the place given up), then the actions it queued cleared.
     releasePlace(brain);
+    if (brain.actionCount() > 0) {
+        static_cast<void>(brain.clearActions());
+    }
     // **Coney stand-in**: the stance is left here; in the original the next goal's own update leaves it (Melee,
     // EngageEnemy, Spectate and most others call Human_LeaveFightStance `0x0022fef0`), which Coney's goals do not.
     brain.setFightStance(false);

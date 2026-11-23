@@ -73,7 +73,9 @@ class FightGoal final : public Goal {
     [[nodiscard]] GoalStatus process(Brain& brain) override;
     /// Gives up the active-attacker place (the goal's suspend, docs/research/ai-fights.md#attack-places).
     void suspend(Brain& brain) override;
-    /// Gives up the active-attacker place and leaves the fight stance (Brain::setFightStance()).
+    /// Gives up the active-attacker place, clears the actions it queued and leaves the fight stance
+    /// (Brain::setFightStance()).
+    /// @orig 0x002b2dd8 FightGoal_End (unknown)
     void end(Brain& brain) override;
 
     /// The kind chosen and not yet pressed (`+0x10`; kNoAttackKind for none).

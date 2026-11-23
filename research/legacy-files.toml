@@ -75,7 +75,7 @@ tag = 3
 comment = 1
 
 ["src/ai/fight_goal.cpp"]
-tag = 13
+tag = 12
 
 ["src/ai/fight_reactions.cpp"]
 tag = 12
@@ -122,9 +122,6 @@ tag = 2
 
 ["src/ai/move_to_flag_goal.h"]
 comment = 1
-
-["src/ai/move_to_human_action.cpp"]
-tag = 3
 
 ["src/ai/pedestrian_goal.cpp"]
 tag = 5

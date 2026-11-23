@@ -2866,6 +2866,21 @@ coney = "src/ai/fight_goal.h:FightGoal::resume"
 status = "legacy"
 
 [[function]]
+address = 0x002b2dd8
+name = "FightGoal_End"
+page = "ai-goals.md#goal-fight"
+kind = "End"
+role = "gives the place up through the goal's suspend; clears the actions when any are queued"
+level = "confirmed-code"
+coney = "src/ai/fight_goal.h:FightGoal::end"
+status = "compared"
+
+[[function.gaps]]
+what = "also leaves the fight stance, which the original's next goal leaves"
+relation = "stand-in"
+question = "ai-moving.md#q-ai-stance"
+
+[[function]]
 address = 0x002b2e28
 name = "FightGoal_TryTackle"
 page = "ai-fights.md#try-tackle"
