@@ -258,9 +258,13 @@ GoalStatus ThrowObjectGoal::process(Brain& brain) {
         brain.queueAction(TurnAction::toPoint(*target));
         return GoalStatus::Stop;
     }
-    // The throw: what it holds leaves its hands.
+    // The throw: what it holds leaves its hands, and its move style is popped as Human_ReleaseThrow pops it at the
+    // throw clip's release (a player's hand is followed by the play mode's dropHeld()).
     script.heldObject = 0.0;
     script.heldObjectName.clear();
+    if (brain.type() != BrainType::Player) {
+        brain.human().letGoOfHeld(true);
+    }
     m_completed = true;
     return GoalStatus::Done;
 }

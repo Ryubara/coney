@@ -170,6 +170,8 @@ class ScriptedHumans final : public script::HumanBindingHost {
     // Runs `body` on the brain named by `handle` now, or when the level makes it while calls are held; nothing when
     // no brain has the handle.
     void onBrain(double handle, const std::function<void(Brain&)>& body);
+    // A script's drop from `brain`'s hand, its hand already cleared: an AI's held object's move style comes off.
+    static void letGo(Brain& brain);
     // The rage meter as runRageHandlers() last saw it on one human.
     struct RageSeen {
         bool full = false;

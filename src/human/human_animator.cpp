@@ -155,6 +155,8 @@ void HumanAnimator::applyStyle(int style) {
     // Coney's guard: a slot whose clip this anim set lacks (a synthetic set, a character without the barrel clips)
     // keeps its default, and so does the walk start when its run start (the next id) is missing outside the hidden
     // style, so the controller always has every clip it plays.
+    // **Coney's reading**: every human counts as a player here (styles 1-3 give a player slot 14 = 380). It changes no
+    // slot, as Coney's defaults for every human hold 380 in slot 14; the original's non-player table holds 372 there.
     AnimSlots styled = styledSlots(m_defaults, style, true);
     for (std::size_t slot = 0; slot < AnimSlots::kCount; ++slot) {
         const std::uint32_t id = styled.ids.at(slot);
@@ -222,12 +224,14 @@ void HumanAnimator::carryStyle(int set) {
 }
 
 void HumanAnimator::releaseStyle(int set, bool thrown) {
-    if (set <= 0 || set > 0xff) {
-        return;
-    }
-    // A throw pops a held object's style on top (styles 1-6); otherwise, and at a drop, the set is removed.
+    // A throw pops a top style 1-6 whatever the held set is; otherwise, and at a drop, the held set (when it has one)
+    // is removed.
     const std::uint8_t top = m_styles.top();
     const bool popped = thrown && top >= 1 && top <= kStyleGhetto;
+    const bool removable = set > 0 && set <= 0xff;
+    if (!popped && !removable) {
+        return;
+    }
     if (const int applied = popped ? m_styles.pop() : m_styles.remove(static_cast<std::uint8_t>(set)); applied >= 0) {
         applyStyle(applied);
     }

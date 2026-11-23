@@ -281,9 +281,22 @@ void ScriptedHumans::setIcon(double human, std::string_view object, int param) {
 void ScriptedHumans::dropWeapon(double human) {
     onBrain(human, [](Brain& brain) {
         human::ScriptState& script = brain.human().script();
+        if (script.heldObject == kNilHandle) {
+            return;
+        }
         script.heldObject = kNilHandle;
         script.heldObjectName.clear();
+        letGo(brain);
     });
+}
+
+// @orig 0x00257f38 Human_DropHeld (unknown)
+void ScriptedHumans::letGo(Brain& brain) {
+    // An AI's drop takes the held object's move style off here; a player's hand is followed by the play mode, whose
+    // dropHeld() does it when it sees the hand empty.
+    if (brain.type() != BrainType::Player) {
+        brain.human().letGoOfHeld(false);
+    }
 }
 
 void ScriptedHumans::releaseObject(double object) {
@@ -296,6 +309,7 @@ void ScriptedHumans::releaseObject(double object) {
         if (script.heldObject == object) {
             script.heldObject = kNilHandle;
             script.heldObjectName.clear();
+            letGo(*brain);
         }
     }
 }

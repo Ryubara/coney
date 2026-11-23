@@ -438,8 +438,8 @@ bool PlayLevelSimulation::trySwap(human::Human& human, const world_objects::Sigh
             m_pickups->drop(object, object == presserHad ? feet : from);
         }
         // Player 1's hand changed by the swap, not by a drop: stepPickups() must not drop the old object. Each hand's
-        // move style follows its new object: the old one's comes off, the new one's goes on as a take puts it.
-        // **Coney's reading**: the swap's own messages are not traced; a take's are used.
+        // move style follows its new object as Human_SwapHeldObjects (0x00233b08) has it: each side's Human_DropHeld
+        // takes the old one's off, then the placement's take (message 3) puts the new one's on.
         m_heldObject = human.script().heldObject;
         const int receiverHad = receiver.fighter().animSet();
         const int receiverHas = m_pickups->animSetOf(receiver.script().heldObjectName);

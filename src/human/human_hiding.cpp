@@ -8,7 +8,9 @@
 namespace coney::human {
 
 void Human::enterHiding() {
-    // Not while already hidden or sprinting (state 0x1000000).
+    // Not while already hidden or sprinting (state 0x1000000). **Coney stand-in**: Human_EnterShadow (0x0022ff88) also
+    // refuses while the held object's set is 4 or 6 (Human_HoldsKind4Or6); not built, so a carrier can hide
+    // (docs/research/objects.md#two-handed).
     if (m_hidden || m_sprinting) {
         return;
     }

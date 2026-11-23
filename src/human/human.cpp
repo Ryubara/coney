@@ -1242,6 +1242,13 @@ void Human::takeHeldStyle(int set) {
     }
 }
 
+void Human::letGoOfHeld(bool thrown) {
+    // The fighter's anim set is the held object's (set at every take), so it names the style to take off.
+    releaseHeldStyle(m_fighter.animSet(), thrown);
+    m_fighter.setAnimSet(0);
+    m_fighter.setHoldingObject(false);
+}
+
 // @orig 0x00278018 Tag_StartSprayClips (unknown)
 void Human::turnOverClip(std::uint32_t clip, anim::Vec3 point, float share) {
     const anim::AnimClip* found = m_animator.clip(clip);

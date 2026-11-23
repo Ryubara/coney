@@ -776,13 +776,13 @@ weapons, none for model hash `0x03c5256c`). It then falls under physics from the
 dropped from the hand came to rest on the ground (`z` 0.3, the ground's height there), flags `0xc321a081`
 (confirmed (runtime)).
 
-**Throw** (`Human_ReleaseThrow`, `0x002586d8`, confirmed (code)): as the drop, but the physics body is made per the
-type (`CfgObj` `+0x84` = 2 or `+0x5a` ≠ 1, else `ThrownObject_MakeBody` `0x003923b8`) and gets body flag `1` (the
-first contact after the throw, [Throws](#throws)), the object is rescheduled, its velocity comes from
-`Human_ComputeThrowVelocity` and is sent in message `0x1c` **detach** with the thrower, the thrower becomes its last
-holder (`+0x11c`) and `+0x116` is set, and the human's target is warned (`0x0021d5c0`). The removal time is the game
-setting `0x0051489c` `+0x26c` for every model but four (`0x03c5256c` gets none; three others keep theirs). The
-details are in [Throws](#throws).
+**Throw** (`Human_ReleaseThrow`, `0x002586d8`, confirmed (code)): as the drop, but it pops a top move style 1-6 rather
+than removing the held set ([Two-handed objects](#two-handed)), the physics body is made per the type (`CfgObj` `+0x84`
+= 2 or `+0x5a` ≠ 1, else `ThrownObject_MakeBody` `0x003923b8`) and gets body flag `1` (the first contact after the
+throw, [Throws](#throws)), the object is rescheduled, its velocity comes from `Human_ComputeThrowVelocity` and is sent
+in message `0x1c` **detach** with the thrower, the thrower becomes its last holder (`+0x11c`) and `+0x116` is set, and
+the human's target is warned (`0x0021d5c0`). The removal time is the game setting `0x0051489c` `+0x26c` for every model
+but four (`0x03c5256c` gets none; three others keep theirs). The details are in [Throws](#throws).
 
 The release runs in the human's own event handler, so an AI human's throw lets go of his object as player 1's does,
 and his take sends him message 3 the same way (inferred: neither path tests for a player; the handler is
@@ -968,14 +968,18 @@ blasters, `pickupAnim` 7) is the same shape with the ghetto clips (idle 555, wal
 Styles 1-3 (knife, baton, bat) change only attack and block slots, which is why a bat is carried with the plain idle
 and walk ([Combat: a bat in hand](combat-throws.md#bat)).
 
-**4. Letting go.** The drop (`Human_DropHeld`, `0x00257f38`, [Drop](#held)) and the throw (`Human_ReleaseThrow`,
-`0x002586d8`) **remove** the held object's set from the style stack (`Human_RemoveMoveStyle`, below; the set read by
-`Human_GetHeldObjectSet`, `0x00231a80`, the held object's type `+0x87`), so the slots go back to the defaults or the
-style beneath (confirmed (code)). The drop of a set 4 or 6 object also sets state `0x20000000`, which asks for the anim
-state again, so a standing human goes back to the plain idle at once (confirmed (code) at `0x00257f38`). Before a
-pick-up clip, a held object is dropped first when the new object's `pickupAnim` is 5 or 6 or the human's style is 4 or
-6 ([Combat](combat-throws.md#bat)). Hiding is refused while the held object's set is 4 or 6 (`Human_EnterShadow`,
-`0x0022ff88`, through `Human_HoldsKind4Or6`; confirmed (code)).
+**4. Letting go.** The drop (`Human_DropHeld`, `0x00257f38`, [Drop](#held)) **removes** the held object's set from the
+style stack (`Human_RemoveMoveStyle`, below; the set read by `Human_GetHeldObjectSet`, `0x00231a80`, the held object's
+type `+0x87`), so the slots go back to the defaults or the style beneath (confirmed (code)). The throw's release
+(`Human_ReleaseThrow`, `0x002586d8`) instead **pops** the top style when it is 1-6, whatever the held set is, and
+removes the held set (when it is not 0) only when the top style is anything else, such as the hidden style (confirmed
+(code) at `0x002586d8`). The script's `HuDropWeapon` (`Human_DropWeapon`, `0x002994b8`) drops through `Human_DropHeld`
+when the human holds anything, and `GoalThrowObject`'s throw (`0x002cf690`) queues the throw attack (`0x21`), whose
+release event is `Human_ReleaseThrow` (both confirmed (code)). The drop of a set 4 or 6 object also sets state
+`0x20000000`, which asks for the anim state again, so a standing human goes back to the plain idle at once (confirmed
+(code) at `0x00257f38`). Before a pick-up clip, a held object is dropped first when the new object's `pickupAnim` is 5
+or 6 or the human's style is 4 or 6 ([Combat](combat-throws.md#bat)). Hiding is refused while the held object's set is 4
+or 6 (`Human_EnterShadow`, `0x0022ff88`, through `Human_HoldsKind4Or6`; confirmed (code)).
 
 **5. The pick-up clip's follow-on.** `Human_PlayPickupClip` (`0x0025e5a8`) builds the loop the pick-up clip hands
 over to **before** the take: it pushes the new object's set as a style for the moment (unless the human is hidden in
@@ -1000,8 +1004,8 @@ ordinary ones, so on a full stack they lose its lowest style (below).
   ids and recomputes the gait speeds. Styles 1-3 also give a player (record `+0x1b0` not −1) slot 14 = 380 (confirmed (code)).
 
 Message 3 itself (`Human_HandleMessage` at `0x002460c0`-`0x002460f8`) reads the held object's type `+0x87`, calls
-`0x00227080(human, 0)` (not traced) and calls `Human_SetCarryMoveStyle` only when the set differs from the top style
-(confirmed (code)).
+`Human_SetObjectTarget` (`0x00227080`) with no object, clearing the human's object target (`+0x33c`), and calls
+`Human_SetCarryMoveStyle` only when the set differs from the top style (confirmed (code)).
 
 **At runtime** (confirmed (runtime), PCSX2 2.9.94, quick-save slot 8 copy (`level99` checkpoint 2), scenario
 `repo:research/traces/scenarios/cashreg_carry.toml`: the player put at (53.23, 56.45) facing +y, 0.8 m south of the
@@ -1041,17 +1045,24 @@ So the register is not special: anything Coney lifts with 503 / 504 needs the sa
 - `human::MoveStyles` and `human::styledSlots()` (`repo:src/human/move_styles.h`) are the stack and
   `Human_ApplyMoveStyle`'s cases 1-20; `HumanAnimator` keeps the stack, so the hidden style is a push and a removal of
   `0x14` like any other (`setStealthStyle()`), `carryStyle()` is `Human_SetCarryMoveStyle`, `releaseStyle()` the drop's
-  and the throw's removal and `pickUpLoop()` the pick-up's follow-on. A slot whose clip the character lacks keeps its
-  default (Coney's guard for synthetic sets).
+  removal and the throw's pop, and `pickUpLoop()` the pick-up's follow-on. A slot whose clip the character lacks keeps
+  its default (Coney's guard for synthetic sets).
 - Every take (player 1's, an AI's, a script's `HuPlaceItemInHand`, the Warrior swap) calls `Human::takeHeldStyle()`,
-  and every drop and throw goes through `PlayLevelSimulation::dropHeld()`, which calls `Human::releaseHeldStyle()`.
+  and every drop and throw of the play mode goes through `PlayLevelSimulation::dropHeld()`, which calls
+  `Human::releaseHeldStyle()`: the drop removes the set, the throw pops a top style 1-6
+  (`HumanAnimator::releaseStyle()`).
+  An AI's scripted drop (`HuDropWeapon`, and `ObjDestroy` on the held object) and `GoalThrowObject`'s throw, which do
+  not go through the play mode, call `Human::letGoOfHeld()` with the drop's or the throw's rule (`ai::ScriptedHumans`,
+  `ai::ThrowObjectGoal`); a player's hand emptied by a script is dropped by the play mode's `dropHeld()`.
 - `world_objects::takeAttachment()` (`repo:src/world_objects/object_tasks.h`) gives `overhead_weapon` and
   `dyn_cashreg` their type's `holdPos` / `holdRot` at the event's bone. **Stand-in**: the take is taken as out of a
   scene (Coney does not keep `Human_IsInSceneState` at the take), so these objects always have their type's pose.
-- Not yet: the hidden-state refusal while holding a set 4 or 6 object, and the client's view of a carry style over the
-  network (`net::MoveStyle` knows only normal and hidden).
+- Not yet, each a marked stand-in in the code: the hidden-state refusal while holding a set 4 or 6 object
+  (`Human::enterHiding()`), and the client's view of a carry style over the network (`net::replicatedState()`:
+  `net::MoveStyle` knows only normal and hidden).
 
-Tests: `repo:tests/human/move_styles_test.cpp` (the stack, style 4's slots, a synthetic lift-carry-drop) and
+Tests: `repo:tests/human/move_styles_test.cpp` (the stack, style 4's slots, a synthetic lift-carry-drop),
+`repo:tests/ai/scripted_humans_test.cpp` (an AI's scripted drop and throw goal take the carry style off) and
 `repo:tests/platform/disc_level99_store_register_test.cpp` (the `level99` register through the player's path).
 
 Open: what the arms do in the barrel clips (that both hands reach the object is inferred from the clips' names and
