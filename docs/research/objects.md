@@ -888,7 +888,7 @@ its anim set):
 
 How the original decides that a held object is carried in **both** hands (the cash register, a drum, a chair, an
 amp) rather than hung from the right hand like a bat or a bottle. Coney held the `level99`
-checkpoint 2 register like a one-handed prop until issue #433 ported what follows ([In Coney](#two-handed-coney)).
+checkpoint 2 register like a one-handed prop until it ported what follows ([In Coney](#two-handed-coney)).
 
 **There is no "two-handed" flag.** The look comes from two bytes of the object's **type record** (`CfgObj`,
 [Object types](#object-types)), set once from the objects file (`config_preload3.lua`'s `CfgObj` lines, arguments 14
@@ -1016,6 +1016,9 @@ per update):
 | 111-120 | **519** | 4 | the stick: the barrel walk start |
 | 121-190 | **515** | 4 | the barrel walk, gait 1, 1.46 m/s |
 | 191 | 509 | 4 | stick released: back to the barrel idle (no run stop from a walk) |
+
+Run again on 2026-11-23 from the `glass-shelf-loot` library state with the same scenario (confirmed (runtime), run
+r-20261123-cashreg-carry): the same clips at the same updates, the same styles, slots and attachment.
 
 The register's attachment through all of it: bone **25** (the right hand), local position **(0.3075, 0.1306,
 0.2869)** m and rotation **(−0.1485, 0.0522, −0.9863, −0.0484)** (`x, y, z, w`), exactly its type record's `+0x00` /
