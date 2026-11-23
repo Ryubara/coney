@@ -1167,6 +1167,18 @@ both games before it is ported.
 
 ## How this was checked
 
+### The charger in his own sector {#runtime-charge-sector}
+
+Ghidra, 2026-11-23 (#606): the charge's sector test (step 1 of [The charge in EngageEnemy](#engage-charge)) read in the
+disassembly at `0x002b0074`-`0x002b009c`, confirmed (code). Until then this page read the runner's own case as "A waits
+this update", and Coney's port waited on it every update, so a lone charger within 1.5 m of a standing target stood
+beside him for good (seen on the gang-combat stack in a QUICK RUMBLE, 0.81 m from the player from update 6529 to
+9000). A runtime read was tried on the library's `l99-warriors-before-fight` state with the `warriors_passive`
+scenario, 2026-11-23: the state now starts with the three Warriors already in the fight (`Generic1` 1.8 m from the
+player at the first update, the other two never beyond 5 m in 1,700 updates), so it holds no run-in to break on; the
+state wants making again as [Reaching the fight without a playthrough](#level99-save) says before the case can be
+watched.
+
 ### The re-target's timing {#runtime-retarget}
 
 PCSX2-MCP fork 2.9.129, 2026-10-21, scenario `warriors_taunts` with the `fight-retarget-due` hook at

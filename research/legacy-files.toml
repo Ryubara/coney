@@ -57,8 +57,7 @@ tag = 6
 comment = 7
 
 ["src/ai/engage_goals.cpp"]
-comment = 1
-tag = 6
+tag = 5
 
 ["src/ai/engage_goals.h"]
 comment = 2
@@ -420,7 +419,7 @@ comment = 3
 tag = 3
 
 ["src/characters/character_assets.cpp"]
-tag = 3
+tag = 2
 
 ["src/characters/character_data.cpp"]
 tag = 3
@@ -891,7 +890,7 @@ tag = 3
 comment = 2
 
 ["src/hud/health_rings.cpp"]
-tag = 10
+tag = 8
 
 ["src/hud/health_rings.h"]
 comment = 1
@@ -1036,7 +1035,7 @@ tag = 1
 tag = 5
 
 ["src/human/player.cpp"]
-tag = 19
+tag = 18
 
 ["src/human/player.h"]
 comment = 6
@@ -1221,7 +1220,7 @@ comment = 1
 tag = 11
 
 ["src/scripting/camera_bindings.cpp"]
-tag = 8
+tag = 6
 
 ["src/scripting/car_bindings.cpp"]
 tag = 3
@@ -1246,7 +1245,7 @@ tag = 1
 tag = 8
 
 ["src/scripting/human_bindings.cpp"]
-tag = 18
+tag = 17
 
 ["src/scripting/level_bindings.cpp"]
 tag = 5
@@ -1562,7 +1561,7 @@ citation = 16
 citation = 5
 
 ["tests/ai/scripted_humans_test.cpp"]
-citation = 20
+citation = 19
 
 ["tests/ai/scripted_story_test.cpp"]
 citation = 15
@@ -1676,7 +1675,7 @@ citation = 5
 citation = 2
 
 ["tests/characters/character_list_test.cpp"]
-citation = 2
+citation = 1
 
 ["tests/characters/character_model_test.cpp"]
 citation = 2
@@ -2024,7 +2023,7 @@ citation = 4
 citation = 3
 
 ["tests/hud/health_rings_test.cpp"]
-citation = 12
+citation = 11
 
 ["tests/hud/lock_pick_hud_test.cpp"]
 citation = 13
@@ -2084,7 +2083,7 @@ citation = 6
 citation = 4
 
 ["tests/human/human_contacts_test.cpp"]
-citation = 8
+citation = 7
 
 ["tests/human/human_test.cpp"]
 citation = 23
@@ -2126,7 +2125,7 @@ citation = 16
 citation = 6
 
 ["tests/human/strike_hits_test.cpp"]
-citation = 6
+citation = 4
 
 ["tests/human/strike_shapes_test.cpp"]
 citation = 7
@@ -2483,7 +2482,7 @@ citation = 2
 citation = 11
 
 ["tests/scripting/camera_bindings_test.cpp"]
-citation = 6
+citation = 5
 
 ["tests/scripting/car_bindings_test.cpp"]
 citation = 3
@@ -2501,7 +2500,7 @@ citation = 9
 citation = 9
 
 ["tests/scripting/hud_bindings_test.cpp"]
-citation = 8
+citation = 7
 
 ["tests/scripting/level_bindings_test.cpp"]
 citation = 8
