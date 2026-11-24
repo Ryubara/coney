@@ -1244,10 +1244,15 @@ fight stance whenever no move was written and went back to the locomotion's idle
 `0x1`/`0x2`; [the band move](ai-moving.md#move-melee)), the disc test counts 4, 7, 5, 8, 7, 6, 9 and 4 taunts for AI
 sequences 0-7 (measured 2026-11-23 with the stance following each re-target and the charging fighter of #606, which
 moved the counts from 7, 7, 2, 8, 13, 7, 6 and 6), around the original's 11, and checks at least 2: the fewest, 4, is
-2 above that bound. The close-in test still differs: Coney's player
-counts as facing whichever Warrior his fighter holds, so a waiter is sometimes close in, where the original's player
-brain holds a target only while a pair links him (a grab or a mount, `Pair_LinkMount` `0x0022bfd0`, `Grab_Link`
-`0x0022c730`) and the first slot holder is close in otherwise; inferred, not yet ported ([Open questions](#q-close-in-target)).
+2 above that bound. Every run reproduces these counts, alone or in parallel (2026-11-23: each sequence three times
+at once, beside four runs of the test that plays sequence 2 twice in one process and compares its traces, which
+hashed the same in all four processes). Until #1668 the test sometimes counted a taunt or two fewer (4 for sequence
+2, 6 for sequence 4, 7 for sequence 6) while the fight itself, its places and the player's health, was the same: it
+told a new taunt by the action's address, and the heap often makes the next taunt where the last was freed.
+The close-in test still differs: Coney's player counts as facing whichever Warrior his fighter holds, so a waiter is
+sometimes close in, where the original's player brain holds a target only while a pair links him (a grab or a
+mount, `Pair_LinkMount` `0x0022bfd0`, `Grab_Link` `0x0022c730`) and the first slot holder is close in otherwise;
+inferred, not yet ported ([Open questions](#q-close-in-target)).
 
 ### Melee ranges {#runtime-melee-range}
 

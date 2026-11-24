@@ -9,21 +9,27 @@ namespace coney::test {
 /// Counts the actions of one kind (a taunt, a gloat) a brain starts, from what is at the front of its queue after each
 /// update: see() is called once per update with that action when it is of the kind and has started, and with null
 /// otherwise.
+///
+/// An action is new when it was not at the front the update before. Its address alone does not tell: the brain frees
+/// a finished action and the next of the kind is often made where it lived, so a count by address missed it in some
+/// runs and not others, as the heap reused the address or did not (#1668). Only a new one at the same address the very
+/// update after the last would be missed, and none comes so soon: the fight's taunt timer is 1000-2000 ms
+/// (docs/research/ai-fights.md#fight-reposition).
 class ActionStarts {
   public:
     /// Notes this update's front action of the kind (null for none), counting it when it is a new one.
     void see(const void* action) {
-        if (action != nullptr && action != m_last) {
-            m_last = action;
+        if (action != nullptr && action != m_previous) {
             ++m_count;
         }
+        m_previous = action;
     }
 
     /// The actions counted.
     [[nodiscard]] int count() const { return m_count; }
 
   private:
-    const void* m_last = nullptr; // the action last counted
+    const void* m_previous = nullptr; // the update before's action of the kind; null when none
     int m_count = 0;
 };
 
