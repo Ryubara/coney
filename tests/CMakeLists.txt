@@ -212,6 +212,7 @@ add_executable(coney_tests
     platform/disc_level5_fights_test.cpp
     platform/disc_level34_furies_test.cpp
     platform/disc_level34_looters_test.cpp
+    platform/disc_level34_molotov_test.cpp
     platform/disc_level99_audio_test.cpp
     platform/disc_level99_heap_test.cpp
     platform/disc_level99_scene_speech_test.cpp
@@ -450,6 +451,7 @@ target_sources(coney_tests PRIVATE
     human/way_clear_test.cpp
     human/flight_test.cpp
     human/hiding_test.cpp
+    human/move_styles_test.cpp
     human/body_test.cpp
     human/climb_test.cpp
     human/combat_test.cpp

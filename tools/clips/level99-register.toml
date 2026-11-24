@@ -1,0 +1,11 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): the level99 store's cash register lifted and
+# carried. The input script breaks the store's window, walks in and stands just south of the register facing it; the
+# clip starts there (`--record-from-frame`) and shows triangle's lift (clip 504), the carry with the stick and the
+# idle with it in hand, then triangle's drop. For a change to how a two-handed object is held or carried
+# (docs/research/objects.md#two-handed).
+description = "level99 store: the cash register lifted, carried in both hands and dropped"
+level = "level99"
+input = "tools/clips/level99-register.txt"
+checkpoint = 2
+start_frame = 690
+seconds = 10

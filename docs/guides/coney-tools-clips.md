@@ -164,6 +164,10 @@ flashbacks complete it walks Swan to the cabinet and presses triangle, and Armie
 before for the change that made the cabinet work (#569) is `--before` a commit that takes that fix out, as the base
 has no `--complete-levels`.
 
+`level99-register` is the scenario for a two-handed object: from level99's checkpoint 2 it breaks the store's window,
+walks to the cash register and lifts it with triangle, carries it with the stick and drops it, for a change to how such
+an object is held or carried ([Two-handed objects](../research/objects.md#two-handed), #433).
+
 `level99-world-parts` is the scenario for the World page's part switches: it opens the pad menu in the level99 street
 and hides the streamed world, then shows it and hides the objects, for a change to the mesh views' hook or to what a
 renderer records for a hidden kind; record it on `--renderer gpu`.

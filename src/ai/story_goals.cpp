@@ -13,6 +13,7 @@
 #include "ai/gangs.h"
 #include "ai/move_action.h"
 #include "ai/script_services.h"
+#include "ai/steal_goals.h"
 #include "ai/turn_action.h"
 #include "human/locomotion.h"
 
@@ -33,8 +34,9 @@ float flatDistance(anim::Vec3 a, anim::Vec3 b) { return std::hypot(a.x - b.x, a.
 
 // The search period of the enemy search, ms.
 constexpr std::uint64_t kSearchPeriodMs = 1000;
-// The throw goal re-aims every this many brain updates while the throw has not happened.
-constexpr std::uint64_t kThrowRetryUpdates = 30;
+// The throw goal throws only on a brain update that is a multiple of this, except for Virgil (character class 0xb2).
+constexpr std::uint64_t kThrowEveryUpdates = 30;
+constexpr int kThrowAtOnceClass = 0xb2;
 // The dynamic idle's walk: gait 2 until within 1 m.
 constexpr int kIdleGait = 2;
 constexpr float kIdleRadius = 1.0F;
@@ -238,31 +240,45 @@ ThrowObjectGoal::ThrowObjectGoal(std::function<std::optional<anim::Vec3>(double)
       m_callback(std::move(callback)), m_services(services) {}
 
 GoalStatus ThrowObjectGoal::process(Brain& brain) {
+    // 1. Busy while winding up a swing of what he holds, or while actions are queued.
+    if (swingingHeld(brain.human()) || brain.actionCount() > 0) {
+        return GoalStatus::Stop;
+    }
+    // 2. Done when he holds nothing or the target is gone. **Coney stand-in**: any held object counts as throwable, for
+    // Human_HeldIsThrowable or a held object of kind 4 or 6.
     human::ScriptState& script = brain.human().script();
     const std::optional<anim::Vec3> target = m_locate ? m_locate(m_target) : std::nullopt;
     if (script.heldObject == 0.0 || !target) {
         return GoalStatus::Done;
     }
-    if (brain.actionCount() > 0) {
-        return GoalStatus::Stop;
-    }
+    // 3. Beyond the range (in 3D) he walks to the target, the range as the arrival radius.
     const anim::Vec3 position = brain.human().position();
-    if (flatDistance(*target, position) > m_range) {
+    const anim::Vec3 to{target->x - position.x, target->y - position.y, target->z - position.z};
+    if (std::hypot(to.x, to.y, to.z) > m_range) {
         brain.queueAction(std::make_unique<MoveAction>(
             MoveRequest{.point = *target, .radius = m_range, .gait = m_gait, .option = false, .delayMs = 0}));
         return GoalStatus::Stop;
     }
-    const float heading = std::atan2(-(target->x - position.x), target->y - position.y);
-    if (std::fabs(human::wrapAngle(heading - brain.human().heading())) > kFaceFlagAngle &&
-        brain.updates() % kThrowRetryUpdates != 0) {
+    // 4. More than 15 degrees off, he turns to it.
+    const float heading = std::atan2(-to.x, to.y);
+    if (std::fabs(human::wrapAngle(heading - brain.human().heading())) > kFaceFlagAngle) {
         brain.queueAction(TurnAction::toPoint(*target));
         return GoalStatus::Stop;
     }
-    // The throw: what it holds leaves its hands.
+    // 5. The throw, only on every 30th brain update unless he is Virgil.
+    if (brain.updates() % kThrowEveryUpdates != 0 && brain.human().characterClass() != kThrowAtOnceClass) {
+        return GoalStatus::Stop;
+    }
+    // **Coney stand-in** for the object target and the queued cross (attack kind 0): what it holds leaves its hands
+    // at once, its move style popped as Human_ReleaseThrow pops it (a player's hand is followed by the play mode's
+    // dropHeld()). The next update finds the hands empty and ends the goal.
     script.heldObject = 0.0;
     script.heldObjectName.clear();
+    if (brain.type() != BrainType::Player) {
+        brain.human().letGoOfHeld(true);
+    }
     m_completed = true;
-    return GoalStatus::Done;
+    return GoalStatus::Stop;
 }
 
 void ThrowObjectGoal::end(Brain& brain) {

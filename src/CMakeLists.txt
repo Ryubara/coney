@@ -376,6 +376,7 @@ target_sources(coney_core PRIVATE
     human/human_contacts.cpp
     human/human_sounds.cpp
     human/human_animator.cpp
+    human/move_styles.cpp
     human/human_held.cpp
     human/human_revive.cpp
     human/way_clear.cpp

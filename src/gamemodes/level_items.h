@@ -60,6 +60,7 @@ class LevelItems final : public ai::ItemServices {
     /// The human's pick-up (human::Human::startPickUp()) with the clip for the object's type and height above his
     /// feet (world_objects::pickupClip()). **Coney's reading**: the AI's pick-up action (`PickUpItemAction`, `0x21`)
     /// is not on the page, so it plays the player's pick-up.
+    /// @coney-only the level's hand-off of an AI pick-up to his human (the clip, its target and the object's set)
     bool startPickUp(ai::Brain& brain, double handle) override;
 
     /// The level's panes and struck props (null: no panes, and no prop is broken), which must outlive it.

@@ -47,6 +47,8 @@ HumanState replicatedState(const human::Human& human, std::int32_t character) {
     state.healthMax = human.fighter().health().maximum();
     state.grounded = !human.airborne();
     state.knockedOut = human.knockedOut() || human.script().wounded;
+    // **Coney stand-in**: only the hidden style is replicated; a carry style (4, 6) is sent as normal, so a client
+    // draws a carrier with the plain clips (docs/research/objects.md#two-handed).
     state.moveStyle = human.animator().stealthStyle() ? MoveStyle::Hidden : MoveStyle::Normal;
     state.character = character;
     // The layers, newest first; each older layer's fade is how far the one over it has faded in.

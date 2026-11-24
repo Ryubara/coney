@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <format>
 #include <functional>
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <string>
@@ -31,6 +32,9 @@
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_start.h"
+#include "human/human.h"
+#include "human/human_animator.h"
+#include "human/move_styles.h"
 #include "human/player.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
@@ -224,6 +228,8 @@ TEST_CASE("the disc's level99 store: the cash register breaks, opens its drawer 
 
 TEST_CASE("the disc's level99 store: triangle takes the cash register's drawer away and lifts the register",
           "[disc][story][objects]") {
+    // Expected: script-types.md#dyn-cashreg, confirmed (code); objects.md#two-handed for the clip 504, confirmed
+    // (runtime)
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -252,5 +258,96 @@ TEST_CASE("the disc's level99 store: triangle takes the cash register's drawer a
     CHECK(picked);
     CHECK(took);
     CHECK(store.live("dyn_cashreg_b") == nullptr);
+    CHECK(store.scripts->scripts().errors() == 0);
+}
+
+TEST_CASE("the disc's level99 store: the lifted cash register is carried in both hands with the barrel clips",
+          "[disc][story][objects]") {
+    // Expected: objects.md#two-handed, confirmed (runtime): 504, then move style 4 with slot 0 = 509; the idle 509 once
+    // 504 ends; the stick plays 519 then 515; the register at bone 25 with its type's holdPos / holdRot; confirmed
+    // (code) for the drop's return to the plain idle (0x00257f38)
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // The scene skipped, triangle to lift it, the stick at 60 % for 80 updates once the clip is over, then triangle to
+    // drop it.
+    constexpr int kTriangle = 540;
+    constexpr int kWalk = 640;
+    constexpr int kWalkFrames = 80;
+    constexpr int kDrop = 760;
+    constexpr int kEnd = 780;
+    StoreRun store(*wad,
+                   std::format("300 tap start\n310 tap cross\n{} tap triangle\n{} stick left 0 60\n{} stick left 0 "
+                               "0\n{} tap triangle\n",
+                               kTriangle, kWalk, kWalk + kWalkFrames, kDrop));
+    const double handle = store.till->handle;
+    const coney::anim::Vec3 at{store.till->position[0], store.till->position[1], store.till->position[2]};
+    const coney::world_objects::ObjectType* type = store.scripts->objectTypes().find("dyn_cashreg");
+    REQUIRE(type != nullptr);
+    store.play->teleport(
+        coney::debug::Place{.name = "register", .feet = {at.x, at.y - 0.95F, 0.3F}, .headingDegrees = 0.0F});
+    const coney::human::Human& human = store.play->player().human();
+    // One sample per update: the clip, the top move style, slot 0, and the register's attachment while drawn.
+    std::vector<std::uint32_t> clips;
+    int styleFour = 0;
+    int idleSlot509 = 0;
+    int heldDrawn = 0;
+    int heldPoseOff = 0;
+    int boneOff = 0;
+    for (int frame = StoreRun::kStartFrames; frame < kEnd; ++frame) {
+        store.run(1);
+        const std::uint32_t id = human.animator().animId();
+        if (clips.empty() || clips.back() != id) {
+            clips.push_back(id);
+        }
+        if (frame >= kDrop) {
+            continue;
+        }
+        styleFour += human.animator().moveStyle() == coney::human::kStyleCarry ? 1 : 0;
+        idleSlot509 += human.animator().slots().ids.at(coney::human::kSlotIdle) == 509 ? 1 : 0;
+        for (const coney::platform::PlayLevelMode::HeldDraw& draw : store.play->heldDraws()) {
+            if (draw.holder != &human || draw.handle != handle) {
+                continue;
+            }
+            ++heldDrawn;
+            boneOff += draw.bone != 25 ? 1 : 0;
+            const auto off = [](float a, float b) { return std::fabs(a - b) > 1e-4F; };
+            heldPoseOff += off(draw.local.position.x, type->holdPosition.x) ||
+                                   off(draw.local.position.y, type->holdPosition.y) ||
+                                   off(draw.local.position.z, type->holdPosition.z) ||
+                                   off(draw.local.rotation.x, type->holdRotation.x) ||
+                                   off(draw.local.rotation.y, type->holdRotation.y) ||
+                                   off(draw.local.rotation.z, type->holdRotation.z) ||
+                                   off(draw.local.rotation.w, type->holdRotation.w)
+                               ? 1
+                               : 0;
+        }
+    }
+    // The clips in the order they first played after the lift began.
+    const auto order = [&clips](std::initializer_list<std::uint32_t> wanted) {
+        auto from = clips.begin();
+        for (const std::uint32_t id : wanted) {
+            from = std::find(from, clips.end(), id);
+            if (from == clips.end()) {
+                return false;
+            }
+        }
+        return true;
+    };
+    std::printf("  level99 store: %zu clip changes, style 4 for %d updates, slot 0 = 509 for %d, held drawn %d "
+                "(off pose %d, off bone %d)\n",
+                clips.size(), styleFour, idleSlot509, heldDrawn, heldPoseOff, boneOff);
+    CHECK(order({504, 509, 519, 515, 509, 388}));
+    CHECK(std::ranges::find(clips, 413U) == clips.end());
+    CHECK(std::ranges::find(clips, 408U) == clips.end());
+    CHECK(styleFour > 150);
+    CHECK(idleSlot509 == styleFour);
+    CHECK(heldDrawn > 150);
+    CHECK(heldPoseOff == 0);
+    CHECK(boneOff == 0);
+    // Dropped: no style, and the plain idle.
+    CHECK(human.animator().moveStyle() == coney::human::kStyleNone);
+    CHECK(human.animator().animId() == 388);
     CHECK(store.scripts->scripts().errors() == 0);
 }

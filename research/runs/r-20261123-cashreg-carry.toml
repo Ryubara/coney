@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261123-cashreg-carry"
+date = "2026-11-23"
+kind = "trace"
+tool = "trace original"
+digest = "c323ffb068dcf620bade5491fae5bdb898bf58f59bbc334f937c387bbd50a927"
+
+[who]
+agent = "aecd94f7719804f49"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "glass-shelf-loot"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "cashreg_carry"
+method = ""
+
+[values]
+updates = 261
+missed_updates = 0
+columns = 38
+
+[hashes]
+trace_csv = "f01c63e82000d9d313dd9820ad09b8173aaa0983d564583e905cb15d3cbf1782"

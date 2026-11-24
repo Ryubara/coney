@@ -33,6 +33,7 @@
 #include "gui/global_strings.h"
 #include "human/human.h"
 #include "human/human_flags.h"
+#include "human/move_styles.h"
 #include "scripting/anim_callbacks.h"
 #include "scripting/binding_args.h"
 #include "scripting/lua_value.h"
@@ -189,6 +190,7 @@ TEST_CASE("the getters answer for a human and their defaults for a handle that n
 }
 
 TEST_CASE("a call on a human the level has not made yet waits for it", "[ai][scripted]") {
+    // Expected: ../references/bindings/character.md#husetmoney, confirmed (code): the money is clamped to 999
     Level level;
     Brain& thug = level.add({44.0F, 40.0F, 0.0F});
     level.scripted->hold();
@@ -206,6 +208,68 @@ TEST_CASE("a call on a human the level has not made yet waits for it", "[ai][scr
     CHECK(level.call("HuPlaceItemInHand", {Value(2.0), Value("dyn_pipe_a")}).number() == 0.0);
     level.call("HuDropWeapon", {Value(2.0)});
     CHECK(level.call("HuGetHeldObject", {Value(2.0)}).number() == 0.0);
+}
+
+namespace {
+
+// Puts a two-handed object (handle `object`, anim set 4) in `brain`'s hand as a take does: the hand, the anim set and
+// the take's carry style.
+void carryTwoHanded(Brain& brain, double object) {
+    coney::human::Human& human = brain.human();
+    human.script().heldObject = object;
+    human.script().heldObjectName = "dyn_cashreg";
+    human.takeHeldStyle(coney::human::kStyleCarry);
+    human.fighter().setAnimSet(coney::human::kStyleCarry);
+    human.fighter().setHoldingObject(true);
+}
+
+} // namespace
+
+TEST_CASE("an AI human who lets go of a two-handed object by script goes back to the plain move style",
+          "[ai][scripted][move_styles]") {
+    // Expected: objects.md#two-handed, confirmed (code): HuDropWeapon (0x002994b8) drops through Human_DropHeld
+    // (0x00257f38), which removes the held set's style; the throw goal's throw ends in Human_ReleaseThrow
+    // (0x002586d8), which pops it.
+    Level level;
+    Brain& dropper = level.add({44.0F, 40.0F, 0.0F});
+    Brain& destroyed = level.add({44.0F, 44.0F, 0.0F});
+    Brain& thrower = level.add({42.0F, 40.0F, 0.0F});
+    carryTwoHanded(dropper, 50.0);
+    carryTwoHanded(destroyed, 51.0);
+    carryTwoHanded(thrower, 52.0);
+    REQUIRE(dropper.human().animator().moveStyle() == coney::human::kStyleCarry);
+    level.call("HuDropWeapon", {Value(2.0)});
+    CHECK(dropper.human().animator().moveStyle() == coney::human::kStyleNone);
+    CHECK(dropper.human().fighter().animSet() == 0);
+    // ObjDestroy on a held object: its holder lets go as at HuDropWeapon.
+    level.call("ObjDestroy", {Value(51.0)});
+    CHECK(destroyed.human().script().heldObject == 0.0);
+    CHECK(destroyed.human().animator().moveStyle() == coney::human::kStyleNone);
+    CHECK(destroyed.human().fighter().animSet() == 0);
+    // The throw goal at the player: once the object has left his hands, his style is popped.
+    level.call("GoalThrowObject", {Value(4.0), Value(1.0), Value(16.0), Value(2.0), Value("")});
+    for (int k = 0; k < 120 && thrower.human().script().heldObject != 0.0; ++k) {
+        level.scene.run(1);
+    }
+    REQUIRE(thrower.human().script().heldObject == 0.0);
+    CHECK(thrower.human().animator().moveStyle() == coney::human::kStyleNone);
+    CHECK(thrower.human().fighter().animSet() == 0);
+}
+
+TEST_CASE("Virgil's throw goal throws as soon as he faces the target, off the 30-update beat", "[ai][scripted]") {
+    // Expected: ai-goals.md#goal-throw-object, confirmed (code): class 0xb2 (Virgil) throws at once, not only on a
+    // brain update that is a multiple of 30
+    Level level;
+    // He faces the player, 4 m to his south.
+    Brain& virgil = level.scene.add({40.0F, 44.0F, 0.0F}, 180.0F);
+    level.scripted->bind(virgil.handle(), virgil);
+    virgil.setCharacterClass(0xb2);
+    virgil.human().script().heldObject = 61.0;
+    virgil.human().script().heldObjectName = "dyn_molotv";
+    level.call("GoalThrowObject", {Value(2.0), Value(1.0), Value(16.0), Value(2.0), Value("")});
+    level.scene.run(1);
+    CHECK(virgil.human().script().heldObject == 0.0);
+    CHECK(virgil.updates() % 30 != 0);
 }
 
 TEST_CASE("EnableCommand masks a player's commands; an AI human has no pad", "[ai][scripted]") {
@@ -708,4 +772,25 @@ TEST_CASE("an AI human who falls out of the world is knocked out once faded: his
     CHECK(level.call("HuIsAlive", {Value(handle)}).isNil());
     CHECK(level.scripted->brain(handle) == nullptr);
     CHECK(level.call("HuIsAlive", {Value(mate.handle())}).number() == 1.0);
+}
+
+TEST_CASE("the throw goal throws only on a brain update that is a multiple of 30", "[ai][scripted]") {
+    // Expected: ai-goals.md#goal-throw-object, confirmed (code): facing the target within range, the throw waits for
+    // a brain update whose counter is a multiple of 30 (Virgil, class 0xb2, at once)
+    Level level;
+    // He faces the player, 4 m to his south.
+    Brain& thrower = level.scene.add({40.0F, 44.0F, 0.0F}, 180.0F);
+    level.scripted->bind(thrower.handle(), thrower);
+    thrower.human().script().heldObject = 60.0;
+    thrower.human().script().heldObjectName = "dyn_bottle";
+    level.call("GoalThrowObject", {Value(2.0), Value(1.0), Value(16.0), Value(2.0), Value("")});
+    std::uint64_t thrownAt = 0;
+    for (int k = 0; k < 90 && thrownAt == 0; ++k) {
+        level.scene.run(1);
+        if (thrower.human().script().heldObject == 0.0) {
+            thrownAt = thrower.updates();
+        }
+    }
+    REQUIRE(thrownAt != 0);
+    CHECK(thrownAt % 30 == 0);
 }

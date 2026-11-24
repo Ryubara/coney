@@ -48,8 +48,6 @@ constexpr int kLedPointBone = 6;
 // less than this share of its move met the wall head-on; it then does not move again before its clip ends, as seen at
 // runtime (why is not traced).
 constexpr float kChargeStopShare = 0.5F;
-// The idle a pick-up returns to (388, the plain idle).
-constexpr std::uint32_t kPickUpIdle = 388;
 // The blend into the uncuff's clips, the freer's 325 and the cuffed human's 326 (AnimTaskBlendOut 0.01 s in
 // Uncuff_Start, 0x00260ca8).
 constexpr float kUncuffFade = 0.01F;
@@ -1211,7 +1209,7 @@ bool Human::tryContextAction() {
     return m_contextAction && m_contextAction(*this);
 }
 
-bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip) {
+bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip, int heldSet) {
     const anim::AnimClip* found = m_animator.clip(clip);
     if (found == nullptr) {
         return false;
@@ -1225,13 +1223,30 @@ bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip) {
     const int updates = std::max(1, static_cast<int>(std::lround(seconds / m_stepSeconds)));
     const anim::Vec3 to = anim::subtract(point, m_position);
     const float turn = std::hypot(to.x, to.y) > 1e-4F ? wrapAngle(headingOf(to) - m_heading) : 0.0F;
+    // The loop after the clip is read under the object's style (509 for a two-handed object, in the stance its fight
+    // idle).
     const std::array<std::uint32_t, 1> clips{clip};
-    m_animator.playCombat(clips, kPickUpIdle, AnimState::Attack, world_objects::kPickupBlend,
+    const std::uint32_t loop = m_animator.pickUpLoop(heldSet, m_hidden, m_fighter.inFightStance());
+    m_animator.playCombat(clips, loop, AnimState::Attack, world_objects::kPickupBlend,
                           HeldFlags{.held = combat::kPhaseGrabStart, .set = combat::kPhaseGrabStart});
     m_velocity = anim::Vec3{};
     m_pickUp = PickUpRun{
         .handle = handle, .clip = clip, .updatesLeft = updates, .turnStep = turn / static_cast<float>(updates)};
     return true;
+}
+
+void Human::takeHeldStyle(int set) {
+    // Message 3 reads the held object's type +0x87 and changes the style only when it differs from the top.
+    if (set != m_animator.moveStyle()) {
+        m_animator.carryStyle(set);
+    }
+}
+
+void Human::letGoOfHeld(bool thrown) {
+    // The fighter's anim set is the held object's (set at every take), so it names the style to take off.
+    releaseHeldStyle(m_fighter.animSet(), thrown);
+    m_fighter.setAnimSet(0);
+    m_fighter.setHoldingObject(false);
 }
 
 // @orig 0x00278018 Tag_StartSprayClips (unknown)

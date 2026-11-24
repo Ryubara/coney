@@ -193,6 +193,7 @@ TEST_CASE("the size cull, the ObjShow distance and the alpha floor", "[object_ta
 }
 
 TEST_CASE("a held object hangs from its bone at the take event's offset, slid to its grip", "[object_tasks]") {
+    // Expected: objects.md#held, confirmed (code)
     // A take event on bone 25 at (0.1, 0, 0), no turn; a grip of 0.39 m along the object's y.
     coney::anim::AnimClip clip;
     clip.events.push_back(coney::anim::ClipEvent{
@@ -216,4 +217,68 @@ TEST_CASE("a held object hangs from its bone at the take event's offset, slid to
     CHECK(pose.position.y == Approx(0.05F).margin(1e-4));
     CHECK(pose.position.z == Approx(1.0F).margin(1e-4));
     CHECK_FALSE(coney::world_objects::heldAttachment(coney::anim::AnimClip{}, 1.0F, 0.0F).has_value());
+}
+
+TEST_CASE("a two-handed object is held at the take event's bone with its type's held pose, unscaled and unslid",
+          "[object_tasks]") {
+    // Expected: objects.md#two-handed, confirmed (code) and confirmed (runtime): the register's local pose was its type
+    // record's +0x00 / +0x0c at bone 25 through the carry.
+    coney::anim::AnimClip clip;
+    clip.events.push_back(coney::anim::ClipEvent{.frame = 7,
+                                                 .type = 9,
+                                                 .value = 0,
+                                                 .word = 25,
+                                                 .position = Vec3{0.1F, 0.2F, 0.0F},
+                                                 .rotation = coney::anim::Quat{0.0F, 0.0F, 0.0F, 1.0F}});
+    coney::world_objects::ObjectType till;
+    till.className = "dyn_cashreg";
+    till.grip = 0.39F;
+    till.holdPosition = Vec3{0.3075F, 0.1306F, 0.2869F};
+    till.holdRotation = coney::anim::Quat{-0.1485F, 0.0522F, -0.9863F, -0.0484F};
+    coney::world_objects::ObjectType drum;
+    drum.className = "overhead_weapon";
+    drum.holdPosition = Vec3{0.0F, 0.4F, 0.1F};
+    drum.holdRotation = coney::anim::Quat{0.0F, 0.0F, 0.7071F, 0.7071F};
+    coney::world_objects::ObjectType bat;
+    bat.className = "melee_weapon";
+    bat.grip = 0.39F;
+    bat.holdPosition = Vec3{9.0F, 9.0F, 9.0F};
+
+    // The register at a human of scale 1.2: the type's pose as given, at the event's bone.
+    const auto held = coney::world_objects::takeAttachment(clip, 1.2F, till, false);
+    REQUIRE(held.has_value());
+    if (!held) {
+        return;
+    }
+    CHECK(held->bone == 25);
+    CHECK(held->position.x == Approx(0.3075F));
+    CHECK(held->position.y == Approx(0.1306F));
+    CHECK(held->position.z == Approx(0.2869F));
+    CHECK(held->rotation.x == Approx(-0.1485F));
+    CHECK(held->rotation.y == Approx(0.0522F));
+    CHECK(held->rotation.z == Approx(-0.9863F));
+    CHECK(held->rotation.w == Approx(-0.0484F));
+    // An overhead_weapon the same way.
+    const auto lifted = coney::world_objects::takeAttachment(clip, 1.2F, drum, false);
+    REQUIRE(lifted.has_value());
+    if (lifted) {
+        CHECK(lifted->position.y == Approx(0.4F));
+        CHECK(lifted->rotation.z == Approx(0.7071F));
+    }
+    // In a scene the event's pose, its position scaled by the human and not slid.
+    const auto inScene = coney::world_objects::takeAttachment(clip, 1.2F, till, true);
+    REQUIRE(inScene.has_value());
+    if (inScene) {
+        CHECK(inScene->position.x == Approx(0.12F));
+        CHECK(inScene->position.y == Approx(0.24F));
+        CHECK(inScene->rotation.w == Approx(1.0F));
+    }
+    // Any other class as heldAttachment() places it: scaled and slid to its grip, its held pose ignored.
+    const auto swung = coney::world_objects::takeAttachment(clip, 1.0F, bat, false);
+    REQUIRE(swung.has_value());
+    if (swung) {
+        CHECK(swung->position.x == Approx(0.1F));
+        CHECK(swung->position.y == Approx(0.2F + 0.39F));
+    }
+    CHECK_FALSE(coney::world_objects::takeAttachment(coney::anim::AnimClip{}, 1.0F, till, false).has_value());
 }

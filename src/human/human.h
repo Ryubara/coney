@@ -1007,14 +1007,34 @@ class Human final : public Holdable {
     void addPush(anim::Vec3 push) { m_pendingPush = anim::add(m_pendingPush, push); }
     /// The breakable objects square may strike from now on (the level's whole panes), given each step.
     void setObjectTargets(std::vector<ObjectTarget> objects) { m_objectTargets = std::move(objects); }
-    /// Picks up the object `handle` at `point` with clip `clip` (world_objects::pickupClip()): the clip plays after a
-    /// world_objects::kPickupBlend blend, holding the grab bit `0x10` so the human neither moves nor acts, and the
-    /// human turns to the object over the time to the clip's first event, when the object is taken (takePickedUp()).
-    /// Returns false, doing nothing, when the anim set lacks the clip. **Coney's stand-ins**: the turn for
-    /// `0x00275d10`'s steer (inferred to be like the attack's, without its slide); the grab bit for what the clip
-    /// holds.
-    /// @orig 0x0025e5a8 Human_PickUpMessage (unknown)
-    bool startPickUp(double handle, anim::Vec3 point, std::uint32_t clip);
+    /// Picks up the object `handle` of anim set `heldSet` (its type's `CfgObj` `+0x87`) at `point` with clip `clip`
+    /// (world_objects::pickupClip()): the clip plays after a world_objects::kPickupBlend blend, holding the grab bit
+    /// `0x10` so the human neither moves nor acts, then hands over to the idle the object's move style gives
+    /// (HumanAnimator::pickUpLoop(): 509 for a two-handed object, docs/research/objects.md#two-handed); the human turns
+    /// to the object over the time to the clip's first event, when the object is taken (takePickedUp()). Returns
+    /// false, doing nothing, when the anim set lacks the clip. **Coney's stand-ins**: the turn for `0x00275d10`'s steer
+    /// (inferred to be like the attack's, without its slide); the grab bit for what the clip holds.
+    /// @orig 0x0025e5a8 Human_PlayPickupClip (unknown)
+    bool startPickUp(double handle, anim::Vec3 point, std::uint32_t clip, int heldSet = 0);
+    /// The take's message 3 to the holder: the held object's anim set `set` goes on as his move style
+    /// (HumanAnimator::carryStyle()) when it is not his top style already, so a two-handed object (set 4) is carried
+    /// with the barrel idle and walks; the test is message 3's (Human_HandleMessage at 0x002460ec). Research:
+    /// docs/research/objects.md#two-handed
+    /// @orig 0x00221ed0 Human_SetCarryMoveStyle (unknown)
+    void takeHeldStyle(int set);
+    /// His held object of anim set `set` let go, dropped or (`thrown`) thrown: its move style comes off
+    /// (HumanAnimator::releaseStyle()). Research: docs/research/objects.md#two-handed
+    /// @orig 0x00257f38 Human_DropHeld (unknown)
+    /// @orig 0x002586d8 Human_ReleaseThrow (unknown)
+    void releaseHeldStyle(int set, bool thrown) { m_animator.releaseStyle(set, thrown); }
+    /// An AI's held object let go outside the play mode's drop: dropped (`HuDropWeapon` and `ObjDestroy`, which drop
+    /// through `Human_DropHeld`) or thrown (`GoalThrowObject`, whose throw ends in `Human_ReleaseThrow`). The held
+    /// object's style comes off as at any drop or throw (releaseHeldStyle(), with the fighter's anim set as the held
+    /// set) and he holds nothing: anim set 0. The caller clears the script's hand. Research:
+    /// docs/research/objects.md#two-handed
+    /// @orig 0x00257f38 Human_DropHeld (unknown)
+    /// @orig 0x002586d8 Human_ReleaseThrow (unknown)
+    void letGoOfHeld(bool thrown);
     /// Starts the stereo theft at the stereo at `point`: the human turns to it at once and the mini-game runs (mode 3)
     /// with `stageTurns` turns of the stick a stage (combat::stereoStageTurns()). **Coney stand-in**: the turn is made
     /// at once and he stays put, where the original's Human_AlignToObject turns and moves him over 0.1 s.

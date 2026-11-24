@@ -281,8 +281,17 @@ void ScriptedHumans::setIcon(double human, std::string_view object, int param) {
 void ScriptedHumans::dropWeapon(double human) {
     onBrain(human, [](Brain& brain) {
         human::ScriptState& script = brain.human().script();
+        if (script.heldObject == kNilHandle) {
+            return;
+        }
+        // Human_DropHeld. **Coney stand-in**: the hand is emptied and an AI's held object's move style comes off
+        // here, as Coney's objects have no weapon class yet; a player's hand is followed by the play mode, whose
+        // dropHeld() drops the object when it sees the hand empty.
         script.heldObject = kNilHandle;
         script.heldObjectName.clear();
+        if (brain.type() != BrainType::Player) {
+            brain.human().letGoOfHeld(false);
+        }
     });
 }
 
@@ -296,6 +305,10 @@ void ScriptedHumans::releaseObject(double object) {
         if (script.heldObject == object) {
             script.heldObject = kNilHandle;
             script.heldObjectName.clear();
+            // Its move style comes off as at HuDropWeapon's drop (a player's, in the play mode's dropHeld()).
+            if (brain->type() != BrainType::Player) {
+                brain->human().letGoOfHeld(false);
+            }
         }
     }
 }
