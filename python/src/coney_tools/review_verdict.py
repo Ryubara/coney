@@ -377,10 +377,36 @@ def problems(verdict: Mapping[str, Any], packet: Mapping[str, Any], pages_min_ad
     return found
 
 
-def stamp_detail(verdict: Mapping[str, Any]) -> dict[str, Any]:
-    """What the `reviewed` stamp keeps of a recorded verdict: small, with a pointer when the function list is long.
+def _size(detail: Mapping[str, Any]) -> int:
+    """The bytes `detail` takes in a stamp (the stamp's own canonical form)."""
+    return len(json.dumps(detail, sort_keys=True, separators=(",", ":")))
 
-    The whole verdict is kept beside the log and covered by the stamp's `review_sha256`.
+
+def fit_detail(detail: dict[str, Any]) -> None:
+    """Shorten `detail` in place until it is within `DETAIL_ROOM`, which leaves what the caller adds (the reviewer's
+    identity and the pointer). The function list goes first, replaced by `function_count`; then the page list is cut
+    to the most pages that fit, at least one (`pr verify` reads a page list that is not empty as "the pages were
+    graded"), and `pages_left_out` counts the rest. The recorded verdict keeps both lists whole."""
+    if _size(detail) > DETAIL_ROOM and "functions" in detail:
+        functions = detail.pop("functions")
+        detail["function_count"] = len(functions) if isinstance(functions, dict) else 0
+    pages = detail.get("pages")
+    if _size(detail) <= DETAIL_ROOM or not isinstance(pages, list) or len(pages) < 2:
+        return
+    already = int(detail.get("pages_left_out", 0))
+    kept = len(pages)
+    while kept > 1 and _size(detail) > DETAIL_ROOM:
+        kept -= 1
+        detail["pages"] = pages[:kept]
+        detail["pages_left_out"] = already + len(pages) - kept
+
+
+def stamp_detail(verdict: Mapping[str, Any]) -> dict[str, Any]:
+    """What the `reviewed` stamp keeps of a recorded verdict: small, with a count in place of a long function or page
+    list (`fit_detail`).
+
+    The whole verdict is kept beside the log and covered by the stamp's `review_sha256`. The other keys cannot grow:
+    `kinds` is a few names of the packet's, and the findings, blockers and unreviewed entries are counts.
     """
     mode = str(verdict["mode"])
     functions = {
@@ -400,8 +426,5 @@ def stamp_detail(verdict: Mapping[str, Any]) -> dict[str, Any]:
         "notes": len(_findings(verdict)) - len(stop),
         "not_reviewed": len(verdict["not_reviewed"]),
     }
-    if len(json.dumps(detail, sort_keys=True, separators=(",", ":"))) > DETAIL_ROOM:
-        # The reviewer's identity and the pointer are added by the caller: leave room for them.
-        detail["function_count"] = len(functions)
-        del detail["functions"]
+    fit_detail(detail)
     return detail
