@@ -151,3 +151,21 @@ in the dead state for an update or more during the death chain, which would make
 `+0x298`, or class 5's when the brain type is not the class's and human `+0x19d` is set. Coney's join keeps the
 weights the brain was made with, or a script set since (`BrSetAttackWeight`). Open: whether a script sets weights
 before a `GangAddMember` that the original then overwrites, and what human `+0x19d` is.
+
+### The war chief on joining {#q-war-chief}
+
+`Gang_AddMember` makes a joining player the leader only when he is war chief (human `+0x3ac` = 1, set by
+`HuSetWarChief`). Coney keeps no war chief flag and reads player 1 as the war chief, so any player joining leads.
+Open: whether a story joins a player who is not war chief to a gang (a second player in co-op), where the two differ.
+
+### Fields Coney does not keep {#q-unkept-fields}
+
+`Gang_Create` clears the record bytes `+0xd0`, `+0xd1` and `+0xda`; `Gang_MakeNeutralWithType` clears the members'
+brain byte `+0x290` when the kind is 0; `Gang_AddMember` sends event `0x16` with the member count before plus one in
+its second word. Coney keeps none of them. Open: who reads each; a reader found means porting the field.
+
+### Ids and records out of range {#q-out-of-range}
+
+`Gang_MakeEnemies` and `Gang_MakeFriends` refuse only id −1 and index any other id, and `Gang_Create` goes on with
+record −1 when every record is in use; past the 32 records both write outside the table. Coney does nothing there
+instead. Open: whether any script passes such an id or makes a 33rd gang (no level seen so far does).

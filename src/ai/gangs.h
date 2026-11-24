@@ -288,12 +288,16 @@ class Gang {
     // result. The tactic must be set.
     void processTactic();
     // The brain with script handle `handle`: a member, else through the scripts; null for 0 or none.
+    // @coney-only Coney's handle lookup (the original resolves handles through Handle_ResolveThunk)
     [[nodiscard]] Brain* resolve(double handle) const;
     // Puts `brain` in the first free member slot (`HandleArray16_PutInFree`); nothing when all 16 are taken.
+    // @coney-only the 16 member slots as Coney stores them
     void putInFreeSlot(Brain& brain);
     // Takes `brain` out of its member slot, if it holds one.
+    // @coney-only the 16 member slots as Coney stores them
     void clearSlot(const Brain& brain);
     // Rebuilds the member list from the slots, in slot order.
+    // @coney-only Coney's member list, kept beside the slots
     void relistMembers();
     // The fighting state's clip groups, and their removal when calm. Research: docs/research/ai-reimpl.md#alert-state
     // @orig 0x001694b8 Gang_AddCombatFidgetClips (unknown)
@@ -396,7 +400,8 @@ class Gangs {
     /// Research: docs/research/gang-records.md#join
     /// @orig 0x00166308 Gang_AddMember (unknown)
     void addMember(int id, Brain& brain);
-    /// `brain` leaves its gang, if it has one.
+    /// `brain` leaves its gang, if it has one: out of its slot, its gang cleared.
+    /// @coney-only the slot and gang bookkeeping; Gang_RemoveMember's other steps (0x001664d8) are its callers'
     void removeMember(Brain& brain);
 
     /// Gangs `a` and `b` become enemies both ways: the friend bit cleared, the enemy bit set, in use or not, so a gang
@@ -531,6 +536,7 @@ class Gangs {
 
   private:
     // The record of slot `id`, in use or not; null outside 0 to 31.
+    // @coney-only a bounds-checked record lookup (the original indexes its table directly)
     [[nodiscard]] Gang* record(int id);
 
     std::array<Gang, kGangSlots> m_gangs{};

@@ -40,9 +40,11 @@ double handleOf(const Brain* brain) { return brain != nullptr ? brain->handle() 
 
 // Whether `brain`'s human is dead (Human_HasStateFlag100000000, 0x00227eb0). Coney's stand-in: Coney keeps no dead
 // bit, so out of health stands for dead, as Gang::standing() reads it.
+// @coney-only stand-in for the dead state flag, which Coney does not keep
 bool dead(const Brain& brain) { return brain.human().fighter().health().depleted(); }
 
 // Whether `brain`'s human is cuffed (Human_IsCuffed, 0x00223b70): the script's arrested state.
+// @coney-only stand-in for the cuffed flag, which Coney reads from the script's arrested state
 bool cuffed(const Brain& brain) { return brain.human().script().arrested; }
 
 // The class roles Gang_PickLeader takes before any other member: 12 and 13, the police (CharClass +0x11b).
@@ -365,7 +367,6 @@ void Gangs::remove(int id) {
     for (Brain* member : gang->m_members) {
         member->setGang(nullptr);
     }
-    gang->m_slots.fill(nullptr);
     gang->m_members.clear();
     gang->m_inUse = false;
     // No other gang keeps it as an enemy or a friend.

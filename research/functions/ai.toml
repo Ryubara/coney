@@ -171,10 +171,12 @@ question = "gang-records.md#q-attack-weights"
 [[function.gaps]]
 what = "any player joining leads: Coney keeps no war chief flag (`+0x3ac`)"
 relation = "stand-in"
+question = "gang-records.md#q-war-chief"
 
 [[function.gaps]]
 what = "event `0x16` does not carry the member count before plus one"
 relation = "stand-in"
+question = "gang-records.md#q-unkept-fields"
 
 [[function]]
 address = 0x00166708
@@ -492,6 +494,7 @@ status = "compared"
 [[function.gaps]]
 what = "an id outside 0 to 31 does nothing; the original reads past its records"
 relation = "stand-in"
+question = "gang-records.md#q-out-of-range"
 
 [[function]]
 address = 0x0016ad80
@@ -505,6 +508,7 @@ status = "compared"
 [[function.gaps]]
 what = "an id outside 0 to 31 does nothing; the original reads past its records"
 relation = "stand-in"
+question = "gang-records.md#q-out-of-range"
 
 [[function]]
 address = 0x0016ae60
@@ -716,6 +720,7 @@ issue = 81
 [[function.gaps]]
 what = "the members' brain byte `+0x290` cleared for kind 0 is not modelled"
 relation = "stand-in"
+question = "gang-records.md#q-unkept-fields"
 
 [[function]]
 address = 0x0016ca50
@@ -743,10 +748,12 @@ issue = 645
 [[function.gaps]]
 what = "the bytes `+0xd0`, `+0xd1` and `+0xda` are not on Coney's record, and the wanted timers are the crime reports'"
 relation = "stand-in"
+question = "gang-records.md#q-unkept-fields"
 
 [[function.gaps]]
 what = "with every record in use Coney makes no gang; the original goes on with record -1"
 relation = "stand-in"
+question = "gang-records.md#q-out-of-range"
 
 [[function]]
 address = 0x0016d170

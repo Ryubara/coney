@@ -79,7 +79,9 @@ class ScriptedHub final : public script::HubBindingHost {
     explicit ScriptedHub(ScriptedBrains& scripted);
 
     /// What the host reads from the level; the categories and flee percentages also go to the gangs, whose attack
-    /// tactic's flight reads them (Gangs::setLookups()).
+    /// tactic's flight reads them (Gangs::setLookups()), and the wanted test and forced crime level, which a new police
+    /// gang reads.
+    /// @coney-only wiring of the level's lookups into the hub and the gangs
     void setLookups(HubLookups lookups);
 
     /// After each characters' step at game time `nowMs`: the workouts begin (all five clips loaded, the enter clip
