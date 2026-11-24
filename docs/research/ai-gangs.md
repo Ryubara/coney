@@ -16,7 +16,7 @@ crimes and police ([Crimes](crimes.md)) and every mission's encounters depend on
 
 ## Original structure
 
-The gang module is `0x00162518`-`0x0016e388`; its function-by-function index is on
+The gang module is `0x00162518`-`0x0016e388` (confirmed (code)); its function-by-function index is on
 [AI code index: the gang module](ai-code.md#gang-functions), and the tactic and goal classes are on
 [AI code index](ai-code.md) and [AI goals](ai-goals.md). The functions this page's behaviour starts from:
 
@@ -54,7 +54,8 @@ How a gang shares out a big fight, team-ups and Rumble's CPU sides: [Gang fights
 | `+0xe4` | u32[] | the **Lua handler** per event id (interned name) |
 | `+0x1b0` | table | gang-wide anim substitutions (`0x00164178`, `0x001642f0`) |
 
-- **`GangMakeEnemies(a, b)`** and **`GangMakeFriends`**: [Gang records](gang-records.md#relations).
+- **`GangMakeEnemies(a, b)`** (`0x0016acf0`), both ways: clear the friend bit, set the enemy bit (`0x001690c8`).
+  `GangMakeFriends` (`0x0016ad80`) does the reverse. Id −1 is ignored.
 - **Friends** (`0x00168f58`): the same gang or kind, both kinds in {1, `0x17`}, a global truce (`0x0050cb7c` in the
   future), or the friend bit.
 - **`GangSetThreatResponse(gang, r)`** (`0x0016b3d0`) writes brain `+0x21c` of the **current** members only.
@@ -224,6 +225,8 @@ no time limit, `+0x28` the option.
   what 1 runs the reaction at once (`0x0030fe58`).
 
 ### The scripted tactics {#tactic-kinds}
+
+Confirmed (code) at the cited addresses, unless marked.
 
 Every `Tactic<Name>` binding finds the gang (`0x0016c388`), takes a tactic from the pool, runs the class's
 constructor (base fields, the callback name interned by `0x003068f8`, then its own fields) and sets it (`0x00165640`),
@@ -1086,8 +1089,8 @@ the cited addresses). There is no early return:
    - the leader is cleared when he was it;
    - under a tactic (gang `+0x40`) his brain is popped to its goal base;
    - the gang gets event `0x16` with `+4` = the members left and `+8` = **0**.
-2. He is put back ([Joining a gang](gang-records.md#join)): brain `+0x20c`, his attack weights, god mode under an
-   invincible gang, a free member slot, the leader slot for a player war chief (human `+0x3ac` = 1).
+2. He is put back: brain `+0x20c`, his attack weights, god mode under an invincible gang, the leader slot for a
+   player war chief (human `+0x3ac` = 1).
 3. Event `0x16` follows with `+4` = the count before + 1 and `+8` = **1**.
 
 `Gang_OnEvent` (`0x00164c20`) hands an event first to a script handler the gang registered for its type (consumed

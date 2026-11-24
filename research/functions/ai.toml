@@ -168,6 +168,14 @@ what = "the attack weights are not loaded again from the class (Brain_LoadAttack
 relation = "stand-in"
 question = "gang-records.md#q-attack-weights"
 
+[[function.gaps]]
+what = "any player joining leads: Coney keeps no war chief flag (`+0x3ac`)"
+relation = "stand-in"
+
+[[function.gaps]]
+what = "event `0x16` does not carry the member count before plus one"
+relation = "stand-in"
+
 [[function]]
 address = 0x00166708
 name = "Gang_CachePlayerInfo"
@@ -481,6 +489,10 @@ level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::makeEnemies"
 status = "compared"
 
+[[function.gaps]]
+what = "an id outside 0 to 31 does nothing; the original reads past its records"
+relation = "stand-in"
+
 [[function]]
 address = 0x0016ad80
 name = "Gang_MakeFriends"
@@ -489,6 +501,10 @@ role = "`GangMakeFriends(a, b)`: `Gang_SetFriendBit` both ways"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::makeFriends"
 status = "compared"
+
+[[function.gaps]]
+what = "an id outside 0 to 31 does nothing; the original reads past its records"
+relation = "stand-in"
 
 [[function]]
 address = 0x0016ae60
@@ -697,6 +713,10 @@ what = "only mode 0 is ported: the calm mode (both sides calmed, a 3 s truce, th
 relation = "not-ported"
 issue = 81
 
+[[function.gaps]]
+what = "the members' brain byte `+0x290` cleared for kind 0 is not modelled"
+relation = "stand-in"
+
 [[function]]
 address = 0x0016ca50
 name = "Gangs_FindWithinRadius"
@@ -719,6 +739,14 @@ status = "compared"
 what = "the music track names, the spot-line flag `+0xd2` and the spawners' reset are not on Coney's record"
 relation = "not-ported"
 issue = 645
+
+[[function.gaps]]
+what = "the bytes `+0xd0`, `+0xd1` and `+0xda` are not on Coney's record, and the wanted timers are the crime reports'"
+relation = "stand-in"
+
+[[function.gaps]]
+what = "with every record in use Coney makes no gang; the original goes on with record -1"
+relation = "stand-in"
 
 [[function]]
 address = 0x0016d170

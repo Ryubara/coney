@@ -391,8 +391,8 @@ class Gangs {
     /// his own cower clips; then event kGangMessageMembers with 1, so a follow tactic gives the members their goals
     /// again (docs/research/ai-gangs.md#warrior-follow). A full gang (capacity()) keeps every member: the original's
     /// test only calls a function with no effect (`Gangs_ResolveAllMembers` `0x0016d0e0`). Nothing for an id not in
-    /// use. **Coney choices**: the brain's counted enemies are kept; any player joining leads, where the original
-    /// makes only a war chief (`+0x3ac`) the leader; the attack weights are not loaded again (stand-in).
+    /// use. Leaving a gang empties the brain's enemy list. **Coney choices**: any player joining leads, where the
+    /// original makes only a war chief (`+0x3ac`) the leader; the attack weights are not loaded again (stand-in).
     /// Research: docs/research/gang-records.md#join
     /// @orig 0x00166308 Gang_AddMember (unknown)
     void addMember(int id, Brain& brain);

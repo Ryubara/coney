@@ -301,12 +301,16 @@ int Gangs::create(int kind, std::string_view name) {
     if (taken) {
         return -1;
     }
+    // Coney's choice: with every record in use the original goes on with record -1 (Gangs_FindFreeSlot's miss) and
+    // writes outside its table; Coney makes no gang.
     const auto free = std::ranges::find_if(m_gangs, [](const Gang& g) { return !g.m_inUse; });
     if (free == m_gangs.end()) {
         return -1;
     }
-    // The record reset (Gang_Reset 0x00164808), in use, calm, its kind and name. Coney's stand-in: the music track
-    // names, the spot-line flag (+0xd2) and the spawners' reset are not kept on the record (Spawners has them, #645).
+    // The record reset (Gang_Reset 0x00164808), in use, calm, its kind and name. Not kept on the record: the music
+    // track names, the spot-line flag (+0xd2), the bytes +0xd0, +0xd1 and +0xda (their readers not traced), the
+    // wanted timers (the crime reports keep them) and the spawners' reset (their active bytes and the wave counts
+    // +0xb00 to +0xb04, Spawners', #645): Coney's stand-in.
     Gang& gang = *free;
     gang.m_inUse = true;
     gang.m_kind = kind;
@@ -412,6 +416,9 @@ void Gangs::addMember(int id, Brain& brain) {
     if (Gang* old = brain.gang(); old != nullptr) {
         static_cast<void>(brain.clearActions());
         brain.setTarget(nullptr);
+        // His enemy list emptied: the hostile counts the original lowers first (Brain_UncountAllEnemies) are read
+        // from the lists in Coney (ai::huntersOf()), so emptying the list lowers them too.
+        brain.clearEnemies();
         if (old->m_tactic != nullptr) {
             brain.popToGoalBase();
         }
@@ -431,6 +438,8 @@ void Gangs::addMember(int id, Brain& brain) {
         brain.human().setFlag(human::flag::kGod, true);
     }
     gang->putInFreeSlot(brain);
+    // Coney's choice: any player joining leads, where the original makes only a war chief (human +0x3ac, set by
+    // HuSetWarChief) the leader; Coney keeps no war chief flag (player 1 is read as the war chief).
     if (brain.type() == BrainType::Player) {
         gang->m_orders.leader = brain.handle();
     }
@@ -439,6 +448,8 @@ void Gangs::addMember(int id, Brain& brain) {
     if (characters::characterClassOf(brain.characterClass()).id == kGunmanType) {
         gang->setClipGroup(kCowerClips, kGunmanCower);
     }
+    // Coney's stand-in: the event's second word, the member count before he joined plus one, is not carried
+    // (BrainEvent has no field for it; no handler Coney ports reads it).
     static_cast<void>(gang->onEvent(brain, BrainEvent{.id = kGangMessageMembers, .other = &brain, .value = 1}));
 }
 
@@ -499,6 +510,10 @@ void Gangs::makeNeutralOfType(int id, int kind) {
     if (gang == nullptr) {
         return;
     }
+    // Coney's stand-in: the members' brain byte +0x290 the original clears for kind 0 is not modelled (its meaning is
+    // not traced). Only mode 0 is ported: the calm mode (both sides calmed, a 3 s truce, the crime report cancelled)
+    // waits for Gang_ClearWanted's police hostility (#81). Skipping the gang itself changes nothing: it is its own
+    // friend.
     for (int other = 0; other < static_cast<int>(kGangSlots); ++other) {
         Gang* second = find(other);
         if (second == nullptr || second == gang || second->m_kind != kind || friends(gang, second) ||

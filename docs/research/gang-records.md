@@ -125,10 +125,13 @@ crime level to the crime reports (`GangLookups::wanted`, `GangLookups::crimeLeve
 
 Deliberate differences and stand-ins:
 
-- The music track names, the spot-line flag `+0xd2` and the spawners' reset are not on Coney's gang record (the
-  spawners are `repo:src/ai/spawners.h`'s, #645).
-- Any player joining becomes the leader, where the original makes only a war chief one; a member's counted enemies are
-  kept on joining.
+- The music track names, the spot-line flag `+0xd2`, the bytes `+0xd0`, `+0xd1` and `+0xda` and the spawners' reset
+  are not on Coney's gang record (the spawners are `repo:src/ai/spawners.h`'s, #645).
+- With every record in use, `Gangs::create` makes no gang and returns −1; the original goes on with record −1.
+- Any player joining becomes the leader, where the original makes only a war chief one (Coney keeps no war chief
+  flag).
+- Leaving a gang empties the brain's enemy list; the hostile counts the original lowers with it
+  (`Brain_UncountAllEnemies`, `0x0028ef48`) are read from the lists in Coney.
 - The attack weights are not loaded again on joining ([the open question](#q-attack-weights)).
 - Dead is out of health and cuffed the script's arrested state ([the open question](#q-state-flags)).
 - An id outside 0 to 31 does nothing in `Gangs::makeEnemies` and `Gangs::makeFriends`; the original reads past its
