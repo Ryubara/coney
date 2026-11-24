@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <expected>
 #include <format>
 #include <memory>
 #include <optional>
@@ -21,7 +22,11 @@
 #include "human/locomotion.h"
 #include "scripting/hud_bindings.h"
 #include "scripting/lua_value.h"
+#include "scripting/lua_vm.h"
+#include "scripting/natives.h"
 #include "scripting/script_bindings.h"
+#include "warriors/game_state.h"
+#include "warriors/level_table.h"
 #include "world_objects/placed_objects_file.h"
 
 namespace coney {
@@ -30,6 +35,9 @@ namespace {
 
 // The script frames runLevelScriptAlone() runs after the start: one second of the fixed 1/30 s step.
 constexpr std::uint64_t kSettleSteps = 30;
+
+// The preload whose CfgLevels fills the level table (docs/research/frontend.md#the-level-table).
+constexpr std::string_view kLevelTableScript = "config_preload3.lua";
 
 // Reads `<level>_objs.txt` through the scripts' source and adds its objects to `records` and its emitters to
 // `particles` (when given: a particle system of the line's name at its pose, its fields past the pose unused, and no
@@ -288,12 +296,57 @@ LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::stri
     return run;
 }
 
-// Stub until the change: no map.
+// The sheet is named after the record's world; the floats are the ones Radar_Render reads from the record each frame,
+// which Coney copies once here (the record does not change while a level plays).
 // @orig 0x001c3de0 Radar_Setup (RadarHUD.cpp)
-hud::RadarMap radarMapOf(const LevelRecord* /*record*/) { return {}; }
+hud::RadarMap radarMapOf(const LevelRecord* record) {
+    hud::RadarMap map;
+    if (record == nullptr) {
+        return map;
+    }
+    map.sheet = record->worldName;
+    map.offsetX = static_cast<float>(record->values.at(LevelRecord::kRadarOffsetXValue));
+    map.offsetY = static_cast<float>(record->values.at(LevelRecord::kRadarOffsetYValue));
+    map.scale = static_cast<float>(record->values.at(LevelRecord::kRadarScaleValue));
+    return map;
+}
 
-// Stub until the change: an empty table.
+// The level table's two scripts in a state holding only the real CfgLevelName (the header's comment).
 // @coney-only runs the level table's scripts alone, for a network guest
-std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& /*source*/) { return LevelTable{}; }
+std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& source) {
+    // What the binding fills: a game state of its own. The strings and the host are there only because the bindings
+    // are built together (buildNatives() needs them); nothing here calls them.
+    GameState state;
+    gui::GlobalStrings strings;
+    QuietBindingHost host;
+    script::BindingContext context;
+    context.state = &state;
+    context.strings = &strings;
+    context.host = &host;
+    // The last line the script system logged: why a script did not run.
+    std::string lastLine;
+    script::ScriptSystem scripts(
+        source,
+        [&context](script::ScriptSystem& system, script::LuaVm& vm) {
+            for (script::Native& native : script::buildNatives(system, context)) {
+                if (native.name == "CfgLevelName") {
+                    vm.registerFunction(native.name, std::move(native.call));
+                }
+            }
+        },
+        [&lastLine](std::string_view line) { lastLine = std::string(line); });
+    scripts.create();
+    // The enumerations first, as the legal screen's preloads run them, then the script that holds CfgLevels.
+    for (const std::string_view name : {script::kEnumPreloadScripts[0], kLevelTableScript}) {
+        if (!scripts.runFile(name)) {
+            // A missing script says so as the source does; one that is there and failed is bad data.
+            if (auto read = source(name); !read) {
+                return std::unexpected(std::move(read.error()));
+            }
+            return fail(ErrorCode::Invalid, std::format("the level table: {} did not run: {}", name, lastLine));
+        }
+    }
+    return state.levels;
+}
 
 } // namespace coney

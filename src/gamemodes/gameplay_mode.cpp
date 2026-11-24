@@ -632,14 +632,11 @@ void GameplayMode::loadLevel() {
     // InitLevel's HUD set-up, before the script: the level starts with the HUD hidden until something shows it.
     if (m_context.hud != nullptr) {
         m_context.hud->levelSetUp();
-        // `Radar_Setup`: the map named after the level's world and the record's three map floats (arguments 13-15);
-        // the blips find their objects as the trigger spheres do.
-        hud::RadarMap map;
-        if (const LevelRecord* record = m_state.levels.at(m_state.currentLevel); record != nullptr) {
-            map.sheet = record->worldName;
-            map.offsetX = static_cast<float>(record->values.at(LevelRecord::kRadarOffsetXValue));
-            map.offsetY = static_cast<float>(record->values.at(LevelRecord::kRadarOffsetYValue));
-            map.scale = static_cast<float>(record->values.at(LevelRecord::kRadarScaleValue));
+        // `Radar_Setup`: the map named after the level's world and the record's three map floats (radarMapOf(), which
+        // a network guest's HUD is given too); the blips find their objects as the trigger spheres do.
+        const LevelRecord* record = m_state.levels.at(m_state.currentLevel);
+        hud::RadarMap map = radarMapOf(record);
+        if (record != nullptr) {
             m_log(std::format("gameplay: radar map {} offset ({:.2f}, {:.2f}) scale {:.2f}\n", map.sheet, map.offsetX,
                               map.offsetY, map.scale));
         }
