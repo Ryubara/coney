@@ -103,6 +103,7 @@ struct ShapeMove {
 bool sweepLevel(PhysicsWorld& world, BodyId id, ShapeId shapeId, std::uint32_t options, Contact& contact) {
     ShapeRecord& shape = world.shape(shapeId);
     const PhysicsWorld::MeshSweep& sweep = world.meshSweep(typeOf(shape.posed));
+    // Coney's choice: an empty entry is skipped, where the strike spheres' step calls it untested (#379).
     if (!sweep) {
         return false;
     }
