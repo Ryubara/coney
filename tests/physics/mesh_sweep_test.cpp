@@ -160,6 +160,7 @@ TEST_CASE("a disabled triangle is never met", "[physics][mesh_sweep]") {
 }
 
 TEST_CASE("a query box past the grid clamps to its last cells", "[physics][mesh_sweep]") {
+    // Expected: physics-bodies.md#u2-00347170-collisionmesh-beginshapequery, confirmed (code)
     const auto mesh = meshOf(wallFacingMinusX(0.0F));
     MeshScratch scratch;
     const auto cells =
@@ -277,6 +278,7 @@ TEST_CASE("the sphere sweep's max, options and n.z range", "[physics][mesh_sweep
 }
 
 TEST_CASE("the sphere overlap returns 1 and puts the deepest kept first, from either side", "[physics][mesh_sweep]") {
+    // Expected: physics-bodies.md#u2-003473c8-physicsmeshoverlap-sphere, confirmed (code)
     // The centre 0.3 m from a wall at x = 0 and 0.1 m from one at x = −0.4 facing +x: depths 0.2 and 0.4.
     auto triangles = wallFacingMinusX(0.0F);
     triangles.push_back(BuildTriangle{.corners = {Rv{-0.4F, -5, 0}, Rv{-0.4F, 5, 0}, Rv{-0.4F, 5, 3}}});

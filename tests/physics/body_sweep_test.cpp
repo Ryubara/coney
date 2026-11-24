@@ -429,6 +429,8 @@ TEST_CASE("the landing segment's fraction is measured beyond 1 m from its top", 
 }
 
 TEST_CASE("the sweep's box helpers", "[physics][body_sweep]") {
+    // Expected: physics-bodies.md#u3-scale-box, confirmed (code)
+    // Expected: physics-bodies.md#u3-extend, confirmed (code)
     Aabb box{Vec3{0, 0, 0}, Vec3{2, 2, 2}};
     coney::physics::scaleAboutCentre(box, Vec3{1.5F, 1, -1});
     checkVec(box.min, Vec3{-0.5F, 0, 0});

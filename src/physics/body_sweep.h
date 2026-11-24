@@ -168,6 +168,7 @@ class MeshWorld final : public SweepWorld {
 
 /// The box a body's sweep queries: its shape's bounds at its start position. **Coney stand-in**: a capsule body's box
 /// is its walking sphere's, not the capsule shape's own bounds (Unit 6).
+/// @orig 0x0033e278 PhysicsBody_Sweep (unknown)
 [[nodiscard]] Aabb shapeBox(const Body& body, anim::Vec3 position);
 
 /// Moves `body` by its owner's velocity `velocity` over `dt` against `world`: the pending push-out joins the move

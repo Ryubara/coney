@@ -1838,16 +1838,22 @@ class StandingCapsuleOwner final : public physics::ShapeOwner {
     StandingCapsuleOwner(anim::Vec3 feet, std::optional<anim::Vec3> head, float scale)
         : m_feet(feet), m_head(head), m_scale(scale) {}
 
+    // The feet, unturned: the capsule stands upright on them.
+    // @coney-only feeds poseCapsule a standing human
     [[nodiscard]] physics::Transform transformNow() const override {
         return physics::Transform{.position = m_feet, .rotation = {}};
     }
     [[nodiscard]] physics::Transform transformStored() const override { return transformNow(); }
+    // The head bone in the human's own frame, the one bone the capsule pose asks for; none without a skeleton.
+    // @coney-only feeds poseCapsule a standing human
     [[nodiscard]] std::optional<physics::Transform> boneTransform(int bone) const override {
         if (bone != kLedPointBone || !m_head.has_value()) {
             return std::nullopt;
         }
         return physics::Transform{.position = *m_head, .rotation = {}};
     }
+    // The scale alone: a standing human has every state flag clear.
+    // @coney-only feeds poseCapsule a standing human
     [[nodiscard]] std::optional<physics::HumanCapsuleState> humanCapsule() const override {
         return physics::HumanCapsuleState{.scale = m_scale};
     }

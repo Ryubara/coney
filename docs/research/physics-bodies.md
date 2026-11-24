@@ -1787,11 +1787,9 @@ is 0, [Bodies](physics.md#bodies)).
 human list, and what a free leaves behind. All confirmed (code) at the cited addresses (read in the disassembly,
 2026-10-12) unless a line says otherwise.
 
-- **Coney:** `repo:src/physics/body_pools.cpp` (done, #376): the pools with the original's counts and scans, so
-  running out behaves the same under the engine limits preset (Coney's own limit builds one more body), each kind's
-  create and free, and the human list. No caller yet: `src/human/human.cpp` (`Human_CreatePhysicsBody`'s rules,
-  [below](#u9-callers)), `src/world_objects/object_bodies.*`, `cars.*` and `glass.*` move onto it once a level owns a
-  world (#379).
+- **Coney:** `src/physics/physics_world.*` (fixed pools with the original's counts, so running out behaves the same);
+  callers in `src/human/human.cpp` (`Human_CreatePhysicsBody`'s rules, [below](#u9-callers)),
+  `src/world_objects/object_bodies.*`, `cars.*`, `glass.*`.
 - **Tests:** [Test ideas](#u9-tests): each kind's starting flags (human `0x8002243f`, then `0x8002203f` /
   `0x8002223f` for an AI; punch bag `0x8000243f` then `0x8000263f`; object `0x80000500`; car `0x80000000`, then
   `0x8002211a` after its boxes; pane `0x8000007a`), shapes and scales; the first free slot is reused (the heal keeps
@@ -1927,10 +1925,9 @@ A fake owner (type mask 0x40 for a human, 8 for an object, scale attribute *s*).
 
 1. **Human create.** Fresh world, owner with scale 1: returns pool slot 0; flags `0x8002243f` written, then
    `0x0002243f` once the create returns (the scale step ends with the body's update, which poses the capsule and clears
-   the dirty bit: confirmed (code) at `0x00341f28` and `0x003422d0`; this line said the body stays dirty until its
-   update, 2026-11-24); capsule flags `0x11`; bone shapes `0x6` (bones 3, 6) and `0x2` (the rest); `+0x60` =
-   (1, 1, 1, 1); `+0x20` = 0; human list = [it]; the capsule is height 2.0 (a human whose head bone is 1.8 m up),
-   radius 0.35.
+   the dirty bit: confirmed (code) at `0x00341f28` and `0x003422d0`); capsule flags `0x11`; bone shapes `0x6` (bones
+   3, 6) and `0x2` (the rest); `+0x60` = (1, 1, 1, 1); `+0x20` = 0; human list = [it]; the capsule is height 2.0 (a
+   human whose head bone is 1.8 m up), radius 0.35.
 2. **Scale 1.1** (not in a scene): capsule height 2.2, radius 0.385; spine segment offset (−0.077, 0, 0.055), radius
    0.198, length 0.418; forearms radius 0.077, length 0.22; shins 0.11, 0.44; head offset (0.055, 0, 0.033), radius
    0.165; hands offset (0.088, 0, 0), radius 0.099; feet 0.165 (float32 values to 1e-6). In a scene state the same
@@ -1955,10 +1952,7 @@ does not
 cover), the weapon spheres and the push sphere. All confirmed (code) at the cited addresses (disassembly read
 2026-10-12) unless a line says otherwise.
 
-- **Coney:** `repo:src/physics/human_body.h` (done, #376): the body set and `Human_TestStrikes` on the physics world,
-  asking the owners through `HumanBodyOwners`; nothing in play calls it until a level owns a world (#379), and the human
-  pairs of the sweep table are Unit 11's (#377). Where it is to be called: `src/human/human.*` (body update after the
-  move, the push), `src/combat/*` (`Human_TestStrikes`: the
+- **Coney:** `src/human/human.*` (body update after the move, the push), `src/combat/*` (`Human_TestStrikes`: the
   gather, the line-of-sight ray and the per-candidate loop below, sweeping each enabled strike shape from its last pose
   through the sweep table: [Unit 5](physics-kernels.md#unit-5) for boxes, [Unit 11](#unit-11) for humans),
   `src/platform/play_level_mode.*` (`strikeObjects()`). Issue #72's step 1 (strikes hit cars) needs Unit 5, [the
@@ -2131,20 +2125,20 @@ per-shape sweep
 
 0. Nothing unless `+0xd0` ≠ 0 or `+0xc0` ≠ 0. `held` = `Human_GetHeldObject(owner)`; the weapon handler's owner is
    `held`, or the human when none.
-1. **Weapon spheres against the level** (only when `held` ≠ 0, `0x0033f218`). For each sphere of `+0xc4` whose type
-   has a mesh sweep (IPhysics `+0xe0` + type × 4): a scratch body's box = the shape's bounds grown by its move
-   (`AABB_ExtendByMove`), then the mesh sweep with max 1, the human body, the shape, the move, options **`0x800c`**,
-   `n.z` limits −0.65 and 0.65 ([Unit 2](#u2-00348a50-physicsmesh-sweepsphere): walls only, triangles with bit 3
-   skipped). On a hit: contact `+0x00`, `+0x04`, `+0x40`, `+0x44` = 0, the shape put back to `cur`, the held
+1. **Weapon spheres against the level** (only when `held` ≠ 0, `0x0033f218`, confirmed (code)). For each sphere of
+   `+0xc4` whose type has a mesh sweep (IPhysics `+0xe0` + type × 4): a scratch body's box = the shape's bounds grown by
+   its move (`AABB_ExtendByMove`), then the mesh sweep with max 1, the human body, the shape, the move, options
+   **`0x800c`**, `n.z` limits −0.65 and 0.65 ([Unit 2](#u2-00348a50-physicsmesh-sweepsphere): walls only, triangles with
+   bit 3 skipped). On a hit: contact `+0x00`, `+0x04`, `+0x40`, `+0x44` = 0, the shape put back to `cur`, the held
    object's handler (vtable `+0xf8` / `+0xfc`) with the contact; the rest of the weapon spheres are skipped.
-2. **Strike spheres against the level** (when `+0xc0` ≠ 0, `0x0033f360`): the same for each bone shape with flags
-   `0x1` and `0x2` **and type 2** (spheres only), options **`0x804c`** (adds `0x40`: one-sided faces kept). On the
-   first hit: the owner fields zeroed as above, the shape restored, then the owner's `Strike_Contact` (vtable
+2. **Strike spheres against the level** (when `+0xc0` ≠ 0, `0x0033f360`, confirmed (code)): the same for each bone shape
+   with flags `0x1` and `0x2` **and type 2** (spheres only), options **`0x804c`** (adds `0x40`: one-sided faces kept).
+   On the first hit: the owner fields zeroed as above, the shape restored, then the owner's `Strike_Contact` (vtable
    `+0x100` / `+0x104`, the level branch: a particle at `+0x90`); the rest of this step is skipped.
-3. **Gather** (`0x0033f4bc`): `IPhysics_QueryBox(phys, list, &body+0x90, start 0, ignored owner = own owner,
-   type mask −1, flag mask 0x18)` ([Queries](physics.md#queries)): bodies whose flags have `0x8` or `0x10`. A body with
-   only
-   `CHARGETARGET` (`0x20`) is never gathered here. The ray origin `o` = own authoritative position + (0, 0, 1.0).
+3. **Gather** (`0x0033f4bc`, confirmed (code)): `IPhysics_QueryBox(phys, list, &body+0x90, start 0, ignored owner = own
+   owner, type mask −1, flag mask 0x18)` ([Queries](physics.md#queries)): bodies whose flags have `0x8` or `0x10`. A
+   body with only `CHARGETARGET` (`0x20`) is never gathered here. The ray origin `o` = own authoritative position +
+   (0, 0, 1.0).
 4. **Per candidate**, in list order:
     1. Skip: null or ownerless; own group non-zero and equal to its group; own `IsIgnoring(its owner)` (vtable
        `+0x30` / `+0x34`: struck already, the grab partner); its type mask has `0x8` (an object) and its owner's state
@@ -2164,13 +2158,13 @@ per-shape sweep
     4. **Strike shapes** (`+0xc0` ≠ 0, candidate flags `0x30` (`0x10` or `0x20`), and own owner vtable `+0x108` /
        `+0x10c` with its owner nonzero): for each bone shape with `0x1` and `0x2`, its move, against: a non-human's
        GetShapes(2, 4, own owner) chain; a human's bone shapes with flag `0x4`, or **his capsule alone** when
-       `Anim_HitsWithCapsule(owner, Human_GetAnimId(owner))` (`0x00101b88`, clip flag `0x10000`,
+       `Anim_HitsWithCapsule(owner, Human_GetAnimId(owner))` (`0x00101b88`, clip flag `0x10000`, confirmed (code),
        [Combat](combat/index.md#capsule-strike)). The first nonzero sweep: contact as Unit 5, `Strike_Contact`, then
        `Ignore(its owner)` when it has one; the strike shapes stop for **this candidate**.
     5. Go on with the **next candidate**: a hit does not end the test. Each body can be struck once per update (and
        once per window, by the ignore list), but one swing can strike several bodies in the same update.
-5. **Weapon timer** (`0x0033fe50`): if `+0xd0` ≠ 0, decrement it; at 0 `ClearStrikeSpheres`; either way set the
-   body's dirty bit.
+5. **Weapon timer** (`0x0033fe50`, confirmed (code)): if `+0xd0` ≠ 0, decrement it; at 0 `ClearStrikeSpheres`; either
+   way set the body's dirty bit.
 
 ### Test ideas {#u10-tests}
 

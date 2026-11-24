@@ -86,6 +86,7 @@ struct ShapeMove {
     Vec3 move;
 
     // Sets `shape` to its previous position and returns its move.
+    // @orig 0x0033f110 Human_TestStrikes (unknown)
     static ShapeMove begin(ShapeRecord& shape) {
         const Vec3 now = shapePosition(shape);
         const Vec3 before = shape.previous;

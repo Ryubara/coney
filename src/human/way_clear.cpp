@@ -17,6 +17,7 @@ namespace {
 // Whether a wall of `mesh` stops any sphere of the capsule swept from `feet` by `move`: its spheres of
 // kWayClearRadius from one radius above the feet up to `height`, each swept as the walking sphere is
 // (physics::sweepCapsuleMesh: walls the move goes into, 0.25 m tall or more).
+// @orig 0x0021c0a8 Human_IsWayClearTo (unknown)
 bool wallOnTheWay(const raycast::CollisionMesh& mesh, anim::Vec3 feet, float height, anim::Vec3 move) {
     // The spheres' centres a diameter apart, the last no higher than one radius below the top (at least one).
     const float span = std::max(0.0F, height - (2.0F * kWayClearRadius));
