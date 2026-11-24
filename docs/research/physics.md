@@ -879,8 +879,9 @@ move, as `Human_PushOutInAir` does. What differs, each marked in the code:
   writes back (which of the two the original writes back is not on this page).
 - **Coney stand-in**: a capsule body's query box is its walking sphere's bounds, not the capsule shape's (Unit 6);
   the visited bits live beside the mesh, not in it.
-- **Not ported** (#369): the airborne body falls and lands by Coney's own landing segment (`Human::moveInAir`), not by
-  `Human_LandingTest`'s contact in the sweep (#369; `physics::landingContact` is written and tested).
+- The airborne body falls through the sweep and lands by `Human_LandingTest`'s contact (`Human::moveInAir`, the walking
+  owner's landing test calling `physics::landingContact`, #369); the human lands in the contact handler and is snapped
+  to the ground after the sweep ([Falling and landing](characters-ground.md#falling)).
 
 The shape-pair code of [Unit 4](physics-kernels.md#unit-4) and [Unit 5](physics-kernels.md#unit-5) is in
 `src/physics/`, as functions of posed shapes (`physics::Box`, `Sphere`, `Capsule`, `Segment` in

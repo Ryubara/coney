@@ -20,7 +20,6 @@ void Human::setFlight(std::optional<Flight> flight) {
         m_jumping = false;
         m_airborne = false;
         m_outOfWorld = false;
-        m_landingPending = false;
         m_airborneUpdates = 0;
         m_blockedUpdates = 0;
         m_velocity = anim::Vec3{};

@@ -103,14 +103,14 @@ anim::Vec3 flatUnit(anim::Vec3 v) {
 bool movesAtOnce(ClimbKind kind) { return kind == ClimbKind::Wall || kind == ClimbKind::ShortWall; }
 
 // The walking body's owner as the physics world's sweep sees it (docs/research/physics-bodies.md#u3-records), for one
-// sweep: the human's feet as the sweep moves them, the velocity it writes back, and `Human_OnContact`'s answer for the
-// level.
+// sweep: the human's feet as the sweep moves them, the velocity it writes back, an airborne human's landing test and
+// landing, and `Human_OnContact`'s answer for the level.
 class WalkingOwner final : public physics::BodyOwner {
   public:
     WalkingOwner(const raycast::CollisionMesh& mesh, anim::Vec3 start, bool airborne, bool inPairOrBlock,
-                 std::span<const std::uint8_t> passThrough)
+                 std::span<const std::uint8_t> passThrough, const LandingInput* landing = nullptr)
         : m_mesh(mesh), m_start(start), m_position(start), m_airborne(airborne), m_inPairOrBlock(inPairOrBlock),
-          m_passThrough(passThrough) {}
+          m_passThrough(passThrough), m_landing(landing) {}
 
     [[nodiscard]] std::uint32_t typeMask() const override { return physics::kTypeHuman; }
     [[nodiscard]] bool airborne() const override { return m_airborne; }
@@ -127,10 +127,15 @@ class WalkingOwner final : public physics::BodyOwner {
     }
     [[nodiscard]] physics::Body* body() override { return m_body; }
     // `Human_OnContact` (`0x00219d50`) for the level: a climbing human passes through the fence it climbs (code 0);
-    // every other triangle slides, with the contact scale (`0x20001`; docs/research/characters-ground.md#walls, step
-    // 4).
+    // every other triangle slides, with the contact scale (`0x20001`; docs/research/characters-ground.md#walls, step 4).
+    // A landing contact lands the human first, whatever the triangle (`Human_Land`, with the airborne state cleared at
+    // once, so the rest of the sweep moves a human on the ground; the human makes the rest of the landing after it).
     // @orig 0x00219d50 Human_OnContact (unknown)
     [[nodiscard]] std::uint32_t onContact(const physics::Contact& contact) override {
+        if ((contact.flags & physics::kContactLanding) != 0) {
+            m_landed = true;
+            m_airborne = false;
+        }
         if (contact.triangle && !m_passThrough.empty()) {
             const std::uint8_t material = m_mesh.triangles()[*contact.triangle].material;
             if (std::ranges::find(m_passThrough, material) != m_passThrough.end()) {
@@ -140,11 +145,40 @@ class WalkingOwner final : public physics::BodyOwner {
         return physics::kAnswerScale | physics::kCodeSlide;
     }
     [[nodiscard]] bool inPairOrBlock() const override { return m_inPairOrBlock; }
+    // `Human_LandingTest` (docs/research/physics-bodies.md#u3-landing): the segment from the head point down to the
+    // feet moved by the pass, the feet raised first for a jump (to at most the cap above the take-off height), against
+    // every enabled triangle; a floor met is kept as the human's ground normal and material, whatever the sweep does
+    // with the contact.
+    // @orig 0x0023e408 Human_LandingTest (unknown)
+    [[nodiscard]] std::optional<physics::Contact> landing(anim::Vec3 move) override {
+        if (m_landing == nullptr) {
+            return std::nullopt;
+        }
+        // stand-in: the raise is asked of a jump in any phase; Coney has no long-fall state (0x1000000000), which ends
+        // it in the original.
+        float raise = 0.0F;
+        if (m_landing->raised) {
+            const float raised =
+                std::min(m_position.z + m_landing->raise, m_landing->takeOffZ + Human::kLandingRaiseCap);
+            raise = raised - m_position.z;
+        }
+        const anim::Vec3 head = anim::add(m_position, anim::Vec3{0.0F, 0.0F, m_landing->headHeight});
+        std::optional<physics::Contact> contact = physics::landingContact(m_mesh, m_position, head, move, raise);
+        if (contact && contact->triangle) {
+            m_ground = LandingGround{.normal = physics::xyz(contact->halves[1].normal),
+                                     .material = m_mesh.triangles()[*contact->triangle].material};
+        }
+        return contact;
+    }
 
     // Gives the body this owner answers for.
     void setBody(physics::Body* body) { m_body = body; }
     // The velocity the sweep wrote back, if any.
     [[nodiscard]] std::optional<anim::Vec3> written() const { return m_written; }
+    // Whether a landing contact landed the human.
+    [[nodiscard]] bool landed() const { return m_landed; }
+    // The last floor the landing test met, if any.
+    [[nodiscard]] std::optional<LandingGround> ground() const { return m_ground; }
 
   private:
     const raycast::CollisionMesh& m_mesh;
@@ -153,8 +187,11 @@ class WalkingOwner final : public physics::BodyOwner {
     bool m_airborne;
     bool m_inPairOrBlock;
     std::span<const std::uint8_t> m_passThrough;
+    const LandingInput* m_landing;
     physics::Body* m_body = nullptr;
     std::optional<anim::Vec3> m_written;
+    bool m_landed = false;
+    std::optional<LandingGround> m_ground;
 };
 
 // The capsule strike (docs/research/combat/index.md#capsule-strike): whether any bone strike shape of `shapes` (posed
@@ -384,7 +421,6 @@ void Human::standAfresh(bool keepMeters) {
     m_fade = kWholeFade;
     m_airborneUpdates = 0;
     m_blockedUpdates = 0;
-    m_landingPending = false;
     m_turn = TurnState{};
     m_lastStick = StickIntent{};
     const Stamina stamina = m_stamina;
@@ -495,7 +531,6 @@ void Human::putBack(const raycast::CollisionMesh* ground, anim::Vec3 position, f
     m_fade = kWholeFade;
     m_airborne = false;
     m_jumping = false;
-    m_landingPending = false;
     m_airborneUpdates = 0;
     m_blockedUpdates = 0;
     m_velocity = anim::Vec3{};
@@ -678,7 +713,8 @@ std::span<const std::uint8_t> Human::passThrough() const {
     return {};
 }
 
-Human::Swept Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 velocity, anim::Vec3 push, bool meetOthers) {
+Human::Swept Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 velocity, anim::Vec3 push, bool meetOthers,
+                          const LandingInput* landing) {
     m_contacts.clear();
     const anim::Vec3 from = m_position;
     // A body that does not move meets nothing.
@@ -696,9 +732,10 @@ Human::Swept Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 velocit
     // The level, through the physics world's sweep (docs/research/physics-bodies.md#u3-sweep): the walking sphere
     // (0.4705 m for Rembrandt, about 0.35 m for an AI human, whose body +0x60 is 1.0) against the walls the move goes
     // into, 0.25 m tall or more. What the humans left of the move beyond the velocity's goes in as the pending
-    // push-out, undivided. Only a player's body writes the slid velocity back (body flag 0x400).
+    // push-out, undivided. Only a player's body writes the slid velocity back (body flag 0x400). While airborne each
+    // pass also asks the landing test, whose floor lands the human (docs/research/physics-bodies.md#u3-landing).
     const float radius = walkingSphereRadius();
-    WalkingOwner owner(mesh, from, m_airborne, m_fighter.inPair() || m_fighter.blocking(), passThrough());
+    WalkingOwner owner(mesh, from, m_airborne, m_fighter.inPair() || m_fighter.blocking(), passThrough(), landing);
     physics::Body body{.owner = &owner,
                        .flags = physics::kBodyPushUndivided | (m_profile.player ? physics::kBodyWriteVelocity : 0U),
                        .typeMask = physics::kTypeHuman,
@@ -716,7 +753,8 @@ Human::Swept Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 velocit
     m_blockedUpdates = static_cast<std::uint32_t>(body.stuck);
     // A slide the sweep kept for the next move (contact flag 0x2) joins the pending push.
     m_pendingPush = anim::add(m_pendingPush, body.pushOut);
-    Swept swept{.feet = owner.position(), .velocity = owner.written()};
+    Swept swept{
+        .feet = owner.position(), .velocity = owner.written(), .landed = owner.landed(), .ground = owner.ground()};
     // A human met asks for the write-back as a wall does (a player's body only).
     if (m_profile.player && !m_contacts.empty() && !swept.velocity) {
         swept.velocity = velocity;
@@ -744,7 +782,7 @@ Human::Swept Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 velocit
     if (m_contacts.size() == humansMet) {
         return swept;
     }
-    WalkingOwner pushed(mesh, swept.feet, m_airborne, true, passThrough());
+    WalkingOwner pushed(mesh, swept.feet, m_airborne && !swept.landed, true, passThrough());
     physics::Body pushBody = body;
     pushBody.owner = &pushed;
     pushBody.flags = physics::kBodyPushUndivided;
@@ -770,6 +808,13 @@ float Human::walkingSphereRadius() const {
 
 // @coney-only for the debug shapes and the watch
 float Human::walkingSphereCentreHeight() const { return walkingSphereRadius() + bodyTuning().footGap; }
+
+float Human::headPointHeight() const {
+    // stand-in: a human with no skeleton has no body point; the idle's pelvis height stands for it.
+    const float bodyHeight =
+        bodyPoint().transform([](anim::Vec3 point) { return point.z; }).value_or(kIdleBodyPointHeight * m_scale);
+    return bodyHeight - (kHeadPointDrop * m_scale);
+}
 
 // @orig 0x0021a490 Human_PushOutInAir (unknown)
 float Human::airSphereRadius() const { return bodyTuning().airRadius * collisionScale(); }
@@ -916,7 +961,6 @@ void Human::snapToGround(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
 }
 
 void Human::land(anim::Vec3 feet) {
-    m_landingPending = false;
     m_lastLandingSpeed = m_velocity.z;
     ++m_landings;
     m_position = feet;
@@ -984,54 +1028,38 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
         const float radius = airSphereRadius();
         (*m_bodyContact)(*this, anim::Vec3{across.x, across.y, across.z + radius + bodyTuning().footGap}, radius);
     }
-    // The walls take the move across the ground; airborne, the sweep makes no corner slide and a player keeps a
-    // quarter of the speed it slid with (the human body's contact scale,
-    // docs/research/physics-bodies.md#u3-human-scale).
-    // **Coney's reading**: the fall itself goes straight down and lands by the segment below, not by the sweep's
-    // landing contact (#369).
+    // The whole velocity, the fall too, goes to the sweep (docs/research/characters-ground.md#falling): the walls take the
+    // move, airborne with no corner slide and a quarter of the speed a player slid with (the human body's contact
+    // scale, docs/research/physics-bodies.md#u3-human-scale), and each pass asks the landing test, whose floor lands
+    // the human inside the sweep. stand-in: the take-off height (+0x560, written by Human_BeginJump) is the last ground
+    // the human stood on, where a jump starts.
     // Not ported (#102): `false` keeps an airborne body from meeting any human, where the original's airborne mask
     // (0x44) still takes the bodies with BLOCKHUMANS (docs/research/physics.md#coneys-implementation).
-    const Swept moved =
-        sweep(mesh, anim::Vec3{m_velocity.x, m_velocity.y, 0.0F}, anim::Vec3{push.x, push.y, 0.0F}, false);
+    const LandingInput landing{.headHeight = headPointHeight(),
+                               .raised = m_jumping || (m_animator.flags() & kRecordRaisedLanding) != 0,
+                               .raise = kLandingRaise * m_scale,
+                               .takeOffZ = m_lastGround.z};
+    const Swept moved = sweep(mesh, m_velocity, anim::Vec3{push.x, push.y, 0.0F}, false, &landing);
+    if (moved.ground) {
+        m_groundNormal = moved.ground->normal;
+        m_groundMaterial = moved.ground->material;
+    }
+    // A landing contact landed the human (`Human_Land` from the contact handler, which takes the vertical speed the
+    // fall had); the velocity a player's sweep wrote back comes after it.
+    if (moved.landed) {
+        land(moved.feet);
+    }
     if (moved.velocity) {
-        m_velocity.x = moved.velocity->x;
-        m_velocity.y = moved.velocity->y;
+        m_velocity = *moved.velocity;
     }
-    const anim::Vec3 feet{moved.feet.x, moved.feet.y, m_position.z + displacement.z};
-    // After the move, the push out of the walls the body overlaps, for the next move (the owner's after-move call).
-    pushOutInAir(mesh, feet);
-    // A floor an earlier move passed, now kLandingDepth or more above the feet: land on it, the whole horizontal move
-    // made (at runtime the landing update still moved at the run's 7.80 m/s,
-    // docs/research/characters-ground.md#falling). Shallower, the body falls a whole step more through it. Nothing
-    // under the feet any more (they went over an edge): no landing, the fall goes on.
-    if (m_landingPending && m_landingFloorZ - m_position.z >= kLandingDepth) {
-        const raycast::Ray ray{.origin = toMesh(anim::Vec3{feet.x, feet.y, m_landingFloorZ + kSnapAbove}),
-                               .direction = raycast::kDown,
-                               .length = kSnapLength};
-        if (const auto hit = mesh.rayCast(ray, passThrough(), 0); hit && hit->normal.z > kFloorNormalZ) {
-            m_groundNormal = fromMesh(hit->normal);
-            m_groundMaterial = hit->material;
-            m_velocity.z = m_landingSpeed;
-            land(anim::Vec3{feet.x, feet.y, m_landingFloorZ + kSnapAbove - hit->t});
-            return;
-        }
+    // Landed, the move ends with the ground snap; still in the air, with the push out of the walls the body overlaps,
+    // for the next move (the owner's after-move call).
+    if (moved.landed) {
+        snapToGround(mesh, moved.feet);
+        return;
     }
-    // The landing test: the segment from the body's upper point to the moved feet; a floor on it is remembered, and
-    // landed on by the first update that starts kLandingDepth or more below it.
-    m_landingPending = false;
-    const anim::Vec3 top = anim::add(m_position, anim::Vec3{0.0F, 0.0F, kLandingTestHeight});
-    const anim::Vec3 segment = anim::subtract(feet, top);
-    const float length = anim::length(segment);
-    if (length > 1e-6F) {
-        const raycast::Ray ray{
-            .origin = toMesh(top), .direction = toMesh(anim::scale(segment, 1.0F / length)), .length = length};
-        if (const auto hit = mesh.rayCast(ray, passThrough(), 0); hit && hit->normal.z > kFloorNormalZ) {
-            m_landingPending = true;
-            m_landingFloorZ = top.z + segment.z * (hit->t / length);
-            m_landingSpeed = m_velocity.z;
-        }
-    }
-    m_position = feet;
+    pushOutInAir(mesh, moved.feet);
+    m_position = moved.feet;
 }
 
 // @orig 0x00240e38 Human_PlayerLocomotion (unknown)

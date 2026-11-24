@@ -1,0 +1,7 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): the level99 street, a run with two jumps, the
+# second landed with the stick let go. For a change to the jump, the fall or the landing.
+description = "level99 street: a run and two jumps"
+level = "level99"
+input = "tools/clips/level99-jump.txt"
+start_frame = 150
+seconds = 5

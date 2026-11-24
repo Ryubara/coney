@@ -734,9 +734,9 @@ the first is inserted, so they never share a slot. Confirmed (code).
 with a contact written at `contacts[*count]` (the count is **not** incremented here), else 0. Confirmed (code):
 
 1. `A` = the feet: the position in the transform table (`0x00714b00 + 32 × h+0x92`).
-2. **Raised feet**: when (`0x00227f68`(h) is true and the state lacks `0x1000000000`, a long fall) **or** the human
-   holds with flag `0x800` (`0x00226660`): `A.z += 0.4 × Human_GetScale(h)` (`0x3ecccccd`), but at most
-   `h+0x560 + 0.7` (`0x3f333333`).
+2. **Raised feet**: when (`0x00227f68`(h) is true, the state's jump bit `0x400000000`, and the state lacks
+   `0x1000000000`, a long fall) **or** the record `+0x08` has bit `0x800` (`Human_HasHeldFlag`, `0x00226660`):
+   `A.z += 0.4 × Human_GetScale(h)` (`0x3ecccccd`), but at most `h+0x560 + 0.7` (`0x3f333333`).
 3. `B` = the upper point, human vtable slot `+0x60` / `+0x64` (`0x00226a20`: the feet + `+0x4e8` − 0.16 × scale,
    [Characters](characters-ground.md#falling)).
 4. `A += D` (the moved, possibly raised, feet).
@@ -753,6 +753,20 @@ with a contact written at `contacts[*count]` (the count is **not** incremented h
 The fraction is measured on the segment **beyond 1.0 m from the origin**, not along `D`: with the origin 0.88 m above
 the starting feet, `f` is `(g − 0.12) / (|D.z| − 0.12)` for a vertical fall with the feet `g` above the ground (worked
 example in the tests). Confirmed (code) for the formula; the reading is inferred.
+
+**What the sweep does with it.** The contact's handler, `Human_OnContact` (`0x00219d50`), calls `Human_Land(h, 1, 1)`
+for a level contact flagged `0x80` before any of its material tests, and answers the level's `0x20001` (a slide with
+the contact scale); `Human_Move` (`0x0023d8c8`) snaps a human whose airborne bit is clear after the sweep to the
+ground. Confirmed (code) at the addresses cited. `Human_Land` clears the airborne bit at once, so the human body's
+contact scale for it is 1.0 and the later passes ask no landing test; with `f = 0` the advance is nothing, the slide
+takes the fall out of both velocities and the next pass moves the rest across the ground (inferred from the sweep's
+order, [above](#u3-sweep)). This also explains the runtime's 0.17 m
+landing depth of a jump ([When the landing happens](characters-ground.md#falling), inferred).
+
+**Coney.** `WalkingOwner::landing` (in `src/human/human.cpp`) asks `physics::landingContact` with the head point
+(`Human::headPointHeight`) and the raise, and `WalkingOwner::onContact` lands; `Human::moveInAir` gives the sweep the
+whole velocity, calls `Human::land` and snaps. Stand-ins: the take-off height `+0x560` is the human's last ground;
+there is no long-fall state, so a jump is raised throughout; a human with no skeleton takes the idle's body point.
 
 ### Contact_InsertSorted {#u3-insert}
 

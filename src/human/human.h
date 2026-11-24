@@ -156,6 +156,22 @@ class ContactSource {
     [[nodiscard]] virtual std::span<Human* const> near(const anim::Vec3& at, float reach) const = 0;
 };
 
+/// What an airborne human's landing test reads of the human (`Human_LandingTest`,
+/// docs/research/physics-bodies.md#u3-landing), for its walking body's sweep.
+struct LandingInput {
+    float headHeight = 0.0F; ///< The head point's height above the feet: the segment's upper end.
+    bool raised = false;     ///< A jump, or record bit Human::kRecordRaisedLanding: the segment's lower end is raised.
+    float raise = 0.0F;      ///< How far it is raised: Human::kLandingRaise times the scale.
+    float takeOffZ =
+        0.0F; ///< The take-off height (`+0x560`): the raised end stays within Human::kLandingRaiseCap of it.
+};
+
+/// A floor an airborne human's landing test met: its normal and material (human `+0x230` and `+0x1d8`).
+struct LandingGround {
+    anim::Vec3 normal;
+    std::uint8_t material = 0;
+};
+
 /// A human: position (the feet), heading, velocity, ground and air state, stamina, its fighting and its animation,
 /// driven by its record. Another human fights it as a Combatant, and grabs or tackles it as a Holdable.
 class Human final : public Holdable {
@@ -171,8 +187,6 @@ class Human final : public Holdable {
     /// Creation's snap: a ray from 1 m above, 2.5 m long, putting the feet 0.01 above the hit.
     static constexpr float kSpawnLength = 2.5F;
     static constexpr float kSpawnGap = 0.01F;
-    /// A floor a falling human lands on has a normal with z above this.
-    static constexpr float kFloorNormalZ = 0.65F;
     /// A velocity longer than this (times the body scale, 1) is a bug: it is zeroed.
     static constexpr float kMaxSpeed = 50.0F;
     /// A human this far below the collision mesh's lowest vertex has fallen out of the world.
@@ -185,13 +199,20 @@ class Human final : public Holdable {
     static constexpr std::uint32_t kStuckUpdates = 60;
     /// A placement's drop: the ray straight down from the placed point is this long (`0x0023d440`).
     static constexpr float kPlaceDrop = 0.5F;
-    /// The landing test's segment starts this far above the feet. **Coney's choice** for the body's upper point
-    /// (`+0x4e8` − 0.16 × scale, `+0x4e8` not researched).
-    static constexpr float kLandingTestHeight = 1.0F;
-    /// A fall or a jump lands on the first update that starts with the feet this far or more below a floor its moves
-    /// have passed; until then the body falls on through it (between 0.161 and 0.176 m at runtime,
-    /// docs/research/characters-ground.md#falling).
-    static constexpr float kLandingDepth = 0.17F;
+    /// The landing test raises the end of a jump's segment this far times the scale above the moved feet
+    /// (`0x3ecccccd`), but to at most kLandingRaiseCap above the take-off height (`0x3f333333`,
+    /// docs/research/physics-bodies.md #u3-landing).
+    static constexpr float kLandingRaise = 0.4F;
+    static constexpr float kLandingRaiseCap = 0.7F;
+    /// The record `+0x08` bit that raises the landing segment's end as a jump does (`Human_LandingTest`'s held flag;
+    /// its meaning is not traced).
+    static constexpr std::uint32_t kRecordRaisedLanding = 0x800;
+    /// The head point, the landing segment's upper end, is the body point's height less this times the scale
+    /// (`Human_GetHeadPoint`, docs/research/characters-ground.md#falling).
+    static constexpr float kHeadPointDrop = 0.16F;
+    /// **Coney stand-in** for the body point's height of a human with no skeleton: the idle's pelvis height, times the
+    /// scale (docs/research/camera.md#body-point, inferred), 0.880 m to the head point at Rembrandt's 0.97.
+    static constexpr float kIdleBodyPointHeight = 1.067F;
 
     /// A human playing `anims` (which must outlive it) through `slots`, bones its clips leave out taking
     /// `bindRotations` (the game's reference pose, anim::referenceRotations()), of body scale `scale` (`+0x65c`), its
@@ -1186,22 +1207,30 @@ class Human final : public Holdable {
     // Moves by the velocity against the walls, then snaps to the ground or starts a fall.
     // @orig 0x0023d8c8 Human_Move (unknown)
     void moveOnGround(const raycast::CollisionMesh& mesh);
-    // Moves a falling human, landing on a floor it passed on the update before.
+    // Moves an airborne human: its whole velocity, the fall too, through the physics world's sweep, which lands it
+    // when its landing test meets a floor; a landed human is snapped to the ground.
     // @orig 0x0023d8c8 Human_Move (unknown)
     void moveInAir(const raycast::CollisionMesh& mesh);
     // Where a walking sweep ends: the feet, and the velocity the sweep wrote back to the human (the slid one for a
-    // player, zero when the body was stuck), or nothing when it wrote none.
+    // player, zero when the body was stuck), or nothing when it wrote none; whether a landing contact landed the
+    // human, and the last floor its landing test met.
     struct Swept {
         anim::Vec3 feet;
         std::optional<anim::Vec3> velocity;
+        bool landed = false;
+        std::optional<LandingGround> ground;
     };
     // Sweeps the walking body from the feet at m_position by `velocity` over the update plus the pending `push`: the
     // other humans first when `meetOthers`, then the level through the physics world's sweep (physics::sweepBody,
-    // docs/research/physics-bodies.md#u3-sweep), then the world objects' bodies. The body's stuck counter is
-    // m_blockedUpdates.
+    // docs/research/physics-bodies.md#u3-sweep), with the landing test of `landing` while airborne (none when null),
+    // then the world objects' bodies. The body's stuck counter is m_blockedUpdates.
     // @orig 0x0033e278 PhysicsBody_Sweep (unknown)
-    [[nodiscard]] Swept sweep(const raycast::CollisionMesh& mesh, anim::Vec3 velocity, anim::Vec3 push,
-                              bool meetOthers);
+    [[nodiscard]] Swept sweep(const raycast::CollisionMesh& mesh, anim::Vec3 velocity, anim::Vec3 push, bool meetOthers,
+                              const LandingInput* landing = nullptr);
+    // The head point's height above the feet, the landing segment's upper end: the body point's height less 0.16 times
+    // the scale.
+    // @orig 0x00226a20 Human_GetHeadPoint (unknown)
+    [[nodiscard]] float headPointHeight() const;
     // The humans the walking capsule meets moving from the feet at `from` by `move` (docs/research/physics.md
     // #human-contacts), of those its contact list (or its source) gives within the move's reach, up to three passes:
     // the nearest contact stops the capsule at it, the rest of the move slides along the other (code 1), and, unless
@@ -1359,9 +1388,6 @@ class Human final : public Holdable {
     int m_fade = kWholeFade;       // the character instance's colour alpha (+0x2b): fade()
     bool m_blockHumansFlag = true; // body flag 0x4 BLOCKHUMANS, on with every new body
     bool m_aimTurning = false;     // a throw aim's turn clip (470) plays
-    bool m_landingPending = false; // an airborne move passed a floor: land once the feet start kLandingDepth below it
-    float m_landingFloorZ = 0.0F;  // that floor's height where it was passed
-    float m_landingSpeed = 0.0F;   // the vertical speed it was passed at
     std::uint32_t m_airborneUpdates = 0;
     std::uint32_t m_blockedUpdates = 0;
     anim::Vec3 m_lastGround;
