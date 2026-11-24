@@ -1,0 +1,33 @@
+# Sliding along a wall: Rembrandt (slot 1) put 7 m from the full-height wall of level99's street at y -5.38 (normal -y,
+# triangle 948), heading 21.7 degrees, so the stick straight up (the camera behind him) runs, then walks, into it
+# about 20 degrees off its normal. Research: docs/research/characters-ground.md#walls (sliding along a wall).
+description = "level99 street: running, then walking, into the wall at y -5.38 about 20 degrees off its normal, 2 trials of 180 updates"
+research = "docs/research/characters-ground.md#walls"
+input = "chars_wall_slide.txt"
+updates = 360
+fields = ["player", "camera"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick"]
+setup = [
+  { address = "tf(player) + 0x0", type = "f32", value = "59.5", frame = 0, until = 2 },
+  { address = "tf(player) + 0x4", type = "f32", value = "-12.4", frame = 0, until = 2 },
+  { address = "tf(player) + 0x8", type = "f32", value = "0.223", frame = 0, until = 2 },
+  { address = "tf(player) + 0x10", type = "f32", value = "0.0", frame = 0, until = 2 },
+  { address = "tf(player) + 0x14", type = "f32", value = "0.0", frame = 0, until = 2 },
+  { address = "tf(player) + 0x18", type = "f32", value = "0.1882", frame = 0, until = 2 },
+  { address = "tf(player) + 0x1c", type = "f32", value = "0.9821", frame = 0, until = 2 },
+  { address = "tf(player) + 0x0", type = "f32", value = "59.5", frame = 180, until = 182 },
+  { address = "tf(player) + 0x4", type = "f32", value = "-12.4", frame = 180, until = 182 },
+  { address = "tf(player) + 0x8", type = "f32", value = "0.223", frame = 180, until = 182 },
+  { address = "tf(player) + 0x10", type = "f32", value = "0.0", frame = 180, until = 182 },
+  { address = "tf(player) + 0x14", type = "f32", value = "0.0", frame = 180, until = 182 },
+  { address = "tf(player) + 0x18", type = "f32", value = "0.1882", frame = 180, until = 182 },
+  { address = "tf(player) + 0x1c", type = "f32", value = "0.9821", frame = 180, until = 182 },
+]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3", "--start", "59.5,-12.4,0.223,21.7,5.3,21.7"]
+settle = 300

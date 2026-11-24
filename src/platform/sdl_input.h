@@ -27,11 +27,11 @@ namespace coney::platform {
 /// The raw PS2 stick bytes (x, y) for an SDL gamepad stick's two axes, stretched from the circle a modern gamepad
 /// reports onto the square a DualShock 2 reports. Pushed fully along a diagonal, a modern stick gives about 0.71 on
 /// each axis, which the original's per-axis dead zone (docs/research/frontend.md#pad-record) turns into a length of
-/// about 0.86: under the 0.95 a run needs (docs/research/characters.md), so a full diagonal walked. A DualShock 2
-/// reaches both extremes there (inferred; PCSX2's default analog sensitivity of 1.33 makes up the same difference), so
-/// each point is moved out along its direction until a full circle meets the square's edge. Its length is first
-/// divided by kStickRim (at most 1), so a stick pushed to its rim reads as a full push. A Coney choice for modern
-/// gamepads, not the original's behaviour.
+/// about 0.86: under the 0.95 a run needs (docs/research/characters-locomotion.md#locomotion), so a full diagonal
+/// walked. A DualShock 2 reaches both extremes there (inferred; PCSX2's default analog sensitivity of 1.33 makes up the
+/// same difference), so each point is moved out along its direction until a full circle meets the square's edge. Its
+/// length is first divided by kStickRim (at most 1), so a stick pushed to its rim reads as a full push. A Coney choice
+/// for modern gamepads, not the original's behaviour.
 [[nodiscard]] std::array<std::uint8_t, 2> stickBytesFromAxes(std::int16_t x, std::int16_t y);
 
 /// The length of an SDL stick (0 to 1) from which it counts as pushed fully: a Coney choice. A modern stick pushed to

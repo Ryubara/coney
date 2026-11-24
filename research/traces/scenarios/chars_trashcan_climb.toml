@@ -1,0 +1,17 @@
+# The standing short-wall and wall climbs (level99 checkpoint 3, slot 8 = library state trash-can-roof): the stick at
+# 50 % toward the trash can and triangle, onto the can (455, 456, 457), then triangle again on the can, onto the roof
+# behind it (449, 450, 451): how long each clip plays and how the feet rise. Research:
+# docs/research/characters-traversal.md#climb.
+description = "level99 street: climb onto the trash can, then from it onto the roof (stick 50 %, triangle)"
+research = "docs/research/characters-traversal.md#climb"
+input = "chars_trashcan_climb.txt"
+updates = 200
+fields = ["player", "held"]
+
+[original]
+slot = 8
+patches = ["scripted-pad", "right-stick"]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3"]

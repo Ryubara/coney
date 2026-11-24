@@ -1,0 +1,23 @@
+# Many run releases and run reversals, to catch the rare ones that play the run stop: each cycle runs up the street,
+# reverses the stick (180 degrees) at the run, runs back and lets go. Research:
+# docs/research/characters-locomotion.md#run-stop. Slot 1 (the street); the state-code and skid-test hooks show which
+# releases and reversals set code 9 and the speed the skid test compared.
+description = "level99 street: 15 cycles of a run, a reversal at the run, the run back and a release"
+research = "docs/research/characters-locomotion.md#run-stop"
+input = "chars_run_release.txt"
+updates = 1330
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "state-code", "skid-test"]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3", "--start", "75.155,41.1354,0.2231,91.909,5.3,89.854"]
+settle = 300
+
+[diff]
+start_frame = true
+columns = ["clip", "gait", "speed", "heading"]
+tolerance = { clip = 0, gait = 0, speed = 0.05, heading = 1.0 }

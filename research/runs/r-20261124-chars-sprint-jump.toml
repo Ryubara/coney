@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-sprint-jump"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "0d526268e348fddcc5c0b2b8c61cd053f658260130644dfe26c0c39632b69c7f"
+
+[who]
+agent = "a635829b69ef6a330"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "chars_sprint_jump"
+method = ""
+
+[values]
+updates = 111
+missed_updates = 0
+columns = 15
+
+[hashes]
+trace_csv = "4c5d07566d33de5e86dd21801af3a4924f9a4a095d7f1164c7f5f12e23c44b58"

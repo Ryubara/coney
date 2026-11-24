@@ -3,12 +3,13 @@ kind: topic
 system: characters
 owns:
   functions: [
-    "0x0016e258", "0x00174d00", "0x00177b80", "0x001897a8", "0x0018e9e0", "0x00217a98", "0x00228d70", "0x003a3ba0",
+    "0x0016e258", "0x00174d00", "0x00177b80", "0x001897a8", "0x0018e9e0", "0x00217a98", "0x00228d70", "0x00257ef0",
+    "0x00258330", "0x003a3ba0",
   ]
 ---
 # Characters: the model, its files and its hats
 
-Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records or, for the older ones, How this was checked.
+Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records.
 
 ## Summary
 
@@ -21,7 +22,7 @@ animation format on [Animation](formats/animation.md).
 
 ## Map {#original-structure}
 
-The functions that load and attach a character:
+The functions that load and attach a character, and those that knock its hat off:
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -30,6 +31,8 @@ The functions that load and attach a character:
 | `0x00177b80` / `0x00174d00` | `CharacterInstance` create / constructor | the model instance (0x330 bytes, vtable `0x00538a78`) | confirmed (code) |
 | `0x00217a98` | `Human_AttachInstance` | gives the human its instance (`+0xd8`) | confirmed (code) |
 | `0x001897a8` | resource manager update | loads missing characters and dynamic animations later | confirmed (code) |
+| `0x00257ef0` | `Human_KnockOffHatIfDown` | class 0x80 down or dead: knocks the hat off ([Hats](#hats)) | confirmed (code) |
+| `0x00258330` | `Human_KnockOffHat` | throws the worn hat off (unless `HuSetKeepHat` or kind 27): spin 8 rad/s, drop at 2 m/s, `+0x364` cleared ([Hats](#hats)) | confirmed (code) |
 
 ## Data
 

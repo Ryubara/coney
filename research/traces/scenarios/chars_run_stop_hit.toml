@@ -1,0 +1,19 @@
+# A run released on an update whose measured speed is not below the run speed: run_stop's straight run, let go three
+# updates earlier (frame 97, seen on step 98, where run_stop's skid-test log shows the speed 0x40f9a3ad). Research:
+# docs/research/characters-locomotion.md#run-stop. Slot 1 (the street); the state-code and skid-test hooks show the skid.
+description = "level99 street: a straight run released where the skid test's speed equals the run speed"
+research = "docs/research/characters-locomotion.md#run-stop"
+input = "chars_run_stop_hit.txt"
+updates = 140
+fields = ["player", "held", "stop"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "state-code", "skid-test"]
+
+[coney]
+level = "level99"
+
+[diff]
+columns = ["clip", "gait", "speed", "heading"]
+tolerance = { clip = 0, gait = 0, speed = 0.05, heading = 1.0 }

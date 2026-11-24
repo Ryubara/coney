@@ -1,0 +1,132 @@
+# The animation task stack while standing, at a walk (stick 50 %) and at a run (stick 100 %), read every update:
+# the stack's size, the top and bottom tasks' type, rate and flags, the human flags (+0xe0), and the bottom task's
+# gait-blend fields (target +0x34, value +0x38, speed +0x3c, the first two anim ids, both cursors' flags; the second
+# cursor's word is only a cursor while the bottom task is a gait blend). The record's +0x08 is the player set's phase.
+# Slot 1 (the street, nobody near).
+# Research: docs/research/characters-animation.md#clip-selection. Frames are updates of 1/30 s.
+description = "slot 1: stand, stick 50 % up for 90 updates, stand, stick 100 % up for 90 updates; the task stack each update"
+research = "docs/research/characters-animation.md#clip-selection"
+input = "chars_task_stack.txt"
+updates = 300
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick"]
+
+[coney]
+level = "level99"
+
+[[field]]
+name = "tasks"
+address = "u32(player + 0xd8) + 0x2ac"
+type = "u16"
+follow = true
+
+[[field]]
+name = "hflags"
+address = "player + 0xe0"
+type = "u32"
+follow = true
+
+[[field]]
+name = "top_type"
+address = "u32(u32(player + 0xd8) + 0x2bc + 4 * (u16(u32(player + 0xd8) + 0x2ac) - 1)) + 0x14"
+type = "s32"
+follow = true
+
+[[field]]
+name = "top_rate"
+address = "u32(u32(player + 0xd8) + 0x2bc + 4 * (u16(u32(player + 0xd8) + 0x2ac) - 1)) + 0xc"
+type = "f32"
+follow = true
+
+[[field]]
+name = "top_flags"
+address = "u32(u32(player + 0xd8) + 0x2bc + 4 * (u16(u32(player + 0xd8) + 0x2ac) - 1)) + 0x10"
+type = "u32"
+follow = true
+
+[[field]]
+name = "top_f18"
+address = "u32(u32(player + 0xd8) + 0x2bc + 4 * (u16(u32(player + 0xd8) + 0x2ac) - 1)) + 0x18"
+type = "f32"
+follow = true
+
+[[field]]
+name = "top_f1c"
+address = "u32(u32(player + 0xd8) + 0x2bc + 4 * (u16(u32(player + 0xd8) + 0x2ac) - 1)) + 0x1c"
+type = "f32"
+follow = true
+
+[[field]]
+name = "t0_type"
+address = "u32(u32(player + 0xd8) + 0x2bc) + 0x14"
+type = "s32"
+follow = true
+
+[[field]]
+name = "t0_rate"
+address = "u32(u32(player + 0xd8) + 0x2bc) + 0xc"
+type = "f32"
+follow = true
+
+[[field]]
+name = "t0_flags"
+address = "u32(u32(player + 0xd8) + 0x2bc) + 0x10"
+type = "u32"
+follow = true
+
+[[field]]
+name = "t0_time"
+address = "u32(u32(u32(player + 0xd8) + 0x2bc) + 0x18) + 0x18"
+type = "f32"
+follow = true
+
+[[field]]
+name = "t0_length"
+address = "u32(u32(u32(u32(player + 0xd8) + 0x2bc) + 0x18) + 0x4) + 0xc"
+type = "f32"
+follow = true
+
+[[field]]
+name = "t0_cflags"
+address = "u32(u32(u32(player + 0xd8) + 0x2bc) + 0x18) + 0x1e"
+type = "u16"
+follow = true
+
+[[field]]
+name = "t0_id0"
+address = "u32(u32(player + 0xd8) + 0x2bc) + 0x20"
+type = "u32"
+follow = true
+
+[[field]]
+name = "t0_id1"
+address = "u32(u32(player + 0xd8) + 0x2bc) + 0x24"
+type = "u32"
+follow = true
+
+[[field]]
+name = "t0_target"
+address = "u32(u32(player + 0xd8) + 0x2bc) + 0x34"
+type = "f32"
+follow = true
+
+[[field]]
+name = "t0_value"
+address = "u32(u32(player + 0xd8) + 0x2bc) + 0x38"
+type = "f32"
+follow = true
+
+[[field]]
+name = "t0_vspeed"
+address = "u32(u32(player + 0xd8) + 0x2bc) + 0x3c"
+type = "f32"
+follow = true
+
+[[field]]
+name = "t0_c2flags"
+address = "u32(u32(u32(player + 0xd8) + 0x2bc) + 0x1c) + 0x1e"
+type = "u16"
+follow = true

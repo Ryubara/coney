@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-run-reversals"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "51e63adcd18ddd2b16d5ed9b0cf4ccff4f6dd7b8f4a3ce737d44aad359fc5d01"
+
+[who]
+agent = "a81ce522c25fb7730"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-e"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad", "skid-test", "state-code"]
+
+[run]
+name = "chars_run_release"
+method = ""
+
+[values]
+updates = 1331
+missed_updates = 0
+columns = 13
+
+[hashes]
+trace_csv = "5a12a5b7757e5278d5c40bcecc47f24e15b39356da6dfc076cbca822d42e5d51"

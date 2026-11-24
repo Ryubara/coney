@@ -1,0 +1,38 @@
+version = 1
+id = "r-20261124-chars-creation"
+date = "2026-11-24"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "a7f480f250fca3614811691b9d3c289ade718b648a2877e4b0e734cdac33cf59"
+
+[who]
+agent = "ae31bd6736d3cec63"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-c"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "From the state (call-brains patched) the load-checkpoint recipe reloaded level99 at checkpoint 1. A breakpoint on Human_Create (0x00233d60) with the condition t0 == 1 (the player argument) stopped on the player's creation; the name at a0 and the three floats at the position pointer a2 were read. The breakpoint was removed and the game run on; the humans recipe read the player's position every 10 s until it stayed still after the intro scene."
+
+[values]
+created_x = -284.4
+created_y = 120.4
+created_z = 0.3
+first_read_z = 0.25
+after_intro_x = -289.033
+after_intro_y = 120.286
+after_intro_z = 0.25
+checkpoint = 1
+
+[addresses]
+human_create = 0x00233d60
+hucreate_binding = 0x00358428

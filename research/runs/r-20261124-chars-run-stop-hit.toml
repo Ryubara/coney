@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-run-stop-hit"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "f5197d5a1a3460b4ff4b3ff6579d5735d4beff09a04966503c9397e65be09917"
+
+[who]
+agent = "a81ce522c25fb7730"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-e"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad", "skid-test", "state-code"]
+
+[run]
+name = "chars_run_stop_hit"
+method = ""
+
+[values]
+updates = 141
+missed_updates = 0
+columns = 34
+
+[hashes]
+trace_csv = "d099f058accb8b6a356afc139c081024262ed46d875689d6ac23585e034baad0"

@@ -1,0 +1,17 @@
+# The stick straight up from standing at each magnitude, then let go; last a run reversed (180 degrees) and let go.
+# Frames are character updates of 1/30 s.
+40 stick left 0 10
+70 stick left 0 0
+80 stick left 0 13
+120 stick left 0 0
+140 stick left 0 35
+180 stick left 0 0
+200 stick left 0 50
+240 stick left 0 0
+260 stick left 0 94
+300 stick left 0 0
+320 stick left 0 96
+355 stick left 0 0
+390 stick left 0 100
+425 stick left 0 -100
+470 stick left 0 0

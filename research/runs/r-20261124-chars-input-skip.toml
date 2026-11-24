@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261124-chars-input-skip"
+date = "2026-11-24"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "6c2f3d0a966e916c0ac7a266d22afb706522bd2e8f0edf4798c8df2bd86960a9"
+
+[who]
+agent = "ae31bd6736d3cec63"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-c"
+
+[start]
+state = "street-end-run"
+patches = []
+
+[run]
+name = ""
+method = "Started the copy on the state, listed the humans in use with the humans recipe (3: two AI humans and the player, handle indexes 0, 2 and 3), then read each one's per-player input record (0x00660f50 + index * 0x2c) over the debug server: byte +0x1e (skip Player_UpdateActions), +0x19 (pad index) and +0x1b (pad-controlled) while the game ran."
+
+[values]
+humans_in_use = 3
+ai_humans = 2
+idx0_skip_1e = 0
+idx2_skip_1e = 0
+idx3_skip_1e = 0
+idx0_pad_19 = 255
+idx2_pad_19 = 0
+idx3_pad_19 = 255
+idx2_padctl_1b = 1
+
+[addresses]
+per_player_table = 0x00660f50
+human_array = 0x00640c80

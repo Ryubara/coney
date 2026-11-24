@@ -2215,7 +2215,7 @@ status = "legacy"
 [[function]]
 address = 0x00252c28
 name = "NavLink_SetBlocked"
-page = "characters-animation.md#code-movement"
+page = "characters/index.md#code-nav"
 role = "Sets or clears a path polygon's blocked flag 8 (+0x48) at a point."
 level = "confirmed-code"
 coney = "src/world_objects/nav_links.h:NavLinks::changeBlocker"
@@ -2240,7 +2240,7 @@ status = "legacy"
 [[function]]
 address = 0x00255540
 name = "Human_UpdateWorkout"
-page = "characters-animation.md#code-movement"
+page = "characters/index.md#code-update"
 role = "State code 0x1b: the workout on gym equipment (start, repetitions with the pad's pumps, end), its clips and rate."
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::update"
@@ -2297,7 +2297,7 @@ issue = 719
 [[function]]
 address = 0x002570e8
 name = "Human_ComputeThrowVelocity"
-page = "characters-animation.md#code-movement"
+page = "combat-throws.md#throws"
 role = "The launch velocity of a thrown held object: aimed at the target (led by its speed) or along the facing, scaled by the object's weight and the human's scale."
 level = "confirmed-code"
 coney = "src/combat/throw_velocity.h:throwVelocity"
@@ -2306,7 +2306,7 @@ status = "legacy"
 [[function]]
 address = 0x00258330
 name = "Human_KnockOffHat"
-page = "characters-animation.md#code-movement"
+page = "characters-appearance.md#hats"
 role = "Throws the worn hat off (unless HuSetKeepHat or kind 27): spin 8 rad/s, drop at 2 m/s, +0x364 cleared ([Hats](characters-appearance.md#hats))."
 level = "confirmed-code"
 coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::knockOffHat"

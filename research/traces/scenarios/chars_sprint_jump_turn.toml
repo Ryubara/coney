@@ -1,0 +1,26 @@
+# A sprint jump turned in the air (slot 1, the street): as chars_sprint_jump, then the stick 100 % right 2 updates
+# after the tap.
+# Unit 364 (the characters research split). The anim state (record +0x18) and the state flags' high word show whether
+# the jump starts. Research: docs/research/characters-traversal.md#jump.
+description = "level99 street: a sprint jump, the stick turned 90 degrees right just after take-off"
+research = "docs/research/characters-traversal.md#jump"
+input = "chars_sprint_jump_turn.txt"
+updates = 110
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick"]
+
+[coney]
+level = "level99"
+
+[[field]]
+name = "state_hi"                         # record +0x04, the state flags' high word (0x4 jump, 0x8 air, 0x20 land)
+address = "rec(player) + 0x4"
+type = "u32"
+
+[[field]]
+name = "anim_state"                       # record +0x18
+address = "rec(player) + 0x18"
+type = "s32"

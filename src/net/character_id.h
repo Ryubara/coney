@@ -22,7 +22,7 @@ inline constexpr std::int32_t kNoCharacter = 0;
 inline constexpr std::int32_t kMostCharacterId = 1023;
 
 /// The id of the character at `listIndex` in the Character List: the index the original keeps in a human at `+0x37c`
-/// (docs/research/characters.md, "model index in the Character List"), plus one so that 0 is "none". kNoCharacter for
+/// (docs/research/characters/index.md#the-human-object), plus one so that 0 is "none". kNoCharacter for
 /// an index past kMostCharacterId.
 /// @coney-only network play; the original has none
 [[nodiscard]] constexpr std::int32_t characterIdOf(std::size_t listIndex) {

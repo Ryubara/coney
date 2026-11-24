@@ -1,0 +1,7 @@
+# Sliding along a wall (docs/research/characters-ground.md#walls): per trial of 180 updates the player is put
+# 7 m from the wall for the first three updates, then the stick is pushed straight up from update 20 to 160: a run,
+# then a walk.
+20 stick left 0 100
+160 stick left 0 0
+200 stick left 0 60
+340 stick left 0 0

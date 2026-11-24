@@ -9,7 +9,7 @@ owns:
 ---
 # Characters: locomotion
 
-Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records or, for the older ones, How this was checked.
+Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records.
 
 ## Summary
 
@@ -49,7 +49,7 @@ Confirmed (code) at the readers; values from `.data`.
 | `0x0051030c` | 0.8 | turn step carried over from the last update |
 | `0x00510310` | **2.0 rad** in play (`CfgTurnRate(true, false, 2.0, 0.8)`) | heading error at which the turn reaches its full rate |
 
-The values "in play" were read in the street save's RAM and match every measured turn (observed in PCSX2,
+The values "in play" were read in the street save's RAM and match every measured turn (confirmed (runtime), run r-20261124-chars-turn-table,
 [Feel comparison](feel.md#details-behind-the-table)); the setters are confirmed (code) on
 [CfgSetTurnRates](../references/bindings/config.md#cfgsetturnrates).
 
@@ -63,7 +63,7 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
 buttons; take the pad record's **camera-turned** left stick (`+0x00`, `+0x04`, [Front end](frontend.md#pad-record)),
 store its angle (`atan2`, `0x003357a8`) and its length clamped to 1. With `+0x1f` set the angle is π/2 and the length
 0. Confirmed (code). The stick is thus already relative to the camera: pushing up moves away from it, which is what
-the game does at runtime (observed in PCSX2, [How this was checked](#runtime-reads)).
+the game does at runtime (confirmed (runtime), run r-20261124-chars-gaits).
 
 ### Buttons {#buttons}
 
@@ -97,28 +97,29 @@ Confirmed (code) for the steps; the state predicates are named by what they test
    record's walk speed `+0x170` unscaled, and two others (`0x00228340`, or the global `0x0051031c`) the base speed. With
    `0x00510258` set, run and sprint come from an analog button's pressure instead (more than 100 sprints); it is 0
    in play. Below the dead zone the target is 0.
-3. **Skid** (the test at `0x00241300`). When the stored gait `+0x1a8` is 4 or 5, the current speed is **at least the
-   run speed** (`0x00221670`: human `+0x3a4` × record `+0x178`, compared as floats, `c.le.S`) and the previous
-   update's stick (the per-player record's other buffer) was over 0.95 (`0x005102e8`), then a stick now under 0.2,
-   or one pointing more than 120° away from the velocity (dot product below -0.5; the dot is worked out only for
-   some camera modes, `0x0011f9b0`), zeroes the velocity and sets the state code to **9** (the call at
-   `0x00241530`), unless the human is airborne (`0x00227f90`) or `0x00227f68` holds. Code 9 is what plays the
-   **run stop**: the idle builder (`Human_BuildIdleTasks`, `0x0025f770`) builds the run stop (`0x0025c0e8`: slot
-   33, 417, holding `0x80000`, the idle after it, a 0.1 s fade) instead of the idle when the code is 9, and the anim
-   state choice (`0x00259578`) picks state 0 for code 9. Confirmed (code); the code 9 and its caller observed in PCSX2.
-4. **Turn.** Target heading = stick angle − π/2; current heading = the facing from the rotation. The error is
-   wrapped to (−π, π]. The limit per update comes from `Human_MaxTurn` (`0x002213d8`) through the gait lookup
-   `0x002212d0`, which reads the table's player word for a pad-controlled human: in play **20° walking or standing,
-   18° jogging and running, 16° sprinting** (600, 540 and 480 degrees per second); 4° and 6° in two special states
-   (`0x00227f68`, `0x00227f40`), 11° in two others, 24° in a combat stance ([Movement
-   constants](#movement-constants)). With smoothing on, the step is the limit times an ease
-   `(1 − cos(π · error / E)) / 2` with **E = 2.0 rad** in play (full from 2.0 rad), plus 0.8 times the previous step
-   (−0.5 times it when the error changed sign), clamped to [0, limit]. When the error is smaller than the step, the
-   heading snaps to the target. The new heading becomes the rotation (unless `+0x3bb` locks it) and the velocity's
-   direction. Confirmed (code) and observed in PCSX2: a 90° turn at a run went 16.0°, then 18° per update (the
-   facing reached in 6 updates); at a walk 17.9°, then 20°; in a sprint 14.3°, then 16°; 45° at a run 6.3°, 9.8°,
-   10.8°, 10.0°, 8.4°, 4.5° ([Feel comparison](feel.md)). The `.data` values (12°, 6°, 4°, 2.5°, 1.5 rad), which an
-   earlier reading of this page gave, are what the scripts replace.
+3. **Skid** (the test at `0x00241300`). When the stored gait `+0x1a8` is 4 or 5, the current speed is **at least the run
+   speed** (`0x00221670`: human `+0x3a4` × record `+0x178`, compared as floats, `c.le.S`) and the previous update's
+   stick (the per-player record's other buffer) was over 0.95 (`0x005102e8`), then a stick now under 0.2, or one
+   pointing more than 120° away from the velocity (dot product below -0.5; the dot is worked out only for some camera
+   modes, `0x0011f9b0`), zeroes the velocity and sets the state code to **9** (the call at `0x00241530`), unless the
+   human is airborne (`0x00227f90`) or `0x00227f68` holds. Code 9 is what plays the **run stop**: the idle builder
+   (`Human_BuildIdleTasks`, `0x0025f770`) builds the run stop (`0x0025c0e8`: slot 33, 417, holding `0x80000`, the idle
+   after it, a 0.1 s fade) instead of the idle when the code is 9, and the anim state choice (`0x00259578`) picks state
+   0 for code 9. Confirmed (code); the code 9 and its caller confirmed (runtime), run r-20261124-chars-turn-sprint.
+4. **Turn.** Target heading = stick angle − π/2; current heading = the facing from the rotation. The error is wrapped to
+   (−π, π]. The limit per update comes from `Human_MaxTurn` (`0x002213d8`) through the gait lookup `0x002212d0`, which
+   reads the table's player word for a pad-controlled human: in play **20° walking or standing, 18° jogging and running,
+   16° sprinting** (600, 540 and 480 degrees per second); 4° and 6° in two special states (`0x00227f68`, `0x00227f40`),
+   11° in two others, 24° in a combat stance ([Movement constants](#movement-constants)). With smoothing on, the step is
+   the limit times an ease `(1 − cos(π · error / E)) / 2` with **E = 2.0 rad** in play (full from 2.0 rad), plus 0.8
+   times the previous step (−0.5 times it when the error changed sign), clamped to [0, limit]. When the error is smaller
+   than the step, the heading snaps to the target. The new heading becomes the rotation (unless `+0x3bb` locks it) and
+   the velocity's direction. Confirmed (code), and confirmed (runtime), run r-20261124-chars-turns (the sprint: run
+   r-20261124-chars-turn-sprint; 45°: run r-20261124-chars-turn45): a 90° turn at a run went 16.1°, then 18° per update
+   for the big steps; at a walk 17.8°, then 20°; in a sprint 14.3°, then 16°; 45° at a run 6.1°, 9.6°, 10.6°, 9.8°,
+   8.3°, 4.9°. Once the big steps end, the follow camera's turn (0.3° to 2.5° an update) moves the stick's target, so
+   the last steps follow the camera ([Feel comparison](feel.md)). The `.data` values (12°, 6°, 4°, 2.5°, 1.5 rad), which
+   an earlier reading of this page gave, are what the scripts replace.
 5. **Accelerate.** Speeding up adds 0.8 m/s per update (24 m/s²) until the target; slowing down either drops to the
    target at once or, in some states (`0x00223db8`), at the same rate.
 6. **Velocity** = facing × speed, with `z` = `+0x3a0` (the vertical velocity is kept); some states zero it.
@@ -131,36 +132,35 @@ speed, else 4 (run) at or above the run speed, 3 (jog), 2 (walk), else 0 (idle).
 not pick a clip: one gait blend covers walk to sprint ([Clip selection](characters-animation.md#clip-selection)), and
 what happens at runtime is below.
 
-**Gaits at runtime** (PCSX2 2.9.94, `level99` checkpoint 1, Rembrandt standing; the left stick held straight up at
-the magnitude given, by the stick-table method in [Driving PCSX2](../guides/research-workflow.md#driving-pcsx2);
-speed is `+0x1ac` sampled every 5 ms, the clip is record `+0x20`). Observed in PCSX2 ([How this was
-checked](#runtime-reads)):
+**Gaits at runtime** (slot 1, Rembrandt standing; the left stick held straight up at the magnitude given; speed is
+`+0x1ac`, the clip is record `+0x20`, read every update). Confirmed (runtime), run r-20261124-chars-gaits (the
+releases: run r-20261124-chars-turn-sprint; the reversals: run r-20261124-chars-run-reversals):
 
 | Stick magnitude | What happens |
 | --- | --- |
 | 0.10 | nothing (inside the 0.12 dead zone) |
-| 0.13, 0.5, 0.94 | **walk start** (413) at a steady 0.76 m/s for about 0.45 s, then **walk** (408) at 1.63 m/s, gait 2: the walk speed does not depend on how far the stick is pushed |
-| 0.96, 1.0 | **run start** (414) for about 0.36 s, the speed following the clip (2.77, 2.49, 2.56, 2.63, 2.84, 3.35, 3.90, 4.54, 5.11, 5.40, 5.61, 5.69 m/s, one value per update), then **run** (410), gaining 0.8 m/s per update up to 7.80 |
+| 0.13, 0.35, 0.5, 0.94 | **walk start** (413) at a steady 0.76 m/s for 13 updates (0.433 s), then **walk** (408) at 1.63 m/s, gait 2: the walk speed does not depend on how far the stick is pushed |
+| 0.96, 1.0 | **run start** (414) for 13 updates (0.433 s), the speed following the clip (2.77, 2.49, 2.56, 2.63, 2.84, 3.35, 3.90, 4.54, 5.11, 5.40, 5.61, 5.69 m/s, one value per update), then **run** (410), gaining 0.8 m/s per update up to 7.80 |
 | released from a walk | speed 0 at once and **idle** (388) |
 | released from a sprint (10.245 m/s) | **run stop** (417) for 24 updates (0.8 s), moved by the clip 1.63 m with the facing held, then the idle ([Sprint](characters-traversal.md#sprint)) |
 | released from a run (7.80 m/s) | the run stop only when the speed that update is not below the run speed by a rounding error, about one release in ten; otherwise the idle (388) at once, at 0 m/s ([The run stop](#run-stop)) |
-| reversed (180°) at a run | one turn step (18°), then the same skid and run stop, sliding 1.63 m the old way; then the walk or run start toward the stick |
+| reversed (180°) at a run | one turn step (18°), then the same skid and run stop, sliding 1.63 m the old way, then the walk or run start toward the stick, when the speed passes the same test (5 of 15 reversals); otherwise the body turns straight through at 18° an update |
 
 So the start clips drive the speed while they play (their root motion, [Animation](formats/animation.md#root-motion)),
-and the gait clip's speed is the target afterwards. The walk start's "about 0.45 s" is its 0.333 s played at rate 0.75
-(0.444 s). The run start's shorter 0.36 s is not explained; it may begin part-way through, as the
-walk-start-to-run-start swap does (speculative, [q-run-start-length](#q-run-start-length)). A jog was not reached from
-the stick alone (it needs a carried object, see the locomotion steps above).
+and the gait clip's speed is the target afterwards. Both start clips last 13 updates: the walk start is its 0.333 s
+played at rate 0.75. A jog was not reached from the stick alone (it needs a carried object, see the locomotion steps above).
 
-**Per update** (the feel pass, slot 1, read every update; observed in PCSX2): on the update the stick is first
-seen the start clip begins and the body does not move; the walk start then moves it at a steady **0.762 m/s** and the
-run start at 2.77, 2.49, 2.56, 2.63, 2.84, 3.35, 3.90, 4.54, 5.11, 5.40, 5.61, 5.69 m/s; both last **13 updates**,
-and the gait blend then gains 0.8 m/s per update. The walk start's clip speed from the disc is 0.786 m/s: the body
-moves at **the clip's speed × the body scale** (0.97), as does the landing clip 436 (4.230 m/s against the clip's
-4.361) and, inferred, every clip that moves the body. The gait speeds (walk, run, sprint) are not scaled.
+**Per update** (the feel pass, slot 1, read every update; confirmed (runtime), run r-20261124-chars-gaits, and confirmed
+(runtime), run r-20261124-chars-landing): on the update the stick is first seen the start clip begins and the body does
+not move; the walk start then moves it at a steady **0.762 m/s** and the run start at 2.77, 2.49, 2.56, 2.63, 2.84,
+3.35, 3.90, 4.54, 5.11, 5.40, 5.61, 5.69 m/s; both last **13 updates**, and the gait blend then gains 0.8 m/s per
+update. The walk start's clip speed from the disc is 0.786 m/s: the body moves at **the clip's speed × the body scale**
+(0.97), as does the landing clip 436 (4.230 m/s against the clip's 4.361) and, inferred, every clip that moves the body.
+The gait speeds (walk, run, sprint) are not scaled.
 
-The first updates in detail (the second feel pass, slot 1; speed `+0x1ac` and the position's change
-agree to 0.003 m/s; the stored gait `+0x1a8` in brackets). Observed in PCSX2 ([How this was checked](#runtime-reads)):
+The first updates in detail (the second feel pass, slot 1; speed `+0x1ac` and the position's change agree to 0.003 m/s;
+the stored gait `+0x1a8` in brackets). Confirmed (runtime), run r-20261124-chars-gaits, confirmed (runtime), run
+r-20261124-chars-walk60, and confirmed (runtime), run r-20261124-chars-run-stop-hit:
 
 | Stick, straight up | Update the stick is seen | Then, one value per update |
 | --- | --- | --- |
@@ -373,7 +373,7 @@ Otherwise it saves the current control (`Human_SaveControl`: `+0x1bc` copied to 
    - after the clip, the idle loops (slot 0, or slot 11 in a fight stance);
    - while the clip plays it holds held flag **`0x80000`**, with state code 0 and the push sphere off.
 
-   The clip-end callback (`0x25c5b0`, not yet a function of the Ghidra project) is an empty function (`jr ra`, confirmed
+   The clip-end callback (`Human_OnRunStopClipEnd`, `0x0025c5b0`) is an empty function (`jr ra`, confirmed
    (code)).
 5. **Turn during the clip.** The human is not turned first. `Human_TurnToOver` (`0x0023cf88`, called from
    `Human_StepControl`; confirmed (code)) turns it to the end facing at a constant rate over **half the clip's play
@@ -407,10 +407,10 @@ the wheelchair, or else `PlayerLocomotion` (`0x00240e38`). Confirmed (code).
 Abort (`GiveWayAction_Abort`, `0x002fe658`) restores the saved boost once `TakeStepAction_Abort` agrees. **It also runs
 when the step ends normally**: a finished action is popped through `Action_AbortAndDestroy`, which calls Abort with
 argument 0 (always agreed) for any started action ([AI: Actions](ai/index.md#actions)). So the boost goes back however
-the GiveWay ends; nothing else restores it. The destroy (`GiveWayAction_Destroy`, at `0x2fe6a8`, not yet a function of
-the Ghidra project) then clears brain `+0xcc` bit 1. Confirmed (code). `Brain_GiveWayTo` (`0x00289ed0`) sets the boost
-flag when the mover is a pad player (`+0x1b0` ≠ −1) whose stored gait `+0x1a8` is 3 (jog) or more, so an AI dashes out
-of a running player's way and steps out of a walker's.
+the GiveWay ends; nothing else restores it. The destroy (`GiveWayAction_Destroy`, `0x002fe6a8`) then clears the low
+bit of the brain's word `+0xcc`. Confirmed (code). `Brain_GiveWayTo` (`0x00289ed0`) sets the boost flag when the mover
+is a pad player (`+0x1b0` ≠ −1) whose stored gait `+0x1a8` is 3 (jog) or more, so an AI dashes out of a running
+player's way and steps out of a walker's.
 
 **Who may give way** (`Brain_GiveWayTo`, before its free-sector search, which is in
 [AI: Giving way](ai-moving.md#giving-way)). All of these must hold:
@@ -545,27 +545,15 @@ top edge.
 - **The circling run's turn**: on `run_circle`'s step 75 Coney turns 16.92° against the original's 16.44°, which the
   camera's auto-follow then grows to 6.6°; whether the stick is turned by the camera of this update or the last.
 
-### The run start's length {#q-run-start-length}
-
-Its 0.36 s against the walk start's 0.444 s is not explained; whether it begins part-way through, as the
-walk-start-to-run-start swap does.
-
 ## How this was checked
 
 Code claims were read in Ghidra in `SLUS_212.15`.
 
-### The old runtime reads {#runtime-reads}
-
-The turn limits "in play" were read in the street save's RAM (PCSX2 2.9.94) and match every measured turn. The gait
-readings (the stick held straight up from a standstill, speed `+0x1ac` sampled every 5 ms) are from `level99`,
-checkpoint 1 (read over PINE on 2026-10-04), and the per-update readings from two "feel passes" in the street from save
-states; the second was run on 2026-10-05. They predate run records.
-
 ### The run stop at a run {#runtime-run-stop}
 
-Observed in PCSX2, scenario `run_stop` (slot 1, a straight run released, then a run circling behind the camera
-released, as `run_circle`), with hooks on the state-code setter and on the skid test logging the gait, both stick
-buffers, the run speed and the speed register `f28` as raw words:
+Confirmed (runtime), run r-20261124-chars-run-stop, scenario `run_stop` (slot 1, a straight run released, then a run
+circling behind the camera released, as `run_circle`), with hooks on the state-code setter and on the skid test logging
+the gait, both stick buffers, the run speed and the speed register `f28` as raw words:
 
 - The run speed is `0x40f9a3ad` (7.8012300). The speed the locomotion measures at a steady run (the length of the
   velocity, `0x0023fea8`'s vtable `+0x94`) jitters between `0x40f9a3aa` and `0x40f9a3ae`: of 93 updates at the run
@@ -574,8 +562,9 @@ buffers, the run speed and the speed register `f28` as raw words:
   was below (`0x40f9a3ab`, `0x40f9a3ac`, straight and circling alike, three recordings) no code 9 was set and the idle
   388 began on the release update itself at 0 m/s (the skid test's call re-labelled one update later after the recorder
   fix, [Recording a trace](../guides/research-workflow.md#hooks)), holding `0x10000000` for 5 updates; where it was not
-  (one circling release), the state code went to 9 from `0x00241538`, the idle builder set it back to 0 (`0x0025fa2c`)
-  and the run stop 417 played for 24 updates with `0x80000`, at the speeds in the table above.
+  (one circling release; confirmed (runtime), run r-20261124-chars-circle-stops), the state code went to 9 from
+  `0x00241538`, the idle builder set it back to 0 (`0x0025fa2c`) and the run stop 417 played for 24 updates with
+  `0x80000`, at the speeds in the table above.
 - So **turning has nothing to do with it**: the circling run of `run_circle` (step 192) and a straight run both go
   either way. After a sprint (10.245 m/s) the speed is far above the run speed, so a sprint always ends in the run
   stop; a jog or walk (gait 3 or less) never does.

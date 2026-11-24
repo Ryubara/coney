@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-heap-run"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "8dbe3a1ccbf5ea43e6821090ef2eb69c83e8b486148b0811ea08f73e1e314e1a"
+
+[who]
+agent = "a73f4eba7e7bccc32"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-d"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "chars_heap_run"
+method = ""
+
+[values]
+updates = 471
+missed_updates = 0
+columns = 33
+
+[hashes]
+trace_csv = "ec6cd96f867055545562bb0d666d714c110a83d123dfe8c24514d8a6586e0f8b"

@@ -3,23 +3,18 @@ kind: topic
 system: characters
 owns:
   functions: [
-    "0x00175080", "0x0023a9b8", "0x0023a9f8", "0x0023aab0", "0x0023ab80", "0x0023ac50", "0x00250e00", "0x00250e48",
-    "0x002510a8", "0x00251188", "0x002516d0", "0x002516f0", "0x00251710", "0x00251718", "0x00251768", "0x00251820",
-    "0x00251a00", "0x00252108", "0x00252ae0", "0x00252b08", "0x00252c28", "0x00253068", "0x00253118", "0x00253170",
-    "0x00253190", "0x002531b8", "0x002531c0", "0x00253268", "0x00253350", "0x00253398", "0x002533b8", "0x00253480",
-    "0x002534a8", "0x002534c0", "0x002534d0", "0x00253528", "0x00253538", "0x00253560", "0x00253598", "0x002535c0",
-    "0x00253e68", "0x00253f78", "0x00254060", "0x002541c8", "0x002544b8", "0x002545a8", "0x002548c8", "0x00254e20",
-    "0x00255540", "0x00255cf8", "0x002570e8", "0x00257ce8", "0x00257d70", "0x00257e38", "0x00257ef0", "0x00258330",
-    "0x00258968", "0x00259578", "0x0025a178", "0x0025a310", "0x0025aeb8", "0x0025af90", "0x0025b200", "0x0025b9f8",
-    "0x0025c240", "0x0025c5b8", "0x0025cb90", "0x0025cd58", "0x0025cf10", "0x0025cf30", "0x0025d020", "0x0025d2d0",
-    "0x0025d348", "0x0025d390", "0x0025e0e0", "0x0025e250", "0x0025e900", "0x0025e948", "0x0025ec28", "0x0025eee0",
-    "0x0025ef58", "0x0025f028", "0x0025f1b8", "0x0025f450", "0x0025f4d0", "0x0025f770", "0x0025fba0", "0x0025fbd0",
-    "0x0025fc00", "0x0025fcb0", "0x0025ff18", "0x0025ff50", "0x002726d8",
+    "0x00175080", "0x0023a9b8", "0x0023a9f8", "0x0023aab0", "0x0023ab80", "0x0023ac50", "0x00253e68", "0x00253f78",
+    "0x00254060", "0x002541c8", "0x002544b8", "0x002545a8", "0x002548c8", "0x00254e20", "0x00258968", "0x00259578",
+    "0x0025a178", "0x0025a310", "0x0025aeb8", "0x0025af90", "0x0025b200", "0x0025b9f8", "0x0025c240", "0x0025c5b8",
+    "0x0025cb90", "0x0025cd58", "0x0025cf10", "0x0025cf30", "0x0025d020", "0x0025d2d0", "0x0025d348", "0x0025d390",
+    "0x0025e0e0", "0x0025e250", "0x0025e900", "0x0025e948", "0x0025ec28", "0x0025eee0", "0x0025ef58", "0x0025f028",
+    "0x0025f1b8", "0x0025f450", "0x0025f4d0", "0x0025f770", "0x0025fba0", "0x0025fbd0", "0x0025fc00", "0x0025ff18",
+    "0x0025ff50", "0x002726d8",
   ]
 ---
 # Characters: anim slots, clips and callbacks
 
-Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records or, for the older ones, How this was checked.
+Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records.
 
 ## Summary
 
@@ -43,45 +38,15 @@ The functions of the clip choice and the callbacks:
 
 ### Movement styles, clips and actions {#code-movement}
 
-From `0x00250e00` (inferred from where the rows lie; each row is graded): movement styles and anim slots, the clip
-builders ([Clip selection](#clip-selection)), the turn and arrival clips of an AI, and the per-human actions.
+From `0x00253e68` (inferred from where the rows lie; each row is graded): movement styles and anim slots, the clip
+builders ([Clip selection](#clip-selection)), the turn and arrival clips of an AI, and the per-human actions. The
+path search of `0x00250e00`-`0x002535c0` is on [AI moving](ai-moving.md#path-search-code) and the human's side of the
+navigation mesh on [Characters](characters/index.md#code-nav); the hat, throw and state-code functions among these
+addresses are on [Hats](characters-appearance.md#hats), [Combat: throws](combat-throws.md#throws) and [the
+characters' update](characters/index.md#code-update).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
-| `0x00250e00` | `NavLink_DisableDoor` | Marks the door links near a point to be avoided (kind 0x10), as when a door shuts. | confirmed (code) |
-| `0x00250e48` | `NavLink_EnableDoor` | Clears the avoid mark of the door links near a point (kind 0x10). | confirmed (code) |
-| `0x002510a8` | `NavNode_IsLinkBlocked` | Whether a node's link list holds a link to the given node with a negative cost (a blocked edge). | confirmed (code) |
-| `0x00251188` | `PathRequests_Clear` | Clears the 32 path-request slots (0x110 bytes each, at 0x006cc340 downward). | confirmed (code) |
-| `0x002516d0` | `PathNode_SetIndex` | Stores a node pointer as its index (offset from the node array 0x006ca21c / 32) at slot i of a list. | confirmed (code) |
-| `0x002516f0` | `PathNode_GetAt` | The node pointer at slot i of a list (the node array 0x006ca21c + index x 32). | confirmed (code) |
-| `0x00251710` | `Ptr_Set` | Writes a word: a one-line setter. | confirmed (code) |
-| `0x00251718` | `PathNode_IsEdgeBlocked` | Whether the edge between list slots i and i+1 is blocked (NavNode_IsLinkBlocked). | confirmed (code) |
-| `0x00251768` | `PathNodes_ResetParents` | Sets every path node's parent (+0x1c) to none (0xffff) before a search. | confirmed (code) |
-| `0x00251820` | `Path_DistanceCost` | The A* cost of a distance: length x 16, as a u16. | confirmed (code) |
-| `0x00251a00` | `PathNodes_ClearOpenMarks` | Clears the +0x18 mark of every node on the open list after a search. | confirmed (code) |
-| `0x00252108` | `Nav_NearestEdgePoint` | The nearest point on a nav polygon's edges (within 1.5 m of its box, at or above the point's height less 0.1) to a point; only when closer than 1.5 m, then dropped to the ground. | confirmed (code) |
-| `0x00252ae0` | `Nav_FindPolygonUnderThunk` | Nav_FindPolygonUnder with a height of 1.0. | confirmed (code) |
-| `0x00252b08` | `Nav_ClampMoveToRange` | Limits a move to a range: beyond it the point is kept only when the nav mesh connects the two (Nav_IsConnected), else the start. | confirmed (code) |
-| `0x00252c28` | `NavLink_SetBlocked` | Sets or clears a path polygon's blocked flag 8 (+0x48) at a point. | confirmed (code) |
-| `0x00253068` | `PathSearch_ResetCount` | Global 0x005105b0 = 0. | confirmed (code) |
-| `0x00253118` | `PathSearch_InitLists` | Static initialiser: the open heap, the closed list and two small lists of the path search. | confirmed (code) |
-| `0x00253170` | `PathSearch_StaticInit` | Calls PathSearch_InitLists(1, 0xffff). | confirmed (code) |
-| `0x00253190` | `PathHeap_Construct` | Constructs the open heap (count 0). | confirmed (code) |
-| `0x002531b8` | `PathHeap_Clear` | Count = 0. | confirmed (code) |
-| `0x002531c0` | `PathHeap_Push` | Pushes a node on the binary min-heap keyed by the node's cost (+0x16), at most 1000. | confirmed (code) |
-| `0x00253268` | `PathHeap_PopMin` | Removes and returns the cheapest node of the heap. | confirmed (code) |
-| `0x00253350` | `PathHeap_Find` | The heap position of a node, or 0xffff. | confirmed (code) |
-| `0x00253398` | `PathHeap_IsEmpty` | Count is 0. | confirmed (code) |
-| `0x002533b8` | `PathHeap_SiftUp` | Moves a node whose cost dropped up the heap. | confirmed (code) |
-| `0x00253480` | `PathList_Construct` | Constructs the closed list. | confirmed (code) |
-| `0x002534a8` | `PathList_Get` | Entry i of the closed list. | confirmed (code) |
-| `0x002534c0` | `PathList_Clear` | Count (+6000) = 0, last (+0x1772) = -1. | confirmed (code) |
-| `0x002534d0` | `PathList_Add` | Appends a node to the closed list, at most 3000. | confirmed (code) |
-| `0x00253528` | `PathList_Count` | The closed list's count. | confirmed (code) |
-| `0x00253538` | `PathPair_Construct` | Constructs a three-short record (zeroed). | confirmed (code) |
-| `0x00253560` | `PathPair_Clear` | Zeroes the three shorts. | confirmed (code) |
-| `0x00253598` | `PathCursor_Construct` | Constructs a two-short record (zeroed). | confirmed (code) |
-| `0x002535c0` | `PathCursor_Clear` | Zeroes the two shorts. | confirmed (code) |
 | `0x00253e68` | `Human_SetMoveStyle` | Replaces the top movement style (pop then push), or applies style 0 when none is stacked. | confirmed (code) |
 | `0x00253f78` | `Human_RemoveMoveStyle` | Removes a movement style from the human's stack and re-applies the top one ([Anim slots](#anim-slots)). | confirmed (code) |
 | `0x00254060` | `Human_GetMoveStyle` | The movement style byte of the human's record (styles 4 and 6 use the slow turns). | confirmed (code) |
@@ -90,14 +55,6 @@ builders ([Clip selection](#clip-selection)), the turn and arrival clips of an A
 | `0x002545a8` | `AnimRange_SetFarRange` | Writes an anim id's far range (seconds x 1000, mm) into the human's Anim Range List (+0x160). | confirmed (code) |
 | `0x002548c8` | `AnimRange_SetDamage` | Writes an anim id's damage (+0x0a) into the human's Anim Range List. | confirmed (code) |
 | `0x00254e20` | `AnimRange_GetHitFlags` | The Anim Range List's u16 +0x0e for an anim (-1: the current one); Hit_ResolveBlock tests 0x600. | confirmed (code) |
-| `0x00255540` | `Human_UpdateWorkout` | State code 0x1b: the workout on gym equipment (start, repetitions with the pad's pumps, end), its clips and rate. | confirmed (code) |
-| `0x00255cf8` | `Human_UpdateSpecialIdle` | State code 0x1d: the special idle (672 start, then 671 looping) from the script's clips; ends the special state. | confirmed (code) |
-| `0x002570e8` | `Human_ComputeThrowVelocity` | The launch velocity of a thrown held object: aimed at the target (led by its speed) or along the facing, scaled by the object's weight and the human's scale. | confirmed (code) |
-| `0x00257ce8` | `Human_EndThrowAim` | Cancels the throw aim and drops what cannot stay in hand (kinds 4 and 6; any but sets 1 and 2 without human flag 0x2000). | confirmed (code) |
-| `0x00257d70` | `Human_EndThrowAimDropHeavy` | Ends the throw aim: drops a held object of kind 4 or 6, then (no human flag 0x2000) drops any other when the human is hurt or holds set 3, unless a cop (brain type 1) holds set 1 or 2 ([Combat: dropping what is held](combat-throws.md#keep-weapon)). | confirmed (code) |
-| `0x00257e38` | `Human_EndThrowAimIfHurt` | Ends the throw aim and drops a held object of kind 4 or 6; a hurt human (no human flag 0x2000) also drops any other, unless a cop (brain type 1) holds set 1 or 2 ([Combat: dropping what is held](combat-throws.md#keep-weapon)). | confirmed (code) |
-| `0x00257ef0` | `Human_KnockOffHatIfDown` | Class 0x80 down or dead: knocks the hat off ([Hats](characters-appearance.md#hats)). | confirmed (code) |
-| `0x00258330` | `Human_KnockOffHat` | Throws the worn hat off (unless HuSetKeepHat or kind 27): spin 8 rad/s, drop at 2 m/s, +0x364 cleared ([Hats](characters-appearance.md#hats)). | confirmed (code) |
 | `0x00258968` | `Human_ReleaseAll` | Lets go of everything: breaks a pair, ends a mini-game, drops the held object, clears the object target, ends rage, clears state 0x18800f, empties the move-style stack and sets style 0x12. | confirmed (code) |
 | `0x00259368` | `Human_UpdateFaceClip` | Queues the face clip 698 + 3 x the record's +0x1c (and its pair 700 + 3n), fading out the old one over at most 1/30 s; record +0x24 holds the current face clip. | confirmed (code) |
 | `0x0025a178` | `Human_BuildCombatIdle` | Anim state 11: the fight-stance idle (slot 11) looping after a fade; from state 2 the fade holds 0x80000. | confirmed (code) |
@@ -127,7 +84,6 @@ builders ([Clip selection](#clip-selection)), the turn and arrival clips of an A
 | `0x0025fba0` | `Human_BuildState25` | Builds the jump loop and sets anim state 0x1a. | confirmed (code) |
 | `0x0025fbd0` | `Human_BuildState26` | Builds the fall clip and sets anim state 0x1a. | confirmed (code) |
 | `0x0025fc00` | `Human_BuildState27` | Builds the landing clip and sets anim state 0x1b. | confirmed (code) |
-| `0x0025fcb0` | `Human_UpdateDealerPair` | The paired clip 668 between two humans: within 1.875 m, a clear way and grabbable, aligns both and plays it on both; otherwise idles both. | confirmed (code) |
 | `0x0025ff18` | `Human_StartObjectSteerIdle` | Starts the object steer, then anim state 0 and action 0. | confirmed (code) |
 | `0x0025ff50` | `Human_BuildGaitBlendFromValue` | Builds a gait blend from a gait value, rounded down to 0-3 ([Clip selection](#clip-selection)). | confirmed (code) |
 | `0x002726d8` | `Human_SetStrafeDirection` | In a fight stance with a brain: record +0xdc = the movement direction relative to the facing (0-2π), for the eight-direction blend. | confirmed (code) |
@@ -140,7 +96,7 @@ The 0x180 record holds the human's **anim slots**: 35 anim ids at `+0x28`-`+0xb3
 `0x005105d8` (`0x00253608`) and changed one by one by `0x002535f0(human, slot, id)`. A player gets slot 14 = 380
 (player combat walk). `0x00253688(human, style)` swaps in a movement style's ids (cases 1-20, a jump table) and then
 recomputes the speeds. Record `+0x20` is the anim id playing (getter `0x002266b8`). Confirmed (code); Rembrandt's ids
-were read at runtime and named from the clips on the disc (observed in PCSX2, [How this was checked](#runtime-reads)).
+were read at runtime and named from the clips on the disc (confirmed (runtime), run r-20261124-chars-anim-slots).
 
 **Slots count from 0**, with no offset or remapping: `0x00253608` copies the table's 0x8c bytes (35 words) to record
 `+0x28` as they are, and `0x002535f0` stores slot *s* at `+0x28 + 4s`. The player's slot 14 is the table's fifteenth
@@ -187,7 +143,7 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
 Each update the human's animation controller `Human_ChooseAnimState` (`0x00259578`, called from the characters'
 update at `0x00255510` and `0x00256c34`) picks an **anim state** and, when it differs from the one in record `+0x18`
 (or human flag `0x20000000` forces it), calls that state's builder from the table at `0x005106e0` (one function per
-state; most entries are an empty stub at `0x25f4c8`, not yet a function of the Ghidra project). The builders make
+state; most entries are the empty stub `Human_BuildAnimStateNothing` at `0x0025f4c8`). The builders make
 [animation tasks](formats/animation.md#animation-tasks) and change animation by "fade over *d*, new task at the bottom"
 ([Task stack](formats/animation.md#task-stack)). Confirmed (code) at the cited addresses unless marked.
 
@@ -252,16 +208,16 @@ clip with no task flags, after a fade of **0.15 s**; if a start clip is still pl
 instead (`0x0025c0e8`, slot 33, 417); otherwise releasing the stick fades straight to the idle, which matches the
 runtime samples below. This corrects the earlier reading that slot 33 is not used.
 
-**At runtime** (PCSX2 2.9.94, `level99` checkpoint 1, Rembrandt; the task stack read from the instance every 50 ms).
-Observed in PCSX2 ([How this was checked](#runtime-reads)):
+**At runtime** (`level99`, Rembrandt; the task stack read from the instance every update). Confirmed (runtime), run
+r-20261124-chars-task-stack:
 
 - Standing: one looping task, idle 388, rate 0.75, no flags.
-- Stick 0.5 straight up: a fade of 0 s and a type-3 task playing the walk start (413, 0.333 s) at rate 0.75 with human
-  flag `0x10000000`; at its end a gait blend (flags `0x2c1`, rate 1.0, speed 10) with target and value 0, the walk
-  clip leading and the jog clip muted.
-- Stick 1.0: the run start (414) the same way, then the gait blend at 2. The first update after the start clip ran
-  at 6.49 m/s, so the target was 1.553 and the value fell to 1.825 (jog and run mixed) before going back to 2.0 at
-  7.80 m/s: the target follows the speed every update.
+- Stick 0.5 straight up: a fade of 0 s and a type-3 task playing the walk start (413, 0.333 s) at rate 0.75 with
+  record `+0x08` flag `0x10000000`; at its end a gait blend (flags `0x2c1`, rate 1.0, speed 10) with target and value
+  0, the walk clip leading and the jog clip muted.
+- Stick 1.0: the run start (414) after a fade of 1/15 s, then the gait blend at 2. The first update after the start
+  clip ran at 6.49 m/s, so the target was 1.553; the value moves 0.333 an update toward the last update's target and
+  went 2.0, 1.667, 1.825 (jog and run mixed) and back to 2.0 at 7.80 m/s: the target follows the speed every update.
 
 ### Animation callbacks (`AddAnimCallback`) {#anim-callbacks}
 
@@ -291,22 +247,22 @@ addresses given:
 - **Not one-shot**: the slot stays until `DelAnimCallback(human, anim)` (`0x0023ab80`; the first slot whose id matches
   and whose flag is set or whose handle is the human's) or the next `InitLevel`.
 - A paired task (`0x00108450`, `0x00108a78`) looks the id up in **the other human's** instance, so the dispatch runs
-  for that human. Inferred from an unrecorded PCSX2 read ([How this was checked](#runtime-reads)): at a strong grapple's
+  for that human. Confirmed (runtime), run r-20261124-chars-grapple-dispatch: at a strong grapple's
   connect the victim's 658, started by `PairedTask_Init` (`0x00108a78`, caller `0x00108af4`), was dispatched for the
   **player** (the grabber, whose set holds 658).
 - **A follow-on task fires when it is built, not when it starts playing.** At a grab's connect, `Grab_Connect`
   ([Combat](combat-grabs.md#grab-posing)) builds the connecting clip and, under it, the hold's four-clip mix (type 11,
   `AnimTaskFourMix_Construct`, `0x00106f50`) on both stacks in the same update; the four-mix's constructor takes its
   clips (82 and 86 for the grabber, 83 and 87 for the victim) and so fires the callbacks of the **hold ids at the
-  connect**, the length of the connecting clip before the hold plays. Inferred from an unrecorded PCSX2 read, 2.9.94,
-  `level99` checkpoint 1 (hooks `anim-dispatch` and `anim-callback-match`, [the queue at
-  runtime](hud-messages.md#hint-queue-runtime)): for each grab the dispatch of 82 for the player (from `0x00106fe0`) and
-  of 83 for the victim came in the tick the connecting clip started (657 from `AnimTaskChained_Construct`,
-  `0x00105990`); in the strong grapple the hold played and the tutorial callback received 82 **34 updates later**, and
-  no second dispatch of 82 came when the hold began. So level99's `PlayerState` (registered on the player's 82 and 84)
-  runs at the connect, and lesson 5's `P1.Power` (the hit scored with 82, [Strong
-  grapple](combat-grabs.md#strong-grapple)) 34 updates after it, never in the same update. A plain grab fires 82 at its
-  connect the same way (lessons 2, 6 and 8).
+  connect**, the length of the connecting clip before the hold plays. Confirmed (runtime), run
+  r-20261124-chars-grapple-dispatch (the plain grab: run r-20261124-chars-grab-dispatch), `level99` (hooks
+  `anim-dispatch` and `anim-callback-match`, [the queue at runtime](hud-messages.md#hint-queue-runtime)): for each grab
+  the dispatch of 82 for the player (from `0x00106fe0`) and of 83 for the victim came in the tick the connecting clip
+  started (657 from `AnimTaskChained_Construct`, `0x00105990`); in the strong grapple the hold played and the tutorial
+  callback received 82 **34 updates later**, and no second dispatch of 82 came when the hold began. So level99's
+  `PlayerState` (registered on the player's 82 and 84) runs at the connect, and lesson 5's `P1.Power` (the hit scored
+  with 82, [Strong grapple](combat-grabs.md#strong-grapple)) 34 updates after it, never in the same update. A plain grab
+  fires 82 at its connect the same way (lessons 2, 6 and 8).
 - **Coney's implementation** (`ScriptedBrains::runAnimCallbacks`): the starts are gathered over the characters' step
   and the callbacks called after it. A human that starts the same id more than once in one step gets **one** call
   (**Coney's reading**). Coney hands a chain over to its loop in every layer, the fading ones too, so two attack chains
@@ -371,10 +327,3 @@ addresses given:
 ## How this was checked
 
 Code claims were read in Ghidra in `SLUS_212.15`.
-
-### The old runtime reads {#runtime-reads}
-
-The task-stack reads of the clip selection (standing, a stick of 0.5 and of 1.0) and the grab's callback dispatches were
-made in PCSX2 2.9.94 (2026-10-04) over PINE in `level99`, checkpoint 1, reading the instance's task stack every 50 ms
-and, for the callbacks, with the `anim-dispatch` and `anim-callback-match` hooks. Rembrandt's ids were read the same way
-and named from the clips on the disc. They predate run records.

@@ -151,7 +151,7 @@ using SceneLines = std::function<std::vector<SceneLine>(const PlayLevelMode& mod
 /// the level's brains) drawn with its own model (src/gamemodes/play_level_cast.cpp). Otherwise the other characters are
 /// a sandbox layout's `target` lines, Coney's passive targets (human::TargetHuman) stepped after the player, and AI
 /// fighters (a layout's `fighter` lines, or spawned from the debug menus), humans with a brain stepped in the player's
-/// characters' step; both are drawn with the player's model. The parts follow docs/research/characters.md,
+/// characters' step; both are drawn with the player's model. The parts follow docs/research/characters/index.md,
 /// docs/research/combat/index.md, docs/research/ai/index.md and docs/research/camera.md; the mode is Coney's own glue.
 ///
 /// A level entered through gameplay also brings its glass panes and doors (ScriptedCast::objects,

@@ -129,7 +129,8 @@ TEST_CASE("Rembrandt stands at level99's start, walks, runs, turns and stops und
     REQUIRE(engine.has_value());
     const Level99 loaded = loadLevel99(discPath);
 
-    // His speeds come from the clips: the runtime values of characters.md.
+    // His speeds come from the clips: the runtime values of characters-classes.md#speed-classes.
+    // Expected: characters-classes.md#speed-classes, confirmed (runtime), run r-20261124-chars-turn-table
     const coney::human::Speeds speeds =
         coney::human::speedsOf(loaded.character->anims(), coney::human::AnimSlots::player());
     CHECK(speeds.walk == Approx(1.629F).margin(1e-3));

@@ -78,8 +78,8 @@ void fillBonePalette(std::span<const anim::Mat34> skinning, BonePalette& palette
 class CharacterMesh {
   public:
     /// Builds the geometry of `model` in its unskinned (bind) positions. `texture` (may be null: untextured) is used by
-    /// every material, as the models' materials name no texture of their own (characters.md); the mesh keeps a
-    /// reference to it. Lit by the world's lights with the vertex normals, modulated by the material colour. With
+    /// every material, as the models' materials name no texture of their own (characters-appearance.md); the mesh keeps
+    /// a reference to it. Lit by the world's lights with the vertex normals, modulated by the material colour. With
     /// `assets` (which must outlive the mesh: the RenderEngine's), both atomics are held there by id for the frame
     /// description's draws (meshId(), bloodMeshId(); docs/engine/renderer.md#frame-description) until the mesh goes,
     /// with each vertex's bones and weights and the texture, which a renderer that skins them needs; and where those

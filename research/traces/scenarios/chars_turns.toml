@@ -1,0 +1,22 @@
+# The turn per update at a run and at a walk: a run turned 90 degrees right, then a walk turned 90 degrees left.
+# Research: docs/research/characters-locomotion.md#locomotion (step 4, Turn). Slot 1 (the street). chars_turn_sprint
+# and chars_turn45 turn a sprint and a run by 45 degrees, each from the slot, since the street is too narrow for all.
+description = "level99 street: a 90 degree turn at a run, then a 90 degree turn at a walk"
+research = "docs/research/characters-locomotion.md#locomotion"
+input = "chars_turns.txt"
+updates = 200
+fields = ["player", "camera"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "state-code", "skid-test"]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3", "--start", "75.155,41.1354,0.2231,91.909,5.3,89.854"]
+settle = 300
+
+[diff]
+start_frame = true
+columns = ["x", "y", "heading", "speed", "gait", "clip"]
+tolerance = { x = 0.1, y = 0.1, heading = 1.0, speed = 0.05, gait = 0, clip = 0 }

@@ -18,8 +18,8 @@
 // recompiling. The original game has no test level (docs/research/debug.md); this is Coney's own feature, not a
 // reimplementation. Format and how to add an experiment: docs/guides/sandbox.md.
 //
-// Everything is in the game's axes and units: metres, z up (docs/research/collision.md, docs/research/characters.md),
-// so a distance in the sandbox means the same as in a level.
+// Everything is in the game's axes and units: metres, z up (docs/research/collision.md,
+// docs/research/characters/index.md), so a distance in the sandbox means the same as in a level.
 
 namespace coney::sandbox {
 

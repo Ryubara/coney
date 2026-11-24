@@ -2,8 +2,8 @@
 #pragma once
 
 // Synthetic character files, built byte by byte in the tests. Nothing here comes from the game (LEGAL.md, "No game
-// data"). The layouts follow docs/research/characters.md and docs/research/formats/animation.md, and RenderWare's
-// binary stream format as librw reads it.
+// data"). The layouts follow docs/research/characters-appearance.md and docs/research/formats/animation.md, and
+// RenderWare's binary stream format as librw reads it.
 
 #include <array>
 #include <bit>

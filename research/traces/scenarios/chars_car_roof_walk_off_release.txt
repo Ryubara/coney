@@ -1,0 +1,6 @@
+# As chars_car_roof_walk_off (climb onto the car, then the stick at 50 % to the right), the stick centred at frame 77,
+# the first update he is airborne.
+0 stick left 0 50
+5 tap triangle
+46 stick left 50 0
+77 stick left 0 0

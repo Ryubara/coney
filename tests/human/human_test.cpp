@@ -292,9 +292,9 @@ TEST_CASE("the stick is camera-relative: up walks away from the camera", "[human
 
 TEST_CASE("a fall lands on the first update that starts 0.17 m or more below the floor, falling through until then",
           "[human]") {
-    // Ledges of several heights put the floor at different phases of the fall's steps (docs/research/characters.md
-    // #falling): whatever the phase, the last airborne update ends 0.17 m or more under the floor, and the one before
-    // it ends less than that under it (or above it).
+    // Ledges of several heights put the floor at different phases of the fall's steps
+    // (docs/research/characters-ground.md#falling #falling): whatever the phase, the last airborne update ends 0.17 m
+    // or more under the floor, and the one before it ends less than that under it (or above it).
     const TestCharacter character;
     for (const float height : {1.0F, 1.3F, 1.6F, 2.0F, 2.45F}) {
         const auto mesh =

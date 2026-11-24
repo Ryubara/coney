@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-turn45"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "f07ed643fb321481a2bae5971dbbc5b89749624408d5173cd93e8ce819c6b412"
+
+[who]
+agent = "a81ce522c25fb7730"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-e"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "chars_turn45"
+method = ""
+
+[values]
+updates = 111
+missed_updates = 0
+columns = 27
+
+[hashes]
+trace_csv = "19e4139f305329b3de4164acd82bd756e6e56cfb46c14ff1ee2b23081210a338"

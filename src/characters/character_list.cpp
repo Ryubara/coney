@@ -50,7 +50,8 @@ const CharacterRecord* CharacterList::find(std::string_view name) const {
 }
 
 // The index a snapshot names a character by.
-// @coney-only network play; the original keeps the index it finds at CfgChar (docs/research/characters.md)
+// @coney-only network play; the original keeps the index it finds at CfgChar
+// (docs/research/characters-classes.md#type-to-model)
 std::optional<std::size_t> CharacterList::indexOf(std::string_view name) const {
     const std::uint32_t hash = characterNameHash(name);
     const auto found = std::ranges::find(m_records, hash, &CharacterRecord::nameHash);

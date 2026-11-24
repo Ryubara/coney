@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-car-climb"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "74432f86223549755aa3b523bbbd6a2ee4ed3630bb68cce1ca248ede294f905b"
+
+[who]
+agent = "ae31bd6736d3cec63"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-c"
+
+[start]
+state = "vehicle-side-window"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "chars_car_climb"
+method = ""
+
+[values]
+updates = 91
+missed_updates = 0
+columns = 27
+
+[hashes]
+trace_csv = "dac45d7a879fe9dca84d7715282b212ca0eb12a9cdd70a0667f5dc1f9808cc4c"

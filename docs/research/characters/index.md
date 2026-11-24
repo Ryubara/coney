@@ -2,6 +2,7 @@
 kind: system
 system: characters
 owns:
+  files: ["Human/Human.cpp", "Human/HumanInterface.cpp"]
   functions: [
     "0x00217a70", "0x00217dd8", "0x00217ec8", "0x00217f08", "0x00218008", "0x00219238", "0x00219320", "0x00219a28",
     "0x00219ad0", "0x0021ada0", "0x0021ada8", "0x0021adb0", "0x0021adf8", "0x0021b048", "0x0021b0b8", "0x0021b100",
@@ -40,13 +41,15 @@ owns:
     "0x00247fc0", "0x00248110", "0x002482e0", "0x00248428", "0x00248980", "0x00249050", "0x00249108", "0x00249b98",
     "0x00249bf8", "0x0024b190", "0x0024b3d8", "0x0024bf78", "0x0024bfa0", "0x0024bfc0", "0x0024c1a0", "0x0024c560",
     "0x0024c7b0", "0x0024cac8", "0x0024cbb0", "0x0024cd30", "0x0024ce40", "0x0024cef0", "0x0024d340", "0x0024d420",
-    "0x0024e1f8", "0x0024e478", "0x0024e608", "0x00250398", "0x00250b10", "0x00250bb8", "0x00250db0", "0x00358428",
-    "0x004197a8", "0x00419a68", "0x00419e10", "0x0041a9c0", "0x0041cf78", "0x0041d428", "0x0041d890", "0x0041ddb8",
+    "0x0024e1f8", "0x0024e478", "0x0024e608", "0x00250398", "0x00250b10", "0x00250bb8", "0x00250db0", "0x00250e00",
+    "0x00250e48", "0x00252108", "0x00252ae0", "0x00252b08", "0x00252c28", "0x00255540", "0x00255cf8", "0x0025fcb0",
+    "0x00358428", "0x004197a8", "0x00419a68", "0x00419e10", "0x0041a9c0", "0x0041cf78", "0x0041d428", "0x0041d890",
+    "0x0041ddb8",
   ]
 ---
 # Characters (humans)
 
-Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records or, for the older ones, How this was checked.
+Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records.
 
 ## Summary
 
@@ -372,7 +375,8 @@ task pose table at `0x00714b00`, `0x20` bytes each. A human flag is a bit of `+0
 
 #### The update, controls and carried props {#code-update}
 
-`0x0023b838`-`0x0024e1f8` (inferred from where the rows lie; each row is graded): anim handles, the state update and its
+`0x0023b838`-`0x0024e1f8`, and three state-code functions from `0x00255540` (inferred from where the rows lie; each
+row is graded): anim handles, the state update and its
 control functions (the member-function pointer at `+0x1bc`, [An AI's
 locomotion](../characters-locomotion.md#ai-locomotion)), falling and landing, the look-at, the reticules and carried
 props.
@@ -429,11 +433,15 @@ props.
 | `0x0024cef0` | `Player_AttachGear` | For a player with the unlocked gear (unlockables 6/5, 6/6): spawns the gear pieces on its bones from the transforms at 0x00715480. | confirmed (code) |
 | `0x0024d340` | `Player_RemoveGear` | Destroys a player's gear objects. | confirmed (code) |
 | `0x0024d420` | `Player_MessageGear` | Sends message 10 with a value to each gear object. | confirmed (code) |
+| `0x00255540` | `Human_UpdateWorkout` | State code 0x1b: the workout on gym equipment (start, repetitions with the pad's pumps, end), its clips and rate. | confirmed (code) |
+| `0x00255cf8` | `Human_UpdateSpecialIdle` | State code 0x1d: the special idle (672 start, then 671 looping) from the script's clips; ends the special state. | confirmed (code) |
+| `0x0025fcb0` | `Human_UpdateDealerPair` | The paired clip 668 between two humans: within 1.875 m, a clear way and grabbable, aligns both and plays it on both; otherwise idles both. | confirmed (code) |
 
 #### Navigation {#code-nav}
 
-`0x0024e1f8`-`0x00250e00` (inferred from where the rows lie; each row is graded): the human's side of the navigation
-mesh (on-mesh tests, path polygons, links); the planner is on [AI](../ai-moving.md#path-planning).
+`0x0024e1f8`-`0x00252c28` (inferred from where the rows lie; each row is graded): the human's side of the navigation
+mesh (on-mesh tests, path polygons, links); the planner and the path search between these rows are on
+[AI](../ai-moving.md#path-planning).
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -444,6 +452,12 @@ mesh (on-mesh tests, path polygons, links); the planner is on [AI](../ai-moving.
 | `0x00250b10` | `NavLink_ClearAvoidByKind` | Clears the avoid mark of links of a kind (glass broken, doors opened). | confirmed (code) |
 | `0x00250bb8` | `NavLink_SetKindNearest` | Sets the kind of the nearest link pair to a point. | confirmed (code) |
 | `0x00250db0` | `NavLink_ConvertJumpToDoor` | `ConvertJumpToDoor`: turns a jump link into a door link. | confirmed (code) |
+| `0x00250e00` | `NavLink_DisableDoor` | Marks the door links near a point to be avoided (kind 0x10), as when a door shuts. | confirmed (code) |
+| `0x00250e48` | `NavLink_EnableDoor` | Clears the avoid mark of the door links near a point (kind 0x10). | confirmed (code) |
+| `0x00252108` | `Nav_NearestEdgePoint` | The nearest point on a nav polygon's edges (within 1.5 m of its box, at or above the point's height less 0.1) to a point; only when closer than 1.5 m, then dropped to the ground. | confirmed (code) |
+| `0x00252ae0` | `Nav_FindPolygonUnderThunk` | Nav_FindPolygonUnder with a height of 1.0. | confirmed (code) |
+| `0x00252b08` | `Nav_ClampMoveToRange` | Limits a move to a range: beyond it the point is kept only when the nav mesh connects the two (Nav_IsConnected), else the start. | confirmed (code) |
+| `0x00252c28` | `NavLink_SetBlocked` | Sets or clears a path polygon's blocked flag 8 (+0x48) at a point. | confirmed (code) |
 
 #### Game-state functions {#warriors-functions}
 
@@ -525,7 +539,7 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x18` | which buffer is current (toggles 0/1 each update; the other is the previous update's) |
 | `+0x19` | pad index, -1 for none (0 for the player at runtime) |
 | `+0x1b` | 1 while the human is pad-controlled; 0 hands it to the AI |
-| `+0x1e` | when not 0, `Player_UpdateActions` is skipped (`0x00254e78` via `0x001480e0`); 0 for every human in the street, so AI humans act on `+0x20` too (inferred from an unrecorded PCSX2 read, [How this was checked](#runtime-reads)) |
+| `+0x1e` | when not 0, `Player_UpdateActions` is skipped (`0x00254e78` via `0x001480e0`); 0 for every human in the street (confirmed (runtime), run r-20261124-chars-input-skip), so AI humans act on `+0x20` too (inferred from that read and the skip at `0x00254e78`) |
 | `+0x1f` | input locked: angle π/2, magnitude 0 |
 | `+0x20` | this update's command id ([Buttons](../characters-locomotion.md#buttons)), read by `0x00147ef8`; cleared each update for a human without a pad (`0x00146000`) |
 | `+0x24` | a pending command (from table entries whose mask is `0xfe`) |
@@ -593,9 +607,8 @@ confirmed (code):
 5. Return the handle (`+0x2c` of the slot) and write the snapped position back into the Lua table.
 
 The fifth argument (`"warr_sw"` in `level99.lua`) is not read by `0x00233d60`. **At runtime** Rembrandt was created at
-`(-284.4, 120.4, 0.3)` and stood at `(-289.03, 120.29, 0.25)` once the intro scene ended (inferred from an unrecorded
-PCSX2 read, [How this
-was checked](#runtime-reads)).
+`(-284.4, 120.4, 0.3)` and stood at `(-289.03, 120.29, 0.25)` once the intro scene ended (confirmed (runtime), run
+r-20261124-chars-creation).
 
 **Loading the files.** When the character's resources are already resident (the level's dependency list or the
 section's pack holds them), the instance is made at once (`0x00177b80`) and attached (`0x00217a98`). Otherwise the
@@ -702,9 +715,3 @@ locomotion and the follow camera ([Camera](../camera.md#coneys-implementation)):
 
 Code claims were read in Ghidra in `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). The disc
 survey read the NTSC-U disc's WAD with throwaway scripts outside the repository and reports counts and hashes only.
-
-### The old runtime reads {#runtime-reads}
-
-The reads marked "runtime" in the human object's table, the pad record's `+0x1e` and the creation position were made on
-Rembrandt in PCSX2 2.9.94 by reading memory over PINE in `level99`, checkpoint 1 (2026-10-04) and, for the street, from
-save states (2026-10-05). They predate run records; a new claim cites one.

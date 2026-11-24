@@ -33,7 +33,7 @@ owns:
 ---
 # Characters: the script functions
 
-Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records or, for the older ones, How this was checked.
+Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records.
 
 ## Summary
 
@@ -308,5 +308,4 @@ read them yet.
 
 ## How this was checked
 
-Code claims were read in Ghidra in `SLUS_212.15`; the scripts' calls were read from the disc's compiled scripts with
-`coney-tools`' Lua walker.
+Code claims were read in Ghidra in `SLUS_212.15`.

@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-sweep-radius"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "cb5d7ccab2cd3eb8fd9395b0071ea0cea5dc091b7ad0b9441b86ab72df2a52c7"
+
+[who]
+agent = "a73f4eba7e7bccc32"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad", "sweep-radius"]
+
+[run]
+name = "sweep60"
+method = ""
+
+[values]
+updates = 81
+missed_updates = 0
+columns = 13
+
+[hashes]
+trace_csv = "08e0bd5ed9b8b5c7767deb5a2a0f5933654c8949ad2fe41afbe5bcff5e1602db"

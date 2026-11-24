@@ -1,0 +1,6 @@
+# Stand for 30 updates, the left stick 50 % straight up for 90, let go for 60, then 100 % straight up for 90 and let
+# go (docs/research/characters-animation.md#clip-selection). Frames are character updates of 1/30 s.
+30 stick left 0 50
+120 stick left 0 0
+180 stick left 0 100
+270 stick left 0 0

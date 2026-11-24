@@ -1,0 +1,9 @@
+# Sprint from rest (L2 and the stick at 100 % up) with stamina at 100; L2 let go at 40 (a run); a jump at 75 with
+# stamina full again; L2 pressed in the run at 105 and let go with the stick at 115.
+10 press l2
+10 stick left 0 100
+40 release l2
+75 tap triangle
+105 press l2
+115 release l2
+115 stick left 0 0

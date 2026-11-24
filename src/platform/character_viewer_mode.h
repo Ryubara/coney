@@ -38,7 +38,8 @@ namespace coney::platform {
 /// way. A new clip is not blended into. Game time only, so with `--frames` and `--input-script` a run is the same
 /// every time (test mode).
 ///
-/// Coney's own tool; the parts it is made of follow docs/research/characters.md and docs/research/formats/animation.md.
+/// Coney's own tool; the parts it is made of follow docs/research/characters/index.md and
+/// docs/research/formats/animation.md.
 class CharacterViewerMode final : public GameMode {
   public:
     /// The mode's id, outside the original's range.
@@ -50,7 +51,7 @@ class CharacterViewerMode final : public GameMode {
     static constexpr float kAmbient = 0.4F;
     static constexpr float kDirectional = 0.8F;
     /// The anim id the viewer plays when no clip is asked for and the character has it: walk, for Rembrandt
-    /// (characters.md, Character Data). **Coney's choice**; otherwise the character's first clip.
+    /// (characters-appearance.md#files). **Coney's choice**; otherwise the character's first clip.
     static constexpr std::size_t kDefaultAnimId = 408;
 
     /// Loads the character `name` (a model name from the Character List, such as "warr_re_cv") from `wad`, its

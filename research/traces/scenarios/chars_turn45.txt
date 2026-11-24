@@ -1,0 +1,5 @@
+# A run from standing (the stick straight up), then the stick 45 degrees left for 10 updates, then let go.
+# Frames are character updates of 1/30 s.
+40 stick left 0 100
+70 stick left -71 71
+80 stick left 0 0

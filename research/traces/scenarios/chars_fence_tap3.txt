@@ -1,0 +1,6 @@
+# A run at the fence (the stick at 100 %, straight ahead), triangle every 3 updates from 5.3 m before its face.
+5 stick left 0 100
+64 tap triangle
+67 tap triangle
+70 tap triangle
+73 tap triangle

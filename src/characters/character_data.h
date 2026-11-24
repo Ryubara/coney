@@ -50,7 +50,7 @@ class CharacterData {
     /// The slot of each anim id: an index into clips(), or kDefaultAnimSlot.
     [[nodiscard]] const std::array<std::uint32_t, kAnimIds>& slots() const { return m_slots; }
 
-    /// The Anim Range List chunk as stored (not decoded yet, characters.md).
+    /// The Anim Range List chunk as stored (not decoded yet, characters-appearance.md#files).
     [[nodiscard]] std::span<const std::byte> rangeList() const { return m_rangeList; }
 
     /// Builds the table from the Character Data chunk and the objects the clips before it left: each distinct slot

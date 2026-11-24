@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-sprint-start"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "78793a16f423ee8c9d098a8abb55b9e48b263bb39bde7830e42dc0bf4a9bdcc8"
+
+[who]
+agent = "ae31bd6736d3cec63"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-c"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "chars_sprint_start"
+method = ""
+
+[values]
+updates = 151
+missed_updates = 0
+columns = 27
+
+[hashes]
+trace_csv = "ca2a0046737680f1a275a49625ac3e83e27b0825252cb28d57f17470b2a66936"

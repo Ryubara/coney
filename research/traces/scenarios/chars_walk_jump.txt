@@ -1,0 +1,3 @@
+# A walk (slot 1, the street): the stick at 80 % straight up from the start, triangle tapped 40 updates in.
+0 stick left 0 80
+40 tap triangle

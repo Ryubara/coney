@@ -506,10 +506,11 @@ TEST_CASE("a player under script control turns on the spot to the flag's heading
 }
 
 TEST_CASE("locked on a foe, a pad's human faces it; a player under script control follows his brain", "[ai][turn]") {
+    // Expected: ai-fights.md#fight-facing, confirmed (code)
     // Human_FightStanceMove and Human_UpdateControl (docs/research/ai-fights.md#fight-facing,
-    // characters.md#ai-locomotion): the pad's player faces his lock target each update; a player whose pad a script
-    // took runs the AI's stance control, so he turns by the brain's heading: 24 degrees an update asked to move, the
-    // standing step (12) stopped more than 15 degrees off, nothing within 15 degrees or with no move asked.
+    // characters-locomotion.md#ai-locomotion): the pad's player faces his lock target each update; a player whose pad a
+    // script took runs the AI's stance control, so he turns by the brain's heading: 24 degrees an update asked to move,
+    // the standing step (12) stopped more than 15 degrees off, nothing within 15 degrees or with no move asked.
     MoveScene scene;
     Brain& player = scene.addPlayer({41.0F, 41.0F, 0.0F}, -90.0F);
     // The foe only punches (a grab or a tackle would hold the player and turn him), so a punch locks him on.

@@ -9,7 +9,7 @@ owns:
 ---
 # Characters: the ground, walls and falls
 
-Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records or, for the older ones, How this was checked.
+Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records.
 
 ## Summary
 
@@ -164,10 +164,10 @@ functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 
    `0x00219860`, written by `PhysicsBody_ApplyHumanScale` `0x00341f28`), so **the scale counts twice**:
    `r` = 0.35 × scale² × body `+0x60`. Confirmed (code). For the player, body `+0x60` (and `+0x64`) is **1.4286**
    (0.5 / 0.35), so `r` = 0.5 × scale²: Rembrandt (scale 0.97) has `r` = 0.3395 × 1.4286 × 0.97 = **0.4705 m**, and
-   the sphere spans 0.05 to 0.99 m above the feet. Observed in PCSX2 2.9.94, the `sweep-radius` hook at
-   `0x00347cbc` in the `sweep60` scenario (a copy of slot 1, level99's street, stick 60 % up for 80 updates): all
-   39 calls logged the player's body with shape `+0x40` × body `+0x60` = 0.4850, body `+0x60` = 1.4286 and
-   `Human_GetScale` = 0.9700,
+   the sphere spans 0.05 to 0.99 m above the feet. Confirmed (runtime), run r-20261124-chars-sweep-radius, the
+   `sweep-radius` hook at `0x00347cbc` in the `sweep60` scenario (a copy of slot 1, level99's street, stick 60 % up for
+   80 updates): all 39 calls logged the player's body with shape `+0x40` × body `+0x60` = 0.4850, body `+0x60` = 1.4286
+   and `Human_GetScale` = 0.9700,
    and the hooked `mul.s` multiplies the two. A measured 0.485 m is that product before the second scale; the radius
    the walls see is 0.4705 m. The stops measured before (0.476-0.480 m from a full wall, a wall at an angle and the
    fence of slot 7; the step faces below) sit 0.006-0.010 m beyond where a 0.4705 m sphere touches, which fits a
@@ -175,7 +175,8 @@ functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 
    `+0x60` = 1.4286 (`Human_CreatePhysicsBody` `0x0021ce08` for a brain of type 0, `Human_MakePlayer` `0x00229c40`;
    `Human_ReleasePlayer` `0x0022a2a8` puts back 1.0, [Physics](physics.md#sweep)). **Every AI human's is 1.0**, so
    its sphere is shape `+0x40` (0.35 × its class scale) × its scale: 0.350 m for Vermin, 0.357 m for level99's bums
-   and civilians of scale 1.01 (fields read in slot 6). Confirmed (code), values observed in PCSX2.
+   and civilians of scale 1.01 (fields read in slot 6). Confirmed (code); the values confirmed (runtime), run
+   r-20261124-chars-ai-sphere-radius.
 2. For each enabled triangle of the grid cells it covers that is a wall (`|n.z| ≤ 0.65`) and that the sphere is in
    front of (a two-sided triangle is turned to face it), and that the move goes into (`n · move < −0.001`):
 3. **Skip low and thin triangles**: take the edge whose unit vector is steepest; if its two ends differ in height by
@@ -195,7 +196,7 @@ the ground snap (1.0 m up, above) then lifts the feet onto it; any face 0.25 m o
 0.75 m is a wall to walk into and needs a climb (a short wall from 0.7 m, [Climbing](characters-traversal.md#climb)) or
 a jump.
 
-**The step at runtime** (observed in PCSX2 2.9.94, a copy of slot 1 in `level99`'s world). The
+**The step at runtime** (confirmed (runtime), run r-20261124-chars-step, a copy of slot 1 in `level99`'s world). The
 street there has no kerb (no wall face under 0.35 m rises from the street level), so a box of the level's collision
 mesh (material 41, 2.62 × 0.62 m, against a wall; its eight vertices are used by its own ten triangles only) was
 made into a step by writing its vertices' heights in RAM: bottom at the floor (0.213), top 0.10 to 0.30 m higher.
@@ -216,13 +217,14 @@ and 0.422 m for `h` = 0.255, 0.26 and 0.30, and against a full-height wall the s
 stops to a 0.485 m sphere without clearance, but that missed the full wall by 0.009 m, and the radius is 0.4705 m
 (step 1).
 
-**Sliding along a wall** (observed in PCSX2, slot 1): the velocity the sweep leaves after sliding is the human's
-velocity, so the next update's current speed is its length and the 0.8 m/s gain starts from there. Running into a
-wall 20° off its normal, the speed fell from 7.80 to 4.00, 1.55, 0.86, 0.65 and 0.56 m/s (every second update) and
-settled near
-`0.8 k / (1 − k)` (`k` = sin 20°: 0.42 m/s measured, 0.416 predicted), until it fell under the idle threshold
-(a quarter of the sneak-walk speed, 0.396 m/s) and the idle played with the stick still pushed. A walk does the
-same. So the player brakes against a wall met at a steep angle instead of sliding along it at speed.
+**Sliding along a wall** (confirmed (runtime), run r-20261124-chars-wall-slide, slot 1): the velocity the sweep leaves
+after sliding is the human's velocity, so the next update's current speed is its length and the 0.8 m/s gain starts from
+there: each update's speed is `k × (last speed + 0.8)`, `k` the sine of the angle off the normal. Running into a wall
+19.8° off its normal, the speed went 7.80, 2.64, 1.17, 0.67, 0.50, 0.44, 0.42 m/s, one value per update, and settled at
+0.415, against `0.8 k / (1 − k)` = 0.416 at 20°. At 18.3° it fell under the idle threshold (a quarter of the sneak-walk
+speed, 0.396 m/s) and the idle played with the stick still pushed; at 19.8° it stayed just above. A walk does the same
+(inferred from the rule, which does not depend on the gait). So the player brakes against a wall met at a steep angle
+instead of sliding along it at speed.
 
 #### Slopes between floor and wall {#slopes}
 
@@ -235,8 +237,8 @@ the body slides up**, not a wall that stops it. Confirmed (code) unless marked.
 | --- | --- | --- |
 | The walking sweep's walls | `n.z` from −0.65 to **0.65**, the move going into the face, 0.25 m tall or more | `PhysicsMesh_SweepCapsule` `0x00347c08` (the −0.65 comes from `0x0033d2d8`), [above](#walls) |
 | An airborne body's landing | `n.z` > **0.65** | `0x0023e408` ([Falling and landing](#falling)) |
-| The ground snap | **none**: the feet go onto the first triangle the ray meets (mask 0) | `Human_SnapToGround` `0x0023eab8`; inferred from an unrecorded PCSX2 read below, walking at full speed down a face with `n.z` 0.54 |
-| The slope's speed | `n.z` < 0.95: × `clamp(0.6 + 0.3 × (n.z − 0.5), 0.5, 1.0)` | the move `0x0023d8c8` ([above](#ground)); inferred from an unrecorded PCSX2 read below |
+| The ground snap | **none**: the feet go onto the first triangle the ray meets (mask 0) | `Human_SnapToGround` `0x0023eab8`; confirmed (runtime), run r-20261124-chars-heap-walk, walking at full speed down a face with `n.z` 0.54 |
+| The slope's speed | `n.z` < 0.95: × `clamp(0.6 + 0.3 × (n.z − 0.5), 0.5, 1.0)` | the move `0x0023d8c8` ([above](#ground)); confirmed (runtime), run r-20261124-chars-heap-walk |
 
 Nothing else changes them:
 
@@ -283,7 +285,8 @@ feet on the floor triangle in front of the face, and the body climbs that floor 
 past the face. The sphere sinks steadily into the face, and nothing corrects that. The body has **no step height of
 its own**: it relies on the 0.25 m wall rule and the snap's 1.0 m reach, [above](#walls).
 
-**At runtime** (observed in PCSX2 2.9.94, a copy of slot 1). The test used `level99`'s gravel
+**At runtime** (a copy of slot 1). Confirmed (runtime), run r-20261124-chars-heap-walk (the other rows: runs
+r-20261124-chars-heap-run and r-20261124-chars-heap-walk-b60). The test used `level99`'s gravel
 heap, where the path data routes a kind-1 walk from (−271.7, 129.4, 0.3) up to the lesson-2 platform at (−277.7,
 132.0, 3.1). The faces on that line:
 
@@ -296,32 +299,32 @@ put the move about 64° from north toward the west. Every run took the line onto
 
 | Run | What happened |
 | --- | --- |
-| walk, stick 60 % | 1.63 m/s on the street. On 679 the walk was turned about 30° north along 680's foot, at 0.41 m/s across the ground and 0.29 m/s up: the feet followed 679's surface (ground normal 0.664 every update) while the slid velocity held `z` 0.36. The sphere's distance to 680 fell from 0.48 to 0.33 m (radius 0.4705). After 3.5 s at z 1.44 the body passed 680 onto faces with `n.z` 0.77 at 1.107 m/s across the ground (1.63 × 0.6797, the slope rule), crested at z 2.01 and walked down the far side, including a face with `n.z` 0.54 at full walk, onto the street |
-| run, stick 100 % | the same: stopped for an update at 679's foot, then 0.55 m/s up 679 along 680, then a run at 7.80 m/s over the crest at z 2.28 |
-| walk, stick 60 %, body `+0x60` set to 1.0 (radius 0.34, an AI's size if its `+0x60` is 1.0) | the same path: up 679 along 680 (distance to 680 0.32 down to 0.20 m), over at z 2.36, down the other side |
+| walk, stick 60 % | 1.63 m/s on the street. On 679 the walk was turned about 30° north along 680's foot, at 0.41 m/s across the ground and 0.29 m/s up: the feet followed 679's surface (ground normal 0.664 every update) while the slid velocity held `z` 0.36. The sphere's distance to 680 fell from 0.48 to 0.30 m (radius 0.4705). After 3.5 s at z 1.45 the body passed 680 onto faces with `n.z` 0.77 at 1.107 m/s across the ground (1.63 × 0.6797, the slope rule), crested at z 2.05 and walked down the far side, including a face with `n.z` 0.54 at full walk, onto the street |
+| run, stick 100 % | the same: stopped for 5 updates at 679's foot, then 0.51-0.56 m/s up 679 along 680, then a run at 7.80 m/s over the crest at z 2.34 |
+| walk, stick 60 %, body `+0x60` set to 1.0 (radius 0.34, an AI's size if its `+0x60` is 1.0) | the same path: up 679 along 680 (distance to 680 about 0.32 down to 0.21 m), over at z 2.37, down the other side |
 
 So a human on that leg does climb the heap in the original: by sliding along 680, not by walking up it. The lesson's
 walk reaching the platform itself was not run (the stick's line passed 1 m north of it).
 
-**An AI on the same leg** (observed in PCSX2 2.9.94, a copy of slot 6, scenario
-`repo:research/traces/scenarios/heap_ai.toml`). Vermin (dead brain, radius 0.350) was put at (−271.7, 129.4, 0.3) with
-the player standing 4 m behind, and his own `GoalMoveToFlag` was re-aimed at (−285.2, 124.2, 0.3), gait 2
-(walk, his 1.654 m/s), radius 2, and his actions cleared. The planner
-gave him the same route as Coney's: (−277.71, 132.00, 3.12), (−280.76, 130.48, 3.76), a drop leg, the target. Each
-update, read over PINE:
+**An AI on the same leg** (a copy of slot 6, scenario `repo:research/traces/scenarios/heap_ai.toml`; confirmed
+(runtime), run r-20261124-chars-heap-ai, and for the 1.3429 body run r-20261124-chars-heap-ai-b60). Vermin (dead brain,
+radius 0.350) was put at (−271.7, 129.4, 0.3) with the player standing 4 m behind, and his own `GoalMoveToFlag` was
+re-aimed at (−285.2, 124.2, 0.3), gait 2 (walk, his 1.654 m/s), radius 2, and his actions cleared. The planner gave him
+the same route as Coney's: (−277.71, 132.00, 3.12), (−280.76, 130.48, 3.76), a drop leg, the target. Each update, read
+over PINE:
 
 | Stretch | What happened |
 | --- | --- |
 | street, updates 1-81 | 1.654 m/s straight at the first waypoint, 20° off 680's normal in plan |
-| 679, along 680's foot, 82-110 | the centre's projection **0.36 to 0.02 m outside the crease edge** (679-680) with the edge 0.50 down to 0.27 m from the centre (radius 0.35): the edge case of step 1. He moved 0.013-0.015 m across the ground (0.42 m/s) and 0.012 m up per update, turned 20-30° north of his aim, while his asked speed (`+0x1ac`) and velocity stayed 1.654 m/s; the "could not move" counter stayed 0 |
+| 679, along 680's foot, 82-110 | the centre's projection **0.36 to 0.02 m outside the crease edge** (679-680) with the edge 0.50 down to 0.27 m from the centre (radius 0.35): the edge case of step 1. He moved 0.036 m across and 0.039 m up per update over 82-88, then 0.013-0.015 m across the ground (0.42 m/s) and 0.012 m up per update over 89-110, turned 20-30° north of his aim, while his asked speed (`+0x1ac`) and velocity stayed 1.654 m/s; the "could not move" counter stayed 0 |
 | inside 680, 111-155 | the projection inside the face (step 1's first case), the centre sinking to 0.21 m from its plane; feet still on 679 until update 140, then on 680 itself (`n.z` 0.526): 0.33 m/s across and 0.45 m/s up |
-| crest | the route moved on to (−280.76, 130.48) at update 160, before he reached the first waypoint (the route's straight-line skip, [AI](ai-moving.md#route-follow)); he crested at z 3.7, took the drop leg and stopped 1.9 m from the target at update 487 |
+| crest | the route moved on to (−280.76, 130.48) at update 160, before he reached the first waypoint (the route's straight-line skip, [AI](ai-moving.md#route-follow)); he crested at z 3.73, took the drop leg and stopped 1.94 m from the target at update 487; around updates 196-209 his aim went back to the first waypoint for a moment |
 
-The same run with his body `+0x60` raised to 1.3429 (radius 0.470, Coney's) was alike: the crease edge 0.49 down
-to 0.35 m from the centre, the projection 0.27 to 0.05 m outside it, 0.013-0.015 m across and 0.012 m up per
-update, never blocked; this passes within 0.5 m of the point where Coney's bum used to stall. Neither
-run tripped the move action's stuck test (0.2 m in 60 updates, [AI](ai-moving.md#move-action)): about 1.1 m was covered
-in each 60 updates on the heap. The waypoint was not skipped to get round the heap, and nothing warped him.
+The same run with his body `+0x60` raised to 1.3429 (radius 0.470, Coney's) was alike: the crease edge 0.49 down to 0.35
+m from the centre, the projection 0.27 to 0.05 m outside it, never blocked; this passes within 0.5 m of the point where
+Coney's bum used to stall. Neither run tripped the move action's stuck test (0.2 m in 60 updates,
+[AI](ai-moving.md#move-action)): 1.14-1.30 m was covered in each 60 updates on 679 and 680, and 0.55-0.76 m after update
+190. The waypoint was not skipped to get round the heap, and nothing warped him.
 
 The push-out `PhysicsBody_PushOutOfWalls` (`0x003477c0`, a sphere out of the nearest wall by `n × (r − distance)`)
 is not the walking case: its only caller `Human_PushOutInAir` (`0x0021a490`) runs while the human is airborne
@@ -349,10 +352,13 @@ when `vz` < −1.5 (camera slot `+0x15c` with the landing kind 1-3), set `+0x3a0
 write the velocity back. The thresholds are `0x00510674` (−14.9) and `0x00510678` (−20.5). Free fall from rest
 reaches 14.9 m/s after about 7.1 m and 20.5 m/s after 13.4 m (inferred from the gravity above).
 
-**When the landing happens** (the feel pass's second runtime run, PCSX2 2.9.94, slot 1, a run jump with
-stick 100 % and triangle tapped 35 updates in; the arc's phase shifted by adding 0.015 to 0.15 m, or taking 0.05 or
-0.12 m, to the feet's height at the 7th update in the air; ground at 0.2231). Observed in PCSX2 ([How this was
-checked](#runtime-reads)):
+**When the landing happens** (the feel pass's second runtime run, slot 1, a run jump with stick 100 % and
+triangle tapped 35 updates in; the arc's phase shifted by adding 0.015 to 0.15 m, or taking 0.05 or 0.12 m, to the
+feet's height at the 7th update in the air; ground at 0.2231). Confirmed (runtime), run r-20261124-chars-run-jump;
+confirmed (runtime), run r-20261124-chars-land-p015; confirmed (runtime), run r-20261124-chars-land-p030;
+confirmed (runtime), run r-20261124-chars-land-p050; confirmed (runtime), run r-20261124-chars-land-p100;
+confirmed (runtime), run r-20261124-chars-land-p150; confirmed (runtime), run r-20261124-chars-land-m050;
+confirmed (runtime), run r-20261124-chars-land-m120:
 
 | Feet at the start of an airborne update, below the ground | That update |
 | --- | --- |
@@ -381,8 +387,8 @@ Read alone, this lands on the update the moved feet pass the ground, which the r
 not follow from the 0.88 / 1.0 m geometry either. A log of the contacts (a code patch that copies each contact's
 fraction and handler code to free memory) would settle it.
 
-**A fall at runtime** (PCSX2 2.9.94, `level99`, no stick input; Rembrandt raised 10 m by writing the transform table's
-`z`). Observed in PCSX2 ([How this was checked](#runtime-reads)):
+**A fall at runtime** (`level99`, no stick input; Rembrandt raised 10 m by writing the transform table's `z`).
+Confirmed (runtime), run r-20261124-chars-fall:
 
 - `vz` changes by −0.5227 m/s per update from the second airborne update, and `z(n+1) = z(n) + vz(n+1) × dt`: the
   velocity is updated before the move.
@@ -399,12 +405,16 @@ Confirmed (code). The builders, confirmed (code):
 - 26 (`0x0025d020`, confirmed (code)): the **drop cycle** (428), or the long-fall cycles 422 / 425 in a long fall
   (`0x400000`, `0x00223b48`, `0x00227e60`). After a jump the jump loop keeps playing (runtime).
 - 27 (`0x0025d390`): after a jump, **436** (jump end running) handing over to a gait blend when the stick is above
-  0.12, else **435** (jump end) and then the idle; after a drop, **429** (drop land); after a long fall
+  0.12, else **435** (jump end) and then the idle; after a drop the same 436 and gait blend with the stick above 0.12,
+  else **429** (drop land) at a rate of `1 − 0.5 ×` a random unit, then the idle; after a long fall
   (`0x1000000000`), the clip after the current one, or 198 (ground roll). Confirmed (code).
 
-**Walking off an edge at runtime** (the roof of a car, 1.48 m up; stick 0.5). Observed in PCSX2 ([How this was
-checked](#runtime-reads)): state 26 with 428 and record `+0x08` `0x400000` for the first two updates, gravity as above,
-then state 27 with **429** for about 0.5 s and the idle.
+**Walking off an edge at runtime** (down the sloping front of a car whose roof is 1.48 m up, a drop of 1.29 m; stick
+0.5). Confirmed (runtime), run r-20261124-chars-car-roof-walk-off: state 26 with 428 and record `+0x08` `0x400000`
+for the first four updates, gravity from the third as above, then, the stick still held, state 27 with **436** and
+`+0x08` `0x1000000` for 11 updates and the gait blend. With the stick released in the air (confirmed (runtime), run
+r-20261124-chars-car-roof-walk-off-release) the landing is **429** and the idle; 429 lasted 13 updates in one run
+and 18 in another, as its rate is random.
 
 ## In Coney {#coneys-implementation}
 
@@ -476,10 +486,6 @@ then state 27 with **429** for about 0.5 s and the idle.
 
 Code claims were read in Ghidra in `SLUS_212.15`.
 
-### The old runtime reads {#runtime-reads}
-
-The ground, wall, slope and fall readings marked as observed in PCSX2 were made in PCSX2 2.9.94 from copies of save
-states in the street of `level99`'s world (a copy of slot 1 for the player, of slot 6 for an AI human), with pad input
-patched in through the copy of the state, the `sweep-radius` hook for the sphere's radius and a box of the level's
-collision mesh as a test step. The old page dated its reads of `level99`, checkpoint 1 to 2026-10-04 and its sprint,
-jump and climb reads in the street to 2026-10-05. They predate run records; the fall out of the world cites one.
+The step was made from a box of the level's collision mesh by writing its vertices' heights in RAM (scenario
+`chars_step`); the landing's phase was shifted by writing the feet's height at the 7th update in the air (scenario
+`chars_run_jump`, its `shift` value).

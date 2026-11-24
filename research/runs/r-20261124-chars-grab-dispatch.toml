@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-grab-dispatch"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "50c780843629cac11aaf755e81b6a1c8372a155164f1827441b4cb589a09ffaf"
+
+[who]
+agent = "aa3b25557b297e4e7"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "pedestrian-grab"
+patches = ["anim-callback-match", "anim-dispatch", "puppet", "right-stick", "scripted-pad", "tutorial-callback"]
+
+[run]
+name = "chars_grab_dispatch"
+method = ""
+
+[values]
+updates = 141
+missed_updates = 0
+columns = 40
+
+[hashes]
+trace_csv = "e4ff6b772644a07533d5c50a92497b3989b8b0b7d359f0521f5344774d7dc50f"

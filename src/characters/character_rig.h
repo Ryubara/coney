@@ -16,9 +16,9 @@
 // The clump's skeleton (RenderWare frames, model space with x up) and the clips' skeleton (34 pose bones in game axes,
 // z up) differ by one fixed rotation, Coney's kClumpToPose: a clip's local rotations and the bone offset chunk are the
 // clump's frames turned by it (x, y, z) -> (x, -z, y). A skin bone's matrix is then
-// `pose bone transform * kClumpToPose * inverse bind matrix`. Evidence (Coney's disc test, characters.md): with it,
-// the bone offsets equal the frames' translations turned, and the vertices weighted to two bones land on the same
-// point from both, which no other axis change gives.
+// `pose bone transform * kClumpToPose * inverse bind matrix`. Evidence (Coney's disc test,
+// characters-appearance.md#character-geometry): with it, the bone offsets equal the frames' translations turned, and
+// the vertices weighted to two bones land on the same point from both, which no other axis change gives.
 
 namespace coney::characters {
 

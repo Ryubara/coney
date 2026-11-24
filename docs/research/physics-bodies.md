@@ -194,12 +194,14 @@ after this call (physics.md #sweep), not here.
 
 ### `0x00347c08` PhysicsMesh_SweepCapsule {#u2-00347c08-physicsmesh-sweepcapsule}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 Size `0x928`. Mesh sweep table `+0xe0`, type 3. Register arguments: `out` (0xc0 array), `max` (ignored), `worldBox`,
 `body`, `shape`, `move` (pointer); `f12`, `f13` and the options word are never read (confirmed (code): no use of
 `a1`, `t2`, `f12` or `f13` in `0x00347c08`-`0x0034852c`). Returns the number of contacts written, 0 if none. All
 steps confirmed (code) at the cited addresses.
 
-**The sphere** (as characters.md #walls): `r = shape+0x40 × body+0x60 × Human_GetScale(body+0x34)`
+**The sphere** (as [Characters: walls](characters-ground.md#walls)): `r = shape+0x40 × body+0x60 × Human_GetScale(body+0x34)`
 (`0x00347c98`-`0x00347cbc`); centre `c` = shape `+0x50` (the feet at the start of the move) with `z += r + 0.05`
 (`0.05` = `0x3d4ccccd`). The kernel is given the record `{c, r}`.
 
@@ -258,7 +260,7 @@ direction along the wall, chosen by the edge's direction: worked through for a v
 viewer, an edge running down is the wall's left end and gives "left", an edge running up the right end and gives
 "right", so `S` always points **outward past the flagged end**. So it eases a walker round an outside corner instead
 of stopping on the edge. The arithmetic is confirmed (code); the purpose is inferred. Which faces carry it on the disc
-is not counted here (characters.md #slopes notes gravel faces with 3).
+is not counted here ([Characters: slopes](characters-ground.md#slopes) notes gravel faces with 3).
 
 **Who consumes it** (`PhysicsBody_ResolveContacts` `0x0033d9d8`, confirmed (code)): for a contact whose handler
 answered a non-zero code, `+0xb0` is read (`0x0033e108`).
@@ -269,7 +271,7 @@ answered a non-zero code, `+0xb0` is read (`0x0033e108`).
   pass velocity** (the vector the next pass's move is made from as `velocity × dt`, `PhysicsBody_Sweep`'s
   `sp+0x40`), `0x0033e148`-`0x0033e178`. So the next pass (there are at most three) moves an extra `S × dt`
   sideways; the velocity reported back to the owner (`sp+0x50`) does not get it. In this branch the `0x20000`
-  contact-scale rule is **not** applied.
+  contact-scale rule is **not** applied. Confirmed (code).
 - Otherwise `+0xb0 & 2` is the other slide (store `+0xa0` once per move in body `+0x50`), and `0x20000` the scale.
   (physics.md #contacts calls this "bit 2"; it is the value 2, bit 1.)
 
@@ -363,8 +365,10 @@ gets no mesh contacts. Confirmed (code).
 
 ### `0x003477c0` PhysicsBody_PushOutOfWalls {#u2-003477c0-physicsbody-pushoutofwalls}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 Size `0x444`. `PushOutOfWalls(phys, body, sphere)` with `sphere = {centre, radius at +0x10}`; returns nothing.
-Caller: `Human_PushOutInAir` (`0x0021a490`) only (characters.md #slopes). Confirmed (code).
+Caller: `Human_PushOutInAir` (`0x0021a490`) only ([Characters: slopes](characters-ground.md#slopes)). Confirmed (code).
 
 1. Box `centre ± r` (`AABB_FromSphere` `0x00341660`), cells as above.
 2. Per triangle: enabled; normal; **wall** `|n.z| ≤ 0.65`; side `n·centre − n·v0 < 1e-6` → one-sided skipped,
@@ -810,10 +814,10 @@ Each confirmed (code) at the address given:
 - #sweep, "The velocity the slides leave is written back ... only when body flag `0x400` is set": and only when some
   stopping contact of the move asked for it (`moveFlags 0x2`: not a level triangle with flag `0x100`, not two
   airborne humans) (`0x0033e734`).
-- #sweep / characters.md #ground, "the body's pending push-out (divided by dt)": also divided by the owner's
-  attribute 7 unless body flag `0x1000` (`0x0033e2e4`).
-- characters.md #falling, "run from `0x0033d340` when body flag `0x40` is set": the body's **type mask** `+0x44`
-  bit `0x40` and the owner airborne (`0x0033d3dc`).
+- #sweep / [Characters: the move](characters-ground.md#ground), "the body's pending push-out (divided by dt)": also
+  divided by the owner's attribute 7 unless body flag `0x1000` (`0x0033e2e4`).
+- [Characters: falling](characters-ground.md#falling), "run from `0x0033d340` when body flag `0x40` is set": the
+  body's **type mask** `+0x44` bit `0x40` and the owner airborne (`0x0033d3dc`).
 - `PhysicsVec_Bounce` also damps an outgoing normal speed by `(1 − e)` ([above](#u3-bounce)).
 
 ### Test ideas (synthetic) {#u3-tests}

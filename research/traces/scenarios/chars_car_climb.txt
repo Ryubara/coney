@@ -1,0 +1,6 @@
+# The stick at 50 % straight up (toward the car) and triangle every 2 updates.
+10 stick left 0 50
+12 tap triangle
+14 tap triangle
+16 tap triangle
+18 tap triangle

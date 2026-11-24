@@ -1,0 +1,9 @@
+# Each move starts from standing with the stick straight up, then turns it; frames are character updates of 1/30 s.
+# A run, then the stick 90 degrees right.
+40 stick left 0 100
+70 stick left 100 0
+82 stick left 0 0
+# A walk, then the stick 90 degrees left.
+120 stick left 0 60
+160 stick left -60 0
+172 stick left 0 0

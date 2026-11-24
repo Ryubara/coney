@@ -1,0 +1,35 @@
+version = 1
+id = "r-20261124-chars-land-m050"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "31027b384cb549c13aa018eef61b16ef834b9e0599ea993ae9621b0b9fb17393"
+
+[who]
+agent = "a635829b69ef6a330"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "chars_run_jump"
+method = ""
+
+[run.args]
+shift = "-0.05"
+
+[values]
+updates = 111
+missed_updates = 0
+columns = 15
+
+[hashes]
+trace_csv = "6759777d74bb18ea879c3536f461eac7f19e009d891d3142ba705f498284738c"

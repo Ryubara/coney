@@ -45,7 +45,7 @@ struct AnimClipChoice {
 };
 
 /// Whether `clip` can play on the player's skeleton: it animates no bone past the 34 pose entries every character on
-/// the disc shares (docs/research/characters.md, "Characters are skinned with 32 bones").
+/// the disc shares (docs/research/characters-appearance.md#character-geometry).
 [[nodiscard]] bool playableOnPlayer(const anim::AnimClip& clip);
 
 /// The clips `set` plays, one per anim id it answers with a clip the player's skeleton can play, in id order, with

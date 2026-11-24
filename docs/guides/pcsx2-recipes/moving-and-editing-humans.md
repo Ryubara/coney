@@ -64,7 +64,7 @@ held. For the script's own teleport, run `lua` with `Teleport(...)`.
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x0021b0b8 Object_SetPosition`, `0x0023d440 Human_SetTransform` |
-| Research | [research/characters-ground.md#ground](../../research/characters-ground.md#ground), [research/characters/index.md#teleport](../../research/characters/index.md#teleport) |
+| Research | [research/characters-ground.md#ground](../../research/characters-ground.md#ground), [research/characters-players.md#level-starts](../../research/characters-players.md#level-starts) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); player moved 3 m along x and turned to 90 degrees; read back after 30 updates |
 
 ```sh
@@ -103,7 +103,7 @@ a pedestrian by name (`humans` lists them); one that is walking is moved off its
 | Preconditions | patches: none; emulation running |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x0021b0b8 Object_SetPosition`, `0x0023d440 Human_SetTransform` |
-| Research | [research/characters-ground.md#ground](../../research/characters-ground.md#ground), [research/characters/index.md#teleport](../../research/characters/index.md#teleport) |
+| Research | [research/characters-ground.md#ground](../../research/characters-ground.md#ground), [research/characters-players.md#level-starts](../../research/characters-players.md#level-starts) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6) |
 
 ```sh

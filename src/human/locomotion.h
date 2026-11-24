@@ -60,7 +60,7 @@ struct LocomotionTuning {
     float turnCarry = kTurnCarry;                 ///< turnToward(): the share of the last step carried over.
     float leanFactor = 0.4F;     ///< leanStep(): the turn times this times the speed is the lean asked for.
     float walkLeanFactor = 8.0F; ///< leanStep(): the same, walking.
-    // A multiplier on each of the player's gait speeds, 1 as the clips give them (docs/research/characters.md
+    // A multiplier on each of the player's gait speeds, 1 as the clips give them (docs/research/characters-classes.md
     // #speed-classes: the speeds come from the clips' root motion, so a scale is the tunable, not a speed). Coney's
     // own debug tooling, and only the player's: another human's speed scale is its own (Human::setSpeedScale()).
     float sneakSpeedScale = 1.0F;  ///< The sneak gait's (slot 3).

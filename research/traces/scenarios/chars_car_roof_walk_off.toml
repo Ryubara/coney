@@ -1,0 +1,27 @@
+# Walking off the roof of a car (unit 364, the characters research split): slot 2 faces the side of a vehicle in
+# level99's street; triangle with the stick at 50 % toward it climbs onto it (1.48 m up), then the stick at 50 % to the
+# right, held, walks him across the roof and off its sloping front. The anim state (record +0x18), the state flags'
+# high word and record +0x08 (`phase`) show the drop and its landing.
+# Research: docs/research/characters-ground.md#falling.
+description = "level99 street (slot 2): climb onto a car, then walk off its roof at stick 50 %"
+research = "docs/research/characters-ground.md#falling"
+input = "chars_car_roof_walk_off.txt"
+updates = 200
+fields = ["player"]
+
+[original]
+slot = 2
+patches = ["scripted-pad", "right-stick"]
+
+[coney]
+level = "level99"
+
+[[field]]
+name = "state_hi"                         # record +0x04, the state flags' high word (0x8 airborne, 0x20 landing)
+address = "rec(player) + 0x4"
+type = "u32"
+
+[[field]]
+name = "anim_state"                       # record +0x18
+address = "rec(player) + 0x18"
+type = "s32"

@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-railing-vault"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "dd51529baa5fc9eb642d3fbeca132590327d94d7bca5d867b73da0b4c64c7ff9"
+
+[who]
+agent = "ae31bd6736d3cec63"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-c"
+
+[start]
+state = "unknown"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "railing_vault"
+method = ""
+
+[values]
+updates = 161
+missed_updates = 0
+columns = 27
+
+[hashes]
+trace_csv = "dd8af0652b0edf6cc4f2c3f08f8ae0dec97c3d4710a05e8a113a3ae6830713ee"

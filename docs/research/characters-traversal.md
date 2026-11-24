@@ -10,7 +10,7 @@ owns:
 ---
 # Characters: sprint, jumps and climbs
 
-Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records or, for the older ones, How this was checked.
+Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records.
 
 ## Summary
 
@@ -65,7 +65,7 @@ nothing latches it. It also ends when stamina reaches 0 (below) and when `Player
 (`level99` and a street, stick 1.0 straight up and L2 held
 through patched pad input, [Driving PCSX2](../guides/research-workflow.md#driving-pcsx2)) the flag was set every
 update, the command was 5, and the speed rose by 0.8 m/s per update from 7.80 to **10.245 m/s** (gait 5).
-Inferred from an unrecorded PCSX2 read ([How this was checked](#runtime-reads)).
+Confirmed (runtime), run r-20261124-chars-sprint.
 
 **The stick still decides.** The flag only asks for a sprint: the locomotion's sprint test (`0x00225dc0`) also needs
 the stick above **0.95** and stamina, as for a run ([Locomotion](characters-locomotion.md#locomotion)). With
@@ -73,8 +73,8 @@ the stick above **0.95** and stamina, as for a run ([Locomotion](characters-loco
 run); it is 0 in play. Confirmed (code).
 
 **Stamina** is the s16 at record `+0x14a`. Its maximum is `Human_StaminaMax` ([Power
-classes](characters-classes.md#power-classes)): 135 for Rembrandt (observed in PCSX2, [How this was
-checked](#runtime-reads)). Confirmed (code) unless marked:
+classes](characters-classes.md#power-classes)): 135 for Rembrandt (confirmed (runtime), run
+r-20261124-chars-sprint). Confirmed (code) unless marked:
 
 - **Drain** (`0x002562d0`, called from the brain `0x00254e78`): while the gait stored with the velocity (`+0x1a8`) is 5
   and record `+0x08` is 0 (`0x00223a98`), stamina loses **20 per second** of game time (`0x005101f4`, `CfgBurnRates`
@@ -92,7 +92,8 @@ checked](#runtime-reads)). Confirmed (code) unless marked:
   only "not 0", so one point of stamina sprints again.
 
 **At runtime** (the street, Rembrandt, stamina 135 of 135; stick and L2 through patched pad
-input; stamina, speed and flags read every update). Observed in PCSX2 ([How this was checked](#runtime-reads)):
+input; stamina, speed and flags read every update). Confirmed (runtime), run r-20261124-chars-sprint-start;
+confirmed (runtime), run r-20261124-chars-sprint:
 
 - From a standstill with stick 1.0 and L2 held, stamina **still refilled** through the run start (gait 2-3), stood
   still at gait 4 (the "run with L2" block), and fell by 1 every 1.5 updates (**20 per second**) from the update the
@@ -119,10 +120,10 @@ input; stamina, speed and flags read every update). Observed in PCSX2 ([How this
 
 In an input script: `stick left 0 100` and `press l2` to sprint, `release l2` to refill.
 
-**Measured** (PCSX2 2.9.94, the stick held fully forward from a standstill by the W key, magnitude 1.0, positions
+**Measured** (the stick held fully forward from a standstill by the W key, magnitude 1.0, positions
 read over PINE): 4.10 m after a
 0.75 s hold, 10.08 m after 1.5 s: 5.98 m in the second 0.75 s, **8.0 m/s**, close to Rembrandt's run speed of
-7.80 m/s (observed in PCSX2; the hold times are those of the key presses, so about ±1 frame).
+7.80 m/s (confirmed (runtime), run r-20261124-chars-run-stop; the hold times are those of the key presses, so about ±1 frame).
 
 ### Jumping {#jump}
 
@@ -167,14 +168,15 @@ more and `|v|` at least 3.3; it keeps the gait at `+0x3c0` and the height at `+0
 it at the `Human_MaxTurn` limit with the same ease as on the ground, and the velocity turns with it; with the stick
 centred nothing changes. Gravity, the airborne counter and the landing are those of a fall. Confirmed (code).
 
-**At runtime** (the street, Rembrandt on flat ground, triangle tapped for one update). Observed in PCSX2 ([How this was
-checked](#runtime-reads)):
+**At runtime** (the street, Rembrandt on flat ground, triangle tapped for one update). Confirmed (runtime), run
+r-20261124-chars-run-jump (the other cases: runs r-20261124-chars-walk-jump, r-20261124-chars-sprint-jump,
+r-20261124-chars-sprint-jump-turn and r-20261124-chars-runstart-jump):
 
 | Case | What happened |
 | --- | --- |
 | stick 0.8 (walk at 1.63 m/s), triangle | nothing |
-| stick 1.0, run at 7.80 m/s, triangle | state 26 and clip 434 at once, state flags `0xc00000000`; `vz` 5.5 then −0.5227 per update; apex **1.06 m** above the take-off; horizontal speed 7.80 throughout; landed after about 25 updates (0.83 s), **6.4 m** further |
-| stick 1.0 and L2, sprint at 10.245 m/s, triangle | the same arc at 10.24 m/s horizontal, about 23 updates in the air |
+| stick 1.0, run at 7.80 m/s, triangle | state 26 and clip 434 at once, state flags `0xc00000000`; `vz` 5.5 then −0.5227 per update; apex **1.06 m** above the take-off; horizontal speed 7.80 throughout; landed 25 updates after the tap (24 in the air), **6.24 m** further than the first update in the air |
+| stick 1.0 and L2, sprint at 10.245 m/s, triangle | the same arc at 10.24 m/s horizontal, 24 updates in the air |
 | the same, stick turned 90° right just after take-off | the heading turned by about **4° per update** toward the stick, the horizontal speed staying 10.24; that is the run's limit, not the sprint's 2.5° (which gait the air turn uses is not traced) |
 | landing | state 27, **436** for about 0.4 s at its own 4.23 m/s, record `+0x08` `0x1000000`, then the gait blend from a jog back to the run |
 | per update (the feel pass, slot 1) | **24 updates** in the air from a run: the last airborne update leaves the feet 0.19 m below the ground and the next one lands them ([the landing rule](characters-ground.md#falling)); that landing update still moves at the full 7.80 m/s, then 436 holds 4.23 m/s for 10 more updates (11 in all) and the gait blend gains 0.8 m/s per update from there; take-off to landing **6.24 m** |
@@ -293,26 +295,28 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
   record `+0x08` gets `0x40` (the fences stop blocking, [Walls and steps](characters-ground.md#walls)); on failure the
   climb ends in the idle or the combat idle. A running climb ends in a gait blend, a standing one in the idle.
 - While clips 437-460 play, `+0x5b9` is 1 (`Human_StateUpdate`).
-- **From P2 on nothing collides.** While record `+0x08` has `0x40`, `Human_Move` (`0x0023d8c8`) skips the wall
-  sweep (`PhysicsBody_Sweep`) and the ground snap and adds the velocity and the clip's root motion (`+0x2f0`), height
-  included, straight to the position (`Object_SetPosition`); the other path zeroes the height and leaves it to the
-  snap. The teleport at P1's end goes through body vtable `+0x1c` with no sweep, `0x4000` stops the body re-posing
-  (`0x003422d0`), and `Human_GetPosition` returns `+0x2c0` while `0x40` is set. So a climbed face of any material
-  (a parapet of material 107 with triangle flag `0x80`, say) stops the body only during P1; the skip of materials 30,
-  31 and 122 in `Human_OnContact` covers only contacts that still reach it. Confirmed (code): the branch is
-  `Human_HasHeld40` (`0x0023d8c8`, the test before `Vec4_Add(..., +0x2f0)` and `Object_SetPosition`); the sweep
-  and `Human_SnapToGround` sit only on the other branch. Observed in PCSX2 on a railing of material 7, below.
-- **Over a drop there is no third clip.** When P2 ends with nothing under the feet (a railing above a lower floor),
-  the next update's ground snap misses and the human falls: the fall clip **428** (record `+0x08` `0x400000`) in
-  place of P3, gravity from the third update, the landing (436) on the floor below. Observed in PCSX2, the hangout
-  railing below; that the switch is `Human_SnapToGround`'s miss starting the fall is inferred.
+- **From P2 on nothing collides.** While record `+0x08` has `0x40`, `Human_Move` (`0x0023d8c8`) skips the wall sweep
+  (`PhysicsBody_Sweep`) and the ground snap and adds the velocity and the clip's root motion (`+0x2f0`), height
+  included, straight to the position (`Object_SetPosition`); the other path zeroes the height and leaves it to the snap.
+  The teleport at P1's end goes through body vtable `+0x1c` with no sweep, `0x4000` stops the body re-posing
+  (`0x003422d0`), and `Human_GetPosition` returns `+0x2c0` while `0x40` is set. So a climbed face of any material (a
+  parapet of material 107 with triangle flag `0x80`, say) stops the body only during P1; the skip of materials 30, 31
+  and 122 in `Human_OnContact` covers only contacts that still reach it. Confirmed (code): the branch is
+  `Human_HasHeld40` (`0x0023d8c8`, the test before `Vec4_Add(..., +0x2f0)` and `Object_SetPosition`); the sweep and
+  `Human_SnapToGround` sit only on the other branch. Confirmed (runtime), run r-20261124-chars-railing-vault, on a
+  railing of material 7, below.
+- **Over a drop there is no third clip.** When P2 ends with nothing under the feet (a railing above a lower floor), the
+  next update's ground snap misses and the human falls: the fall clip **428** (record `+0x08` `0x400000`) in place of
+  P3, gravity from the third update, the landing (436) on the floor below. Confirmed (runtime), run
+  r-20261124-chars-railing-vault, the hangout railing below; that the switch is `Human_SnapToGround`'s miss starting the
+  fall is inferred.
 - **The first clip runs during the move.** The same call sets the move to the start point (`0x0023d2b8`: over 1/60 s,
   or 1/15 s when the turn `0x0023cf88` takes 1/30 s) and installs the three clip tasks (`0x00105990`, `0x001754e8`),
   so P1's clock starts on the climb's first update, not after the move. Confirmed (code). At runtime (the slot 7
   fence from a run, [Feel comparison](feel.md)) 440 lasted 11 updates: the start update still at run speed, the two
   snap updates (1.11 and 1.17 m), then 8 updates of the clip's root motion at full speed from the first (5.79 m/s
-  falling to 0.36 m/s), with no fade-in. The first update of 441 and of 442 moved the body 0 m. Observed in PCSX2 ([How
-  this was checked](#runtime-reads)).
+  falling to 0.36 m/s), with no fade-in. The first update of 441 and of 442 moved the body 0 m. Confirmed (runtime), run
+  r-20261124-chars-fence-climb.
 
 **What gets climbed**, from the rules above (heights above the feet; inferred from the code, the three rows marked
 runtime were seen):
@@ -325,22 +329,23 @@ runtime were seen):
 | reaches 1.7 m, lower than 2.5 m | ground lower than 0.25 m | fence (437-442); runtime: a street fence, from a run |
 | lower than 0.69 m, or a top outside the windows, or a fence of 2.5 m or more | | no climb |
 
-**At runtime** (the street; stick and triangle through patched pad input). Observed in PCSX2 ([How this was
-checked](#runtime-reads)):
+**At runtime** (the street; stick and triangle through patched pad input). Confirmed (runtime), run
+r-20261124-chars-fence-climb (the other rows: runs r-20261124-chars-fence-tap3, r-20261124-chars-trashcan-climb and
+r-20261124-chars-car-climb):
 
 | Climb | Input | What happened |
 | --- | --- | --- |
-| fence from a run (440, 441, 442) | stick 1.0, triangle tapped every 0.1 s | the tap 4.9 m from the face did nothing (no climb, and no jump: the 5.5 m climbable check); the one about 4.4 m away started 440. The body was **snapped** 2.5 m forward in two updates (37-39 m/s), then 440 moved it at 5.4 to 4.5 m/s to the start point (0.34 m before the face, 0.3 s); 441 (0.47 s, record `+0x08` `0x40`) carried it **through the fence** at 2.4-3.4 m/s with the feet at ground height; 442 (0.43 s, `0x80000`) and the run went on; 1.27 s in all |
-| the same, per update (the feel pass, slot 7, the tap 4.5 m from the face) | stick 1.0, triangle every 2 updates | 440 for **11 updates**: the snap moved 1.11 m and 1.17 m, then the clip carried the body until it **stopped against the fence, 0.48 m from its face** (its walking sphere); 441 for 15 updates through the fence at 2.4-3.6 m/s; 442 for 13; the run's gait blend 39 updates after the tap |
-| short wall and wall, per update (slot 8) | stick 0.5, triangle | the rise at 456's start took **2 updates** (1.12 m, then 0.17 m by the ground snap); at 450's start 2.30 m, then 0.097 m per update for 4 updates to the roof (2.64 m in all) |
-| short wall, standing (455, 456, 457) | stick 0.5, triangle | 455 for 0.3 s (`0x80000`); at 456's start the feet **jumped** 1.06 m forward and **1.29 m up** in one update onto the trash can; 456 for 0.6 s (`0x40`), 457 for about 0.6 s, then the walk |
-| wall, standing (449, 450, 451) | stick 0.5, triangle, on the trash can | 449 for 0.37 s; at 450's start the feet jumped 0.98 m forward and 2.4 m up, and the ground snap settled them on the roof (2.64 m above the start) over the next updates; 450 for 1.4 s, 451 for 0.37 s |
+| fence from a run (440, 441, 442) | stick 1.0, triangle tapped every 3 updates | the tap 4.80 m from the face did nothing (no climb, and no jump: the 5.5 m climbable check); the one 4.02 m away started 440. The body was **snapped** 2.02 m forward in two updates (29-31 m/s), about 2.0 m less than the tap's distance, then 440 carried it until it stopped against the fence 0.48 m from its face (its walking sphere); 441 (15 updates, 0.5 s, record `+0x08` `0x40`) carried it **through the fence** at 2.4-3.6 m/s with the feet at ground height; 442 (13 updates, 0.43 s, `0x80000`) and the run went on; 39 updates (1.3 s) in all |
+| the same, per update (slot 7; the tap 4.28 m from the face started it, one at 4.80 m did nothing) | stick 1.0, triangle every 2 updates | 440 for **11 updates**: the snap moved 1.11 m and 1.17 m, then the clip carried the body until it **stopped against the fence, 0.48 m from its face** (its walking sphere); 441 for 15 updates through the fence at 2.4-3.6 m/s; 442 for 13; the run's gait blend 39 updates after the tap |
+| short wall and wall, per update (slot 8) | stick 0.5, triangle | the rise at 456's start took **2 updates** (1.12 m, then 0.17 m by the ground snap); at 450's start 2.30 m, then 0.097, 0.097, 0.097 and 0.052 m to the roof (2.645 m in all) |
+| short wall, standing (455, 456, 457) | stick 0.5, triangle | 455 for 8 updates (0.27 s, `0x80000`); at 456's start the feet **jumped** 1.06 m forward and rose **1.29 m** onto the trash can over two updates (1.12 m, then 0.17 m by the ground snap); 456 for 0.63 s (`0x40`), 457 for 13 updates (0.43 s), then the walk |
+| wall, standing (449, 450, 451) | stick 0.5, triangle, on the trash can | 449 for 12 updates (0.40 s); at 450's start the feet jumped 0.98 m forward and 2.30 m up, and the ground snap settled them on the roof (2.64 m above the start) over the next updates; 450 for 1.4 s, 451 for 0.37 s |
 | short wall onto a car | stick 0.5, triangle | as the trash can, 1.48 m up |
 | short fence over the hangout railing (443, 444, then the fall), per update | stick 0.5, triangle every 2 updates | below |
 
-**The hangout railing** (observed in PCSX2 2.9.94, scenario `railing_vault`: level95, Cleon put
-on the clubhouse balcony at (−172.0, 98.3, −194.38) facing +y, 0.63 m from the railing's face, stick 0.5 straight
-up from update 60, triangle every 2 updates from 66). The railing is 0.90 m tall, material 7 (`LAMPOST`) with
+**The hangout railing** (confirmed (runtime), run r-20261124-chars-railing-vault, scenario `railing_vault`: level95,
+Cleon put on the clubhouse balcony at (−172.0, 98.3, −194.38) facing +y, 0.63 m from the railing's face, stick 0.5
+straight up from update 60, triangle every 2 updates from 66). The railing is 0.90 m tall, material 7 (`LAMPOST`) with
 triangle flag `0x80`, its face at y ≈ 98.93, and the floor behind it is 3.20 m lower
 ([Collision](collision.md#hangout-railings)):
 
@@ -349,7 +354,7 @@ triangle flag `0x80`, its face at y ≈ 98.93, and the floor behind it is 3.20 m
 | 61-66 | 413, `0x10000000` | the walk start stops against the railing at y 98.44 (0.49 m from the face) |
 | 67-79 (13) | 443, `0x80000` | 0.04 m back toward the start point, then forward to 98.443 |
 | 80-98 (19) | 444, `0x40` | through the railing at up to 1.64 m/s, y 98.443 to **99.326** (0.40 m past the face), the feet **at the balcony's height** all the way (z −194.378) over the drop |
-| 99-118 (20) | 428, `0x400000` | the fall: z held for 2 updates, then `vz` −0.5227 per update; at 102 pushed 0.17 m on to y 99.50, clear of the railing's back; 445 never plays |
+| 99-118 (20) | 428, `0x400000` for 99-102, then 0 | the fall: z held for 2 updates, then `vz` −0.5227 per update; at 102 pushed 0.17 m on to y 99.50, clear of the railing's back; 445 never plays |
 | 119 | 436 | landed on the floor below (z −197.576), 3.20 m down, 0.57 m past the face; then the landing and the walk |
 
 So the railing's triangles do not stop the body during 444, though material 7 is not among the materials
@@ -484,9 +489,5 @@ itself is above.
 
 Code claims were read in Ghidra in `SLUS_212.15`.
 
-### The old runtime reads {#runtime-reads}
-
-The sprint, jump and climb readings marked as observed in PCSX2 were made in the street of `level99`'s world (PCSX2
-2.9.94, 2026-10-05) from save states made at test spots, with pad input patched in through a copy of the state, reading
-stamina, speed and flags every update. The railing vault (scenario `railing_vault`: level95, Cleon put at a hangout
-railing) was run on 2026-10-10. They predate run records.
+The street is too short to drain 135 points of stamina, so the sprint run (scenario `chars_sprint`) sets stamina
+to 6 once, at update 50, and lets the drain take it to 0.

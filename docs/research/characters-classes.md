@@ -9,7 +9,7 @@ owns:
 ---
 # Characters: classes, stats and speeds
 
-Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records or, for the older ones, How this was checked.
+Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records.
 
 ## Summary
 
@@ -248,8 +248,9 @@ from `0x00101a00` and the rate from `0x00104a38`. Confirmed (code). It writes, i
 | `+0x178` | run | 6 | 7.801 (410) |
 | `+0x17c` | sprint | 7 | 10.245 (411) |
 
-Each runtime value equals the clip's displacement divided by its duration as read from the disc, observed in PCSX2 ([How
-this was checked](#runtime-reads)). The speed class table is therefore only a fallback.
+The runtime values are confirmed (runtime), run r-20261124-chars-turn-table. Each equals the clip's displacement
+divided by its duration as read from the disc (inferred from Coney's disc test, `repo:tests/human/disc_player_test.cpp`,
+whose speeds worked out from the clips match them). The speed class table is therefore only a fallback.
 
 **Gait from speed** (`0x0022aeb0`, the gait stored with the velocity): below 0.5 m/s gait 0; otherwise the gait 1-5
 whose speed (`+0x16c`, `+0x170`, `+0x174`, `+0x178`, `+0x17c`) is nearest. Confirmed (code); a jump table at
@@ -379,9 +380,3 @@ no `CfgWarriorClass` leaves the health unscaled and the rage at class 6's.
 ## How this was checked
 
 Code claims were read in Ghidra in `SLUS_212.15`.
-
-### The old runtime reads {#runtime-reads}
-
-The speed values were compared with Rembrandt's in PCSX2 2.9.94 (2026-10-04) by reading memory over PINE in `level99`,
-checkpoint 1; each equals the clip's displacement divided by its duration as read from the disc. They predate run
-records.

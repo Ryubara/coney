@@ -3,11 +3,15 @@ kind: topic
 system: ai
 owns:
   functions: [
-    "0x002221e0", "0x00243848", "0x0024fbf8", "0x00250708", "0x00250760", "0x00251070", "0x002511c8", "0x002513a8",
-    "0x00251680", "0x002517b0", "0x00251890", "0x00251a70", "0x00288cc8", "0x00289010", "0x00289138", "0x00289ed0",
-    "0x0028a248", "0x0028aac0", "0x0028ab28", "0x0029a8c0", "0x0029aa88", "0x0029b4b8", "0x0029b6d8", "0x0029e5d8",
-    "0x0029eb38", "0x002fb9e8", "0x002fc158", "0x002fc330", "0x002fc420", "0x002fc560", "0x002fc5c0", "0x002fcd90",
-    "0x002fcf50", "0x002fcff0", "0x002fd068", "0x002fd128", "0x002fd158", "0x002fd4e8", "0x004eef40",
+    "0x002221e0", "0x00243848", "0x0024fbf8", "0x00250708", "0x00250760", "0x00251070", "0x002510a8", "0x00251188",
+    "0x002511c8", "0x002513a8", "0x00251680", "0x002516d0", "0x002516f0", "0x00251710", "0x00251718", "0x00251768",
+    "0x002517b0", "0x00251820", "0x00251890", "0x00251a00", "0x00251a70", "0x00253068", "0x00253118", "0x00253170",
+    "0x00253190", "0x002531b8", "0x002531c0", "0x00253268", "0x00253350", "0x00253398", "0x002533b8", "0x00253480",
+    "0x002534a8", "0x002534c0", "0x002534d0", "0x00253528", "0x00253538", "0x00253560", "0x00253598", "0x002535c0",
+    "0x00288cc8", "0x00289010", "0x00289138", "0x00289ed0", "0x0028a248", "0x0028aac0", "0x0028ab28", "0x0029a8c0",
+    "0x0029aa88", "0x0029b4b8", "0x0029b6d8", "0x0029e5d8", "0x0029eb38", "0x002fb9e8", "0x002fc158", "0x002fc330",
+    "0x002fc420", "0x002fc560", "0x002fc5c0", "0x002fcd90", "0x002fcf50", "0x002fcff0", "0x002fd068", "0x002fd128",
+    "0x002fd158", "0x002fd4e8", "0x004eef40",
   ]
 ---
 # AI moving: gaits, path planning, routes and steering {#moving}
@@ -52,6 +56,42 @@ loading](level-loading.md#path-data); holes, waypoint claims and jump legs on [A
 The entry points are the move actions' Start and Update, which `Brain_RunActions` calls
 ([AI humans](ai/index.md#update-goals)), and `Human_UpdateControl`, the human's control. Confirmed (code) at
 `0x0028fe28` and `0x00243848`.
+
+### The path search's helpers {#path-search-code}
+
+`0x002510a8`-`0x002535c0` (inferred from where the rows lie; each row is graded): the request slots, the node lists,
+the open heap and the closed list that `Route_AStar` uses ([Path planning](#path-planning)).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x002510a8` | `NavNode_IsLinkBlocked` | Whether a node's link list holds a link to the given node with a negative cost (a blocked edge). | confirmed (code) |
+| `0x00251188` | `PathRequests_Clear` | Clears the 32 path-request slots (0x110 bytes each, at 0x006cc340 downward). | confirmed (code) |
+| `0x002516d0` | `PathNode_SetIndex` | Stores a node pointer as its index (offset from the node array 0x006ca21c / 32) at slot i of a list. | confirmed (code) |
+| `0x002516f0` | `PathNode_GetAt` | The node pointer at slot i of a list (the node array 0x006ca21c + index x 32). | confirmed (code) |
+| `0x00251710` | `Ptr_Set` | Writes a word: a one-line setter. | confirmed (code) |
+| `0x00251718` | `PathNode_IsEdgeBlocked` | Whether the edge between list slots i and i+1 is blocked (NavNode_IsLinkBlocked). | confirmed (code) |
+| `0x00251768` | `PathNodes_ResetParents` | Sets every path node's parent (+0x1c) to none (0xffff) before a search. | confirmed (code) |
+| `0x00251820` | `Path_DistanceCost` | The A* cost of a distance: length x 16, as a u16. | confirmed (code) |
+| `0x00251a00` | `PathNodes_ClearOpenMarks` | Clears the +0x18 mark of every node on the open list after a search. | confirmed (code) |
+| `0x00253068` | `PathSearch_ResetCount` | Global 0x005105b0 = 0. | confirmed (code) |
+| `0x00253118` | `PathSearch_InitLists` | Static initialiser: the open heap, the closed list and two small lists of the path search. | confirmed (code) |
+| `0x00253170` | `PathSearch_StaticInit` | Calls PathSearch_InitLists(1, 0xffff). | confirmed (code) |
+| `0x00253190` | `PathHeap_Construct` | Constructs the open heap (count 0). | confirmed (code) |
+| `0x002531b8` | `PathHeap_Clear` | Count = 0. | confirmed (code) |
+| `0x002531c0` | `PathHeap_Push` | Pushes a node on the binary min-heap keyed by the node's cost (+0x16), at most 1000. | confirmed (code) |
+| `0x00253268` | `PathHeap_PopMin` | Removes and returns the cheapest node of the heap. | confirmed (code) |
+| `0x00253350` | `PathHeap_Find` | The heap position of a node, or 0xffff. | confirmed (code) |
+| `0x00253398` | `PathHeap_IsEmpty` | Count is 0. | confirmed (code) |
+| `0x002533b8` | `PathHeap_SiftUp` | Moves a node whose cost dropped up the heap. | confirmed (code) |
+| `0x00253480` | `PathList_Construct` | Constructs the closed list. | confirmed (code) |
+| `0x002534a8` | `PathList_Get` | Entry i of the closed list. | confirmed (code) |
+| `0x002534c0` | `PathList_Clear` | Count (+6000) = 0, last (+0x1772) = -1. | confirmed (code) |
+| `0x002534d0` | `PathList_Add` | Appends a node to the closed list, at most 3000. | confirmed (code) |
+| `0x00253528` | `PathList_Count` | The closed list's count. | confirmed (code) |
+| `0x00253538` | `PathPair_Construct` | Constructs a three-short record (zeroed). | confirmed (code) |
+| `0x00253560` | `PathPair_Clear` | Zeroes the three shorts. | confirmed (code) |
+| `0x00253598` | `PathCursor_Construct` | Constructs a two-short record (zeroed). | confirmed (code) |
+| `0x002535c0` | `PathCursor_Clear` | Zeroes the two shorts. | confirmed (code) |
 
 ## Data
 

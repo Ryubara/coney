@@ -44,7 +44,7 @@
 // mesh, and its animation, stepped at the characters' fixed 30 Hz in the original's three passes (animation, state
 // update, actions; human/humans.h runs them across every human). Platform-neutral and deterministic: no clock, no
 // randomness, so a scripted pad gives the same path on every run (test mode).
-// Research: docs/research/characters.md, docs/research/tasks.md#humans-update
+// Research: docs/research/characters/index.md, docs/research/tasks.md#humans-update
 
 namespace coney::human {
 
@@ -1440,8 +1440,8 @@ class Human final : public Holdable {
 
 /// Ends the rage of every human in `humans` that rages, at once (Human::setRageMode() off, the meters left where they
 /// are), as a scene's bind does whoever it binds (docs/research/scenes.md#join-reset). **Coney's reading**: the
-/// research calls them every player (scenes.md) and every human in rage (characters.md); either way a raging human
-/// stops, so the caller passes every human it has.
+/// research calls them every player (scenes.md) and every human in rage (characters/index.md); either way a raging
+/// human stops, so the caller passes every human it has.
 /// @orig 0x00232538 Humans_EndAllRage (unknown)
 void endAllRage(std::span<Human* const> humans);
 

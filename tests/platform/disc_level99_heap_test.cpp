@@ -12,7 +12,7 @@
 // It failed before the fix of 2026-10-11: the bum stopped for good at (-275.4, 131.6), at the face's foot. Coney's
 // push-out left his sphere 0.01 m off the face each update, so the face was never a fraction-0 contact he slides along,
 // and his move fell under the stuck test (0.2 m in 60 updates). A face within the radius and that clearance now counts
-// as touched (docs/research/characters.md, "Coney's implementation").
+// as touched (docs/research/characters-ground.md#coneys-implementation).
 
 #include <algorithm>
 #include <cmath>

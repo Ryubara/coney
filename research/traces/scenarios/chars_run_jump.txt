@@ -1,0 +1,3 @@
+# The stick at 100 % straight up from the start (the run start, then the run), triangle tapped 35 updates in.
+0 stick left 0 100
+35 tap triangle

@@ -1,0 +1,17 @@
+# The running fence climb with triangle tapped every 3 updates (0.1 s) on the run in (level99 checkpoint 3, slot 7 =
+# library state fence-run-jump; the fence's face 19.04 m ahead, docs/research/feel.md): which tap starts the climb
+# and how far the snap, the three clips and the run after move the body. Research:
+# docs/research/characters-traversal.md#climb.
+description = "level99 street fence: run at it, triangle every 3 updates; where the climb starts and its clips"
+research = "docs/research/characters-traversal.md#climb"
+input = "chars_fence_tap3.txt"
+updates = 140
+fields = ["player", "held"]
+
+[original]
+slot = 7
+patches = ["scripted-pad", "right-stick"]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3", "--start", "48.4135,43.9145,0.2232,179.754,4.8,179.744"]

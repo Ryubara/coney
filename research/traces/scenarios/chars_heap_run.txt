@@ -1,0 +1,3 @@
+# The heap run (docs/research/characters-ground.md#slopes): stand while the camera settles, then the left stick fully
+# up (a run) to the end.
+60 stick left 0 100

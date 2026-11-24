@@ -1,0 +1,64 @@
+# The player on level99's gravel heap (slot 1): Rembrandt put at the start of the kind-1 walk up to the lesson-2
+# platform, facing its end, then the left stick fully up (a run).
+# Research: docs/research/characters-ground.md#slopes (the faces 679 and 680, the slide along 680).
+description = "level99 gravel heap: Rembrandt from (-271.7, 129.4) facing (-277.7, 132.0), stick 100 % up from update 60"
+research = "docs/research/characters-ground.md#slopes"
+input = "chars_heap_run.txt"
+updates = 470
+fields = ["player", "camera"]
+
+[[field]]
+name = "p_vx"
+address = "player + 0x30"
+type = "f32"
+digits = 3
+
+[[field]]
+name = "p_vy"
+address = "player + 0x34"
+type = "f32"
+digits = 3
+
+[[field]]
+name = "p_vz"
+address = "player + 0x38"
+type = "f32"
+digits = 3
+
+[[field]]
+name = "p_gnz"
+address = "player + 0x238"
+type = "f32"
+digits = 3
+
+[[field]]
+name = "p_blocked"
+address = "u32(player + 0x1a0) + 0x70"
+type = "u32"
+
+[[field]]
+name = "p_b60"
+address = "u32(player + 0x1a0) + 0x60"
+type = "f32"
+digits = 4
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick"]
+let = { b60 = "1.4286" }
+setup = [
+  { address = "tf(player) + 0x0", type = "f32", value = "-271.7", frame = 0, until = 3 },
+  { address = "tf(player) + 0x4", type = "f32", value = "129.4", frame = 0, until = 3 },
+  { address = "tf(player) + 0x8", type = "f32", value = "0.3", frame = 0, until = 3 },
+  { address = "tf(player) + 0x10", type = "f32", value = "0.0", frame = 0, until = 3 },
+  { address = "tf(player) + 0x14", type = "f32", value = "0.0", frame = 0, until = 3 },
+  { address = "tf(player) + 0x18", type = "f32", value = "0.549", frame = 0, until = 3 },
+  { address = "tf(player) + 0x1c", type = "f32", value = "0.836", frame = 0, until = 3 },
+  { address = "u32(player + 0x1a0) + 0x60", type = "f32", value = "b60", frame = 0, until = 3 },
+  { address = "u32(player + 0x1a0) + 0x64", type = "f32", value = "b60", frame = 0, until = 3 },
+]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3", "--start", "-271.7,129.4,0.3,66.6,5.3,66.6"]
+settle = 300

@@ -1,0 +1,6 @@
+# A sprint jump turned in the air (slot 1, the street): as chars_sprint_jump, then the stick 100 % right 2 updates
+# after the tap.
+0 press l2
+0 stick left 0 100
+50 tap triangle
+52 stick left 100 0
