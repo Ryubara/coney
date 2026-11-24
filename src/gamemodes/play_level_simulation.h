@@ -157,6 +157,12 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     [[nodiscard]] std::array<const human::Human*, hud::kPlayers> playerHumans() const {
         return {&m_player->human(), nullptr};
     }
+    /// The human the script handle `handle` names: player 1, or a human the level's scripts cast; null for a handle
+    /// that names no human. What network play uses to say which human a radar blip follows
+    /// (net::GameHumans::captureBlips()).
+    /// @coney-only Coney's lookup of a human by his script handle, for network play
+    [[nodiscard]] const human::Human* humanOfHandle(double handle);
+
     /// The HUD's standing state now: each player slot's panel flags, prompt and radar, and the shared counter panels,
     /// bars, scoreboard, stopwatch and settings the scripts set (docs/guides/snapshots.md#hud-standing). The play
     /// mode's HUD owns it as simulation state; network play carries it beside playerHuds().

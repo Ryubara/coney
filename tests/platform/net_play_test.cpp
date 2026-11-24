@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <format>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <span>
@@ -33,6 +34,7 @@
 #include "net/net_id.h"
 #include "net/net_status.h"
 #include "net/player_huds.h"
+#include "net/radar_blips.h"
 #include "net/snapshot.h"
 #include "net/state_digest.h"
 #include "net/transport.h"
@@ -601,6 +603,43 @@ TEST_CASE("a host sends its HUD's standing state with its snapshots, and the gue
     standing.shared.counters[0].value = 18.0F;
     CHECK(games.guest.arrivedHudStanding() == standing);
     CHECK(games.host.arrivedHudStanding() == coney::hud::HudStanding{}); // a host draws its own
+}
+
+TEST_CASE("a host sends its radar's blips with its snapshots, and the guest holds them by slot",
+          "[net][net_play][hud][radar]") {
+    // Expected: unverified, #1537 (Coney's own snapshots; docs/guides/snapshots.md#hud-blips)
+    TwoGames games;
+    games.connect();
+    std::map<double, coney::hud::RadarBlip> blips;
+    blips.emplace(7.0, coney::hud::RadarBlip{.type = 10, .icon = 27, .place = coney::anim::Vec3{3.0F, 4.0F, 5.0F}});
+    blips.emplace(9.0, coney::hud::RadarBlip{.type = 7, .icon = 365});
+    coney::net::BlipSlots slots;
+    const coney::net::NetId human{.slot = 4, .generation = 1};
+    const auto handOver = [&] {
+        const auto taken = coney::net::snapshotBlips(
+            blips, slots, [&](double handle) { return handle == 9.0 ? human : coney::net::NetId{}; });
+        games.host.setGameHuds({}, {}, {}, taken);
+    };
+    for (int i = 0; i < 10; ++i) {
+        handOver();
+        games.run(1);
+    }
+    coney::hud::HudStanding held = games.guest.arrivedHudStanding();
+    REQUIRE(held.shared.blips.size() == 2);
+    CHECK(held.shared.blips.at(0.0).type == 10);
+    CHECK(held.shared.blips.at(0.0).icon == 27);
+    REQUIRE(held.shared.blips.at(0.0).fixedPlace.has_value());
+    CHECK(held.shared.blips.at(1.0).follows == coney::net::netIdNumber(human));
+    CHECK(games.host.arrivedHudStanding().shared.blips.empty()); // a host draws its own
+    // A blip the host's script deletes is gone from the guest's, and the blips alone changed nothing else.
+    blips.erase(7.0);
+    for (int i = 0; i < 10; ++i) {
+        handOver();
+        games.run(1);
+    }
+    held = games.guest.arrivedHudStanding();
+    REQUIRE(held.shared.blips.size() == 1);
+    CHECK(held.shared.blips.contains(1.0));
 }
 
 TEST_CASE("a host with nobody joined sends nothing and writes no snapshot digest", "[net][net_play]") {

@@ -294,17 +294,19 @@ void NetPlay::setGameHumans(std::span<const net::SnapshotHuman> humans) {
 }
 
 void NetPlay::setGameHuds(std::span<const net::SnapshotHud> huds, std::span<const net::SnapshotHudElement> elements,
-                          std::span<const net::SnapshotHudText> texts) {
+                          std::span<const net::SnapshotHudText> texts, std::span<const net::SnapshotBlip> blips) {
     m_gameHuds.assign(huds.begin(), huds.end());
     m_gameHudElements.assign(elements.begin(), elements.end());
     m_gameHudTexts.assign(texts.begin(), texts.end());
+    m_gameBlips.assign(blips.begin(), blips.end());
 }
 
 hud::HudStanding NetPlay::arrivedHudStanding() const {
     if (!m_client) {
         return {};
     }
-    return net::hudStanding(m_client->snapshots().hudElements(), m_client->snapshots().hudTexts());
+    return net::hudStanding(m_client->snapshots().hudElements(), m_client->snapshots().hudTexts(),
+                            m_client->snapshots().blips());
 }
 
 std::uint8_t NetPlay::playerSlot() const {
@@ -321,7 +323,7 @@ net::SnapshotHuds NetPlay::arrivedHuds() const {
 }
 
 void NetPlay::sendSnapshots(std::uint32_t step) {
-    m_server->sendSnapshots(step, m_gameHumans, m_gameHuds, m_gameHudElements, m_gameHudTexts);
+    m_server->sendSnapshots(step, m_gameHumans, m_gameHuds, m_gameHudElements, m_gameHudTexts, m_gameBlips);
     if (!m_snapshotDigests) {
         return;
     }

@@ -9,8 +9,9 @@ architecture. The original has no network play, so none of this code carries an 
 SnapshotAck messages of [the protocol](multiplayer.md#protocol) (the Snapshot's body in `src/net/snapshot_wire.cpp`,
 apart from `protocol.cpp`), and the sessions' side: `NetServer::sendSnapshots()` and `NetClient::snapshots()`. A
 client plays what it decodes through [the client's world](client-world.md). Each player slot's HUD state and the HUD's
-standing state travel in the same snapshots ([HUD state](#hud-state), [The HUD's standing state](#hud-standing)), and a
-guest's HUD takes them (the client game's, [The HUD](client-world.md#client-hud)). The host's game fills the humans
+standing state travel in the same snapshots ([HUD state](#hud-state), [The HUD's standing state](#hud-standing)), with
+the radar's blips ([The radar's blips](#hud-blips)), and a guest's HUD takes them (the client game's, [The
+HUD](client-world.md#client-hud)). The host's game fills the humans
 every step ([The game's humans](multiplayer.md#game-humans)), and a guest running [the client
 game](client-world.md#client-game) draws them. **Planned:** interest (which humans a client needs, and how fast each
 one's priority grows), and releasing a removed human's id once its removal is acknowledged. **Not in a snapshot, by
@@ -150,6 +151,7 @@ What the HUD holds between steps, set by the scripts' HUD bindings and the game 
 | The scoreboard | shared | each row shown: its label, score and colour | `HUDEnableTextProgress`, widgets at `0x00615320` |
 | The stopwatch | shared | while shown: its label and the mission stopwatch's time | `W_ShowStopWatch` |
 | The HUD's settings | shared | the HUD shown (`HideHud`, `RestoreHud`), the prompt at the clubhouse's place, the radars' script switch, their range and zoom scale | HUD `+0x177a0`, `+0x177ac`, radar `+0x24`, `+0x28`, `+0x2920` |
+| The radar's blips | shared | each blip's type, icon, size, colour, flashing, mark and place, or the human it follows: [its own section](#hud-blips) | [Radar blip slots](../research/gui.md#radar-blip-slots) |
 
 **Whose.** The panel, the prompt and the radar are each player's, so they go per player slot. The counter panels, the
 bars, the scoreboard, the stopwatch and the settings are one each on the original's screen, which both of its players
@@ -164,10 +166,9 @@ and `applyStanding()` starts a guest's cycle again only when its settings change
 counter panel's hide time is the host's: its "shows" flag travels and a guest's panel hides when the host's does. The
 scoreboard's row counts only sort the rows when a script sets a score, on the host.
 
-**Not carried yet:** the radar's blips. They are a map keyed by script handle, each following an object a guest cannot
-look up by that handle, so carrying them needs each blip's place or the network id of what it follows, which the game
-does not give yet ([Game events](multiplayer.md#events)). They wait for #1537. The second radar is not
-driven yet either ([HUD, menus and pause](network-architecture.md#sub-hud)).
+**The radar's blips** are a map keyed by script handle, each following an object a guest cannot look up by that handle:
+they travel in a list of their own, by slot, with the human each follows named by its network id ([The radar's
+blips](#hud-blips)). The second radar is not driven yet ([HUD, menus and pause](network-architecture.md#sub-hud)).
 
 **Elements.** Each part travels as an element named by a key (5 bits), with its own field table
 ([Field tables](multiplayer.md#field-tables)): 0 to 3 each player slot's (`HudPlayer`, 14 fields), 4 to 8 the counter
@@ -186,8 +187,75 @@ them, then their changed fields only (a counter counting is 5 + 1 + 5 + 32 bits,
 and removed when gone. The elements go in the budget with the HUDs, and the sender keeps room for every element in
 full and one 255-byte text. The texts go next, in key order, each where it fits (the room left always takes the
 longest, so none waits for ever), then the humans' removals and changes. A first snapshot in a mission (two players,
-two counter panels, two bars, the gauge, two rows, the stopwatch and their seven texts) takes about 196 bytes of the
+two counter panels, two bars, the gauge, two rows, the stopwatch and their seven texts) takes about 197 bytes of the
 1,200 before the humans.
+
+## The radar's blips {#hud-blips}
+
+A blip is a dot on the radar's disc: `hud::RadarState::blips`, a map keyed by the script handle of the object it follows
+(`HUDAddRadarMissionObjective`, `HUDAddRadarHuman`, a dealer's greeting), each with its type, icon, size, colour,
+flashing, mark and the place the last radar step found it at. The original keeps them in 128 slots of `0x40` bytes a
+radar ([Radar blip slots](../research/gui.md#radar-blip-slots)), and calls every radar binding on both radars, so both
+hold the same blips. Coney keeps one set (`RadarState::blips`, radar 0's), and so the blips travel **once, for the whole
+HUD**, like the counter panels and not per player slot: a radar index on each blip would carry nothing until the second
+radar is driven ([HUD, menus and pause](network-architecture.md#sub-hud)), when a protocol bump adds it.
+
+**How a blip names its place on a guest.** A script handle names nothing on a guest, so a blip cannot travel by it, and
+nothing may travel as a pointer. A blip names its place one of two ways, picked for each blip by the host each step:
+
+1. **The network id of the human it follows** (`Follows`, a [NetId](multiplayer.md#net-ids) as one number of 22 bits,
+   `netIdNumber()`), when the object is a human the session holds an id for. The guest has that human already: his place
+   is in the snapshot's humans, blended by its jitter buffer, so a blip that follows him moves as he does and costs no
+   bytes while he moves. The guest's HUD finds him through `Hud::setRadarFollowLocator()`, which the client game points
+   at its world.
+2. **A quantized place** (`HasPlace` and three coordinates of 14 bits, a step of 0.125 m, about a tenth of a pixel on the
+   disc), for every other blip: its fixed point, else where the host's last radar step found it. A blip that stands
+   still costs bytes once; one that moves is a change each time it moves, which is what the priority is for. A blip the
+   host could not place has neither, and the guest draws nothing for it, as the host does.
+
+**Which targets have ids today.** Only the humans of the level's brains (the player, the cast, the fighters): the host's
+`GameHumans` gives each an id the step it appears ([The game's humans](multiplayer.md#game-humans)). The play mode finds
+the human a handle names (`PlayLevelSimulation::humanOfHandle()`: the player's handle, or a cast human's) and
+`GameHumans::captureBlips()` turns him into his id, or leaves the blip to name its place when he has none. A world flag,
+a spawn record (a prop, a pick-up), a car or a particle system has none: `ReplicatedKind::WorldObject` and `Car` have
+field tables, but nothing captures them yet, so those blips carry a place. The `Follows` field holds any network id, so
+the day those things have ids their blips change over with no change to the wire.
+
+**The slot.** The wire names a blip by a slot, 0 to 127 (`kMaxRadarBlips`, the original's 128: a limit that stays,
+because every peer must agree on the slot's bits and on a count to refuse past), which `net::BlipSlots` gives each blip
+on the host and keeps for as long as the blip lasts, so a delta names it the same every step. A new blip takes the lowest
+free slot, in handle order; one gone gives its slot back; the blips past 128 at once have none and are drawn on the host
+only. A guest keys its blips by the slot as a number, since it has no handles.
+
+**The fields** (`HudBlipField`, 18, [field table](multiplayer.md#field-tables)): type (4 bits, 0 to 12), icon (10 bits),
+size (16 bits, 0 to 16), colour (4 x 8 bits), flashing, blinking, icon lock, marked, marking and dot shown (a bit each),
+the followed human (22 bits), has place (a bit) and the place (3 x 14 bits): 133 bits, 159 with the slot, the removed bit
+and a changed bit for each field. The two running counts (a new objective's 100 updates of blinking, the scanner's 300
+of mark) travel as whether they run, because each HUD counts them down itself: a guest's HUD takes them at their start
+every step the host's run, so its dot blinks while the host's does. The dot's settled state, its batch's depth and its
+place are each HUD's own, derived as `Radar_AddBlip` and the radar step derive them; the dot's shown state travels, since
+it depends on how the blip's history went. An objective's up or down arrow (icons 74 and 75) and its colour travel as
+the host's icon and colour, so on a guest they show the objective above or below the **host's** player: the guest's step
+does not run the height test, where the original works it out per radar from that radar's own player (**stand-in**,
+until each player slot has a radar of its own). A blip has one set of words: one that follows a human has no place, and
+one with no place has the zero place's words, so a delta never sends a place nothing reads.
+
+**Deltas, the budget and the priority.** Blips are delta-compressed against the same acknowledged baseline as the rest:
+a slot the baseline does not hold comes in full (every field), a kept one with its changed fields only (an icon change is
+7 + 1 + 18 + 10 bits, 5 bytes), an unchanged one costs nothing, and one gone is removed. They go **after the HUD's texts
+and before the humans**, in at most **a quarter of the budget** (`kSnapshotBlipShare`, 300 bytes): a level holds dozens
+that seldom change, and they must fill in without crowding the humans out. Removals go first (a byte each). Then the
+changes by priority, as the humans' do: each blip with a change not yet sent adds its rate to its priority every
+snapshot, the highest go first and equal ones in slot order, a change that does not fit waits and a smaller one after
+it may still go, and a blip sent starts again from 0. The rate is **4 for a mission objective** (types 10 and 1), which
+the player steers by, and 1 for the rest, so a level's 40 blips (800 bytes in full) reach a guest over three snapshots,
+the objectives in the first, and none waits for ever. What the budget leaves unused goes to the humans.
+
+**Strict decoding.** The decoder refuses a count past 128 or one the packet cannot hold, a slot not rising, a kept entry
+with nothing changed and a word over its field's range (a type past 12). The client's receiver refuses, against its
+baseline, the removal of a blip it does not hold, a new blip with a field left out, a field "changed" to the word it
+has, and words that break a blip's rules: a follows number that is no network id (generation 0), a blip that follows a
+human and also has a place, and one with no place whose coordinates are not the zero place's.
 
 ## The packet {#packet}
 
@@ -207,6 +275,8 @@ Message 10, Snapshot, server to client, UnreliableSequenced:
 | Each HUD element, in rising key order: the key; a removed bit; when not removed, for each of its fields a changed bit and, when set, the field's word | 5 + 1 + its fields + the words |
 | The number of HUD texts, at most 22 (protocol 9) | varint |
 | Each HUD text, in rising key order: the key; a removed bit; when not removed, the text's length (1 to 255) and its bytes | 5 + 1 + varint + 8 a byte |
+| The number of radar blips, at most 128 (protocol 14) | varint |
+| Each radar blip, in rising slot order: the slot; a removed bit; when not removed, for each of its 18 fields a changed bit and, when set, the field's word | 7 + 1 + 18 + the words |
 
 Message 11, SnapshotAck, client to server, Unreliable: the sequence (a varint).
 
@@ -219,7 +289,8 @@ keep the same rules by slot, and more of them than there are player slots is ref
 elements keep them by key, and a key past the last or an Exact word that is not a finite number is refused; a HUD text
 for a key with no text (the gauge's, the settings'), an empty one, one over 255 bytes, keys not rising, a removal of a
 text not held and a text "changed" to the one held are refused, and more elements or texts than there are keys is
-refused before any is read. The server closes a connection that acknowledges a snapshot it never sent.
+refused before any is read. The radar's blips keep the same rules by slot, and a blip's words must keep a blip's own
+([The radar's blips](#hud-blips)). The server closes a connection that acknowledges a snapshot it never sent.
 
 ## The budget and the priority accumulator {#budget}
 
@@ -231,6 +302,10 @@ datagram below every common path's MTU. `build()` fills it:
    (`SnapshotHuman::priority`, 1 for most) to its priority; the highest go first, equal ones in id order. A change that
    does not fit waits and a smaller one after it may still go.
 3. A human sent has its priority back at 0; one with nothing to send has none.
+
+Before the humans go the players' HUDs and the HUD's elements, then its texts, and then the radar's blips: their
+removals, then their changes by a priority of their own, in at most a quarter of the budget ([The radar's
+blips](#hud-blips)). What the blips leave goes to the humans.
 
 A human left out stays as the baseline has it (not at all, when new) and goes in a later snapshot with a higher
 priority, so far or quiet humans update less often and nobody waits for ever. The rates are the place for
@@ -248,15 +323,16 @@ walking.
 
 | Snapshot | Entries | Bytes |
 | --- | --- | --- |
-| The first (full): 30 humans of 315 bits fit, the other 30 wait | 30 | 1,190 |
-| The second: the 30 in full, and the one walker among the first 30 that the room left (x, heading and playhead: 86 bits) | 31 | 1,200 |
-| Every one after: the 12 walkers | 12 | 137 |
+| The first (full): 30 humans of 315 bits fit, the other 30 wait | 30 | 1,191 |
+| The second: the 30 in full; the 78 bits the room leaves take no walker (86 bits) | 30 | 1,191 |
+| Every one after: the 12 walkers | 12 | 138 |
 
-137 bytes at 30 snapshots a second is about 4 KB/s per client, under the [architecture's
+138 bytes at 30 snapshots a second is about 4 KB/s per client, under the [architecture's
 estimate](network-architecture.md#snapshots) of 340 bytes for a similar scene. Carrying four layers rather than two
 cost a human in full 70 bits more and a walker's delta 6 (the older layers' changed bits); the four gait values cost
 it 44 more and the walker 4; the move style, 2 more for a human in full (its changed bit and its word) and 1 for a
-walker (its changed bit); the character, 11 more and the walker 1. A fight where 20 humans each move, turn and change
+walker (its changed bit); the character, 11 more and the walker 1; the radar's blip count, a byte on the header of
+every snapshot (a second walker no longer fits in the second). A fight where 20 humans each move, turn and change
 every animation field takes about 20 × 34 bytes, under 60 % of the budget.
 
 ## Testing {#testing}
@@ -271,7 +347,13 @@ before the humans (both in the first snapshot, 29 humans beside them), and a rou
 and repeated snapshots and late acknowledgements, where every snapshot decoded leaves the client holding exactly the
 server's record of it, and a human's character coming with the human, then costing a bit, then sent alone when it
 changes. `tests/net/character_id_test.cpp` covers [the id](#character) both ways and the client's roster of characters.
-`tests/net/hud_standing_test.cpp` covers [the HUD's standing state](#hud-standing): its
+`tests/net/radar_blips_test.cpp` covers [the radar's blips](#hud-blips): a blip's words and back (the human it follows
+by id, a place within a step, a number past its range held, the counts as whether they run), the slots (kept while a blip
+lasts, the lowest free for a new one, 128 the most), the game's capture, the entries in full first and then changed
+fields only, a removal and a slot's reuse, a delta against an older baseline, the entry's bits and a snapshot's pinned
+bytes, the decoder's and the client's refusals, and the budget (a quarter of it, the objectives first, none waiting for
+ever, a removal always going); `tests/hud/radar_blips_test.cpp` covers a guest's blips following a human by the follow
+locator and the HUD taking them. `tests/net/hud_standing_test.cpp` covers [the HUD's standing state](#hud-standing): its
 elements and texts and back (a number past its range held, a long text cut), the game's capture, the elements and
 texts in full first, then their changes, a part gone removed and a delta against an older baseline, their pinned bytes,
 the decoder's and the client's refusals, and the budget's order (elements with the HUDs, texts after them, the humans

@@ -325,6 +325,17 @@ const ai::AiHuman* PlayLevelSimulation::castHumanOf(double handle) {
     return nullptr;
 }
 
+const human::Human* PlayLevelSimulation::humanOfHandle(double handle) {
+    if (handle == world_objects::kNoObject) {
+        return nullptr;
+    }
+    if (handle == playerHandle()) {
+        return &m_player->human();
+    }
+    const ai::AiHuman* fighter = castHumanOf(handle);
+    return fighter != nullptr ? fighter->human.get() : nullptr;
+}
+
 std::vector<characters::CharacterChoice> PlayLevelSimulation::characterChoices() const {
     // Every configured type a player can be drawn as: those whose record (or class record) names a model.
     std::vector<characters::CharacterChoice> choices;

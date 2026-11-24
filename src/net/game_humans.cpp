@@ -15,6 +15,7 @@
 #include "human/human.h"
 #include "net/character_id.h"
 #include "net/player_huds.h"
+#include "net/radar_blips.h"
 
 namespace coney::net {
 
@@ -112,6 +113,19 @@ void GameHumans::captureHuds(std::span<const hud::PlayerHudState> slots, const h
     m_hudStanding = standing != nullptr ? snapshotHudStanding(*standing) : SnapshotHudStanding{};
 }
 
+void GameHumans::captureBlips(const hud::HudStanding& standing, const BlipHumanOf& followed) {
+    if (!m_capturing) {
+        return;
+    }
+    // The id the human a handle names has now: ids, never pointers, name him on the wire; a human the capture holds no
+    // id for (not captured yet, or gone) is not followed, and his blip names its place.
+    const BlipFollowed idOfHandle = [this, &followed](double handle) {
+        const human::Human* human = followed ? followed(handle) : nullptr;
+        return human != nullptr ? m_table.idOf(human).value_or(NetId{}) : NetId{};
+    };
+    m_blips = snapshotBlips(standing.shared.blips, m_blipSlots, idOfHandle);
+}
+
 void GameHumans::clear() {
     std::vector<const human::Human*> all;
     m_table.forEach([&all](NetId, const human::Human* handle) { all.push_back(handle); });
@@ -123,6 +137,8 @@ void GameHumans::clear() {
     m_humans.clear();
     m_huds.clear();
     m_hudStanding = {};
+    m_blips.clear();
+    m_blipSlots.clear();
 }
 
 void GameHumans::releaseRetired() {

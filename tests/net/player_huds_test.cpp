@@ -293,12 +293,12 @@ TEST_CASE("player HUDs: the HUD entries' bytes are pinned, round-trip and refuse
     // Id 10; sequence 3; baseline 1 back; step 7; no humans; one HUD entry of 14 fields (protocol 13 added the human
     // the slot drives as the 14th). From its first bit: slot 1 (2 bits), removed 0, fields 0 to 4 unchanged = 0x01;
     // money's changed bit and its word's low 7 bits (0x19) = 0x33; the word's next 8 bits = 0x00; its top bit, then
-    // fields 6 to 12 unchanged = 0x01; field 13 unchanged and the zero bits of the HUD element count and the HUD text
-    // count (protocol 9), which fill the last bytes = 0x00 0x00 0x00.
+    // fields 6 to 12 unchanged = 0x01; field 13 unchanged and the zero bits of the HUD element count, the HUD text
+    // count (protocol 9) and the radar blip count (protocol 14), which fill the last bytes = 0x00 0x00 0x00 0x00.
     const std::vector<std::byte> expected{std::byte{0x0a}, std::byte{0x03}, std::byte{0x01}, std::byte{0x07},
                                           std::byte{0x00}, std::byte{0x01}, std::byte{0x01}, std::byte{0x33},
                                           std::byte{0x00}, std::byte{0x01}, std::byte{0x00}, std::byte{0x00},
-                                          std::byte{0x00}};
+                                          std::byte{0x00}, std::byte{0x00}};
     CHECK(kHudFieldCount == 14);
     CHECK(encode(small) == expected);
     CHECK(overTheWire(small) == small);
@@ -310,8 +310,8 @@ TEST_CASE("player HUDs: the HUD entries' bytes are pinned, round-trip and refuse
         REQUIRE_FALSE(decoded.has_value());
         CHECK(decoded.error().code == ErrorCode::Invalid);
     };
-    // The header of a snapshot with no humans, then `count` HUD entries written as `entries`, then no HUD elements and
-    // no HUD texts.
+    // The header of a snapshot with no humans, then `count` HUD entries written as `entries`, then no HUD elements, no
+    // HUD texts and no radar blips.
     const auto withHuds = [](std::uint64_t count, const BitWriter& entries) {
         std::vector<std::byte> packet{std::byte{0x0a}, std::byte{0x01}, std::byte{0x00}, std::byte{0x00},
                                       std::byte{0x00}};
@@ -320,6 +320,7 @@ TEST_CASE("player HUDs: the HUD entries' bytes are pinned, round-trip and refuse
         for (const std::byte b : entries.bytes()) {
             tail.writeBits(static_cast<std::uint32_t>(b), 8);
         }
+        tail.writeVarUint(0);
         tail.writeVarUint(0);
         tail.writeVarUint(0);
         packet.insert(packet.end(), tail.bytes().begin(), tail.bytes().end());

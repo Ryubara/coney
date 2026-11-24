@@ -23,9 +23,10 @@ namespace coney::net {
 
 namespace {
 
-// The most bits a Snapshot's header takes: the id byte and four varints of 32 bits at most (5 bytes each), and the
-// counts of HUD entries, HUD elements and HUD texts (one byte each: at most kMaxPlayerSlots and kHudElements).
-constexpr std::size_t kMostHeaderBits = 8 + (4 * 5 * 8) + (3 * 8);
+// The most bits a Snapshot's header takes: the id byte and four varints of 32 bits at most (5 bytes each), the
+// counts of HUD entries, HUD elements and HUD texts (one byte each: at most kMaxPlayerSlots and kHudElements) and the
+// radar blips' (two bytes: at most kMaxRadarBlips).
+constexpr std::size_t kMostHeaderBits = 8 + (4 * 5 * 8) + (3 * 8) + 16;
 static_assert(kHudElements < 0x80, "a HUD element or text count is a one-byte varint");
 
 // The bits of a HUD text of kMaxHudTextBytes: its key, its removed bit, its length (a two-byte varint) and its bytes.
@@ -53,6 +54,18 @@ const SnapshotHudElements& noHudElements() {
 const SnapshotHudTexts& noHudTexts() {
     static const SnapshotHudTexts none;
     return none;
+}
+
+// What no snapshot holds of the radar's blips.
+const SnapshotBlips& noBlips() {
+    static const SnapshotBlips none;
+    return none;
+}
+
+// The bits of a blip in full: what the sender keeps room for, in the blips' share and in the packet.
+std::size_t fullBlipBits() {
+    const auto fields = fieldTable(ReplicatedKind::HudBlip);
+    return kRadarBlipSlotBits + 1 + fields.size() + fieldsBits(fields);
 }
 
 // The bits of every HUD element in full: what the sender keeps room for, as for the players' HUDs.
@@ -118,6 +131,12 @@ struct Candidate {
     std::uint64_t priority = 0;
 };
 
+// A radar blip's change waiting to be sent: its entry, and the priority it waits with.
+struct BlipCandidate {
+    SnapshotBlipEntry entry;
+    std::uint64_t priority = 0;
+};
+
 } // namespace
 
 HumanWords humanWords(std::span<const FieldValue, kHumanFieldCount> values) {
@@ -165,14 +184,17 @@ SnapshotSender::SnapshotSender(std::size_t budgetBytes) : m_budgetBytes(budgetBy
     const std::size_t fullHuman = kNetIdBits + 1 + kHumanFieldCount + fieldsBits(fieldTable(ReplicatedKind::Human));
     const std::size_t fullHud =
         kPlayerSlotBits + 1 + kHudFieldCount + fieldsBits(fieldTable(ReplicatedKind::PlayerHud));
-    // The HUD's standing state too: every element in full and one text of the longest, or a long text might never fit.
+    // The HUD's standing state too: every element in full and one text of the longest, or a long text might never fit;
+    // and the blips' whole share, which goes before the humans, or the blips could leave no room for a human.
     CONEY_ASSERT(budgetBytes * 8 >= kMostHeaderBits + (kMaxPlayerSlots * fullHud) + allHudElementsBits() +
-                                        kLongestHudTextBits + fullHuman);
+                                        kLongestHudTextBits + (budgetBytes * 8 / kSnapshotBlipShare) + fullHuman);
+    // The radar's blips have a share of the packet, which must hold one in full or a new blip might never fit.
+    CONEY_ASSERT(budgetBytes * 8 / kSnapshotBlipShare >= fullBlipBits());
 }
 
 Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman> humans,
                                std::span<const SnapshotHud> huds, std::span<const SnapshotHudElement> elements,
-                               std::span<const SnapshotHudText> texts) {
+                               std::span<const SnapshotHudText> texts, std::span<const SnapshotBlip> blips) {
     CONEY_ASSERT(m_sequence < 0xffffffffU); // four and a half years of snapshots at 30 a second
     Snapshot snapshot;
     snapshot.sequence = ++m_sequence;
@@ -188,6 +210,7 @@ Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman
     SnapshotHuds hudsHeld = kept ? acknowledged.huds : noHuds();
     SnapshotHudElements elementsHeld = kept ? acknowledged.elements : noHudElements();
     SnapshotHudTexts textsHeld = kept ? acknowledged.texts : noHudTexts();
+    SnapshotBlips blipsHeld = kept ? acknowledged.blips : noBlips();
 
     // This step's humans by id, so they are walked in id order whatever order the game gave them in.
     std::map<NetId, const SnapshotHuman*> now;
@@ -244,6 +267,43 @@ Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman
     const std::vector<SnapshotHudElementEntry> elementChanges = hudElementChanges(elementsHeld, elementsNow);
     const std::vector<SnapshotHudTextEntry> textChanges = hudTextChanges(textsHeld, textsNow);
 
+    // The radar's blips by slot: a removal for each the baseline holds that is not here; for the rest the fields
+    // changed, each blip's priority grown by its own rate while its change waits, as the humans' is.
+    std::map<std::uint8_t, const SnapshotBlip*> blipsNow;
+    for (const SnapshotBlip& blip : blips) {
+        CONEY_ASSERT(blip.slot < kMaxRadarBlips);
+        const bool added = blipsNow.emplace(blip.slot, &blip).second;
+        CONEY_ASSERT(added); // one entry a slot
+    }
+    std::vector<SnapshotBlipEntry> blipRemovals;
+    for (const auto& [slot, words] : blipsHeld) {
+        if (!blipsNow.contains(slot)) {
+            blipRemovals.push_back(SnapshotBlipEntry{.slot = slot, .removed = true, .changed = 0, .words = {}});
+        }
+    }
+    std::vector<BlipCandidate> blipChanges;
+    std::map<std::uint8_t, std::uint64_t> blipPriorities;
+    for (const auto& [slot, blip] : blipsNow) {
+        SnapshotBlipEntry entry{.slot = slot, .removed = false, .changed = 0, .words = {}};
+        const auto held = blipsHeld.find(slot);
+        for (std::size_t field = 0; field < kBlipFieldCount; ++field) {
+            if (held == blipsHeld.end() || held->second.at(field) != blip->words.at(field)) {
+                entry.changed |= 1U << field;
+                entry.words.at(field) = blip->words.at(field);
+            }
+        }
+        if (entry.changed == 0) {
+            continue;
+        }
+        const auto before = m_blipPriority.find(slot);
+        const std::uint64_t priority = (before == m_blipPriority.end() ? 0 : before->second) + blip->priority;
+        blipPriorities.emplace(slot, priority);
+        blipChanges.push_back(BlipCandidate{.entry = entry, .priority = priority});
+    }
+    // The highest priority first; equal ones in slot order.
+    std::ranges::stable_sort(blipChanges,
+                             [](const BlipCandidate& a, const BlipCandidate& b) { return a.priority > b.priority; });
+
     // Removals: a human the baseline holds that is not here any more.
     std::vector<Candidate> removals;
     for (const auto& [id, words] : holding) {
@@ -282,8 +342,9 @@ Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman
     // longest), then removals (each a few bytes, and a client must not keep a human that has gone), then the changes
     // by priority; one that does not fit waits, and a smaller one after it may still go.
     const std::size_t budgetBits = m_budgetBytes * 8;
-    std::size_t usedBits = snapshotHeaderBits(snapshot, removals.size() + changes.size(), hudChanges.size(),
-                                              elementChanges.size(), textChanges.size());
+    std::size_t usedBits =
+        snapshotHeaderBits(snapshot, removals.size() + changes.size(), hudChanges.size(), elementChanges.size(),
+                           textChanges.size(), blipRemovals.size() + blipChanges.size());
     std::vector<SnapshotHudEntry> hudsTaken;
     for (const SnapshotHudEntry& entry : hudChanges) {
         const std::size_t bits = snapshotHudEntryBits(entry);
@@ -326,6 +387,34 @@ Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman
             textsHeld.insert_or_assign(entry.key, entry.text);
         }
     }
+    // The radar's blips: the removals, each a byte, then the changes by priority, in the blips' share of the budget;
+    // one that does not fit waits with its priority grown, and a smaller one after it may still go.
+    const std::size_t blipShareBits = budgetBits / kSnapshotBlipShare;
+    std::size_t blipBits = 0;
+    std::vector<SnapshotBlipEntry> blipsTaken;
+    const auto offerBlip = [&](const SnapshotBlipEntry& entry) {
+        const std::size_t bits = snapshotBlipEntryBits(entry);
+        if (usedBits + bits > budgetBits || blipBits + bits > blipShareBits) {
+            return false;
+        }
+        usedBits += bits;
+        blipBits += bits;
+        blipsTaken.push_back(entry);
+        return true;
+    };
+    for (const SnapshotBlipEntry& entry : blipRemovals) {
+        if (offerBlip(entry)) {
+            blipsHeld.erase(entry.slot);
+        }
+    }
+    for (const BlipCandidate& candidate : blipChanges) {
+        if (offerBlip(candidate.entry)) {
+            blipsHeld.insert_or_assign(candidate.entry.slot, blipsNow.at(candidate.entry.slot)->words);
+            blipPriorities.erase(candidate.entry.slot); // sent: it starts waiting again from 0
+        }
+    }
+    std::ranges::sort(blipsTaken, {}, &SnapshotBlipEntry::slot);
+    snapshot.blips = std::move(blipsTaken);
     std::vector<SnapshotEntry> taken;
     const auto offer = [&](const Candidate& candidate) {
         const std::size_t bits = snapshotEntryBits(candidate.entry);
@@ -347,11 +436,13 @@ Snapshot SnapshotSender::build(std::uint32_t step, std::span<const SnapshotHuman
     std::ranges::sort(taken, [](const SnapshotEntry& a, const SnapshotEntry& b) { return a.id < b.id; });
     snapshot.humans = std::move(taken);
     m_priority = std::move(priorities);
+    m_blipPriority = std::move(blipPriorities);
     m_sent.at(snapshot.sequence % kSnapshotHistory) = Sent{.sequence = snapshot.sequence,
                                                            .holding = std::move(holding),
                                                            .huds = std::move(hudsHeld),
                                                            .elements = std::move(elementsHeld),
-                                                           .texts = std::move(textsHeld)};
+                                                           .texts = std::move(textsHeld),
+                                                           .blips = std::move(blipsHeld)};
     return snapshot;
 }
 
@@ -374,6 +465,26 @@ const SnapshotHumans* SnapshotSender::holding(std::uint32_t sequence) const {
 const SnapshotHuds* SnapshotSender::holdingHuds(std::uint32_t sequence) const {
     const Sent& sent = m_sent.at(sequence % kSnapshotHistory);
     return sequence != 0 && sent.sequence == sequence ? &sent.huds : nullptr;
+}
+
+const SnapshotBlips* SnapshotSender::holdingBlips(std::uint32_t sequence) const {
+    const Sent& sent = m_sent.at(sequence % kSnapshotHistory);
+    return sequence != 0 && sent.sequence == sequence ? &sent.blips : nullptr;
+}
+
+std::uint64_t SnapshotSender::blipPriority(std::uint8_t slot) const {
+    const auto found = m_blipPriority.find(slot);
+    return found == m_blipPriority.end() ? 0 : found->second;
+}
+
+const SnapshotBlips& SnapshotReceiver::blips() const {
+    const SnapshotBlips* newest = holdingBlips(m_newest);
+    return newest == nullptr ? noBlips() : *newest;
+}
+
+const SnapshotBlips* SnapshotReceiver::holdingBlips(std::uint32_t sequence) const {
+    const Received& received = m_received.at(sequence % kSnapshotHistory);
+    return sequence != 0 && received.sequence == sequence ? &received.blips : nullptr;
 }
 
 std::uint64_t SnapshotSender::priority(NetId id) const {
@@ -400,6 +511,9 @@ std::expected<SnapshotApplied, Error> SnapshotReceiver::apply(const Snapshot& sn
     CONEY_ASSERT(elementsBaseline != nullptr && textsBaseline != nullptr); // kept with the humans
     SnapshotHudElements elements = *elementsBaseline;
     SnapshotHudTexts texts = *textsBaseline;
+    const SnapshotBlips* blipsBaseline = snapshot.baseline == 0 ? &noBlips() : holdingBlips(snapshot.baseline);
+    CONEY_ASSERT(blipsBaseline != nullptr); // kept with the humans
+    SnapshotBlips blipsHeld = *blipsBaseline;
     for (const SnapshotEntry& entry : snapshot.humans) {
         if (entry.removed) {
             if (humans.erase(entry.id) == 0) {
@@ -492,12 +606,47 @@ std::expected<SnapshotApplied, Error> SnapshotReceiver::apply(const Snapshot& sn
         }
         texts.insert_or_assign(entry.key, entry.text);
     }
+    // The radar's blips, by the same rules as the humans, and each blip's words must keep a blip's own.
+    for (const SnapshotBlipEntry& entry : snapshot.blips) {
+        if (entry.removed) {
+            if (blipsHeld.erase(entry.slot) == 0) {
+                return fail(ErrorCode::Invalid, "network snapshot removes a radar blip its baseline does not hold");
+            }
+            continue;
+        }
+        const auto held = blipsHeld.find(entry.slot);
+        if (held == blipsHeld.end()) {
+            if (entry.changed != kAllBlipFields) {
+                return fail(ErrorCode::Invalid, "network snapshot adds a radar blip with fields left out");
+            }
+            if (const char* broken = blipWordsBroken(entry.words)) {
+                return fail(ErrorCode::Invalid, broken);
+            }
+            blipsHeld.emplace(entry.slot, entry.words);
+            continue;
+        }
+        BlipWords words = held->second;
+        for (std::size_t field = 0; field < kBlipFieldCount; ++field) {
+            if ((entry.changed & (1U << field)) == 0) {
+                continue;
+            }
+            if (words.at(field) == entry.words.at(field)) {
+                return fail(ErrorCode::Invalid, "network snapshot changes a radar blip's field to the value it has");
+            }
+            words.at(field) = entry.words.at(field);
+        }
+        if (const char* broken = blipWordsBroken(words)) {
+            return fail(ErrorCode::Invalid, broken);
+        }
+        held->second = words;
+    }
     m_received.at(snapshot.sequence % kSnapshotHistory) = Received{.sequence = snapshot.sequence,
                                                                    .step = snapshot.step,
                                                                    .holding = std::move(humans),
                                                                    .huds = std::move(huds),
                                                                    .elements = std::move(elements),
-                                                                   .texts = std::move(texts)};
+                                                                   .texts = std::move(texts),
+                                                                   .blips = std::move(blipsHeld)};
     m_newest = snapshot.sequence;
     m_newestStep = snapshot.step;
     return SnapshotApplied::Applied;

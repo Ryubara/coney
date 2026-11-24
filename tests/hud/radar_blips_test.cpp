@@ -17,6 +17,7 @@
 
 using Catch::Approx;
 using coney::anim::Vec3;
+using coney::hud::Hud;
 using coney::hud::RadarBlip;
 using coney::hud::RadarState;
 using coney::hud::RadarStepContext;
@@ -356,4 +357,108 @@ TEST_CASE("no police hint in levels 80 and 99, for another brain, or with the ga
     CHECK_FALSE(run(99, 1, true));
     CHECK_FALSE(run(98, 2, true));
     CHECK_FALSE(run(98, 1, false));
+}
+
+// Expected: unverified, #1537 (Coney's own network play; the blips' fields are the original's slot's,
+// gui.md#radar-blip-slots)
+TEST_CASE("a guest's blip that follows a human is placed by the follow locator, never by its handle",
+          "[hud][radar][net]") {
+    RadarState radar = openRadar();
+    radar.blips[1.0] = RadarBlip{.type = 7, .follows = 5};
+    radar.blips[2.0] = RadarBlip{.type = 7, .follows = 6};
+    radar.blips[3.0] = RadarBlip{.type = 7, .fixedPlace = Vec3{4.0F, 5.0F, 6.0F}, .follows = 5};
+    RadarStepContext context;
+    // The handle lookup finds everything, as the host's does: a guest's blip must not be found through it.
+    context.locate = [](double) -> std::optional<Vec3> { return Vec3{99.0F, 99.0F, 99.0F}; };
+    context.locateFollowed = [](std::uint32_t id) -> std::optional<Vec3> {
+        return id == 5 ? std::optional<Vec3>(Vec3{0.0F, 10.0F, 0.0F}) : std::nullopt;
+    };
+    coney::hud::stepRadarBlips(radar, context);
+    REQUIRE(radar.blips.at(1.0).place.has_value());
+    CHECK(coney::test::got(radar.blips.at(1.0).place) == Vec3{0.0F, 10.0F, 0.0F});
+    // A human the guest's world does not hold leaves the blip without a place, so it is not drawn.
+    CHECK_FALSE(radar.blips.at(2.0).place.has_value());
+    // A fixed place wins over the id.
+    CHECK(coney::test::got(radar.blips.at(3.0).place) == Vec3{4.0F, 5.0F, 6.0F});
+    // With no follow locator at all the blip has no place either.
+    context.locateFollowed = {};
+    coney::hud::stepRadarBlips(radar, context);
+    CHECK_FALSE(radar.blips.at(1.0).place.has_value());
+}
+
+// Expected: unverified, #1537 (Coney's own view of the radar's blips for network play, snapshots.md#hud-blips)
+TEST_CASE("the HUD's standing state holds the radar's blips by handle, and a guest's HUD takes them",
+          "[hud][radar][net]") {
+    Hud host;
+    host.radar().blips[7.0] = RadarBlip{.type = 10, .icon = 27, .scale = 0.7F, .flashCountdown = 100};
+    host.radar().blips[9.0] = RadarBlip{.type = 7,
+                                        .icon = 365,
+                                        .scale = 0.56F,
+                                        .colour = coney::graphics::Rgba{1, 2, 3, 4},
+                                        .flashing = true,
+                                        .iconLock = true,
+                                        .markTimer = 300,
+                                        .dotShown = true,
+                                        .follows = 0};
+    const coney::hud::HudStanding standing = host.standing();
+    REQUIRE(standing.shared.blips.size() == 2);
+    CHECK(standing.shared.blips.at(7.0).icon == 27);
+    CHECK(standing.shared.blips.at(9.0).colour == coney::graphics::Rgba{1, 2, 3, 4});
+
+    // What a guest's HUD takes is what the standing state carries of each blip; the rest is its own.
+    Hud guest;
+    guest.applyStanding(standing);
+    REQUIRE(guest.radar().blips.size() == 2);
+    const RadarBlip& objective = guest.radar().blips.at(7.0);
+    CHECK(objective.type == 10);
+    CHECK(objective.icon == 27);
+    CHECK(objective.scale == Approx(0.7F));
+    CHECK(objective.flashCountdown == 100);
+    const RadarBlip& human = guest.radar().blips.at(9.0);
+    CHECK(human.icon == 365);
+    CHECK(human.scale == Approx(0.56F));
+    CHECK(human.colour == coney::graphics::Rgba{1, 2, 3, 4});
+    CHECK(human.flashing);
+    CHECK(human.iconLock);
+    CHECK(human.markTimer == 300);
+    CHECK(human.dotShown);
+    // A new blip is set up as Radar_AddBlip leaves one (its batch by its type), with no first show or hide to redo,
+    // since the host's dot state travels.
+    CHECK(objective.settled);
+    CHECK(objective.depth == 9000);
+    CHECK(human.depth == 1000);
+    CHECK(human.dotShown);
+
+    // A blip the host no longer holds goes; one kept keeps what the guest's step found, and takes what changed.
+    guest.radar().blips.at(9.0).place = Vec3{1.0F, 2.0F, 3.0F};
+    host.radar().blips.erase(7.0);
+    host.radar().blips.at(9.0).icon = 366;
+    guest.applyStanding(host.standing());
+    REQUIRE(guest.radar().blips.size() == 1);
+    CHECK(guest.radar().blips.at(9.0).icon == 366);
+    CHECK(coney::test::got(guest.radar().blips.at(9.0).place) == Vec3{1.0F, 2.0F, 3.0F});
+    CHECK(guest.standing().shared.blips.size() == 1);
+}
+
+// Expected: unverified, #1537 (Coney's own network play)
+TEST_CASE(
+    "a guest's blips follow a human through the HUD's step, and a type-9 blip ends the update as it does the host's",
+    "[hud][radar][net]") {
+    Hud guest;
+    guest.setRadarFollowLocator([](std::uint32_t id) -> std::optional<Vec3> {
+        return id == 42 ? std::optional<Vec3>(Vec3{0.0F, 20.0F, 0.0F}) : std::nullopt;
+    });
+    coney::hud::HudStanding standing;
+    standing.shared.blips[3.0] = RadarBlip{.type = 7, .follows = 42};
+    standing.shared.blips[4.0] = RadarBlip{.type = 7, .follows = 43};
+    standing.shared.blips[5.0] = RadarBlip{.type = 7, .fixedPlace = Vec3{0.0F, 30.0F, 0.0F}};
+    guest.applyStanding(standing);
+    stepHud(guest, 0, 99);
+    stepHud(guest, 33, 99);
+    CHECK(coney::test::got(guest.radar().blips.at(3.0).place) == Vec3{0.0F, 20.0F, 0.0F});
+    CHECK_FALSE(guest.radar().blips.at(4.0).place.has_value());
+    CHECK(coney::test::got(guest.radar().blips.at(5.0).place) == Vec3{0.0F, 30.0F, 0.0F});
+    // Taking the same standing state again does not undo what the step found.
+    guest.applyStanding(standing);
+    CHECK(guest.radar().blips.at(3.0).place.has_value());
 }

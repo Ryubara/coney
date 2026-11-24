@@ -496,6 +496,9 @@ void PlayLevelMode::hudStepped() {
         const hud::HudStanding standing = hudStanding();
         const std::array<const human::Human*, hud::kPlayers> drivers = playerHumans();
         m_netHumans->captureHuds(playerHuds(), &standing, drivers);
+        // The radar's blips, each naming the human it follows by the id he has: a script's handle names nothing on a
+        // guest.
+        m_netHumans->captureBlips(standing, [this](double handle) { return humanOfHandle(handle); });
     }
     m_hudLayer->render();
     recordIconPoses();

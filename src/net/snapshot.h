@@ -61,6 +61,10 @@ using SnapshotHudElements = std::map<std::uint8_t, HudElementWords>;
 /// The HUD texts a snapshot leaves a client holding, by their element's key: each one 1 to kMaxHudTextBytes bytes.
 using SnapshotHudTexts = std::map<std::uint8_t, std::string>;
 
+/// The radar's blips a snapshot leaves a client holding, by slot: each one's fields as words. A map, so it is walked in
+/// slot order on every machine.
+using SnapshotBlips = std::map<std::uint8_t, BlipWords>;
+
 /// One element of the HUD's standing state as the server's game hands it to a snapshot.
 /// @coney-only network play; the original has none
 struct SnapshotHudElement {
@@ -82,6 +86,16 @@ struct SnapshotHud {
     HudWords words{};      ///< hudWords() of its fields this step
 };
 
+/// One radar blip as the server's game hands it to a snapshot (docs/guides/snapshots.md#hud-blips).
+/// @coney-only network play; the original has none
+struct SnapshotBlip {
+    std::uint8_t slot = 0; ///< below kMaxRadarBlips, and once in a step's list
+    BlipWords words{};     ///< fieldWord() of each of its fields this step
+    /// How much its priority grows each snapshot it has a change to send and is left out: 1 for most, more for what
+    /// the guest's radar needs sooner (a mission objective).
+    std::uint32_t priority = 1;
+};
+
 /// One human as the server's game hands it to a snapshot.
 /// @coney-only network play; the original has none
 struct SnapshotHuman {
@@ -92,6 +106,10 @@ struct SnapshotHuman {
     /// has room left after the others.
     std::uint32_t priority = 1;
 };
+
+/// The share of a snapshot's budget the radar's blips may take: a quarter. A level holds dozens of blips that seldom
+/// change; they fill in over a few snapshots by their priority and never crowd out the humans.
+inline constexpr std::size_t kSnapshotBlipShare = 4;
 
 /// The server's side of one client's snapshots: keeps the last kSnapshotHistory it sent and what each leaves the
 /// client holding, writes each new one as a delta against the newest the client has acknowledged (in full when it
@@ -113,10 +131,12 @@ class SnapshotSender {
     /// Remembers what it leaves the client holding. The HUDs go before the humans' changes: a handful of small entries
     /// a client's panels need every step. `elements` and `texts` are the HUD's standing state (in any order); the
     /// elements go with the HUDs, and the texts after them, in key order, each where it fits.
+    /// `blips` are the radar's (in any order): they go after the texts and before the humans, a blip's removals first
+    /// and then its changes by priority, in at most a kSnapshotBlipShare-th of the budget.
     [[nodiscard]] Snapshot build(std::uint32_t step, std::span<const SnapshotHuman> humans,
                                  std::span<const SnapshotHud> huds = {},
                                  std::span<const SnapshotHudElement> elements = {},
-                                 std::span<const SnapshotHudText> texts = {});
+                                 std::span<const SnapshotHudText> texts = {}, std::span<const SnapshotBlip> blips = {});
 
     /// The client has decoded snapshot `sequence`; later snapshots may take it as their baseline. False, and nothing
     /// changes, when it is not newer than the one acknowledged before (a late or repeated acknowledgement) or no
@@ -135,8 +155,12 @@ class SnapshotSender {
     [[nodiscard]] const SnapshotHudElements* holdingHudElements(std::uint32_t sequence) const;
     /// The HUD texts snapshot `sequence` leaves the client holding, while it is kept; null when it is not.
     [[nodiscard]] const SnapshotHudTexts* holdingHudTexts(std::uint32_t sequence) const;
+    /// The radar's blips snapshot `sequence` leaves the client holding, while it is kept; null when it is not.
+    [[nodiscard]] const SnapshotBlips* holdingBlips(std::uint32_t sequence) const;
     /// A human's priority now: what it has grown to while its change waited; 0 when it has none waiting.
     [[nodiscard]] std::uint64_t priority(NetId id) const;
+    /// A blip's priority now, as priority() is a human's; 0 when it has none waiting.
+    [[nodiscard]] std::uint64_t blipPriority(std::uint8_t slot) const;
     /// The packet budget, bytes.
     [[nodiscard]] std::size_t budgetBytes() const { return m_budgetBytes; }
 
@@ -148,13 +172,15 @@ class SnapshotSender {
         SnapshotHuds huds;
         SnapshotHudElements elements;
         SnapshotHudTexts texts;
+        SnapshotBlips blips;
     };
 
     std::size_t m_budgetBytes = kSnapshotBudgetBytes;
     std::uint32_t m_sequence = 0;
     std::uint32_t m_acknowledged = 0;
-    std::array<Sent, kSnapshotHistory> m_sent{}; // by sequence % kSnapshotHistory
-    std::map<NetId, std::uint64_t> m_priority;   // the humans whose change is waiting, and how long
+    std::array<Sent, kSnapshotHistory> m_sent{};          // by sequence % kSnapshotHistory
+    std::map<NetId, std::uint64_t> m_priority;            // the humans whose change is waiting, and how long
+    std::map<std::uint8_t, std::uint64_t> m_blipPriority; // the blips whose change is waiting, and how long
 };
 
 /// What SnapshotReceiver::apply() made of a snapshot.
@@ -171,8 +197,9 @@ enum class SnapshotApplied : std::uint8_t {
 class SnapshotReceiver {
   public:
     /// Decodes `snapshot` against its baseline. Fails with Invalid when it breaks what its baseline allows: a
-    /// removal of a human, a HUD, a HUD element or a HUD text the baseline does not hold, a new one with fields left
-    /// out, a changed field whose word is the baseline's, or a text "changed" to the text it has.
+    /// removal of a human, a HUD, a HUD element, a HUD text or a radar blip the baseline does not hold, a new one with
+    /// fields left out, a changed field whose word is the baseline's, a text "changed" to the text it has, or a blip
+    /// whose words break blipWordsBroken().
     [[nodiscard]] std::expected<SnapshotApplied, Error> apply(const Snapshot& snapshot);
 
     /// The newest sequence decoded; 0 for none.
@@ -195,6 +222,10 @@ class SnapshotReceiver {
     [[nodiscard]] const SnapshotHudTexts& hudTexts() const;
     /// The HUD texts decoded snapshot `sequence` holds, while it is kept; null when it is not.
     [[nodiscard]] const SnapshotHudTexts* holdingHudTexts(std::uint32_t sequence) const;
+    /// The radar's blips the newest snapshot holds, by slot.
+    [[nodiscard]] const SnapshotBlips& blips() const;
+    /// The radar's blips decoded snapshot `sequence` holds, while it is kept; null when it is not.
+    [[nodiscard]] const SnapshotBlips* holdingBlips(std::uint32_t sequence) const;
     /// The server's step decoded snapshot `sequence` shows, while it is kept; nothing when it is not. With holding(),
     /// what a client's jitter buffer takes of each snapshot decoded since it last looked, not only the newest.
     [[nodiscard]] std::optional<std::uint32_t> heldStep(std::uint32_t sequence) const;
@@ -208,6 +239,7 @@ class SnapshotReceiver {
         SnapshotHuds huds;
         SnapshotHudElements elements;
         SnapshotHudTexts texts;
+        SnapshotBlips blips;
     };
 
     std::uint32_t m_newest = 0;

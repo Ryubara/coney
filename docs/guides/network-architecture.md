@@ -278,7 +278,7 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
 | Pads sampled once per step through one `InputSource` and the pad record; the AI writes the same `PlayerRecord` | **Simulation inside `src/platform/`**: the level's simulation and its step are core now (`PlayLevelSimulation`, [Missions](#sub-missions)), the streaming, the lights, the glints, the rings and the HUD's sprites behind its presentation hooks, but the scenes' binding is still the platform's (#1449), and the character and level loaders need librw |
 | Script handles from one deterministic counter, and ordered `std::map<double, ...>` almost everywhere | **No copy or restore** of simulation state; `Human`, `Brain` and `Player` are not copyable, and humans link to each other by raw pointer |
 | Per-human and per-brain `CombatRandom` streams; cosmetic effects on their own streams | **`GameRandom`** is drawn by presentation-adjacent code too (system music, radios, effects), each on its own stream as the original's ([Maths](../research/maths.md#random)), so those draws no longer move the gameplay stream, but they still run in the simulation |
-| A headless mode that runs the whole simulation, and input scripts | **The HUD's prompts and radar** are not in the snapshot yet: each player's panel state is ([HUD state](snapshots.md#hud-state)), and the sounds, particles, messages, scenes and movies go through the [game events](multiplayer.md#events) |
+| A headless mode that runs the whole simulation, and input scripts | **The second radar** is not driven yet: each player's panel state, the HUD's standing state and the radar's blips are in the snapshot ([HUD state](snapshots.md#hud-state), [The radar's blips](snapshots.md#hud-blips)), and the sounds, particles, messages, scenes and movies go through the [game events](multiplayer.md#events) |
 | `PlayerSnapshot` and `TargetSnapshot`, ready-made per-human presentation state | **Tuning singletons** the debug menus change live, and debug tools that change the game out of band |
 
 ### Loop, time and input {#sub-loop}
@@ -429,14 +429,14 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   mode owns (`PlayLevelSimulation::playerHuds()`; slot 1 stays empty until a second player plays in a level), and each
   slot's state travels in the snapshots ([HUD state](snapshots.md#hud-state)), with the HUD's standing state: each
   slot's panel flags, prompt and radar switch, and the shared counter panels, bars, scoreboard, stopwatch and settings
-  (`PlayLevelSimulation::hudStanding()`, [The HUD's standing state](snapshots.md#hud-standing)); only radar 0 is
-  driven. Menus read pad
+  (`PlayLevelSimulation::hudStanding()`, [The HUD's standing state](snapshots.md#hud-standing)) and the radar's
+  blips, once for the whole HUD, each naming the human it follows by his network id or else its place ([The radar's
+  blips](snapshots.md#hud-blips)); only radar 0 is driven. Menus read pad
   port 0; the pause menu leaves out the co-op quit. The play mode's HUD state is the simulation's (`hud::HudOwner`, its
   own HUD or the game's), and so is its update in the step; `platform::HudLayer` only lists and draws the sprites of the
   HUD's newest step.
-- **In the way:** the second radar, and the radar's blips, which no snapshot carries yet: they wait for #1537, as
-  they need each blip's place or the network id of what it follows; a menu driven by whichever player opened it (the
-  original's pause stores the player).
+- **In the way:** the second radar, whose blips would need a radar index on the wire; a menu driven by whichever
+  player opened it (the original's pause stores the player).
 
 ### Audio (`audio/`, `platform/audio_output`) {#sub-audio}
 

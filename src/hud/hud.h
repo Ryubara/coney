@@ -200,6 +200,13 @@ struct SharedHudStanding {
     float radarRest = 50.0F;     ///< RadarState::rest.
     float radarFast = 75.0F;     ///< RadarState::fast.
     float radarZoomScale = 1.0F; ///< RadarState::zoomScale.
+    /// The radar's blips (RadarState::blips), which both radars hold in the original (every radar binding acts on
+    /// both), so they are the HUD's, not a player's. From Hud::standing(): the HUD's own, by the script handle each
+    /// follows. In what a guest's HUD takes: keyed by the blip's slot in the snapshot (net::BlipSlots), each with the
+    /// type, icon, size, colour, flashing, mark and place it carries and RadarBlip::follows
+    /// (docs/guides/snapshots.md#hud-blips). Applied by Hud::applyStanding(); the rest of a blip (its settled state,
+    /// its depth, its counters) is each HUD's own.
+    std::map<double, RadarBlip> blips;
     /// The counter panels. A panel's hide time does not travel (Hud::standing() leaves it empty): its `visible` does,
     /// so a guest hides it when the host does.
     std::array<CounterPanel, kCounterPanels> counters{};
@@ -447,6 +454,13 @@ class Hud {
     void setRadarLocator(std::function<std::optional<anim::Vec3>(double handle)> locate) {
         m_locate = std::move(locate);
     }
+    /// A guest's: finds where the human a blip follows is now (RadarBlip::follows, a network id's number) in the
+    /// guest's world; nothing for one that is not there. Empty: such blips are not drawn. Its owner clears it before it
+    /// goes.
+    /// @coney-only network play; the original has none
+    void setRadarFollowLocator(std::function<std::optional<anim::Vec3>(std::uint32_t id)> locate) {
+        m_locateFollowed = std::move(locate);
+    }
     /// Finds the brain type (Human_GetBrain `+0x04`) of the human a blip follows, for the police hint; nothing for a
     /// handle that is not a human. Empty: the hint is never given.
     void setRadarBrainLookup(std::function<std::optional<int>(double handle)> brainType) {
@@ -585,6 +599,8 @@ class Hud {
     void renderRadar(const HudCanvas& canvas) const;
     // The blips over the disc centred at `centre`.
     void renderBlips(const HudCanvas& canvas, graphics::OverlayPoint centre) const;
+    // A guest's HUD takes the radar's blips the host holds (applyStanding()).
+    void applyBlips(const std::map<double, RadarBlip>& theirs);
     // The player's arrow at `centre`, turned by his facing from the camera's.
     void renderPlayerArrow(const HudCanvas& canvas, graphics::OverlayPoint centre) const;
     // Player 0's radar frame's arcs round the disc.
@@ -624,6 +640,7 @@ class Hud {
     RadarState m_radar;
     std::function<std::optional<anim::Vec3>(double)> m_locate;
     std::function<std::optional<int>(double)> m_brainOf;
+    std::function<std::optional<anim::Vec3>(std::uint32_t)> m_locateFollowed;
     std::array<NumIndicator, kNumIndicators> m_indicators{};
     CrewStatusList m_crew;   // HUD +0x10
     CrimePanel m_crimePanel; // HUD +0x177d0: player 0's radar frame

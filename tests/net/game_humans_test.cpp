@@ -23,6 +23,7 @@
 #include "net/client_world.h"
 #include "net/net_id.h"
 #include "net/player_huds.h"
+#include "net/radar_blips.h"
 #include "net/snapshot.h"
 #include "net/state_digest.h"
 #include "raycast/collision_mesh.h"
@@ -329,4 +330,74 @@ TEST_CASE("with capture off the game's humans hold nothing and keep no ids", "[n
         game.setCapturing(false);
     }
     CHECK(game.humans().empty());
+}
+
+// Expected: unverified, #1537 (Coney's own capture; the choice is written in snapshots.md#hud-blips)
+TEST_CASE("the game's radar blips name the human they follow by the id he has, and the rest by place",
+          "[net][hud][radar]") {
+    Scene scene;
+    Human& first = scene.add(0.0F, 0.0F, 0.0F);
+    Human& second = scene.add(5.0F, 5.0F, 0.0F);
+    // A human the scene holds no brain for, so the capture gives him no id.
+    Human stray(scene.character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
+                &scene.character.ranges);
+    GameHumans game;
+    game.capture(scene.brains);
+    REQUIRE(game.humans().size() == 2);
+    const NetId firstId = game.humans()[0].id;
+    const NetId secondId = game.humans()[1].id;
+
+    coney::hud::HudStanding standing;
+    standing.shared.blips[10.0] = coney::hud::RadarBlip{.type = 10, .place = Vec3{3.0F, 4.0F, 0.0F}};
+    standing.shared.blips[20.0] = coney::hud::RadarBlip{.type = 7, .place = Vec3{0.0F, 0.0F, 0.0F}};
+    standing.shared.blips[30.0] = coney::hud::RadarBlip{.type = 7, .place = Vec3{5.0F, 5.0F, 0.0F}};
+    standing.shared.blips[40.0] = coney::hud::RadarBlip{.type = 7, .place = Vec3{9.0F, 9.0F, 0.0F}};
+    const BlipHumanOf humanOf = [&](double handle) -> const Human* {
+        if (handle == 20.0) {
+            return &first;
+        }
+        return handle == 30.0 ? &second : handle == 40.0 ? &stray : nullptr;
+    };
+    game.captureBlips(standing, humanOf);
+    REQUIRE(game.hudBlips().size() == 4);
+    const auto follows = [&](std::size_t slot) {
+        return game.hudBlips()[slot].words.at(static_cast<std::size_t>(HudBlipField::Follows));
+    };
+    const auto hasPlace = [&](std::size_t slot) {
+        return game.hudBlips()[slot].words.at(static_cast<std::size_t>(HudBlipField::HasPlace));
+    };
+    // Slots by handle: 10 an objective with no human, 20 and 30 the scene's humans, 40 a human with no id.
+    CHECK(follows(0) == 0);
+    CHECK(hasPlace(0) == 1);
+    CHECK(follows(1) == netIdNumber(firstId));
+    CHECK(hasPlace(1) == 0);
+    CHECK(follows(2) == netIdNumber(secondId));
+    CHECK(follows(3) == 0);
+    CHECK(hasPlace(3) == 1);
+    CHECK(game.hudBlips()[0].priority == 4);
+
+    // The same blips next step keep their slots, a blip gone frees its own, and a new one takes it.
+    standing.shared.blips.erase(20.0);
+    standing.shared.blips[5.0] = coney::hud::RadarBlip{.type = 7};
+    game.captureBlips(standing, humanOf);
+    REQUIRE(game.hudBlips().size() == 4);
+    CHECK(game.hudBlips()[1].slot == 1);
+    CHECK(follows(1) == 0); // handle 5 took slot 1, with no human
+    CHECK(follows(2) == netIdNumber(secondId));
+
+    // With none to ask, every blip names its place.
+    game.captureBlips(standing);
+    for (const SnapshotBlip& blip : game.hudBlips()) {
+        CHECK(blip.words.at(static_cast<std::size_t>(HudBlipField::Follows)) == 0);
+    }
+
+    // A level that goes takes the blips; turned off, capture holds none.
+    game.clear();
+    CHECK(game.hudBlips().empty());
+    game.captureBlips(standing, humanOf);
+    CHECK(game.hudBlips().size() == 4);
+    CHECK(game.hudBlips()[0].slot == 0);
+    game.setCapturing(false);
+    game.captureBlips(standing, humanOf);
+    CHECK(game.hudBlips().empty());
 }

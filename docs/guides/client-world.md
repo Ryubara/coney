@@ -293,11 +293,19 @@ player, so his panel is panel 0 and the host's other players' panels are not dra
 everyone (its counters and bars, the scoreboard, the radar's settings, whether the HUD shows) is the host's as it is.
 `ClientLevelScene` draws the HUD over the frame through a `HudLayer`, as the play mode does.
 
-Two things the HUD does not have yet, by choice: the HUD takes the newest snapshot's state, not the playback's
-(**Coney's choice**: it keeps no history to blend, so it is up to the jitter buffer's delay ahead of the humans, while
-its messages and sounds arrive with the humans), and the radar shows no blips: they are not in the snapshots (#1537).
-Its view (where the player stands and which way the camera looks) is the [client's camera](#client-camera)'s and the
-human it follows's now, and is given to the radar with the blips.
+One thing the HUD does not have, by choice: the HUD takes the newest snapshot's state, not the playback's (**Coney's
+choice**: it keeps no history to blend, so it is up to the jitter buffer's delay ahead of the humans, while its messages
+and sounds arrive with the humans).
+
+**The radar.** The blips are the host's ([The radar's blips](snapshots.md#hud-blips)), taken with the standing state and
+keyed by their slots. Its view (where the player stands and which way he faces, how fast he moved over the last step and
+which way the camera looks) is the human the [client's camera](#client-camera) follows, as the world shows him now, and
+the guest's own camera (`ClientGame::radarView()`); with none to follow the radar draws nothing. A blip that follows a
+human is found through the world (`Hud::setRadarFollowLocator()`), by the network id the snapshot names, so it moves as
+the human is drawn; one with a place is where the snapshot puts it. An objective's up or down arrow and its colour are
+the host's, worked out from the host player's height ([The radar's blips](snapshots.md#hud-blips)). **Planned**
+(#1670): the level's map on the guest's radar; until then it draws the blips and the player's arrow without the map
+disc.
 
 ## Testing {#testing}
 

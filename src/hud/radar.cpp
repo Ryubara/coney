@@ -179,6 +179,8 @@ bool radarBlipShown(const RadarBlip& blip, std::uint64_t updates) {
     return true;
 }
 
+bool radarTopBatchIcon(int icon) { return isTopBatchIcon(icon); }
+
 int radarBatchDepth(int type) {
     switch (type) {
     case 10:
@@ -278,7 +280,15 @@ bool stepRadarBlips(RadarState& radar, const RadarStepContext& context) {
         }
         // 2. Where it is: its fixed point, or its object, whose objective arrow follows the height.
         std::optional<anim::Vec3> at = blip.fixedPlace;
-        if (!at && context.locate) {
+        // **Coney's stand-in** for a guest's HUD in network play (Coney-only): a guest cannot resolve the host's script
+        // handles, so its blip finds the human it follows by network id (RadarBlip::follows), and the host's step has
+        // already given its icon and colour, which travel. The host never sets `follows`: it takes the original's path.
+        // So a guest's objective, followed or placed (fixedPlace), skips the height test: its up or down arrow and its
+        // colour come from the host player's height, where the original works them out per radar from that radar's own
+        // player (stand-in until a radar per player).
+        if (!at && blip.follows != 0) {
+            at = context.locateFollowed ? context.locateFollowed(blip.follows) : std::nullopt;
+        } else if (!at && context.locate) {
             at = context.locate(handle);
             if (at && blip.type == 10) {
                 stepObjectiveHeight(blip, radar.view.position, *at);

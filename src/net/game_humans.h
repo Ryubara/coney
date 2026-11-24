@@ -11,6 +11,7 @@
 #include "net/net_id.h"
 #include "net/net_id_table.h"
 #include "net/player_huds.h"
+#include "net/radar_blips.h"
 #include "net/snapshot.h"
 
 // The server's game as snapshots and the state digest see it: each human's replicated state read from the game, and
@@ -40,6 +41,9 @@ namespace coney::net {
 /// that draws the humans answers it, since only it knows which model each one wears.
 using CharacterOf = std::function<std::int32_t(const human::Human&)>;
 
+/// The human a script handle names (a blip's), as this step's capture holds him: null for a handle that names no human.
+using BlipHumanOf = std::function<const human::Human*(double handle)>;
+
 /// The humans of the server's game, each step, as the snapshots and the digest take them. Each human gets a network id
 /// the first step it is seen (in brain order, so the same game gives the same ids) and keeps it; a human gone from the
 /// brains has its id retired, never handed out again in that generation until releaseRetired() frees it. Ids come from
@@ -64,6 +68,12 @@ class GameHumans {
     void captureHuds(std::span<const hud::PlayerHudState> slots, const hud::HudStanding* standing = nullptr,
                      std::span<const human::Human* const> drivers = {});
 
+    /// This step's radar blips, from `standing` (after captureHuds() of the same step): each of its blips in the slot
+    /// BlipSlots gives it, naming the human it follows when `followed` says its handle names one the capture holds an
+    /// id for (capture() of the step comes first) and its place otherwise ([The radar's
+    /// blips](snapshots.md#hud-blips)). Nothing while capture is off.
+    void captureBlips(const hud::HudStanding& standing, const BlipHumanOf& followed = {});
+
     /// No humans and no HUDs: the level has gone. The humans' ids are retired as the next capture() would.
     void clear();
     /// Frees every retired id, for use again in its next generation: call it only when no peer can still name them
@@ -85,6 +95,8 @@ class GameHumans {
     [[nodiscard]] std::span<const SnapshotHudElement> hudElements() const { return m_hudStanding.elements; }
     /// The HUD's standing state captured: its texts, in key order.
     [[nodiscard]] std::span<const SnapshotHudText> hudTexts() const { return m_hudStanding.texts; }
+    /// The radar's blips captured, in slot order.
+    [[nodiscard]] std::span<const SnapshotBlip> hudBlips() const { return m_blips; }
 
   private:
     NetIdAllocator m_ids;
@@ -92,6 +104,8 @@ class GameHumans {
     std::vector<SnapshotHuman> m_humans;
     std::vector<SnapshotHud> m_huds;
     SnapshotHudStanding m_hudStanding;
+    std::vector<SnapshotBlip> m_blips;
+    BlipSlots m_blipSlots;
     std::vector<NetId> m_retired; // retired ids waiting for releaseRetired()
     bool m_capturing = true;
 };

@@ -409,6 +409,46 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(HudSettingsField::Count
     {.name = "radarZoomScale", .encoding = FieldEncoding::Exact, .bits = 32},
 }};
 
+// A radar blip's fields (docs/guides/snapshots.md#hud-blips). Every range is Coney's choice. The type is the original's
+// slot `+0x2c`, 0 to 12; the icon a `part_page0` rectangle (the sheet holds a few hundred); the size 0 to 16 in 16
+// bits, a step of 0.00024 against the 0.7 a dot starts at; the place in the humans' 2 km across at 14 bits, a step of
+// 0.125 m, about a tenth of a pixel on the radar's disc (about 55 pixels across a 75 m zoom); `Follows` any network id.
+constexpr float kBlipSizeMax = 16.0F;
+constexpr int kBlipPlaceBits = 14;
+constexpr float kMostBlipFollows = static_cast<float>((1U << kNetIdBits) - 1U);
+constexpr std::array<FieldSpec, static_cast<std::size_t>(HudBlipField::Count)> kHudBlipFields{{
+    {.name = "type", .encoding = FieldEncoding::Integer, .bits = 4, .min = 0.0F, .max = 12.0F},
+    {.name = "icon", .encoding = FieldEncoding::Integer, .bits = 10, .min = 0.0F, .max = 1023.0F},
+    {.name = "scale", .encoding = FieldEncoding::Float, .bits = 16, .min = 0.0F, .max = kBlipSizeMax},
+    {.name = "red", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "green", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "blue", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "alpha", .encoding = FieldEncoding::Integer, .bits = 8, .min = 0.0F, .max = 255.0F},
+    {.name = "flashing", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "blinking", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "iconLock", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "marked", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "marking", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "dotShown", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "follows", .encoding = FieldEncoding::Integer, .bits = kNetIdBits, .min = 0.0F, .max = kMostBlipFollows},
+    {.name = "hasPlace", .encoding = FieldEncoding::Bool, .bits = 1},
+    {.name = "placeX",
+     .encoding = FieldEncoding::Float,
+     .bits = kBlipPlaceBits,
+     .min = kPositionMin,
+     .max = kPositionMax},
+    {.name = "placeY",
+     .encoding = FieldEncoding::Float,
+     .bits = kBlipPlaceBits,
+     .min = kPositionMin,
+     .max = kPositionMax},
+    {.name = "placeZ",
+     .encoding = FieldEncoding::Float,
+     .bits = kBlipPlaceBits,
+     .min = kPositionMin,
+     .max = kPositionMax},
+}};
+
 std::string_view replicatedKindName(ReplicatedKind kind) {
     switch (kind) {
     case ReplicatedKind::Human:
@@ -433,6 +473,8 @@ std::string_view replicatedKindName(ReplicatedKind kind) {
         return "hudStopWatch";
     case ReplicatedKind::HudSettings:
         return "hudSettings";
+    case ReplicatedKind::HudBlip:
+        return "hudBlip";
     }
     return "unknown";
 }
@@ -461,6 +503,8 @@ std::span<const FieldSpec> fieldTable(ReplicatedKind kind) {
         return kHudStopWatchFields;
     case ReplicatedKind::HudSettings:
         return kHudSettingsFields;
+    case ReplicatedKind::HudBlip:
+        return kHudBlipFields;
     }
     return {};
 }

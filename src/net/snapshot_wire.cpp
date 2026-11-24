@@ -91,6 +91,31 @@ const char* hudStandingRuleBroken(const Snapshot& snapshot) {
     return nullptr;
 }
 
+// Whether a Snapshot's radar blips keep their rules: null when they do, else the reason.
+const char* blipRuleBroken(const Snapshot& snapshot) {
+    if (snapshot.blips.size() > kMaxRadarBlips) {
+        return "network snapshot carries more radar blips than there are slots";
+    }
+    for (std::size_t i = 0; i < snapshot.blips.size(); ++i) {
+        const SnapshotBlipEntry& entry = snapshot.blips[i];
+        if (entry.slot >= kMaxRadarBlips) {
+            return "network snapshot names a radar blip slot past the last";
+        }
+        if (i > 0 && snapshot.blips[i - 1].slot >= entry.slot) {
+            return "network snapshot's radar blip slots are not in rising order";
+        }
+        if (entry.removed ? entry.changed != 0 : (entry.changed == 0 || (entry.changed & ~kAllBlipFields) != 0)) {
+            return "network snapshot radar blip changes nothing, or a removal changes something";
+        }
+        for (std::size_t field = 0; field < kBlipFieldCount; ++field) {
+            if ((entry.changed & (1U << field)) == 0 && entry.words.at(field) != 0) {
+                return "network snapshot radar blip has a word for a field it does not change";
+            }
+        }
+    }
+    return nullptr;
+}
+
 // Whether a Snapshot keeps its rules (encode() asserts them, decode() refuses what breaks them): null when it does,
 // else the reason.
 const char* snapshotRuleBroken(const Snapshot& snapshot) {
@@ -105,6 +130,9 @@ const char* snapshotRuleBroken(const Snapshot& snapshot) {
         return broken;
     }
     if (const char* broken = hudStandingRuleBroken(snapshot)) {
+        return broken;
+    }
+    if (const char* broken = blipRuleBroken(snapshot)) {
         return broken;
     }
     for (std::size_t i = 0; i < snapshot.humans.size(); ++i) {
@@ -179,6 +207,61 @@ std::expected<SnapshotHudEntry, Error> readSnapshotHudEntry(BitReader& in) {
         return entry;
     }
     for (std::size_t field = 0; field < kHudFieldCount; ++field) {
+        auto changed = in.readBool();
+        if (!changed) {
+            return std::unexpected(changed.error());
+        }
+        if (!*changed) {
+            continue;
+        }
+        auto word = in.readBits(fields[field].bits);
+        if (!word) {
+            return std::unexpected(word.error());
+        }
+        if (auto value = fieldValue(fields[field], *word); !value) {
+            return std::unexpected(value.error());
+        }
+        entry.changed |= 1U << field;
+        entry.words.at(field) = *word;
+    }
+    return entry;
+}
+
+// Writes a Snapshot radar blip as Snapshot's comment lays it out.
+void writeSnapshotBlip(BitWriter& out, const SnapshotBlipEntry& entry) {
+    const auto fields = fieldTable(ReplicatedKind::HudBlip);
+    out.writeBits(entry.slot, kRadarBlipSlotBits);
+    out.writeBool(entry.removed);
+    if (entry.removed) {
+        return;
+    }
+    for (std::size_t field = 0; field < kBlipFieldCount; ++field) {
+        const bool changed = (entry.changed & (1U << field)) != 0;
+        out.writeBool(changed);
+        if (changed) {
+            out.writeBits(entry.words.at(field), fields[field].bits);
+        }
+    }
+}
+
+// Reads a Snapshot radar blip written by writeSnapshotBlip(); a word over its field's range is Invalid.
+std::expected<SnapshotBlipEntry, Error> readSnapshotBlip(BitReader& in) {
+    const auto fields = fieldTable(ReplicatedKind::HudBlip);
+    SnapshotBlipEntry entry;
+    auto slot = in.readBits(kRadarBlipSlotBits);
+    if (!slot) {
+        return std::unexpected(slot.error());
+    }
+    entry.slot = static_cast<std::uint8_t>(*slot);
+    auto removed = in.readBool();
+    if (!removed) {
+        return std::unexpected(removed.error());
+    }
+    entry.removed = *removed;
+    if (entry.removed) {
+        return entry;
+    }
+    for (std::size_t field = 0; field < kBlipFieldCount; ++field) {
         auto changed = in.readBool();
         if (!changed) {
             return std::unexpected(changed.error());
@@ -353,6 +436,10 @@ void writeSnapshotBody(BitWriter& out, const Snapshot& snapshot) {
     for (const SnapshotHudTextEntry& entry : snapshot.hudTexts) {
         writeSnapshotHudText(out, entry);
     }
+    out.writeVarUint(snapshot.blips.size());
+    for (const SnapshotBlipEntry& entry : snapshot.blips) {
+        writeSnapshotBlip(out, entry);
+    }
 }
 
 std::expected<Snapshot, Error> readSnapshotBody(BitReader& in) {
@@ -447,6 +534,27 @@ std::expected<Snapshot, Error> readSnapshotBody(BitReader& in) {
     if (const char* broken = hudStandingRuleBroken(snapshot)) {
         return fail(ErrorCode::Invalid, broken);
     }
+    // The radar's blips: their count checked against the slots and against what the packet can hold before any is read.
+    auto blipCount = in.readVarUint();
+    if (!blipCount) {
+        return std::unexpected(blipCount.error());
+    }
+    if (*blipCount > kMaxRadarBlips) {
+        return fail(ErrorCode::Invalid, "network snapshot carries more radar blips than there are slots");
+    }
+    if (*blipCount > in.remainingBits() / (kRadarBlipSlotBits + 1)) {
+        return fail(ErrorCode::Invalid, "network snapshot counts more radar blips than its packet holds");
+    }
+    for (std::uint64_t i = 0; i < *blipCount; ++i) {
+        auto entry = readSnapshotBlip(in);
+        if (!entry) {
+            return std::unexpected(entry.error());
+        }
+        snapshot.blips.push_back(*entry);
+    }
+    if (const char* broken = blipRuleBroken(snapshot)) {
+        return fail(ErrorCode::Invalid, broken);
+    }
     return snapshot;
 }
 
@@ -528,12 +636,52 @@ std::size_t snapshotHudTextEntryBits(const SnapshotHudTextEntry& entry) {
     return entry.removed ? bits : bits + varUintBits(entry.text.size()) + (entry.text.size() * 8);
 }
 
+std::size_t snapshotBlipEntryBits(const SnapshotBlipEntry& entry) {
+    std::size_t bits = kRadarBlipSlotBits + 1;
+    if (entry.removed) {
+        return bits;
+    }
+    const auto fields = fieldTable(ReplicatedKind::HudBlip);
+    for (std::size_t field = 0; field < kBlipFieldCount; ++field) {
+        bits += 1;
+        if ((entry.changed & (1U << field)) != 0) {
+            bits += static_cast<std::size_t>(fields[field].bits);
+        }
+    }
+    return bits;
+}
+
+std::uint32_t blipNoPlaceWord() {
+    return fieldWord(fieldTable(ReplicatedKind::HudBlip)[static_cast<std::size_t>(HudBlipField::PlaceX)],
+                     FieldValue{0.0F});
+}
+
+const char* blipWordsBroken(const BlipWords& words) {
+    const std::uint32_t follows = words.at(static_cast<std::size_t>(HudBlipField::Follows));
+    const bool hasPlace = words.at(static_cast<std::size_t>(HudBlipField::HasPlace)) != 0;
+    // A word of 0 follows nobody; any other is an id, whose generation (the bits above the slot's) is not 0.
+    if (follows != 0 && !netIdFromNumber(follows).valid()) {
+        return "network snapshot's radar blip follows a number that is no network id";
+    }
+    if (follows != 0 && hasPlace) {
+        return "network snapshot's radar blip follows a human and also has a place";
+    }
+    if (!hasPlace) {
+        for (const HudBlipField coordinate : {HudBlipField::PlaceX, HudBlipField::PlaceY, HudBlipField::PlaceZ}) {
+            if (words.at(static_cast<std::size_t>(coordinate)) != blipNoPlaceWord()) {
+                return "network snapshot's radar blip has no place but a coordinate of one";
+            }
+        }
+    }
+    return nullptr;
+}
+
 std::size_t snapshotHeaderBits(const Snapshot& snapshot, std::size_t entries, std::size_t hudEntries,
-                               std::size_t elementEntries, std::size_t textEntries) {
+                               std::size_t elementEntries, std::size_t textEntries, std::size_t blipEntries) {
     return 8 + varUintBits(snapshot.sequence) +
            varUintBits(snapshot.baseline == 0 ? 0 : snapshot.sequence - snapshot.baseline) +
            varUintBits(snapshot.step) + varUintBits(entries) + varUintBits(hudEntries) + varUintBits(elementEntries) +
-           varUintBits(textEntries);
+           varUintBits(textEntries) + varUintBits(blipEntries);
 }
 
 } // namespace coney::net

@@ -28,7 +28,7 @@ namespace coney::net {
 
 /// The protocol's version. Bump it with any change to a message's layout or meaning: a client and a server of
 /// different versions refuse each other in the handshake rather than misread each other.
-inline constexpr std::uint16_t kProtocolVersion = 13;
+inline constexpr std::uint16_t kProtocolVersion = 14;
 /// The first field of Hello, "CONY" read as a little-endian number: a packet from another program is refused.
 inline constexpr std::uint32_t kProtocolMagic = 0x594e4f43U;
 /// The UDP port a server listens on unless told otherwise.
@@ -244,6 +244,47 @@ struct SnapshotHudTextEntry {
     friend bool operator==(const SnapshotHudTextEntry&, const SnapshotHudTextEntry&) = default;
 };
 
+/// The radar blips a snapshot can carry, by slot: the 128 slots each of the original's radars keeps
+/// (docs/research/gui.md#radar-blip-slots). A limit that stays, as the original's limits do when network play needs one
+/// (docs/guides/conventions.md#original-limits): every peer must agree on a slot's bits and on a count to refuse past.
+/// A script that adds more blips than this has the rest left out of the snapshots (net::BlipSlots); the host draws them
+/// all, as before.
+inline constexpr std::size_t kMaxRadarBlips = 128;
+/// Bits a blip's slot takes in a Snapshot's blip entry.
+inline constexpr int kRadarBlipSlotBits = 7;
+static_assert(kMaxRadarBlips == 1U << kRadarBlipSlotBits);
+
+/// The fields of a radar blip (fieldTable(ReplicatedKind::HudBlip)), in HudBlipField order.
+inline constexpr std::size_t kBlipFieldCount = static_cast<std::size_t>(HudBlipField::Count);
+/// Every blip field's changed bit set (SnapshotBlipEntry::changed): what an entry for a slot the baseline does not hold
+/// carries.
+inline constexpr std::uint32_t kAllBlipFields = (1U << kBlipFieldCount) - 1U;
+static_assert(kBlipFieldCount < 32, "a SnapshotBlipEntry's changed bits are one 32-bit word");
+
+/// A radar blip's fields as they travel: each field's fieldWord(), in HudBlipField order.
+using BlipWords = std::array<std::uint32_t, kBlipFieldCount>;
+
+/// One radar blip in a Snapshot: gone, or the fields that differ from the baseline's (every field for a slot the
+/// baseline does not hold).
+struct SnapshotBlipEntry {
+    std::uint8_t slot = 0; ///< below kMaxRadarBlips
+    bool removed = false;  ///< the blip is gone; `changed` is 0
+    /// Bit i set: field i is written; 0 only for a removal. A slot the baseline does not hold has every bit set.
+    std::uint32_t changed = 0;
+    BlipWords words{}; ///< each changed field's word; the others are 0
+
+    friend bool operator==(const SnapshotBlipEntry&, const SnapshotBlipEntry&) = default;
+};
+
+/// The word each of a blip's three place coordinates has when the blip has no place: that of the zero place, so one
+/// blip has one set of words however far it last was.
+[[nodiscard]] std::uint32_t blipNoPlaceWord();
+
+/// Why a blip's words, as a snapshot leaves a client holding them, break the rules of a blip (null when they keep
+/// them): the blip follows a human and also has a place, or has no place and a coordinate that is not the zero place's,
+/// so one blip has one set of words.
+[[nodiscard]] const char* blipWordsBroken(const BlipWords& words);
+
 /// The state of the humans a client needs and of each player's HUD, as a delta against a snapshot it has acknowledged
 /// (its baseline), or in full when it has none. Sent every step, UnreliableSequenced: a lost one is repaired by the
 /// next, which is a delta against an older baseline (docs/guides/snapshots.md).
@@ -257,7 +298,9 @@ struct SnapshotHudTextEntry {
 /// HUD elements (a varint, at most kHudElements) and each: its key (kHudElementBits), a removed bit and, when not
 /// removed, for each of its fields a changed bit followed by the word when set; then the number of HUD texts (a
 /// varint, at most kHudElements) and each: its key (kHudElementBits), a removed bit and, when not removed, the text (a
-/// varint length of 1 to kMaxHudTextBytes, then its bytes) (protocol 9).
+/// varint length of 1 to kMaxHudTextBytes, then its bytes) (protocol 9). Then the number of radar blips (a varint, at
+/// most kMaxRadarBlips) and each: its slot (kRadarBlipSlotBits), a removed bit and, when not removed, for each of its
+/// fields a changed bit followed by the word when set (protocol 14).
 struct Snapshot {
     std::uint32_t sequence = 1;           ///< 1 for a client's first, one more for each after
     std::uint32_t baseline = 0;           ///< the sequence it is a delta against; 0 for none (a full snapshot)
@@ -266,6 +309,7 @@ struct Snapshot {
     std::vector<SnapshotHudEntry> huds{}; ///< in strictly rising slot order
     std::vector<SnapshotHudElementEntry> hudElements{}; ///< in strictly rising key order
     std::vector<SnapshotHudTextEntry> hudTexts{};       ///< in strictly rising key order
+    std::vector<SnapshotBlipEntry> blips{};             ///< in strictly rising slot order
 
     friend bool operator==(const Snapshot&, const Snapshot&) = default;
 };
@@ -402,10 +446,15 @@ struct MovieBegan {
 /// Bits `entry` takes in a Snapshot's packet: what the server's snapshot budget counts.
 [[nodiscard]] std::size_t snapshotHudTextEntryBits(const SnapshotHudTextEntry& entry);
 
+/// Bits `entry` takes in a Snapshot's packet: what the server's snapshot budget counts.
+[[nodiscard]] std::size_t snapshotBlipEntryBits(const SnapshotBlipEntry& entry);
+
 /// Bits a Snapshot's packet takes besides its entries (the message id and the counts included) with `entries` human
-/// entries, `hudEntries` HUD entries, `elementEntries` HUD elements and `textEntries` HUD texts.
+/// entries, `hudEntries` HUD entries, `elementEntries` HUD elements, `textEntries` HUD texts and `blipEntries` radar
+/// blips.
 [[nodiscard]] std::size_t snapshotHeaderBits(const Snapshot& snapshot, std::size_t entries, std::size_t hudEntries = 0,
-                                             std::size_t elementEntries = 0, std::size_t textEntries = 0);
+                                             std::size_t elementEntries = 0, std::size_t textEntries = 0,
+                                             std::size_t blipEntries = 0);
 
 /// Whether two pads travel as the same bits: both disconnected, or both connected with the same buttons, sticks and
 /// pressures.
