@@ -211,14 +211,15 @@ class FakeMonitor:
     """A QEMU human monitor on a localhost port: it greets, echoes each command as QEMU's readline does (with an
     escape sequence), answers the few commands the tools send and ends every answer with the `(qemu) ` prompt."""
 
-    def __init__(self, stub: FakeGdbStub | None = None, version: str = "8.2.50 (xemu-v0.8.110)") -> None:
+    def __init__(self, stub: FakeGdbStub | None = None, version: str = "8.2.50 (xemu-v0.8.110)", port: int = 0) -> None:
+        """`port` 0 takes any free port; a test that needs a known one (a collision it guards against) names it."""
         self.stub = stub
         self.version = version
         self.commands: list[str] = []
         self.snapshots: list[str] = []
         self.paused = False
         self.screendump = True  # xemu 0.8.139 has no `screendump`: "unknown command"
-        self._server = socket.create_server(("127.0.0.1", 0))
+        self._server = socket.create_server(("127.0.0.1", port))
         self._server.settimeout(0.1)  # before the thread starts: a close can then never beat it
         self.port: int = self._server.getsockname()[1]
         self._stop = threading.Event()
@@ -322,6 +323,25 @@ def make_copy(root: Path, name: str, gdb: int, monitor: int) -> Path:
     (folder / "xemu.toml").write_text("[general]\nshow_welcome = false\n", encoding="utf-8")
     (folder / "coney-copy.toml").write_text(f"gdb_port = {gdb}\nmonitor_port = {monitor}\n", encoding="utf-8")
     return folder
+
+
+def spare_ports(count: int) -> list[int]:
+    """`count` distinct local ports nothing listens on. The OS never hands out a port another socket still holds,
+    so they differ from every live fake's (`FakeGdbStub.port`, `FakeMonitor.port`); a constant could equal one,
+    because the fakes take ports from the OS's dynamic range (issue #1669)."""
+    holders = [socket.create_server(("127.0.0.1", 0)) for _ in range(count)]
+    try:
+        return [holder.getsockname()[1] for holder in holders]
+    finally:
+        for holder in holders:
+            holder.close()
+
+
+def fake_copies(root: Path, stub: FakeGdbStub, monitor: FakeMonitor) -> None:
+    """Two fake copies under `root`: `xemu` on the fakes' ports and `xemu-b` on two spare ports, so that no two
+    copies share a port whatever ports the OS gave the fakes."""
+    make_copy(root, "xemu", stub.port, monitor.port)
+    make_copy(root, "xemu-b", *spare_ports(2))
 
 
 def make_install(root: Path, portable: bool = True) -> Path:

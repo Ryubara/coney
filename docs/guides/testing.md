@@ -202,6 +202,12 @@ command's trailing `exit 0`, prints nothing and the test reads empty output. `gi
 `git` (Git for Windows') on Windows, the one on `PATH` elsewhere, and None when there is none, and `needs_bash` skips a
 test with `no_bash_reason()` for that case. `test_shell_support.py` covers the choice with a made-up `PATH`.
 
+A test that runs a fake server (the xemu stub and monitor of `python/tests/xemu_support.py`) beside copies that name
+ports never gives those copies a constant port. The fakes take their ports from the OS's dynamic range (49152 and up on
+Windows), where a constant such as 61002 sometimes lands, and `discover_copies` then refuses two copies sharing a port:
+main's `python` run failed on it once, in a fixture's setup. `spare_ports` and `fake_copies` give the other copies
+ports no live fake holds; `test_xemu_support.py` pins a fake on the old constant to show it.
+
 ### Test through the player's path {#test-through-the-players-path}
 
 The game is set up one way. The story from the main menu, `coney --play-level LEVEL --checkpoint N` and the debug
