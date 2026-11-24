@@ -272,8 +272,9 @@ TEST_CASE("in the air a pending push moves the body whole, its vertical part too
     // The next airborne update has no gravity yet and no velocity: only the push moves the body.
     human.addPush(Vec3{0.1F, 0.0F, 0.3F});
     human.step(stick(0.0F, 0.0F), empty.get());
-    // Expected: 0x0023d8c8 (Human_Move, docs/research/characters-ground.md#falling), confirmed (code): in the air the push
-    // is added to the move with its z; only the ground branch takes the z off.
+    // Expected: docs/research/physics.md#sweep, confirmed (code) at 0x0033e278 (`PhysicsBody_Sweep`): the body's
+    // pending push-out (+0x50) is added to the move whole, its z too. (Human_Move's own stored push, +0x2f0, is not
+    // added in the air at all, 0x0023d928-0x0023d934.)
     REQUIRE(human.airborne());
     CHECK(human.position().x == Approx(40.1F).margin(1e-4));
     CHECK(human.position().z == Approx(10.3F).margin(1e-4));
