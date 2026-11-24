@@ -808,7 +808,8 @@ void Gang::setSharedTarget(Brain* target) {
 
 Brain* Gang::leader() const {
     // The stored leader stays unless he is gone or dead, or is an AI cuffed or down: a player leader keeps the lead
-    // while arrested or down.
+    // while arrested or down. Coney's stand-in: dead is out of health and cuffed the script's arrested state, as
+    // Coney keeps no human state flags (docs/research/gang-records.md#q-state-flags).
     Brain* stored = resolve(m_orders.leader);
     if (stored != nullptr && !dead(*stored) &&
         (stored->type() == BrainType::Player || (!cuffed(*stored) && !humanIsDownOrDead(*stored)))) {
@@ -819,7 +820,8 @@ Brain* Gang::leader() const {
     const ScriptServices* scripts = m_owner != nullptr ? m_owner->scripts() : nullptr;
     const Brain* playerOne = scripts != nullptr ? scripts->player() : nullptr;
     const bool playerOneDead = playerOne != nullptr && dead(*playerOne);
-    // 1. Player 1 (any player while player 1 is dead), or a member of a police role who is not cuffed.
+    // 1. Player 1 (any player while player 1 is dead), or a member of a police role who is not cuffed (dead and
+    // cuffed as in the stand-in above).
     const auto leadsFirst = [&](const Brain& member) {
         if (member.type() == BrainType::Player && (&member == playerOne || playerOneDead)) {
             return true;
@@ -827,7 +829,7 @@ Brain* Gang::leader() const {
         const std::optional<int> role = m_owner != nullptr ? m_owner->roleOf(member) : std::nullopt;
         return role && *role >= kFirstLeaderRole && *role <= kLastLeaderRole && !cuffed(member);
     };
-    // 2. A member neither down nor cuffed; 3. any member.
+    // 2. A member neither down nor cuffed (cuffed as in the stand-in above); 3. any member.
     const auto free = [](const Brain& member) { return !humanIsDownOrDead(member) && !cuffed(member); };
     const auto pick = [this](const auto& test) -> Brain* {
         const auto found = std::ranges::find_if(m_members, [&test](const Brain* member) { return test(*member); });
