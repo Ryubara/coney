@@ -433,6 +433,20 @@ def test_a_delta_stamp_stacks_on_the_full_review_and_keeps_what_it_judged(
     assert "unchanged" in capsys.readouterr().out
 
 
+def test_a_delta_on_a_review_of_many_pages_carries_the_short_list_and_the_count(rig: Rig) -> None:
+    pages = {f"docs/research/characters/system/the-character-page-number-{n:03d}.md": PAGE for n in range(60)}
+    fix(rig, pages, diff="1" * 64)
+    full = full_review(rig)
+    assert full.detail["pages"] and full.detail["pages_left_out"] > 0
+    fix(rig, {"src/ai/util.cpp": "int helper() { return 1; }\n"})
+    assert record_delta(rig, SONNET) == 0
+    stamp = stamps.verify(rig.unit.stamps, rig.rules).stamps[-1]
+    # The delta's own keys (`since_seq`, `full_seq`) take room too, so it may keep one page fewer than the review below.
+    kept = stamp.detail["pages"]
+    assert stamp.detail["scope"] == "delta" and kept and kept == full.detail["pages"][: len(kept)]
+    assert len(kept) + stamp.detail["pages_left_out"] == len(full.detail["pages"]) + full.detail["pages_left_out"]
+
+
 def test_prepare_writes_the_delta_for_the_reviewer(rig: Rig, capsys: pytest.CaptureFixture[str]) -> None:
     full_review(rig)
     fix(rig, {"src/ai/util.cpp": "int helper() { return 1; }\n"})

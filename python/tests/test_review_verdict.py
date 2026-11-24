@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from review_support import make_packet, make_verdict
 
-from coney_tools import review_verdict
+from coney_tools import review_verdict, stamps
 from coney_tools.review_verdict import VerdictError
 
 PACKET = make_packet()
@@ -210,6 +210,74 @@ def test_a_long_function_list_leaves_the_detail_and_a_pointer() -> None:
     detail = review_verdict.stamp_detail(make_verdict(PACKET, functions=functions))
     assert "functions" not in detail and detail["function_count"] == 200
     assert len(json.dumps(detail)) < 2048
+
+
+def _function_entries(count: int) -> list[dict[str, Any]]:
+    """`count` clean functions at distinct invented addresses."""
+    return [
+        {
+            "key": f"F{n}",
+            "body_sha256": "c" * 64,
+            "addresses": [f"0x{0x100000 + n:08x}"],
+            "class": "clean",
+            "evidence": "inferred",
+            "note": "",
+        }
+        for n in range(count)
+    ]
+
+
+def _page_entries(count: int) -> list[dict[str, Any]]:
+    """`count` research pages in one folder, with long invented paths as a page split makes."""
+    return [
+        {
+            "path": f"docs/research/characters/system/the-character-page-number-{n:03d}.md",
+            "checked": [],
+            "unchecked": "",
+        }
+        for n in range(count)
+    ]
+
+
+def test_sixty_pages_and_sixty_functions_fit_a_stamp() -> None:
+    """A research restructure touches dozens of pages: the stamp keeps a few of them and counts the rest (#1679)."""
+    verdict = make_verdict(PACKET, functions=_function_entries(60), pages=_page_entries(60))
+    detail = review_verdict.stamp_detail(verdict)
+    detail["reviewer"] = {"id": "r1", "type": "reviewer", "model": "claude-opus-5-5", "session": "s" * 36}
+    detail["since_seq"] = detail["full_seq"] = 12
+    assert len(stamps.canonical(detail)) <= stamps.MAX_DETAIL
+    assert "functions" not in detail and detail["function_count"] == 60
+    kept = detail["pages"]
+    assert kept and kept == [item["path"] for item in verdict["pages"][: len(kept)]]
+    assert detail["pages_left_out"] == 60 - len(kept) > 0
+    # Nothing is lost: the verdict file the stamp points at still lists every page.
+    assert len(verdict["pages"]) == 60
+
+
+def test_a_stamp_with_few_pages_keeps_them_all_and_counts_none_left_out() -> None:
+    detail = review_verdict.stamp_detail(make_verdict(PACKET, pages=_page_entries(5)))
+    assert len(detail["pages"]) == 5 and "pages_left_out" not in detail
+
+
+def test_the_pages_are_cut_only_after_the_functions() -> None:
+    """A long function list goes first; the pages stay whole while they fit beside the count."""
+    verdict = make_verdict(PACKET, functions=_function_entries(200), pages=_page_entries(8))
+    detail = review_verdict.stamp_detail(verdict)
+    assert detail["function_count"] == 200 and len(detail["pages"]) == 8 and "pages_left_out" not in detail
+
+
+@pytest.mark.parametrize("count", [1, 3, 20, 60, 400])
+def test_the_stamp_detail_stays_in_the_room_for_any_number_of_pages(count: int) -> None:
+    detail = review_verdict.stamp_detail(make_verdict(PACKET, pages=_page_entries(count)))
+    assert len(stamps.canonical(detail)) <= review_verdict.DETAIL_ROOM
+    assert len(detail["pages"]) + detail.get("pages_left_out", 0) == count
+
+
+def test_a_list_of_findings_or_kinds_never_enters_the_stamp() -> None:
+    """The other keys are counts or a short fixed set, so only `functions` and `pages` can overflow."""
+    verdict = make_verdict(PACKET, findings=[{"severity": "minor", "where": "a:1", "text": "x" * 500}] * 100)
+    detail = review_verdict.stamp_detail(verdict)
+    assert detail["notes"] == 100 and len(stamps.canonical(detail)) <= review_verdict.DETAIL_ROOM
 
 
 def test_the_class_letters_are_one_per_class() -> None:

@@ -245,12 +245,12 @@ resolved in a rebase. When the earlier review still holds for the rest, only the
   wrapped over two lines (the value on one, its address and level on the next) can change on a line no
   `claim_patterns` expression matches, so the line check alone cannot tell that its claims are the full review's.
 * **Its stamp.** `scope` is `delta`; the detail adds `since_seq` and `full_seq` and carries the `functions` (or
-  `function_count`) and `pages` of the reviews below it, each function it judged again under its new class, with the
-  pages it judged. `pr verify` accepts it when every review below it, down to a full one, passed: it walks `since_seq`
-  to the full review (from a text review too, which names the review of the code it rests on in `since_seq`), holds
-  each reviewer to the [who rule](#who) and the reverse-engineering model to the kinds that review applied (the whole
-  change's for the full one and for a text review), and reads a function list left out of a stamp from the verdicts
-  the stack recorded (`recorded-<seq>.json`, each only when its stamp covers it).
+  `function_count`) and `pages` (with `pages_left_out`) of the reviews below it, each function it judged again under
+  its new class, with the pages it judged. `pr verify` accepts it when every review below it, down to a full one,
+  passed: it walks `since_seq` to the full review (from a text review too, which names the review of the code it rests
+  on in `since_seq`), holds each reviewer to the [who rule](#who) and the reverse-engineering model to the kinds that
+  review applied (the whole change's for the full one and for a text review), and reads a function list left out of a
+  stamp from the verdicts the stack recorded (`recorded-<seq>.json`, each only when its stamp covers it).
 
 The tool part is the same as a full review's, over the whole change: compares, copy-check, `fails-first` and the
 docs check are a program's and cost no reviewer time.
@@ -289,13 +289,13 @@ hash](../stamps.md#change)). Its `commit` is the tip reviewed.
 | Part | Holds |
 | --- | --- |
 | `covers` | `diff_sha256`, `pairs_set_sha256`, `title_sha256`, `paragraph_sha256`, `images_sha256` and `review_sha256`, the hash of the recorded verdict |
-| `detail` | `verdict`, `scope` (`full`, `delta` or `text`), `kinds`, `functions` (each compared address to one letter: `c` clean, `d` diff-deliberate-ok, `u` unclear, `a` diff-uncommented, `w` wrong-address, `t` transcription, `b` diff-bug), `pages`, `blockers`, `notes`, `not_reviewed` and `reviewer` (id, type, model). `reviewer` also holds the caller's `session` when the hooks know it. A stamp's `detail` may hold 2048 bytes; when the rest of it is over 1648 bytes (leaving room for `reviewer` and the pointer) the function list is replaced by `function_count`, and the recorded verdict has the list |
+| `detail` | `verdict`, `scope` (`full`, `delta` or `text`), `kinds`, `functions` (each compared address to one letter: `c` clean, `d` diff-deliberate-ok, `u` unclear, `a` diff-uncommented, `w` wrong-address, `t` transcription, `b` diff-bug), `pages`, `blockers`, `notes`, `not_reviewed` and `reviewer` (id, type, model). `reviewer` also holds the caller's `session` when the hooks know it. A stamp's `detail` may hold 2048 bytes; when the rest of it is over 1648 bytes (leaving room for `reviewer` and the pointer) the function list is replaced by `function_count`; when it is still over, the page list is cut to the first pages that fit (at least one) and `pages_left_out` counts the rest. The recorded verdict has both lists whole |
 | `result` | `pass` or `fail`; a fail stamp is a verdict, so it is written, and a later pass replaces it |
 
-A text review keeps the `functions`, `pages` and `full_seq` of the review of the code it rests on (a full one, or a
-delta on a full one) and names that review in `since_seq`; a delta review keeps them too
-([The delta review](#delta)). Recording the
-same verdict again for the same change writes no second stamp.
+A text review keeps the `functions`, `pages`, `pages_left_out` and `full_seq` of the review of the code it rests on (a
+full one, or a delta on a full one) and names that review in `since_seq`; a delta review keeps them too
+([The delta review](#delta)); its `pages_left_out` adds the count of the review below it to its own, so it can count a
+page twice. Recording the same verdict again for the same change writes no second stamp.
 
 ## Who may record {#who}
 

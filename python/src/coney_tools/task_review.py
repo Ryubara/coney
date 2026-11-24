@@ -808,7 +808,7 @@ def _carry_full_review(report: stamps.Report, detail: dict[str, Any]) -> None:
     down from."""
     for stamp in reversed(report.stamps):
         if stamp.step == "reviewed" and stamp.detail.get("scope") in review_delta.CODE_SCOPES:
-            for key in ("functions", "function_count", "pages"):
+            for key in ("functions", "function_count", "pages", "pages_left_out"):
                 if key in stamp.detail:
                     detail[key] = stamp.detail[key]
                 else:
@@ -836,11 +836,14 @@ def _carry_delta(env: ReviewEnv, delta: Mapping[str, Any], detail: dict[str, Any
         detail["function_count"] = since.detail.get("function_count", 0)
     else:
         detail["functions"] = {**carried, **(own if isinstance(own, dict) else {})}
+    # The pages both reviews graded; each one's own count of pages it left out is carried, so the sum is at most what
+    # was left out (a page the delta judged again may be counted twice).
     detail["pages"] = sorted(set(since.detail.get("pages", [])) | set(detail.get("pages", [])))
-    if len(json.dumps(detail, sort_keys=True, separators=(",", ":"))) > review_verdict.DETAIL_ROOM:
-        # Too long beside the reviewer's identity: `pr verify` reads the list from the stack's recorded verdicts.
-        functions = detail.pop("functions", {})
-        detail["function_count"] = len(functions) if isinstance(functions, dict) else 0
+    left_out = int(since.detail.get("pages_left_out", 0)) + int(detail.get("pages_left_out", 0))
+    if left_out:
+        detail["pages_left_out"] = left_out
+    # Too long beside the reviewer's identity: `pr verify` reads a function list from the stack's recorded verdicts.
+    review_verdict.fit_detail(detail)
 
 
 # --- run -------------------------------------------------------------------------------------------------------------

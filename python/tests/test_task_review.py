@@ -909,6 +909,34 @@ def test_a_text_review_needs_a_current_full_pass(rig: Rig, capsys: pytest.Captur
     assert any("no passing full review" in p for p in task_review.build_packet(rig.env(), "text")[1])
 
 
+def test_a_review_of_a_change_with_many_pages_is_recorded(rig: Rig) -> None:
+    """A research restructure touches dozens of pages: the stamp keeps a few, the verdict all (#1679)."""
+    for n in range(60):
+        path = rig.root / f"docs/research/characters/system/the-character-page-number-{n:03d}.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(PAGE, encoding="utf-8")
+    git(rig.root, "add", "-A")
+    git(rig.root, "commit", "-q", "-m", "split the characters page")
+    verdict = rig.write_verdict()
+    assert len(verdict["pages"]) == 61
+    assert task_review.record(rig.env(), "full") == 0
+    stamp = stamps.verify(rig.unit.stamps, rig.rules).stamps[-1]
+    assert stamp.detail["pages"] and len(stamp.detail["pages"]) + stamp.detail["pages_left_out"] == 61
+    recorded = json.loads((rig.unit.dir / review_verdict.RECORDED).read_text(encoding="utf-8"))
+    assert len(recorded["pages"]) == 61
+    # A text review of it carries the shortened list and the count.
+    rig.text.write_text(PR_TEXT.replace("now uses", "uses"), encoding="utf-8")
+    packet, problems = task_review.build_packet(rig.env(), "text")
+    assert problems == []
+    rig.verdict_path().write_text(json.dumps(make_verdict(packet)), encoding="utf-8")
+    assert task_review.record(rig.env(), "text") == 0
+    text = stamps.verify(rig.unit.stamps, rig.rules).stamps[-1]
+    assert (
+        text.detail["pages"] == stamp.detail["pages"]
+        and text.detail["pages_left_out"] == stamp.detail["pages_left_out"]
+    )
+
+
 def test_a_text_review_keeps_the_full_reviews_functions_and_pages(rig: Rig) -> None:
     rig.write_verdict()
     assert task_review.record(rig.env(), "full") == 0
