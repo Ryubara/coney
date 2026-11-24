@@ -498,6 +498,7 @@ TEST_CASE("the disc's level99: the sparring fight under one AI seed plays the sa
           "another seed",
           "[disc][story][ai]") {
     // Sequence 2 is one whose taunt count varied (4 or 5); 6 is played between.
+    // Expected: ai-fights.md#runtime-taunts, confirmed (runtime)
     constexpr std::uint32_t kSeed = 2;
     constexpr std::uint32_t kOtherSeed = 6;
     std::vector<std::string> first;
@@ -527,6 +528,8 @@ TEST_CASE("the disc's level99: the sparring fight under one AI seed plays the sa
 TEST_CASE("the sparring test's counter counts a new action at the address of the one before it", "[ai]") {
     const int taunt = 0;
     const int other = 0;
+    // Expected: ai-fights.md#fight-reposition, confirmed (code): taunts 1000-2000 ms apart, never on consecutive
+    // updates
     coney::test::ActionStarts starts;
     // A taunt for three updates, a gap of one, then another taunt where the first lived.
     starts.see(&taunt);
