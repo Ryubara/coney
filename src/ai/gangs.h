@@ -83,9 +83,13 @@ inline constexpr int kFleeRole = 11;
 /// What the gangs read from the level's configuration, each empty (null) for none.
 struct GangLookups {
     /// A member's class role (`CharClass` `+0x11b`, the `CfgChar` category); nothing when not known.
-    std::function<std::optional<int>(const Brain&)> role;
+    std::function<std::optional<int>(const Brain&)> role{};
     /// A gang kind's flee share (`CfgGang` v9, `GangConfig_GetField72`), percent of its count; 0 never flees.
-    std::function<int(int kind)> fleeShare;
+    std::function<int(int kind)> fleeShare{};
+    /// Whether gang `gang` is wanted (its wanted timer, gang `+0x5e8`, runs); none is without it.
+    std::function<bool(int gang)> wanted{};
+    /// Whether `ForceCrimeLevel` holds the wanted gangs (game state `+0x28c`); false without it.
+    std::function<bool()> crimeLevelForced{};
 };
 
 /// Whether `brain`'s human is down or dead in Coney's attack tactic's and standing count's reading: out of health, or

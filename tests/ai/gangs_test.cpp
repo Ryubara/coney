@@ -4,6 +4,7 @@
 #include "ai/gangs.h"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -487,4 +488,195 @@ TEST_CASE("the gang's update without its spawners starts and runs its tactic onc
     gangs.find(empty)->update();
     CHECK(emptyStarts == 0);
     CHECK(emptyUpdates == 0);
+}
+
+TEST_CASE("a player leading the gang stays its leader while arrested or down, and leaves the lead only dead",
+          "[ai][gangs]") {
+    // Expected: ai-gangs.md#gang-leader, confirmed (code): Gang_GetLeader (0x00165678) picks again only when the stored
+    // leader is gone or dead, or is not a player and is cuffed or down.
+    AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    const int gang = gangs.create(coney::ai::kWarriorsKind, "Warriors");
+    Brain& warrior = scene.add({44.0F, 40.0F, 0.0F}, 0.0F);
+    gangs.addMember(gang, warrior);
+    gangs.addMember(gang, scene.player());
+    coney::ai::Gang* warriors = gangs.find(gang);
+    REQUIRE(warriors != nullptr);
+    REQUIRE(warriors->orders().leader == scene.player().handle());
+    CHECK(warriors->leader() == &scene.player());
+    scene.player().human().script().arrested = true;
+    CHECK(warriors->leader() == &scene.player());
+    scene.player().human().script().arrested = false;
+    scene.player().human().script().wounded = true;
+    CHECK(warriors->leader() == &scene.player());
+    // Dead (in Coney, out of health): the pick runs again, and player 1 in the gang, dead or not, leads first.
+    scene.player().human().fighter().health().set(0);
+    CHECK(warriors->leader() == &scene.player());
+}
+
+TEST_CASE("with no leader the gang picks player 1 or a cop first, then the first member free and up, then the first "
+          "member, and keeps the pick",
+          "[ai][gangs]") {
+    // Expected: ai-gangs.md#gang-leader, confirmed (code): Gang_PickLeader (0x00165738) stores and returns a member
+    // who is player 1, or of class role 12 or 13 and not cuffed; else the first neither down nor cuffed; else the
+    // first member at all.
+    AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    const int gang = gangs.create(19, "Punks");
+    Brain& first = scene.add({44.0F, 40.0F, 0.0F}, 0.0F);
+    Brain& second = scene.add({45.0F, 40.0F, 0.0F}, 0.0F);
+    Brain& cop = scene.add({46.0F, 40.0F, 0.0F}, 0.0F);
+    gangs.addMember(gang, first);
+    gangs.addMember(gang, second);
+    gangs.addMember(gang, cop);
+    coney::ai::Gang* punks = gangs.find(gang);
+    REQUIRE(punks != nullptr);
+    // All three arrested and no cop: the first member all the same, kept as the leader.
+    first.human().script().arrested = true;
+    second.human().script().arrested = true;
+    cop.human().script().arrested = true;
+    CHECK(punks->leader() == &first);
+    CHECK(punks->orders().leader == first.handle());
+    // The second free again: the arrested leader is dropped for him.
+    second.human().script().arrested = false;
+    CHECK(punks->leader() == &second);
+    // A cop's role (12), not cuffed, comes before any member free and up.
+    gangs.setLookups(coney::ai::GangLookups{.role = [&cop](const Brain& brain) -> std::optional<int> {
+        return &brain == &cop ? std::optional<int>(12) : std::nullopt;
+    }});
+    cop.human().script().arrested = false;
+    punks->orders().leader = 0;
+    CHECK(punks->leader() == &cop);
+}
+
+TEST_CASE("a full gang keeps every member: the new one takes the first free of its 16 slots, and with none he is "
+          "in the gang but not listed",
+          "[ai][gangs]") {
+    // Expected: ai-gangs.md#warrior-follow, confirmed (code): Gang_AddMember (0x00166308) only calls a no-op past its
+    // cap and puts the member in the first free slot (HandleArray16_PutInFree), the brain's gang set either way.
+    AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    const int gang = gangs.create(19, "Punks");
+    const int other = gangs.create(19, "Others");
+    std::vector<Brain*> joined;
+    for (int k = 0; k < 11; ++k) {
+        Brain& member = scene.add({20.0F + static_cast<float>(k), 30.0F, 0.0F}, 0.0F);
+        gangs.addMember(gang, member);
+        joined.push_back(&member);
+    }
+    const coney::ai::Gang* punks = gangs.find(gang);
+    REQUIRE(punks != nullptr);
+    CHECK(punks->members().size() == 11);
+    CHECK(joined.front()->gang() == punks);
+    // The second leaves; the next to join fills his slot, second in the list.
+    gangs.addMember(other, *joined[1]);
+    Brain& late = scene.add({20.0F, 35.0F, 0.0F}, 0.0F);
+    gangs.addMember(gang, late);
+    REQUIRE(punks->members().size() == 11);
+    CHECK(punks->members()[1] == &late);
+    // All 16 slots taken: the 17th joins the gang but no slot holds him.
+    for (int k = 0; k < 5; ++k) {
+        gangs.addMember(gang, scene.add({20.0F + static_cast<float>(k), 50.0F, 0.0F}, 0.0F));
+    }
+    REQUIRE(punks->members().size() == coney::ai::kGangMemberSlots);
+    Brain& extra = scene.add({30.0F, 50.0F, 0.0F}, 0.0F);
+    gangs.addMember(gang, extra);
+    CHECK(punks->members().size() == coney::ai::kGangMemberSlots);
+    CHECK(extra.gang() == punks);
+}
+
+TEST_CASE("a member of character type 0xed brings his gang his own four cower clips", "[ai][gangs]") {
+    // Expected: ai-gangs.md#warrior-follow, confirmed (code): Gang_AddMember (0x00166308) sets group 0x29c from the
+    // four names at 0x0050cb30 for a human of type 0xed.
+    AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    const int gang = gangs.create(19, "Punks");
+    Brain& gunman = scene.add({44.0F, 40.0F, 0.0F}, 0.0F);
+    gunman.setCharacterClass(0xed);
+    gangs.addMember(gang, gunman);
+    coney::ai::Gang* punks = gangs.find(gang);
+    REQUIRE(punks != nullptr);
+    CHECK(punks->clipGroup(coney::ai::kCowerClips) == 4);
+    CHECK(punks->clip(coney::ai::kCowerClips, 0) == "l55_gun_aim");
+    CHECK(punks->clip(coney::ai::kCowerClips, 3) == "l55_gun_wave");
+}
+
+TEST_CASE("a new gang of the police, police-like or dealer kind gets its kind's clip groups", "[ai][gangs]") {
+    // Expected: ai-gangs.md#gang-create, confirmed (code): Gang_Create (0x0016cdf0) sets group 0x29c for kind 1;
+    // 0x29c, 0x25c and 0x253 for kind 0x17; 0x25b (eight) and 0x29c (three) for kind 0x18.
+    Gangs gangs;
+    coney::ai::Gang* police = gangs.find(gangs.create(coney::ai::kPoliceKind, "Police"));
+    coney::ai::Gang* bums = gangs.find(gangs.create(coney::ai::kPoliceLikeKind, "Bums"));
+    coney::ai::Gang* dealers = gangs.find(gangs.create(coney::ai::kNoFidgetsKind, "Dealers"));
+    coney::ai::Gang* punks = gangs.find(gangs.create(19, "Punks"));
+    REQUIRE(police != nullptr);
+    REQUIRE(bums != nullptr);
+    REQUIRE(dealers != nullptr);
+    REQUIRE(punks != nullptr);
+    CHECK(police->clip(coney::ai::kCowerClips, 0) == "cop_lost_target_search");
+    CHECK(police->clip(coney::ai::kCowerClips, 3) == "cop_radio");
+    CHECK(bums->clip(coney::ai::kCowerClips, 0) == "gen_cower_plead");
+    CHECK(bums->clip(coney::ai::kIdleFidgetClips, 2) == "fidget_nose_wipe");
+    CHECK(bums->clip(coney::ai::kTauntAdvanceClips, 3) == "taunt4_adv");
+    CHECK(bums->clip(coney::ai::kTauntAdvanceClips, 4).empty());
+    CHECK(dealers->clip(coney::ai::kCombatFidgetClips, 7) == "dlr_nearfight");
+    CHECK(dealers->clip(coney::ai::kCowerClips, 2) == "money_take");
+    CHECK(punks->clipGroup(coney::ai::kCowerClips) == 0);
+}
+
+TEST_CASE("a new police gang makes every wanted gang its enemy, and them its enemies unless the crime level is "
+          "forced",
+          "[ai][gangs]") {
+    // Expected: ai-gangs.md#gang-create, confirmed (code): Gang_Create (0x0016cdf0) calls Gang_SetHostileToKind
+    // (0x0016c3a8) for each other wanted gang (+0x5e8) with the police kind, both ways only while game state +0x28c is
+    // 0.
+    Gangs gangs;
+    bool forced = false;
+    const int wanted = gangs.create(19, "Wanted");
+    const int calm = gangs.create(19, "Calm");
+    gangs.setLookups(coney::ai::GangLookups{.wanted = [wanted](int gang) { return gang == wanted; },
+                                            .crimeLevelForced = [&forced] { return forced; }});
+    const int police = gangs.create(coney::ai::kPoliceKind, "Police");
+    CHECK(Gangs::enemies(gangs.find(police), gangs.find(wanted)));
+    CHECK(Gangs::enemies(gangs.find(wanted), gangs.find(police)));
+    CHECK_FALSE(Gangs::enemies(gangs.find(police), gangs.find(calm)));
+    gangs.remove(police);
+    forced = true;
+    const int held = gangs.create(coney::ai::kPoliceKind, "Police");
+    CHECK(Gangs::enemies(gangs.find(held), gangs.find(wanted)));
+    CHECK_FALSE(Gangs::enemies(gangs.find(wanted), gangs.find(held)));
+}
+
+TEST_CASE("a gang made in a freed slot starts with no leader and the record's other orders reset", "[ai][gangs]") {
+    // Expected: ai-gangs.md#gang-create, confirmed (code): Gang_Create (0x0016cdf0) resets the record (0x00164808):
+    // the leader the null handle, the turf boxes cleared, +0xd7 30, +0xd9 0.
+    Gangs gangs;
+    const int gang = gangs.create(19, "Punks");
+    gangs.find(gang)->orders().leader = 7.0;
+    gangs.find(gang)->orders().turf[0] = 3.0;
+    gangs.find(gang)->orders().attackStrategies = true;
+    gangs.remove(gang);
+    const int again = gangs.create(19, "Others");
+    REQUIRE(again == gang);
+    const coney::ai::GangOrders& orders = gangs.find(again)->orders();
+    CHECK(orders.leader == 0.0);
+    CHECK(orders.turf[0] == 0.0);
+    CHECK_FALSE(orders.attackStrategies);
+    CHECK(orders.respondPercent == 30);
+}
+
+TEST_CASE("GangMakeEnemies and GangMakeFriends write a slot not in use too, so a gang made there inherits the bit",
+          "[ai][gangs]") {
+    // Expected: ai-gangs.md#gang-record, confirmed (code): GangMakeEnemies (0x0016acf0) and GangMakeFriends
+    // (0x0016ad80) ignore only id -1 and write both records whether in use or not.
+    Gangs gangs;
+    const int warriors = gangs.create(coney::ai::kWarriorsKind, "Warriors");
+    gangs.makeEnemies(warriors, 1);
+    gangs.makeFriends(warriors, 2);
+    const int punks = gangs.create(19, "Punks");
+    const int friendly = gangs.create(21, "Friends");
+    REQUIRE(punks == 1);
+    REQUIRE(friendly == 2);
+    CHECK(Gangs::enemies(gangs.find(warriors), gangs.find(punks)));
+    CHECK(Gangs::friends(gangs.find(warriors), gangs.find(friendly)));
 }
