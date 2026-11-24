@@ -47,6 +47,9 @@ struct HubLookups {
     std::function<void(anim::Vec3 at)> reportBreakIn;
     /// Where the `CrimeScene` flag is.
     std::function<std::optional<anim::Vec3>()> crimeScene;
+    /// Whether a gang is wanted, and whether `ForceCrimeLevel` holds the wanted gangs (a new police gang reads both).
+    std::function<bool(int gang)> gangWanted;
+    std::function<bool()> crimeLevelForced;
 };
 
 /// One human's workout (`HuWorkout`): the state code `0x1b` until it begins, then the working-out flag.
