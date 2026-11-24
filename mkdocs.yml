@@ -191,6 +191,7 @@ nav:
           - "AI moving: gaits, path planning, routes and steering": research/ai-moving.md
           - "AI scripting: how the scripts drive the AI": research/ai-scripting.md
           - "AI gangs, tactics and formations": research/ai-gangs.md
+          - "Gang records: making a gang, joining it and its leader": research/gang-records.md
           - "AI code index: brains, actions and tactics": research/ai-code.md
           - "AI goals: the code of every goal class": research/ai-goals.md
           - "AI and the world: objects, cars, doors and climbs": research/ai-world.md

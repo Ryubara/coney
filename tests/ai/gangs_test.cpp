@@ -3,6 +3,7 @@
 // gang, and the events a member's gang hears before its brain, among them event 18 with the count still standing.
 #include "ai/gangs.h"
 
+#include <algorithm>
 #include <memory>
 #include <optional>
 #include <string>
@@ -83,8 +84,10 @@ TEST_CASE("friends are the same gang or kind, both police-like, or made friends;
     CHECK(w->enemyMask() == 1U << static_cast<unsigned>(enemy));
 }
 
-TEST_CASE("joining a gang, the same one included, re-adds the brain; a full gang drops its first member",
+TEST_CASE("joining a gang, the same one included, re-adds the brain; a gang at its count keeps every member",
           "[ai][gangs]") {
+    // Expected: gang-records.md#join, confirmed (code): Gang_AddMember (0x00166308) has no early return and its
+    // cap changes nothing.
     AiScene scene;
     Gangs& gangs = scene.brains.gangs();
     const int a = gangs.create(19, "A");
@@ -109,8 +112,8 @@ TEST_CASE("joining a gang, the same one included, re-adds the brain; a full gang
     }
     CHECK(gangs.find(a)->members().size() == coney::ai::kGangMembers);
     gangs.addMember(a, brain);
-    CHECK(gangs.find(a)->members().size() == coney::ai::kGangMembers);
-    CHECK(joined.front()->gang() == nullptr);
+    CHECK(gangs.find(a)->members().size() == coney::ai::kGangMembers + 1);
+    CHECK(joined.front()->gang() == gangs.find(a));
     CHECK(gangs.find(a)->members().back() == &brain);
 }
 
@@ -437,9 +440,10 @@ TEST_CASE("a member whose human is deleted leaves the gang and drops the living 
     CHECK(scene.brains.gangs().countLiving(id, true) == 1);
 }
 
-TEST_CASE("a gang's capacity is the limit Gangs::addMember holds it to: 10, and 16 for the police kinds",
+TEST_CASE("a gang's capacity is the count Gang_AddMember tests, 10 and 16 for the police kinds, and holds no one back",
           "[ai][gangs]") {
-    // Expected: unverified, #924 (the limit is Gang_AddMember's; the page's gangs read it through capacity())
+    // Expected: gang-records.md#join, confirmed (code): Gang_AddMember (0x00166308) tests 16 for kinds 1 and
+    // 0x17, else 10, and only calls a no-op past it; the 16 slots are the only bound.
     AiScene scene;
     Gangs& gangs = scene.brains.gangs();
     struct Case {
@@ -451,12 +455,12 @@ TEST_CASE("a gang's capacity is the limit Gangs::addMember holds it to: 10, and 
         const int id = gangs.create(c.kind, "Kind" + std::to_string(c.kind));
         REQUIRE(id >= 0);
         CHECK(gangs.find(id)->capacity() == c.limit);
-        // Two more than it holds: the gang stops at its capacity, as addMember limits it.
+        // Two more than its count: each is listed while a slot is free.
         for (std::size_t i = 0; i < c.limit + 2; ++i) {
             gangs.addMember(id,
                             scene.add({10.0F + static_cast<float>(i), 10.0F + static_cast<float>(c.kind), 0.0F}, 0.0F));
         }
-        CHECK(gangs.find(id)->members().size() == c.limit);
+        CHECK(gangs.find(id)->members().size() == std::min(c.limit + 2, coney::ai::kGangMemberSlots));
     }
 }
 
@@ -492,7 +496,7 @@ TEST_CASE("the gang's update without its spawners starts and runs its tactic onc
 
 TEST_CASE("a player leading the gang stays its leader while arrested or down, and leaves the lead only dead",
           "[ai][gangs]") {
-    // Expected: ai-gangs.md#gang-leader, confirmed (code): Gang_GetLeader (0x00165678) picks again only when the stored
+    // Expected: gang-records.md#leader, confirmed (code): Gang_GetLeader (0x00165678) picks again only when the stored
     // leader is gone or dead, or is not a player and is cuffed or down.
     AiScene scene;
     Gangs& gangs = scene.brains.gangs();
@@ -517,7 +521,7 @@ TEST_CASE("a player leading the gang stays its leader while arrested or down, an
 TEST_CASE("with no leader the gang picks player 1 or a cop first, then the first member free and up, then the first "
           "member, and keeps the pick",
           "[ai][gangs]") {
-    // Expected: ai-gangs.md#gang-leader, confirmed (code): Gang_PickLeader (0x00165738) stores and returns a member
+    // Expected: gang-records.md#leader, confirmed (code): Gang_PickLeader (0x00165738) stores and returns a member
     // who is player 1, or of class role 12 or 13 and not cuffed; else the first neither down nor cuffed; else the
     // first member at all.
     AiScene scene;
@@ -552,7 +556,7 @@ TEST_CASE("with no leader the gang picks player 1 or a cop first, then the first
 TEST_CASE("a full gang keeps every member: the new one takes the first free of its 16 slots, and with none he is "
           "in the gang but not listed",
           "[ai][gangs]") {
-    // Expected: ai-gangs.md#warrior-follow, confirmed (code): Gang_AddMember (0x00166308) only calls a no-op past its
+    // Expected: gang-records.md#join, confirmed (code): Gang_AddMember (0x00166308) only calls a no-op past its
     // cap and puts the member in the first free slot (HandleArray16_PutInFree), the brain's gang set either way.
     AiScene scene;
     Gangs& gangs = scene.brains.gangs();
@@ -586,7 +590,7 @@ TEST_CASE("a full gang keeps every member: the new one takes the first free of i
 }
 
 TEST_CASE("a member of character type 0xed brings his gang his own four cower clips", "[ai][gangs]") {
-    // Expected: ai-gangs.md#warrior-follow, confirmed (code): Gang_AddMember (0x00166308) sets group 0x29c from the
+    // Expected: gang-records.md#join, confirmed (code): Gang_AddMember (0x00166308) sets group 0x29c from the
     // four names at 0x0050cb30 for a human of type 0xed.
     AiScene scene;
     Gangs& gangs = scene.brains.gangs();
@@ -602,7 +606,7 @@ TEST_CASE("a member of character type 0xed brings his gang his own four cower cl
 }
 
 TEST_CASE("a new gang of the police, police-like or dealer kind gets its kind's clip groups", "[ai][gangs]") {
-    // Expected: ai-gangs.md#gang-create, confirmed (code): Gang_Create (0x0016cdf0) sets group 0x29c for kind 1;
+    // Expected: gang-records.md#create, confirmed (code): Gang_Create (0x0016cdf0) sets group 0x29c for kind 1;
     // 0x29c, 0x25c and 0x253 for kind 0x17; 0x25b (eight) and 0x29c (three) for kind 0x18.
     Gangs gangs;
     coney::ai::Gang* police = gangs.find(gangs.create(coney::ai::kPoliceKind, "Police"));
@@ -627,7 +631,7 @@ TEST_CASE("a new gang of the police, police-like or dealer kind gets its kind's 
 TEST_CASE("a new police gang makes every wanted gang its enemy, and them its enemies unless the crime level is "
           "forced",
           "[ai][gangs]") {
-    // Expected: ai-gangs.md#gang-create, confirmed (code): Gang_Create (0x0016cdf0) calls Gang_SetHostileToKind
+    // Expected: gang-records.md#create, confirmed (code): Gang_Create (0x0016cdf0) calls Gang_SetHostileToKind
     // (0x0016c3a8) for each other wanted gang (+0x5e8) with the police kind, both ways only while game state +0x28c is
     // 0.
     Gangs gangs;
@@ -648,7 +652,7 @@ TEST_CASE("a new police gang makes every wanted gang its enemy, and them its ene
 }
 
 TEST_CASE("a gang made in a freed slot starts with no leader and the record's other orders reset", "[ai][gangs]") {
-    // Expected: ai-gangs.md#gang-create, confirmed (code): Gang_Create (0x0016cdf0) resets the record (0x00164808):
+    // Expected: gang-records.md#create, confirmed (code): Gang_Create (0x0016cdf0) resets the record (0x00164808):
     // the leader the null handle, the turf boxes cleared, +0xd7 30, +0xd9 0.
     Gangs gangs;
     const int gang = gangs.create(19, "Punks");
@@ -667,7 +671,7 @@ TEST_CASE("a gang made in a freed slot starts with no leader and the record's ot
 
 TEST_CASE("GangMakeEnemies and GangMakeFriends write a slot not in use too, so a gang made there inherits the bit",
           "[ai][gangs]") {
-    // Expected: ai-gangs.md#gang-record, confirmed (code): GangMakeEnemies (0x0016acf0) and GangMakeFriends
+    // Expected: gang-records.md#relations, confirmed (code): GangMakeEnemies (0x0016acf0) and GangMakeFriends
     // (0x0016ad80) ignore only id -1 and write both records whether in use or not.
     Gangs gangs;
     const int warriors = gangs.create(coney::ai::kWarriorsKind, "Warriors");

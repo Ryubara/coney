@@ -35,13 +35,16 @@
 
 namespace {
 
-// Updates of play looked at: about a minute and a half of the match after the menus.
-constexpr int kUpdates = 2700;
+// The most updates of play looked at (five minutes of the match after the menus), and how many updates with an Orphan
+// down by state with health left end the look early. The match runs until that many are seen, so a change to the AI
+// that moves the first fall (under seed 3 it came at about game frame 3,260, and at 4,015 once the gang leader stayed
+// player 1 and was picked as Gang_PickLeader picks, docs/research/gang-records.md#leader) does not take the updates
+// the count is wrong on out of the window.
+constexpr int kMaxUpdates = 9000;
+constexpr int kDecisiveUpdates = 300;
 // The AI's seed (`--ai-seed`, StartUpFlow::setAiSeed()). Which side wins is the AI's draw, and the counter's test needs
-// an Orphan down by state with health left: under seed 3 the first falls at about game frame 3,260, inside the window,
-// while under seed 0 the Orphans now win with none down (since the fight stance follows each re-target,
-// docs/research/ai-fights.md#fight-reposition). A later AI change may move the draw again; a survey of seeds 0-6
-// (the first fall's frame under each) finds a new one.
+// an Orphan down by state with health left: under seed 0 the Orphans win with none down (since the fight stance follows
+// each re-target, docs/research/ai-fights.md#fight-reposition), under seed 3 Orphans fall.
 constexpr std::uint32_t kAiSeed = 3;
 
 } // namespace
@@ -72,7 +75,8 @@ TEST_CASE("the disc's WAR PARTY gang counter shows the standing Orphans, not tho
     int decisive = 0;                // updates with a member down by state but with health left
     int healthWas = 0;               // of those, updates where the count is the members with health left
     std::uint64_t firstDecisive = 0; // the game frame of the first such update
-    for (int i = 0; i < kUpdates; ++i) {
+    int looked = 0;                  // updates looked at
+    for (; looked < kMaxUpdates && decisive < kDecisiveUpdates; ++looked) {
         game.run(1);
         const coney::hud::NumIndicator& indicator = hud->numIndicator(coney::hud::Hud::kSharedNumIndicator);
         const coney::ai::Brains* brains = game.flow().gameplay().brains();
@@ -100,8 +104,8 @@ TEST_CASE("the disc's WAR PARTY gang counter shows the standing Orphans, not tho
     std::printf("  war party gang counter: shown %d of %d updates, %d not the standing count; %d updates with a "
                 "member down by state with health left (the first at game frame %llu), %d of them showing the health "
                 "count\n",
-                shown, kUpdates, mismatch, decisive, static_cast<unsigned long long>(firstDecisive), healthWas);
-    CHECK(shown > kUpdates / 2);
+                shown, looked, mismatch, decisive, static_cast<unsigned long long>(firstDecisive), healthWas);
+    CHECK(shown > looked / 2);
     CHECK(mismatch == 0);
     CHECK(decisive > 0);
     CHECK(healthWas == 0);

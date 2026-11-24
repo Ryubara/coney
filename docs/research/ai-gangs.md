@@ -27,6 +27,9 @@ The gang module is `0x00162518`-`0x0016e388`; its function-by-function index is 
 | `0x001681a0` | `GangSpawner_Update` | One spawner's update and spawn | confirmed (code) |
 | `0x001672a8` | `GangSpawner_OnHumanGone` | A spawned human gone: the counts taken off | confirmed (code) |
 | `0x001664d8` | `Gang_RemoveMember` | A member leaves the gang | confirmed (code) |
+| `0x0016cdf0` | `Gang_Create` | Making a gang: [Gang records](gang-records.md#create) | confirmed (code) |
+| `0x00166308` | `Gang_AddMember` | A member joins: [Gang records](gang-records.md#join) | confirmed (code) |
+| `0x00165678` | `Gang_GetLeader` | The leader: [Gang records](gang-records.md#leader) | confirmed (code) |
 
 ## Gang fights {#gang-fights}
 
@@ -51,8 +54,7 @@ How a gang shares out a big fight, team-ups and Rumble's CPU sides: [Gang fights
 | `+0xe4` | u32[] | the **Lua handler** per event id (interned name) |
 | `+0x1b0` | table | gang-wide anim substitutions (`0x00164178`, `0x001642f0`) |
 
-- **`GangMakeEnemies(a, b)`** (`0x0016acf0`), both ways: clear the friend bit, set the enemy bit (`0x001690c8`).
-  `GangMakeFriends` (`0x0016ad80`) does the reverse. Id −1 is ignored.
+- **`GangMakeEnemies(a, b)`** and **`GangMakeFriends`**: [Gang records](gang-records.md#relations).
 - **Friends** (`0x00168f58`): the same gang or kind, both kinds in {1, `0x17`}, a global truce (`0x0050cb7c` in the
   future), or the friend bit.
 - **`GangSetThreatResponse(gang, r)`** (`0x0016b3d0`) writes brain `+0x21c` of the **current** members only.
@@ -233,8 +235,8 @@ below unless marked.
 
 Shared behaviour, confirmed (code):
 
-- **Leader**: gang `+0x44` holds the leader's handle; `0x00165678` returns him while he is alive, not a player, not down
-  (`0x00223b70`) and not out of the fight (`0x00227e60`), else another member (`0x00165738`).
+- **Leader**: gang `+0x44` holds the leader's handle, which `Gang_GetLeader` keeps or picks again
+  ([Gang records](gang-records.md#leader); a player leader stays one while arrested or down).
 - **Moving as a group** (MoveToFlag, TravelPath, WalkinTall, Wander, Confront): the leader is popped to his goal base
   and re-marked (`0x0028d8c0`, `0x0028d8a0`), and the moving goal is pushed above his old goals; every other member
   that is not a player and not down joins the leader's
@@ -1084,8 +1086,8 @@ the cited addresses). There is no early return:
    - the leader is cleared when he was it;
    - under a tactic (gang `+0x40`) his brain is popped to its goal base;
    - the gang gets event `0x16` with `+4` = the members left and `+8` = **0**.
-2. He is put back: brain `+0x20c`, his attack weights, god mode under an invincible gang, the leader slot for a
-   player war chief (human `+0x3ac` = 1).
+2. He is put back ([Joining a gang](gang-records.md#join)): brain `+0x20c`, his attack weights, god mode under an
+   invincible gang, a free member slot, the leader slot for a player war chief (human `+0x3ac` = 1).
 3. Event `0x16` follows with `+4` = the count before + 1 and `+8` = **1**.
 
 `Gang_OnEvent` (`0x00164c20`) hands an event first to a script handler the gang registered for its type (consumed

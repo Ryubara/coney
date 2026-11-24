@@ -1331,6 +1331,8 @@ void GameplayMode::wireHub() {
         const std::optional<std::array<float, 3>> at = scene ? objectPosition(*scene) : std::nullopt;
         return at ? std::optional<anim::Vec3>(anim::Vec3{(*at)[0], (*at)[1], (*at)[2]}) : std::nullopt;
     };
+    lookups.gangWanted = [this](int gang) { return m_state.player.crimes.wanted(gang); };
+    lookups.crimeLevelForced = [this] { return m_state.player.crimes.forced(); };
     m_scripted->hubHost().setLookups(std::move(lookups));
     // The gangs' team-ups draw from the game's random numbers, by the gang kinds' `CfgGang` strategies.
     m_brains->gangs().setGameRandom(&m_state.random);
