@@ -14,8 +14,9 @@ Verified against: `SLUS_212.15` (NTSC-U); runtime claims cite run records or, fo
 ## Summary
 
 What makes one character stronger, tougher or faster than another comes from four configuration tables set by
-the configuration scripts (and again by each difficulty's): the **power classes**, the **character classes**,
-the **speed classes** and the hat-fit sets. This page holds those tables, the one list of every stat
+the configuration scripts (and again by each difficulty's): the **character type** (`CfgChar`), the **power class**
+(`CfgPowerClass`), the **Warrior class** (`CfgWarriorClass`) and the **gym upgrades** (`CfgWarriorUpgrade`). This page
+holds the power-class and character-class records, the one list of every stat, the speed classes (`CfgSpeedClass`)
 and the way `HuCreate`'s type picks a class and a model. The human object they land in is on
 [Characters (humans)](characters/index.md#the-human-object); what the speeds do each update is on
 [Locomotion](characters-locomotion.md).
