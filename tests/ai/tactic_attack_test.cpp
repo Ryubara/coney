@@ -588,8 +588,8 @@ TEST_CASE("the alert state's kind exceptions: 5 takes no clips, 0x18 no fidgets,
     for (Gang* gang : {&five, &dealers, &policeLike}) {
         gang->setAlertState(coney::ai::kGangFighting);
     }
-    // The groups a kind skips keep what GangCreate gave it (docs/research/gang-records.md#create, confirmed (code)):
-    // the dealers' eight fidgets and the police-like kind's four advancing taunts, not the fighting state's own.
+    // Expected: gang-records.md#create, confirmed (code): the groups a kind skips keep what GangCreate gave it, the
+    // dealers' eight fidgets and the police-like kind's four advancing taunts, not the fighting state's own.
     CHECK(five.clipGroup(coney::ai::kCombatFidgetClips) == 0);
     CHECK(five.clipGroup(coney::ai::kTauntAdvanceClips) == 0);
     CHECK(dealers.clipGroup(coney::ai::kCombatFidgetClips) == 8);
