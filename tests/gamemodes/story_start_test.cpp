@@ -602,6 +602,8 @@ TEST_CASE("story: behind the loading screen the level loads after the fade in an
 }
 
 TEST_CASE("story: a level's intro movie plays before the level's first step", "[story_start][loading_screen][movies]") {
+    // Expected: level-loading.md#initlevel, confirmed (code) (step 12: the intro movie L<n>_IN, n the record's level
+    // number, before the level is entered)
     // As InitLevel blocks in Movie_Play: had the world stepped first, its first scene would have loaded and prepared
     // its soundtrack, and the movie's stop of every sound would have thrown it away
     // (docs/research/sound.md#scene-sound).
