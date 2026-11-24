@@ -961,8 +961,10 @@ void Human::snapToGround(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
 }
 
 void Human::land(anim::Vec3 feet) {
-    // Not ported: `Human_Land`'s fall damage by this speed and the player camera's landing kind (#667), and the arm of
-    // the impact sound (#684); lastLandingSpeed() keeps the speed they read (docs/research/characters.md#falling).
+    // Not ported: `Human_Land`'s fall damage by this speed, the player camera's landing kind, the release of a grab,
+    // the switch of the body's capsule, its body mode, the dead or limp branch and the game mode 0x11 case (all #667),
+    // and the arm of the impact sound (#684); lastLandingSpeed() keeps the speed they read
+    // (docs/research/characters.md#falling).
     m_lastLandingSpeed = m_velocity.z;
     ++m_landings;
     m_position = feet;
