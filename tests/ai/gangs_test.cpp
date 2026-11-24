@@ -684,3 +684,21 @@ TEST_CASE("GangMakeEnemies and GangMakeFriends write a slot not in use too, so a
     CHECK(Gangs::enemies(gangs.find(warriors), gangs.find(punks)));
     CHECK(Gangs::friends(gangs.find(warriors), gangs.find(friendly)));
 }
+
+TEST_CASE("leaving a gang to join another empties the joiner's enemy list; a human with no gang keeps his",
+          "[ai][gangs]") {
+    // Expected: gang-records.md#join, confirmed (code): Gang_AddMember (0x00166308) clears the brain's enemy list
+    // (+0x164) only when he leaves a gang.
+    AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    const int a = gangs.create(19, "A");
+    const int b = gangs.create(21, "B");
+    Brain& enemy = scene.add({30.0F, 30.0F, 0.0F}, 0.0F);
+    Brain& loner = scene.add({40.0F, 40.0F, 0.0F}, 0.0F);
+    loner.addEnemy(enemy);
+    REQUIRE(loner.enemies().size() == 1);
+    gangs.addMember(a, loner);
+    CHECK(loner.enemies().size() == 1);
+    gangs.addMember(b, loner);
+    CHECK(loner.enemies().empty());
+}
