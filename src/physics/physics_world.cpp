@@ -16,6 +16,7 @@
 #include "physics/contact.h"
 #include "physics/overlaps.h"
 #include "physics/shapes.h"
+#include "physics/sphere_box_sweep.h"
 
 namespace coney::physics {
 
@@ -79,6 +80,25 @@ std::array<std::array<PhysicsWorld::PairTest, 5>, 5> defaultOverlaps() {
     return table;
 }
 
+// One entry of the sweep table: the sweep `Sweep` for an own shape `A` moving against a resting shape `B`.
+// @coney-only the sweep table's entries, filled by the world's constructor (Unit 15, #379)
+template <typename A, typename B, bool (*Sweep)(Contact&, const A&, const B&, Vec3)>
+bool sweepEntry(Contact& contact, const Shape& own, const Shape& other, Vec3 move) {
+    return Sweep(contact, std::get<A>(own), std::get<B>(other), move);
+}
+
+// The sweep table's entries Coney has: a sphere against a box and its mirror (docs/research/physics-kernels.md#unit-5);
+// the human pairs are Unit 11's (#377).
+// @coney-only the sweep table as the IPhysics constructor fills it (Unit 15, #379)
+std::array<std::array<PhysicsWorld::SweepTest, 5>, 5> defaultSweeps() {
+    std::array<std::array<PhysicsWorld::SweepTest, 5>, 5> table{};
+    table.at(static_cast<std::size_t>(ShapeType::Sphere)).at(static_cast<std::size_t>(ShapeType::Box)) =
+        sweepEntry<Sphere, Box, sweepSphereBox>;
+    table.at(static_cast<std::size_t>(ShapeType::Box)).at(static_cast<std::size_t>(ShapeType::Sphere)) =
+        sweepEntry<Box, Sphere, sweepBoxSphere>;
+    return table;
+}
+
 // The index of a ShapeType in the tables.
 // @coney-only table indexing
 std::size_t index(ShapeType type) { return static_cast<std::size_t>(type); }
@@ -96,7 +116,8 @@ std::size_t ignoreSlotCap(EngineLimits limits) {
     return limits == EngineLimits::Original ? kOrigIgnoreSlots : std::numeric_limits<std::size_t>::max();
 }
 
-PhysicsWorld::PhysicsWorld(EngineLimits limits) : m_limits(limits), m_overlaps(defaultOverlaps()) {
+PhysicsWorld::PhysicsWorld(EngineLimits limits)
+    : m_limits(limits), m_overlaps(defaultOverlaps()), m_sweeps(defaultSweeps()) {
     // The constructor's tables: every pool shape built once, and the ignore slots zeroed (docs/research/
     // physics-bodies.md#u8-pools).
     for (std::size_t pool = 0; pool < kOrigPoolCounts.size(); ++pool) {
@@ -105,6 +126,17 @@ PhysicsWorld::PhysicsWorld(EngineLimits limits) : m_limits(limits), m_overlaps(d
         }
     }
     m_ignoreSlots.resize(kOrigIgnoreSlots);
+    // The body pools (docs/research/physics-bodies.md#u9-constructed): the human sets with their shapes, the punch
+    // bag's set, then the objects', cars' and panes' bodies.
+    for (std::size_t i = 0; i < kOrigBodyCounts.at(static_cast<std::size_t>(BodyPool::Human)); ++i) {
+        std::ignore = buildHumanSet();
+    }
+    std::ignore = buildPunchBagSet();
+    for (const BodyPool pool : {BodyPool::Object, BodyPool::Car, BodyPool::Pane}) {
+        for (std::size_t i = 0; i < kOrigBodyCounts.at(static_cast<std::size_t>(pool)); ++i) {
+            std::ignore = buildPoolBody(pool);
+        }
+    }
 }
 
 ShapeId PhysicsWorld::addShapeRecord(const ShapeRecord& record) {
@@ -416,7 +448,8 @@ std::size_t PhysicsWorld::overlapShape(std::vector<Contact>& out, const OverlapQ
             if ((q.options & kOverlapAskOwner) != 0 && q.accepts && !q.accepts(me.owner, other.owner)) {
                 continue;
             }
-            // Stand-in: every body answers its own chain; a human body's capsule chain is Unit 10's (#376).
+            // Every body answers its first shape's chain (GetShapes, 0x00341ae0 and the human body's 0x003420c8):
+            // a human body's is its capsule alone, its bone shapes being chained apart.
             for (ShapeId s = other.firstShape; s != kNoShape; s = shape(s).next) {
                 const ShapeRecord& theirs = shape(s);
                 if ((q.options & kOverlapEnabledOnly) != 0 && (theirs.flags & kShapeEnabled) == 0) {

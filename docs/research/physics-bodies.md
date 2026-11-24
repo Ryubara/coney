@@ -1787,9 +1787,11 @@ is 0, [Bodies](physics.md#bodies)).
 human list, and what a free leaves behind. All confirmed (code) at the cited addresses (read in the disassembly,
 2026-10-12) unless a line says otherwise.
 
-- **Coney:** `src/physics/physics_world.*` (fixed pools with the original's counts, so running out behaves the same);
-  callers in `src/human/human.cpp` (`Human_CreatePhysicsBody`'s rules, [below](#u9-callers)),
-  `src/world_objects/object_bodies.*`, `cars.*`, `glass.*`.
+- **Coney:** `repo:src/physics/body_pools.cpp` (done, #376): the pools with the original's counts and scans, so
+  running out behaves the same under the engine limits preset (Coney's own limit builds one more body), each kind's
+  create and free, and the human list. No caller yet: `src/human/human.cpp` (`Human_CreatePhysicsBody`'s rules,
+  [below](#u9-callers)), `src/world_objects/object_bodies.*`, `cars.*` and `glass.*` move onto it once a level owns a
+  world (#379).
 - **Tests:** [Test ideas](#u9-tests): each kind's starting flags (human `0x8002243f`, then `0x8002203f` /
   `0x8002223f` for an AI; punch bag `0x8000243f` then `0x8000263f`; object `0x80000500`; car `0x80000000`, then
   `0x8002211a` after its boxes; pane `0x8000007a`), shapes and scales; the first free slot is reused (the heal keeps
@@ -1923,9 +1925,12 @@ player) flags `|= 0x400` (already set) and scale `+0x60` = (1.4286, 1.4286, 1, 1
 
 A fake owner (type mask 0x40 for a human, 8 for an object, scale attribute *s*). Values from this spec.
 
-1. **Human create.** Fresh world, owner with scale 1: returns pool slot 0; flags `0x8002243f`; capsule flags `0x11`;
-   bone shapes `0x6` (bones 3, 6) and `0x2` (the rest); `+0x60` = (1, 1, 1, 1); `+0x20` = 0; human list = [it]; after
-   the scale step the capsule is height 2.0, radius 0.35 and the body is still dirty until its update.
+1. **Human create.** Fresh world, owner with scale 1: returns pool slot 0; flags `0x8002243f` written, then
+   `0x0002243f` once the create returns (the scale step ends with the body's update, which poses the capsule and clears
+   the dirty bit: confirmed (code) at `0x00341f28` and `0x003422d0`; this line said the body stays dirty until its
+   update, 2026-11-24); capsule flags `0x11`; bone shapes `0x6` (bones 3, 6) and `0x2` (the rest); `+0x60` =
+   (1, 1, 1, 1); `+0x20` = 0; human list = [it]; the capsule is height 2.0 (a human whose head bone is 1.8 m up),
+   radius 0.35.
 2. **Scale 1.1** (not in a scene): capsule height 2.2, radius 0.385; spine segment offset (−0.077, 0, 0.055), radius
    0.198, length 0.418; forearms radius 0.077, length 0.22; shins 0.11, 0.44; head offset (0.055, 0, 0.033), radius
    0.165; hands offset (0.088, 0, 0), radius 0.099; feet 0.165 (float32 values to 1e-6). In a scene state the same
@@ -1950,7 +1955,10 @@ does not
 cover), the weapon spheres and the push sphere. All confirmed (code) at the cited addresses (disassembly read
 2026-10-12) unless a line says otherwise.
 
-- **Coney:** `src/human/human.*` (body update after the move, the push), `src/combat/*` (`Human_TestStrikes`: the
+- **Coney:** `repo:src/physics/human_body.h` (done, #376): the body set and `Human_TestStrikes` on the physics world,
+  asking the owners through `HumanBodyOwners`; nothing in play calls it until a level owns a world (#379), and the human
+  pairs of the sweep table are Unit 11's (#377). Where it is to be called: `src/human/human.*` (body update after the
+  move, the push), `src/combat/*` (`Human_TestStrikes`: the
   gather, the line-of-sight ray and the per-candidate loop below, sweeping each enabled strike shape from its last pose
   through the sweep table: [Unit 5](physics-kernels.md#unit-5) for boxes, [Unit 11](#unit-11) for humans),
   `src/platform/play_level_mode.*` (`strikeObjects()`). Issue #72's step 1 (strikes hit cars) needs Unit 5, [the
@@ -2142,7 +2150,8 @@ per-shape sweep
        `+0x30` / `+0x34`: struck already, the grab partner); its type mask has `0x8` (an object) and its owner's state
        flags (owner vtable `+0x50` / `+0x54`) have `0x4000000` (airborne: a flying object is not struck).
     2. **Line of sight.** Target point `t` = its first shape's world position (GetShapes with (0, 0, 0), shape
-       `+0x20` / `+0x24`), `+1.0` in z when the candidate is a human (type mask `0x40`). `d = t − o`, `L = |d|`,
+       `+0x20` / `+0x24`), `+1.0` in z when the candidate is a human (type mask `0x40`; confirmed (code) in the
+       disassembly at `0x0033f5e0`-`0x0033f600`, which the decompile leaves out). `d = t − o`, `L = |d|`,
        ray `{o, d / L, L}` through `WorldManager_RayCast` (`0x0040db88`) with the material exclusion list at
        `0x005771c8` and options `0x48`, or `0x8` for a human candidate ([Objects](objects.md#glass) gives the
        exclusions). A hit (result `+0x10` ≠ 0): skip the candidate.

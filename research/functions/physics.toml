@@ -10,9 +10,9 @@ coney = "src/human/human.h:Human::heal"
 status = "compared"
 
 [[function.gaps]]
-what = "Coney keeps no physics body on the human: none is freed or taken from the pool, each sweep builds its own (human.cpp Human::sweep)"
+what = "Coney keeps no physics body on the human: none is freed or taken from the pool, each sweep builds its own (human.cpp Human::sweep); the pools exist (PhysicsWorld::createHumanBody) and wait for a level to own a world"
 relation = "not-ported"
-issue = 376
+issue = 379
 
 [[function.gaps]]
 what = "the heavy bag's body (class 0x1cc, flag 0x200)"
@@ -29,11 +29,91 @@ coney = "src/world_objects/loose_objects.cpp:integrateAngular"
 status = "legacy"
 
 [[function]]
+address = 0x0033cb08
+name = "IPhysics_CreatePunchBagBody"
+page = "physics-bodies.md#u9-create"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::createPunchBagBody"
+status = "compared"
+
+[[function]]
+address = 0x0033cbf0
+name = "IPhysics_FreePunchBagBody"
+page = "physics-bodies.md#u9-free"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::freeHumanBody"
+status = "compared"
+
+[[function]]
+address = 0x0033cc48
+name = "IPhysics_CreateHumanBody"
+page = "physics-bodies.md#u9-create"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::createHumanBody"
+status = "compared"
+
+[[function]]
 address = 0x0033cd70
 name = "IPhysics_ForgetIgnoredOwner"
 page = "physics-bodies.md#u8-forget"
 level = "confirmed-code"
 coney = "src/physics/physics_world.h:PhysicsWorld::forgetIgnoredOwner"
+status = "compared"
+
+[[function]]
+address = 0x0033ce00
+name = "IPhysics_FreeHumanBody"
+page = "physics-bodies.md#u9-free"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::freeHumanBody"
+status = "compared"
+
+[[function]]
+address = 0x0033ce58
+name = "IPhysics_CreateObjectBody"
+page = "physics-bodies.md#u9-create"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::createObjectBody"
+status = "compared"
+
+[[function]]
+address = 0x0033cf00
+name = "IPhysics_FreeObjectBody"
+page = "physics-bodies.md#u9-free"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::freeObjectBody"
+status = "compared"
+
+[[function]]
+address = 0x0033cf68
+name = "IPhysics_CreateCarBody"
+page = "physics-bodies.md#u9-create"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::createCarBody"
+status = "compared"
+
+[[function]]
+address = 0x0033cff8
+name = "IPhysics_FreeCarBody"
+page = "physics-bodies.md#u9-free"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::freeCarBody"
+status = "compared"
+
+[[function]]
+address = 0x0033d070
+name = "Physics_CreateBoxBody"
+page = "physics-bodies.md#u9-box"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::createBoxBody"
+status = "compared"
+
+[[function]]
+address = 0x0033d158
+name = "IPhysics_FreeBoxBody"
+page = "physics-bodies.md#u9-free"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::freeBoxBody"
 status = "compared"
 
 [[function]]
@@ -170,11 +250,6 @@ level = "confirmed-code"
 coney = "src/physics/physics_world.h:PhysicsWorld::overlapShape"
 status = "compared"
 
-[[function.gaps]]
-what = "a human body's shapes are its capsule chain"
-relation = "stand-in"
-issue = 376
-
 [[function]]
 address = 0x0033feb0
 name = "IPhysics_QueryBox"
@@ -229,6 +304,22 @@ name = "IPhysics_RemoveBody"
 page = "physics-bodies.md#u7-addremove"
 level = "confirmed-code"
 coney = "src/physics/physics_world.h:PhysicsWorld::removeBody"
+status = "compared"
+
+[[function]]
+address = 0x003407a0
+name = "IPhysics_AddHumanBody"
+page = "physics-bodies.md#u9-human-list"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::addHumanBody"
+status = "compared"
+
+[[function]]
+address = 0x003407f8
+name = "IPhysics_RemoveHumanBody"
+page = "physics-bodies.md#u9-human-list"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::removeHumanBody"
 status = "compared"
 
 [[function]]
@@ -409,6 +500,46 @@ coney = "src/physics/physics_world.h:PhysicsWorld::bodyMoved"
 status = "compared"
 
 [[function]]
+address = 0x00341e98
+name = "PhysicsHumanBody_Construct"
+page = "physics-bodies.md#u9-constructed"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::constructHumanBody"
+status = "compared"
+
+[[function]]
+address = 0x00341f28
+name = "PhysicsBody_ApplyHumanScale"
+page = "physics-bodies.md#u10-scale"
+level = "confirmed-code"
+coney = "src/physics/human_body.h:applyHumanScale"
+status = "compared"
+
+[[function]]
+address = 0x003420d0
+name = "PhysicsHumanBody_SetPushSphere"
+page = "physics-bodies.md#u10-push-sphere"
+level = "confirmed-code"
+coney = "src/physics/human_body.h:setPushSphere"
+status = "compared"
+
+[[function]]
+address = 0x00342158
+name = "PhysicsHumanBody_AddStrikeSphere"
+page = "physics-bodies.md#u10-weapon"
+level = "confirmed-code"
+coney = "src/physics/human_body.h:addStrikeSphere"
+status = "compared"
+
+[[function]]
+address = 0x00342168
+name = "PhysicsHumanBody_ClearStrikeSpheres"
+page = "physics-bodies.md#u10-weapon"
+level = "confirmed-code"
+coney = "src/physics/human_body.h:clearStrikeSpheres"
+status = "compared"
+
+[[function]]
 address = 0x003421d0
 name = "PhysicsHumanBody_IsIgnoring"
 page = "physics-bodies.md#u8-human"
@@ -439,6 +570,46 @@ page = "physics-bodies.md#u3-human-scale"
 level = "confirmed-code"
 coney = "src/physics/body_sweep.h:contactScale"
 status = "legacy"
+
+[[function]]
+address = 0x003422d0
+name = "PhysicsHumanBody_Update"
+page = "physics-bodies.md#u10-update"
+level = "confirmed-code"
+coney = "src/physics/human_body.h:updateHumanBody"
+status = "compared"
+
+[[function]]
+address = 0x003425c0
+name = "PhysicsHumanBody_PushAwayHumans"
+page = "physics-bodies.md#u10-push"
+level = "confirmed-code"
+coney = "src/physics/human_body.h:pushAwayHumans"
+status = "compared"
+
+[[function]]
+address = 0x00342828
+name = "PhysicsHumanBody_Moved"
+page = "physics-bodies.md#u10-moved"
+level = "confirmed-code"
+coney = "src/physics/human_body.h:humanBodyMoved"
+status = "compared"
+
+[[function]]
+address = 0x003428d0
+name = "PhysBody_SetShapeEnabled"
+page = "physics-bodies.md#u10-enable"
+level = "confirmed-code"
+coney = "src/physics/human_body.h:setStrikeShapeEnabled"
+status = "compared"
+
+[[function]]
+address = 0x003429e8
+name = "PhysicsHumanBody_AddBoneShape"
+page = "physics-bodies.md#u9-constructed"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::addBoneShape"
+status = "compared"
 
 [[function]]
 address = 0x00342b08

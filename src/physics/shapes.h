@@ -197,6 +197,11 @@ void setCapsuleMatrix(ShapeRecord& shape, const anim::Mat34& m);
 /// @coney-only the shape vtable's set-from-matrix dispatch; each type's is a port
 void setShapeMatrix(ShapeRecord& shape, const anim::Mat34& m);
 
+/// Sets the shape's position (shape vtable `+0x08`: a sphere's centre, a box's centre, a capsule's base, a segment's
+/// start), its previous position and the rest untouched.
+/// @coney-only the shape vtable's set-position slot (0x004f1200, 0x004f1220, 0x004f1238, 0x004f1250), a field write
+void setShapePosition(ShapeRecord& shape, anim::Vec3 position);
+
 /// The position the shape's previous position follows (shape vtable `+0x20`): a sphere's centre, a box's centre, a
 /// capsule's base, a segment's start.
 /// @coney-only the shape vtable's position slot, a field read

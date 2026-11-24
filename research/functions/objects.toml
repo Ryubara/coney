@@ -202,8 +202,13 @@ page = "objects.md#original-structure"
 role = "per update, after the move: the human's switched-on strike shapes against nearby bodies"
 level = "confirmed-code"
 note = "confirmed (code), runtime"
-coney = "src/human/human.h:Human::testStrikes"
-status = "legacy"
+coney = "src/physics/human_body.h:testStrikes"
+status = "compared"
+
+[[function.gaps]]
+what = "play still strikes through Human::testStrikes (src/human/human.h), Coney's own loop over the humans fought, until a level owns a physics world"
+relation = "not-ported"
+issue = 379
 
 [[function]]
 address = 0x0038ed68
