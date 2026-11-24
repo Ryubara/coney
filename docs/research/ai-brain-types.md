@@ -605,7 +605,11 @@ gang clip table's names and the event sent as a man comes to lie on the ground
   or an enemy gang; the cop's, civilian's, dealer's and shopkeeper's handlers are not built (they take the shared
   one); the top goals' own hit handlers, the Mark goal's noise reaction and the look-around are not built.
 
-A think counts, keeps the tackle meter of a cop, a gang soldier or a Warrior, and for a Warrior runs step 7, [the swap
+A think counts; for a cop, a gang soldier or a Warrior it first turns a non-empty enemy list into a fight
+(`Brain::thinkFightOnSight`, `repo:src/ai/brain.cpp`: the cop's and the soldier's step 3, the Warrior's step 1, with a
+threat response and no fight goal, `Brain::pushFightGoals` with no time limit; **Coney's stand-ins**: the cop's test
+for a Chase goal always passes, Coney having none, and his flag `+0x28f` is not kept), then keeps the tackle meter, and
+for a Warrior runs step 7, [the swap
 prompt](#think-warrior) (`repo:src/ai/swap_prompt.h`): talkable (`ScriptState::talkable`) with `GSTRING.HUD` 0xc, 0xd
 or 0xe while a player of his gang within 1.5 m, below a jog, has him standing in front, nobody attacks him and one
 of the two holds an object (**Coney's reading**: the hand's object, `+0x338`); the blocked and held-flag tests, the

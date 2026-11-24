@@ -2907,6 +2907,39 @@ flag net (`PedNet_*`) between the boxes above, steps into `vSection3Gate`'s 1.8 
 `HUDLaunchMissionComplete`. Waypoint routes that already play checkpoints 2, 4 and 5 in Coney are those of items 7,
 11 and 15.
 
+### level80 checkpoint 4: the fight from the think {#level80-think-fight}
+
+How Coney starts [the fight at checkpoint 4](#level80-fight-start) since task 406 (checked 2026-11-23 against `main`
+at `e5d58e85`).
+
+- **Before.** The enemy scan ran from every brain's update (#394) and the lists filled, but the Destroyers fought at
+  once through the help calls. The scan's event `0xb` makes the shared handler send a 20 m help call flagged "new
+  enemy" (`Brain_DefaultOnEvent` `0x00292d80`), and each Destroyer who heard one took Cochise's or Swan's side through
+  `Brain_OnViolenceSeen` (`0x00291960`). The release test (`repo:tests/platform/disc_level80_brawl_test.cpp`) run with
+  the release's settle taken out (its fails-first red run) prints it: none of the twelve holding the idle fade at the
+  scene's end, all twelve fighting at update 1, and all twelve with a HelpRespond goal before update 13, the first at
+  update 1. The original's first Destroyer has
+  FindEnemy and Melee at update 1 or 2, its last at 7-9, and none has HelpRespond before update 13
+  ([the timeline](#level80-fight-timeline)).
+- **Why the original differs.** Its Destroyers hear the same help calls and refuse them at the held-flag test
+  (`0x00291a94`): the cast still holds the idle's fade from the scene's end ([The cast after the
+  end](scenes.md#cast-after-end)), and each one's own think pushes the fight first (`0x00304760`). Run
+  r-20261123-level80-help-call-held.
+- **Now.** Coney has both halves: the think step (`Brain::thinkFightOnSight`, `repo:src/ai/brain.cpp`; [Attacking on
+  sight in Coney](ai-gangs.md#aggro-in-coney)) and the cast's idle fade at a scene's release
+  (`PlayLevelMode::placeReleased`, `repo:src/platform/play_level_scene.cpp`, [Scenes in
+  Coney](scenes.md#release-idle)). The disc tests (`repo:tests/platform/disc_level80_brawl_test.cpp`, the scene
+  skipped) print all twelve holding the idle fade at the scene's end, none fighting at update 1, the last fighting at
+  update 7, all twelve targeting Cochise or Swan or spectating at update 12 and at most one at a time off them to
+  update 30, the first HelpRespond at update 21 (none before 13), none on the idle player, and after the attack
+  order the checks of item 5 of the list What Coney must do ([the timeline](#level80-fight-timeline)). The release
+  test fails below update 5 for the last fight and on any HelpRespond before update 13.
+- **The ring.** Sixty updates after the scene's end 10 of the original's twelve Destroyers stand more than 0.5 m
+  from their flags (run r-20261123-level80-block-breaks), Coney's 11 now that its fight goal queues the band-keeping
+  move ([MoveMelee](ai-moving.md#move-melee)): its waiting attackers back off to the ring and circle as the
+  original's do. Before that move, Coney's waiters stood inside the ring and only 5 left their flags. The disc test
+  prints the count and does not check it (#1663).
+
 ## Open questions
 
 - **The first mission:** what a restart (failure or pause menu) restores from `SetCheckPoint`'s copies, and who

@@ -20,6 +20,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "ai/ai_humans.h"
+#include "ai/brain.h"
 #include "core/input_script.h"
 #include "core/pad.h"
 #include "core/pads.h"
@@ -106,6 +108,12 @@ std::vector<Seen> play(const coney::io::Wad& wad, std::vector<Press> presses, co
     REQUIRE(play->spawnFighter(at, play->playerHeadingDegrees() + 180.0F));
     const coney::human::Human& fighter = *play->fighters().humans().back().human;
     const coney::human::Human& player = play->player().human();
+    // The original's victim was a pedestrian (run r-20261025-strike-contact-timing), who takes no fight of his own: the
+    // spawned fighter, a gang soldier, gets threat response 0 so his think does not answer the hits with a fight
+    // (docs/research/ai-brain-types.md#think-gang).
+    coney::ai::Brain* victim = play->fighters().brainOf(fighter);
+    REQUIRE(victim != nullptr);
+    victim->setThreatResponse(0);
     run.run(kSettleFrames);
     driver.start(run.playFrames());
 

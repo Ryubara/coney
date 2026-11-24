@@ -1,0 +1,12 @@
+# Level80 checkpoint 4 for the `level80-brawl` clips pair scenario (tools/clips/level80-brawl.toml): once the checkpoint
+# plays, the developer console's lua line puts player 1 on fCochiseSwan, inside the meeting's volume
+# (vCochiseSwanTrigger), which starts Cochise and Swan's scene; cross every second skips it. The scene's end
+# (EndCochiseSwanScene) puts Cleon on fCSCleon, about 18 m from the fight, so a second lua line moves him to 7 m from
+# Cochise's flag on the same line, facing the fight, and he stands there. The Warriors are not the Destroyers' enemies
+# before the attack order, so he takes no part. Frames are 1/30 s from the level's first frame of play.
+1290 console lua "TeleportToFlag(player, fCochiseSwan, -1)"
+1350 tap cross
+1380 tap cross
+1410 tap cross
+1440 tap cross
+1450 console lua "Teleport(player, {-246.4, 155.2, 1.3}, 226)"

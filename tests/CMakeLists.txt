@@ -199,6 +199,7 @@ add_executable(coney_tests
     platform/disc_hub_cutscene_audio_test.cpp
     platform/disc_hub_test.cpp
     platform/disc_level80_end_test.cpp
+    platform/disc_level80_brawl_test.cpp
     platform/disc_level80_test.cpp
     platform/disc_flash_test.cpp
     platform/disc_crew_commands_test.cpp
@@ -564,6 +565,7 @@ target_sources(coney_tests PRIVATE
     ai/spawners_test.cpp
     ai/rumble_tactics_test.cpp
     ai/swap_prompt_test.cpp
+    ai/think_fight_test.cpp
     ai/sub_tactics_test.cpp
     ai/tactic_attack_test.cpp
     ai/team_up_test.cpp

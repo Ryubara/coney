@@ -195,9 +195,12 @@ TEST_CASE("the Melee goal's and the dealer's spectate arguments are the research
 }
 
 TEST_CASE("a joining spectator watches his nearest enemy without an attack slot and ends at his time limit", "[ai]") {
+    // Expected: ai-fights.md#spectate, confirmed (code)
     Scene scene;
     Brain& gang = scene.add({40.0F, 42.0F, 0.0F}, 180.0F, BrainType::Gang, onlyKind(1));
     gang.addEnemy(scene.playerBrain());
+    // Threat response 0, so his think starts no fight of its own on the enemy listed (ai-brain-types.md#think-gang).
+    gang.setThreatResponse(0);
     REQUIRE(gang.pushGoal(std::make_unique<coney::ai::SpectateGoal>(coney::ai::SpectateArgs::melee(0.0F))));
     scene.run(2);
     const auto* spectate = dynamic_cast<const coney::ai::SpectateGoal*>(gang.topGoal());
@@ -210,9 +213,12 @@ TEST_CASE("a joining spectator watches his nearest enemy without an attack slot 
 }
 
 TEST_CASE("a spectator too close backs out toward his keep distance", "[ai]") {
+    // Expected: ai-fights.md#spectate, confirmed (code)
     Scene scene;
     Brain& gang = scene.add({40.0F, 41.0F, 0.0F}, 180.0F, BrainType::Gang, onlyKind(1));
     gang.addEnemy(scene.playerBrain());
+    // Threat response 0, so his think starts no fight of its own on the enemy listed (ai-brain-types.md#think-gang).
+    gang.setThreatResponse(0);
     coney::ai::SpectateArgs args = coney::ai::SpectateArgs::melee(4.0F);
     args.mayEngage = false;
     args.timeLimitMs = 6000;

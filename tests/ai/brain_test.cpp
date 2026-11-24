@@ -708,8 +708,9 @@ TEST_CASE("a block extended while the target attacks punishes in its last second
     scene.playerBrain().setTarget(&gang);
     // Reactions off before the goal (so they stay off): the player's hit does not stun the AI out of its goal.
     gang.human().fighter().setHitReactionsOff(true);
-    // The block runs over a fight, as a fight pushes it: the player's hit then only keeps him as the target.
-    REQUIRE(gang.pushGoal(std::make_unique<coney::ai::FightGoal>(coney::test::kLongFightMs)));
+    // The block runs over a fight, as a fight pushes it (FindEnemy, Melee, the fight goal): the player's hit then only
+    // keeps him as the target, and with Melee on the stack his think starts no second fight.
+    gang.pushFightGoals(coney::test::kLongFightMs);
     REQUIRE(gang.pushGoal(std::make_unique<coney::ai::BlockGoal>()));
     scene.run(1);
     const auto* block = dynamic_cast<const coney::ai::BlockGoal*>(gang.topGoal());

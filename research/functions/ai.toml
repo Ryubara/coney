@@ -1521,7 +1521,12 @@ page = "ai/index.md#update"
 role = "call handler B / handler A"
 level = "confirmed-code"
 coney = "src/ai/brain.h:Brain::think"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the scene gate, the perception update and the flee from hurt (the hurt clip, a cop's or a fleeing class's way back to the idle)"
+relation = "not-ported"
+issue = 1662
 
 [[function]]
 address = 0x0028f8b8
@@ -5529,6 +5534,26 @@ coney = "src/scripting/story_bindings.cpp:makeGetDistanceTweenHumans"
 status = "legacy"
 
 [[function]]
+address = 0x00300678
+name = "CopBrain_Think"
+page = "ai-brain-types.md#think-cop"
+kind = "type 1 think"
+role = "a cop's think: spots players, the radar blip, the fight on an enemy listed, the pursuit counter and the crimes he sees"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::thinkFightOnSight"
+status = "compared"
+
+[[function.gaps]]
+what = "step 3's test for a Chase goal always passes (Coney has none) and the flag +0x28f is not kept"
+relation = "stand-in"
+question = "ai-brain-types.md#q-event-senders"
+
+[[function.gaps]]
+what = "spotting players, the radar blip and steps 5 to 9 (trespassing, store flags, tag spots, lock picks and thefts seen)"
+relation = "not-ported"
+issue = 1662
+
+[[function]]
 address = 0x003035d8
 name = "PlayerBrain_Update"
 page = "ai-brain-types.md#think-player"
@@ -5564,6 +5589,21 @@ coney = "src/ai/crew.h:CrewOrders::chiefTargetInRange"
 status = "legacy"
 
 [[function]]
+address = 0x00304608
+name = "GangBrain_Think"
+page = "ai-brain-types.md#think-gang"
+kind = "type 2 think"
+role = "a gang soldier's think: spots players, the radar blip, the fight on an enemy listed, the pursuit counter, weapons, hats and tag spots"
+level = "confirmed-code"
+coney = "src/ai/brain.h:Brain::thinkFightOnSight"
+status = "compared"
+
+[[function.gaps]]
+what = "spotting players, the radar blip, the weapon pick-up, the hat and the tag spot (steps 1, 2, 5, 6 and 7)"
+relation = "not-ported"
+issue = 1662
+
+[[function]]
 address = 0x00304fa8
 name = "GangBrain_OnEvent"
 page = "ai-brain-types.md#think-gang"
@@ -5581,8 +5621,14 @@ page = "ai-brain-types.md#think-warrior"
 kind = "type 3 think"
 role = "[The Warriors' pick-ups](ai-gangs.md#warrior-pickups) and the fight push"
 level = "confirmed-code"
+note = "two ports: step 1, the fight push, is `Brain::thinkFightOnSight` (src/ai/brain.h); the swap prompt is the one below"
 coney = "src/ai/swap_prompt.h:thinkSwapPrompt"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "spotting players, the pick-ups, the weapon and loot drops, the hats, the pick-up window, timer +0x2dc and getting out of the way (steps 1 to 6, 8 and 9 but the fight push)"
+relation = "not-ported"
+issue = 1662
 
 [[function]]
 address = 0x00306040

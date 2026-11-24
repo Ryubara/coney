@@ -322,10 +322,12 @@ Class details, confirmed (code) unless marked:
 - **Vandalize** / **Steal**: each member's goal takes the zone, the delay and `leaderRange`; the vandal brain's
   `+0x28d` is set. Vandalize's code 1 comes from `0x0039a580(zone)` reporting nothing left to break.
 
-## Attacking on sight {#aggro-on-sight}
+### Attacking on sight {#aggro-on-sight}
 
-Why an enemy-gang member attacks the player he sees, and what holds him back. Confirmed (code) at the addresses
-cited; the `level87` facts are from its scripts on the disc.
+Confirmed (code) at the cited addresses unless a line says otherwise; the `level87` facts are read from its scripts
+on the disc.
+
+Why an enemy-gang member attacks the player he sees, and what holds him back.
 
 **The chain.**
 
@@ -396,28 +398,6 @@ line) → ATTACK at 2-3 m**; a hit at any point → ATTACK at once.
 fight it hears about; it does not stop code 3. No form holds a gang passive by its threat response; the passive ones
 are held by a short sight (`HuSetLOSRange` 1 or 4) or by `Halt`.
 
-**Coney status and fix** (checked 2026-10-11, `repo:src/ai`; item 5 of the user's list):
-
-- Coney runs the enemy scan only for members under TacticScout (`ScoutTactic::update` →
-  `ScanSchedule::maybeScan`); `Brains::update` and `Brain::think` never scan. So no Destroyer under HANGINGOUT, IDLE,
-  WANDERWALK or HOMEIN ever gets event 11, no code 3 reaches `Strategy`, and the gang stays in its tactic until a hit
-  (codes 5 and 6) turns it to ATTACK. That is exactly "they see the player and do nothing until he attacks".
-- Nothing sends event 10 (`kEventSawPlayer` has no sender), so code 4 never fires; `level87`'s presets ignore it, but
-  other levels' may not.
-- A gang soldier with no tactic never fights an enemy in his list: Coney has no `GangBrain_Think` step 3.
-- The rest of the chain is in place: `codeOf` maps the events to codes, `StoryTactic::event` and
-  `Tactic::fireCallback` call the Lua callback, `Brain::pushFightGoals` refuses under a tactic, and the scan itself
-  (`scanEnemies`) sends event `0xb` to the human's handlers.
-
-Fix, in order:
-
-1. Call the scan (`ScanSchedule::maybeScan`) for every AI brain in the brain update, as `Brain_UpdateGoals` does,
-   with the 5-per-update budget and the 2 s / 8 s interval (detail level and fight stance), not only for scouts.
-2. Add `GangBrain_Think` step 3 (and the cop's and Warriors' equivalents, [Brain types](ai-brain-types.md)): with threat
-   response, no fight goal and a non-empty enemy list, `pushFightGoals`.
-3. HanginOut's awareness (× 0.75, − 20° unless `fullAware`) at its Start, undone at its End.
-4. Then `Brain_MaybeSpotPlayers` (event 10, code 4) for completeness.
-
 **Suggested tests** (synthetic unless named):
 
 1. A kind-19 gang under TacticHanginOut with a recording callback, enemies with the player's gang; the player 15 m in
@@ -438,15 +418,13 @@ playing two missions. A check for later, from such a state: log the tactic callb
 the code) while the player walks into a hanging-out group's view; the expected order is 3, then 7 and 1 from
 Confront, then the ATTACK tactic's members in Melee.
 
-**Runtime, gangs with no tactic** (2026-10-12, PCSX2 2.9.94; confirmed (runtime)): at `level80` checkpoint 4, two
-Destroyer gangs with no tactic and threat response 2 were made enemies of Cochise and Swan by `GangMakeEnemies`. One
-update later every member had scanned (five an update), and within six updates all twelve had FindEnemy and Melee with
-Fight or Spectate. After the attack order made them enemies of the Warriors too, Destroyers turned on the player
-although he never attacked: five within 21 updates in one run, two within 25 in another and none in 450 in a third, as
-the scan lists only the Warriors in a soldier's field of view. That is steps 1 and 3 of the chain above, with nobody hit
-first; Coney does neither yet. Of the fix list above, the open PR #394 does item 1 (the scan in every brain); item 2
-(the think step that fights a listed enemy) is still missing there. Details, timings and the test:
-[Scripts](scripting.md#level80-fight-start).
+**Runtime, gangs with no tactic.** At `level80` checkpoint 4 two Destroyer gangs with no tactic and threat response 2
+are made enemies of Cochise and Swan by `GangMakeEnemies`, and their fight starts from step 3 of the chain: a
+Destroyer's think pushed the fight with two enemies listed, before any of the new-enemy help calls got past
+`Brain_OnViolenceSeen` (`0x00291960`), which the cast's held flag refuses for about five updates ([The cast after the
+end](scenes.md#cast-after-end)). Confirmed (runtime), run r-20261123-level80-help-call-held. The fight's timeline and
+who turns on the player after the attack order are on [Scripts](scripting.md#level80-fight-start); the earlier runs
+of this page are in [How this was checked](#checked).
 
 ## The boss fights {#boss-fights}
 
@@ -1462,11 +1440,40 @@ The gang and its update are `repo:src/ai/gangs.h`, the spawners `repo:src/ai/spa
 `repo:src/ai/tactic.h` and its `tactic_*.h` files with the scripted ones in `repo:src/ai/story_tactics.h`, the
 formations `repo:src/ai/formations.h`, the Warrior commands `repo:src/ai/set_command_action.h` and the boss goals
 `repo:src/ai/boss_goals.h`. What Coney does differently and what it leaves out is on
-[AI humans: Coney's implementation](ai/index.md#in-coney); the sections above say where Coney differs on their subject (the
-attack on sight, the follow).
+[AI humans: Coney's implementation](ai/index.md#in-coney); the follow's sections above say where Coney differs on it,
+and the attack on sight is below.
+
+### Attacking on sight in Coney {#aggro-in-coney}
+
+What Coney has of [the attack on sight](#aggro-on-sight) (checked 2026-11-23, `repo:src/ai`, task 406):
+
+- Every AI brain runs the enemy scan in its update (`Brain::update` → `ScanSchedule::maybeScan`), with the 5-per-update
+  budget, the 2 s / 8 s interval and the gang-changed trigger (#394). So event 11 reaches the tactics and code 3 reaches
+  `Strategy`.
+- A gang soldier, a cop or a Warrior with no tactic fights an enemy in his list: `Brain::thinkFightOnSight`
+  (`repo:src/ai/brain.cpp`) is step 3 of `GangBrain_Think` and `CopBrain_Think` and step 1 of `WarriorBrain_Think`,
+  run at each think. Under a tactic `Brain::pushFightGoals` refuses, as in the original. The rest of the three think
+  handlers is #1662.
+- A scene's AI cast goes back to its idle with the idle's fade, so it stays out of the help calls of a fight that
+  starts as the scene ends ([Scenes in Coney](scenes.md#release-idle)).
+- HanginOut's awareness (× 0.75, − 20° unless `fullAware`) is in `repo:src/ai/story_tactics.cpp`.
+- Nothing sends event 10 (`kEventSawPlayer` has no sender), so code 4 never fires: `Brain_MaybeSpotPlayers` is not
+  ported. `level87`'s presets ignore code 4, but other levels' may not.
+- How this plays at `level80` checkpoint 4, and the fight's ring there (#1663): [Scripts in
+  Coney](scripting.md#level80-think-fight).
 
 ## Open questions
 
-Each open point sits with its subject above (the attack on sight's fix list, the scripted tactics Coney stands in
-for, the boss program's unused operations); the reimplementation units still to do are on
+Each open point sits with its subject above (the scripted tactics Coney stands in for, the boss program's unused
+operations); the reimplementation units still to do are on
 [AI reimplementation plan](ai-reimpl.md).
+
+## How this was checked {#checked}
+
+**`level80` checkpoint 4, gangs with no tactic** (PCSX2 2.9.94, 2026-10-12, before run records): two Destroyer gangs
+with no tactic and threat response 2 were made enemies of Cochise and Swan by `GangMakeEnemies`. One update later
+every member had scanned (five an update), and within six updates all twelve had FindEnemy and Melee with Fight or
+Spectate. After the attack order made them enemies of the Warriors too, Destroyers turned on the player although he
+never attacked: five within 21 updates in one run, two within 25 in another and none in 450 in a third, as the scan
+lists only the Warriors in a soldier's field of view. That is steps 1 and 3 of [the chain](#aggro-on-sight), with
+nobody hit first. The later run r-20261123-level80-help-call-held saw which of the two starts the fight.

@@ -181,6 +181,10 @@ void PlayLevelMode::placeReleased(const SceneStage::Release& release) {
     } else if (const ai::AiHuman* fighter = castHumanOf(release.human); fighter != nullptr) {
         ai::Brain* brain = m_ai != nullptr ? m_ai->brainOf(*fighter->human) : nullptr;
         ai::placeAfterScene(*fighter->human, brain, ground, release.feet, headingDegrees, release.skipped);
+        // His scene clip over, he goes back to his idle with its fade, whose held flag keeps him out of the help calls
+        // of the first five updates (a Destroyer at level80's scene end, docs/research/scenes.md#cast-after-end).
+        // stand-in: the player is left as he was; whether his own idle fade gates his stick there is not checked.
+        fighter->human->settleToIdle();
     }
 }
 
