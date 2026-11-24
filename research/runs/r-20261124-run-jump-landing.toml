@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-run-jump-landing"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "5b3221ea5d32e0ff4862439b508a85d97a763d1201796c1cab4abf652dbd5f74"
+
+[who]
+agent = "a3b9c19bbb1b6200c"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "run_jump"
+method = ""
+
+[values]
+updates = 101
+missed_updates = 0
+columns = 13
+
+[hashes]
+trace_csv = "4bdd67ba5783b92b4082d56f76b4fdd6d310e5817a81e0c3956df98242691d77"

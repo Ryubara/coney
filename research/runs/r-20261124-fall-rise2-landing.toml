@@ -1,0 +1,35 @@
+version = 1
+id = "r-20261124-fall-rise2-landing"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "1279d92ea7f6a0e9942dccc2f07c810af471647cb8241093a919f59540e5a6ad"
+
+[who]
+agent = "a3b9c19bbb1b6200c"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "fall_heights"
+method = ""
+
+[run.args]
+rise = "2"
+
+[values]
+updates = 301
+missed_updates = 0
+columns = 39
+
+[hashes]
+trace_csv = "9f31e4ce9c2e66651393500eb39675afd9bbfb72cbdedf146b5e3b7459bc35e4"

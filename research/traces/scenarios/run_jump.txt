@@ -1,0 +1,4 @@
+# A run jump on open ground (issue #369): stick 100 % up from frame 5, triangle at frame 35, the stick held through
+# the landing. Research: docs/research/characters.md#falling.
+5 stick left 0 100
+35 tap triangle

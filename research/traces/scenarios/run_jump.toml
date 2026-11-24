@@ -1,0 +1,25 @@
+# A run jump on level99's street (issue #369): slot 1 stands Rembrandt in the street, the stick goes 100 % up at
+# frame 5 and triangle is tapped at frame 35, as in the landing runs of docs/research/characters.md#falling. The trace
+# shows the jump's height and vertical speed every update: the landing update is the one whose vertical speed
+# returns to 0 with the feet snapped onto the ground (0.2231), and the update before it says how far under the ground
+# the feet were when the landing contact was taken.
+description = "level99 street: a run 100 % up and one jump on open ground, landing with the stick held"
+research = "docs/research/characters.md#falling"
+input = "run_jump.txt"
+updates = 100
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick"]
+
+[coney]
+level = "level99"
+# Checkpoint 3 now opens with the l99_c3 scene, which puts player 1 at (48.41, 43.91) facing -y and holds the pad
+# until about update 750 (a --start is overridden by it); the run starts there, with 18 m of open street ahead.
+args = ["--checkpoint", "3"]
+settle = 750
+
+[diff]
+columns = ["z", "vz", "speed"]
+tolerance = { z = 0.05, vz = 0.05, speed = 0.1 }
