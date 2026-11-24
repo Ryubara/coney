@@ -2,7 +2,7 @@
 kind: system
 system: characters
 owns:
-  files: ["Human/Human.cpp", "Human/HumanInterface.cpp"]
+  files: ["Human/Human.cpp"]
   functions: [
     "0x00217a70", "0x00217dd8", "0x00217ec8", "0x00217f08", "0x00218008", "0x00219238", "0x00219320", "0x00219a28",
     "0x00219ad0", "0x0021ada0", "0x0021ada8", "0x0021adb0", "0x0021adf8", "0x0021b048", "0x0021b0b8", "0x0021b100",
