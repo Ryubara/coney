@@ -46,6 +46,7 @@
 #include "platform/net_play.h"
 #include "scripting/sound_bindings.h"
 #include "support/optional_value.h"
+#include "warriors/level_table.h"
 
 using coney::FrameTime;
 using coney::GameModeStack;
@@ -191,6 +192,22 @@ class GuestPad final : public coney::InputSource {
     }
 };
 
+// The guest's level table, as it reads it from its disc's preloads: level99 on its own world, with level99's map
+// floats (docs/research/hud-radar.md#the-radar-on-screen: offsets -1.33 and 61.55, 95 m across). level34 has no record.
+coney::LevelTable guestLevelTable() {
+    coney::LevelTable table;
+    coney::LevelRecord record;
+    record.id = 1.0;
+    record.name = "level99";
+    record.worldName = "level99";
+    record.number = 99.0;
+    record.values.at(coney::LevelRecord::kRadarOffsetXValue) = -1.33;
+    record.values.at(coney::LevelRecord::kRadarOffsetYValue) = 61.55;
+    record.values.at(coney::LevelRecord::kRadarScaleValue) = 95.0;
+    REQUIRE(table.set(record));
+    return table;
+}
+
 // A host and a guest running the client game, stepped as their main loops would step them.
 struct HostAndClient {
     LoopbackNetwork network;
@@ -212,7 +229,7 @@ struct HostAndClient {
                       [](std::string_view level) { return level != "nolevel"; },
                       [this](std::string_view line) { printed.emplace_back(line); },
                       nullptr,
-                      ClientPresentation{.sound = &sound, .hud = {}}};
+                      ClientPresentation{.sound = &sound, .hud = {}, .levels = guestLevelTable()}};
     std::array<coney::hud::PlayerHudState, 2> hostPlayerHuds{}; // what the host's game hands over each step
     std::array<NetId, 2> hostDrivers{}; // the human each of the host's player slots drives (none at first)
     coney::hud::HudStanding hostStanding{};
@@ -729,4 +746,29 @@ TEST_CASE("client game: the host's radar blips are the guest's HUD's, a human's 
         coney::net::snapshotBlips(blips, slots, [absent](double handle) { return handle == 77.0 ? absent : NetId{}; });
     g.run(10);
     CHECK_FALSE(hud.radar().blips.at(1.0).place.has_value());
+}
+
+// Expected: hud-radar.md#the-radar-on-screen, confirmed (code) (Radar_Setup 0x001c3de0 gives the radar the map named
+// after the level record's world, with the record's three map floats); the guest's read of the record is Coney's own
+// (docs/guides/client-world.md#client-hud)
+TEST_CASE("client game: the guest's radar has the map of the host's level from the guest's own level table, and a "
+          "level with no record has none",
+          "[net][net_play][client_game][hud][radar]") {
+    HostAndClient g;
+    g.host.loadLevel("level99", 1);
+    g.connect();
+    g.run(4);
+    REQUIRE(g.client.hud() != nullptr);
+    const coney::hud::RadarMap& map = g.client.hud()->radar().map;
+    CHECK(map.usable());
+    CHECK(map.sheet == "level99");
+    CHECK(map.offsetX == -1.33F);
+    CHECK(map.offsetY == 61.55F);
+    CHECK(map.scale == 95.0F);
+
+    // The host goes on to a level the guest's table has no record of: the new level's HUD has no map, and no disc.
+    g.host.loadLevel("level34", 2);
+    g.run(2);
+    REQUIRE(g.client.hud() != nullptr);
+    CHECK_FALSE(g.client.hud()->radar().map.usable());
 }

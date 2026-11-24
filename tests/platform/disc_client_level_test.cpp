@@ -9,6 +9,8 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <expected>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -22,16 +24,24 @@
 #include "fileio/disc.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
+#include "gamemodes/game_mode_stack.h"
+#include "gamemodes/level_start.h"
 #include "hud/hud.h"
 #include "hud/hud_owner.h"
 #include "net/character_id.h"
 #include "net/client_camera.h"
 #include "net/client_world.h"
+#include "net/loopback_transport.h"
 #include "net/net_id.h"
 #include "net/snapshot.h"
+#include "platform/client_game.h"
 #include "platform/client_level_scene.h"
+#include "platform/game_session.h"
+#include "platform/net_play.h"
 #include "platform/play_scenery.h"
 #include "platform/render_engine.h"
+#include "scripting/config_strings.h"
+#include "support/disc_session.h"
 #include "world/sector_budget.h"
 
 namespace {
@@ -243,4 +253,61 @@ TEST_CASE("the client game's scene draws each human with the character his snaps
     CHECK(drawn.characterOf(id(0)) == drawn.characterOf(id(1)));
     std::printf("client scene characters: %zu humans posed, %zu meshes, %zu characters loaded\n", drawn.humansPosed(),
                 drawn.meshes(), drawn.charactersLoaded());
+}
+
+// Expected: hud-radar.md#the-radar-on-screen, confirmed (code) (Radar_Setup 0x001c3de0 names the map after the level
+// record's world; the three floats are the record's, as CfgLevelName sets them); the guest's read of the level table
+// is Coney's own (docs/guides/client-world.md#client-hud)
+TEST_CASE("a guest's radar on level80 has the map the host's own HUD has for level80", "[disc][net][client_game]") {
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // The host: the game session's level80, as `coney --play-level level80` starts it; its HUD's map once it plays.
+    coney::hud::RadarMap host;
+    {
+        coney::test::DiscSession run(*wad, "");
+        run.session().startAtLevel("level80", 1);
+        REQUIRE(run.runUntilPlay());
+        host = run.session().flow().hud().radar().map;
+    }
+    REQUIRE(host.usable());
+
+    // The guest, as `coney --join ADDR --net-view` makes it: the level table from its own disc, and the client game
+    // loading the host's level80 with the client scene, as NetLevels asks it to.
+    auto levels = coney::loadLevelTable(coney::script::wadScriptSource(*wad));
+    REQUIRE(levels.has_value());
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
+    coney::net::LoopbackNetwork network;
+    coney::platform::NetPlay net{
+        [&network] { return std::make_unique<coney::net::LoopbackTransport>(network, "guest"); }, {}};
+    coney::platform::ClientPresentation presentation;
+    presentation.levels = std::move(*levels);
+    coney::platform::ClientGame client(
+        net,
+        [&](const coney::platform::LevelAt& at,
+            coney::hud::HudOwner& hud) -> std::expected<std::unique_ptr<coney::platform::ClientScene>, coney::Error> {
+            auto scene = coney::platform::ClientLevelScene::load(**engine, *wad, at, budget, hud,
+                                                                 [](std::string_view /*line*/) {});
+            if (!scene) {
+                return std::unexpected(std::move(scene.error()));
+            }
+            return std::unique_ptr<coney::platform::ClientScene>(std::move(*scene));
+        },
+        [](std::string_view /*level*/) { return true; }, [](std::string_view /*line*/) {}, nullptr,
+        std::move(presentation));
+    REQUIRE(client.jumpToLevel("level80", 1));
+    coney::GameModeStack stack;
+    (void)client.update(stack, coney::FrameTime{.index = 0, .seconds = 1.0 / 30.0});
+    REQUIRE(client.hud() != nullptr);
+    const coney::hud::RadarMap& guest = client.hud()->radar().map;
+    CHECK(guest.usable());
+    CHECK(guest.sheet == host.sheet);
+    CHECK(guest.offsetX == host.offsetX);
+    CHECK(guest.offsetY == host.offsetY);
+    CHECK(guest.scale == host.scale);
+    std::printf("radar map of level80: host and guest %s, scale %.2f\n", guest.sheet == host.sheet ? "agree" : "differ",
+                static_cast<double>(guest.scale));
 }

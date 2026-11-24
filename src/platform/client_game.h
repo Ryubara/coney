@@ -19,6 +19,7 @@
 #include "net/client_world.h"
 #include "platform/net_levels.h"
 #include "scripting/sound_bindings.h"
+#include "warriors/level_table.h"
 
 // The client game: a guest that runs no game of its own and draws the host's from the snapshots it decodes
 // (`--join ADDR --net-view`). Coney's own; the original has no network play (docs/guides/client-world.md#client-game).
@@ -60,12 +61,15 @@ using ClientSceneLoader =
     std::function<std::expected<std::unique_ptr<ClientScene>, Error>(const LevelAt& level, hud::HudOwner& hud)>;
 
 /// What the client game presents the host's events and HUD with on this machine: the sound that plays the host's
-/// sounds and music (null: none), and the services the HUD reads (its strings, colours and sound output, which the run
-/// fills from the disc; empty: a HUD with no strings and no sound).
+/// sounds and music (null: none), the services the HUD reads (its strings, colours and sound output, which the run
+/// fills from the disc; empty: a HUD with no strings and no sound), and the level table, whose record of the host's
+/// level gives the radar its map (gamemodes/level_start.h, loadLevelTable(), which the run reads from the disc;
+/// empty: no level has a map, and the radar draws no disc).
 /// @coney-only network play; the original has none
 struct ClientPresentation {
     script::SoundHost* sound = nullptr;
     hud::HudServices hud;
+    LevelTable levels;
 };
 
 /// The client game (docs/guides/client-world.md#client-game): the mode a guest runs in place of its own game, so what
