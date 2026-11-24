@@ -74,6 +74,27 @@ inline constexpr std::size_t kOrigIgnoreSlots = 60;
 /// @coney-only limit: the original keeps 60 ignore slots and drops a 61st ignore; past 60 Coney adds a slot
 [[nodiscard]] std::size_t ignoreSlotCap(EngineLimits limits);
 
+/// The original's body pools (docs/research/physics-bodies.md#u9-create), each a fixed number of bodies built by the
+/// world's constructor.
+enum class BodyPool : std::uint8_t {
+    Human,    ///< 60 human body sets: a capsule and ten bone shapes each.
+    PunchBag, ///< The one punch bag set: a capsule and one segment.
+    Object,   ///< 416 world objects' bodies, no shape until the caller adds one.
+    Car,      ///< 18 cars' bodies, no shape until the car adds its boxes.
+    Pane,     ///< 255 glass panes' bodies, each paired with its own box.
+};
+
+/// The original's count of each body pool, in BodyPool order (the creates' loop limits).
+inline constexpr std::array<std::size_t, 5> kOrigBodyCounts{60, 1, 416, 18, 255};
+
+/// The most bodies pool `pool` holds: its kOrigBodyCounts entry under the engine limits preset (`limits`
+/// EngineLimits::Original) and for the punch bag, no limit otherwise.
+/// @coney-only limit: the original's pools hold 60 human sets, 416 objects', 18 cars' and 255 panes' bodies and
+/// refuse one more; past them Coney builds one more body each time every body is taken
+[[nodiscard]] std::size_t bodyPoolCap(BodyPool pool, EngineLimits limits);
+
+class HumanBodyOwners;
+
 /// One ignore slot (docs/research/physics-bodies.md#u8-slot): free while `owner` is null.
 struct IgnoreSlot {
     BodyId body = kNoBody;             ///< `+0x00`: the body whose chain holds it.
@@ -99,6 +120,15 @@ struct WorldBody {
     std::int32_t stuck = 0;    ///< `+0x70`: updates in a row its sweep could not move it.
     bool human = false;        ///< A human body (vtable `0x005446b0`): its own ignore rules.
     bool ignoresLevel = false; ///< A human body's `+0xd4`: it ignores the level.
+    // The human body's own fields (docs/research/physics-bodies.md#u10-record); other bodies leave them unset.
+    ShapeId boneChain = kNoShape;   ///< `+0x80`: the bone shapes (the punch bag's one segment), chained apart.
+    ShapeId pushSphere = kNoShape;  ///< `+0x84`: the push sphere held, if any.
+    Aabb broadBound;                ///< `+0x90`: the box the strike test gathers its candidates from.
+    std::uint32_t strikeBits = 0;   ///< `+0xc0`: one bit per strike bone switched on.
+    ShapeId weaponChain = kNoShape; ///< `+0xc4`: the weapon strike spheres.
+    BodyId humanNext = kNoBody;     ///< `+0xc8`: the next body of the human list.
+    BodyId humanPrev = kNoBody;     ///< `+0xcc`: the previous body of the human list.
+    std::int32_t weaponTimer = 0;   ///< `+0xd0`: updates left before the weapon spheres go.
 };
 
 /// The update sweep a body with kBodyFlagSweepBodies and kBodyFlagAlwaysUpdate asks for after its update
@@ -148,6 +178,14 @@ class PhysicsWorld {
     /// appending at most `room` contacts to `out` and returning how many it appended.
     using MeshOverlap =
         std::function<std::size_t(float, float, std::vector<Contact>&, std::size_t, const Aabb&, BodyId)>;
+
+    /// A sweep test of the sweep table (IPhysics `+0x7c`): whether `own` moving by `move` meets the resting `other`,
+    /// filling the contact as its research section says.
+    using SweepTest = std::function<bool(Contact&, const Shape& own, const Shape& other, anim::Vec3 move)>;
+    /// A mesh sweep of the IPhysics `+0xe0` table, by the moving shape's type: `(out, shape, move, box, body, options,
+    /// min normal z, max normal z)`, at most one contact; whether it hit.
+    using MeshSweep =
+        std::function<bool(Contact&, const ShapeRecord&, anim::Vec3, const Aabb&, BodyId, std::uint32_t, float, float)>;
 
     /// An empty world whose pools and ignore slots are built as the original's constructor builds them; `limits`
     /// says whether they may grow past the original's counts.
@@ -259,6 +297,70 @@ class PhysicsWorld {
     [[nodiscard]] std::array<std::array<PairTest, 5>, 5>& overlapTable() { return m_overlaps; }
     /// The mesh overlap of shape type `type`'s queries (empty for none).
     [[nodiscard]] MeshOverlap& meshOverlap(ShapeType type) { return m_meshOverlaps.at(static_cast<std::size_t>(type)); }
+    /// The sweep table's entry for an own shape of type `own` moving against one of type `other` (empty for none).
+    [[nodiscard]] SweepTest& sweepTest(ShapeType own, ShapeType other) {
+        return m_sweeps.at(static_cast<std::size_t>(own)).at(static_cast<std::size_t>(other));
+    }
+    /// The mesh sweep of shape type `type` (empty for none).
+    [[nodiscard]] MeshSweep& meshSweep(ShapeType type) { return m_meshSweeps.at(static_cast<std::size_t>(type)); }
+
+    // ---- Unit 9: creating and freeing bodies (docs/research/physics-bodies.md#unit-9) ----
+
+    /// Takes the first free human body set for `owner` (type mask `typeMask`): the human flags, scale 1, its capsule
+    /// on and its bone shapes off, then onto the human list, into the world and through the scale step. kNoBody when
+    /// every set is taken and no more may be built.
+    /// @orig 0x0033cc48 IPhysics_CreateHumanBody (unknown)
+    BodyId createHumanBody(OwnerId owner, std::uint32_t typeMask, const HumanBodyOwners& owners);
+    /// Takes the punch bag's one set, free or not: the punch bag's flags, its capsule on and its segment off, onto the
+    /// human list and into the world, with no scale step.
+    /// @orig 0x0033cb08 IPhysics_CreatePunchBagBody (unknown)
+    BodyId createPunchBagBody(OwnerId owner, std::uint32_t typeMask);
+    /// Takes the first free world object's body: the object flags, scale 1, no shape (the caller adds one).
+    /// @orig 0x0033ce58 IPhysics_CreateObjectBody (unknown)
+    BodyId createObjectBody(OwnerId owner, std::uint32_t typeMask);
+    /// Takes the first free car's body: the car flags, no shape, its scale not written.
+    /// @orig 0x0033cf68 IPhysics_CreateCarBody (unknown)
+    BodyId createCarBody(OwnerId owner, std::uint32_t typeMask);
+    /// Takes the first free pane's body with its paired box, sized `width` by 0.5 by `height` (half extents
+    /// width / 2, 0.25, height / 2) and taken (flags `|= 0x9`).
+    /// @orig 0x0033d070 Physics_CreateBoxBody (unknown)
+    BodyId createBoxBody(OwnerId owner, std::uint32_t typeMask, float width, float height);
+    /// Frees a human body set or the punch bag's: off the human list, out of the world, no owner, its push sphere
+    /// given back. Its flags and bone shapes stay as they are.
+    /// @orig 0x0033ce00 IPhysics_FreeHumanBody (unknown)
+    /// @orig 0x0033cbf0 IPhysics_FreePunchBagBody (unknown)
+    void freeHumanBody(BodyId id);
+    /// Frees a world object's body: out of the world, its shape's allocated bit cleared, its ignore list emptied, no
+    /// owner, no shape.
+    /// @orig 0x0033cf00 IPhysics_FreeObjectBody (unknown)
+    void freeObjectBody(BodyId id);
+    /// Frees a car's body: out of the world, each shape unchained with its allocated bit cleared, its ignore list
+    /// emptied, no owner.
+    /// @orig 0x0033cff8 IPhysics_FreeCarBody (unknown)
+    void freeCarBody(BodyId id);
+    /// Frees a pane's body: out of the world, its box's allocated bit cleared, no owner. Its ignore list and its box
+    /// are kept.
+    /// @orig 0x0033d158 IPhysics_FreeBoxBody (unknown)
+    void freeBoxBody(BodyId id);
+    /// Appends a human body at the tail of the human list.
+    /// @orig 0x003407a0 IPhysics_AddHumanBody (unknown)
+    void addHumanBody(BodyId id);
+    /// Takes a human body off the human list: its ignore list and the level emptied first, its weapon spheres cleared
+    /// after, its links zeroed.
+    /// @orig 0x003407f8 IPhysics_RemoveHumanBody (unknown)
+    void removeHumanBody(BodyId id);
+    /// The first body of the human list, or kNoBody.
+    [[nodiscard]] BodyId humanHead() const { return m_humanHead; }
+    /// How many bodies pool `pool` holds now.
+    [[nodiscard]] std::size_t bodyPoolSize(BodyPool pool) const {
+        return m_bodyPools.at(static_cast<std::size_t>(pool)).size();
+    }
+    /// Body `index` of pool `pool`.
+    [[nodiscard]] BodyId bodyPoolBody(BodyPool pool, std::size_t index) const {
+        return m_bodyPools.at(static_cast<std::size_t>(pool)).at(index);
+    }
+    /// The box paired with pane body `index`.
+    [[nodiscard]] ShapeId paneBox(std::size_t index) const { return m_paneBoxes.at(index); }
 
     /// The lowest free ignore slot, or kNoIgnoreSlot when every slot is taken and no more may be added. It is not
     /// marked taken.
@@ -320,6 +422,28 @@ class PhysicsWorld {
     // @orig 0x0033d278 IPhysics_AllocBigSphere (unknown)
     // @orig 0x003408d8 IPhysics_FindFreeStrikeSphere (unknown)
     ShapeId takeFromPool(ShapePool pool);
+    // A human body as its constructor leaves it: the body's, flags `|= 0x3f`, its own fields zero.
+    // @orig 0x00341e98 PhysicsHumanBody_Construct (unknown)
+    BodyId constructHumanBody();
+    // Appends `shape` at the tail of the body's bone chain.
+    // @orig 0x003429e8 PhysicsHumanBody_AddBoneShape (unknown)
+    void addBoneShape(BodyId id, ShapeId shape);
+    // Builds one human body set as the world's constructor does: the capsule, five bone segments, five bone spheres.
+    // @coney-only one human set as IPhysics_Construct builds it (Unit 15, #379)
+    BodyId buildHumanSet();
+    // Builds the punch bag's set: the capsule and one segment, a strike target only.
+    // @coney-only the punch bag's set as IPhysics_Construct builds it (Unit 15, #379)
+    BodyId buildPunchBagSet();
+    // Builds one body of `pool` (a pane's with its box) and adds it to the pool.
+    // @coney-only one pool body as IPhysics_Construct builds it (Unit 15, #379)
+    BodyId buildPoolBody(BodyPool pool);
+    // The creates' scan from index 0 for the first body of `pool` with no owner; past the end, one more body when the
+    // limits allow; the largest size_t for none.
+    // @orig 0x0033cc48 IPhysics_CreateHumanBody (unknown)
+    // @orig 0x0033ce58 IPhysics_CreateObjectBody (unknown)
+    // @orig 0x0033cf68 IPhysics_CreateCarBody (unknown)
+    // @orig 0x0033d070 Physics_CreateBoxBody (unknown)
+    std::size_t findFreeBody(BodyPool pool);
     // The base body: whether its chain holds a slot naming `owner` (false for null).
     // @orig 0x00341ae8 PhysicsBody_IsIgnoring (unknown)
     [[nodiscard]] bool bodyIsIgnoring(BodyId id, OwnerId owner) const;
@@ -351,6 +475,11 @@ class PhysicsWorld {
     std::array<std::vector<ShapeId>, 5> m_pools;
     std::array<std::array<PairTest, 5>, 5> m_overlaps; // `+0x18`: indexed by ShapeType values
     std::array<MeshOverlap, 5> m_meshOverlaps;         // `+0xf4`: indexed by ShapeType values
+    std::array<std::array<SweepTest, 5>, 5> m_sweeps;  // `+0x7c`: indexed by ShapeType values
+    std::array<MeshSweep, 5> m_meshSweeps;             // `+0xe0`: indexed by ShapeType values
+    std::array<std::vector<BodyId>, 5> m_bodyPools;    // by BodyPool
+    std::vector<ShapeId> m_paneBoxes;                  // `+0x42eb0`: box i goes with pane body i
+    BodyId m_humanHead = kNoBody;                      // `+0x04`: the human list's head
 };
 
 } // namespace coney::physics

@@ -158,6 +158,8 @@ add_library(coney_core STATIC
     physics/sphere_box_sweep.cpp
     physics/shapes.cpp
     physics/physics_world.cpp
+    physics/body_pools.cpp
+    physics/human_body.cpp
     raycast/collision_mesh.cpp
     physics/body_sweep.cpp
     physics/contact.cpp
