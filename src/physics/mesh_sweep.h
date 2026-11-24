@@ -10,6 +10,7 @@
 
 #include "animation/anim_math.h"
 #include "physics/contact.h"
+#include "physics/shapes.h"
 #include "physics/sphere_triangle.h"
 #include "raycast/collision_mesh.h"
 
@@ -20,12 +21,6 @@
 // wall. Research: docs/research/physics-bodies.md#unit-2
 
 namespace coney::physics {
-
-/// An axis-aligned box: the original's `{min, max}` AABB.
-struct Box {
-    anim::Vec3 min;
-    anim::Vec3 max;
-};
 
 /// Triangle flag bits the mesh functions read (docs/research/collision.md#triangles).
 inline constexpr std::uint16_t kTriangleBit3 = 0x0008;  ///< Skipped by a sphere sweep of a body with flag 0x100.
@@ -70,7 +65,7 @@ struct CellRange {
 /// Starts a query of `worldBox`: clears the visited bits and gives the cells its two corners fall in, each corner
 /// taken through the grid matrix, clamped and truncated on its own.
 /// @orig 0x00347170 CollisionMesh_BeginShapeQuery (unknown)
-[[nodiscard]] CellRange beginShapeQuery(const raycast::CollisionMesh& mesh, const Box& worldBox, MeshScratch& scratch);
+[[nodiscard]] CellRange beginShapeQuery(const raycast::CollisionMesh& mesh, const Aabb& worldBox, MeshScratch& scratch);
 
 /// Fills `order` with the indices of `contacts` sorted by key, as the original's insertion sort does it: equal keys
 /// keep their arrival order, and **an insertion before the end overwrites the entries after it with copies of the one
@@ -108,7 +103,7 @@ struct CapsuleSweep {
 /// original ignores its `max`). The original's walk reads one index past a cell's list after a hit above 1; Coney
 /// does not.
 /// @orig 0x00347c08 PhysicsMesh_SweepCapsule (unknown)
-int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, const CapsuleSweep& sweep,
+int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Aabb& worldBox, const CapsuleSweep& sweep,
                      MeshScratch& scratch, std::vector<Contact>& out);
 
 /// A sphere shape's sweep and its query.
@@ -127,7 +122,7 @@ struct SphereSweep {
 /// each kernel hit from 0 to 1 is kept. Sorted, cut to `max`, then with kQueryOnePerPlane one per plane; written to
 /// `out` (appended) with their flags and start distances. Returns how many were written.
 /// @orig 0x00348a50 PhysicsMesh_SweepSphere (unknown)
-int sweepSphereMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, const SphereSweep& sweep,
+int sweepSphereMesh(const raycast::CollisionMesh& mesh, const Aabb& worldBox, const SphereSweep& sweep,
                     MeshScratch& scratch, std::vector<Contact>& out);
 
 /// A sphere overlapping `mesh` in `worldBox`'s cells, from either side of every enabled triangle inside the query's
@@ -135,7 +130,7 @@ int sweepSphereMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, con
 /// (appended) deepest first, with the triangles' own normals. Returns **1** when any was found, not the count, so its
 /// one caller sees only the first.
 /// @orig 0x003473c8 PhysicsMeshOverlap_Sphere (unknown)
-int overlapSphereMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, const Sphere& sphere,
+int overlapSphereMesh(const raycast::CollisionMesh& mesh, const Aabb& worldBox, const Sphere& sphere,
                       std::uint32_t options, float minNormalZ, float maxNormalZ, int room, MeshScratch& scratch,
                       std::vector<Contact>& out);
 

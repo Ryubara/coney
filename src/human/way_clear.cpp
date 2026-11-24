@@ -28,7 +28,7 @@ bool wallOnTheWay(const raycast::CollisionMesh& mesh, anim::Vec3 feet, float hei
         const anim::Vec3 centre{feet.x, feet.y, feet.z + up};
         const anim::Vec3 reach{kWayClearRadius, kWayClearRadius, kWayClearRadius};
         const anim::Vec3 end = anim::add(centre, move);
-        const physics::Box box{
+        const physics::Aabb box{
             anim::subtract(anim::Vec3{std::min(centre.x, end.x), std::min(centre.y, end.y), std::min(centre.z, end.z)},
                            reach),
             anim::add(anim::Vec3{std::max(centre.x, end.x), std::max(centre.y, end.y), std::max(centre.z, end.z)},

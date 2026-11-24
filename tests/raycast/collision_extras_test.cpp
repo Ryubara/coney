@@ -106,7 +106,7 @@ TEST_CASE("a spawned box joins a level-like mesh: rays stop on it, the walking s
                                                .ownerAirborne = false,
                                                .footGap = 0.05F,
                                                .minWallHeight = 0.25F};
-    const coney::physics::Box query{coney::anim::Vec3{38.0F, 41.0F, 0.0F}, coney::anim::Vec3{42.0F, 46.0F, 2.0F}};
+    const coney::physics::Aabb query{coney::anim::Vec3{38.0F, 41.0F, 0.0F}, coney::anim::Vec3{42.0F, 46.0F, 2.0F}};
     std::vector<coney::physics::Contact> contacts;
     REQUIRE(coney::physics::sweepCapsuleMesh(*mesh, query, walking, scratch, contacts) > 0);
     REQUIRE_FALSE(contacts.empty());

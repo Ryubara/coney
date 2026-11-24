@@ -15,11 +15,6 @@
 #include "physics/contact.h"
 #include "physics/shapes.h"
 
-// This file does not include physics/body_sweep.h (nor mesh_sweep.h or sphere_triangle.h): those headers and
-// shapes.h each define ShapeType, Box and Sphere in coney::physics, so one file cannot see both. That is why the type
-// mask is a parameter and the owner's state and answers are callbacks here, not reads of a body-sweep owner. Units 9
-// and 11 (#376, #377) join this world with the body sweep and must resolve the clash first.
-
 // The physics world's bodies (docs/research/physics-bodies.md#unit-7) and its fixed tables
 // (docs/research/physics-bodies.md#unit-8): the body record and its update, the body vector, the list of bodies kept
 // sorted by their bound's min x with its widest-body bound, the box queries every shape, sweep, strike and ray test
