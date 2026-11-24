@@ -54,6 +54,12 @@ void standingHuman(FakeOwners& owners, OwnerId id, Vec3 at) {
     owners[id].bones[6] = Transform{.position = {0.0F, 0.0F, 1.8F}, .rotation = {}};
 }
 
+// A human body for `owner`, its made-up owner made first: the fake answers only the owners it holds.
+BodyId humanFor(PhysicsWorld& world, FakeOwners& owners, OwnerId owner) {
+    std::ignore = owners[owner];
+    return world.createHumanBody(owner, kHuman, owners);
+}
+
 } // namespace
 
 TEST_CASE("a human body takes the first free set, the human flags and its capsule on with the bone shapes off") {
@@ -133,9 +139,9 @@ TEST_CASE("each pool holds the original's count under the original's limits, and
     FakeOwners owners;
     OwnerId next = 1;
     for (int i = 0; i < 60; ++i) {
-        CHECK(world.createHumanBody(next++, kHuman, owners) != kNoBody);
+        CHECK(humanFor(world, owners, next++) != kNoBody);
     }
-    CHECK(world.createHumanBody(next++, kHuman, owners) == kNoBody);
+    CHECK(humanFor(world, owners, next++) == kNoBody);
     for (int i = 0; i < 416; ++i) {
         CHECK(world.createObjectBody(next++, kObject) != kNoBody);
     }
@@ -156,7 +162,7 @@ TEST_CASE("past the original's counts Coney's pools build one more body") {
     FakeOwners owners;
     OwnerId next = 1;
     for (int i = 0; i < 61; ++i) {
-        CHECK(world.createHumanBody(next++, kHuman, owners) != kNoBody);
+        CHECK(humanFor(world, owners, next++) != kNoBody);
     }
     CHECK(world.bodyPoolSize(BodyPool::Human) == 61);
     CHECK(bones(world, world.bodyPoolBody(BodyPool::Human, 60)).size() == 10);
@@ -269,9 +275,9 @@ TEST_CASE("human bodies join the human list at its tail and leave it from anywhe
     // Expected: physics-bodies.md#u9-human-list, confirmed (code)
     PhysicsWorld world;
     FakeOwners owners;
-    const BodyId a = world.createHumanBody(1, kHuman, owners);
-    const BodyId b = world.createHumanBody(2, kHuman, owners);
-    const BodyId c = world.createHumanBody(3, kHuman, owners);
+    const BodyId a = humanFor(world, owners, 1);
+    const BodyId b = humanFor(world, owners, 2);
+    const BodyId c = humanFor(world, owners, 3);
     CHECK(humanList(world) == std::vector<BodyId>{a, b, c});
     world.freeHumanBody(b);
     CHECK(humanList(world) == std::vector<BodyId>{a, c});
@@ -285,8 +291,8 @@ TEST_CASE("freeing a human body frees its push sphere, its ignore slots and the 
     // Expected: physics-bodies.md#u9-tests, confirmed (code)
     PhysicsWorld world;
     FakeOwners owners;
-    const BodyId id = world.createHumanBody(1, kHuman, owners);
-    const BodyId other = world.createHumanBody(2, kHuman, owners);
+    const BodyId id = humanFor(world, owners, 1);
+    const BodyId other = humanFor(world, owners, 2);
     setPushSphere(world, id, true);
     const ShapeId sphere = world.body(id).pushSphere;
     REQUIRE(sphere != kNoShape);
