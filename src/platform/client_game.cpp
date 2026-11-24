@@ -4,6 +4,7 @@
 #include <array>
 #include <charconv>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <optional>
@@ -13,6 +14,7 @@
 #include "animation/anim_math.h"
 #include "camera/camera_view.h"
 #include "gamemodes/game_mode_stack.h"
+#include "gamemodes/level_start.h"
 #include "net/client_camera.h"
 #include "net/event_channel.h"
 #include "net/jitter_buffer.h"
@@ -67,6 +69,10 @@ ModeResult ClientGame::update(GameModeStack& stack, const FrameTime& frame) {
         // The level's HUD, as its scene draws it: a fresh one for each level, with the services the run gave.
         m_hud = std::make_unique<hud::HudOwner>();
         m_hud->hud().setServices(m_presentation.hud);
+        // The radar's map, as the host's GameplayMode gives its HUD: from the host's level's record, which the guest
+        // finds in the level table it read from its own disc; none for a level the table does not name.
+        const std::optional<std::size_t> record = m_presentation.levels.find(at.level);
+        m_hud->hud().setRadarMap(radarMapOf(record ? m_presentation.levels.at(*record) : nullptr));
         // The humans its radar's blips follow, found in this level's world by the id the host's snapshots name them by.
         m_hud->hud().setRadarFollowLocator([this](std::uint32_t id) -> std::optional<anim::Vec3> {
             if (!m_world) {

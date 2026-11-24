@@ -243,15 +243,17 @@ void applyTurnConfig(const script::RecordedCalls& recorded);
 /// @orig 0x001c3de0 Radar_Setup (RadarHUD.cpp)
 [[nodiscard]] hud::RadarMap radarMapOf(const LevelRecord* record);
 
-/// The level table as the legal screen's preloads fill it, read from `source` alone: `enum_preload.lua` (the
-/// enumerations the records use), then `config_preload3.lua`, whose `CfgLevels` passes every level to the real
-/// `CfgLevelName`; every other binding is skipped. For a run that plays no game of its own, a network guest, which
+/// The level table as the legal screen's preloads fill it, read from `source` alone: `enum_preload.lua`, then
+/// `config_preload.lua`, `config_preload2.lua` and `config_preload3.lua`, in the legal screen's order, with only the
+/// real `CfgLevelName` (which `config_preload3.lua`'s `CfgLevels` calls for every level) and the bindings
+/// `config_preload2.lua` needs to build the tables `config_preload3.lua` reads (`doFile`, `GetLanguage`,
+/// `GetPlatform`); every other binding is skipped. For a run that plays no game of its own, a network guest, which
 /// still needs each level's record (its radar map) and runs none of the preloads. Fails as `source` does when
-/// `config_preload3.lua` is missing, and when either script fails to run.
+/// `config_preload3.lua` is missing, and when it fails to run; an earlier preload that fails is only logged.
 ///
 /// Research: docs/research/frontend.md#the-level-table, docs/guides/client-world.md#client-hud
-/// @coney-only runs the level table's scripts alone, outside the game, for a network guest; the original runs them in
-/// its boot preload with every binding
+/// @coney-only runs the preloads alone, outside the game, for a network guest; the original runs them in its boot
+/// preload with every binding
 [[nodiscard]] std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& source);
 
 } // namespace coney

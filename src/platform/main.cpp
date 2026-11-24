@@ -974,6 +974,13 @@ int main(int argc, char** argv) {
         presentation.hud.sound.playing = [&audio](coney::hud::HudSoundHandle sound) {
             return audio && audio->sounds().isPlaying(coney::audio::VoiceHandle{sound});
         };
+        // The level table from the disc's preloads, whose records give each level's radar map
+        // (docs/guides/client-world.md#client-hud); without it the guest's radar draws no map.
+        if (auto levels = coney::loadLevelTable(coney::script::wadScriptSource(*wad)); levels) {
+            presentation.levels = std::move(*levels);
+        } else {
+            logText(std::format("client game: the level table did not load: {}\n", levels.error().message));
+        }
         clientGame.emplace(
             netPlay,
             [&renderer, &wad, &sectorBudget](const coney::platform::LevelAt& level, coney::hud::HudOwner& hud) {

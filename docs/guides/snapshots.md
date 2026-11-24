@@ -160,7 +160,8 @@ every player. **Who owns it:** the play mode's HUD, as simulation state (`PlayLe
 the HUD's step the play mode hands it to network play with the slots' HUD state (`GameHumans::captureHuds(slots,
 &standing)`, `NetPlay::setGameHuds()`), and a guest reads the newest decoded with `NetPlay::arrivedHudStanding()`.
 
-**Derived on the guest, not carried.** The level's radar map comes from the level record the guest loads itself. The
+**Derived on the guest, not carried.** The level's radar map comes from the level record the guest reads from its
+own disc ([The radar's map](client-world.md#client-hud)). The
 running part of a prompt's icon cycle (its count, which icon shows, the blink) steps on each HUD from the cycle's start,
 and `applyStanding()` starts a guest's cycle again only when its settings change, so it steps as the host's does. A
 counter panel's hide time is the host's: its "shows" flag travels and a guest's panel hides when the host's does. The

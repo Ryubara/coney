@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gamemodes/level_start.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -38,6 +39,9 @@ constexpr std::uint64_t kSettleSteps = 30;
 
 // The preload whose CfgLevels fills the level table (docs/research/frontend.md#the-level-table).
 constexpr std::string_view kLevelTableScript = "config_preload3.lua";
+// The bindings loadLevelTable() gives the preloads: the level records, and what config_preload2.lua needs to run its
+// strings file and reach the tables config_preload3.lua's objects use. Every other call is skipped.
+constexpr std::array<std::string_view, 4> kLevelTableBindings{"CfgLevelName", "doFile", "GetLanguage", "GetPlatform"};
 
 // Reads `<level>_objs.txt` through the scripts' source and adds its objects to `records` and its emitters to
 // `particles` (when given: a particle system of the line's name at its pose, its fields past the pose unused, and no
@@ -311,11 +315,12 @@ hud::RadarMap radarMapOf(const LevelRecord* record) {
     return map;
 }
 
-// The level table's two scripts in a state holding only the real CfgLevelName (the header's comment).
+// The legal screen's preloads in a state holding only the bindings the level table needs (the header's comment).
 // @coney-only runs the level table's scripts alone, for a network guest
 std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& source) {
-    // What the binding fills: a game state of its own. The strings and the host are there only because the bindings
-    // are built together (buildNatives() needs them); nothing here calls them.
+    // What the bindings work on: a game state of its own (CfgLevelName fills its table, GetLanguage reads its language,
+    // English as a fresh state has). The strings and the host are there only because the bindings are built together
+    // (buildNatives() needs them); nothing here calls them.
     GameState state;
     gui::GlobalStrings strings;
     QuietBindingHost host;
@@ -329,16 +334,19 @@ std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& sour
         source,
         [&context](script::ScriptSystem& system, script::LuaVm& vm) {
             for (script::Native& native : script::buildNatives(system, context)) {
-                if (native.name == "CfgLevelName") {
+                if (std::ranges::find(kLevelTableBindings, native.name) != kLevelTableBindings.end()) {
                     vm.registerFunction(native.name, std::move(native.call));
                 }
             }
         },
         [&lastLine](std::string_view line) { lastLine = std::string(line); });
     scripts.create();
-    // The enumerations first, as the legal screen's preloads run them, then the script that holds CfgLevels.
-    for (const std::string_view name : {script::kEnumPreloadScripts[0], kLevelTableScript}) {
-        if (!scripts.runFile(name)) {
+    // Every preload in the legal screen's order: config_preload3.lua's objects read the tables config_preload2.lua
+    // builds (after running its strings file by name), and its CfgLevels reads the enumerations. Only the last must
+    // run; a failure of an earlier one shows as the last one's.
+    scripts.runFiles(script::kEnumPreloadScripts);
+    for (const std::string_view name : script::kConfigPreloadScripts) {
+        if (!scripts.runFile(name) && name == kLevelTableScript) {
             // A missing script says so as the source does; one that is there and failed is bad data.
             if (auto read = source(name); !read) {
                 return std::unexpected(std::move(read.error()));

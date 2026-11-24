@@ -303,9 +303,18 @@ which way the camera looks) is the human the [client's camera](#client-camera) f
 the guest's own camera (`ClientGame::radarView()`); with none to follow the radar draws nothing. A blip that follows a
 human is found through the world (`Hud::setRadarFollowLocator()`), by the network id the snapshot names, so it moves as
 the human is drawn; one with a place is where the snapshot puts it. An objective's up or down arrow and its colour are
-the host's, worked out from the host player's height ([The radar's blips](snapshots.md#hud-blips)). **Planned**
-(#1670): the level's map on the guest's radar; until then it draws the blips and the player's arrow without the map
-disc.
+the host's, worked out from the host player's height ([The radar's blips](snapshots.md#hud-blips)).
+
+**The radar's map** is the guest's own: nothing of it travels. The original's `Radar_Setup` names the map after the
+level record's world and draws it with the record's three map floats ([The radar on
+screen](../research/hud-radar.md#the-radar-on-screen)); the records are the level table the preloads fill (`CfgLevels`
+in `config_preload3.lua`), which the guest, running no preloads, reads from its own disc once at start-up
+(`loadLevelTable()`, `enum_preload.lua` then `config_preload3.lua` with only the real `CfgLevelName` bound, as the HUD's
+strings are read with `loadGlobalStrings()`) and hands the client game in its `ClientPresentation`. Each level's HUD
+is given the map of the host's level's record when the level loads (`radarMapOf()`, the same function `GameplayMode`
+gives its own HUD the map with), so the guest draws the disc the host draws. A level its table has no record of has
+no map, and its radar draws the blips and the arrow with no disc; that is a mod's level, which the host numbers at run
+time, and whose record on the host has no map floats, so the host draws no disc for it either.
 
 ## Testing {#testing}
 
@@ -352,7 +361,8 @@ leaving the level, and a level the disc lacks refused. Two peers also pin the ev
 track the host raises in one step are presented on the guest once, none before its playback has reached that step and
 all in the step it does, in the order raised, on the guest's own sound and HUD; and the HUD: the guest's own slot's
 panel is panel 0 with its rage and money and its standing flags, the host's player's values are on no panel, what the
-host's HUD holds for everyone follows it, and a new level has a new HUD.
+host's HUD holds for everyone follows it, and a new level has a new HUD; and the radar's map: the HUD of a level the
+guest's level table has a record of has that record's map, and one with no record has none.
 `tests/net/client_camera_test.cpp` covers [the client's camera](#client-camera): the human each slot follows (the one
 its HUD entry names, and the lowest id for a slot that drives none, two clients each following their own slot's human
 and cutting when the host swaps them), what the follow camera reads of a replicated human (his velocity from the move
@@ -364,4 +374,8 @@ circle within the follow camera's band. Its case in `client_game_test.cpp` has t
 guest's own pad's stick, the character's speeds and the level's collision, and a new level start with a new camera.
 `tests/platform/disc_client_level_test.cpp`, with the disc, loads the scene of `level99` headless and draws two humans a
 client's world was sent, both posed with every layer's clip found, the follow camera behind player 1, and a human gone from
-the snapshots losing his mesh.
+the snapshots losing his mesh. Its radar case starts the game session's `level80` as `coney --play-level` does, then a
+client game with the level table read from the same disc loading `level80`, and checks that the guest's radar map is
+the host's HUD's: the same sheet, offsets and scale. `tests/gamemodes/story_start_test.cpp` covers the level table
+read alone (a level's record with its map floats and the enumerations run first, and no `config_preload3.lua` an
+error) and `radarMapOf()`.
