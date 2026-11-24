@@ -744,6 +744,22 @@ TEST_CASE("the level table read alone fails without config_preload3.lua", "[stor
     CHECK_FALSE(coney::loadLevelTable(sourceOver(files)).has_value());
 }
 
+TEST_CASE("the level table read alone logs an earlier preload that fails and still reads the records",
+          "[story_start][radar]") {
+    // Expected: unverified, #1670 (Coney's own: the guest's run log says which preload failed, as the level table can
+    // still load without it; docs/guides/client-world.md#client-hud)
+    auto files = levelTableScripts();
+    files["config_preload.lua"] = std::vector<std::byte>{std::byte{0x01}, std::byte{0x02}};
+    std::vector<std::string> lines;
+    const auto table =
+        coney::loadLevelTable(sourceOver(files), [&lines](std::string_view line) { lines.emplace_back(line); });
+    REQUIRE(table.has_value());
+    CHECK(table->find("level99").has_value());
+    CHECK(std::ranges::any_of(lines, [](const std::string& line) {
+        return line.find("level table:") != std::string::npos && line.find("config_preload.lua") != std::string::npos;
+    }));
+}
+
 TEST_CASE("a level's radar map is its record's world sheet and map floats, and no record has none",
           "[story_start][radar]") {
     // Expected: hud-radar.md#the-radar-on-screen, confirmed (code) (Radar_Setup 0x001c3de0 names the sheet after the

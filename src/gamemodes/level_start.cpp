@@ -317,7 +317,8 @@ hud::RadarMap radarMapOf(const LevelRecord* record) {
 
 // The legal screen's preloads in a state holding only the bindings the level table needs (the header's comment).
 // @coney-only runs the level table's scripts alone, for a network guest
-std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& source) {
+std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& source,
+                                                const script::ScriptSystem::Log& log) {
     // What the bindings work on: a game state of its own (CfgLevelName fills its table, GetLanguage reads its language,
     // English as a fresh state has). The strings and the host are there only because the bindings are built together
     // (buildNatives() needs them); nothing here calls them.
@@ -328,7 +329,7 @@ std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& sour
     context.state = &state;
     context.strings = &strings;
     context.host = &host;
-    // The last line the script system logged: why a script did not run.
+    // The last line the script system logged (why a script did not run), and every line to the caller's log.
     std::string lastLine;
     script::ScriptSystem scripts(
         source,
@@ -339,11 +340,15 @@ std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& sour
                 }
             }
         },
-        [&lastLine](std::string_view line) { lastLine = std::string(line); });
+        [&lastLine, &log](std::string_view line) {
+            lastLine = std::string(line);
+            // Stub (#1670): the log is not forwarded yet.
+            static_cast<void>(log);
+        });
     scripts.create();
     // Every preload in the legal screen's order: config_preload3.lua's objects read the tables config_preload2.lua
     // builds (after running its strings file by name), and its CfgLevels reads the enumerations. Only the last must
-    // run; a failure of an earlier one shows as the last one's.
+    // run; an earlier one that fails is in the log, and shows as the last one's failure when the last needed it.
     scripts.runFiles(script::kEnumPreloadScripts);
     for (const std::string_view name : script::kConfigPreloadScripts) {
         if (!scripts.runFile(name) && name == kLevelTableScript) {
