@@ -342,8 +342,9 @@ std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& sour
         },
         [&lastLine, &log](std::string_view line) {
             lastLine = std::string(line);
-            // Stub (#1670): the log is not forwarded yet.
-            static_cast<void>(log);
+            if (log) {
+                log(std::format("level table: {}", line));
+            }
         });
     scripts.create();
     // Every preload in the legal screen's order: config_preload3.lua's objects read the tables config_preload2.lua

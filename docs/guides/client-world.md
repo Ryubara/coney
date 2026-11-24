@@ -308,9 +308,13 @@ the host's, worked out from the host player's height ([The radar's blips](snapsh
 **The radar's map** is the guest's own: nothing of it travels. The original's `Radar_Setup` names the map after the
 level record's world and draws it with the record's three map floats ([The radar on
 screen](../research/hud-radar.md#the-radar-on-screen)); the records are the level table the preloads fill (`CfgLevels`
-in `config_preload3.lua`), which the guest, running no preloads, reads from its own disc once at start-up
-(`loadLevelTable()`, `enum_preload.lua` then `config_preload3.lua` with only the real `CfgLevelName` bound, as the HUD's
-strings are read with `loadGlobalStrings()`) and hands the client game in its `ClientPresentation`. Each level's HUD
+in `config_preload3.lua`), which the guest, running no preloads, reads from its own disc once at start-up, as the HUD's
+strings are read with `loadGlobalStrings()`, and hands the client game in its `ClientPresentation`. `loadLevelTable()`
+runs all four preloads in the legal screen's order (`enum_preload.lua`, `config_preload.lua`, `config_preload2.lua`,
+`config_preload3.lua`) with only four bindings: the real `CfgLevelName`, and `doFile`, `GetLanguage` and `GetPlatform`,
+which `config_preload2.lua` needs to build the tables `config_preload3.lua`'s objects read; every other call is
+skipped. It fails only when `config_preload3.lua` is missing or does not run; an earlier preload that fails is named in
+the run log (`level table: script error: ...`). Each level's HUD
 is given the map of the host's level's record when the level loads (`radarMapOf()`, the same function `GameplayMode`
 gives its own HUD the map with), so the guest draws the disc the host draws. A level its table has no record of has
 no map, and its radar draws the blips and the arrow with no disc; that is a mod's level, which the host numbers at run

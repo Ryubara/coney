@@ -3,9 +3,9 @@
 # which level80's Main shows the HUD and turns the radar on, and Cleon stands at the start while the first tutorial
 # hint shows; the guest (`--join ... --net-view`, the one recorded) draws the host's game from its snapshots, with the
 # radar's blips from the host and the level's map disc from the guest's own level table
-# (tools/clips/level80-guest-radar.txt: the guest's pad, which drives no human yet, is left at rest). The guest joins once the host's scene has ended (its
-# `cutscene: end l80_c1` line, about the host's frame 190), so the clip starts at the guest's frame 30, past its load's
-# first frames. For a change to the guest's radar: its disc, its blips, its arrow.
+# (tools/clips/level80-guest-radar.txt: the guest's pad, which drives no human yet, is left at rest). The guest joins
+# once the host's scene has ended (its `cutscene: end l80_c1` line, about the host's frame 190), so the clip starts at
+# the guest's frame 30, past its load's first frames. For a change to the guest's radar: its disc, its blips, its arrow.
 description = "level80 start: a guest's radar, its disc, blips and arrow"
 level = "level80"
 input = "tools/clips/level80-guest-radar.txt"

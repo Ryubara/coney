@@ -976,7 +976,7 @@ int main(int argc, char** argv) {
         };
         // The level table from the disc's preloads, whose records give each level's radar map
         // (docs/guides/client-world.md#client-hud); without it the guest's radar draws no map.
-        if (auto levels = coney::loadLevelTable(coney::script::wadScriptSource(*wad)); levels) {
+        if (auto levels = coney::loadLevelTable(coney::script::wadScriptSource(*wad), logText); levels) {
             presentation.levels = std::move(*levels);
         } else {
             logText(std::format("client game: the level table did not load: {}\n", levels.error().message));
