@@ -145,7 +145,7 @@ def bench_command(
     return command
 
 
-def _coney_executable(given: Path | None, preset: str) -> Path:
+def coney_executable(given: Path | None, preset: str) -> Path:
     """Coney's program: the one given, else the preset's build in the checkout."""
     if given is not None:
         return given
@@ -157,7 +157,7 @@ def _coney_executable(given: Path | None, preset: str) -> Path:
     raise ConfigError(f"no Coney build at build/{preset}/src/platform/; build the {preset} preset or pass --coney")
 
 
-def _disc(given: str | None) -> str:
+def disc_for(given: str | None) -> str:
     """The disc for Coney: the one given, else game_dir from coney.local.toml."""
     if given is not None:
         return given
@@ -170,8 +170,8 @@ def _disc(given: str | None) -> str:
 
 def run_bench(args: argparse.Namespace) -> int:
     """Run the bench once per fighter count, keep the reports and logs in --out, print the table; 1 on a failed run."""
-    coney = _coney_executable(args.coney, args.preset)
-    disc = _disc(args.disc)
+    coney = coney_executable(args.coney, args.preset)
+    disc = disc_for(args.disc)
     if args.scene:
         return run_scene_bench(args, coney=coney, disc=disc)
     if args.compare:
@@ -217,7 +217,9 @@ def scene_bench_command(
     renderer: str | None = None,
 ) -> list[str]:
     """The command line of one run of a scene: the plain bench run, then the scene's checkpoint, pinned camera, player
-    spot, god mode (a crowd must not kill the player), render size, and `--display-preset` / `--renderer` when asked."""
+    spot, god mode (a crowd must not kill the player), render size, and `--display-preset` / `--renderer` when asked.
+    A headless scene is given no renderer: it draws nothing, and Coney refuses `--renderer gpu` with `--headless`, so
+    `--scene all --renderer gpu` still runs the simulation-only scenes."""
     command = bench_command(
         coney,
         disc,
@@ -234,7 +236,7 @@ def scene_bench_command(
     command += ["--bench-god"] if scene.fighters > 0 else []
     command += ["--render-size", scene.render_size] if scene.render_size else []
     command += ["--display-preset", display_preset] if display_preset else []
-    command += ["--renderer", renderer] if renderer else []
+    command += ["--renderer", renderer] if renderer and not scene.headless else []
     return command
 
 

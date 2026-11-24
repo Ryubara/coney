@@ -168,12 +168,7 @@ def _draw(
     """Run Coney on one scene so that it writes `target`; ConfigError when it fails, hangs or draws nothing.
 
     With `renderer` the run asks for it (`--renderer`), and a run asked for the GPU renderer whose log does not say it
-    started fails. Coney's output (standard output, then standard error) is kept beside the picture as NAME.log,
-    whatever the run's end, so the job's artifact holds the log of a scene that failed or hung as well as of one that
-    drew."""
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.unlink(missing_ok=True)
-    log = target.with_suffix(".log")
+    started fails (`draw_picture`)."""
     command = [
         *coney,
         *scene.args,
@@ -185,8 +180,30 @@ def _draw(
         str(target),
         *(["--renderer", renderer] if renderer else []),
     ]
+    draw_picture(scene.name, command, target, runner, cwd, timeout, renderer)
+
+
+def draw_picture(
+    name: str,
+    command: Sequence[str],
+    target: Path,
+    runner: Runner,
+    cwd: Path | None,
+    timeout: float,
+    renderer: str | None = None,
+) -> None:
+    """Run `command` (a Coney command line that ends by writing `target` with `--screenshot`); ConfigError, naming
+    `name`, when it fails, hangs or draws nothing.
+
+    A run asked for the GPU renderer (`renderer == "gpu"`) whose log does not say it started fails. Coney's output
+    (standard output, then standard error) is kept beside the picture as NAME.log, whatever the run's end, so the job's
+    artifact holds the log of a scene that failed or hung as well as of one that drew. `picture parity` draws its
+    frames through this too."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.unlink(missing_ok=True)
+    log = target.with_suffix(".log")
     try:
-        done = runner(command, capture_output=True, text=True, timeout=timeout, check=False, cwd=cwd)
+        done = runner(list(command), capture_output=True, text=True, timeout=timeout, check=False, cwd=cwd)
     except subprocess.TimeoutExpired as error:
         # What Coney printed before it was stopped says how far it got: the last step it logged. The timeout stops the
         # launcher's process only: under `docker run` the container may outlive it, which is harmless because the
@@ -194,25 +211,23 @@ def _draw(
         output = _text(error.stdout) + _text(error.stderr)
         log.write_text(output, encoding="utf-8")
         raise ConfigError(
-            f"scene {scene.name}: coney did not finish in {timeout:g} s (hung, or far slower than a few frames take); "
+            f"scene {name}: coney did not finish in {timeout:g} s (hung, or far slower than a few frames take); "
             f"its output so far is in {log}" + _tail(output)
         ) from error
     except OSError as error:
-        raise ConfigError(f"scene {scene.name}: cannot run {coney[-1]}: {error}") from error
+        raise ConfigError(f"scene {name}: cannot run {command[0]}: {error}") from error
     output = _text(done.stdout) + _text(done.stderr)
     log.write_text(output, encoding="utf-8")
     if done.returncode != 0:
         raise ConfigError(
-            f"scene {scene.name}: coney ended with exit code {done.returncode}; its output is in {log}"
+            f"scene {name}: coney ended with exit code {done.returncode}; its output is in {log}"
             + _tail(_text(done.stderr) or _text(done.stdout))
         )
     if not target.is_file():
-        raise ConfigError(
-            f"scene {scene.name}: coney ended well but wrote no picture at {target}; its output is in {log}"
-        )
+        raise ConfigError(f"scene {name}: coney ended well but wrote no picture at {target}; its output is in {log}")
     if renderer == "gpu" and not _GPU_STARTED.search(output):
         raise ConfigError(
-            f"scene {scene.name}: asked for the GPU renderer, but coney's log does not say it started (no GPU device, "
+            f"scene {name}: asked for the GPU renderer, but coney's log does not say it started (no GPU device, "
             f"so it drew with GL3?); its output is in {log}" + _tail(output)
         )
 

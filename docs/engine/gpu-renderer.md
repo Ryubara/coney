@@ -513,4 +513,6 @@ Linux GCC job starts `coney --renderer gpu --frames 10` under lavapipe (Mesa's s
 and checks the run log's `renderer: gpu on vulkan` and `renderer: N of 10 frames shown` lines ([What CI
 runs](../guides/building.md#what-ci-runs)). The [software pictures](../guides/testing.md#software-pictures) draw the
 test cards, the 3D `scene` card among them, on both renderers and compare them by the cross-renderer tolerance ([How
-pictures are compared](renderer.md#comparing)).
+pictures are compared](renderer.md#comparing)). `coney-tools picture parity` is their disc-backed half, run locally: every
+benchmark scene and the named level frames, whole, on both renderers ([The GPU renderer's
+parity](renderer-pictures.md#parity)).

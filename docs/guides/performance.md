@@ -189,7 +189,8 @@ is `no baseline`, never a failure. It exits 1 when a scene is over **and the mac
 build slot ([`build status`](coney-tools-build.md#build)) before the runs or after them. On a busy machine it prints who
 holds a slot, still prints the comparison, and exits 0, since a busy machine spreads one scene's runs by more than the
 budget. A run that fails exits 1 whatever the machine does. `--display-preset` and `--renderer` are passed to Coney for
-the scene runs (`--preset` stays the build's CMake preset).
+the scene runs (`--preset` stays the build's CMake preset); a headless scene is given no `--renderer`, since it draws
+nothing and Coney refuses `--renderer gpu` with `--headless`, so `--scene all --renderer gpu` runs all seven scenes.
 
 ## GPU skinning {#gpu-skinning}
 

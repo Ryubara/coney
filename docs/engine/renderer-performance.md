@@ -72,6 +72,43 @@ the GPU time and the comparison are built ([Scenes](../guides/performance.md#sce
 `--compare` has no folder to read and refuses. The items that draw through GL3 (1 to 10 and 15 to 19) must keep these
 numbers (the *PS2* budget below); the GPU renderer's items are measured against them.
 
+## The GPU renderer against GL3 {#gpu-table}
+
+The parity suite ([The GPU renderer's parity](renderer-pictures.md#parity)) closes item 20 with this table: `perf
+bench --scene NAME --renderer gl3` and `--renderer gpu`, one scene at a time with the two renderers back to back, so a
+busy minute falls on both (confirmed (runtime), the reports and the script that made the table are in the task's
+scratch folder). A `playtest` build, `--vsync off`, 600 frames after 60 of warm-up, three runs of each scene; a cell
+is the median of the three runs' means in milliseconds a frame, the fastest and slowest run in brackets; the agents'
+Windows machine (a Ryzen 7 9800X3D, an RTX 5080), the GPU renderer on Direct3D 12. Three other builds held build slots
+and the processor at 100 % during the runs, so a bracket is wide where a run met a busy moment (GL3's hub, 16.8 ms in
+its slowest run); a second pass of the hub and the crowd gave the same ordering (hub 3.55 against 2.31, crowd 5.25
+against 3.60).
+
+| Scene | Render size | Frame, GL3 | Frame, GPU | Change | Render, GL3 | Render, GPU | Present, GL3 | Present, GPU |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Hub | 960x720 | 3.65 (3.23-16.82) | 2.14 (2.14-2.25) | -41 % | 1.92 (1.64-12.27) | 0.70 (0.69-0.74) | 0.90 (0.66-10.19) | 0.57 (0.57-0.60) |
+| Hub, crowd (50 fighters) | 960x720 | 4.82 (4.49-14.59) | 3.71 (3.70-3.88) | -23 % | 2.20 (1.97-8.79) | 1.17 (1.15-1.25) | 0.75 (0.60-4.58) | 0.74 (0.72-0.78) |
+| Street | 960x720 | 2.91 (2.76-3.13) | 1.42 (1.38-5.30) | -51 % | 2.51 (2.40-2.71) | 1.11 (1.08-4.43) | 0.81 (0.74-0.93) | 0.85 (0.82-3.98) |
+| Hub | 640x448 | 3.18 (2.83-3.82) | 2.18 (2.16-2.25) | -31 % | 1.56 (1.37-2.04) | 0.72 (0.71-0.74) | 0.59 (0.48-0.94) | 0.59 (0.58-0.61) |
+| Hub | 2560x1920 | 3.32 (2.95-3.71) | 2.29 (2.23-2.29) | -31 % | 1.67 (1.45-1.94) | 0.74 (0.73-0.75) | 0.67 (0.53-0.91) | 0.60 (0.59-0.61) |
+| Hub, headless | none | 1.42 (1.41-1.91) | 1.41 (1.39-1.42) | -1 % | 0.01 | 0.01 | 0.00 | 0.00 |
+| Hub, crowd, headless | none | 2.41 (2.40-3.79) | 2.37 (2.35-2.39) | -1 % | 0.01 | 0.01 | 0.00 | 0.00 |
+
+What it says:
+
+- **The GPU renderer's frame is shorter than GL3's in every scene that draws**, by a quarter to a half, and it is the
+  render that is shorter (0.7 to 1.2 ms against 1.6 to 2.5): the drawing besides posing is what
+  [the design expected](renderer.md#migration-gains) to shrink, and more than its estimate of about 0.4 to 0.8 ms (on
+  a busy machine, so the size is a first reading).
+  The present is the same within the runs' spread.
+- **The headless scenes are the control.** They draw nothing and are given no renderer, so the two columns are the same
+  program run twice: 1.42 and 1.41 ms, 2.41 and 2.37, which is the noise of the table's two passes.
+- **Not measured here.** The GPU renderer has no GPU timestamps (`gpu.frame` is GL3's only, SDL3's GPU API has none), and
+  counts no draws or triangles (`gl.draws` and `gl.triangles` are GL3's probes), so the columns are left out. GL3's
+  counts are 620 draws and 71,006 triangles in the hub, 671 and 129,999 in the crowd, 995 and 79,525 in the street.
+- **The simulation's step is the same on both** (1.4 to 1.6 ms in the hub, 2.3 to 2.7 with the crowd): the renderer
+  does not change it, and the [simulation thread](renderer.md#threads) is what takes it off the frame.
+
 ## Culling before posing {#cull-before-posing}
 
 Posing a human (his bone transforms, skinning matrices and posed bounding sphere, `render.skin`) costs about 25-30
