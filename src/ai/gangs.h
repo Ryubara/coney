@@ -38,8 +38,7 @@ class ScriptServices;
 /// The gang records (`0x005e6e30`, 32 of 0xb10), and the size of a gang's member list (`+0x48`).
 inline constexpr std::size_t kGangSlots = 32;
 inline constexpr std::size_t kGangMemberSlots = 16;
-/// The member count `Gang_AddMember` (`0x00166308`) tests a gang against, kGangMemberSlots for the police kind and kind
-/// `0x17`; reaching it changes nothing there (a member joins while one of the 16 slots is free).
+/// A gang holds at most this many members, kGangMemberSlots for the police kind and kind `0x17` (`0x00166308`).
 inline constexpr std::size_t kGangMembers = 10;
 /// The gang kinds the research names: the Warriors (0), the police (1) and the kind that counts as police for
 /// friendship (`0x17`).
@@ -149,10 +148,10 @@ class Gang {
     /// own members' fight and spectate goals skip the line-of-sight test. The scan reads it (ai::scanSees()).
     /// **Coney stand-in**: the fight and spectate goals' skip is not built.
     [[nodiscard]] bool alwaysSeen() const { return m_alwaysSeen; }
-    /// The members (`+0x48`), in the order of the 16 slots they hold: a member joining takes the first free slot.
+    /// The members (`+0x48`), in the order they joined.
     [[nodiscard]] const std::vector<Brain*>& members() const { return m_members; }
-    /// The member count `Gang_AddMember` tests: kGangMemberSlots for the police kinds, else kGangMembers. The original
-    /// does nothing when a gang reaches it (Gangs::addMember()); the fighter sides roll over to a new gang there.
+    /// How many members it holds before Gangs::addMember() makes room: kGangMemberSlots for the police kinds, else
+    /// kGangMembers. The original's `Gang_AddMember` tests the same count against the same two numbers.
     [[nodiscard]] std::size_t capacity() const;
     /// The tactic (`+0x40`); null for none.
     [[nodiscard]] Tactic* tactic() const { return m_tactic.get(); }
@@ -204,15 +203,9 @@ class Gang {
     /// @orig 0x00169dd8 Gang_NoneAbleToHelp (unknown)
     [[nodiscard]] bool noneAbleToHelp(const Brain* except) const;
 
-    /// The gang's leader (`Gang_GetLeader`): the stored one (GangOrders::leader) unless he is gone or dead, or is no
-    /// player and is cuffed or down (humanIsDownOrDead()), so a player leader stays one while arrested or down. Else a
-    /// new leader is picked and stored (`Gang_PickLeader`): the first member who is player 1 (any player while player
-    /// 1 is dead) or whose class role is 12 or 13 (the police) and is not cuffed; else the first neither down nor
-    /// cuffed; else the first member. Null for a gang with no members. **Coney's reading**: dead is out of health,
-    /// cuffed the script's arrested state, the stored handle is found among the members, then through the scripts.
-    /// Research: docs/research/gang-records.md#leader
+    /// The gang's leader (`0x00165678`): the leader set while it is a member, alive, not a player and not down; else
+    /// the first member that is. Null when none is. **Coney choice**: "down" is Coney's grounded state.
     /// @orig 0x00165678 Gang_GetLeader (unknown)
-    /// @orig 0x00165738 Gang_PickLeader (unknown)
     [[nodiscard]] Brain* leader() const;
     /// The gang's shared target (`+0x10`): the enemy its members score 400 points more, their scans keep listing and
     /// the Warriors may hit when a street civilian (ai::attackableBy()); null for none.
@@ -287,18 +280,6 @@ class Gang {
     // The tactic's update (`Tactic_Process`, from the gang's update `0x00166708`), its callback fired on a non-zero
     // result. The tactic must be set.
     void processTactic();
-    // The brain with script handle `handle`: a member, else through the scripts; null for 0 or none.
-    // @coney-only Coney's handle lookup (the original resolves handles through Handle_ResolveThunk)
-    [[nodiscard]] Brain* resolve(double handle) const;
-    // Puts `brain` in the first free member slot (`HandleArray16_PutInFree`); nothing when all 16 are taken.
-    // @coney-only the 16 member slots as Coney stores them
-    void putInFreeSlot(Brain& brain);
-    // Takes `brain` out of its member slot, if it holds one.
-    // @coney-only the 16 member slots as Coney stores them
-    void clearSlot(const Brain& brain);
-    // Rebuilds the member list from the slots, in slot order.
-    // @coney-only Coney's member list, kept beside the slots
-    void relistMembers();
     // The fighting state's clip groups, and their removal when calm. Research: docs/research/ai-reimpl.md#alert-state
     // @orig 0x001694b8 Gang_AddCombatFidgetClips (unknown)
     void addCombatFidgetClips();
@@ -319,15 +300,14 @@ class Gang {
     bool m_suspended = false;
     bool m_invincible = false;
     bool m_alwaysSeen = false;
-    std::array<Brain*, kGangMemberSlots> m_slots{}; // +0x48: null for a free slot
-    std::vector<Brain*> m_members;                  // the slots' brains, in slot order
-    anim::Vec3 m_centre{};                          // +0x00
-    float m_radius = 0.0F;                          // +0x14
+    std::vector<Brain*> m_members;
+    anim::Vec3 m_centre{}; // +0x00
+    float m_radius = 0.0F; // +0x14
     Brain* m_chosenTarget = nullptr;
     std::unique_ptr<Tactic> m_tactic;
     std::uint32_t m_tacticsSet = 0; // tactics set so far
     std::map<int, std::string> m_handlers;
-    mutable GangOrders m_orders; // mutable: leader() stores the leader it picks, as Gang_GetLeader does
+    GangOrders m_orders;
     std::map<int, std::vector<std::string_view>> m_clipGroups; // +0x1b0: group → its slots' clip names
     int m_alertState = kGangCalm;                              // +0x32
     int m_fleeCount = -1;                                      // +0xe0
@@ -368,13 +348,8 @@ class Gangs {
     /// Gang kind `kind`'s flee share, percent; 0 when not known.
     [[nodiscard]] int fleeShare(int kind) const;
 
-    /// `GangCreate(kind, name)`: takes the first free slot for a gang of `kind` named `name`, its record reset (no
-    /// members, tactic, handlers, clips, leader, turf or shared target; respondPercent 30), calm. Kinds 1, `0x17` and
-    /// `0x18` get their own clip groups; a police gang (kind 1) makes every other wanted gang (GangLookups::wanted)
-    /// hostile to the police kind, both ways unless the crime level is forced (setHostileToKind()). Returns its id, or
-    /// -1 when the name is in use or every slot is taken. **Coney stand-ins**: the music track names, the spot-line
-    /// flag and the spawners' reset are not kept here (the spawners are Spawners', #645).
-    /// Research: docs/research/gang-records.md#create
+    /// `GangCreate(kind, name)`: takes the first free slot for a gang of `kind` named `name`. Returns its id, or -1
+    /// when the name is in use or every slot is taken.
     /// @orig 0x0016cdf0 Gang_Create (unknown)
     [[nodiscard]] int create(int kind, std::string_view name);
     /// `GangDelete`: the members leave, the tactic ends and the slot is free again. Nothing for an id not in use.
@@ -389,30 +364,24 @@ class Gangs {
     [[nodiscard]] int countLiving(int id, bool standingOnly) const;
 
     /// `GangAddMember`: `brain` leaves its gang, even when it is gang `id` (its actions and target cleared, under a
-    /// tactic popped to its goal base, no longer the leader, event kGangMessageMembers with 0), then joins gang `id`:
-    /// its gang set, god mode under an invincible gang, the first free of the 16 member slots (none free: in the gang
-    /// but in no slot), a player becomes its leader (the war chief), a human of character type `0xed` gives the gang
-    /// his own cower clips; then event kGangMessageMembers with 1, so a follow tactic gives the members their goals
-    /// again (docs/research/ai-gangs.md#warrior-follow). A full gang (capacity()) keeps every member: the original's
-    /// test only calls a function with no effect (`Gangs_ResolveAllMembers` `0x0016d0e0`). Nothing for an id not in
-    /// use. Leaving a gang empties the brain's enemy list. **Coney choices**: any player joining leads, where the
-    /// original makes only a war chief (`+0x3ac`) the leader; the attack weights are not loaded again (stand-in).
-    /// Research: docs/research/gang-records.md#join
+    /// tactic popped to its goal base, no longer the leader, event kGangMessageMembers with 0), then joins gang `id`
+    /// (a player becomes its leader, the war chief; event kGangMessageMembers with 1), so a follow tactic gives the
+    /// members their goals again (docs/research/ai-gangs.md#warrior-follow). A full gang (capacity()) drops its first
+    /// member first: **Coney's choice**, which of them and that any; the original resolves every member handle
+    /// (`Gangs_ResolveAllMembers` `0x0016d0e0`, its result unused) and adds the new member all the same. Nothing for an
+    /// id not in use. **Coney choices**: the brain's counted enemies are kept; any player joining leads, where the
+    /// original makes only a war chief (`+0x3ac`) the leader.
     /// @orig 0x00166308 Gang_AddMember (unknown)
     void addMember(int id, Brain& brain);
-    /// `brain` leaves its gang, if it has one: out of its slot, its gang cleared.
-    /// @coney-only the slot and gang bookkeeping; Gang_RemoveMember's other steps (0x001664d8) are its callers'
+    /// `brain` leaves its gang, if it has one.
     void removeMember(Brain& brain);
 
-    /// Gangs `a` and `b` become enemies both ways: the friend bit cleared, the enemy bit set, in use or not, so a gang
-    /// made later in a free slot keeps the bit the other holds. Nothing for -1. **Coney's choice**: nothing for an id
-    /// outside 0 to 31 (the original reads past its records).
-    /// Research: docs/research/gang-records.md#relations
-    /// @orig 0x0016acf0 Gang_MakeEnemies (unknown)
+    /// Gangs `a` and `b` become enemies both ways: the friend bit cleared, the enemy bit set. Nothing when either is
+    /// not in use (and for -1).
+    /// @orig 0x0016acf0 GangMakeEnemies (unknown)
     void makeEnemies(int a, int b);
-    /// Gangs `a` and `b` become friends both ways: the enemy bit cleared, the friend bit set; as makeEnemies(), in
-    /// use or not, and nothing for -1 or an id outside 0 to 31.
-    /// @orig 0x0016ad80 Gang_MakeFriends (unknown)
+    /// Gangs `a` and `b` become friends both ways: the enemy bit cleared, the friend bit set.
+    /// @orig 0x0016ad80 GangMakeFriends (unknown)
     void makeFriends(int a, int b);
     /// Whether `a` and `b` are friends (`0x00168f58`): the same gang or kind, both kinds police-like (1 or `0x17`), a
     /// truce (setTruce()) or the friend bit. **Coney choice**: a human with no gang is no one's friend.
@@ -421,22 +390,16 @@ class Gangs {
     /// `GangMakeNeutralOfType(id, kind)`: gang `id` and every other gang in use of kind `kind` lose each other's
     /// enemy and friend bits, both ways, unless the two are friends already (friends()). Nothing for a gang not in use.
     /// **Coney's**: the members' brain byte `+0x290` the original clears for kind 0 is not modelled (its meaning is not
-    /// traced). Only the worker's mode 0 is ported; its calm mode (third argument 1: both sides calmed, a 3 s truce,
-    /// the crime report cancelled) comes only from `Gang_ClearWanted` (`0x00169a20`), whose police hostility Coney's
-    /// crime reports do not wire yet (CrimeServices::clearPoliceHostility(); not ported, #81).
+    /// traced).
     /// @orig 0x0016ae90 Gang_MakeNeutralOfTypeById (unknown)
     /// @orig 0x0016c470 Gang_MakeNeutralWithType (unknown)
     void makeNeutralOfType(int id, int kind);
     /// `GangMakeEnemiesOfType(id, kind)`: gang `id` and every gang in use of kind `kind` become enemies both ways (the
-    /// friend bit cleared, the enemy bit set), the gang itself too when it is of that kind: setHostileToKind() both
-    /// ways. Gangs made later are not affected. Nothing for a gang not in use.
+    /// friend bit cleared, the enemy bit set), the gang itself too when it is of that kind. Gangs made later are not
+    /// affected. Nothing for a gang not in use.
     /// @orig 0x0016ae60 Gang_MakeEnemiesOfType (unknown)
-    void makeEnemiesOfType(int id, int kind);
-    /// `Gang_SetHostileToKind(id, kind, mutual)`: every gang in use of kind `kind` treats gang `id` as an enemy (the
-    /// friend bit cleared, the enemy bit set), and with `mutual` gang `id` treats each of them so too. Nothing for a
-    /// gang not in use. Research: docs/research/gang-records.md#create
     /// @orig 0x0016c3a8 Gang_SetHostileToKind (unknown)
-    void setHostileToKind(int id, int kind, bool mutual);
+    void makeEnemiesOfType(int id, int kind);
     /// `GangSetAlwaysSeen`: the always-seen byte. Nothing for a gang not in use.
     /// @orig 0x0016bde8 Gang_SetAlwaysSeen (unknown)
     void setAlwaysSeen(int id, bool on);
@@ -535,10 +498,6 @@ class Gangs {
     [[nodiscard]] EngineLimits engineLimits() const { return m_limits; }
 
   private:
-    // The record of slot `id`, in use or not; null outside 0 to 31.
-    // @coney-only a bounds-checked record lookup (the original indexes its table directly)
-    [[nodiscard]] Gang* record(int id);
-
     std::array<Gang, kGangSlots> m_gangs{};
     std::vector<std::unique_ptr<Tactic>> m_retired; // tactics replaced, freed by the next update
     ScriptServices* m_scripts = nullptr;
