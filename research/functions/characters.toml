@@ -530,6 +530,20 @@ coney = "src/ai/fidget_action.h:freeToFidget"
 status = "legacy"
 
 [[function]]
+address = 0x00226a20
+name = "Human_GetHeadPoint"
+page = "characters.md#falling"
+role = "the upper point of the landing segment: the feet + `+0x4e8` - 0.16 x scale"
+level = "confirmed-code"
+coney = "src/human/human.h:Human::headPointHeight"
+status = "compared"
+
+[[function.gaps]]
+what = "a human with no skeleton takes the idle's pelvis height for the body point"
+relation = "stand-in"
+question = "characters.md#q-landing-inputs"
+
+[[function]]
 address = 0x00228258
 name = "Human_IsBusy"
 page = "characters-classes.md#power-class-bytes"
@@ -1923,8 +1937,18 @@ name = "Human_Land"
 page = "characters-ground.md#original-structure"
 role = "clears airborne, fall damage, `vz` = 0"
 level = "confirmed-code"
-coney = "src/ai/move_action.h:MoveAction::landed"
-status = "legacy"
+coney = "src/human/human.h:Human::land"
+status = "compared"
+
+[[function.gaps]]
+what = "the fall damage, the camera's landing kind, the dead or limp branch, the grab and body fields and game mode 0x11's kept action are not ported"
+relation = "not-ported"
+issue = 667
+
+[[function.gaps]]
+what = "the next wall contact's impact sound is not armed (+0x3bd)"
+relation = "not-ported"
+issue = 684
 
 [[function]]
 address = 0x0023e408
@@ -1933,7 +1957,12 @@ page = "characters-ground.md#original-structure"
 role = "the airborne sweep's floor test (`n.z` > 0.65)"
 level = "confirmed-code"
 coney = "src/physics/body_sweep.h:landingContact"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a jump's raise is not ended by a long fall (no long-fall state); the take-off height is the last ground"
+relation = "stand-in"
+question = "characters.md#q-landing-inputs"
 
 [[function]]
 address = 0x0023eab8

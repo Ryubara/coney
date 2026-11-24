@@ -8,6 +8,7 @@
 
 namespace coney::human {
 
+// @coney-only debug tooling: the debug menu's noclip
 void Human::setFlight(std::optional<Flight> flight) {
     const bool starting = flight.has_value() && !m_flight.has_value();
     const bool ending = !flight.has_value() && m_flight.has_value();
