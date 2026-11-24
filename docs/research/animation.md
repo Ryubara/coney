@@ -28,9 +28,9 @@ to its function.
 A **clip** here is its 80-byte descriptor ([Descriptor](formats/animation.md#descriptor-chunk-0x02-80-bytes)). Most
 queries take a human and an anim id and find the clip through the human's character (`0x00221bf0`:
 `CharacterInstance_GetAnim(human +0xd8, id, 1)`, the form that does not fire the [anim
-callbacks](characters.md#anim-callbacks)); they return 0 (or 0.0) when the human has no character or the id no clip.
-Event records are 24 bytes ([Keyframes](formats/animation.md#keyframes-chunk-0x00)); besides the documented fields,
-`+0x04` is an s16 (or u32) **value** that several types use. Confirmed (code) at each address.
+callbacks](characters-animation.md#anim-callbacks)); they return 0 (or 0.0) when the human has no character or the id no
+clip. Event records are 24 bytes ([Keyframes](formats/animation.md#keyframes-chunk-0x00)); besides the documented
+fields, `+0x04` is an s16 (or u32) **value** that several types use. Confirmed (code) at each address.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -202,13 +202,13 @@ Confirmed (code) at the addresses cited.
 
 ## Dynamic animation slots {#dynamic-slots}
 
-A 0x28-byte slot (seven per human at `+0x3c8`, [Characters](characters.md)): `+0x00` the clip's name (up to 31
+A 0x28-byte slot (seven per human at `+0x3c8`, [Characters](characters/index.md)): `+0x00` the clip's name (up to 31
 characters), `+0x20` the loaded clip resource (`+0x00` the time it was last let go on the real-time clock, `+0x04` a
 reference count, `+0x0c` the clip), `+0x24` the anim id it stands for. Confirmed (code):
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
-| `0x0010bc38` | `DynAnimSlot_Set(slot, name, id)` | lets the old clip go, copies the name and id; when the clip is already loaded (`0x0016f980`) takes it (`0x00178f40`, `0x0016f128`) and returns 1, else 0 (the [resource manager](characters.md) attaches it later); a null name empties the slot | confirmed (code) |
+| `0x0010bc38` | `DynAnimSlot_Set(slot, name, id)` | lets the old clip go, copies the name and id; when the clip is already loaded (`0x0016f980`) takes it (`0x00178f40`, `0x0016f128`) and returns 1, else 0 (the [resource manager](characters/index.md) attaches it later); a null name empties the slot | confirmed (code) |
 | `0x0010bcf8` | `DynAnimSlot_Release` | drops the clip's count, stamps the time, empties the slot | confirmed (code) |
 | `0x0010bd70` / `0x0010bd80` / `0x0010bd90` | `DynAnimSlot_Attach` / `_GetClip` / `_GetRefCount` | set `+0x20`; its clip; its count (0 when empty) | confirmed (code) |
 

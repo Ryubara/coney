@@ -439,7 +439,8 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
         // otherwise run him back to it, out of the swap's reach.
         // Still means standing at no speed for a whole think period (his brain thinks one step in five): a stop from a
         // run plays the run stop (417), which reads as standing on its first update (0 m/s) and then carries him about
-        // 1.6 m along his facing (docs/research/characters.md#sprint), into the player and off the prompt's front.
+        // 1.6 m along his facing (docs/research/characters-traversal.md#sprint), into the player and off the prompt's
+        // front.
         constexpr int kThinkPeriod = 6;
         constexpr float kStill = 1e-3F;
         // A fresh count for each wait.

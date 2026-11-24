@@ -129,7 +129,7 @@ struct MoveScene {
 };
 
 // A move the test sets, written into the brain every update as the original's actions write theirs: the brain's
-// update clears the move before its goals and actions run (docs/research/characters.md#ai-locomotion).
+// update clears the move before its goals and actions run (docs/research/characters-locomotion.md#ai-locomotion).
 struct HeldMove {
     float heading = 0.0F;    // radians, 0 facing +y
     float speed = 0.0F;      // m/s
@@ -949,7 +949,7 @@ TEST_CASE("a move steers round a human standing on its line and still arrives", 
 
 TEST_CASE("a brain's move lasts one update: the next update asks for nothing unless it is written again",
           "[ai][move]") {
-    // Brain_UpdateGoals starts with Brain_StopMove (docs/research/characters.md#ai-locomotion).
+    // Brain_UpdateGoals starts with Brain_StopMove (docs/research/characters-locomotion.md#ai-locomotion).
     MoveScene scene;
     Brain& brain = scene.add({20.0F, 20.0F, 0.0F}, 0.0F);
     brain.setMoveHeading(radians(90.0F), 2.0F);
@@ -1021,9 +1021,9 @@ struct StanceTurnScope {
 } // namespace
 
 TEST_CASE("locked onto a target, a move turns away from it and walks to its point", "[ai][move]") {
-    // The stance faces the brain's heading, not the target (docs/research/characters.md#ai-locomotion): a move whose
-    // point lies behind the human, its target in front, turns on the spot and strafes there. Facing the target, the
-    // turn could never finish and the move would stand for good (the level5 Vargas stall).
+    // The stance faces the brain's heading, not the target (docs/research/characters-locomotion.md#ai-locomotion): a
+    // move whose point lies behind the human, its target in front, turns on the spot and strafes there. Facing the
+    // target, the turn could never finish and the move would stand for good (the level5 Vargas stall).
     MoveScene scene;
     Brain& brain = scene.add({45.0F, 41.0F, 0.0F}, -90.0F);                               // facing +x
     Brain& other = scene.add({45.9F, 41.0F, 0.0F}, 90.0F, coney::ai::BrainType::Warrior); // in front of him
@@ -1062,9 +1062,9 @@ TEST_CASE("locked onto a target with no move, an AI keeps its facing while the t
     const Vec3 standing = brain.human().position();
     // He walks 1.8 m up +y beside him, within the 2.5 m that keeps the lock. The hit left him in a fight stance too,
     // where the feet go to his brain's aim point (+0x90), not along the heading
-    // (docs/research/characters.md#ai-locomotion), so the walk aims there. With the aim left stale he strafed into the
-    // AI along x and, now that humans meet (docs/research/physics.md#human-contacts), pushed him along, so the bearing
-    // never changed.
+    // (docs/research/characters-locomotion.md#ai-locomotion), so the walk aims there. With the aim left stale he
+    // strafed into the AI along x and, now that humans meet (docs/research/physics.md#human-contacts), pushed him
+    // along, so the bearing never changed.
     const HeldMove walk{.heading = 0.0F, .speed = other.human().speeds().walk, .aim = Vec3{45.9F, 42.8F, 0.0F}};
     REQUIRE(other.queueAction(std::make_unique<HoldMoveAction>(walk)));
     bool lockHeld = true;
@@ -1078,9 +1078,9 @@ TEST_CASE("locked onto a target with no move, an AI keeps its facing while the t
 }
 
 TEST_CASE("locked, a brain's move turns an AI 24 degrees an update and strafes him to its point", "[ai][move]") {
-    // The stance (docs/research/characters.md#ai-locomotion): the turn toward the brain's heading runs whenever it asks
-    // for a speed, at the AI's own word (0x005101dc), which the player's tuning never changes; the feet go along the
-    // line to the point at the stance walk when it asks for more than 0.1, else stand.
+    // The stance (docs/research/characters-locomotion.md#ai-locomotion): the turn toward the brain's heading runs
+    // whenever it asks for a speed, at the AI's own word (0x005101dc), which the player's tuning never changes; the
+    // feet go along the line to the point at the stance walk when it asks for more than 0.1, else stand.
     const StanceTurnScope scope;
     coney::human::locomotionTuning().stanceTurnDegrees = 10.0F; // the player's: not the AI's
     MoveScene scene;
@@ -1123,8 +1123,8 @@ TEST_CASE("locked, a brain's move turns an AI 24 degrees an update and strafes h
 }
 
 TEST_CASE("locked and wounded, an AI turns 0.375 degrees an update, even asked to stand, and walks", "[ai][move]") {
-    // The hurt test comes first (docs/research/characters.md#ai-locomotion): a quarter of 1.5° an update whatever the
-    // speed, no turn on the spot, and the walk speed rather than the stance walk.
+    // The hurt test comes first (docs/research/characters-locomotion.md#ai-locomotion): a quarter of 1.5° an update
+    // whatever the speed, no turn on the spot, and the walk speed rather than the stance walk.
     MoveScene scene;
     Brain& brain = scene.add({45.0F, 41.0F, 0.0F}, -90.0F);
     Brain& other = scene.add({45.9F, 41.0F, 0.0F}, 90.0F, coney::ai::BrainType::Warrior);

@@ -45,7 +45,7 @@ address.
 ## Data
 
 The meters live in fields [Combat](combat/index.md#data) owns ([Other record fields](combat/index.md#record-fields));
-the power and Warrior class records are on [Characters](characters.md#power-classes), the `CfgBurnRates`,
+the power and Warrior class records are on [Characters](characters-classes.md#power-classes), the `CfgBurnRates`,
 `CfgRagePoints` and `CfgRageHandlers` values on [Constants](combat/index.md#constants). The fields this page reads most,
 each read in the function named:
 
@@ -74,9 +74,9 @@ neither spends nor drains while raging or with flag `0x4000000` (the fraction th
 confirmed (runtime) (400 → 377 over 1.4 s of a tackle; 25 → 0 at 15 per second in a grab).
 
 **Per class.** The power class is human `+0x1b8` (AI) or `+0x1b9` (player), through `0x00222b78`
-([Character classes](characters.md#classes)). The maximum (`0x00223068`) is the class's s16 `+0x28`; for a player
-with the upgrade flag (`0x00424130(0x006fe998, 6, 0xb)`) it is scaled by 1 + byte `+0x02` / 100 of the record from
-`0x00228860`; and **while hurt** (`0x00222ff8`: health percentage below the class float `+0x04` × 100) it is scaled
+([Character classes](characters-classes.md#classes)). The maximum (`0x00223068`) is the class's s16 `+0x28`; for a
+player with the upgrade flag (`0x00424130(0x006fe998, 6, 0xb)`) it is scaled by 1 + byte `+0x02` / 100 of the record
+from `0x00228860`; and **while hurt** (`0x00222ff8`: health percentage below the class float `+0x04` × 100) it is scaled
 by the class float `+0x18`; each step `int(x + 0.5)`. The refill (`0x00256a60`) adds the class's `+0x2a` × the
 update's time, capped at that maximum. Confirmed (code). Runtime classes: `PoizoCiv` class 2 = 200, 32 per second,
 hurt factor 0.55; Vermin (type 26) class 7 = 400, 100 per second, hurt below 35 %, factor 0.75; Rembrandt class 64 =

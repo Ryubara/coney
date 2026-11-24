@@ -36,7 +36,7 @@ from coney_tools.elf import Elf, read_elf
 
 # --- addresses and layouts (NTSC-U SLUS_212.15) -------------------------------------------------------------------
 
-#: The 35 default anim slots a human starts with (docs/research/characters.md#anim-slots).
+#: The 35 default anim slots a human starts with (docs/research/characters-animation.md#anim-slots).
 ANIM_SLOT_TABLE = 0x005105D8
 ANIM_SLOTS = 35
 #: The markup tag table: 66 strings of 61 bytes (docs/research/gui.md#markup).
@@ -47,7 +47,7 @@ TAG_SIZE = 61
 ANIM_IDS = 722
 #: Chunk types inside a character data resource and the Character List (docs/research/formats/wad-contents.md).
 CHUNK_KEYFRAMES, CHUNK_DESCRIPTOR, CHUNK_CHARACTER_DATA, CHUNK_CHARACTER_LIST = 0x00, 0x02, 0x08, 0x44
-#: The slots that hold walk, jog, run and sprint (docs/research/characters.md#speed-classes).
+#: The slots that hold walk, jog, run and sprint (docs/research/characters-classes.md#speed-classes).
 GAIT_SLOTS = {"walk": 4, "jog": 5, "run": 6, "sprint": 7}
 #: Clips play at 30 frames a second.
 FPS = 30
@@ -258,7 +258,7 @@ class DiscFacts:
 
     @cached_property
     def character_list(self) -> list[tuple[int, ...]]:
-        """The Character List: 32-byte records of eight words (docs/research/characters.md#files)."""
+        """The Character List: 32-byte records of eight words (docs/research/characters-appearance.md#files)."""
         entry = self.by_name("warriors.glr")
         if entry is None:
             raise ValueError("warriors.glr is not on the disc")
@@ -681,7 +681,8 @@ _LEVEL_MAIN = re.compile(r"^level(\d+)\.lua$")
 _RUMBLE_INIT = re.compile(r"^level(\d+)_([a-z0-9]+)_init\.lua$", re.IGNORECASE)
 #: Tables a level script keeps its per-checkpoint scripts in: `tMission[k][3]` or `Mission[k]` / `Chapter[k]`.
 _CHAPTER_TABLES = ("Mission", "Chapter", "tChapters")
-#: The flag list a Rumble arena puts player 1 on the first of (`fP1[1]`, docs/research/characters.md#level-starts).
+#: The flag list a Rumble arena puts player 1 on the first of (`fP1[1]`,
+#: docs/research/characters-players.md#level-starts).
 RUMBLE_PLAYER_FLAGS = "fP1"
 
 

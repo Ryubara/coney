@@ -117,7 +117,7 @@ confirmed (code):
 2. The gang's Lua message handlers are cleared, so the members' removal below calls no script handler.
 3. **Each member still in the gang is destroyed, at once**: taken out of the member list (`0x001664d8`: clears the
    leader `+0x44` when it was the leader, offers event `0x16` to the gang's tactic), then `Human_Destroy(h, 0)`
-   ([Characters: destroying a human](characters.md#destroy)). Nothing is deferred: the humans, their held objects
+   ([Characters: destroying a human](characters/index.md#destroy)). Nothing is deferred: the humans, their held objects
    (destroyed, not dropped), radar blips, HUD panel and pad (for a player) are gone when `GangDelete` returns.
 4. The tactic, if any, is stopped and freed.
 5. The record is reset (`0x00164808`): not in use, not suspended, members, spawners, timers and handlers cleared,
@@ -125,8 +125,8 @@ confirmed (code):
 
 **A player is no exception.** A listed player in the gang is destroyed like the others: its pad is freed and it is
 removed from the player list (the other player, if any, becomes player 1); no other human is made the player. Scripts
-move the player first with `HuChangePlayerGang` ([Characters: players](characters.md#players)); level 99 does so at
-checkpoint 2 ([the hand-over](characters.md#level99-handover)).
+move the player first with `HuChangePlayerGang` ([Characters: players](characters-players.md#players)); level 99 does so
+at checkpoint 2 ([the hand-over](characters-players.md#level99-handover)).
 
 **`GangBrFlush(id)`** (`0x0016ba18`) only clears the goals and actions of each current member's brain; it removes and
 destroys nothing. Called just before `GangDelete` in the same script step, as in level 99, it has no visible effect.
@@ -1248,9 +1248,9 @@ distance (0.75 m from the follow code), leader, a turn-with-leader flag, time li
   behind runs, near his slot matches the leader, and slows to a walk on arrival.
 - **What limits a follower's speed and destination** (confirmed (code) at the cited addresses unless marked). The
   speed's only caps are the clamp above (1.25 × the follower's own sprint clip speed, 12.81 m/s for Vermin and
-  Rembrandt) and the control's 25 m/s ([Characters](characters.md#ai-locomotion)); the move action may lower it
-  further at corners ([The corner speed](ai-moving.md#corner-speed)) and a climb leg runs at gait 4. Nothing caps it for
-  a straight move, and the follower really moves that fast: confirmed (runtime), Vermin's and Rembrandt's speed
+  Rembrandt) and the control's 25 m/s ([Characters](characters-locomotion.md#ai-locomotion)); the move action may lower
+  it further at corners ([The corner speed](ai-moving.md#corner-speed)) and a climb leg runs at gait 4. Nothing caps it
+  for a straight move, and the follower really moves that fast: confirmed (runtime), Vermin's and Rembrandt's speed
   `+0x1ac` reached **12.807 m/s** and held it on a 75 m run, on a route and on straight moves alike. What keeps a
   follower on the ground is the destination and the line, not the speed:
     - the slot point is put on the ground when the formation is planned (a ray from 1.9 m above, 5.9 m long, so to

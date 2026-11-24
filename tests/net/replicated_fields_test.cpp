@@ -156,7 +156,8 @@ TEST_CASE("field tables: a whole thing's bits are the sum of its fields' bits", 
     CHECK(coney::net::fieldsBits(fields) == 267);
 }
 
-// Expected: unverified, #1612 (Coney's own field table; the Character List's 543 records, characters.md#files)
+// Expected: unverified, #1612 (Coney's own field table; the Character List's 543 records,
+// characters-appearance.md#files)
 TEST_CASE("field tables: a human's character is a Character List index plus one in ten exact bits", "[net][fields]") {
     const auto fields = coney::net::fieldTable(ReplicatedKind::Human);
     const FieldSpec& character = fields[static_cast<std::size_t>(coney::net::HumanField::Character)];

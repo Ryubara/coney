@@ -13,7 +13,7 @@ batch's vertex count; an `UNPACK` may carry a few more vectors as padding) and a
 
 In a triangle strip every batch after the first repeats the last two vertices of the one before; joining drops them.
 
-Research: docs/research/world.md#ps2-world-geometry, docs/research/characters.md#character-geometry,
+Research: docs/research/world.md#ps2-world-geometry, docs/research/characters-appearance.md#character-geometry,
 docs/research/formats/renderware.md#native-geometry
 """
 

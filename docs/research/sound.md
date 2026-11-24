@@ -500,8 +500,8 @@ The line count is found at start-up: for each set `s` and command `c`, the names
 found. The set is written in decimal and the line in two digits, inferred from the sound list: it holds
 `voices/0/attack_01` and `voices/100/attack_01`, not `voices/00/attack_01`.
 
-A human's voice set is `CfgChar`'s voice (character type `+0x118`, [Characters](characters.md)); the human keeps it at
-`+0x3b0`. `HuSetStateRespVoiceIndex` stores a second set at `+0x3b4`, for its state responses (inferred from the
+A human's voice set is `CfgChar`'s voice (character type `+0x118`, [Characters](characters/index.md)); the human keeps
+it at `+0x3b0`. `HuSetStateRespVoiceIndex` stores a second set at `+0x3b4`, for its state responses (inferred from the
 binding's name).
 
 ### The sound matrix {#sound-matrix}

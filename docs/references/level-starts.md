@@ -6,7 +6,7 @@ Where each level puts player 1 when it starts: one entry per checkpoint of a sto
 `HuCreate` for player 1 in the function the level script calls for `GetCheckPoint()`) and one per mode of a
 Rumble arena (the first flag of the list `fP1` in `level<N>_<mode>_init.lua`, which the arena teleports
 player 1 to).
-How the game gets there: [Characters](../research/characters.md#level-starts).
+How the game gets there: [Characters](../research/characters-players.md#level-starts).
 
 !!! info "What is complete"
 

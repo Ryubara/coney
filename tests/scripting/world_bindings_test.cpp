@@ -272,7 +272,7 @@ TEST_CASE("FlagEnable switches a flag; ChangeCollision switches the triangles in
 }
 
 TEST_CASE("CfgSetMaxThrowError keeps radians; KillHumans does nothing", "[world_bindings]") {
-    // Expected: characters.md#warriors-functions, confirmed (code)
+    // Expected: characters/index.md#warriors-functions, confirmed (code)
     Harness h;
     h.call("CfgSetMaxThrowError", {Value(5.0), Value(10.0)});
     REQUIRE(h.state.characters.maxThrowError.has_value());

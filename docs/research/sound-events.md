@@ -66,7 +66,7 @@ What starts each sound, kind by kind.
 ## The ground under a human {#ground-material}
 
 Human `+0x1d8` is the material of the level triangle under him: `Human_SnapToGround` (`0x0023eab8`, each update's
-1.5 m ray down from 1 m above the feet, [Characters](characters.md)) and the landing test (`Human_LandingTest`,
+1.5 m ray down from 1 m above the feet, [Characters](characters/index.md)) and the landing test (`Human_LandingTest`,
 `0x0023e408`, a floor contact with `n.z` > 0.65) store the hit's material (`WorldManager_RayCast` result `+0x28`,
 [Collision](collision.md)). A cast that hits nothing leaves it unchanged; it starts at 0 (`Human_Init`), which the
 lookup treats as the default, `CONCRETE`. Confirmed (code).

@@ -124,7 +124,7 @@ The fourth argument says what an ambient human does at the flag. Confirmed (code
   accepts for the human's brain. `0x00417028` and `0x004172c8` pick the nearest and the farthest flag of an activity
   within 89 degrees of a direction. Confirmed (code).
 - `0x00416718` says whether a human may use the flag: the flag must be enabled (`+0xd4`), and each activity admits
-  some role categories (the character type's byte `+0x11b`, [Characters](characters.md)), some only while
+  some role categories (the character type's byte `+0x11b`, [Characters](characters/index.md)), some only while
   `0x00226ff0` returns 0 (not traced), and activities 35 and 36 only a brain of kind 6. Activities 0, 3, 8, 12, 14,
   15, 18 and 33 admit no one through it. Confirmed (code).
 - `0x004162f8` picks the clip: the table at `0x005896a0` holds three clip names of 0x1a bytes per activity (37 rows
@@ -207,7 +207,7 @@ characters, so a longer name given to `FindFlag` never matches (inferred from th
   used as whole degrees; the rotation is about **−z** (degrees × 0.0174533 to `Quat_FromAxisAngle` `0x00335ea0`, whose
   axis is the constant (0, 0, −1) at `0x00511710`); the position is the flag's (`Flag_Position`), set through the
   object's vtable slot `+0x6c`; a human also gets its vtable slot `+0x14c` (its movement reset). There is **no ground
-  snap**, unlike `HuCreate` ([Characters](characters.md#creation)). Confirmed (code). `Teleport(object, {x, y, z},
+  snap**, unlike `HuCreate` ([Characters](characters/index.md#creation)). Confirmed (code). `Teleport(object, {x, y, z},
   heading)` (`Object_Teleport`, `0x00385bb8`) builds its rotation the same way, about −z.
 - **Which way a heading turns.** A flag's heading, and `Teleport`'s and `TeleportToFlag`'s, grows **clockwise** seen
   from above: heading `h` faces `(sin h, cos h)`, the sense of `Vec_Heading` and `Quat_Heading` (`0x00335f48`), so
@@ -263,7 +263,7 @@ in [Level starts](../references/level-starts.md). The players are placed only wh
 ## Coney's implementation
 
 Written from this page, [Scripts](scripting.md#errors-in-a-fresh-state) and
-[Characters](characters.md#type-to-model) (2026-10-05):
+[Characters](characters-classes.md#type-to-model) (2026-10-05):
 
 - **The flags** (`src/world_objects/flags.h`, `WorldFlags`): `createPool(n)` makes room for `n + 4`, `add` keeps a
   flag's handle, name (cut to 15 characters), position, heading, parent, user, enabled flag and the two integers in

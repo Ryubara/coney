@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The characters page's stats columns: each character type joined with the power and Warrior classes it gets.
 
-A character's stats come from four configuration tables ([Characters: stats](../research/characters.md#stats)):
+A character's stats come from four configuration tables ([Characters: stats](../research/characters-classes.md#stats)):
 its own `CfgChar` record, the power class that record names (`v11d`), and for a player the Warrior class and power
 class his type picks. The characters list holds only the first; this module joins in the others from their lists,
 on normal difficulty (the one `config_preload2.lua` sets at boot), so the page shows a type's numbers in one row:
@@ -12,7 +12,7 @@ on normal difficulty (the one `config_preload2.lua` sets at boot), so the page s
 - **Combat**: the damage table times the damage scale, the attack table and the range table.
 - **Drop**: the object or object group the human may carry and the `+0xb4` value used with it.
 
-Research: docs/research/characters.md#power-classes, docs/references/warrior-classes.md
+Research: docs/research/characters-classes.md#power-classes, docs/references/warrior-classes.md
 """
 
 from __future__ import annotations

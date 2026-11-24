@@ -199,7 +199,7 @@ at the start, then 4 in level index 43, else 5). Both are god-mode, pushable, wh
 (radius 5.5); reaching it moves the glow on and adds 1 to the score; one short of the lap the finish line
 (`tFinishLine`, `vFinishLine`) flickers, red, yellow or white by who leads, and the first player into `vFinishLine` with
 a score at least the other's wins (`RumbleOver(side, last_flag)`). Spectator crowds react and count knock-downs (shown,
-not scored). The players drive with L1 and R1 ([Characters: wheelchair control](characters.md#wheelchair)).
+not scored). The players drive with L1 and R1 ([Characters: wheelchair control](characters-locomotion.md#wheelchair)).
 
 The race in detail (`wchair.lua`, `SetupRaceGlows4(fRace)`; from its calls and bytecode):
 
@@ -452,9 +452,9 @@ All confirmed (runtime), PCSX2 2.9.94, 2026-10-12:
   The brains go on (`+0x09` turns 0, `FinishCountdown`) **151 to 172 updates** after the press, depending on the
   match (151, 151, 172): the intro does not last a fixed number of updates.
 - **Every fighter driven by its brain.** After the sample of frame 200 the recorder calls `Human_ReleasePlayer(P11,
-  0, 1)` (`0x0022a2a8`, [Characters](characters.md)), as `HuSwitchPlayer` hands a player back; from then on no human
-  is player 0, and none became one when `P11` went down. Called before the brains go on, it stops the battle from ever
-  starting: the Furies took the follow-player goal and the Orphans none for 9,000 updates.
+  0, 1)` (`0x0022a2a8`, [Characters](characters/index.md)), as `HuSwitchPlayer` hands a player back; from then on no
+  human is player 0, and none became one when `P11` went down. Called before the brains go on, it stops the battle from
+  ever starting: the Furies took the follow-player goal and the Orphans none for 9,000 updates.
 - **Different matches** come from an offset added to the 10-bit index of the random stream `0x006eb880`
   ([Maths](maths.md#random)) before the first update: 0, 341 and 682. The same offset gives the same intro length.
 - **Sampling.** PCSX2 at 0.4 speed (`speed` in the scenario): 9,001 samples a match, none missed; 10 or 11 torn, one
@@ -528,7 +528,7 @@ and the two names at `0x0063eef0` and `0x0063ef10`; the intro then names the Orp
 - **With these two gangs, the gang decides who wins, and how it fights.** The Furies won all three as side 2, faster
   and without losing a fighter. What goes with the Furies on either side: winning, the Blocking goal (4.3-17 % of
   their standing time against the Orphans' 0-2.3 %) and few reactions (0.8-2.8 a minute against 3.3-5.8). Inferred:
-  from the two gangs' classes, which this pass did not compare ([Characters](characters.md)).
+  from the two gangs' classes, which this pass did not compare ([Characters](characters/index.md)).
 - **The side decides how often it attacks.** Side 2 attacked more often than side 1 in all eight matches (Orphans
   19-22 against Furies 13-19; Furies 22-29 against Orphans 8-14). Inferred: side 1 fights under the attack command's
   FollowAndAttack and side 2 under TacticAttack's Melee ([Gang fights: runtime checks](gang-fights.md#runtime)).
@@ -610,7 +610,7 @@ beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Me
   scripts' own.
 - **Every fighter AI-driven** (`--ai-player`, a test aid, [Running: tracing](../guides/running.md#tracing)): when the
   countdown ends (after `FinishCountdown` and `StartIt`), player 1 is released as `Human_ReleasePlayer`
-  ([Characters](characters.md#players), `0x0022a2a8`) releases a human with no one taking the pad
+  ([Characters](characters-players.md#players), `0x0022a2a8`) releases a human with no one taking the pad
   (`repo:src/ai/ai_humans.h`): his brain goes back to his class's type with its goals and actions cleared, his flags are
   the released ones ([Combat: human flags](combat/index.md#human-flags)) and the pad drives nobody, so his brain alone moves
   him and `HuSwitchPlayer` finds no player to hand on. With no one in the player list, the game-over check ([Combat:
@@ -668,9 +668,9 @@ beaten the player, and Wheelchair when the CPU racer finishes. Tag battle and Me
   `Teleport` (which moves a spawned object's record as well as a human, so the glow's trigger sphere follows), the
   finish line tinted with `ObjColor`. `HuSetWheelchairControl` sets the wheelchair flag, turns every command off and
   the look-behind switch off; the player then drives with L1 and R1 and brakes with cross
-  ([Characters: wheelchair control](characters.md#wheelchair), `repo:src/human/human.h`), while the CPU racer keeps
-  its own locomotion. Stand-ins: no start clip or wheelchair clips (the body slides in its idle), commands 46 and 47
-  are not added (the control reads the buttons itself), and `DeclareWinner`'s pad lock stops the pushes.
+  ([Characters: wheelchair control](characters-locomotion.md#wheelchair), `repo:src/human/human.h`), while the CPU racer
+  keeps its own locomotion. Stand-ins: no start clip or wheelchair clips (the body slides in its idle), commands 46 and
+  47 are not added (the control reads the buttons itself), and `DeclareWinner`'s pad lock stops the pushes.
   `HuSetNoAutoLock` and `CamAssignRevCamButton` are kept, and `ActGiveWay` makes the human give way to the other
   ([AI: Giving way](ai-moving.md#giving-way)).
 - **Result screen**, mode 0x14 (`repo:src/gamemodes/rumble_result_mode.h`,

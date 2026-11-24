@@ -335,27 +335,27 @@ path data, so it walks into a spawned obstacle rather than over it, as it does i
 **Change character.** *Character type* lists every type the scripts' `CfgChar` calls configure (449 on the disc) when
 the scripts set up the scene (a level's own, the story's, or level99's for a sandbox), each with the model a player of
 it is drawn as: a plain alias takes its class's model, and levels 60-64 the `_a` one ([From a type to a
-model](../research/characters.md#type-to-model)). *Change character* rebuilds the player where he stands, at full
-health, with the camera behind him, through the play mode's own player creation: the model, its animation set and moves
-(their Anim Range List), the speeds its clips give, and his class, taken as the level's starting player takes his. That
-is the class's damage table scaled by his Warrior class's percentage
+model](../research/characters-classes.md#type-to-model)). *Change character* rebuilds the player where he stands, at
+full health, with the camera behind him, through the play mode's own player creation: the model, its animation set and
+moves (their Anim Range List), the speeds its clips give, and his class, taken as the level's starting player takes his.
+That is the class's damage table scaled by his Warrior class's percentage
 ([Damage](../research/combat/index.md#damage-table)), and his power class: his Warrior's (58-66) for a Warriors type,
-else the type's own ([Power classes](../research/characters.md#power-classes)), which sets his power meter, stamina,
-hurt threshold, stun and down times; his health, the type's times his Warrior class's percentage (Cleon's 1800 × 85 % =
-1530); and his Warrior class's rage ([Stats](../research/characters.md#stats)). The Player page's *Character* line shows
-both classes. The AI fighters are made again where they stand, at full health, since their brains hold the player they
-fought; they and the targets keep the scene's character. In a level whose scripts hold the player (every story level,
-the hub included) the brains and the scripts hold him by his handle, so he is not made again but becomes the type in
-place (`human::Player::changeCharacter()`): the same files, moves, speeds, class damage, power class and full health as
-a player made as that type, standing where he was with the camera where it was. The scripts' record of him and his brain
-take the new type too, so `HuGetCharType`, his voice and his sounds' character type follow it; the cast is left as it
-is. A disc test (`tests/platform/disc_level99_change_character_test.cpp`) checks the result against a player made as the
-type. The new character loads from the disc, so that frame stalls briefly.
+else the type's own ([Power classes](../research/characters-classes.md#power-classes)), which sets his power meter,
+stamina, hurt threshold, stun and down times; his health, the type's times his Warrior class's percentage (Cleon's 1800
+× 85 % = 1530); and his Warrior class's rage ([Stats](../research/characters-classes.md#stats)). The Player page's
+*Character* line shows both classes. The AI fighters are made again where they stand, at full health, since their brains
+hold the player they fought; they and the targets keep the scene's character. In a level whose scripts hold the player
+(every story level, the hub included) the brains and the scripts hold him by his handle, so he is not made again but
+becomes the type in place (`human::Player::changeCharacter()`): the same files, moves, speeds, class damage, power class
+and full health as a player made as that type, standing where he was with the camera where it was. The scripts' record
+of him and his brain take the new type too, so `HuGetCharType`, his voice and his sounds' character type follow it; the
+cast is left as it is. A disc test (`tests/platform/disc_level99_change_character_test.cpp`) checks the result against a
+player made as the type. The new character loads from the disc, so that frame stalls briefly.
 
 Not taken from the configuration yet, because Coney does not model them for a player: the Warrior class's cuffing, theft
 and mugging stats, the gym upgrades, the body scale (Rembrandt's 0.97), the speed class (a fallback the original does
-not use in play, [Speed classes](../research/characters.md#speed-classes)), the attack table, attack delays and brain
-type (an AI's, not a pad's), the voice, hat and weapon, and the movement styles that change the anim slots.
+not use in play, [Speed classes](../research/characters-classes.md#speed-classes)), the attack table, attack delays and
+brain type (an AI's, not a pad's), the voice, hat and weapon, and the movement styles that change the anim slots.
 
 **Display.** *FPS counter* shows, in the top-right corner under the frame stats, the frames a second, the average
 frame time and the steps a second over each half second, as the frame pacer measures them (`coney::FrameRateMeter`,
@@ -591,17 +591,18 @@ and `disc_entity_editor_test.cpp` check it on every kind of human.
 #### Movement speeds {#entity-editor-speeds}
 
 The player's walk, jog, run and sprint speeds come from the clips' root motion ([Speed
-classes](../research/characters.md#speed-classes)), not from a table, so the tunables are a **scale on each gait**
-(Tunables page, Movement: *Sneak*, *Walk*, *Jog*, *Run*, *Sprint speed scale*, 1 as made). The combat walk's speed is
-already the Combat page's tunable. A scale lands between steps like any tunable, and the gait the human is judged to be
-in, the jump's launch and the animation's gait blend all follow the scaled speeds (`HumanAnimator::setSpeedFactors()`);
-a scale of 2 on the run makes the player cover twice the ground at the same animation, so the feet slide. Another
-human's speeds are the *Speed scale* above, per entity, on top of the player's own tunables when it is the player.
+classes](../research/characters-classes.md#speed-classes)), not from a table, so the tunables are a **scale on each
+gait** (Tunables page, Movement: *Sneak*, *Walk*, *Jog*, *Run*, *Sprint speed scale*, 1 as made). The combat walk's
+speed is already the Combat page's tunable. A scale lands between steps like any tunable, and the gait the human is
+judged to be in, the jump's launch and the animation's gait blend all follow the scaled speeds
+(`HumanAnimator::setSpeedFactors()`); a scale of 2 on the run makes the player cover twice the ground at the same
+animation, so the feet slide. Another human's speeds are the *Speed scale* above, per entity, on top of the player's own
+tunables when it is the player.
 
 **Not here yet** (still #723): knock down, giving and taking a weapon, team and gang, a target, cuffing, AI on and off,
 taking the pad, playing any clip, duplicate and respawn, objects (break, open, move, reset), and the rest of the stats
-inventory of [Characters: Stats](../research/characters.md#stats) (power class, faction, damage percentage and the
-others).
+inventory of [Characters: Stats](../research/characters-classes.md#stats) (power class, faction, damage percentage and
+the others).
 
 ### Noclip {#noclip}
 
@@ -649,9 +650,9 @@ does: in a level (`--play-level`, the story) and in a sandbox.
 The sets are, in order: **Player** (his character's clips, with the generic ones his character leaves to them: what he
 plays in the game), **Generic** (the generic character data alone, the `gen_*` clips) and then **every model a player
 can be drawn as** (the models *Change character* offers), each with its own clips only. Every character on the disc has
-the same skeleton ([Characters](../research/characters.md)), so every set can play on him; a clip that animated a bone
-past the 34 pose entries would be left out. A model's set loads from the disc the first time it is opened, which stalls
-that frame briefly; a set that fails to load says why.
+the same skeleton ([Characters](../research/characters/index.md)), so every set can play on him; a clip that animated a
+bone past the 34 pose entries would be left out. A model's set loads from the disc the first time it is opened, which
+stalls that frame briefly; a set that fails to load says why.
 
 A set's page lists its clips by **category**: the first word of each anim id's `ANIM_*` name from `royal.lua`
 ([Anim ids](../references/anim-ids.md)), in title case, with a word's forms together (MOUNTING and MOUNTED under
@@ -685,7 +686,7 @@ simulation never reads it and a run plays the same with any of it changed; test 
 | Look | the display preset: *PS2*, *Xbox*, *Enhanced*, *High* (*Custom* is shown, not chosen); the Tunables page's `Display/Preset`, queued like any tunable | *PS2* is the original's picture, the only one drawn yet; the others are the [presets](../engine/renderer.md#presets) of the Xbox's look and Coney's |
 | Fog | *Level's fog* (the colour and the start the level's scripts set); *Red*, *Green*, *Blue* and *Start*, each starting at the level's value; *Reset fog* | The level's are the original's: `SetFogColor`, also the background, and `SetFogDistance`, a fraction of the far clip ([Fog](../research/world.md#fog)). A value of the page's is Coney's, drawn in the level's place; set back to the level's value (triangle does), it is the level's again. *Start* stops at 0.99, short of the far clip |
 | Shadows | *Blob shadows*; *Shadow colour* and *Shadow offset* (the shadow light's, the offset in game axes); *Shadows off* (the objects a script took the shadow from); *Shadow maps*; *Reset shadows* | The blob is the PS2's shadow; the shadow light and `EnableShadow` are the original's script values, empty on the PS2 and the Xbox's shadow map source ([The shadow light](../research/xbox-lighting.md#shadow-light)). The shadow maps (the Xbox's, and Coney's [realtime shadows](realtime-lighting.md)) are not drawn yet ([#1259](issue:1259), [#1220](issue:1220)), which the item says with `Display/Shadows` |
-| Gravity | what pulls an airborne human down, m/s², the `World/Gravity` tunable (triangle resets it) | 15.68 m/s² (1.6 g), the original's (`Human_StateUpdate` `0x0023fea8`, [characters](../research/characters.md)); any other value is Coney's |
+| Gravity | what pulls an airborne human down, m/s², the `World/Gravity` tunable (triangle resets it) | 15.68 m/s² (1.6 g), the original's (`Human_StateUpdate` `0x0023fea8`, [characters](../research/characters/index.md)); any other value is Coney's |
 | Parts | *Streamed world* (off also hides the background), *Background* (the sky and cloud boxes, the skyline, the light glows), *Humans* (with what they wear and hold), *Objects* (world objects, doors, cars), *Glass*, *Water*, *Effects* (particles, glints, the throw-aim arc), *Health rings* (and the L1 markers), *Coronas*, *Blob shadows*; *All on* | Every part on is the original's picture; each off is Coney's |
 | Reset world | the lighting's layers and view, the fog, the shadows, the gravity and the parts back as the game has them (the look stays: choose *PS2*) | |
 
@@ -728,7 +729,7 @@ The first tunables are the player's and the camera's researched values (`src/deb
 | --- | --- |
 | Movement | stick dead zone (0.12), run threshold (0.95), acceleration (24 m/s², 0.8 m/s an update), turn limit walking, jogging, running and sprinting (20°, 18°, 18°, 16° an update), in a stance (24°), turn ease (2.0 rad) and carry (0.8), lean factor and lean factor walking (0.4, 8), and a scale on each of the player's gait speeds: sneak, walk, jog, run and sprint (1 each, up to 10; [below](#entity-editor-speeds)) |
 | Body | radius (0.35 × scale), player factor (1.4286: the player's sphere is 0.35 × scale × this × scale, 0.4704 m), foot gap (0.05 m), step height (0.25 m: lower wall faces do not stop a walk), air radius (0.5 × scale) |
-| Sprint | drain (20/s); the stamina maximum and refill are each human's power class's ([Stats](../research/characters.md#stats)) |
+| Sprint | drain (20/s); the stamina maximum and refill are each human's power class's ([Stats](../research/characters-classes.md#stats)) |
 | Jump | minimum speed (3.3 m/s), up speed (5.5 m/s), climbable check (5.5 m), air turn (4° an update, Coney's choice) |
 | Climb | low and high probe (0.69 m, 1.7 m), reach and running reach (1.5 m, 4.5 m), probe behind (0.4 m), fence top limit (0.25 m), fence ceiling (2.5 m), wall window (1.7-2.91 m), short wall window (0.7-1.7 m) |
 | World | gravity (15.68 m/s², the humans' alone; the [World page](#world)'s) |

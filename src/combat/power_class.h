@@ -4,8 +4,8 @@
 #include <cstdint>
 
 // A human's power class: the numbers that decide how it takes hits and how its power meter runs (the record at
-// `0x006619a0 + class × 0x44`, docs/research/characters.md#power-classes). Values read at runtime in the street.
-// Research: docs/research/combat/index.md#constants, docs/research/combat-rage.md#power-meter
+// `0x006619a0 + class × 0x44`, docs/research/characters-classes.md#power-classes). Values read at runtime in the
+// street. Research: docs/research/combat/index.md#constants, docs/research/combat-rage.md#power-meter
 
 namespace coney::combat {
 
@@ -13,13 +13,14 @@ namespace coney::combat {
 struct PowerClass {
     int powerMax = 400;       ///< `+0x28`: the power meter's maximum.
     int refillPerSecond = 60; ///< `+0x2a`: the power meter's refill.
-    int staminaMax = 135; ///< `+0x2c`: the stamina maximum (`Human_StaminaMax`, docs/research/characters.md#sprint).
+    int staminaMax =
+        135; ///< `+0x2c`: the stamina maximum (`Human_StaminaMax`, docs/research/characters-traversal.md#sprint).
     int staminaRefillPerSecond = 40; ///< `+0x2e`: the stamina refill.
     float hurtFraction = 0.3F;       ///< `+0x04`: below this share of its health the human is hurt.
     float hurtPowerFactor = 0.75F;   ///< `+0x18`: the power maximum's scale while hurt.
     int stunMs = 200;                ///< `+0x30`: a stun's length.
     /// s16 `+0x32` (`CfgPowerClass` argument 8): how long, ms, a hit keeps an AI busy (`Human_ApplyPendingDamage`,
-    /// docs/research/characters.md#power-class-bytes). 300 for Rembrandt's class 64 on normal.
+    /// docs/research/characters-classes.md#power-class-bytes). 300 for Rembrandt's class 64 on normal.
     int busyAfterHitMs = 300;
     int groundMs = 2750;     ///< `+0x34`: how long a knockdown keeps it down.
     int struggleDivisor = 3; ///< Byte `+0x36`: the grab struggle's divisor.

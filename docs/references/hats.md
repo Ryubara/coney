@@ -7,7 +7,7 @@ set, a 0xa90-byte record at `0x00662b70 + set × 0xa90` with 48 hat slots, owned
 whose class has brain kind 3 (the Warriors) wears a hat, the hat is placed by the set of the type it was created as
 (human `+0xd0`), else by the set of its class (`+0xcc`), at the fitting whose name is the hat's; every other human
 uses the hat model's own attach point (`0x003a3ba0`). The hats are [objects](objects.md);
-[Characters: hats](../research/characters.md#hats).
+[Characters: hats](../research/characters-appearance.md#hats).
 
 !!! info "What is complete"
 

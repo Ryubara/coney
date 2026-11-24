@@ -29,7 +29,7 @@ standing to 5 sprint).
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (code) |
 | Ghidra | `0x0021b0b8 Object_SetPosition` |
-| Research | [research/characters.md#ground](../../research/characters.md#ground), [research/characters.md#the-human-object](../../research/characters.md#the-human-object) |
+| Research | [research/characters-ground.md#ground](../../research/characters-ground.md#ground), [research/characters/index.md#the-human-object](../../research/characters/index.md#the-human-object) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6) |
 
 ```sh
@@ -64,7 +64,7 @@ held. For the script's own teleport, run `lua` with `Teleport(...)`.
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x0021b0b8 Object_SetPosition`, `0x0023d440 Human_SetTransform` |
-| Research | [research/characters.md#ground](../../research/characters.md#ground), [research/characters.md#teleport](../../research/characters.md#teleport) |
+| Research | [research/characters-ground.md#ground](../../research/characters-ground.md#ground), [research/characters/index.md#teleport](../../research/characters/index.md#teleport) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); player moved 3 m along x and turned to 90 degrees; read back after 30 updates |
 
 ```sh
@@ -103,7 +103,7 @@ a pedestrian by name (`humans` lists them); one that is walking is moved off its
 | Preconditions | patches: none; emulation running |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x0021b0b8 Object_SetPosition`, `0x0023d440 Human_SetTransform` |
-| Research | [research/characters.md#ground](../../research/characters.md#ground), [research/characters.md#teleport](../../research/characters.md#teleport) |
+| Research | [research/characters-ground.md#ground](../../research/characters-ground.md#ground), [research/characters/index.md#teleport](../../research/characters/index.md#teleport) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6) |
 
 ```sh
@@ -140,7 +140,7 @@ Health and its maximum are `s16`s in the human's record (`+0x144`, `+0x146`), th
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (code) |
 | Ghidra | `0x00237848 Human_SetHealth`, `0x00264cf8 Human_AddRage` |
-| Research | [research/characters.md#the-record](../../research/characters.md#the-record), [research/combat-rage.md#rage](../../research/combat-rage.md#rage) |
+| Research | [research/characters/index.md#the-record](../../research/characters/index.md#the-record), [research/combat-rage.md#rage](../../research/combat-rage.md#rage) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6) |
 
 ```sh
@@ -173,7 +173,7 @@ it); `HuSetMaxHealth` (`0x00237be0`) changes that. For a death through the game'
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00237848 Human_SetHealth` |
-| Research | [research/characters.md#the-record](../../research/characters.md#the-record) |
+| Research | [research/characters/index.md#the-record](../../research/characters/index.md#the-record) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6) |
 
 ```sh
@@ -274,7 +274,7 @@ is called by no script and what it feeds is not traced.
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (code) |
 | Ghidra | `0x00299470 Human_SetPendingWeapon` |
-| Research | [research/characters.md#the-human-object](../../research/characters.md#the-human-object), [research/combat-moves.md](../../research/combat-moves.md) |
+| Research | [research/characters/index.md#the-human-object](../../research/characters/index.md#the-human-object), [research/combat-moves.md](../../research/combat-moves.md) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); empty hands: 0xffffffff |
 
 ```sh

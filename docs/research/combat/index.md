@@ -43,7 +43,7 @@ How the player fights on foot: the attack buttons and their chains, the moving a
 sprint), blocking, grabbing and what follows a grab (strikes, throws, mugging), tackles, the damage a hit does and
 how the target reacts, health, the power meter that grabs spend and the rage meter that hits fill, and how a target
 is picked. The same input path breaks objects (glass, car windows) and runs the stereo theft minigame, so those are
-here too. Movement, sprint, jumps and climbs are on [Characters](../characters.md); the clips on
+here too. Movement, sprint, jumps and climbs are on [Characters](../characters/index.md); the clips on
 [Animation](../formats/animation.md); the anim ids on the [Anim ids](../../references/anim-ids.md) list.
 
 In one paragraph: the pad's buttons become a **command id** per update through nine trigger tables (held, pressed,
@@ -104,8 +104,8 @@ role and level, is on [the combat function list](functions.md). Where to start, 
 
 The functions no section walks through are on [the combat function list](functions.md), each with its role and
 level. By address they fall in four groups of the human code (`0x00217a70`-`0x00288000`, a range inferred from where its
-functions lie; [Characters](../characters.md#code-index) has why it starts at `0x00217a70`) and a few helpers of the game
-state; the groups are our grouping.
+functions lie; [Characters](../characters/index.md#code-index) has why it starts at `0x00217a70`) and a few helpers of
+the game state; the groups are our grouping.
 
 #### Attack checks, grabs, tackles and three-person moves {#code-grabs}
 
@@ -169,7 +169,8 @@ long hold, released. Confirmed (code) at `0x00147940`. So:
   The X attack starts on `0x10`; inside a chain the `0x12` of the press is what is buffered.
 
 These buttons are the pad word's bits ([Pad record](../frontend.md#pad-record)); the earlier reading on
-[Characters](../characters.md#buttons) took square (`0x80`) for left (`0x8000`) and cross (`0x40`) for down (`0x4000`).
+[Characters](../characters-locomotion.md#buttons) took square (`0x80`) for left (`0x8000`) and cross (`0x40`) for down
+(`0x4000`).
 
 **Disabled commands** (`EnableCommand(player, id, 0)` clears the pad's bit in the entry's mask) are still matched:
 the matcher stores them in the per-player record's pending `+0x24` instead of `+0x20`, so the human does not act on
@@ -179,8 +180,8 @@ at `0x00147940` and `0x001480e0`; confirmed (runtime) for L1 (6) with pad 0's bi
 
 ### State flags {#state-flags}
 
-The 0x180 record's `+0x00` flags ([Characters](../characters.md#the-record)) that combat uses. Confirmed (code) where a
-test is cited in the behaviour below; seen at runtime unless marked.
+The 0x180 record's `+0x00` flags ([Characters](../characters/index.md#the-record)) that combat uses. Confirmed (code)
+where a test is cited in the behaviour below; seen at runtime unless marked.
 
 | Bit | Meaning |
 | --- | --- |
@@ -192,7 +193,7 @@ test is cited in the behaviour below; seen at runtime unless marked.
 | `0x400` | tackling, mounted on the target (seen `0x405`); the victim `0x800` (seen `0x801`) |
 | `0x1000` | a paired power move: throws, power strikes, specials and stealth kills (seen `0x1005`; [Combat moves](../combat-moves.md#tandem-ai)) |
 | `0x8000` | blocking (with `0x1`: `0x8001`) |
-| `0x1000000` | sprint asked for ([Sprint](../characters.md#sprint)) |
+| `0x1000000` | sprint asked for ([Sprint](../characters-traversal.md#sprint)) |
 | `0x2000000` | tagging ([Crimes](../crimes.md#tagging)) |
 | `0x4000000` | in a mini-game (lock picking, the stereo, uncuffing; [Crimes](../crimes.md#mini-game-record)) |
 
@@ -287,11 +288,11 @@ Every attack's base **damage is the Anim Range List's `+0x0a`** as the human hol
 ([Animation](../formats/animation.md#anim-range-list)); `Strike_Contact` (`0x0021b290`) reads it with
 `AnimRange_Damage(attacker, anim id)` (`0x002542e8`). The value on the disc is **not** what plays: when the human is
 made (`Human_AttachInstance`, `0x00217a98`), `0x002548f0` writes the character class's damages (`CfgChar`'s 16-bit
-values at class record `+0xb8`, [Character classes](../characters.md#classes)) over the list, through the jump table at
-`0x0055d6f0`. For a player (human `+0x1b0` not -1) each value is first scaled by its **Warrior class byte `+0x06`**
-(115 % for class 6): `damage = int(value × byte × 0.01 + 0.5)` in single-precision floats, so 30 gives 34, not 35.
-A value of 0 leaves the list's own. Confirmed (code); confirmed (runtime): Rembrandt (`CfgChar` type 30) has 15 for
-`S1`, which plays as 17, and the street civilian (type 417, no player) keeps its values unscaled.
+values at class record `+0xb8`, [Character classes](../characters-classes.md#classes)) over the list, through the jump
+table at `0x0055d6f0`. For a player (human `+0x1b0` not -1) each value is first scaled by its **Warrior class byte
+`+0x06`** (115 % for class 6): `damage = int(value × byte × 0.01 + 0.5)` in single-precision floats, so 30 gives 34,
+not 35. A value of 0 leaves the list's own. Confirmed (code); confirmed (runtime): Rembrandt (`CfgChar` type 30) has 15
+for `S1`, which plays as 17, and the street civilian (type 417, no player) keeps its values unscaled.
 
 | Index | Anim ids | Index | Anim ids | Index | Anim ids |
 | --- | --- | --- | --- | --- | --- |
@@ -413,12 +414,12 @@ Read at runtime in the street; the setters are on the [config bindings](../../re
 | `0x00510998` | 0.2 | the power cost of a grab strike, halved for a player | confirmed (runtime) |
 | `0x00514878` | 4, 1.21, 4, 4, 3.0625, 2.25 | `CfgActionDistance`, squared | confirmed (runtime) |
 
-The player's **power class** record (64, `0x006619a0 + 64 × 0x44`, [Power classes](../characters.md#power-classes)):
-`+0x28` = **400, the power meter's maximum**; `+0x2a` = 60, its refill per second; `+0x04` = 0.3, the **hurt**
-threshold (below 30 % health); `+0x30` = 200 ms a stun; `+0x34` = 2750 ms on the ground; byte `+0x36` = 3, the grab
-struggle divisor. The street civilian (class 2): hurt below 35 %, stun 750 ms, ground 2000 ms, power 200, divisor 4.
-The **Warrior class** record (`CfgWarriorClass`, `0x006b65c0 + c × 14`; class 6 for the player here, human `+0x1ba`,
-picked by type: [Power classes](../characters.md#power-classes))
+The player's **power class** record (64, `0x006619a0 + 64 × 0x44`, [Power
+classes](../characters-classes.md#power-classes)): `+0x28` = **400, the power meter's maximum**; `+0x2a` = 60, its
+refill per second; `+0x04` = 0.3, the **hurt** threshold (below 30 % health); `+0x30` = 200 ms a stun; `+0x34` = 2750 ms
+on the ground; byte `+0x36` = 3, the grab struggle divisor. The street civilian (class 2): hurt below 35 %, stun 750 ms,
+ground 2000 ms, power 200, divisor 4. The **Warrior class** record (`CfgWarriorClass`, `0x006b65c0 + c × 14`; class 6
+for the player here, human `+0x1ba`, picked by type: [Power classes](../characters-classes.md#power-classes))
 was `4e 00 90 c8 f0 32 73 03 01 01 01 02 03 02`: s16 `+0x00` = 78 is the **rage maximum**, byte `+0x02` = 144 the
 rage gain percentage, `+0x03` = 200 the idle rage decay and `+0x04` = 240 the rage drain while raging (percent of
 the maximum per 20 s), `+0x05` = 50 the player's health percentage, `+0x06` = 115 the player's damage scale, byte
@@ -437,8 +438,8 @@ classes](../../references/warrior-classes.md), which lists every byte's reader.
    state `0x8000` or `+0x08` `0x1000`) and the command is `0x1f` without a full rage meter, or 8 (L1 released). It
    clears the sprint, calls `0x002801e8`, sets state `0x8001`, starts rage on `0x1f` with a full meter
    (`0x0027ffa0`), and returns 0 on command 4 (R1 held), so nothing else runs while R1 is held. This is the sprint's
-   "other clear" on [Characters](../characters.md#sprint). R1 held is read from the pad record (`0x00147f98`, 0 when
-   per-player `+0x19` is −1), so **an AI human never starts a block**: command 4 alone does nothing
+   "other clear" on [Characters](../characters-traversal.md#sprint). R1 held is read from the pad record (`0x00147f98`,
+   0 when per-player `+0x19` is −1), so **an AI human never starts a block**: command 4 alone does nothing
    ([AI](../ai-fights.md#block)). The fight test fails while the human runs or sprints with record `+0x08` clear (gait 4
    or 5, `0x00223a60`, `0x00223a98`), so **R1 at a run starts no block**: the run goes on and R1 only turns the camera
    round ([Camera](../camera.md#reverse)); the block starts the update the gait drops below 4. Confirmed (code);
@@ -876,8 +877,8 @@ clip `+0x44` & `0x10000` of the clip the attacker plays (`Human_FindAnimQuiet` `
 
 - **Radius:** `+0x40` = 0.35 × the human's scale (`Human_GetCapsuleRadius` `0x00219860`; confirmed (code)): 0.3395 m
   at scale 0.97.
-  The walking sweep's body factor `+0x60` (1.4286 for the player, [Characters](../characters.md#walls)) is not applied
-  here.
+  The walking sweep's body factor `+0x60` (1.4286 for the player, [Characters](../characters-ground.md#walls)) is not
+  applied here.
 - **Base:** `+0x50`, at the human's position (the feet), each update.
 - **Height:** `+0x44`, the height of the head bone (6) above the feet + 0.2 × scale, so about 1.8 m standing.
   It is shorter in some states, by the rules on the Physics page; 0.35 × scale when cuffed; never under 0.2 × scale.

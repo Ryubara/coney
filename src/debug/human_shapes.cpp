@@ -19,7 +19,7 @@ constexpr float kNormalLength = 0.5F;
 // The bodies: the sphere the physics moves the human with now, the capsule others meet, the ground probe and the climb.
 void addBodies(DebugLines& lines, const human::Human& human) {
     const anim::Vec3 feet = human.position();
-    // Grounded, the walking sweep's sphere; airborne, the push-out sphere (docs/research/characters.md#walls).
+    // Grounded, the walking sweep's sphere; airborne, the push-out sphere (docs/research/characters-ground.md#walls).
     if (human.airborne() && !human.flying()) {
         const float radius = human.airSphereRadius();
         lines.sphere(anim::add(feet, anim::Vec3{0.0F, 0.0F, radius + human::bodyTuning().footGap}), radius,

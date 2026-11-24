@@ -185,7 +185,7 @@ TEST_CASE("a run skids to a stop when the stick lets go or turns back", "[locomo
 
 TEST_CASE("a run's release skids only when the measured speed is at least the run speed, exactly", "[locomotion]") {
     // The original compares the run speed with the measured speed as floats (c.le.S), with no slack: a speed one unit
-    // in the last place short does not skid (docs/research/characters.md#run-stop).
+    // in the last place short does not skid (docs/research/characters-locomotion.md#run-stop).
     Speeds speeds = testSpeeds();
     speeds.run = std::bit_cast<float>(0x40f9a3adU); // 7.8012300, Rembrandt's
     const Vec3 forward{0.0F, 1.0F, 0.0F};
@@ -251,7 +251,7 @@ TEST_CASE("in the fight stance an AI word of 24 degrees an update applies, 0.375
 
 TEST_CASE("an AI starts at 2 m/s, gains 1.067 an update until 2 m/s short, then 0.267, and slows 1.067 an update",
           "[locomotion][ai]") {
-    // Expected: characters.md#ai-locomotion, confirmed (code)
+    // Expected: characters-locomotion.md#ai-locomotion, confirmed (code)
     using coney::human::aiApproachSpeed;
     CHECK(aiApproachSpeed(0.0F, 7.8F) == Approx(2.0F));
     CHECK(aiApproachSpeed(0.0F, 1.6F) == Approx(1.6F));

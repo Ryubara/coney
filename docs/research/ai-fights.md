@@ -175,7 +175,7 @@ What turns a fighter toward his target once the run-in is over. Confirmed (code)
   target with a timed body turn (`Human_TurnToFaceObject` `0x00221cd8`, 0.3 s), which does not use brain `+0x110`.
   Whatever it left in the brain's move fields is wiped by the next update's `Brain_StopMove` (`0x0028ac18`, the first
   call of `Brain_UpdateGoals`): speed `+0x114` = 0 and heading `+0x110` = the human's own facing
-  ([Characters](characters.md#ai-locomotion)).
+  ([Characters](characters-locomotion.md#ai-locomotion)).
 - **The fight goal never writes the move.** `FightGoal_Process` (`0x002b3ab0`), its reposition, tackle and grab tries,
   the attack action (`0x002fad70`, which only asks gait 4 for a charge kind) and the block goal store nothing to
   `+0x110` or `+0x90`.
@@ -784,8 +784,9 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
   chosen target (gang `+0x10`); and a human of class 221 with `+0x11f` clear is still attackable by an attacker that
   has no goal `0x1f`. Confirmed (code).
 - **Sprint check** (EngageEnemy step 8): `Human_GetStaminaPercent` (`0x00222fa0`) = stamina (record `+0x14a`) × 100 /
-  `Human_StaminaMax` (`0x00223188`, [Sprint](characters.md#sprint)); above 50 the AI sprints after a running target.
-  AI stamina drains and refills by the player's rules (the drain is keyed on gait 5, not on the pad). Confirmed (code).
+  `Human_StaminaMax` (`0x00223188`, [Sprint](characters-traversal.md#sprint)); above 50 the AI sprints after a running
+  target. AI stamina drains and refills by the player's rules (the drain is keyed on gait 5, not on the pad). Confirmed
+  (code).
 
 #### The enemy scan {#enemy-scan}
 
@@ -995,7 +996,7 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
 What the street civilian and a sparring Warrior did under attack: [How this was checked](#runtime-block).
 
 New power-class fields (confirmed (code)): `+0x08` block chance, `+0x0c` block chance while hurt, `+0x24` counter
-chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#power-classes)).
+chance, `+0x37` the pattern-reading threshold ([Power classes](characters-classes.md#power-classes)).
 
 ## In Coney
 

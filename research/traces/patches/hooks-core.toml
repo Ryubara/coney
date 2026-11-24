@@ -126,7 +126,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.skid-test]
 description = "The locomotion's skid test (Human_PlayerLocomotion, at 0x00241300 just before it): the gait, both stick buffers, the speed scale and run speed it compares with, and the speed (f28)."
-research = "docs/research/characters.md#locomotion"
+research = "docs/research/characters-locomotion.md#locomotion"
 address = 0x00241300
 # sw zero,0x8(s5); lw v0,0x1a8(s1)
 original = [0xaea00008, 0x8e2201a8]
@@ -486,7 +486,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = 
 
 [hook.anim-dispatch]
 description = "Each call of AnimCallback_Dispatch (0x0023ac50, from CharacterInstance_GetAnim 0x00175080 when an anim id is taken for playing): the human, its player number (+0x1b0, low byte; 0 for player 1), the anim id, and the caller of CharacterInstance_GetAnim (its saved ra at [sp])."
-research = "docs/research/characters.md#anim-callbacks"
+research = "docs/research/characters-animation.md#anim-callbacks"
 address = 0x0023ac50
 # addiu sp,sp,-0x80; lui v0,0x6b
 original = [0x27bdff80, 0x3c02006b]
@@ -494,7 +494,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = 
 
 [hook.anim-callback-match]
 description = "AnimCallback_Dispatch finding a matching slot (0x0023acb8, before the name look-up): the human, the anim id and the slot's name."
-research = "docs/research/characters.md#anim-callbacks"
+research = "docs/research/characters-animation.md#anim-callbacks"
 address = 0x0023acb8
 # lw a2,0x2b04(s4); lw a1,0x0(s0)
 original = [0x8e862b04, 0x8e050000]

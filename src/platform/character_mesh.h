@@ -46,7 +46,8 @@ struct BoneBox {
 
 /// The box round every node's box as its matrix in `skinning` moves it, and round the origin (the feet). Every skinned
 /// vertex lies inside: a vertex is a blend of points each inside one of the moved boxes, by weights that sum to 1 or
-/// a hair below (characters.md#character-geometry), so it lies between them and the origin. Empty with no boxes.
+/// a hair below (characters-appearance.md#character-geometry), so it lies between them and the origin. Empty with no
+/// boxes.
 [[nodiscard]] BoneBox posedBox(std::span<const BoneBox> boxes, std::span<const anim::Mat34> skinning);
 
 /// Whether a mesh asking for `skinning`, of a model with `nodes` skin nodes, is skinned by the vertex shader: only with
@@ -73,7 +74,7 @@ void fillBonePalette(std::span<const anim::Mat34> skinning, BonePalette& palette
 /// layer, which the original draws right after the first pass with a blood texture (bloodAtomic()). librw's GL3
 /// pipeline draws one texture per atomic, so the layer is an atomic of its own, posed with the first.
 ///
-/// Research: docs/research/characters.md#coneys-implementation, docs/research/rendering.md#characters
+/// Research: docs/research/characters/index.md#coneys-implementation, docs/research/rendering.md#characters
 class CharacterMesh {
   public:
     /// Builds the geometry of `model` in its unskinned (bind) positions. `texture` (may be null: untextured) is used by

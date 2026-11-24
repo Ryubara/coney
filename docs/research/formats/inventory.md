@@ -49,9 +49,9 @@ A resource held by several packs is extracted once; 35 hashes have two different
 | Shape (chunks) | Distinct | Format page | Extracted as (type) |
 | --- | ---: | --- | --- |
 | Texture dictionary (`0x2A`, `0x4C`) | 2,085 | [RenderWare](renderware.md#texture-dictionary), [GUI](../gui.md#particle-page) | PNG per texture, sprite rectangles in the index (`textures`) |
-| Model (`0x47`, `0x28`) | 1,477 | [RenderWare](renderware.md#clump), [Characters](../characters.md#character-geometry) | glTF 2.0, 153 skinned (`models`) |
+| Model (`0x47`, `0x28`) | 1,477 | [RenderWare](renderware.md#clump), [Characters](../characters-appearance.md#character-geometry) | glTF 2.0, 153 skinned (`models`) |
 | Animation (`0x00`, `0x02`) | 564 | [Animation](animation.md) | JSON per distinct clip (`animations`) |
-| Character (`0x00`, `0x02`, `0x08`, `0x45`) | 53 | [Characters](../characters.md#files), [Animation](animation.md#anim-range-list) | clips, the 722 slots and the range list as JSON (`animations`) |
+| Character (`0x00`, `0x02`, `0x08`, `0x45`) | 53 | [Characters](../characters-appearance.md#files), [Animation](animation.md#anim-range-list) | clips, the 722 slots and the range list as JSON (`animations`) |
 | Level (`.lev`, 13 chunk types) | 64 | [Level loading](../level-loading.md#the-level-file), [Collision](../collision.md), [Movies](../movies.md#caption-text) | textures as PNG; collision, paths, occluders, subtitles as JSON, the sky models and glows as glTF (`levels`) |
 | Global (`warriors.glr`) | 2 | [Global lists](global-lists.md), [Audio data](audio.md) | sound tables as JSON (`audio`); the five lists as JSON (`data`) |
 | Scene list (`0x43`) | 1 | [Scenes](../scenes.md#data) | `scenes/list.json` (`scenes`) |

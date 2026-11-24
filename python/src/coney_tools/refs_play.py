@@ -11,7 +11,7 @@ Each `topic_*` function returns the entries of one list, in page order; the pure
 scripts so the tests can feed them synthetic chunks. The topics themselves, and their starting prose, are defined here
 too and registered in `refs_topics` and `refs_cli`.
 
-Research: docs/research/characters.md#power-classes, docs/research/combat/index.md,
+Research: docs/research/characters-classes.md#power-classes, docs/research/combat/index.md,
 docs/research/ai/index.md#attack-kinds, docs/research/frontend.md#rumble, docs/research/gui.md#statistics,
 docs/guides/research-data.md#reference-lists.
 """

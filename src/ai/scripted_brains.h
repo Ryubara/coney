@@ -94,7 +94,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// them after the characters' step, so a callback never changes a human in the middle of its update. A human that
     /// started the same anim more than once in the step (two attack chains, one fading out under the other, handing
     /// over to the same fight idle) gets one call (**Coney's reading**): two calls queued two hints for one start, and
-    /// the hint box backed up behind them (docs/research/characters.md#anim-callbacks).
+    /// the hint box backed up behind them (docs/research/characters-animation.md#anim-callbacks).
     /// @orig 0x0023ac50 AnimCallback_Dispatch (unknown)
     void runAnimCallbacks();
     /// The bound humans as the volume boxes test them: handle, feet and whether alive (health not run out).
@@ -284,7 +284,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// otherwise the gang's member that is not the player with the lowest non-zero priority (HuCreate's player
     /// argument), else its first, takes player 1 (the hand-over, setHandOver()) and the player joins `gang` under its
     /// handle; the old handle names no one. Nothing for a gang with no such member. Returns whether he was handed
-    /// over. Research: docs/research/characters.md#players
+    /// over. Research: docs/research/characters-players.md#players
     /// @orig 0x00239b80 Players_ChangeGang (unknown)
     bool changePlayerGang(int gang);
     /// Makes the human with the spawner and binds its brain to the handle, in `human`'s gang, with its type as the

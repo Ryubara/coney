@@ -139,7 +139,7 @@ std::vector<SnapshotHuman> crowd(std::size_t count, std::uint32_t word) {
 } // namespace
 
 // Expected: unverified, #557 (Coney's own protocol; the original has no network play). The checkpoint is 16 bits as the
-// original's: characters.md#level-starts, confirmed (code)
+// original's: characters-players.md#level-starts, confirmed (code)
 TEST_CASE("the level messages round-trip and go reliably", "[net][level]") {
     const auto load = std::get<LoadLevel>(
         roundTrip(LoadLevel{.load = 3, .level = "level34", .checkpoint = 2, .reason = LoadReason::Restart}));
@@ -183,7 +183,7 @@ TEST_CASE("the level messages' bytes are pinned", "[net][level]") {
 }
 
 // Expected: unverified, #557 (Coney's own protocol; decoding is strict, docs/guides/multiplayer.md#protocol). The
-// checkpoint counts from 1: characters.md#level-starts, confirmed (code)
+// checkpoint counts from 1: characters-players.md#level-starts, confirmed (code)
 TEST_CASE("level messages that break their rules are refused", "[net][level]") {
     // Checkpoint 0, no level name, an unknown reason, load 0.
     CHECK(decode(bytes({0x0d, 0x01, 0x01, 0x00, 0x00, 0x02, 'l', '2'})).error().code == ErrorCode::Invalid);

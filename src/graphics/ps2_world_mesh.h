@@ -14,7 +14,8 @@
 // feeds the PS2's vector unit 1 the vertices in batches, packed as integers; the game's own pipelines (right to render
 // 0x30082 and 0x30083) unpack them. librw's PS2 reader keeps these chains but cannot unpack this layout, so Coney does
 // it here. Layout and evidence: docs/research/world.md#ps2-world-geometry. The skinned characters' geometry is the same
-// layout with a fifth slot of bone weights (docs/research/characters.md#character-geometry), so it decodes here too.
+// layout with a fifth slot of bone weights (docs/research/characters-appearance.md#character-geometry), so it decodes
+// here too.
 
 namespace coney::graphics {
 

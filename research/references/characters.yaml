@@ -5,13 +5,13 @@ title: "Characters (humans)"
 about: |
   Every character type `CfgChar` configures. A level script creates a character (a *human*) with
   `HuCreate(name, type, position, heading, ...)`, and the type picks everything below: the model, health,
-  damage and attack tables, voice, hat and weapon. See [Characters](../research/characters.md#classes).
+  damage and attack tables, voice, hat and weapon. See [Characters](../research/characters-classes.md#classes).
 
   Speeds are what the game uses in play: each clip's root displacement over its length, for the clip the
   type's character data plays in the walk, jog, run and sprint slots (the generic clip when it has none of
   its own). The [speed class](speed-classes.md) is only a fallback.
 
-  **Stats** come from four tables ([Characters: stats](../research/characters.md#stats)): the type's own `CfgChar`
+  **Stats** come from four tables ([Characters: stats](../research/characters-classes.md#stats)): the type's own `CfgChar`
   record (this list), the [power class](power-classes.md) it names, and for a player the
   [Warrior class](warrior-classes.md) and power class his type picks. *Stats (normal)* joins them on normal
   difficulty, the one set at boot: the power class an AI human of the type fights with (`v11d`) and its power and
@@ -652,7 +652,7 @@ entries:
     script_names: [Rembrandt]
     levels: [99]
     image: characters/warr_re_cv.png
-    notes: "The type Coney spawns by default; runtime-checked (docs/research/characters.md)."
+    notes: "The type Coney spawns by default; runtime-checked (docs/research/characters/index.md)."
   - id: 33
     label: Snow
     model: warr_sn

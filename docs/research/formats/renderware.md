@@ -159,12 +159,12 @@ u32 indices}` and per mesh `{u32 vertex count, u32 material}`.
 **Skin** (`0x116`, PS2): bone count, used-bone count, the most weights per vertex and a padding word, the used bones'
 indices, then one 4x4 inverse bind matrix per bone (16 floats, column-major right, up, at, position, the fourth
 components not meaningful). The weights themselves are in the DMA chain (below). Disc check (corroboration): the
-153 skinned models each have 32 bones and 32 matrices ([Characters](../characters.md#files)).
+153 skinned models each have 32 bones and 32 matrices ([Characters](../characters-appearance.md#files)).
 
 The models' **materials name no texture** a model can use: the game gives each model the textures of the dictionary
 its Object List or Character List record names ([Level loading](../level-loading.md#the-object-list),
-[Characters](../characters.md#files)); props take the dictionary's first texture. Disc check (corroboration): of the
-1,477 model resources, 153 are skinned characters and 1,324 props or scene models.
+[Characters](../characters-appearance.md#files)); props take the dictionary's first texture. Disc check (corroboration):
+of the 1,477 model resources, 153 are skinned characters and 1,324 props or scene models.
 
 ### PS2 native geometry {#native-geometry}
 
@@ -207,7 +207,7 @@ world section. No code names them (inferred: leftovers of an earlier build); `co
 ## Behaviour
 
 The game reads these streams only through RenderWare; what it does with the results is on the subsystem pages
-([Graphics](../graphics.md), [The streamed world](../world.md), [Characters](../characters.md#files)).
+([Graphics](../graphics.md), [The streamed world](../world.md), [Characters](../characters-appearance.md#files)).
 
 ## Coney's implementation
 

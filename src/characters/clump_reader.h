@@ -19,7 +19,7 @@
 // librw reads clumps, but neither the game's packed PS2 vertex layout nor the skin's per-vertex weights inside it;
 // reading the stream here keeps the format checks and the model platform-neutral, as the world's streams are
 // (docs/research/world.md#coneys-implementation). The stream format is RenderWare's, as librw reads it; what the
-// characters hold is in docs/research/characters.md#files.
+// characters hold is in docs/research/characters-appearance.md#files.
 
 namespace coney::characters {
 

@@ -128,7 +128,8 @@ class WalkingOwner final : public physics::BodyOwner {
     }
     [[nodiscard]] physics::Body* body() override { return m_body; }
     // `Human_OnContact` (`0x00219d50`) for the level: a climbing human passes through the fence it climbs (code 0);
-    // every other triangle slides, with the contact scale (`0x20001`; docs/research/characters.md#walls, step 4).
+    // every other triangle slides, with the contact scale (`0x20001`; docs/research/characters-ground.md#walls, step
+    // 4).
     // @orig 0x00219d50 Human_OnContact (unknown)
     [[nodiscard]] std::uint32_t onContact(const physics::Contact& contact) override {
         if (contact.triangle && !m_passThrough.empty()) {
@@ -278,7 +279,7 @@ void Human::applyDamageModifier(float factor) {
 void Human::setFighterProfile(const FighterProfile& profile) {
     m_profile = profile;
     m_fighter = Fighter(m_ranges, 1, m_profile);
-    // Its stamina is its power class's, full (`Human_Init`'s defaults, docs/research/characters.md#stats).
+    // Its stamina is its power class's, full (`Human_Init`'s defaults, docs/research/characters-classes.md#stats).
     m_stamina =
         Stamina(m_profile.powerClass.staminaMax, static_cast<float>(m_profile.powerClass.staminaRefillPerSecond));
     m_fighter.setLogName(m_logName);
@@ -535,10 +536,10 @@ void Human::locomote(bool gated) {
     float newSpeed = approachSpeed(current, target, m_stepSeconds);
 
     // A run stopped hard or turned back at or above the run speed skids: the velocity is zeroed and the run stop plays
-    // (always after a sprint, rarely after a steady run, docs/research/characters.md#run-stop). The run stop's 0x80000
-    // then makes the human busy, so it holds the facing; the skid's own update still turns one step (a reversal at a
-    // run turned 18° before sliding the old way). The skid sets no state code: the run stop's own bits gate its
-    // updates.
+    // (always after a sprint, rarely after a steady run, docs/research/characters-locomotion.md#run-stop). The run
+    // stop's 0x80000 then makes the human busy, so it holds the facing; the skid's own update still turns one step (a
+    // reversal at a run turned 18° before sliding the old way). The skid sets no state code: the run stop's own bits
+    // gate its updates.
     const anim::Vec3 moving =
         current > 1e-6F ? anim::scale(anim::Vec3{m_velocity.x, m_velocity.y, 0.0F}, 1.0F / current) : facing(m_heading);
     if (skids(gaitNow, current, speeds, m_lastMagnitude, m_intent.magnitude, moving, facing(wanted))) {
@@ -552,8 +553,8 @@ void Human::locomote(bool gated) {
         m_heading = turnToward(m_heading, wanted, maxTurn(gaitNow), m_turn);
     } else if (m_animator.idleFading() && m_lastStick.magnitude > locomotionTuning().stickDeadZone) {
         // Let go, while the idle's fade holds 0x10000000 the body keeps turning toward the stick's last angle, its
-        // magnitude falling by 0.8 an update (`+0x5d8` / `+0x5dc`, docs/research/characters.md#run-stop): the 0.7°,
-        // 1.1°, 1.4°, 1.5° after run_circle's release, eased from a fresh start at the standing limit.
+        // magnitude falling by 0.8 an update (`+0x5d8` / `+0x5dc`, docs/research/characters-locomotion.md#run-stop):
+        // the 0.7°, 1.1°, 1.4°, 1.5° after run_circle's release, eased from a fresh start at the standing limit.
         m_heading = turnToward(m_heading, m_lastStick.angle - kPi / 2.0F, maxTurn(gaitNow), m_turn);
     } else {
         // No turn this update: the next one starts without the last step's carry (at runtime the first turn after a
@@ -572,7 +573,7 @@ void Human::locomote(bool gated) {
 
 void Human::aiLocomote(bool gated) {
     // The speed: a wounded human asked to move walks; otherwise the brain's, reached at the AI's rates
-    // (docs/research/characters.md#ai-locomotion).
+    // (docs/research/characters-locomotion.md#ai-locomotion).
     constexpr float kMovingAsk = 0.1F;
     const Speeds& speeds = m_animator.speeds();
     const float current = ps2::length(m_velocity.x, m_velocity.y);
@@ -606,8 +607,8 @@ void Human::aiLocomote(bool gated) {
 }
 
 void Human::wheelchairControl(bool locked) {
-    // Per update (docs/research/characters.md#wheelchair): both shoulders push toward the sprint speed; one alone slows
-    // a little and turns, more at low speed; neither lets it roll down; cross brakes on top.
+    // Per update (docs/research/characters-locomotion.md#wheelchair): both shoulders push toward the sprint speed; one
+    // alone slows a little and turns, more at low speed; neither lets it roll down; cross brakes on top.
     // @orig 0x002427e8 Human_WheelchairControl (unknown)
     constexpr float kPush = 0.5F;       // 0x005104d4
     constexpr float kDecay = 0.04F;     // 0x005104d8
@@ -655,8 +656,8 @@ void Human::airControl() {
 void Human::applyRootMotion(const anim::Pose& pose) {
     const anim::RootMotion root = anim::rootMotionOf(pose);
     // The clip's velocity is in the character's axes (facing +y): turn it by the heading, scale it by the body (the
-    // walk start moved Rembrandt at 0.762 m/s against the clip's 0.786, docs/research/characters.md#locomotion), cap
-    // it, add it.
+    // walk start moved Rembrandt at 0.762 m/s against the clip's 0.786,
+    // docs/research/characters-locomotion.md#locomotion), cap it, add it.
     const float c = std::cos(m_heading);
     const float s = std::sin(m_heading);
     anim::Vec3 world{(root.velocity.x * c - root.velocity.y * s) * m_scale,
@@ -964,7 +965,7 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
         // The velocity the sweep wrote back: slid along what it met (a player's), or stopped when stuck. **Coney's
         // reading**: the sweep was given the slope-scaled velocity, so the scale is taken off again (the page does not
         // say which one the original writes back). Its z (a slide up a face that leans back) goes with the velocity
-        // until the next update on the ground sets it to 0 (docs/research/characters.md#slopes, step 5).
+        // until the next update on the ground sets it to 0 (docs/research/characters-ground.md#slopes, step 5).
         m_velocity.x = factor > 0.0F ? moved.velocity->x / factor : 0.0F;
         m_velocity.y = factor > 0.0F ? moved.velocity->y / factor : 0.0F;
         m_velocity.z = moved.velocity->z;
@@ -1001,9 +1002,9 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
     // After the move, the push out of the walls the body overlaps, for the next move (the owner's after-move call).
     pushOutInAir(mesh, feet);
     // A floor an earlier move passed, now kLandingDepth or more above the feet: land on it, the whole horizontal move
-    // made (at runtime the landing update still moved at the run's 7.80 m/s, docs/research/characters.md#falling).
-    // Shallower, the body falls a whole step more through it. Nothing under the feet any more (they went over an
-    // edge): no landing, the fall goes on.
+    // made (at runtime the landing update still moved at the run's 7.80 m/s,
+    // docs/research/characters-ground.md#falling). Shallower, the body falls a whole step more through it. Nothing
+    // under the feet any more (they went over an edge): no landing, the fall goes on.
     if (m_landingPending && m_landingFloorZ - m_position.z >= kLandingDepth) {
         const raycast::Ray ray{.origin = toMesh(anim::Vec3{feet.x, feet.y, m_landingFloorZ + kSnapAbove}),
                                .direction = raycast::kDown,
@@ -1655,8 +1656,8 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
         return;
     }
     // The animation's step (a climb follows its clips). A climb's first clip runs during the move to the start point,
-    // as the original installs it with that move (0x0023d2b8, docs/research/characters.md#climb). The clip's warning
-    // events reach the target as they pass.
+    // as the original installs it with that move (0x0023d2b8, docs/research/characters-traversal.md#climb). The clip's
+    // warning events reach the target as they pass.
     const anim::AnimTask* before = m_animator.tasks().top();
     const std::uint32_t beforeId = before != nullptr ? before->animId() : 0;
     const float beforeTime = before != nullptr ? before->time() : 0.0F;

@@ -33,17 +33,17 @@
 // Player 1 in a level: the character it plays, the human the pad drives and the follow camera behind it, stepped
 // together in the characters' order (the pad into the human's record, the characters' step, then cameras).
 // Platform-neutral: the play mode draws it, the disc tests drive it headless.
-// Research: docs/research/characters.md#update, docs/research/tasks.md#humans-update, docs/research/camera.md
+// Research: docs/research/characters/index.md#update, docs/research/tasks.md#humans-update, docs/research/camera.md
 
 namespace coney::human {
 
-/// The player's model: Rembrandt, as `level99.lua` creates him (docs/research/characters.md#creation).
+/// The player's model: Rembrandt, as `level99.lua` creates him (docs/research/characters/index.md#creation).
 inline constexpr std::string_view kPlayerModel = "warr_re_cv";
 /// The character type of kPlayerModel: Rembrandt as `level99.lua` creates him (`HuCreate` type 32).
 inline constexpr int kPlayerType = 32;
 
 /// Rembrandt's body scale (`+0x65c`) as read at runtime: his walking sphere is 0.35 × 0.97 = 0.34 m
-/// (docs/research/characters.md#walls). How the game derives it is open, so Coney uses the value read.
+/// (docs/research/characters-ground.md#walls). How the game derives it is open, so Coney uses the value read.
 inline constexpr float kPlayerBodyScale = 0.97F;
 
 /// Where a level's script puts player 1: the feet (game axes) and the heading in degrees.

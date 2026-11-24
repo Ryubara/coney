@@ -94,7 +94,8 @@ TEST_CASE("a human's walking sphere is drawn at the radius and height the wall s
         Human human(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind());
         human.setFighterProfile(coney::human::FighterProfile{.player = player});
         human.spawn(mesh.get(), Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
-        // The sweep's own radius: the player's 0.4704 m, an AI human's 0.35 m (docs/research/characters.md#walls).
+        // The sweep's own radius: the player's 0.4704 m, an AI human's 0.35 m
+        // (docs/research/characters-ground.md#walls).
         CHECK(human.walkingSphereRadius() ==
               Approx(player ? coney::human::playerWalkingRadius(1.0F) : coney::human::aiWalkingRadius(1.0F)));
         CHECK(human.walkingSphereCentreHeight() ==

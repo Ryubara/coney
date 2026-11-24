@@ -606,7 +606,7 @@
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to move."}
     - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the destination flag (a named point placed in the level, found with `FindFlag` or a level's flag table)."}
-    - {name: gait, lua: number, ctype: int, desc: "How fast to go: the gait id, 2 walk, 3 jog, 4 run, 5 sprint ([Characters](../../research/characters.md#locomotion))."}
+    - {name: gait, lua: number, ctype: int, desc: "How fast to go: the gait id, 2 walk, 3 jog, 4 run, 5 sprint ([Characters](../../research/characters-locomotion.md#locomotion))."}
     - {name: angle, lua: number, ctype: float, desc: "Direction in degrees of an offset from the flag's point (0 with `distance` 0 means the flag itself)."}
     - {name: distance, lua: number, ctype: float, desc: "Length of that offset in metres: the human goes to the point `distance` metres from the flag in direction `angle`."}
     - {name: radius, lua: number, ctype: float, desc: "Arrival radius in metres; the goal is reached within this distance (scripts use 0.3-0.5)."}
@@ -632,7 +632,7 @@
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human (a pedestrian, vendor or extra leaving the scene)."}
     - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the exit flag to head for (a flag with activity 8); the goal may switch to another exit flag on the way."}
-    - {name: gait, lua: number, ctype: int, desc: "Gait id: 2 walk, 3 jog, 4 run, 5 sprint ([Characters](../../research/characters.md#locomotion))."}
+    - {name: gait, lua: number, ctype: int, desc: "Gait id: 2 walk, 3 jog, 4 run, 5 sprint ([Characters](../../research/characters-locomotion.md#locomotion))."}
     - {name: angle, lua: number, ctype: float, desc: "Direction in degrees of an offset from the flag's point; used only when it or `distance` is above 0."}
     - {name: distance, lua: number, ctype: float, desc: "Length of the offset in metres (0 for the flag itself)."}
     - {name: radius, lua: number, ctype: float, desc: "Arrival radius in metres (scripts use 0.3)."}

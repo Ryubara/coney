@@ -332,7 +332,7 @@ target_sources(coney_core PRIVATE
     scripting/character_bindings.cpp
     world_objects/car_hits.cpp
     world_objects/cars.cpp)
-# Characters: the animation format and player, and the character resources (docs/research/characters.md).
+# Characters: the animation format and player, and the character resources (docs/research/characters/index.md).
 target_sources(coney_core PRIVATE
     animation/anim_clip.cpp
     animation/anim_math.cpp
@@ -352,7 +352,7 @@ target_sources(coney_core PRIVATE
     characters/orbit_camera.cpp
     characters/reference_render.cpp)
 # The player: animation tasks, the human's locomotion, body and ground, sprint, jump and climbs, the follow camera
-# (docs/research/characters.md, docs/research/camera.md).
+# (docs/research/characters/index.md, docs/research/camera.md).
 target_sources(coney_core PRIVATE
     animation/anim_task.cpp
     camera/camera_blend.cpp

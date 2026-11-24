@@ -17,7 +17,7 @@
 #include "fileio/wad.h"
 
 // A character's data resource: its animations and the table that maps the game's 722 anim ids to them.
-// Format: docs/research/characters.md#files.
+// Format: docs/research/characters-appearance.md#files.
 
 namespace coney::characters {
 

@@ -280,7 +280,7 @@ class Fighter {
     /// A fighter whose damage comes from `ranges` (may be null: no damage), coin flips seeded with `seed`, of `profile`
     /// (the player's power class and kPlayerHealth by default; a profile's health of 0 takes kPlayerHealth): its power
     /// meter is its power class's (`+0x28`, `+0x2a`) and its rage meter its profile's rage
-    /// (docs/research/characters.md#stats).
+    /// (docs/research/characters-classes.md#stats).
     explicit Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed = 1, const FighterProfile& profile = {});
 
     /// One update: the hits, warnings and grab taken since the last update (the victim's side), the timers of a
@@ -678,13 +678,13 @@ class Fighter {
     /// The player's reactions, stun and ground timers.
     [[nodiscard]] const Victim& victim() const { return m_victim; }
     /// The game time, ms, until which a hit keeps an AI busy (record `+0x108`, set to the time + the power class's
-    /// `+0x32` as a hit lands; docs/research/characters.md#power-class-bytes). 0 until an AI is hit; never set for a
-    /// player. While readBusyUntilAs() holds a value, that value instead.
+    /// `+0x32` as a hit lands; docs/research/characters-classes.md#power-class-bytes). 0 until an AI is hit; never set
+    /// for a player. While readBusyUntilAs() holds a value, that value instead.
     [[nodiscard]] std::uint64_t busyUntilMs() const { return m_busyReadAs.value_or(m_busyUntilMs); }
     /// Makes busyUntilMs() read `untilMs` (nullopt: the record again). The original sends a hit's event 1 at the strike
     /// (`Human_DealDamage`, `0x0021d680`), before the victim's update writes `+0x108`; Coney sends it after the hit is
     /// applied (ai::Brains::reportDamage()), so for that event the timer reads as it was before the hit
-    /// (docs/research/characters.md#power-class-bytes).
+    /// (docs/research/characters-classes.md#power-class-bytes).
     /// @coney-only lets Coney's late event 1 see the hit timer as the original's event at the strike does
     void readBusyUntilAs(std::optional<std::uint64_t> untilMs) { m_busyReadAs = untilMs; }
     /// Hurt: below the power class's hurt fraction of its health.

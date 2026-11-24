@@ -18,7 +18,8 @@ namespace coney::script {
 /// human and anim id, called with (human, anim id) when that human starts playing the id. A table of 16 slots, the
 /// first match firing.
 ///
-/// Research: docs/research/characters.md#anim-callbacks, docs/references/bindings/character.md#addanimcallback
+/// Research: docs/research/characters-animation.md#anim-callbacks,
+/// docs/references/bindings/character.md#addanimcallback
 class AnimCallbacks {
   public:
     /// The table's slots (`0x006b6710`, 16 of 16 bytes).

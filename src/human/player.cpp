@@ -418,9 +418,9 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     const combat::CommandId command = script.padLocked ? combat::command::kNone : matched;
     const combat::CommandId padCommand = matched != combat::command::kNone ? matched : m_matcher.pending();
     // The pad into the human's per-player record, its stick turned by the camera as it stood after the last update;
-    // L2 held asks for a sprint; triangle pressed (command 10) climbs or jumps (docs/research/characters.md#buttons).
-    // Then the characters' step, and the cameras last.
-    // Without the pad the record keeps only the brain's move, which the brains write in the step.
+    // L2 held asks for a sprint; triangle pressed (command 10) climbs or jumps
+    // (docs/research/characters-locomotion.md#buttons). Then the characters' step, and the cameras last. Without the
+    // pad the record keeps only the brain's move, which the brains write in the step.
     const anim::Vec3 cameraForward = m_cameras != nullptr ? camera::viewForward(m_cameras->view()) : m_camera.forward();
     if (m_noclip) {
         // The noclip: the stick and the camera fly him (Human::fly()), the triggers and R1 set the flight; no lock,

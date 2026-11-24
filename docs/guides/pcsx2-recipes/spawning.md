@@ -25,7 +25,7 @@ coney`); `HuCreate` returns the null handle when all 60 slots are taken. Remove 
 | Preconditions | patches: `call-brains`; emulation running; start state: `pedestrian-grab` ([state library](../pcsx2-states.md)) |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00358428 lua_HuCreate`, `0x00233d60 Human_Create` |
-| Research | [research/characters.md#creation](../../research/characters.md#creation) |
+| Research | [research/characters/index.md#creation](../../research/characters/index.md#creation) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); a pedestrian like Civilians0 appeared 1.5 m in front of Rembrandt, facing him |
 
 ```sh

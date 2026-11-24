@@ -23,7 +23,7 @@ namespace coney::platform {
 /// What the play mode draws of a level's scripted world beyond its humans and objects: the parked cars
 /// (world_objects::Cars) and the particle systems among the scenery, and the motion blur over the 3D frame
 /// (effects::LevelEffects). Gameplay steps them; this only draws them. A walker meets a parked car through the level's
-/// own collision mesh, its shell there (docs/research/characters.md#car-shells), never through the car.
+/// own collision mesh, its shell there (docs/research/characters-traversal.md#car-shells), never through the car.
 class PlayLevelEffects {
   public:
     /// Draws `effects` and `cars` (either may be null; both must outlive this), loading sprite sheets and car models

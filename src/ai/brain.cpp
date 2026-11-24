@@ -165,7 +165,8 @@ void Brain::update(std::uint64_t nowMs) {
     const bool held = m_suspended || (m_gang != nullptr && m_gang->suspended());
     // The move is asked for again every update (Brain_StopMove, the first call of Brain_UpdateGoals, even when the
     // rest is skipped): the human stands along its facing unless a goal or an action writes it below
-    // (docs/research/characters.md#ai-locomotion). Nothing a finished goal or action wrote outlives its update.
+    // (docs/research/characters-locomotion.md#ai-locomotion). Nothing a finished goal or action wrote outlives its
+    // update.
     // @orig 0x0028ac18 Brain_StopMove (unknown)
     if (runsGoals) {
         stopMove();

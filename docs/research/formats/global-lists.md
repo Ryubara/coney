@@ -33,7 +33,7 @@ All values little-endian; a hash is a CRC-32 of a lower-case name ([Name hashing
 ### Character List (chunk `0x44`)
 
 A 16-byte header whose first word is the count, then 32-byte records `{model name, character data, model, texture
-dictionary, four sizes}`. Layout and uses: [Characters](../characters.md#files).
+dictionary, four sizes}`. Layout and uses: [Characters](../characters-appearance.md#files).
 
 ### Object List (chunk `0x46`)
 

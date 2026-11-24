@@ -11,7 +11,7 @@ character type (`0x00222ba8`), or 7 for a Warriors type with none ([Warrior clas
 Each difficulty script (`config_easy`, `config_normal`, `config_hard`, `config_fury`, and `config_rumble` for Rumble)
 sets every class when its `CfgDifficulty` runs, and re-runs `CfgChar` for 63 types, so a type's class can differ by
 difficulty; `config_preload2.lua` sets normal's at boot. The readers of each field:
-[Characters: power classes](../research/characters.md#power-classes).
+[Characters: power classes](../research/characters-classes.md#power-classes).
 
 !!! info "What is complete"
 

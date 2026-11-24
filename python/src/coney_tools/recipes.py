@@ -12,7 +12,7 @@ docs/guides/pcsx2-recipes/) from the same file.
 [recipe.teleport]
 summary = "Move a human to x, y, z and turn it to a heading."
 how = "Prose for the recipe's section: the technique and why it works."
-research = ["docs/research/characters.md#the-human-object"]
+research = ["docs/research/characters/index.md#the-human-object"]
 ghidra = ["0x00390180 Handle_Resolve"]
 evidence = "confirmed-runtime"
 patches = []                    # patches or hooks of research/traces/patches/ the running state must hold

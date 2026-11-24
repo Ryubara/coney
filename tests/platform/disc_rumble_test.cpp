@@ -245,8 +245,8 @@ TEST_CASE("the disc's Battle royal kills the fighters rung out and gives the win
 
 TEST_CASE("the disc's Fight Pen Brawl ends with the Furies' win when the Orphan falls out of the world",
           "[disc][rumble]") {
-    // Expected: characters.md#out-of-world, confirmed (code) at 0x00249108 and 0x0021c7c8, confirmed (runtime) run
-    // r-20261122-fall-out-of-world; rumble.md#game-types (StandardGang2Dead ends the Brawl), inferred
+    // Expected: characters-ground.md#out-of-world, confirmed (code) at 0x00249108 and 0x0021c7c8, confirmed (runtime)
+    // run r-20261122-fall-out-of-world; rumble.md#game-types (StandardGang2Dead ends the Brawl), inferred
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

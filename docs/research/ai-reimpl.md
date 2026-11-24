@@ -1003,8 +1003,8 @@ kept by the track (`UNITS.md`); the "Spec" column links the sections that descri
 `AttackTactic_StartSubTactic` asks `Human_IsBusy` (`0x00228258`): a state flag of `0x1f80974000`, or record `+0x108`
 (set after a hit lands on an AI human) still ahead of the game time (confirmed (code)). Its port asks
 `ai::humanBusy()`, as Coney's other callers of `Human_IsBusy` do: the hit timer (`human::Fighter::busyUntilMs()`,
-[Power class fields](characters.md#power-class-bytes)), the record bits and the reaction states Coney models in place
-of the state mask. Open: which of the mask's states Coney's fighter can be in.
+[Power class fields](characters-classes.md#power-class-bytes)), the record bits and the reaction states Coney models in
+place of the state mask. Open: which of the mask's states Coney's fighter can be in.
 
 ### The pursue tactic's `+0x4c` {#q-pursue-flag}
 

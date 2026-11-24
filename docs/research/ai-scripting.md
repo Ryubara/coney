@@ -562,7 +562,8 @@ object at its own size (no scale is set); it is not a HUD sprite. **The cuffs** 
 `dyn_cuffs_geo`, placed at the feet + the type record's offset, then left in the world there. While the camera
 state at `0x005fdeb8` `+0x1e8` / `+0x1ec` is set (inferred: a scene or camera effect), every icon but `dyn_cross`
 gets its draw fields `+0xc8` / `+0xcc` set to −255 / −256 (inferred: hidden). Messages: 8 detach, `0x0a` show or hide, `0x15`
-remove, `0x20` hide, `0x34` a colour fade (`HuSetSpinningIconColor`, [the spinning icon](characters.md#spinning-icon)).
+remove, `0x20` hide, `0x34` a colour fade (`HuSetSpinningIconColor`, [the spinning
+icon](characters-appearance.md#spinning-icon)).
 
 **Coney's icons** (`repo:src/world_objects/spinning_icons.h`, drawn by `PlayLevelMode` with the world objects): a
 human's icon is the type `iconTypeName()` gives (`dyn_p_one` / `dyn_p_two` become `dyn_play_one` / `dyn_play_two`),

@@ -8,7 +8,7 @@ add_library(coney_platform STATIC asset_convert.cpp draw_calls.cpp draw_stream.c
 target_sources(coney_platform PRIVATE level_file.cpp lit_atomic.cpp scene_assets.cpp texture_lookup.cpp world_renderer.cpp world_set.cpp world_viewer_mode.cpp front_end_scene.cpp)
 # Dynamic objects' models, drawn where the scripts and scenes put them (docs/research/objects.md#coneys-implementation).
 target_sources(coney_platform PRIVATE object_draw.cpp object_models.cpp placed_objects.cpp)
-# The character viewer (docs/research/characters.md#coneys-implementation).
+# The character viewer (docs/research/characters/index.md#coneys-implementation).
 target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp character_skin.cpp human_posing.cpp)
 target_sources(coney_platform PRIVATE blood_textures.cpp play_lighting.cpp scene_lighting.cpp)
 # Playing a level as Rembrandt (docs/guides/running-play-level.md#playing-a-level), in a level's scenery or a sandbox's.

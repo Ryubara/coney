@@ -169,7 +169,7 @@ TEST_CASE("Rembrandt walks up a slope, a stair set and over low ledges to a wall
     SECTION("the ledges at x = 32: over the 10 and 25 cm blocks, stopped by the 50 cm one") {
         const Run run = runScript(course, "ledge", "sandbox_walk_forward.txt", {32.0F, -14.5F, 0.0F}, 300);
         // Wall faces under 0.25 m do not stop the walking body and the ground snap lifts the feet on; the 25 cm
-        // block's 3 m wide face is two slivers the same rule skips (docs/research/characters.md#walls).
+        // block's 3 m wide face is two slivers the same rule skips (docs/research/characters-ground.md#walls).
         CHECK(highest(run) == Approx(0.25F).margin(0.02));
         // The 50 cm block is a wall: the walking sphere (0.4704 m for Rembrandt, kept 0.01 m clear) holds him short
         // of its face at y = -5.5.

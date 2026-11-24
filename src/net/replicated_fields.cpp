@@ -112,7 +112,7 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(HumanField::Count)> kHu
     {.name = "moveStyle", .encoding = FieldEncoding::Bool, .bits = 1},
     // Which character the human is: a Character List index plus one, 0 for none (character_id.h). The list the original
     // keeps in its resource manager has 543 records, so 10 bits are fixed by its data
-    // (docs/research/characters.md#files).
+    // (docs/research/characters-appearance.md#files).
     {.name = "character",
      .encoding = FieldEncoding::Integer,
      .bits = 10,

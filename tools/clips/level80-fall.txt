@@ -2,7 +2,7 @@
 # (tools/clips/level80-fall.toml). The walk to Cochise and Swan, their scene skipped and the attack order are
 # level80-destroyers.txt's (its frames up to 1155); then Cleon stands, and from frame 1170 `drop-ai` (a build with the
 # debug tools) puts the nearest Destroyer 200 m under the street every 5 frames, twelve in all, as if each fell out of
-# the world (docs/research/characters.md#out-of-world). Frames are 1/30 s from the level's first frame of play.
+# the world (docs/research/characters-ground.md#out-of-world). Frames are 1/30 s from the level's first frame of play.
 31 stick left 37 88
 33 stick left 37 87
 38 stick left 37 88

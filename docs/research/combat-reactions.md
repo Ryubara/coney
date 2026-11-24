@@ -369,7 +369,7 @@ other level is given.
   action clip after record `+0x28` (inferred to be 357 too: at runtime 357 followed a reaction directly, below). The
   clip holds `0x80000`, or `0x40000000` when the player record's `+0x1b` is set.
 - **A game flag also slows the human.** When the word at `0x0051021c` is non-zero and the human has no state
-  `0x80000`, `Human_EndStun` sets the speed multiplier `+0x3a4` ([Humans](characters.md)) to 0.65 (`0x3f266666`).
+  `0x80000`, `Human_EndStun` sets the speed multiplier `+0x3a4` ([Humans](characters/index.md)) to 0.65 (`0x3f266666`).
   Confirmed (code); the word is 0 in the executable and its one reference is this read (no writer found), so what
   sets it is unknown ([Open questions](#open-questions)). Knocked down, dead or out, it only removes style `0xe` and
   clears `0x100000`.
@@ -827,7 +827,7 @@ the scan matched `ld`/`sd` pairs, not every store).
 | --- | --- |
 | `Human_OnHealthOut` (`0x002674c0`, confirmed (code)) | health out, a human without flag `0x8` or already wounded ([above](#defeat)) |
 | `Human_SetConscious` (`0x00237778`, confirmed (code)) | `HuSetConscious(h, false)` |
-| `Human_Destroy` (`0x0021c7c8`, confirmed (code)) | a human deleted while not dead: knocked out (his brain drops its goals and target and he is sent event 18), then made dead (`0x100000000`) and the bit cleared, in the same call. `Humans_Update` calls it once a human taken away (record state `0x200000000`: `HuDelete`, [a fall out of the world](characters.md#out-of-world), a dead human no camera sees) has faded out; `0x200000000` is that take-away, not dead |
+| `Human_Destroy` (`0x0021c7c8`, confirmed (code)) | a human deleted while not dead: knocked out (his brain drops its goals and target and he is sent event 18), then made dead (`0x100000000`) and the bit cleared, in the same call. `Humans_Update` calls it once a human taken away (record state `0x200000000`: `HuDelete`, [a fall out of the world](characters-ground.md#out-of-world), a dead human no camera sees) has faded out; `0x200000000` is that take-away, not dead |
 | `Human_ReleaseInstance` (`0x00217dd8`, confirmed (code)) | from `Human_Destroy` only, with argument 1; the state word is zeroed a few instructions later |
 
 **Cleared** by:
@@ -1083,7 +1083,7 @@ bone arguments it also passes are not read. Confirmed (code), in order:
     | anything else, or nothing (fists, bat, pipe …) | 0 |
 
     Then, when the victim **is hurt** (`Human_IsHurt`, `0x00222ff8`: health below the class's `+0x04` fraction of
-    maximum, 0.3 by default, [Characters](characters.md)), a count of 0 becomes 1, and a hurt victim who is
+    maximum, 0.3 by default, [Characters](characters/index.md)), a count of 0 becomes 1, and a hurt victim who is
     **blocking** gets 0 whatever the weapon. A victim who is not hurt keeps the weapon's count even when blocking.
     The names are the model hashes' CRC-32 matches (`0x2a263bb3` … `0x4b95d669`), corroborated against the
     reference lists.

@@ -9,7 +9,7 @@ to 0-1. Materials are untextured in the files: a model takes the first texture o
 the Character List gives it (else one named like it), referenced as `../textures/<dictionary>/<texture>.png`.
 `models/index.json` lists every model with its dictionary, counts and bone offsets (chunk `0x28`).
 
-Research: docs/research/formats/renderware.md#clump, docs/research/characters.md#character-geometry,
+Research: docs/research/formats/renderware.md#clump, docs/research/characters-appearance.md#character-geometry,
 docs/research/level-loading.md#the-object-list
 """
 

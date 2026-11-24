@@ -69,28 +69,28 @@ They live in `assets/sandbox/` with the textures; that folder's README lists the
 | `parkour` | The traversal course: fences from 0.6 to 3 m, kerbs and low walls from 0.2 to 1.65 m, climb blocks from 1 to 3.5 m, a raised run of platforms with gaps from 1 to 8 m, drop towers from 2 to 14 m with stairs up, jump-up blocks from 0.5 to 2 m, and a 120 m run-up lane with a mark every metre and a post every 5 m. The fences, walls and blocks sit on both sides of each climb threshold (0.69, 1.7, 2.5 and 2.91 m); its spawns `lane`, `fences`, `walls`, `climbs`, `gaps`, `towers` and `blocks` each start in front of one |
 
 The values from the research that the courses are built round (all from
-[Characters](../research/characters.md#ground) unless noted):
+[Characters](../research/characters-ground.md#ground) unless noted):
 
 | Value | Where it shows |
 | --- | --- |
 | The ground snap climbs a step of up to 1.0 m | stairs and ledges: higher ledges are red |
-| Wall faces under 0.25 m tall do not stop a walking body; taller ones do ([walls and steps](../research/characters.md#walls)) | stairs and ledges: in the original the 10 and 20 cm risers and ledges are walked up, the 30 cm and higher are walls |
+| Wall faces under 0.25 m tall do not stop a walking body; taller ones do ([walls and steps](../research/characters-ground.md#walls)) | stairs and ledges: in the original the 10 and 20 cm risers and ledges are walked up, the 30 cm and higher are walls |
 | A drop of more than 0.5 m is a fall | gaps, drops and ledges |
 | A character lands only on ground whose normal has z > 0.65 (about 49°) | the slope gallery: the 50° and 60° ramps are red |
 | Gravity 15.68 m/s²; a landing hurts from 14.9 m/s (about 7.1 m) and kills from 20.5 m/s (about 13.4 m) | the drop towers bracket both heights (inferred from the speeds) |
-| Walk 1.63, jog 4.86, run 7.80, sprint 10.25 m/s ([speed classes](../research/characters.md#speed-classes)) | the run-up lane's marks |
-| A jump leaves at 5.5 m/s up at the run or sprint speed and rises 1.06 m; it lands 6.4 m on at a run ([jumping](../research/characters.md#jump)) | the platform gaps and jump-up blocks: in the original a 1 m block is about the limit |
-| Climbs: short fence or short wall for an obstacle from 0.69 to 1.7 m, fence (below 2.5 m) or wall (top 1.7 to 2.91 m) above that ([climbing](../research/characters.md#climb)) | the fences, low walls and climb blocks |
+| Walk 1.63, jog 4.86, run 7.80, sprint 10.25 m/s ([speed classes](../research/characters-classes.md#speed-classes)) | the run-up lane's marks |
+| A jump leaves at 5.5 m/s up at the run or sprint speed and rises 1.06 m; it lands 6.4 m on at a run ([jumping](../research/characters-traversal.md#jump)) | the platform gaps and jump-up blocks: in the original a 1 m block is about the limit |
+| Climbs: short fence or short wall for an obstacle from 0.69 to 1.7 m, fence (below 2.5 m) or wall (top 1.7 to 2.91 m) above that ([climbing](../research/characters-traversal.md#climb)) | the fences, low walls and climb blocks |
 
 The climbs follow two forward rays at 0.69 and 1.7 m above the feet and a downward probe 0.4 m behind the face: a
 fence has nothing to stand on just behind it, a wall has a top inside the window
-([Climbing](../research/characters.md#climb)). In the original only triangles of material 30 (`LOW_FENCE`) or with
-flag bit 2 (`0x4`, players) or bit 7 (`0x80`) are climbable ([Collision](../research/collision.md#triangles)); a
+([Climbing](../research/characters-traversal.md#climb)). In the original only triangles of material 30 (`LOW_FENCE`) or
+with flag bit 2 (`0x4`, players) or bit 7 (`0x80`) are climbable ([Collision](../research/collision.md#triangles)); a
 primitive's `flags=` sets those bits raw.
 
 What the courses show today. Coney's walking body is the original's: for the player a sphere of 0.4704 m whose bottom
 is 0.05 m above the feet, and a wall triangle under 0.25 m tall is not a wall
-([walls and steps](../research/characters.md#walls)).
+([walls and steps](../research/characters-ground.md#walls)).
 
 - **Default course**: Rembrandt walks up the ramps to 40° and the 20 cm stairs onto their 2 m platforms (each walkable
   stair set and ramp landing is two boxes, the top one a rise deep, so no face taller than a riser stands within the
@@ -102,7 +102,7 @@ is 0.05 m above the feet, and a wall triangle under 0.25 m tall is not a wall
   and climbs the fences, low walls and blocks inside the windows. The 20 cm kerb is walked onto, and the 30, 50 and
   65 cm ledges are walls: too low to climb, so only a jump gets onto them. `tests/sandbox/disc_sandbox_traversal_test.cpp`
   checks a run past each threshold and a walk up every flight of stairs, with the input scripts `tests/support/parkour_*.txt`
-  ([Characters](../research/characters.md#coneys-implementation) lists what each one shows).
+  ([Characters](../research/characters/index.md#coneys-implementation) lists what each one shows).
 
 - **Fight yard**: Rembrandt fights the passive targets with the original's moves
   ([Combat](../research/combat/index.md#coneys-implementation)); the targets react, are stunned, knocked down and thrown
@@ -207,9 +207,9 @@ so a 1.25 m fence shows one and a quarter tiles.
 
 A flight of stairs or a walkable ramp must not end at a plain tall box. The player's walking sphere (0.4704 m, its
 centre 0.52 m above the feet) reaches that far ahead of him, so from the second-to-last step it touches the box's
-front face, and a face taller than 0.25 m is a wall ([walls and steps](../research/characters.md#walls)): he stops
-on the last step but one, as if an invisible wall stood there. A ramp does the same through the top edge of the face
-(the 30° and 40° ramps of the default course did).
+front face, and a face taller than 0.25 m is a wall ([walls and steps](../research/characters-ground.md#walls)): he
+stops on the last step but one, as if an invisible wall stood there. A ramp does the same through the top edge of the
+face (the 30° and 40° ramps of the default course did).
 
 The rule for a layout author: **no face taller than 0.25 m, and no edge of one, within 0.47 m of the last step or
 the last metre of ramp.** The way to build a landing is two boxes with the same footprint, the lower one a rise
@@ -261,8 +261,8 @@ the player, and each frame draws the camera blended between the last two steps.
 ## Open questions
 
 Answered and moved into the text above: whether a 75 cm ledge stops the player (it does in the original, and so does
-a 50 cm one, [walls and steps](../research/characters.md#walls)); which heights choose the climbs
-([climbing](../research/characters.md#climb)); the climbable flags (bits 2 and 7 and material 30,
+a 50 cm one, [walls and steps](../research/characters-ground.md#walls)); which heights choose the climbs
+([climbing](../research/characters-traversal.md#climb)); the climbable flags (bits 2 and 7 and material 30,
 [Collision](../research/collision.md#triangles)); whether Coney's body should match the original's (it does now:
 the lower sphere and the 0.25 m rule); and the parkour ranges (now on both sides of 0.69, 1.7, 2.5 and 2.91 m).
 
@@ -270,7 +270,7 @@ the lower sphere and the 0.25 m rule); and the parkour ranges (now on both sides
   with the patched pad yet; the courses show Coney's reading of the code.
 - **The camera at a fence climb**: the follow camera pulls in close while Rembrandt passes through a fence, because
   its ray hits the fence; what the original's camera does there is open
-  ([Characters](../research/characters.md#open-questions)).
+  ([Characters](../research/characters/index.md#open-questions)).
 
 ## Credits
 

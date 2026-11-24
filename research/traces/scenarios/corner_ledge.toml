@@ -1,7 +1,7 @@
 # A run and a jump onto a ledge (issue #348): on the original (slot 1, Rembrandt facing -x) the 2.62 x 0.61 m box of
 # material 41 at (47.40-48.01, 51.85-54.47), against a wall, is made a 0.6 m ledge by writing its eight vertices'
 # heights (bottom at the street's 0.223, top 0.823; its vertices belong to its own ten triangles only, as in the step
-# test of docs/research/characters.md#walls). The player is put 8.5 m east of it, runs at it with the stick 100 % up
+# test of docs/research/characters-ground.md#walls). The player is put 8.5 m east of it, runs at it with the stick 100 % up
 # and leaves the ground 1.5 m before it (triangle at frame 38; frames 33 and 40 also land on it, 42 hits its face).
 # tri-sweep-tri logs every triangle that reaches Sweep_SphereTriangle and its caller (the walking capsule sweep or,
 # in the air, the sphere sweep's thunk), vertex-step and edge-roots every corner step and every edge step that kept

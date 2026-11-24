@@ -688,7 +688,7 @@ described:
 
 | Family | Behaviour |
 | --- | --- |
-| character | [Characters](characters.md), [Combat](combat/index.md) |
+| character | [Characters](characters/index.md), [Combat](combat/index.md) |
 | world | [World objects](objects.md), [World flags](flags.md) |
 | level | [Level loading](level-loading.md) |
 | ai: goals and actions (`Goal*`, `Act*`) | [AI](ai-scripting.md#scripted) |
@@ -811,7 +811,7 @@ eight `l99_` scenes on a loop ([Scenes: the scene test](scenes.md#scene-test)).
 and 16 on the dealer, whose trigger sphere gives 3 and 4; 18 on a civilian and, through `GangSetMsgHandler`, on a gang;
 2 on two breakable fences; one 50-second stopwatch (`P1.SendWarriors` → `P1.TimesUp`); about 60 scheduled calls; the
 tutorial's attack callback (`HUDSetTutorialCallback`, [HUD](hud-messages.md#tutorial-callback)), animation callbacks
-([Characters](characters.md#anim-callbacks)) and pad handlers (`PadSetHandlerEx`). How each is delivered:
+([Characters](characters-animation.md#anim-callbacks)) and pad handlers (`PadSetHandlerEx`). How each is delivered:
 [Message handlers](#message-handlers), [Trigger boxes and spheres](#triggers), [The mission stopwatch](#stopwatch),
 [Scheduled calls](#scheduled-calls). No script of the mission launches a failure: the players are demi-gods (below)
 and the only failure the engine raises by itself is a player falling out of the world
@@ -891,7 +891,7 @@ disassembly of the script (ids and counts only); the moves themselves are confir
 | 9 | weapons (after the scene `l99_c8`, three bats on the ground) | the pick-up (message 0 on a bat, with a prompt); then 34; 36; then two more of 34 or 36 (four counted hits) | triangle at a bat; square, cross | [A bat in hand](combat-throws.md#bat), [the prompt](#message-handlers) |
 | 10 | rage (2 s after lesson 9) | the meter set to half and locked, then filled by hits; the full callback; L1 + R1 (every other command off); 3.5 s into rage, 645 or 647; 3.5 s later, 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat-rage.md#rage); 65 and 233 inferred |
 | 11 | finish the second wave | the gang's message 18 with none standing | any | [AI](ai/index.md#level99) |
-| 12 | the Warriors (after the scene `l99_c5`) | the 50-second stopwatch; a hint the first time the player holds a grab (anim callback on 82 / 84) | any | [Stopwatch](#stopwatch), [anim callbacks](characters.md#anim-callbacks) |
+| 12 | the Warriors (after the scene `l99_c5`) | the 50-second stopwatch; a hint the first time the player holds a grab (anim callback on 82 / 84) | any | [Stopwatch](#stopwatch), [anim callbacks](characters-animation.md#anim-callbacks) |
 
 Then the scene `l99_c6` and `P1.Cleanup` (checkpoint 2). Coney's disc test checks lessons 1-10, driven by mission
 1's play-through pad script (`repo:tests/platform/disc_level99_course_test.cpp`). The pad script is frame-locked, so
@@ -1013,10 +1013,10 @@ the order of calls only.
 
 **The mechanism.** `SetupStateCallbacks(idle, mount, frontGrab, rearGrab)` registers the anim callback
 `PlayerState` on five of the player's clips: `ANIM_FIGHT_IDLE`, `ANIM_NORMAL_IDLE`, `ANIM_MOUNTING_IDLE` (210),
-`ANIM_GRAB_HOLD_FROM_FRONT` (82) and `ANIM_GRAB_HOLD_FROM_REAR` (84) ([anim callbacks](characters.md#anim-callbacks)).
-It stores the four texts in globals and calls `StateSwitch(STATE)` at once. `UpdateStateCallbacks` stores four new
-texts and calls `StateSwitch(STATE)`; `RemoveStateCallbacks` stops the switching (`DISABLED`) and clears the text;
-`DisableStateCallbacks` deletes the five callbacks.
+`ANIM_GRAB_HOLD_FROM_FRONT` (82) and `ANIM_GRAB_HOLD_FROM_REAR` (84) ([anim
+callbacks](characters-animation.md#anim-callbacks)). It stores the four texts in globals and calls `StateSwitch(STATE)`
+at once. `UpdateStateCallbacks` stores four new texts and calls `StateSwitch(STATE)`; `RemoveStateCallbacks` stops the
+switching (`DISABLED`) and clears the text; `DisableStateCallbacks` deletes the five callbacks.
 
 `PlayerState(h, anim)`, when one of those clips **starts**: either idle → `STATE` = `IDLE`, 210 → `MOUNT`, 82 →
 `FGRAB`, 84 → `RGRAB`. It first saves the old state, sets the **new** one, and only when the two differ (and the
@@ -1053,9 +1053,9 @@ so `STATE` is `FGRAB` when lesson 6 sets up.
 **Coney fixes** (item 33 (a) and (b); the hint box itself is on [HUD](hud.md)):
 
 1. Fire the anim callbacks on the update a clip **starts**, with that clip's id, whether it was started directly,
-   by a chain or by an end hook ([anim callbacks](characters.md#anim-callbacks)); 82, 84, 210 and both idles must
-   each reach `PlayerState` once per start. A unit test: grab (82 fires), mount (210 fires), get off (an idle fires),
-   in that order, with nothing stale.
+   by a chain or by an end hook ([anim callbacks](characters-animation.md#anim-callbacks)); 82, 84, 210 and both idles
+   must each reach `PlayerState` once per start. A unit test: grab (82 fires), mount (210 fires), get off (an idle
+   fires), in that order, with nothing stale.
 2. `SetupStateCallbacks` and `UpdateStateCallbacks` show the text for the current `STATE` at once (the state kept
    from the earlier lessons, not reset to idle).
 3. The lesson-6 callback counts 57 then 59 only; Coney's standing cross + square must not reach it as 57.
@@ -1068,8 +1068,9 @@ Every hint call, shown hint and callback of lessons 5-8 over two plays of the or
 same course and state as above, 3,600 updates each), by update from `P1.SetupPowerAttacks`, the call that starts
 lesson 5. Updates are tick counts halved, so two events in one update are exact; where the runs differ the second
 run's update follows a slash. "set" is a `HUDSetTutorialText` call, "shown" the `0x001cdf7c` show, "anim" an
-[animation callback](characters.md#anim-callbacks) and "tutorial" the [tutorial callback](hud-messages.md#tutorial-callback)
-with its anim id. Method and hooks: [The queue at runtime](hud-messages.md#hint-queue-runtime). Confirmed (runtime).
+[animation callback](characters-animation.md#anim-callbacks) and "tutorial" the [tutorial
+callback](hud-messages.md#tutorial-callback) with its anim id. Method and hooks: [The queue at
+runtime](hud-messages.md#hint-queue-runtime). Confirmed (runtime).
 
 | Update | Lesson | What ran | Hint calls | Shown, in that update |
 | --- | --- | --- | --- | --- |
@@ -1127,9 +1128,9 @@ the disassembly of the scripts (names, ids and values only).
 | 2.4 mugging | `P2.SetupPeds`, 3 s later | `PoizoCiv` sent to the phone flag `wPhone01` (dead brain, `GoalMoveToUseFlag`), the bums (`GoalBumLogic`, `GoalMoveToUseFlag`), `HuSetMugCallback(P2.PedMugged)` on both players, `SetInterrogateParam` (below), message 18 on `PoizoCiv` (`P2.MugPedDied`: a hint only); after 3 s `FlagNetTraverse(PoizoCiv, 1, 0)` walks him off | the callback with success true; then all-zero `SetInterrogateParam` | [Mugging](combat-throws.md#mugging), [who and the callback](crimes.md#mugging), [AI](ai-scripting.md#scripted) |
 | 2.5 Vermin | `P2.SeeVermin`, 5 s later | the camera `VerminWait`, `ObjShow(dyn_objective_w)`, Vermin a radar objective (texture 27), command 38 on after 2.5 s | `vFenceSection` message 3 → `SetCheckPoint(3)`, `level99_lesson2` | [HUD](hud.md) |
 | 3.1 set-up | `P3.SetupLesson2` | the dealer `FlashDealer` with `GoalDealer(dealer, 0, 17, 0, 0, false)` and messages 1 and 16 (`P3.DealerHit`), Vermin (god mode, unpushable, ungrabbable, fast climber), scene `l99_c3` | the scene's end | [GoalDealer](ai-scripting.md#dealer) |
-| 3.2 fences | `P3.EndChapterScene` | `DoorOpenDegree(WXL00, 100)`, command 40 off and 38 on, Vermin (secondary camera target) to `fVerminFencePoizo` | `vFenceJump` 3, the flag's 8, then `vFenceJump2` / `3` texts | [Climbs](characters.md), [AI fence climb](ai-moving.md#path-planning) |
-| 3.3 climb | `vClimb` 3 (`P3.MoveToClimb`) | Vermin to `fStop2`; `P3.GetBack(1)` 10 s later flashes his radar icon while the player is lost | `fStop2` 8 → the camera `ClimbPoizo`, the players put at `fClimbWarp`; `vFirstClimb` / `vDoneClimb` 3 | [Characters](characters.md) |
-| 3.4 rooftops | `vReachRooftop` / `2` 3 (`P3.PoizoJump`) | `ObjShow(dyn_w_mission)`, the camera `JumpCam`, the players put at `fRoofTeleport`, radar target `fRadarJump` | `vReachWindow` 3 (both players with two, below), then Vermin's run to `fStop3`, his line, `vVerminJumps` 3 | [Jumps](characters.md#jump), [Moving into a pane](objects.md#pane-break) |
+| 3.2 fences | `P3.EndChapterScene` | `DoorOpenDegree(WXL00, 100)`, command 40 off and 38 on, Vermin (secondary camera target) to `fVerminFencePoizo` | `vFenceJump` 3, the flag's 8, then `vFenceJump2` / `3` texts | [Climbs](characters/index.md), [AI fence climb](ai-moving.md#path-planning) |
+| 3.3 climb | `vClimb` 3 (`P3.MoveToClimb`) | Vermin to `fStop2`; `P3.GetBack(1)` 10 s later flashes his radar icon while the player is lost | `fStop2` 8 → the camera `ClimbPoizo`, the players put at `fClimbWarp`; `vFirstClimb` / `vDoneClimb` 3 | [Characters](characters/index.md) |
+| 3.4 rooftops | `vReachRooftop` / `2` 3 (`P3.PoizoJump`) | `ObjShow(dyn_w_mission)`, the camera `JumpCam`, the players put at `fRoofTeleport`, radar target `fRadarJump` | `vReachWindow` 3 (both players with two, below), then Vermin's run to `fStop3`, his line, `vVerminJumps` 3 | [Jumps](characters-traversal.md#jump), [Moving into a pane](objects.md#pane-break) |
 | 3.5 wooden fences | `vAlmostDone` 3 (`P3.WoodenFences`) | the players put at `fBreakFencePoizo` (a held object destroyed), two locked cameras, message 2 on `dyn_door_fence02` and `03` | either fence's message 2 (`P3.FenceBroken`) | [Barriers](objects.md#barriers) |
 | 3.6 dealer | `P3.DealerPoizo`, 0.5 s later | `CfgSetGlobalTimeToLive(1000)`, money raised to at least $20, the dealer's icon `dyn_flashdeal`, `TriggerSphereCfg(dealer, true, 4, 2, 500)` with messages 3 / 4, the scene `l99_c9` preloaded | message 3 on the dealer → `P3.CheckForFlash` every 0.5 s until `InvNumberOf(1)` ≥ 1 | [Buying](ai-scripting.md#dealer), [trigger spheres](#triggers) |
 | 3.7 flash | `P3.FlashSpeak`, 3 s after the buy | `CfgSetGlobalTimeToLive(10000)`, command 40 on, `PadSetHandlerEx(P3.UseFlash)` | command 40 (d-pad right) → `P3.MissionOver` 1.5 s later | [The flash](combat-rage.md#flash), [How the mission ends](#level99) |
@@ -1144,22 +1145,22 @@ Points an implementer needs:
   one flash, refused at 3 carried; a dirty dealer would take the money and give nothing.
 - **3.7**: the last step waits only for the command; the flash itself heals the player when he is hurt (he is at 35 %
   from 2.1) and does nothing at full health without upgrade (6, 8).
-- **3.4**: the jump is the player's own ([Jumping](characters.md#jump)) and the script never touches the window: the
-  two type-11 panes in it break when the jumping player reaches them ([Moving into a pane](objects.md#pane-break)).
-  `P3.JumpPoizoDone` arms `vReachWindow` (corner 43.2, −4.3, 4.1, size 4 × 6 × 4, just past the panes at x 47.4)
-  with `P3.ReachWindow`, which counts only players. With one player, his entering removes the handler and runs
-  `P3.Player2Jumps`. With two, each player who enters is set brain-dead (`BrDead`, so he gives up the pad,
-  [AI](ai/index.md#handlers)) and counted; the second removes the handler and runs `P3.Player2Jumps` (player 2 arriving
-  first sets `bWindowWait`; if he then drops out, player 1 still has to enter). `P3.Player2Jumps` marks the
+- **3.4**: the jump is the player's own ([Jumping](characters-traversal.md#jump)) and the script never touches the
+  window: the two type-11 panes in it break when the jumping player reaches them ([Moving into a
+  pane](objects.md#pane-break)). `P3.JumpPoizoDone` arms `vReachWindow` (corner 43.2, −4.3, 4.1, size 4 × 6 × 4, just
+  past the panes at x 47.4) with `P3.ReachWindow`, which counts only players. With one player, his entering removes the
+  handler and runs `P3.Player2Jumps`. With two, each player who enters is set brain-dead (`BrDead`, so he gives up the
+  pad, [AI](ai/index.md#handlers)) and counted; the second removes the handler and runs `P3.Player2Jumps` (player 2
+  arriving first sets `bWindowWait`; if he then drops out, player 1 still has to enter). `P3.Player2Jumps` marks the
   objective done, flushes the Warriors' brains and sets the gang dead (the player is `Warriors.Rembrandt`, so he too
   gives up the pad), gives each player `GoalAddressPerson` towards Vermin, turns the follow camera off with
   Vermin as its secondary target, destroys the marker `dyn_w_mission` and sends Vermin to `fStop[3]`
   (`P3.VerminInWindow` on arrival). A jump enters the box in the air (at about x 47.2), so the pad is lost
   mid-jump and the jump finishes on its own. Confirmed (runtime) in the jump of
   [Moving into a pane](objects.md#pane-break), one player, the stick held at 100 % throughout: he landed with 435,
-  the jump end for a centred stick (436 follows a held one, [Characters](characters.md#jump)), slid to a stop 0.57 m
-  on, then turned on the spot about 164° (heading 88° to −108.6°, clip 398) in 14 updates and stood idle. If player
-  2 drops out while player 1 waits at the window, `level99.lua`'s drop-out handler runs `P3.Player2Jumps` itself.
+  the jump end for a centred stick (436 follows a held one, [Characters](characters-traversal.md#jump)), slid to a stop
+  0.57 m on, then turned on the spot about 164° (heading 88° to −108.6°, clip 398) in 14 updates and stood idle. If
+  player 2 drops out while player 1 waits at the window, `level99.lua`'s drop-out handler runs `P3.Player2Jumps` itself.
 - **3.5**: a barrier's message 2 is its **removal**, not its hit: the class update (`0x003b3220`, every 60 ticks)
   reports a broken barrier and `WorldObject_Remove` (`0x00391c10`) sends message 2, up to 1 s after the breaking hit
   ([Barriers](objects.md#barriers), confirmed (code) and (runtime) there).
@@ -1177,8 +1178,8 @@ out of sight; he never joins unless a second pad does.
   Rembrandt with `HuCreate(..., player 1, ...)` and Ash with `HuCreate(..., player 2, ...)` at **z −8.5**, 8.8 m
   below the street ((−285.5, 125.1), (66.2, 52.7), (68, 52.7)); the drop-out flags `fAshTeleport1` / `2` are at
   z −8.5 too. `HuCreate`'s ground snap is a 2.5 m ray down from 1 m above the given point
-  ([Characters: creation](characters.md#creation)), which finds nothing that deep, so Ash stays there. Confirmed (code)
-  for the snap; the positions are the script's.
+  ([Characters: creation](characters/index.md#creation)), which finds nothing that deep, so Ash stays there. Confirmed
+  (code) for the snap; the positions are the script's.
 - `HuCreate`'s player argument only makes a player when it is **1**; 2 is stored as the hand-over priority `+0x1b1`
   and Ash is an ordinary AI human, so `HuIsAPlayer(Ash)` (player slot `+0x1b0` not −1) is **false** until a second
   player joins. Confirmed (code) at `0x00233d60`, `0x00235758`.
@@ -1257,7 +1258,7 @@ Vermin's human `+0x1a8` (gait), `+0x1ac` (speed), position and top goal were rea
   (41.50, 19.44).
 - So the gait is **4 (run)** right up to the take-off on both legs, with no slowing before the window; the gait-5
   reading during the jump is the jump's own speed (above 9.02 m/s, the gait-5 bound for Rembrandt's speeds, confirmed
-  (code) at `0x0022aeb0`, [Speed classes](characters.md#speed-classes)), not a sprint order.
+  (code) at `0x0022aeb0`, [Speed classes](characters-classes.md#speed-classes)), not a sprint order.
 
 Coney fixes (item 42):
 
@@ -1274,10 +1275,10 @@ take-offs, where before the corner after each landing held him at 2.80 m/s. Test
 
 **Item 43: where Vermin faces in the fence lesson.** `P3.WoodenFences` (the player entering `vAlmostDone`) flushes
 Vermin and teleports him to `fStop[5]` (29.5, 6.4, 0.3) with heading −1, so **the flag's heading, 273°**; the game's
-heading grows clockwise from +y and faces `(sin h, cos h)` ([Characters](characters.md#step-control)), so he faces
-(−1.00, 0.05), **−x, towards the locked camera `VerminFencePoizo`** (25.282, 6.984, 2.012), not towards the fences.
-He then speaks and plays `point_left.anm` (`GoalPlayDynAnimation`); facing −x his left is −y, where the two fences
-stand (`dyn_door_fence02` at (23.6, −6.67), `03` at (27.98, −6.67)), so the gesture points at them. Its callback
+heading grows clockwise from +y and faces `(sin h, cos h)` ([Characters](characters-locomotion.md#step-control)), so he
+faces (−1.00, 0.05), **−x, towards the locked camera `VerminFencePoizo`** (25.282, 6.984, 2.012), not towards the
+fences. He then speaks and plays `point_left.anm` (`GoalPlayDynAnimation`); facing −x his left is −y, where the two
+fences stand (`dyn_door_fence02` at (23.6, −6.67), `03` at (27.98, −6.67)), so the gesture points at them. Its callback
 `P3.ShowFence` cuts to `BreakFencePoizo` and, 3 s later, `P3.BreakFence` gives control back
 (`CamSetFollowAngle(-10)`), arms both fences' message 2 and sends Vermin walking (**gait 2**) to `fStop[6]` (21.4,
 −4.1, 0.3) with the face-flag on: there he turns to its 139°, facing (0.66, −0.75), **straight at
@@ -2327,8 +2328,8 @@ from the disassembly of `level3.lua` and its five chapter scripts; bindings on
    objective to the roof's end; the pursuers made enemies and each given a hostile devil run on `roofpath2` against
    the Warriors (gait 5, attack at 1 m, pace 13 m, up to 13 m/s, urgency 0.5); switches 3 on and 4 off; **the rail
    camera made current over 0.5 s**; `HuLockPad` and `HuLockPadMovement` cleared and **`BrDead(player, false)`**:
-   from here the stick moves Snow, [relative to the rail camera's heading](characters.md#input). Player 2 gets the
-   same.
+   from here the stick moves Snow, [relative to the rail camera's heading](characters-locomotion.md#input). Player 2
+   gets the same.
 6. **During the chase**, all by kind-2 boxes (message 3): `vMainRail` / `vSideRail` / `vTopRail` / `vBigRail`
    re-frame the rail with `CamModifyRail` (side: distance 8, height 2, setting 3 = 2, 4 = 0, field of view 65 or 78;
    top: height 20; big: distance 10, height 7, field of view 65, setting 9 = 4). `vFixCam` boxes switch to a locked
@@ -2350,8 +2351,8 @@ from the disassembly of `level3.lua` and its five chapter scripts; bindings on
    **The way across the last roofs**, read from the disc's collision mesh (inferred; not checked in the original): the
    jump from `vbJumpWarn_08`'s roof (z 13.2, edge at x 150.5) lands on a roof at z 10.3 (y 361-369.5). Its south
    part is closed at x 167.4 (y 361.5-366.7) by a wall 3.6 m tall, material 152 with no climbable flag, so no climb
-   takes it ([Characters: climbing](characters.md#climb)). The way on is the steel stairs beside it (material 3,
-   y 367-369.5): two 33° flights with a landing from x 167 to 177.5, a platform at z 16.46 to x 193, then the jump in
+   takes it ([Characters: climbing](characters-traversal.md#climb)). The way on is the steel stairs beside it (material
+   3, y 367-369.5): two 33° flights with a landing from x 167 to 177.5, a platform at z 16.46 to x 193, then the jump in
    `vbJumpWarn_09` over the gap (x 193.5-200.5) to the gallery's roof (z 14.4) and `vbEnterGallery` (x 200.8-208.8).
    **Outrunning the pursuers**, confirmed (runtime) in PCSX2 (`coney-tools trace mission` from a level3
    checkpoint 4 state, 2026-10-21): a player who walks up to each climb is caught (Snow knocked down near x -97
@@ -2554,9 +2555,9 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   [World flags](flags.md#coneys-implementation), the AI and gang bindings, which hand their calls to the AI host,
   [AI](ai/index.md#in-coney), the trigger bindings of `src/scripting/trigger_bindings.h`: `SetMsgHandler`,
   `SetMsgHandlerEx`, `AddVolumeBox` and `RotateVolumeBox`, below, the three animation callback bindings,
-  [Characters](characters.md#anim-callbacks), and the scene bindings with the `GoalJoin*` goals, which play scenes,
-  [Scenes](scenes.md#coneys-implementation); with no scene system the preload and play bindings fall back to Coney's
-  stand-in, where a scene loads and ends at once),
+  [Characters](characters-animation.md#anim-callbacks), and the scene bindings with the `GoalJoin*` goals, which play
+  scenes, [Scenes](scenes.md#coneys-implementation); with no scene system the preload and play bindings fall back to
+  Coney's stand-in, where a scene loads and ends at once),
   **routed** (handed to a
   Coney stand-in that logs it: `PlayMovie`, the three music bindings, `ShowRumbleModeInterface`) or a **stub** (returns
   its documented default: nothing, a new handle for `GetPTank`, `ObjSpawn` and `CameraCreateLocked`, 0 for
@@ -2990,7 +2991,7 @@ at `e5d58e85`).
   5's end**: `PlayerState`'s animation callback on the strong grapple's hold 82 runs at the connect (update 157,
   `TT_19b` shown) and `P1.Power` sets `TT_24d` when the hit is scored with 82 (update 191), 34 updates apart in both
   runs, so the two texts never share an update; confirmed (runtime), the dispatch of 82 from the four-clip mix's
-  constructor (`0x00106fe0`, [Animation callbacks](characters.md#anim-callbacks)). **`P1.StartSnaps`**: its
+  constructor (`0x00106fe0`, [Animation callbacks](characters-animation.md#anim-callbacks)). **`P1.StartSnaps`**: its
   `HUDSetTutorialText` calls (nil, `TT_25c`, nil, `TT_25c`) ran in one tick; each text found the box free and showed
   within its own call, so the box showed the snap text, cleared it and showed it again, with the cue twice, and nothing
   stayed queued; confirmed (runtime) at the show `0x001cdf7c`, as `HintBox_Queue` reads (confirmed (code) at

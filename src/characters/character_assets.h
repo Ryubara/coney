@@ -16,7 +16,7 @@
 
 // A character's three resources, found by model name through the Character List: the model and the character data
 // decoded here, the texture dictionary's WAD entry for the platform layer to read (textures need librw).
-// Research: docs/research/characters.md#files.
+// Research: docs/research/characters-appearance.md#files.
 
 namespace coney::characters {
 

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Checks against the player's own disc that player 1 climbs a parked car through its shell in the level's collision
-// mesh, as the original does (docs/research/characters.md#car-shells, #climb): `level99` checkpoint 2 played as
+// mesh, as the original does (docs/research/characters-traversal.md#car-shells, #climb): `level99` checkpoint 2 played
+// as
 // `--play-level level99 --checkpoint 2` plays it, headless, its scene skipped; player 1 is put north of the sedan the
 // script parks at (57.5, 37.9), walks south into its side with the left stick at 60 % and presses triangle, and ends
 // standing on its roof. It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it

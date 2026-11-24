@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// From a character type to the model it is drawn as (docs/research/characters.md#type-to-model): Human_Init's class
-// switch, the player's plain-alias rule and the `_a` models of levels 60-64. The model names come from a stand-in for
-// the recorded `CfgChar` calls written here.
+// From a character type to the model it is drawn as (docs/research/characters-classes.md#type-to-model): Human_Init's
+// class switch, the player's plain-alias rule and the `_a` models of levels 60-64. The model names come from a stand-in
+// for the recorded `CfgChar` calls written here.
 #include "characters/character_class.h"
 
 #include <map>
@@ -29,7 +29,7 @@ std::optional<std::string> modelOf(int type) {
 } // namespace
 
 TEST_CASE("Human_Init's switch maps a type to its class, as a plain alias or a variant", "[character_class]") {
-    // Expected: characters.md#type-to-model, confirmed (code)
+    // Expected: characters-classes.md#type-to-model, confirmed (code)
     CHECK(characterClassOf(2).id == 1);
     CHECK(!characterClassOf(2).variant);
     CHECK(characterClassOf(4).id == 1);
@@ -47,7 +47,7 @@ TEST_CASE("Human_Init's switch maps a type to its class, as a plain alias or a v
 
 TEST_CASE("a player made as a plain alias is drawn as the class's model; anyone else as the type's own",
           "[character_class]") {
-    // Expected: characters.md#type-to-model, confirmed (code)
+    // Expected: characters-classes.md#type-to-model, confirmed (code)
     CHECK(modelRecordType(2, 1) == 1);
     CHECK(modelRecordType(2, 0) == 2);
     CHECK(modelRecordType(32, 1) == 32);
@@ -59,7 +59,8 @@ TEST_CASE("a player made as a plain alias is drawn as the class's model; anyone 
 }
 
 TEST_CASE("levels 60 to 64 draw the `_a` model, and a type with no CfgChar call has none", "[character_class]") {
-    // Expected: characters.md#type-to-model, confirmed (code) at 0x00218008 (Human_Init reads +0x114 in levels 60-64)
+    // Expected: characters-classes.md#type-to-model, confirmed (code) at 0x00218008 (Human_Init reads +0x114 in levels
+    // 60-64)
     CHECK(modelNameFor(1, 1, 60, modelOf) == std::optional<std::string>("warr_cl_a"));
     CHECK(modelNameFor(1, 1, 64, modelOf) == std::optional<std::string>("warr_cl_a"));
     // Human_Init's own test, not the Armies test of the HUD and the sound (60-69): 65 draws the plain model.
@@ -71,7 +72,7 @@ TEST_CASE("levels 60 to 64 draw the `_a` model, and a type with no CfgChar call 
 }
 
 TEST_CASE("a Warriors type plays with his Warrior's class; anyone else with his own", "[character_class]") {
-    // Expected: characters.md#power-classes, confirmed (code)
+    // Expected: characters-classes.md#power-classes, confirmed (code)
     using coney::characters::powerClassOf;
     using coney::characters::warriorClassOf;
     using coney::characters::warriorPowerClassOf;

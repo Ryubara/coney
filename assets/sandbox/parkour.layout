@@ -1,7 +1,7 @@
 # Coney sandbox: the traversal course, for running, sprinting, jumping and climbing (docs/guides/sandbox.md).
 # Game axes and units: metres, z up; spawns face +y. One texture tile is 1 m (bright lines every 50 cm).
 #
-# What the research gives (docs/research/characters.md): wall faces under 0.25 m do not stop a walking body and the
+# What the research gives (docs/research/characters/index.md): wall faces under 0.25 m do not stop a walking body and the
 # ground snap lifts it on, so a 20 cm kerb is walked onto and anything taller is a wall (#walls); a drop of more than
 # 0.5 m is a fall; gravity is 15.68 m/s² from the second airborne update; a landing hurts from 14.9 m/s and kills from
 # 20.5 m/s; Rembrandt walks at 1.63 m/s, runs at 7.80 and sprints at 10.25 while L2 is held and stamina (135, 20 a

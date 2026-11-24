@@ -354,7 +354,7 @@ NativeFunction makeEnableCommands(const BindingContext& context) {
 }
 
 // `HuAttachSpinningIcon(human, object, bone)`: the icon of type world_objects::iconTypeName(object)
-// (docs/research/characters.md#spinning-icon).
+// (docs/research/characters-appearance.md#spinning-icon).
 // @orig 0x00238a88 Human_AttachSpinningIcon (unknown)
 NativeFunction makeAttachSpinningIcon(const BindingContext& context) {
     return hostCall(context, [](HumanBindingHost& host, std::span<const Value> args) {
@@ -394,7 +394,7 @@ NativeFunction makePlaceItemInHand(const BindingContext& context, std::function<
 }
 
 // `HuPlaceHatOnHead(human, hat)`: a new hat object of type `hat` on the human's head, as his class's hat is put on
-// when he is made (docs/research/characters.md#hats).
+// when he is made (docs/research/characters-appearance.md#hats).
 // @orig 0x002385f8 Human_PlaceHatOnHead (unknown)
 NativeFunction makePlaceHatOnHead(const BindingContext& context, std::function<double()> nextHandle) {
     return [context = &context, nextHandle = std::move(nextHandle)](std::span<const Value> args) {

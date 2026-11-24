@@ -143,16 +143,16 @@ zone), `(r - 95) / 95` below it and `(r - 160) / 95` above it, so the range is e
 executable). The y values are negated so that up is positive.
 
 **Diagonals and the stick's shape.** The dead zone and the scale are applied to each axis on its own, and the
-in-game stick length is `min(1, sqrt(x² + y²))` ([Characters](characters.md): a run needs more than 0.95, `0x005102e8`).
-So a full push only runs along a diagonal if both bytes reach near 0 or 255 there. The DualShock 2's sticks do: their
-output is close to a square, both axes at their extremes at a full diagonal (inferred, from the game's design and from
-PCSX2, whose default analog sensitivity of 1.33 scales a modern pad up to match; not measured on hardware). A modern
-gamepad reports a circle: about 0.71 of full travel on each axis at a full diagonal, raw bytes about 37 and 218, which
-the table turns into 0.61 each and a length of about 0.86, so the player walks. W A S D are unaffected (bytes 0 and
-255). **Coney's implementation:** the SDL layer stretches each gamepad stick from the circle onto the square before
-making the bytes (`stickBytesFromAxes`, `src/platform/sdl_input.cpp`: each point scaled by its length over its larger
-axis), so a full diagonal runs as on a PS2; the table above is unchanged. The stick's length is first divided by
-**0.9** (`kStickRim`, at most 1), so a stick at its rim reads as a full push. A modern stick pushed straight to its
+in-game stick length is `min(1, sqrt(x² + y²))` ([Characters](characters/index.md): a run needs more than 0.95,
+`0x005102e8`). So a full push only runs along a diagonal if both bytes reach near 0 or 255 there. The DualShock 2's
+sticks do: their output is close to a square, both axes at their extremes at a full diagonal (inferred, from the game's
+design and from PCSX2, whose default analog sensitivity of 1.33 scales a modern pad up to match; not measured on
+hardware). A modern gamepad reports a circle: about 0.71 of full travel on each axis at a full diagonal, raw bytes about
+37 and 218, which the table turns into 0.61 each and a length of about 0.86, so the player walks. W A S D are unaffected
+(bytes 0 and 255). **Coney's implementation:** the SDL layer stretches each gamepad stick from the circle onto the
+square before making the bytes (`stickBytesFromAxes`, `src/platform/sdl_input.cpp`: each point scaled by its length over
+its larger axis), so a full diagonal runs as on a PS2; the table above is unchanged. The stick's length is first divided
+by **0.9** (`kStickRim`, at most 1), so a stick at its rim reads as a full push. A modern stick pushed straight to its
 rim often reports 0.92-0.97 of the travel, bytes 249-252, which the table turns into 0.94-0.97: the moves that need
 more than 0.95 then came only now and then. `level99`'s lesson 7 needs the snap attacks (the stick past 0.95 to a
 side, [Attacks](combat/index.md#attacks)), and with a gamepad they came out as `S1` (12), so the lesson never went on. A
@@ -647,10 +647,10 @@ Choose Gangs row of [Per screen](#rumble-screens).
   (`0x001ebfc0`) puts member 0 in the centre of the nine-slot display. So in 1 ON 1 (`gangSize` 1) each side shows its
   warchief alone; in WAR PARTY the warchief and the next four.
 - **Which model.** `Human_Create(gang, "RM_HUMAN_%d", type, position, 0, 0, gang id, 0)` with the character type: the
-  model is that type's own, as for any human of that type ([Characters](characters.md)); nothing on this screen
+  model is that type's own, as for any human of that type ([Characters](characters/index.md)); nothing on this screen
   chooses a model. A side is rebuilt only once its gang group has no member left (`Gang_GetHeadCountById` < 1).
 - **What it does.** Each fighter gets `Brain_SetDead(h, 1)` (no AI), `Human_SetLockMovement(h, 1)` (`0x00234ef8`,
-  [`HuLockMovement`](characters.md)), human byte `+0x284` = 0 (combat stance off, as on
+  [`HuLockMovement`](characters/index.md)), human byte `+0x284` = 0 (combat stance off, as on
   [Swap Soldier](#rm-swap-soldier)), its position set and its heading kept in screen `+0x148 + 4s`. No clip is set
   by this screen or by `Render`, so it plays its ordinary standing idle (inferred: nothing else gives a
   dead-brained, locked human a clip). `ResourceMgr_ResetFadeIns` (`0x00189528`) runs after a side is made.

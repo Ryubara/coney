@@ -310,13 +310,13 @@ class AnimTaskStack {
     [[nodiscard]] float layerIncoming(std::size_t index) const;
     /// Called with the anim id whenever a task starts playing (change(), a clip handing over to its next) and when a
     /// gait blend moves to another clip: where the original resolves an id to a clip and runs the animation
-    /// callbacks (`CharacterInstance_GetAnim`, docs/research/characters.md#anim-callbacks). Empty for none.
+    /// callbacks (`CharacterInstance_GetAnim`, docs/research/characters-animation.md#anim-callbacks). Empty for none.
     void setStartHook(std::function<void(std::uint32_t animId)> hook) { m_startHook = std::move(hook); }
     /// Reports now the start of the task the newest task's chain ends in (its follow-on, after the clips handing over
     /// to one another), which then is not reported again when it begins playing; nothing when the newest task has no
     /// follow-on or it was reported already. A grab's connect builds the hold under the connecting clip, and the
     /// hold's ids fire their animation callbacks then, not when the hold plays
-    /// (docs/research/characters.md#anim-callbacks).
+    /// (docs/research/characters-animation.md#anim-callbacks).
     void announceFollowOn();
     /// Keeps (`keep`) every event of the newest task's clip whose frame is passed, after the held-flag events have
     /// moved the record, for takeEvents(): the human acts on the rest (clip event 11, the animation sounds,

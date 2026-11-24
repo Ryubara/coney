@@ -160,7 +160,7 @@ the pool names are the managers' allocation tags.
 
 | Class | Vtable | Initialiser | Pool (manager, allocator) | Records | Handle |
 | --- | --- | --- | --- | --- | --- |
-| human | `0x0053f088` | `Human_Init` `0x00218008` | the static array `0x00640c80` ([Characters](characters.md#the-human-object)) | 60 × 0x6d0 | yes |
+| human | `0x0053f088` | `Human_Init` `0x00218008` | the static array `0x00640c80` ([Characters](characters/index.md#the-human-object)) | 60 × 0x6d0 | yes |
 | world object (props, weapons, pick-ups, doors) | `0x005453a0` | `0x003918b8` | `ObjectTaskManager`, `0x004f3e98` | 384 × 0x140 | yes |
 | particle system | `0x00545660` | `0x0039aef0` | `ParticleTaskManager` per phase, `0x004f42b0` | 1,400 (play) and 100 (pause) × 0xf0 | yes |
 | scene | `0x005458c8` | `0x0039ca48` | `SceneTaskManager`, `0x004f4610` | 12 × 0x100 | no: a scene id ([Scene bindings](../references/bindings/scene.md)) |
@@ -321,7 +321,7 @@ human's `0x0053f088`. A human's task head has flags `+0x54` = `0x42005001` (no `
 
 Called on every 60 Hz tick; its body runs only when `0x005104f4` is even, so **the characters step at 30 Hz**. Each
 step behind a debug switch that is on in play. Confirmed (code) at `0x00249108`; this corrects the order given
-before on [Characters](characters.md#update):
+before on [Characters](characters/index.md#update):
 
 1. The litter, ground fog and rain splashes (`0x00170c88`, `0x00171d38`, `0x00184568`,
    [Graphics](graphics.md#code-camera-effects)).
@@ -337,7 +337,7 @@ before on [Characters](characters.md#update):
 6. With `0x005e5360`, each human's animation step (`0x0023bd78`), then `0x00105570` (refresh the playing anim ids).
 7. Per human: an effect for flag `0x4000`, the player gang checks.
 8. With `0x005e5364`, each human's **state update**: vtable `+0x13c` (the locomotion for a pad-controlled human,
-   [Characters](characters.md#locomotion)), unless `0x0023d790` says it is not ready.
+   [Characters](characters-locomotion.md#locomotion)), unless `0x0023d790` says it is not ready.
 9. With `0x005e5368`, each human's **actions**, the order alternating (0 → 59, then 59 → 0) between steps:
    `Human_UpdateActions` (`0x00254e78`) runs `Player_UpdateActions` (`0x0027c120`, the dispatcher,
    [Combat](combat/index.md#dispatch)) unless the state word has any of `0x1f80974000` or per-player `+0x1e` is set,
@@ -379,7 +379,7 @@ one task after the first update (the fade has finished).
 
 So every attack's timing (wind-up, window, end, recovery) comes from its clip's events, and its length from the clip.
 The same holds for any move whose builder hands flags to its task (grab `0x10`, start clips `0x10000000`, run stop and
-climbs `0x80000`, landing `0x1000000`; seen at runtime, [Characters](characters.md#the-record)).
+climbs `0x80000`, landing `0x1000000`; seen at runtime, [Characters](characters/index.md#the-record)).
 
 ### Who reads the held flags {#readers}
 
@@ -455,7 +455,7 @@ sets 1.
 - `src/human/humans.*` is `Humans_Update`'s order on Coney's fixed 1/30 s step (a Coney choice: no 60 Hz tick and no
   wheel until the world's objects come). Every human has a per-player record (`human::PlayerRecord`) that a pad or a
   brain writes; the dispatcher runs from it for every human, so a human no pad drives fights from the command its
-  brain writes ([Characters](characters.md#coneys-implementation)).
+  brain writes ([Characters](characters/index.md#coneys-implementation)).
 - `src/animation/anim_task.*` holds the held flags and the events that move them, and a fade that holds bits until it
   ends (the idle's fade holds `0x10000000`, which gives the 5 updates after a block or a stop)
   ([Animation](formats/animation.md#coneys-implementation)); the readers' masks are in `src/combat/` and

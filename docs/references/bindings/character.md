@@ -234,7 +234,7 @@ animation. It takes the first of the 16 slots at 0x006b6710 whose handle does no
 
 **Notes.** Dispatch as for AddAnimCallback (first matching slot only). Remove it with DelAnimCallback(0, anim);
 AddAnimCallback can overwrite the slot since it does not test the flag. Details:
-[Characters](../../research/characters.md#anim-callbacks).
+[Characters](../../research/characters-animation.md#anim-callbacks).
 
 - **Evidence:** confirmed (code) at `0x0023aab0`; detail: traced
 - **Wrapper** `0x0035ea90` (registered by `RegisterBindings`); **calls** `0x0023aab0` `AnimCallback_AddForAll`
@@ -265,7 +265,7 @@ level.
 **Notes.** The dispatch (0x0023ac50) runs synchronously when the animation code resolves the id to a clip to play
 (0x00175080), and only the first matching slot fires. A slot counts as free when its human handle no longer resolves, so
 entries of deleted humans (and, since the flag is not tested, all-humans entries) can be overwritten. Details:
-[Characters](../../research/characters.md#anim-callbacks).
+[Characters](../../research/characters-animation.md#anim-callbacks).
 
 - **Evidence:** confirmed (code) at `0x0023a9f8`; detail: traced
 - **Wrapper** `0x0035e9f8` (registered by `RegisterBindings`); **calls** `0x0023a9f8` `AnimCallback_Add`
@@ -341,7 +341,7 @@ CullCorpses(all) -> boolean
 Frees human slots during big fights by marking downed humans dead. It walks the 60 human slots and takes every human
 that has a state record, is not a player (flag word bit 0x4 clear), is out of the fight (0x00227e60) and fails the check
 0x002283c8; each one (or only the farthest from the active camera when `all` is false) gets state flag 0x200000000, dead
-([Characters](../../research/characters.md)), after which the usual dead-human handling removes it.
+([Characters](../../research/characters/index.md)), after which the usual dead-human handling removes it.
 
 **Notes.** What 0x002283c8 excludes is not traced (inferred: a human being carried or arrested). Distances are measured
 to the camera of view 0 (0x0011f9b0(0)). The removal path after the dead flag is not traced here.
@@ -577,8 +577,8 @@ Tells whether the human is locked into something and cannot start a new action: 
 throwing, tagging, a mini-game (lock picking and the like), being dead and the airborne states (jump, fall, landing).
 Fight stance, blocking and sprinting do not count.
 
-**Notes.** The same mask gates the player's context actions and jumps (characters.md) and is tested by about 88 AI and
-combat functions. Bits 0x2000, 0x4000, 0x10000-0x40000, 0x100000, 0x800000, 0x8000000, 0x10000000, 0x80000000,
+**Notes.** The same mask gates the player's context actions and jumps (characters/index.md) and is tested by about 88 AI
+and combat functions. Bits 0x2000, 0x4000, 0x10000-0x40000, 0x100000, 0x800000, 0x8000000, 0x10000000, 0x80000000,
 0x100000000 and 0x10000000000-0x40000000000 are in the mask but not yet named.
 
 - **Evidence:** confirmed (code) at `0x002387a8`, `0x00228228`; detail: traced
@@ -719,10 +719,10 @@ HuBlockJump(human, block)
 
 Sets or clears human flag 0x10000000 (`+0xe0`). While it is set, the triangle button never starts a jump (Player_TryJump
 is skipped, 0x0027c120); a climb, a context action or an object action can still take the press ([Characters:
-jumping](../../research/characters.md#jump)).
+jumping](../../research/characters-traversal.md#jump)).
 
 **Notes.** Only players jump, so it matters only for a player human. The same bit is seen set briefly while a start clip
-plays (characters.md), so a script clearing it may race the game's own use (inferred).
+plays (characters/index.md), so a script clearing it may race the game's own use (inferred).
 
 - **Evidence:** confirmed (code) at `0x00237958`; detail: traced
 - **Wrapper** `0x00359020` (registered by `RegisterBindings`); **calls** `0x00237958` `Human_SetBlockJump`
@@ -997,7 +997,7 @@ world object run its per-slot method for all 26 slots (0x003858b8), with no deat
 
 **Notes.** What the object's slot method (vtable +0x0c, called with 0-25) does is not traced; that the dead flag makes
 the human update remove it is inferred. Contrast `HuKill`, which kills through the damage path. Record flags:
-[Characters](../../research/characters.md#the-record).
+[Characters](../../research/characters/index.md#the-record).
 
 - **Evidence:** confirmed (code) at `0x00233ef0`; detail: traced
 - **Wrapper** `0x00358608` (registered by `RegisterBindings`); **calls** `0x00233ef0` `Human_Delete`
@@ -1870,7 +1870,7 @@ or a human not in one.
 Tells whether the human is taking part in a scripted scene: true when its scene id (human `+0x280`) is not -1, or when
 it carries the in-scene state flag 0x800000 that the scene player sets on bound humans while a scene starts.
 
-**Notes.** Human `+0x280` is also read as an attachment by the movement code (characters.md); scene binding:
+**Notes.** Human `+0x280` is also read as an attachment by the movement code (characters/index.md); scene binding:
 [Scenes](../../research/scenes.md). A human with no record (`+0xd4` = 0) and `+0x280` = -1 gives nil.
 
 - **Evidence:** confirmed (code) at `0x002356c8`, `0x00227d28`; detail: traced
@@ -2055,8 +2055,8 @@ Locks the left-stick movement of the player controlling this human (byte `+0x1f`
 player record's update reads the stick as centred (angle π/2, length 0), so the character stands still but its buttons
 (attacks, commands, actions) still work.
 
-**Notes.** Reader: `PlayerRecord_Update` (0x00146078), [Characters](../../research/characters.md#input). The lock stays
-until cleared.
+**Notes.** Reader: `PlayerRecord_Update` (0x00146078), [Characters](../../research/characters-locomotion.md#input). The
+lock stays until cleared.
 
 - **Evidence:** confirmed (code) at `0x0023ae90`; detail: traced
 - **Wrapper** `0x003655a0` (registered by `RegisterBindings`); **calls** `0x0023ae90` `Human_LockPadMovement`
@@ -2084,7 +2084,7 @@ set. Finally human flag `+0xe0` 0x10 and state flag 0x40000000 are set.
 **Notes.** The AI stays held until something releases brain `+0x09` (not traced which binding). State flag 0x40000000 is
 the down latch (HuMakeGrounded false clears it; confirmed (runtime): 196 at once, health 1, then 199 on the update after
 the latch was cleared, combat-reactions.md#scripted-knockdowns). State flags 0x10000 and 0x20000000 and human flag 0x10
-(also set by a hit stopped at a health floor) are not named yet. Bit meanings: characters.md#the-record,
+(also set by a hit stopped at a health floor) are not named yet. Bit meanings: characters/index.md#the-record,
 combat.md#state-flags.
 
 - **Evidence:** confirmed (code) at `0x00234d70`, `0x0022f100`; detail: traced
@@ -3391,7 +3391,7 @@ Sets the human's maximum health and refills it: both the maximum (record `+0x146
 become `health`, so the health bar shows full. Scripts use it to make bosses and key enemies tougher.
 
 **Notes.** Also heals a hurt human to full. No clamping: values above 32767 wrap negative. Health fields:
-characters.md#the-record.
+characters/index.md#the-record.
 
 - **Evidence:** confirmed (code) at `0x00237be0`; detail: traced
 - **Wrapper** `0x0035bbc8` (registered by `RegisterBindings`); **calls** `0x00237be0` `Human_SetMaxHealth`
@@ -3941,7 +3941,7 @@ message's arguments are popped last in, first out, so the second argument is the
 script calls it.
 
 **Notes.** The step is the difference of the whole 32-bit tint words divided by the step count, not per channel; the
-game itself only fades the alpha byte. See characters.md#spinning-icon.
+game itself only fades the alpha byte. See characters-appearance.md#spinning-icon.
 
 - **Evidence:** confirmed (code) at `0x00238b18`, `0x003e93d0`; detail: traced
 - **Wrapper** `0x0035af80` (registered by `RegisterBindings`); **calls** `0x00238b18` `Human_SetSpinningIconColor`,
@@ -4238,7 +4238,7 @@ replaced by `wheelchairControl` (0x002427e8), every other player command off and
 look-behind switch 11 goes to 0. Off undoes it. In the chair L1 and R1 together push forward (+0.5 an update up to the
 sprint speed), one alone turns (L1 left, R1 right, 0.08 rad an update at a standstill down to 0.03 at top speed) while
 the speed decays by 0.04, cross brakes (−0.5), and the sticks do nothing ([Characters: wheelchair
-control](../../research/characters.md#wheelchair)).
+control](../../research/characters-locomotion.md#wheelchair)).
 
 **Notes.** A human that is not pad-driven (per-player record `+0x1b` 0, inferred) runs its normal control even with the
 flag, so the Rumble CPU follows its path as usual.
@@ -4336,8 +4336,8 @@ HuSetWoundable(human, on)
 **Returns** nothing.
 
 Sets or clears bit 0x8 of the human's flag word (`+0xe0`). `Human_MakePlayer` clears the same bit, so players start
-without it ([Characters](../../research/characters.md)). From the name, a woundable human can be left hurt (limping,
-wounded idle) rather than only knocked out; scripts set it on many story extras.
+without it ([Characters](../../research/characters/index.md)). From the name, a woundable human can be left hurt
+(limping, wounded idle) rather than only knocked out; scripts set it on many story extras.
 
 **Notes.** The store is confirmed (code); the readers of bit 0x8 in `+0xe0` were not found in this pass, so the effect
 is inferred from the name.
@@ -4867,7 +4867,7 @@ handle through the shared handle table (0x006ebd38, serial must match; a serial-
 object-manager spawn id) and answers whether anything came back. The one script use checks a human handle.
 
 **Notes.** A live world object's handle also gives true (the table holds humans and objects alike;
-characters.md#the-human-object). -1 gives nil.
+characters/index.md#the-human-object). -1 gives nil.
 
 - **Evidence:** confirmed (code) at `0x00385b90`, `0x00390180`; detail: traced
 - **Wrapper** `0x0036cb70` (registered by `RegisterBindings`); **calls** `0x00385b90` `IsHumanHandle`, `0x00390180`
@@ -5050,7 +5050,7 @@ Adds an animation file to the level's list of dynamic animations (64 entries) so
 list is full, the largest loaded entry is replaced. With `release` true the entry is removed. HuUseAnim and HuUseAnyAnim
 can only use files requested this way.
 
-**Notes.** See characters.md#creation for how dynamic animations are loaded later.
+**Notes.** See characters/index.md#creation for how dynamic animations are loaded later.
 
 - **Evidence:** confirmed (code) at `0x0040cd78`; detail: traced
 - **Wrapper** `0x0036e668` (registered by `RegisterBindings`); **calls** `0x0040cd78`

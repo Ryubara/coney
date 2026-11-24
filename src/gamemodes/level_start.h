@@ -31,7 +31,7 @@ namespace coney {
 
 /// Where a level starts player 1: what the level's own script created for the checkpoint. No data file holds a player
 /// start; the level script makes player 1 with `HuCreate` while `InitLevel` runs it, at a literal position or at a
-/// flag, and may teleport him onto a flag before play starts (docs/research/characters.md#level-starts).
+/// flag, and may teleport him onto a flag before play starts (docs/research/characters-players.md#level-starts).
 struct LevelStart {
     std::string level;  ///< The level (`level99`).
     int checkpoint = 1; ///< The checkpoint the script read with `GetCheckPoint()`.
@@ -216,8 +216,8 @@ class LevelScripts {
 
 /// Sets the player's turning as the preload scripts configure it (`CfgSetTurnRates`, `CfgTurnRate` in
 /// config_preload2.lua, recorded by their stubs): the values the original plays with
-/// (docs/research/characters.md#movement-constants). The settings are global; a level played on its own applies them
-/// once its scripts are ready.
+/// (docs/research/characters-locomotion.md#movement-constants). The settings are global; a level played on its own
+/// applies them once its scripts are ready.
 void applyTurnConfig(const script::RecordedCalls& recorded);
 
 /// The story's way into `level` at `checkpoint` without the menus, run once: a script system of its own

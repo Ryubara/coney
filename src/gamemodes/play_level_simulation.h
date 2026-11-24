@@ -88,7 +88,7 @@ struct PlayStats {
 /// hooks, which do nothing by default, so the simulation steps alone where nothing is presented. The scenes are still
 /// the platform's, reached through three hooks of their own until they move to the core (#1449).
 ///
-/// The parts follow docs/research/objects.md, docs/research/characters.md#hats,
+/// The parts follow docs/research/objects.md, docs/research/characters-appearance.md#hats,
 /// docs/research/combat-grabs.md#power-move-props, docs/research/crimes.md and docs/research/ai-scripting.md#dealer;
 /// the class is Coney's own glue.
 class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
@@ -337,12 +337,12 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // One human the scripts created, made: player 1's first creation is the player (his brain bound to it); any other
     // with a position an AI human of its type's class, drawn as its model, snapped as `HuCreate` snaps. Returns its
     // brain; null for a creation with no position. The script's half (name, slot, handle) is makeHuCreate's.
-    // Research: docs/research/characters.md#creation
+    // Research: docs/research/characters/index.md#creation
     // @orig 0x00233d60 Human_Create (unknown)
     ai::Brain* castHuman(const HumanCreation& human);
     // HuChangePlayerGang's hand-over to `to` (a cast human): the player is moved, drawn and named as it, and it leaves.
     // The gang's pick is ai::ScriptedBrains::changePlayerGang()'s. Research:
-    // docs/research/characters.md#level99-handover
+    // docs/research/characters-players.md#level99-handover
     // @orig 0x00239b80 Players_ChangeGang (unknown)
     void takePlace(const ai::Brain& to);
     // The brain type a human of character type `type` fights as: its class's, as castHuman() makes it.
@@ -568,7 +568,7 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // @orig 0x0024c280 Human_PlaceItemInHand (unknown)
     void placeItemInHand(human::Human& human, double holder);
 
-    // --- play_level_hats.cpp: the hats the humans wear (docs/research/characters.md#hats).
+    // --- play_level_hats.cpp: the hats the humans wear (docs/research/characters-appearance.md#hats).
 
     // One human's hat as the mode keeps it: whether his class's hat was given, the hat worn (0 for none), where it sits
     // on his head and where it was at the last step, and his state then.

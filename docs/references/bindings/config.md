@@ -550,7 +550,7 @@ CfgChar(charType, v2, v3, speedClass, v5, v6, damage, attacks, damageScale, mode
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `charType` | number, truncated to an integer | Character type id (the number HuCreate takes); record at 0x00684620 + charType x 0x1ac ([Characters](../../research/characters.md#classes)). |
+| 1 | `charType` | number, truncated to an integer | Character type id (the number HuCreate takes); record at 0x00684620 + charType x 0x1ac ([Characters](../../research/characters-classes.md#classes)). |
 | 2 | `v2` | number, truncated to an integer | Byte at +0x11a (3 for the Warriors). |
 | 3 | `v3` | number, truncated to an integer | Byte at +0x11b: the category (14 for the Warriors), which also picks the CfgCharClassAttribs record for the starting money. |
 | 4 | `speedClass` | number, truncated to an integer | Speed class (see CfgSpeedClass), byte at +0x11c. |
@@ -1750,8 +1750,8 @@ run of small bytes, with the clamps listed per argument; it also marks the recor
 scripts (config_easy/normal/hard/fury and Rumble) each define the whole set, so the profile depends on difficulty.
 
 **Notes.** Layout and clamps confirmed (code) at 0x002288c0; the record is read through 0x00222b78. The meanings given
-in the argument list are confirmed (code) at the cited readers (combat.md and characters.md); the others are not traced.
-The record has 31 fields; Coney needs all of them stored even before their meaning is known.
+in the argument list are confirmed (code) at the cited readers (combat.md and characters/index.md); the others are not
+traced. The record has 31 fields; Coney needs all of them stored even before their meaning is known.
 
 - **Evidence:** confirmed (code) at `0x002288c0`; detail: traced
 - **Wrapper** `0x00369868` (registered by `RegisterBindings`); **calls** `0x002288c0` `Cfg_SetPowerClass`
@@ -2683,8 +2683,8 @@ CfgSpeedClass(class, speeds)
 
 **Returns** nothing.
 
-Fills one speed class's six speeds ([Characters](../../research/characters.md#speed-classes)). In play the humans' own
-per-human values are used instead while 0x005101e0 is set.
+Fills one speed class's six speeds ([Characters](../../research/characters-classes.md#speed-classes)). In play the
+humans' own per-human values are used instead while 0x005101e0 is set.
 
 - **Evidence:** confirmed (code) at `0x00228888`; detail: traced
 - **Wrapper** `0x003842c0` (registered by the script system); **calls** `0x00228888` `Cfg_SetSpeedClass`

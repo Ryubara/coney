@@ -542,7 +542,7 @@ returns nothing. `v` is only read; the velocity goes back through the owner. `ou
        `sbox = AABB_ExtendByMove(AABB_ScaleAboutCentre(box, body+0x60), D)`. **`sbox` is never passed on**: both
        queries get `qbox` (`0x0033e518`, `0x0033e550`), and their box readers read only `+0x00`-`+0x18`
        (`0x00347170`, `0x0033feb0`). So body `+0x60` has no effect on which triangles or bodies are tested here (it
-       does widen the capsule's mesh sphere, [Characters](characters.md#walls)). Confirmed (code).
+       does widen the capsule's mesh sphere, [Characters](characters-ground.md#walls)). Confirmed (code).
     3. `count = 0`; `IPhysics_SweepBodyVsMesh(phys, &qbox, body, shape, contacts, sorted, &count, &D)`
        ([below](#u3-mesh)); then, if body flag `0x1` is set, the body sweep `0x0033d498` with the same arguments
        ([Unit 11](#unit-11): it adds its contacts to the same sorted list).
@@ -590,7 +590,7 @@ with `+0x70 = 0` (pass 1's `|D|² ≤ 1e-6` with `found = 0`). Confirmed (code);
 
 A head-on hit whose slide leaves `V ≈ 0` ends the loop on the next pass's `|D|²` test with `passes = 3` and
 `found > 0`: **stuck**, so the counter goes up each update a body is pressed straight into a wall. Confirmed (code);
-this is what the human's "stuck in the air" rule reads ([Characters](characters.md#ground)).
+this is what the human's "stuck in the air" rule reads ([Characters](characters-ground.md#ground)).
 
 ### PhysicsBody_ResolveContacts {#u3-resolve}
 
@@ -630,7 +630,8 @@ touched. The part of the move along the surface up to the contact is **not** app
 covers the surface direction). −0.01 is `0xbc23d70a`, 0.01 `0x3c23d70a`. Confirmed (code) at `0x0033dcdc`-`0x0033ddc8`
 (code 1), `0x0033ddec`-`0x0033dedc` (code 2), `0x0033df40`-`0x0033e02c` (code 3). The same formula is the stand-alone
 `PhysicsVec_BackOffPlane` (below), which the resolution does not call. That this 0.01 is the 0.006-0.010 m
-clearance measured on [Characters](characters.md#walls) is inferred (the walls page measured stops, not the code).
+clearance measured on [Characters](characters-ground.md#walls) is inferred (the walls page measured stops, not the
+code).
 
 | Code | Effect, in order |
 | --- | --- |
@@ -733,7 +734,7 @@ with a contact written at `contacts[*count]` (the count is **not** incremented h
    holds with flag `0x800` (`0x00226660`): `A.z += 0.4 × Human_GetScale(h)` (`0x3ecccccd`), but at most
    `h+0x560 + 0.7` (`0x3f333333`).
 3. `B` = the upper point, human vtable slot `+0x60` / `+0x64` (`0x00226a20`: the feet + `+0x4e8` − 0.16 × scale,
-   [Characters](characters.md#falling)).
+   [Characters](characters-ground.md#falling)).
 4. `A += D` (the moved, possibly raised, feet).
 5. The ray goes from the **higher** of `A` and `B` to the lower: origin `B`, end `A`, unless `B.z < A.z`, then the
    two swap. `L` = the distance between them, direction = (end − origin) / `L`.
@@ -1905,10 +1906,10 @@ Owner 0 is written with `PhysicsBody_SetOwner(body, 0)`, which leaves the type m
 `Human_CreatePhysicsBody` (`0x0021ce08`), confirmed (code): if the human has a body (`+0x1a0`) it is freed first
 (`Human_FreePhysicsBody` `0x0021cf20`: the punch bag's free for class `0x1cc`, else the human free; `+0x1a0` = 0).
 For class `0x1cc` (`HeavyBag`) the punch bag's set, flags `|= 0x200`. Otherwise a human body; then when the human's
-brain `+0x04` is 0 (the player, inferred from the 1.4286 scale [Characters](characters.md#walls) gives the player) flags
-`|= 0x400` (already set) and scale `+0x60` = (1.4286, 1.4286, 1, 1) (`0x3fb6db6e`); otherwise flags `&= ~0x400`;
-then, when human byte `+0x3bf` is 0, flags `|= 0x200`. Corroboration: the runtime flags of [Layers](physics.md#layers)
-(humans
+brain `+0x04` is 0 (the player, inferred from the 1.4286 scale [Characters](characters-ground.md#walls) gives the
+player) flags `|= 0x400` (already set) and scale `+0x60` = (1.4286, 1.4286, 1, 1) (`0x3fb6db6e`); otherwise flags `&=
+~0x400`; then, when human byte `+0x3bf` is 0, flags `|= 0x200`. Corroboration: the runtime flags of
+[Layers](physics.md#layers) (humans
 `0x2203f` and `0x2223f`, cars `0x2211a`, panes `0x7a`) are these values without the dirty bit.
 
 `Car_MakeBodies` (`0x00387d50`) ORs **`0x2211a`** into its body's flags at `0x00387ea8`, so a car's body reads

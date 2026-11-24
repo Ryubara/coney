@@ -166,8 +166,8 @@ Two cases.
   dependency list loads resources at `InitLevel` until `UnloadLevel`, the section's pack at the preload, and others
   stream in and out as the resource manager needs them, so a human whose files are not resident is made at once and
   drawn when they arrive ([Resident and streamed](../../research/level-loading.md#resident-and-streamed),
-  [Characters: Creation](../../research/characters.md#creation)). That hidden loading is faithful for those natives,
-  and faithful first holds ([Studio's decisions](index.md#decisions)).
+  [Characters: Creation](../../research/characters/index.md#creation)). That hidden loading is faithful for those
+  natives, and faithful first holds ([Studio's decisions](index.md#decisions)).
 - **Coney natives that take a path follow the rule above for a `game:/` path as for any other:** the script loads it
   first (`Coney.LoadAsset("game:/models/...")`). A project then does not depend on what the original keeps resident in
   one level.

@@ -494,10 +494,10 @@ int currentLevelNumber(const GameState& state) {
 // which (in play) makes it a character with a brain once the level has loaded (ai::ScriptedBrains). Coney's choices:
 // the position is not snapped to the ground here (no collision is loaded while the script runs) and so not written back
 // into the table; the play mode snaps the player the same way when it places him
-// (docs/research/characters.md#creation). The gang is kept for the AI (nil is none), and so is the flag
+// (docs/research/characters/index.md#creation). The gang is kept for the AI (nil is none), and so is the flag
 // (docs/research/human-init.md#brain-type); the unused string is not. The model the type is drawn as is resolved here
-// from the recorded `CfgChar` calls (characters::modelNameFor(), docs/research/characters.md#type-to-model); the play
-// mode loads it. Human_Init's money and later steps follow (humanInitSteps()).
+// from the recorded `CfgChar` calls (characters::modelNameFor(), docs/research/characters-classes.md#type-to-model);
+// the play mode loads it. Human_Init's money and later steps follow (humanInitSteps()).
 // @orig 0x00358428 HuCreate (unknown)
 // @orig 0x00233d60 Human_Create (unknown)
 NativeFunction makeHuCreate(const Factory& factory) {

@@ -11,7 +11,7 @@
 // The player's climbs: which obstacle triangle climbs (a fence, a short fence, a wall or a short wall), from two
 // forward rays and a downward probe just behind the face, and where the climb starts. Pure functions over the
 // collision mesh; the human (src/human/human.*) plays the climb.
-// Research: docs/research/characters.md#climb
+// Research: docs/research/characters-traversal.md#climb
 
 namespace coney::human {
 

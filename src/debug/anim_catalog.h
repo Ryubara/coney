@@ -16,7 +16,7 @@ class AnimSet;
 // The Animation player's catalogue (docs/guides/debug-menu.md#animation-player): the clips an anim set can play, by
 // anim id, with their names and lengths, grouped into categories for the menu. Coney's own tooling: the original has
 // no such list. The anim ids and their `ANIM_*` names are docs/references/anim-ids.md; how a set answers an id is
-// docs/research/characters.md#files and docs/research/formats/animation.md#where-clips-are-found.
+// docs/research/characters-appearance.md#files and docs/research/formats/animation.md#where-clips-are-found.
 
 namespace coney::debug {
 

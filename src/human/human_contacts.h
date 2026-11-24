@@ -31,7 +31,7 @@ struct CapsuleContact {
 /// matters): they meet where the axes are the two radii apart, and only while their heights overlap. Already closer
 /// than that, a move that goes in is met at fraction 0 and one that leaves is not met (**Coney's choice**: the original
 /// capsule sweep's start case is not traced; the walls' own sweep meets a face it already touches at fraction 0,
-/// docs/research/characters.md#slopes). Two axes on top of each other give no normal and are not met.
+/// docs/research/characters-ground.md#slopes). Two axes on top of each other give no normal and are not met.
 /// @orig 0x00343cd8 PhysicsSweep_CapsuleCapsule (unknown)
 [[nodiscard]] std::optional<CapsuleContact> sweepCapsules(const UprightCapsule& mover, anim::Vec3 move,
                                                           const UprightCapsule& other);

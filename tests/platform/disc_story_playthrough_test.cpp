@@ -66,7 +66,8 @@ constexpr float kClimbRise = 0.5F;
 constexpr float kClimbOverWithin = 2.0F;
 // How far from a Climb leg's point triangle starts being tapped, m: the point lies 1.5-2 m beyond the face, so the
 // face is then about 2-2.5 m ahead. A player at the run or sprint gait probes 4.5 m for a face and takes it with the
-// running climb, which keeps his speed (docs/research/characters.md#climb), so he climbs without slowing down.
+// running climb, which keeps his speed (docs/research/characters-traversal.md#climb), so he climbs without slowing
+// down.
 constexpr float kClimbTapWithin = 4.0F;
 // Frames between triangle taps on the way to a climb: every other frame (pressed, then released), so a sprint of about
 // 0.25 m a frame meets the face with a tap.
@@ -87,7 +88,7 @@ constexpr float kChargeBackOff = 3.0F;
 
 // A pad driven by what player 1 is doing: it follows `route` leg by leg, turning each wanted direction into the left
 // stick by the shown camera's heading (the stick moves the player relative to the camera,
-// docs/research/characters.md#input).
+// docs/research/characters-locomotion.md#input).
 class RouteDriver final : public coney::InputSource {
   public:
     // `player` gives player 1 once the level plays (null before).
@@ -123,9 +124,9 @@ class RouteDriver final : public coney::InputSource {
         // (docs/research/ai-gangs.md#warrior-auto-commands); that the chapter's Setup turns the commands off, and the
         // pursuers' speed, are inferred (docs/research/scripting.md#level3, docs/research/ai-scripting.md#devil-run).
         // So he sprints wherever he is not about to climb; Snow is tireless in the chase, so the sprint never runs
-        // out (docs/research/characters.md#sprint). The original's pursuers catch a driver that slows down for each
-        // climb too (issue #531: the same route driven in PCSX2 lost Snow at the climbs near x -97 and -74.5), so he
-        // runs into the climbs as a player who wants to win does.
+        // out (docs/research/characters-traversal.md#sprint). The original's pursuers catch a driver that slows down
+        // for each climb too (issue #531: the same route driven in PCSX2 lost Snow at the climbs near x -97 and -74.5),
+        // so he runs into the climbs as a player who wants to win does.
         steer(pad, *player, dx, dy, 1.0F);
 
         // Buttons: L2 held throughout (the sprint, and a jump's or a charge's run-up); triangle tapped near a climb's

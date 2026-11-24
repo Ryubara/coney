@@ -4,7 +4,7 @@
 [[function]]
 address = 0x00146078
 name = "PlayerRecord_Update"
-page = "characters.md#original-structure"
+page = "characters-locomotion.md#original-structure"
 role = "pad → stick angle and magnitude"
 level = "confirmed-code"
 coney = "src/human/locomotion.h:stickIntent"
@@ -13,7 +13,7 @@ status = "legacy"
 [[function]]
 address = 0x0016e258
 name = "LevelChunk_CharacterData"
-page = "characters.md#original-structure"
+page = "characters-appearance.md#original-structure"
 level = "confirmed-code"
 coney = "src/characters/character_data.h:CharacterData::resolve"
 status = "legacy"
@@ -21,7 +21,7 @@ status = "legacy"
 [[function]]
 address = 0x00175080
 name = "CharacterInstance_GetAnim"
-page = "characters.md#original-structure"
+page = "characters-animation.md#original-structure"
 role = "an anim id to an animation"
 level = "confirmed-code"
 coney = "src/characters/character_data.h:CharacterData::animation"
@@ -54,7 +54,7 @@ question = "face.md#q-shared-buffer"
 [[function]]
 address = 0x00218008
 name = "Human_Init"
-page = "characters.md#original-structure"
+page = "characters/index.md#original-structure"
 role = "type remap, model, ground snap, defaults"
 level = "confirmed-code"
 coney = "src/characters/character_class.cpp:modelNameFor"
@@ -92,7 +92,7 @@ status = "compared"
 [[function]]
 address = 0x00219d50
 name = "Human_OnContact"
-page = "characters.md#original-structure"
+page = "characters-ground.md#original-structure"
 role = "the body's contact handler: landings, fences while climbing, objects"
 level = "confirmed-code"
 note = "confirmed (code) for the parts cited"
@@ -117,7 +117,7 @@ issue = 684
 [[function]]
 address = 0x0021a490
 name = "Human_PushOutInAir"
-page = "characters.md#original-structure"
+page = "characters-ground.md#original-structure"
 role = "the push-out sphere (or a bone segment) while airborne and in some states"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::pushOutInAir"
@@ -131,7 +131,7 @@ issue = 1008
 [[function]]
 address = 0x0021c7c8
 name = "Human_Destroy"
-page = "characters.md#destroy"
+page = "characters/index.md#destroy"
 role = "removes a human at once: knocked out if not dead (event 18), defeat credited, made dead, handle freed"
 level = "confirmed-code"
 coney = "src/ai/brains.h:Brains::destroy"
@@ -145,7 +145,7 @@ issue = 1640
 [[function]]
 address = 0x0021cda8
 name = "Human_StoreName"
-page = "characters.md#original-structure"
+page = "characters/index.md#original-structure"
 role = "15 characters at `+0x80`"
 level = "confirmed-code"
 coney = "src/scripting/hub_bindings.cpp:makeHuSetName"
@@ -154,7 +154,7 @@ status = "legacy"
 [[function]]
 address = 0x0021d080
 name = "Human_GetPosition"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "The human's position: the carried pose `+0x2c0` while grabbed or carried, else the pose slot."
 level = "confirmed-code"
 coney = "src/scripting/level_bindings.cpp:makeHuGetPosition"
@@ -163,7 +163,7 @@ status = "legacy"
 [[function]]
 address = 0x0021e3a8
 name = "Human_GetSoundVolumeScale"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "1.0, or the combat-framing volume (game state `+0x24c`) for a player while the camera frames a fight."
 level = "confirmed-code"
 coney = "src/audio/human_sound_events.h:HumanSoundEvents::combatFactor"
@@ -172,7 +172,7 @@ status = "legacy"
 [[function]]
 address = 0x0021e940
 name = "Human_UpdateSpeech"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Per update speech: when the line ends, clears speaking state and runs the end callback once; while it plays, moves the stream to the head and faces the partner."
 level = "confirmed-code"
 coney = "src/audio/speech.h:Speech::update"
@@ -191,7 +191,7 @@ issue = 1009
 [[function]]
 address = 0x0021ec38
 name = "Human_StopSpeech"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "`(human, force)`: stops the current line when it is alive and either forced or cut-able (`+0x194` set); ends the speaking pose, sets `+0x194` and `+0x195` and drops the queued follow-up (`+0x184`); never touches the Lua callback, which runs at the next `Human_UpdateSpeech` ([Sound](sound.md#speech-cut-in))."
 level = "confirmed-code"
 coney = "src/audio/speech.h:Speech::shutUp"
@@ -200,7 +200,7 @@ status = "legacy"
 [[function]]
 address = 0x0021f290
 name = "Human_PlayFootstep"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Plays the material pair of a material and the ground under the human (`+0x1d8`, remapped): twice as loud for a player, half when hidden in shadow ([Sound](sound.md#anim-sounds))."
 level = "confirmed-code"
 coney = "src/audio/human_sound_events.h:HumanSoundEvents::footstep"
@@ -209,7 +209,7 @@ status = "legacy"
 [[function]]
 address = 0x0021f410
 name = "Human_SayAnimLine"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "An anim entry's first sound as a speech line, only when the human may speak; over a playing line only when asked, cutting it when asked ([Sound](sound.md#anim-sounds))."
 level = "confirmed-code"
 coney = "src/audio/human_sound_events.h:HumanSoundEvents::sayAnimLine"
@@ -218,7 +218,7 @@ status = "legacy"
 [[function]]
 address = 0x0021f548
 name = "Human_PlayAnimSound"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Plays an anim entry of the sound matrix at a point, owned by the human; a player's louder, with extra columns under combat framing ([Sound](sound.md#anim-sounds))."
 level = "confirmed-code"
 coney = "src/audio/human_sound_events.h:HumanSoundEvents::playAnimSound"
@@ -227,7 +227,7 @@ status = "legacy"
 [[function]]
 address = 0x0021f700
 name = "Human_OnAnimSoundEvent"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Clip event 11 (message 0x8b): by the anim sound id plays the matrix entry, a footstep or material pair, a speech line or a command ([Sound](sound.md#anim-sounds))."
 level = "confirmed-code"
 coney = "src/audio/human_sound_events.h:HumanSoundEvents::animSound"
@@ -245,7 +245,7 @@ status = "compared"
 [[function]]
 address = 0x002212d0
 name = "Human_GetTurnRateForGait"
-page = "characters.md#ai-locomotion"
+page = "characters-locomotion.md#ai-locomotion"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/human/locomotion.h:aiMaxTurn"
 status = "legacy"
@@ -253,7 +253,7 @@ status = "legacy"
 [[function]]
 address = 0x002213d8
 name = "Human_MaxTurn"
-page = "characters.md#original-structure"
+page = "characters-locomotion.md#original-structure"
 role = "the turn limit per update"
 level = "confirmed-code"
 coney = "src/human/locomotion.h:aiStanceTurn"
@@ -262,7 +262,7 @@ status = "legacy"
 [[function]]
 address = 0x00221760
 name = "Human_GaitForSpeed"
-page = "characters.md#original-structure"
+page = "characters-locomotion.md#original-structure"
 role = "a speed to gait 0, 2, 3, 4 or 5"
 level = "confirmed-code"
 coney = "src/human/locomotion.h:gaitForSpeed"
@@ -271,7 +271,7 @@ status = "legacy"
 [[function]]
 address = 0x002217f0
 name = "Human_LaunchJump"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 role = "the jump's velocity, then airborne"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::launchJump"
@@ -280,7 +280,7 @@ status = "compared"
 [[function]]
 address = 0x00221a00
 name = "Human_GetDynamicAnim"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Clip for an anim id: an override slot (`+0x3c8`, 7 x 0x28) else the gang clip table entry of the variant `+0x3c4`."
 level = "confirmed-code"
 coney = "src/human/human_animator.h:HumanAnimator::setOverride"
@@ -289,7 +289,7 @@ status = "legacy"
 [[function]]
 address = 0x00221aa0
 name = "Human_SetAnimOverride"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Puts a clip into one of the seven override slots (`+0x3c8`) for an anim id, or releases the slot when the clip is 0; marks the state when the current anim is overridden."
 level = "confirmed-code"
 coney = "src/human/script_state.h:ScriptState::setAnimOverride"
@@ -303,7 +303,7 @@ issue = 695
 [[function]]
 address = 0x00221c20
 name = "Human_TurnToFacePoint"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Heading from the human to a point (Math_Atan2), then Human_TurnToOver over the given time."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::turnToFace"
@@ -312,7 +312,7 @@ status = "compared"
 [[function]]
 address = 0x00222370
 name = "Human_HasClearRayTo"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Ray_IsClear from the human's position (eye height added) to a point."
 level = "confirmed-code"
 coney = "src/ai/perception.h:clearRayTo"
@@ -321,7 +321,7 @@ status = "legacy"
 [[function]]
 address = 0x00222710
 name = "Human_IsInFieldOfView"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Whether a point is within the human's field of view (cosine of half the angle)."
 level = "confirmed-code"
 coney = "src/ai/perception.h:inFieldOfView"
@@ -330,7 +330,7 @@ status = "legacy"
 [[function]]
 address = 0x00222980
 name = "Human_AddCuffs"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Adds handcuffs: inventory item 5 for a player, else `+0x378` clamped at 0."
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::addCuffs"
@@ -339,8 +339,8 @@ status = "legacy"
 [[function]]
 address = 0x00222a48
 name = "Human_IsThreatTo"
-page = "characters.md#code-core"
-role = "Whether human b is a threat to human a: Brain_IsThreat on their two brains (gangs enemies, or both pad players; a Warrior's +0x2e5 mode overrides). A test only; Brain_GiveWayTo needs it false both ways ([Step control](characters.md#step-control))."
+page = "characters/index.md#code-core"
+role = "Whether human b is a threat to human a: Brain_IsThreat on their two brains (gangs enemies, or both pad players; a Warrior's +0x2e5 mode overrides). A test only; Brain_GiveWayTo needs it false both ways ([Step control](characters-locomotion.md#step-control))."
 level = "confirmed-code"
 coney = "src/ai/threats.h:isThreat"
 status = "legacy"
@@ -348,7 +348,7 @@ status = "legacy"
 [[function]]
 address = 0x00222ba8
 name = "WarriorType_GetPlayerClass"
-page = "characters.md#power-class-bytes"
+page = "characters-classes.md#power-class-bytes"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/characters/character_class.h:warriorPowerClassOf"
 status = "legacy"
@@ -356,7 +356,7 @@ status = "legacy"
 [[function]]
 address = 0x00222c20
 name = "WarriorType_GetWarriorClass"
-page = "characters.md#power-class-bytes"
+page = "characters-classes.md#power-class-bytes"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/characters/character_class.h:warriorClassOf"
 status = "legacy"
@@ -373,7 +373,7 @@ status = "compared"
 [[function]]
 address = 0x00223068
 name = "Human_GetMaxPower"
-page = "characters.md#power-class-bytes"
+page = "characters-classes.md#power-class-bytes"
 level = "confirmed-code"
 coney = "src/combat/meters.h:PowerMeter::setHurt"
 status = "legacy"
@@ -381,7 +381,7 @@ status = "legacy"
 [[function]]
 address = 0x00223188
 name = "Human_StaminaMax"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 role = "stamina maximum from the power class"
 level = "confirmed-code"
 coney = "src/human/stamina.h:Stamina::Stamina"
@@ -426,7 +426,7 @@ status = "compared"
 [[function]]
 address = 0x002239c0
 name = "Human_IsGrabbingRear"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "State flag 0x80: the human holds his victim from behind."
 level = "confirmed-code"
 coney = "src/ai/move_to_human_action.cpp:grabbingRear"
@@ -435,7 +435,7 @@ status = "compared"
 [[function]]
 address = 0x00223b98
 name = "Human_IsKnockedDown"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "State flag 0x80000, read only when the human has a record (`+0xd4`)."
 level = "confirmed-code"
 coney = "src/ai/targeting.cpp:down"
@@ -449,7 +449,7 @@ question = "ai-fights.md#q-score-down-flag"
 [[function]]
 address = 0x00223c10
 name = "Human_HasHeld40"
-page = "characters.md#climb"
+page = "characters-traversal.md#climb"
 role = "Record `+0x08` bit `0x40`: set while a climb's middle clip plays (fences do not block the body); the flash's press is refused on it."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::climbingOver"
@@ -472,7 +472,7 @@ question = "ai-fights.md#q-score-held-object"
 [[function]]
 address = 0x002240e8
 name = "Human_CanUseAttackKind"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Whether the human can start attack kind n on a target now: per-kind checks of its own and the target's state flags, held objects, spray paint, cuffs, and the brain's targets for kind 10."
 level = "confirmed-code"
 coney = "src/ai/attack_choice.h:canUseAttackKind"
@@ -486,8 +486,8 @@ issue = 674
 [[function]]
 address = 0x00225390
 name = "Human_IsIdleUnderControl"
-page = "characters.md#code-core"
-role = "Under Human_UpdateControl or the step control with no state 0x7bf9e1f3ff0 and no held flag; the stander test of Brain_GiveWayTo ([Step control](characters.md#step-control))."
+page = "characters/index.md#code-core"
+role = "Under Human_UpdateControl or the step control with no state 0x7bf9e1f3ff0 and no held flag; the stander test of Brain_GiveWayTo ([Step control](characters-locomotion.md#step-control))."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::idleUnderControl"
 status = "legacy"
@@ -509,7 +509,7 @@ issue = 684
 [[function]]
 address = 0x002256a0
 name = "Human_CanBeGrabbed"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Whether the human may be grabbed or tackled by another: not down or in a scene, within 0.25 m of height, and none of the blocking state or held flags; a knocked-down one only before half its rise"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::mountableOnGround"
@@ -523,7 +523,7 @@ issue = 231
 [[function]]
 address = 0x00225f58
 name = "Human_IsFreeForFidget"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "No held flags, no action state flags and nothing held: the fidget and taunt actions may start."
 level = "confirmed-code"
 coney = "src/ai/fidget_action.h:freeToFidget"
@@ -532,7 +532,7 @@ status = "legacy"
 [[function]]
 address = 0x00228258
 name = "Human_IsBusy"
-page = "characters.md#power-class-bytes"
+page = "characters-classes.md#power-class-bytes"
 role = "Busy: a state flag of 0x1f80974000, or the hit timer (record +0x108, set by Human_ApplyPendingDamage to the game time + the class's +0x32) still ahead of the game time; about 40 AI routines skip a busy human."
 level = "confirmed-code"
 coney = "src/ai/reaction_goals.h:humanBusy"
@@ -546,8 +546,8 @@ question = "ai-reimpl.md#q-teamup-busy"
 [[function]]
 address = 0x00228448
 name = "Human_HasHeld20080000"
-page = "characters.md#code-core"
-role = "Held flags 0x20080000: a turn clip (0x20000000) or a step clip (0x80000) plays; TakeStep waits on it and refuses an abort ([Step control](characters.md#step-control))."
+page = "characters/index.md#code-core"
+role = "Held flags 0x20080000: a turn clip (0x20000000) or a step clip (0x80000) plays; TakeStep waits on it and refuses an abort ([Step control](characters-locomotion.md#step-control))."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::stepHeld"
 status = "legacy"
@@ -555,7 +555,7 @@ status = "legacy"
 [[function]]
 address = 0x002286a0
 name = "Human_IsSwingingHeld"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Held flag 0x800000, or 0x1000010 while holding an object and playing one of the eleven object throw clips (467, 471, 472, 491, 502, 505-507, 551-553; a throw wind-up, not a melee swing). A hit drops the held object while it is true ([Combat: dropping what is held](combat-throws.md#keep-weapon))."
 level = "confirmed-code"
 coney = "src/ai/steal_goals.h:swingingHeld"
@@ -564,7 +564,7 @@ status = "compared"
 [[function]]
 address = 0x00228d70
 name = "Cfg_AddHatFit"
-page = "characters.md#hats"
+page = "characters-appearance.md#hats"
 level = "confirmed-code"
 coney = "src/world_objects/hats.h:HatFits::add"
 status = "legacy"
@@ -572,7 +572,7 @@ status = "legacy"
 [[function]]
 address = 0x00229570
 name = "Human_GetPortraitKind"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "The crew-portrait kind for the character id `+0xcc` (kinds 0-11)."
 level = "confirmed-code"
 coney = "src/hud/player_panel.h:bannerRecord"
@@ -581,8 +581,8 @@ status = "compared"
 [[function]]
 address = 0x00229c40
 name = "Human_MakePlayer"
-page = "characters.md#original-structure"
-role = "joins the player list, takes a pad and a HUD panel, brain type 0 ([Players](characters.md#players))"
+page = "characters-players.md#original-structure"
+role = "joins the player list, takes a pad and a HUD panel, brain type 0 ([Players](characters-players.md#players))"
 level = "confirmed-code"
 coney = "src/gamemodes/gameplay_mode.h:GameplayMode::stepCrew"
 status = "compared"
@@ -595,7 +595,7 @@ issue = 1520
 [[function]]
 address = 0x0022a2a8
 name = "Human_ReleasePlayer"
-page = "characters.md#original-structure"
+page = "characters-players.md#original-structure"
 role = "the reverse: frees the pad and panel, leaves the player list, AI again"
 level = "confirmed-code"
 coney = "src/ai/ai_humans.h:AiHumans::releasePlayer"
@@ -609,7 +609,7 @@ issue = 1011
 [[function]]
 address = 0x0022a770
 name = "Gang_PickNextPlayer"
-page = "characters.md#original-structure"
+page = "characters-players.md#original-structure"
 role = "the gang member a player hand-over chooses"
 level = "confirmed-code"
 coney = "src/ai/scripted_brains.h:ScriptedBrains::switchTarget"
@@ -618,7 +618,7 @@ status = "legacy"
 [[function]]
 address = 0x0022ae40
 name = "Human_SpeedForGait"
-page = "characters.md#ai-locomotion"
+page = "characters-locomotion.md#ai-locomotion"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/move_action.h:gaitSpeed"
 status = "legacy"
@@ -626,7 +626,7 @@ status = "legacy"
 [[function]]
 address = 0x0022aeb0
 name = "Human_GaitForSpeed"
-page = "characters.md#speed-classes"
+page = "characters-classes.md#speed-classes"
 level = "confirmed-code"
 coney = "src/human/locomotion.h:gaitOfSpeed"
 status = "legacy"
@@ -634,7 +634,7 @@ status = "legacy"
 [[function]]
 address = 0x0022d348
 name = "Human_StartWorkout"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Sets state 0x20000000000 and calls the workout start callback."
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::beginWorkout"
@@ -643,7 +643,7 @@ status = "legacy"
 [[function]]
 address = 0x0022d380
 name = "Human_EndWorkout"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Clears state 0x20000000000, stops the workout clip and calls the end callback."
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::endWorkout"
@@ -652,7 +652,7 @@ status = "legacy"
 [[function]]
 address = 0x0022fa78
 name = "Human_StartWounded"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Clears the fight states, drops what is held, pushes the wounded style, sets the health to a quarter of the maximum and state 0x10000, and tells the brain the human is knocked out."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::blocksHumans"
@@ -661,7 +661,7 @@ status = "legacy"
 [[function]]
 address = 0x0022fc00
 name = "Human_EndWounded"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Clears state 0x10000, restores push weight and pops the wounded style (0xd)."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::setWounded"
@@ -670,7 +670,7 @@ status = "legacy"
 [[function]]
 address = 0x002300c0
 name = "Human_LeaveShadow"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "When hidden (0x200000), not running and with a target, clears the hidden state."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::leaveHiding"
@@ -679,7 +679,7 @@ status = "legacy"
 [[function]]
 address = 0x00231b60
 name = "Human_StopFidget"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "With a fidget playing (held 0x100): drops the overlay while moving, else rebuilds the idle tasks."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::stopScripted"
@@ -688,7 +688,7 @@ status = "legacy"
 [[function]]
 address = 0x00232538
 name = "Humans_EndAllRage"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Ends rage mode for every human in rage (flag 0x80000)."
 level = "confirmed-code"
 coney = "src/human/human.h:endAllRage"
@@ -697,7 +697,7 @@ status = "legacy"
 [[function]]
 address = 0x00233b08
 name = "Human_SwapHeldObjects"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "Swaps two humans' held objects, each picking up the other's with its pickup clip."
 level = "confirmed-code"
 coney = "src/ai/swap_prompt.h:swapHeldObjects"
@@ -706,7 +706,7 @@ status = "legacy"
 [[function]]
 address = 0x00233d60
 name = "Human_Create"
-page = "characters.md#original-structure"
+page = "characters/index.md#original-structure"
 role = "heading quaternion, slot, init, name, player; returns the handle"
 level = "confirmed-code"
 coney = "src/scripting/script_bindings.cpp:makeHuCreate"
@@ -715,7 +715,7 @@ status = "compared"
 [[function]]
 address = 0x00233ef0
 name = "Human_Delete"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "Marks the human dead (0x200000000), clears its foe and its script handlers."
 level = "confirmed-code"
 coney = "src/ai/ai_humans.h:AiHumans::remove"
@@ -724,7 +724,7 @@ status = "legacy"
 [[function]]
 address = 0x00234038
 name = "Human_SetNoTarget"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "Human flag 0x100000000000 on or off: the human cannot be targeted."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp"
@@ -733,7 +733,7 @@ status = "legacy"
 [[function]]
 address = 0x002340a8
 name = "Human_SetNoAutoLock"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "Human flag 0x8000000000 on or off: no automatic lock-on."
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
@@ -742,7 +742,7 @@ status = "legacy"
 [[function]]
 address = 0x00234118
 name = "Human_SetAutoCombat"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "Human flag 0x200000000000 on or off."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -751,7 +751,7 @@ status = "legacy"
 [[function]]
 address = 0x00234188
 name = "Human_SetWheelchairControl"
-page = "characters.md#wheelchair"
+page = "characters-locomotion.md#wheelchair"
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
 status = "legacy"
@@ -759,7 +759,7 @@ status = "legacy"
 [[function]]
 address = 0x00234530
 name = "Cfg_SetWorkoutParams"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "Fills the workout parameter tables at 0x00510690-0x005106b0."
 level = "confirmed-code"
 coney = "src/scripting/hub_bindings.cpp:makeCfgWorkoutParams"
@@ -768,7 +768,7 @@ status = "legacy"
 [[function]]
 address = 0x002345f8
 name = "Human_SetWorkoutCallbacks"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "Interns the workout start, rep and end Lua callbacks."
 level = "confirmed-code"
 coney = "src/scripting/hub_bindings.cpp:makeHuSetWorkoutCallbacks"
@@ -777,7 +777,7 @@ status = "legacy"
 [[function]]
 address = 0x00234ef8
 name = "Human_SetLockMovement"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuLockMovement`: human flag 0x200000000 on or off; the rumble menus use it on preview fighters."
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
@@ -786,7 +786,7 @@ status = "legacy"
 [[function]]
 address = 0x002350c8
 name = "Human_SetTireless"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "Human flag 0x4000000 on or off."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp"
@@ -795,7 +795,7 @@ status = "legacy"
 [[function]]
 address = 0x00235198
 name = "Human_SetNoReact"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "Human flag 0x800 on or off."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -804,7 +804,7 @@ status = "legacy"
 [[function]]
 address = 0x00235200
 name = "Human_SetAutoEscape"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetAutoEscape`: human flag 0x20000 on or off."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -813,7 +813,7 @@ status = "legacy"
 [[function]]
 address = 0x00235268
 name = "Human_SetPushable"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetPushable`: resolves the handle and calls the human's pushable setter (0x0021d848)."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeSetPushable"
@@ -822,7 +822,7 @@ status = "legacy"
 [[function]]
 address = 0x002352b0
 name = "Human_GetPositionRef"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuGetPosition`: the human's position, or the zero vector 0x005116c0."
 level = "confirmed-code"
 coney = "src/scripting/level_bindings.cpp:makeHuGetPosition"
@@ -831,7 +831,7 @@ status = "legacy"
 [[function]]
 address = 0x00235478
 name = "Human_GetGangType"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuGetGangType`: the brain's gang (`+0x20c`), -1 without a human."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:addGetters"
@@ -840,7 +840,7 @@ status = "legacy"
 [[function]]
 address = 0x00235530
 name = "Human_GetHat"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuHasHat`: the handle of the worn hat `+0x364`, or null."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:addGetters"
@@ -849,7 +849,7 @@ status = "legacy"
 [[function]]
 address = 0x002355e0
 name = "Human_IsGrabbed"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuIsGrabbed`: any of state flags 0x830 (grabbed from the front or rear, tackled)."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -858,7 +858,7 @@ status = "legacy"
 [[function]]
 address = 0x00235628
 name = "Human_IsAlive"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuIsAlive`: not down or dead and up."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::alive"
@@ -867,7 +867,7 @@ status = "legacy"
 [[function]]
 address = 0x00235688
 name = "Human_IsDead"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuIsDead`: dead (true without a human)."
 level = "confirmed-code"
 coney = "src/scripting/hub_bindings.cpp:addHubBindings"
@@ -876,7 +876,7 @@ status = "legacy"
 [[function]]
 address = 0x002356c8
 name = "Human_IsInScene"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuIsInScene`: in a scene state."
 level = "confirmed-code"
 coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
@@ -885,7 +885,7 @@ status = "legacy"
 [[function]]
 address = 0x00235718
 name = "Human_IsArrested"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuIsArrested`: cuffed."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:addGetters"
@@ -894,7 +894,7 @@ status = "legacy"
 [[function]]
 address = 0x00235758
 name = "Human_IsPlayer"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuIsAPlayer`: player index `+0x1b0` is not -1."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:addGetters"
@@ -903,7 +903,7 @@ status = "legacy"
 [[function]]
 address = 0x00235798
 name = "Human_IsHidden"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuIsHidden`: the brain's hidden byte `+0x2d4`."
 level = "confirmed-code"
 coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
@@ -912,7 +912,7 @@ status = "legacy"
 [[function]]
 address = 0x00235890
 name = "Human_GetCharType"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuGetCharType`: the character type `+0xcc`."
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
@@ -921,7 +921,7 @@ status = "legacy"
 [[function]]
 address = 0x002359a0
 name = "Human_SetDemiGodMode"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetDemiGodMode`: human flag 0x20000000000 and the minimum health 0x0051024c."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeSetDemiGodMode"
@@ -930,7 +930,7 @@ status = "legacy"
 [[function]]
 address = 0x00235a28
 name = "Human_SetGodMode"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetGodMode`: human flag 0x10; the tired goal also uses it."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeSetGodMode"
@@ -939,7 +939,7 @@ status = "legacy"
 [[function]]
 address = 0x00235a88
 name = "Human_SetKillerMode"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetKillerMode`: human flag 0x20."
 level = "confirmed-code"
 coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
@@ -948,7 +948,7 @@ status = "legacy"
 [[function]]
 address = 0x00235b68
 name = "Human_SetFastClimber"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetFastClimber`: a human flag on or off."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp"
@@ -957,7 +957,7 @@ status = "legacy"
 [[function]]
 address = 0x00235bc8
 name = "Human_SetUngrabbable"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetUngrabbable`: human flag 0x40."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp"
@@ -966,7 +966,7 @@ status = "legacy"
 [[function]]
 address = 0x00235c28
 name = "Human_SetUngroundable"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetUngroundable`: human flag 0x80."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp"
@@ -975,7 +975,7 @@ status = "legacy"
 [[function]]
 address = 0x00235c88
 name = "Human_SetUnstunnable"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetUnstunnable`: human flag 0x100."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp"
@@ -984,7 +984,7 @@ status = "legacy"
 [[function]]
 address = 0x00235ce8
 name = "Human_SetIncreasedReact"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetIncreasedReact`: human flag 0x200000."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp"
@@ -993,7 +993,7 @@ status = "legacy"
 [[function]]
 address = 0x00235d50
 name = "Human_SetReducedReact"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetReducedReact`: human flag 0x200."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp"
@@ -1002,7 +1002,7 @@ status = "legacy"
 [[function]]
 address = 0x00235db0
 name = "Human_SetRevivable"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetRevivable`: a human flag on or off."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -1011,7 +1011,7 @@ status = "legacy"
 [[function]]
 address = 0x00235e10
 name = "Human_SetDoubleDamage"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetDoubleDamage`: human flag 0x4000."
 level = "confirmed-code"
 coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
@@ -1020,7 +1020,7 @@ status = "legacy"
 [[function]]
 address = 0x00235e70
 name = "Human_SetUnarrestable"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetUnarrestable`: human flag 0x8000, removing a pending arrest prompt."
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::setUnarrestable"
@@ -1029,7 +1029,7 @@ status = "legacy"
 [[function]]
 address = 0x00236188
 name = "Human_SetUnlockedGear"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuAttachGear`: attaches or removes the unlocked gear."
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::attachGear"
@@ -1038,7 +1038,7 @@ status = "legacy"
 [[function]]
 address = 0x00236470
 name = "Cfg_SetStickDeflection"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`CfgStickDeflection`: sets 0x005102e8."
 level = "confirmed-code"
 coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
@@ -1047,7 +1047,7 @@ status = "legacy"
 [[function]]
 address = 0x00236480
 name = "Cfg_SetPlayerCombatWalkOnly"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`CfgPlayerCombatWalkOnly`: sets 0x0051031c."
 level = "confirmed-code"
 coney = "src/scripting/hub_world_bindings.cpp:addHubWorldBindings"
@@ -1056,7 +1056,7 @@ status = "legacy"
 [[function]]
 address = 0x00236978
 name = "Human_ForceEnableReticule"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuForceEnableReticule`: sets 0x005104f8."
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
@@ -1065,7 +1065,7 @@ status = "legacy"
 [[function]]
 address = 0x002369b8
 name = "Human_SetRageFrac"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetRageFrac`: sets the rage meter to a fraction of its maximum."
 level = "confirmed-code"
 coney = "src/combat/meters.h:RageMeter::setFraction"
@@ -1074,7 +1074,7 @@ status = "legacy"
 [[function]]
 address = 0x00236a68
 name = "Human_SetFullRage"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetFullRage`: fills the rage meter."
 level = "confirmed-code"
 coney = "src/combat/meters.h:RageMeter::fill"
@@ -1083,7 +1083,7 @@ status = "legacy"
 [[function]]
 address = 0x00236ad0
 name = "Human_SetPreventRage"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetPreventRage`: human flag 0x2000000."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp"
@@ -1092,7 +1092,7 @@ status = "legacy"
 [[function]]
 address = 0x00236b38
 name = "Human_SetLockedRage"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetLockedRage`: human flag 0x100000 and the rage meter held where it is."
 level = "confirmed-code"
 coney = "src/combat/meters.h:RageMeter::setLocked"
@@ -1101,7 +1101,7 @@ status = "legacy"
 [[function]]
 address = 0x00236c58
 name = "Cfg_SetRageHandlers"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`CfgRageHandlers`: interns the rage Lua handlers (0x00510290, 0x00510294, table 0x006b6810)."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeCfgRageHandlers"
@@ -1110,7 +1110,7 @@ status = "legacy"
 [[function]]
 address = 0x00237128
 name = "Human_SetRageMode"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetRageMode`: starts or ends rage (human flag 0x80000) for a player."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::setRageMode"
@@ -1119,7 +1119,7 @@ status = "legacy"
 [[function]]
 address = 0x002372a8
 name = "Human_GiveCuffs"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuGiveCuffs`: adds handcuffs (inventory item 5 for a player)."
 level = "confirmed-code"
 coney = "src/scripting/hub_bindings.cpp:makeHuGiveCuffs"
@@ -1128,7 +1128,7 @@ status = "legacy"
 [[function]]
 address = 0x00237328
 name = "Human_SetKeepWeapon"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetKeepWeapon`: human flag 0x2000; Diego's boss goal uses it."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp"
@@ -1137,7 +1137,7 @@ status = "legacy"
 [[function]]
 address = 0x00237388
 name = "Human_SetKeepHat"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetKeepHat`: human flag 0x10000000000."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -1146,7 +1146,7 @@ status = "legacy"
 [[function]]
 address = 0x00237468
 name = "Human_SetNoThrowWeapon"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetNoThrowWeapon`: human flag 0x4000000000."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp"
@@ -1155,7 +1155,7 @@ status = "legacy"
 [[function]]
 address = 0x00237628
 name = "Human_SetWounded"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetWounded`: starts or ends the wounded state."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::setWounded"
@@ -1164,7 +1164,7 @@ status = "legacy"
 [[function]]
 address = 0x002376a0
 name = "Human_SetWoundable"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetWoundable`: a human flag on or off."
 level = "confirmed-code"
 coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
@@ -1173,7 +1173,7 @@ status = "legacy"
 [[function]]
 address = 0x00237700
 name = "Human_SetArrested"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetArrested`: arrests or frees the human ([Crimes](crimes.md#arrest)); the bum goal uses it too."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::setArrested"
@@ -1182,7 +1182,7 @@ status = "legacy"
 [[function]]
 address = 0x00237778
 name = "Human_SetConscious"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetConscious`: knocks out or wakes the human."
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
@@ -1191,7 +1191,7 @@ status = "legacy"
 [[function]]
 address = 0x002377f8
 name = "Human_Revive"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuRevive`: revives the human."
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::revive"
@@ -1200,7 +1200,7 @@ status = "legacy"
 [[function]]
 address = 0x00237848
 name = "Human_SetHealth"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetHealth`: health `+0x144`, at most the maximum."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -1209,7 +1209,7 @@ status = "legacy"
 [[function]]
 address = 0x002378a8
 name = "Human_SetHealthPercent"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetHealthPercent`: health as a percentage of the maximum, in single-precision products rounded toward zero, then truncated."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::setHealthPercent"
@@ -1218,7 +1218,7 @@ status = "legacy"
 [[function]]
 address = 0x00237958
 name = "Human_SetBlockJump"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuBlockJump`: human flag 0x10000000."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -1227,7 +1227,7 @@ status = "legacy"
 [[function]]
 address = 0x00237a28
 name = "Human_BlockGrab"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuBlockGrab`: human flags 0xc0000000 (both grabs)."
 level = "confirmed-code"
 coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
@@ -1236,7 +1236,7 @@ status = "legacy"
 [[function]]
 address = 0x00237b00
 name = "Human_SetBlockRearGrab"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuBlockRearGrab`: human flag 0x80000000."
 level = "confirmed-code"
 coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
@@ -1245,7 +1245,7 @@ status = "legacy"
 [[function]]
 address = 0x00237b70
 name = "Human_SetBlockTackle"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuBlockTackle`: human flag 0x100000000."
 level = "confirmed-code"
 coney = "src/scripting/hub_bindings.cpp:addHubBindings"
@@ -1254,7 +1254,7 @@ status = "legacy"
 [[function]]
 address = 0x00237c38
 name = "Human_GetHealthPercent"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuGetHealthPercent`: health as a percentage of the maximum."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::healthPercent"
@@ -1263,7 +1263,7 @@ status = "legacy"
 [[function]]
 address = 0x00237d08
 name = "Human_GetHeldObjectType"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuWhatAmIHolding`: the held object's type."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeHuWhatAmIHolding"
@@ -1272,7 +1272,7 @@ status = "legacy"
 [[function]]
 address = 0x00237d48
 name = "Human_GetHeldObject"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuGetHeldObject`: the held object's handle, or null."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:addGetters"
@@ -1281,7 +1281,7 @@ status = "legacy"
 [[function]]
 address = 0x00237db8
 name = "Human_IsInCombat"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuInCombat`: whether the human fights."
 level = "confirmed-code"
 coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
@@ -1290,7 +1290,7 @@ status = "legacy"
 [[function]]
 address = 0x00237e70
 name = "Human_Kill"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuKill`: kills the human."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -1299,7 +1299,7 @@ status = "legacy"
 [[function]]
 address = 0x00238030
 name = "Human_SetShadow"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuShadow`: the render instance's shadow switch (`+0x2b4`)."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -1308,7 +1308,7 @@ status = "legacy"
 [[function]]
 address = 0x00238078
 name = "Human_SetName"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetName`: the human's name."
 level = "confirmed-code"
 coney = "src/scripting/hub_bindings.cpp:makeHuSetName"
@@ -1317,7 +1317,7 @@ status = "legacy"
 [[function]]
 address = 0x002380c0
 name = "Human_GetControlName"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuGetControlName`: the name of the control the human is under."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeHuGetControlName"
@@ -1326,7 +1326,7 @@ status = "legacy"
 [[function]]
 address = 0x00238158
 name = "Human_GetMoney"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuGetMoney`: money `+0x370`."
 level = "confirmed-code"
 coney = "src/scripting/hub_bindings.cpp:addHubBindings"
@@ -1335,7 +1335,7 @@ status = "legacy"
 [[function]]
 address = 0x002381f0
 name = "Human_RemoveItemInPocket"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuRemoveItemInPocket`: clears the pocket item (`+0x250`, `+0x254`)."
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
@@ -1344,7 +1344,7 @@ status = "legacy"
 [[function]]
 address = 0x00238230
 name = "Human_SetCarriedItemName"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetCarriedItem`: the carried item name (`+0x278`)."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeSetCarriedItem"
@@ -1353,7 +1353,7 @@ status = "legacy"
 [[function]]
 address = 0x002383a0
 name = "Human_SetLOSRange"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetLOSRange`: sight range `+0x130`."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -1362,7 +1362,7 @@ status = "legacy"
 [[function]]
 address = 0x002383e8
 name = "Human_SetHearRange"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetHearRange`: hearing range `+0x134`."
 level = "confirmed-code"
 coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
@@ -1371,7 +1371,7 @@ status = "legacy"
 [[function]]
 address = 0x00238430
 name = "Human_SetHelpHearRange"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetHelpHearRange`: the range for hearing calls for help `+0x138`."
 level = "confirmed-code"
 coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
@@ -1380,7 +1380,7 @@ status = "legacy"
 [[function]]
 address = 0x00238478
 name = "Human_ExitWorld"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuExitWorld`: takes the human out of the world."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeHuExitWorld"
@@ -1389,7 +1389,7 @@ status = "legacy"
 [[function]]
 address = 0x002384f8
 name = "Human_EnableController"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuEnableController`: the human's per-player record flag `+0x1b`, pad control on or off."
 level = "confirmed-code"
 coney = "src/ai/scripted_humans.h:ScriptedHumans::enableController"
@@ -1403,7 +1403,7 @@ question = "armies.md#coney"
 [[function]]
 address = 0x002385f8
 name = "Human_PlaceHatOnHead"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuPlaceHatOnHead`: puts a hat object on the human's head."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makePlaceHatOnHead"
@@ -1412,7 +1412,7 @@ status = "legacy"
 [[function]]
 address = 0x00238640
 name = "Human_SetPedReaction"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetPedReaction`: the pedestrian reaction `+0x270`."
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::setPedReaction"
@@ -1421,7 +1421,7 @@ status = "legacy"
 [[function]]
 address = 0x00238690
 name = "Human_UseAnim"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "Plays an anim by id on the human (scripts and many AI goals)."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeUseAnim"
@@ -1430,7 +1430,7 @@ status = "legacy"
 [[function]]
 address = 0x00238748
 name = "Human_UseAnyAnim"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuUseAnyAnim`: plays any clip by name."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeUseAnyAnim"
@@ -1439,7 +1439,7 @@ status = "legacy"
 [[function]]
 address = 0x002387a8
 name = "Human_AreActionsBlocked"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuAreActionsBlocked`: whether the human cannot act."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -1448,7 +1448,7 @@ status = "legacy"
 [[function]]
 address = 0x002387e8
 name = "Human_IsTagging"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuIsTagging`: state 0x2000000."
 level = "confirmed-code"
 coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
@@ -1457,7 +1457,7 @@ status = "legacy"
 [[function]]
 address = 0x00238948
 name = "Human_PlayDynAnim"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuPlayDynAnim`: a dynamic clip on the human."
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::playDynAnim"
@@ -1466,8 +1466,8 @@ status = "legacy"
 [[function]]
 address = 0x00238a88
 name = "Human_AttachSpinningIcon"
-page = "characters.md#code-script"
-role = "`HuAttachSpinningIcon`: the [spinning icon](characters.md#spinning-icon) over the human (`+0x360`); AI crime and dealer goals use it."
+page = "characters-script.md#code-script"
+role = "`HuAttachSpinningIcon`: the [spinning icon](characters-appearance.md#spinning-icon) over the human (`+0x360`); AI crime and dealer goals use it."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeAttachSpinningIcon"
 status = "legacy"
@@ -1475,7 +1475,7 @@ status = "legacy"
 [[function]]
 address = 0x00238ae0
 name = "Human_RemoveSpinningIcon"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuRemoveSpinningIcon`: removes it."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeRemoveSpinningIcon"
@@ -1484,7 +1484,7 @@ status = "legacy"
 [[function]]
 address = 0x00238bd8
 name = "Human_StartWorkout"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuWorkout`: starts a workout on the human (Human_StartWorkout state, start callback)."
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::workout"
@@ -1493,7 +1493,7 @@ status = "legacy"
 [[function]]
 address = 0x00238cd8
 name = "Human_SetWorkoutBlend"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetWorkoutBlend`: the workout blend `+0x670`."
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::setWorkoutBlend"
@@ -1502,7 +1502,7 @@ status = "legacy"
 [[function]]
 address = 0x00238d30
 name = "Human_StopWorkout"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuStopWorkout`: ends the workout and its clip."
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::stopWorkout"
@@ -1511,7 +1511,7 @@ status = "legacy"
 [[function]]
 address = 0x00238f10
 name = "Cfg_SetTagStartCallback"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`CfgTagStartCallback`: interns the tag-start Lua callback (0x006b6870)."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -1520,7 +1520,7 @@ status = "legacy"
 [[function]]
 address = 0x00239080
 name = "Human_SetTagColour"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuTagColor`: the tag colour `+0x640`."
 level = "confirmed-code"
 coney = "src/human/tag_colour.h:tagColourFromScript"
@@ -1529,7 +1529,7 @@ status = "legacy"
 [[function]]
 address = 0x00239188
 name = "Tag_SetPattern"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuTagPattern`: the tag's button pattern."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeHuTagPattern"
@@ -1538,7 +1538,7 @@ status = "legacy"
 [[function]]
 address = 0x00239240
 name = "Human_EnableSoundCommands"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuEnableSoundCommands`: switch `+0x199`, which every speech path checks."
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
@@ -1547,7 +1547,7 @@ status = "legacy"
 [[function]]
 address = 0x002392c0
 name = "Human_EnableTagDoneSpeech"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuEnableTagDone`: the tag-done speech switch `+0x19a`."
 level = "confirmed-code"
 coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
@@ -1556,7 +1556,7 @@ status = "legacy"
 [[function]]
 address = 0x00239300
 name = "Human_EnableTagCheer"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuEnableTagCheer`: the tag-cheer switch `+0x19c`."
 level = "confirmed-code"
 coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
@@ -1565,7 +1565,7 @@ status = "legacy"
 [[function]]
 address = 0x00239340
 name = "Human_Say"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSay`: Human_Speak with the default arguments."
 level = "confirmed-code"
 coney = "src/scripting/sound_bindings.cpp:addSoundBindings"
@@ -1574,7 +1574,7 @@ status = "legacy"
 [[function]]
 address = 0x00239370
 name = "Human_Speak"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSpeak`: plays a named speech line on the human with an optional Lua end callback (interned through the script system)."
 level = "confirmed-code"
 coney = "src/scripting/sound_bindings.cpp:makeHuSpeak"
@@ -1588,7 +1588,7 @@ issue = 1009
 [[function]]
 address = 0x00239558
 name = "Human_ShutUp"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuShutUp`: stops the human's line; the roof boss banter uses it."
 level = "confirmed-code"
 coney = "src/scripting/sound_bindings.cpp:makeHuShutUp"
@@ -1597,7 +1597,7 @@ status = "legacy"
 [[function]]
 address = 0x002395a0
 name = "Human_SpeakInterrupt"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSpeakNI`: the variant of `HuSpeak` that Human_ActionDialog and AI dialogue call."
 level = "confirmed-code"
 coney = "src/scripting/sound_bindings.cpp:makeHuSpeak"
@@ -1611,7 +1611,7 @@ issue = 1009
 [[function]]
 address = 0x00239788
 name = "Human_ActionDialog"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuActionDialog`: a line spoken to a partner (`+0x18c`), whom the speaker faces."
 level = "confirmed-code"
 coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
@@ -1620,7 +1620,7 @@ status = "legacy"
 [[function]]
 address = 0x00239b80
 name = "Players_ChangeGang"
-page = "characters.md#players"
+page = "characters-players.md#players"
 level = "confirmed-code"
 coney = "src/ai/scripted_brains.h:ScriptedBrains::changePlayerGang"
 status = "compared"
@@ -1633,7 +1633,7 @@ issue = 548
 [[function]]
 address = 0x00239e30
 name = "Human_MarkReachable"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuMarkReachable`: byte `+0x11e`."
 level = "confirmed-code"
 coney = "src/scripting/mission7_bindings.cpp:addMission7Bindings"
@@ -1642,7 +1642,7 @@ status = "legacy"
 [[function]]
 address = 0x00239e78
 name = "Human_SetMugCallback"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetMugCallback`: interns the mug Lua callback into `+0x5a4` ([Crimes](crimes.md#mugging))."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeSetMugCallback"
@@ -1651,7 +1651,7 @@ status = "legacy"
 [[function]]
 address = 0x00239ee0
 name = "Human_SetMug"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetMug`: the mug settings `+0x5b0`."
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::setMuggable"
@@ -1660,7 +1660,7 @@ status = "legacy"
 [[function]]
 address = 0x0023a210
 name = "Human_SetNormalMode"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetNormalMode`: clears the special modes; AI goals use it."
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::setNormal"
@@ -1669,7 +1669,7 @@ status = "legacy"
 [[function]]
 address = 0x0023a258
 name = "Human_SetRubberNeck"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuRubberNeck`: human flag 0x1000000 on or off."
 level = "confirmed-code"
 coney = "src/scripting/character_bindings.cpp:addCharacterBindings"
@@ -1678,7 +1678,7 @@ status = "legacy"
 [[function]]
 address = 0x0023a2c0
 name = "Human_SetBlockLook"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuBlockLook`: human flag 0x1000 on or off."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -1687,7 +1687,7 @@ status = "legacy"
 [[function]]
 address = 0x0023a328
 name = "Human_SetForceLook"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuForceLook`: human flag 0x10000 on or off."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -1696,7 +1696,7 @@ status = "legacy"
 [[function]]
 address = 0x0023a3b8
 name = "Human_SetLookTarget"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetLookTarget`: an object for the head to look at."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeSetLookTarget"
@@ -1705,7 +1705,7 @@ status = "legacy"
 [[function]]
 address = 0x0023a460
 name = "Human_ClearLook_Stub"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuClearLook`: empty in this build."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -1714,7 +1714,7 @@ status = "legacy"
 [[function]]
 address = 0x0023a468
 name = "Human_IsAimingAt"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuIsAimingAt`: a player's aim target `+0x634` is the given object."
 level = "confirmed-code"
 coney = "src/ai/scripted_story.h:ScriptedStory::aimingAt"
@@ -1723,7 +1723,7 @@ status = "legacy"
 [[function]]
 address = 0x0023a5f8
 name = "Cfg_SetTurnRate"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`CfgTurnRate`: sets 0x00510304, 0x00510308, 0x0051030c, 0x00510310, 0x00510314, 0x00510318."
 level = "confirmed-code"
 coney = "src/human/locomotion.h:setTurnEase"
@@ -1732,7 +1732,7 @@ status = "legacy"
 [[function]]
 address = 0x0023a7a0
 name = "Cfg_SetTurnRates"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`CfgSetTurnRates`: sets 0x005101b0, 0x005101b8, 0x005101c0, 0x005101c8, 0x005101d0, 0x005101d8."
 level = "confirmed-code"
 coney = "src/human/locomotion.h:setPlayerTurnRates"
@@ -1741,7 +1741,7 @@ status = "legacy"
 [[function]]
 address = 0x0023a9b8
 name = "AnimCallback_ClearAll"
-page = "characters.md#anim-callbacks"
+page = "characters-animation.md#anim-callbacks"
 level = "confirmed-code"
 coney = "src/scripting/anim_callbacks.h:AnimCallbacks::clear"
 status = "legacy"
@@ -1749,7 +1749,7 @@ status = "legacy"
 [[function]]
 address = 0x0023a9f8
 name = "AnimCallback_Add"
-page = "characters.md#anim-callbacks"
+page = "characters-animation.md#anim-callbacks"
 level = "confirmed-code"
 coney = "src/scripting/anim_callbacks.h:AnimCallbacks::add"
 status = "legacy"
@@ -1757,7 +1757,7 @@ status = "legacy"
 [[function]]
 address = 0x0023aab0
 name = "AnimCallback_AddForAll"
-page = "characters.md#anim-callbacks"
+page = "characters-animation.md#anim-callbacks"
 level = "confirmed-code"
 coney = "src/scripting/anim_callbacks.h:AnimCallbacks::addAll"
 status = "legacy"
@@ -1765,7 +1765,7 @@ status = "legacy"
 [[function]]
 address = 0x0023ab80
 name = "AnimCallback_Remove"
-page = "characters.md#anim-callbacks"
+page = "characters-animation.md#anim-callbacks"
 level = "confirmed-code"
 coney = "src/scripting/anim_callbacks.h:AnimCallbacks::remove"
 status = "legacy"
@@ -1773,8 +1773,8 @@ status = "legacy"
 [[function]]
 address = 0x0023ac50
 name = "AnimCallback_Dispatch"
-page = "characters.md#original-structure"
-role = "runs the script's anim callback ([Animation callbacks](characters.md#anim-callbacks))"
+page = "characters-animation.md#original-structure"
+role = "runs the script's anim callback ([Animation callbacks](characters-animation.md#anim-callbacks))"
 level = "confirmed-code"
 coney = "src/ai/scripted_brains.h:ScriptedBrains::runAnimCallbacks"
 status = "legacy"
@@ -1782,7 +1782,7 @@ status = "legacy"
 [[function]]
 address = 0x0023adc8
 name = "Human_GetVoiceIndex"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuGetVoiceIndex`: the voice `+0x3b0`."
 level = "confirmed-code"
 coney = "src/scripting/hub_bindings.cpp:makeHuGetVoiceIndex"
@@ -1791,7 +1791,7 @@ status = "legacy"
 [[function]]
 address = 0x0023ae40
 name = "Human_LockPad"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuLockPad`: the player record's pad lock `+0x1e`."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeLockPad"
@@ -1800,7 +1800,7 @@ status = "legacy"
 [[function]]
 address = 0x0023ae90
 name = "Human_LockPadMovement"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuLockPadMovement`: the player record's movement lock `+0x1f`."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:addStoryBindings"
@@ -1809,7 +1809,7 @@ status = "legacy"
 [[function]]
 address = 0x0023b0e0
 name = "Human_SetScale"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetScale`: the human's model scale."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::setScale"
@@ -1818,7 +1818,7 @@ status = "compared"
 [[function]]
 address = 0x0023b128
 name = "CNS_SetMissionInfoEnabled"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`CNSEnableMissionInfo`: sets 0x005109ac."
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addStateBindings"
@@ -1827,7 +1827,7 @@ status = "legacy"
 [[function]]
 address = 0x0023b138
 name = "Human_TeleportNear"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuTeleportNearHuman`: puts the human at a free point near another human, facing it."
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeTeleportNear"
@@ -1836,7 +1836,7 @@ status = "legacy"
 [[function]]
 address = 0x0023b778
 name = "Human_SetSlowMo"
-page = "characters.md#code-script"
+page = "characters-script.md#code-script"
 role = "`HuSetSlowMo`: a player's slow motion (`+0x3bb`, the time factor 0x005102cc)."
 level = "confirmed-code"
 coney = "src/camera/slow_motion.h:SlowMotion::setScripted"
@@ -1845,7 +1845,7 @@ status = "legacy"
 [[function]]
 address = 0x0023bd78
 name = "Human_StepAnimation"
-page = "characters.md#update"
+page = "characters/index.md#update"
 role = "the characters' update's animation step: for a human with an instance, runs the instance's queued tasks (`0x00175610`) and marks its bone cache (`+0x460`) stale"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::animate"
@@ -1854,7 +1854,7 @@ status = "compared"
 [[function]]
 address = 0x0023cd30
 name = "Human_UpdateLedSlots"
-page = "characters.md#code-update"
+page = "characters/index.md#code-update"
 role = "When the move is dirty (`+0x255`), recomputes four aim points in world space: `+0x1e0` = the world transform composed with `+0x500` (bone 6, the head), `+0x1f0` with `+0x540` (bone 3), `+0x200` with `+0x4e0` (bone 2, the hips), `+0x210` = the position + 0.3 m up ([Combat: the led steer](combat-targets.md#led-steer))."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::ledPoint"
@@ -1863,7 +1863,7 @@ status = "legacy"
 [[function]]
 address = 0x0023cf70
 name = "Human_ClearTurn"
-page = "characters.md#code-update"
+page = "characters/index.md#code-update"
 role = "Clears the turn state `+0x300`, `+0x304`, `+0x331`, `+0x332`; attacks and climbs call it before steering."
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::clearSteer"
@@ -1892,7 +1892,7 @@ question = "teleports.md#q-placement-rest"
 [[function]]
 address = 0x0023d8c8
 name = "Human_Move"
-page = "characters.md#original-structure"
+page = "characters-ground.md#original-structure"
 role = "slope factor, physics sweep, ground snap"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::moveOnGround"
@@ -1911,7 +1911,7 @@ issue = 1003
 [[function]]
 address = 0x0023db48
 name = "Human_BeginJump"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 role = "the jump's checks; take-off gait and height"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::launchJump"
@@ -1920,7 +1920,7 @@ status = "legacy"
 [[function]]
 address = 0x0023e090
 name = "Human_Land"
-page = "characters.md#original-structure"
+page = "characters-ground.md#original-structure"
 role = "clears airborne, fall damage, `vz` = 0"
 level = "confirmed-code"
 coney = "src/ai/move_action.h:MoveAction::landed"
@@ -1929,7 +1929,7 @@ status = "legacy"
 [[function]]
 address = 0x0023e408
 name = "Human_LandingTest"
-page = "characters.md#original-structure"
+page = "characters-ground.md#original-structure"
 role = "the airborne sweep's floor test (`n.z` > 0.65)"
 level = "confirmed-code"
 coney = "src/physics/body_sweep.h:landingContact"
@@ -1938,7 +1938,7 @@ status = "legacy"
 [[function]]
 address = 0x0023eab8
 name = "Human_SnapToGround"
-page = "characters.md#original-structure"
+page = "characters-ground.md#original-structure"
 role = "1.5 m ray down from 1 m above the feet"
 level = "confirmed-code"
 coney = "src/ai/hiding.h:updateHiding"
@@ -1971,7 +1971,7 @@ status = "compared"
 [[function]]
 address = 0x0023fea8
 name = "Human_StateUpdate"
-page = "characters.md#original-structure"
+page = "characters/index.md#original-structure"
 role = "per update: state function, gravity, out-of-world, move"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::updateState"
@@ -1980,7 +1980,7 @@ status = "legacy"
 [[function]]
 address = 0x00240898
 name = "Human_AirControl"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 role = "the jump's state function: steering in the air"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::airControl"
@@ -1989,7 +1989,7 @@ status = "legacy"
 [[function]]
 address = 0x00240e38
 name = "Human_PlayerLocomotion"
-page = "characters.md#original-structure"
+page = "characters-locomotion.md#original-structure"
 role = "stick → velocity and heading"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::updateState"
@@ -2008,7 +2008,7 @@ issue = 1003
 [[function]]
 address = 0x002427e8
 name = "Human_MoveWheelchair"
-page = "characters.md#wheelchair"
+page = "characters-locomotion.md#wheelchair"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/human/human.cpp:Human::wheelchairControl"
 status = "legacy"
@@ -2016,8 +2016,8 @@ status = "legacy"
 [[function]]
 address = 0x002432b0
 name = "Human_EnterStepControl"
-page = "characters.md#code-update"
-role = "Saves the control (+0x1bc to +0x1c4) and installs the step control (0x00243420) unless state 0x180f3ff0 or already installed; from TakeStepAction_Start ([Step control](characters.md#step-control))."
+page = "characters/index.md#code-update"
+role = "Saves the control (+0x1bc to +0x1c4) and installs the step control (0x00243420) unless state 0x180f3ff0 or already installed; from TakeStepAction_Start ([Step control](characters-locomotion.md#step-control))."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::enterStepControl"
 status = "legacy"
@@ -2025,7 +2025,7 @@ status = "legacy"
 [[function]]
 address = 0x00243360
 name = "Human_LeaveStepControl"
-page = "characters.md#code-update"
+page = "characters/index.md#code-update"
 role = "Leaves the step control: Human_UpdateControl, or Human_MoveAttached while grabbed or mugged."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::leaveStepControl"
@@ -2034,8 +2034,8 @@ status = "legacy"
 [[function]]
 address = 0x00243420
 name = "Human_StepControl"
-page = "characters.md#code-update"
-role = "The step control function (+0x1bc while a TakeStep runs): for an AI, one step clip by the angle between brain +0x110 and the facing (step, dash or fight shuffle), turned over half the clip, then leaves at once; waits while busy ([Step control](characters.md#step-control))."
+page = "characters/index.md#code-update"
+role = "The step control function (+0x1bc while a TakeStep runs): for an AI, one step clip by the angle between brain +0x110 and the facing (step, dash or fight shuffle), turned over half the clip, then leaves at once; waits while busy ([Step control](characters-locomotion.md#step-control))."
 level = "confirmed-code"
 coney = "src/human/step_control.h:stepClipFor"
 status = "compared"
@@ -2053,7 +2053,7 @@ issue = 684
 [[function]]
 address = 0x002446b0
 name = "Human_SetThrowAimState"
-page = "characters.md#code-update"
+page = "characters/index.md#code-update"
 role = "Enters throw aiming: the control function and the aim point."
 level = "confirmed-code"
 coney = "src/combat/throw_aim.h:ThrowAimState::enter"
@@ -2062,7 +2062,7 @@ status = "legacy"
 [[function]]
 address = 0x00247a50
 name = "Nav_WalkDistanceTo"
-page = "characters.md#code-update"
+page = "characters/index.md#code-update"
 role = "The straight distance to a point a walkable line reaches, else the length of a route planned to it ([AI](ai-gangs.md#warrior-follow)); 0 with no area or no route."
 level = "confirmed-code"
 coney = "src/ai/route_planner.h:RoutePlanner::walkDistance"
@@ -2071,7 +2071,7 @@ status = "legacy"
 [[function]]
 address = 0x00247fc0
 name = "Human_StrikeShapeOn"
-page = "characters.md#code-update"
+page = "characters/index.md#code-update"
 role = "Turns a strike shape on (message 0x8f)."
 level = "confirmed-code"
 coney = "src/human/strike_shapes.h:StrikeShapes::onEvent"
@@ -2080,7 +2080,7 @@ status = "legacy"
 [[function]]
 address = 0x00248110
 name = "Human_StrikeShapeOff"
-page = "characters.md#code-update"
+page = "characters/index.md#code-update"
 role = "Turns a strike shape off (message 0x90)."
 level = "confirmed-code"
 coney = "src/human/strike_shapes.h:StrikeShapes::onEvent"
@@ -2089,7 +2089,7 @@ status = "legacy"
 [[function]]
 address = 0x00248170
 name = "Human_StrikeAllOn"
-page = "characters.md#wheelchair"
+page = "characters-locomotion.md#wheelchair"
 level = "confirmed-code"
 coney = "src/human/strike_shapes.h:StrikeShapes::onEvent"
 status = "legacy"
@@ -2097,7 +2097,7 @@ status = "legacy"
 [[function]]
 address = 0x00248270
 name = "Human_StrikeAllOff"
-page = "characters.md#wheelchair"
+page = "characters-locomotion.md#wheelchair"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/human/strike_shapes.h:StrikeShapes::onEvent"
 status = "legacy"
@@ -2105,7 +2105,7 @@ status = "legacy"
 [[function]]
 address = 0x00248df0
 name = "Human_Lean"
-page = "characters.md#original-structure"
+page = "characters-locomotion.md#original-structure"
 role = "a lean from the turn rate"
 level = "confirmed-code"
 coney = "src/human/locomotion.h:leanStep"
@@ -2114,7 +2114,7 @@ status = "legacy"
 [[function]]
 address = 0x00249050
 name = "Ground_ProbeBelow"
-page = "characters.md#code-update"
+page = "characters/index.md#code-update"
 role = "A ray straight down from 0.1 m above a point; true when it hits the level."
 level = "confirmed-code"
 coney = "src/ai/steering.h:groundProbeBelow"
@@ -2123,7 +2123,7 @@ status = "legacy"
 [[function]]
 address = 0x00249108
 name = "Humans_Update"
-page = "characters.md#original-structure"
+page = "characters/index.md#original-structure"
 role = "the characters' update, every second task-manager tick"
 level = "confirmed-code"
 coney = "src/human/humans.h:Humans::update"
@@ -2162,7 +2162,7 @@ issue = 685
 [[function]]
 address = 0x0024bfc0
 name = "Human_SpawnHat"
-page = "characters.md#code-update"
+page = "characters/index.md#code-update"
 role = "Creates the hat object by name at the human, pins it and stores its handle `+0x364`."
 level = "confirmed-code"
 coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::putOnHat"
@@ -2171,7 +2171,7 @@ status = "legacy"
 [[function]]
 address = 0x0024cbb0
 name = "Human_CreateCarriedProp"
-page = "characters.md#code-update"
+page = "characters/index.md#code-update"
 role = "Destroys the prop at `+0x348`, creates the named object at the human, keeps it in `+0x34c` and attaches it at point `0x13` (`Human_AttachCarriedProp`); clip event `0x30` ([Combat: props of a power move](combat-grabs.md#power-move-props))."
 level = "confirmed-code"
 coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::makeCarriedProp"
@@ -2180,7 +2180,7 @@ status = "legacy"
 [[function]]
 address = 0x0024cd30
 name = "Human_AttachCarriedProp"
-page = "characters.md#code-update"
+page = "characters/index.md#code-update"
 role = "Attaches the prop `+0x34c` to attach point 0x13 with its type's offset."
 level = "confirmed-code"
 coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::makeCarriedProp"
@@ -2189,7 +2189,7 @@ status = "legacy"
 [[function]]
 address = 0x0024ce40
 name = "Human_ReleaseCarriedProps"
-page = "characters.md#code-update"
+page = "characters/index.md#code-update"
 role = "Drops a held kind-0x27 object and clears the carried props `+0x348`, `+0x34c`."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::releaseCarriedProps"
@@ -2198,7 +2198,7 @@ status = "legacy"
 [[function]]
 address = 0x0024d810
 name = "Human_PickUpSearch"
-page = "characters.md#triangle-held"
+page = "characters-traversal.md#triangle-held"
 level = "confirmed-code"
 coney = "src/gamemodes/level_pickups.h:LevelPickups::triangle"
 status = "legacy"
@@ -2206,7 +2206,7 @@ status = "legacy"
 [[function]]
 address = 0x0024e478
 name = "Nav_GetWalkingDistance"
-page = "characters.md#code-nav"
+page = "characters/index.md#code-nav"
 role = "`WalkingDistance`: the length of the path between two points."
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeWalkingDistance"
@@ -2215,7 +2215,7 @@ status = "legacy"
 [[function]]
 address = 0x00252c28
 name = "NavLink_SetBlocked"
-page = "characters.md#code-movement"
+page = "characters-animation.md#code-movement"
 role = "Sets or clears a path polygon's blocked flag 8 (+0x48) at a point."
 level = "confirmed-code"
 coney = "src/world_objects/nav_links.h:NavLinks::changeBlocker"
@@ -2224,7 +2224,7 @@ status = "legacy"
 [[function]]
 address = 0x00254078
 name = "Human_ComputeGaitSpeeds"
-page = "characters.md#speed-classes"
+page = "characters-classes.md#speed-classes"
 level = "confirmed-code"
 coney = "src/human/human_animator.h:speedsOf"
 status = "legacy"
@@ -2232,7 +2232,7 @@ status = "legacy"
 [[function]]
 address = 0x002544a0
 name = "AttackTable_GetReach"
-page = "characters.md#climb"
+page = "characters-traversal.md#climb"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/attack_reach.h:nearReach"
 status = "legacy"
@@ -2240,7 +2240,7 @@ status = "legacy"
 [[function]]
 address = 0x00255540
 name = "Human_UpdateWorkout"
-page = "characters.md#code-movement"
+page = "characters-animation.md#code-movement"
 role = "State code 0x1b: the workout on gym equipment (start, repetitions with the pad's pumps, end), its clips and rate."
 level = "confirmed-code"
 coney = "src/ai/scripted_hub.h:ScriptedHub::update"
@@ -2249,7 +2249,7 @@ status = "legacy"
 [[function]]
 address = 0x002562d0
 name = "Human_UpdateMeters"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 role = "stamina drain while sprinting, the rage drain, and the power meter's drain and empty-meter let-go only while grabbing or tackling ([The power move holds no one](slow-motion.md#power-move))"
 level = "confirmed-code"
 coney = "src/combat/meters.h:RageMeter::update"
@@ -2273,7 +2273,7 @@ issue = 684
 [[function]]
 address = 0x00256a60
 name = "Human_UpdateDown"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 role = "stamina refill (and the second meter)"
 level = "confirmed-code"
 coney = "src/human/stamina.h:Stamina::refill"
@@ -2297,7 +2297,7 @@ issue = 719
 [[function]]
 address = 0x002570e8
 name = "Human_ComputeThrowVelocity"
-page = "characters.md#code-movement"
+page = "characters-animation.md#code-movement"
 role = "The launch velocity of a thrown held object: aimed at the target (led by its speed) or along the facing, scaled by the object's weight and the human's scale."
 level = "confirmed-code"
 coney = "src/combat/throw_velocity.h:throwVelocity"
@@ -2306,8 +2306,8 @@ status = "legacy"
 [[function]]
 address = 0x00258330
 name = "Human_KnockOffHat"
-page = "characters.md#code-movement"
-role = "Throws the worn hat off (unless HuSetKeepHat or kind 27): spin 8 rad/s, drop at 2 m/s, +0x364 cleared ([Hats](characters.md#hats))."
+page = "characters-animation.md#code-movement"
+role = "Throws the worn hat off (unless HuSetKeepHat or kind 27): spin 8 rad/s, drop at 2 m/s, +0x364 cleared ([Hats](characters-appearance.md#hats))."
 level = "confirmed-code"
 coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::knockOffHat"
 status = "legacy"
@@ -2324,7 +2324,7 @@ status = "compared"
 [[function]]
 address = 0x00259578
 name = "Human_ChooseAnimState"
-page = "characters.md#original-structure"
+page = "characters-animation.md#original-structure"
 role = "picks the anim state, calls its builder from `0x005106e0`"
 level = "confirmed-code"
 coney = "src/human/human_animator.h:HumanAnimator::choose"
@@ -2351,7 +2351,7 @@ status = "legacy"
 [[function]]
 address = 0x0025b200
 name = "Human_BuildMoveTasks"
-page = "characters.md#original-structure"
+page = "characters-animation.md#original-structure"
 level = "confirmed-code"
 coney = "src/human/human_animator.h:HumanAnimator::buildMove"
 status = "legacy"
@@ -2359,8 +2359,8 @@ status = "legacy"
 [[function]]
 address = 0x0025cf30
 name = "Human_BuildJumpLoop"
-page = "characters.md#code-movement"
-role = "Anim state 25: the jump loop 434 after a 0.1 s fade, then the launch ([Anim states in the air](characters.md#jump))."
+page = "characters-animation.md#code-movement"
+role = "Anim state 25: the jump loop 434 after a 0.1 s fade, then the launch ([Anim states in the air](characters-traversal.md#jump))."
 level = "confirmed-code"
 coney = "src/human/human_animator.h:HumanAnimator::startJump"
 status = "legacy"
@@ -2368,8 +2368,8 @@ status = "legacy"
 [[function]]
 address = 0x0025d390
 name = "Human_BuildLandingClip"
-page = "characters.md#code-movement"
-role = "Anim state 27: the jump end 435 / 436, the drop land 429 or a long-fall clip, then the idle or a gait blend ([Anim states in the air](characters.md#jump))."
+page = "characters-animation.md#code-movement"
+role = "Anim state 27: the jump end 435 / 436, the drop land 429 or a long-fall clip, then the idle or a gait blend ([Anim states in the air](characters-traversal.md#jump))."
 level = "confirmed-code"
 coney = "src/human/human_animator.h:HumanAnimator::startLanding"
 status = "legacy"
@@ -2377,7 +2377,7 @@ status = "legacy"
 [[function]]
 address = 0x0025ec28
 name = "Gait_BlendForSpeed"
-page = "characters.md#original-structure"
+page = "characters-animation.md#original-structure"
 role = "speed → gait blend target 0-3"
 level = "confirmed-code"
 coney = "src/human/locomotion.h:gaitBlendForSpeed"
@@ -2386,7 +2386,7 @@ status = "legacy"
 [[function]]
 address = 0x0025f028
 name = "Human_BuildAnimState"
-page = "characters.md#code-movement"
+page = "characters-animation.md#code-movement"
 role = "Calls the builder for anim state 0-7 from the table at 0x0055db50."
 level = "confirmed-code"
 coney = "src/ai/taunt_action.h:tauntAnim"
@@ -2395,7 +2395,7 @@ status = "legacy"
 [[function]]
 address = 0x0025f770
 name = "Human_BuildIdleTasks"
-page = "characters.md#original-structure"
+page = "characters-animation.md#original-structure"
 level = "confirmed-code"
 coney = "src/human/human_animator.h:HumanAnimator::buildIdle"
 status = "legacy"
@@ -2403,7 +2403,7 @@ status = "legacy"
 [[function]]
 address = 0x0027c120
 name = "Player_UpdateActions"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 role = "the player's commands each update: climb, jump, block, sprint"
 level = "confirmed-code"
 note = "confirmed (code) for the parts cited"
@@ -2418,7 +2418,7 @@ issue = 664
 [[function]]
 address = 0x0027ce90
 name = "Player_UpdateSprint"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 role = "The pad player's stance update: drops a target that is out, the sprint, a run leaving the stance, a threat within 2 m entering it and locking, the hold and the end."
 level = "confirmed-code"
 note = "confirmed (code), runtime"
@@ -2462,7 +2462,7 @@ issue = 664
 [[function]]
 address = 0x00281450
 name = "Climb_OnFirstClipEndRun"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::followClimb"
 status = "compared"
@@ -2480,7 +2480,7 @@ issue = 664
 [[function]]
 address = 0x00281838
 name = "Climb_OnFirstClipEndStand"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::followClimb"
 status = "compared"
@@ -2498,7 +2498,7 @@ issue = 664
 [[function]]
 address = 0x00281c20
 name = "Climb_Start"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 role = "reach window, start point, the three-clip chain"
 level = "confirmed-code"
 coney = "src/human/climb.h:withinClimbReach"
@@ -2512,7 +2512,7 @@ issue = 664
 [[function]]
 address = 0x00282370
 name = "Climb_ProbeTop"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 role = "finds the obstacle's top and picks fence or wall"
 level = "confirmed-code"
 coney = "src/human/climb.h:probeClimb"
@@ -2521,7 +2521,7 @@ status = "legacy"
 [[function]]
 address = 0x002826f0
 name = "Climb_TryStart"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 role = "the two forward probes; fence, wall and their short forms"
 level = "confirmed-code"
 coney = "src/human/climb.h:probeClimb"
@@ -2535,7 +2535,7 @@ issue = 664
 [[function]]
 address = 0x002829e8
 name = "Player_TryJump"
-page = "characters.md#original-structure"
+page = "characters-traversal.md#original-structure"
 role = "the jump's checks; take-off gait and height"
 level = "confirmed-code"
 coney = "src/human/jump.h:jumpAllowed"
@@ -2549,7 +2549,7 @@ issue = 664
 [[function]]
 address = 0x0029ade0
 name = "Route_SetJumpArcVelocity"
-page = "characters.md#jump"
+page = "characters-traversal.md#jump"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/ai/move_action.h:routeJumpVelocity"
 status = "legacy"
@@ -2557,7 +2557,7 @@ status = "legacy"
 [[function]]
 address = 0x0033e278
 name = "PhysicsBody_Sweep"
-page = "characters.md#original-structure"
+page = "characters-ground.md#original-structure"
 role = "moves a body by `v × dt`, up to three sliding passes"
 level = "confirmed-code"
 note = "confirmed (code) for the steps listed"
@@ -2567,7 +2567,7 @@ status = "legacy"
 [[function]]
 address = 0x003477c0
 name = "PhysicsBody_PushOutOfWalls"
-page = "characters.md#original-structure"
+page = "characters-ground.md#original-structure"
 role = "sphere against the collision mesh's walls (`n.z` within ±0.65)"
 level = "confirmed-code"
 coney = "src/physics/mesh_sweep.h:pushOutOfWalls"
@@ -2576,7 +2576,7 @@ status = "legacy"
 [[function]]
 address = 0x00347c08
 name = "PhysicsMesh_SweepCapsule"
-page = "characters.md#original-structure"
+page = "characters-ground.md#original-structure"
 role = "the walking body's sphere swept against the mesh's walls, with the 0.25 m step rule"
 level = "confirmed-code"
 coney = "src/physics/mesh_sweep.h:capsuleLowOrThin"
@@ -2585,7 +2585,7 @@ status = "legacy"
 [[function]]
 address = 0x00356d00
 name = "ScriptSystem_OnPreloadFileDone"
-page = "characters.md#level-starts"
+page = "characters-players.md#level-starts"
 level = "confirmed-code"
 coney = "src/scripting/script_system.h:ScriptSystem::servicePreloads"
 status = "compared"
@@ -2598,7 +2598,7 @@ issue = 1130
 [[function]]
 address = 0x00358428
 name = "lua_HuCreate"
-page = "characters.md#original-structure"
+page = "characters/index.md#original-structure"
 role = "reads the Lua arguments, calls `Human_Create`"
 level = "confirmed-code"
 coney = "src/scripting/script_bindings.cpp:makeHuCreate"
@@ -2612,7 +2612,7 @@ question = "human-init.md#q-written-back"
 [[function]]
 address = 0x00385bb8
 name = "Object_Teleport"
-page = "characters.md#level-starts"
+page = "characters-players.md#level-starts"
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:makeTeleport"
 status = "legacy"
@@ -2620,7 +2620,7 @@ status = "legacy"
 [[function]]
 address = 0x003a3ba0
 name = "Human_PlaceHat"
-page = "characters.md#hats"
+page = "characters-appearance.md#hats"
 level = "confirmed-code"
 coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::putOnHat"
 status = "legacy"
@@ -2628,7 +2628,7 @@ status = "legacy"
 [[function]]
 address = 0x004197a8
 name = "GameState_CheckGameOver"
-page = "characters.md#warriors-functions"
+page = "characters/index.md#warriors-functions"
 role = "each update, when enabled (`+0x155`), outside Rumble (`+0x158`) and not already over (`+0x14c`): over when a player has state flag `0x100000000`; when every player is knocked out or cuffed, not over while player 1 is cuffed, awake and can uncuff himself (upgrade (6, 15) and item 6); over when no gang member can help (`Gang_NoneAbleToHelp`); over at once when player 1 is out with no flash (item 1) or byte `+0x414 + player` is set; otherwise every 37th update asks `Gang_CanReachToHelp` and is over after 4 failures in a row (`+0x56e6`). The mission-failed reason is GSTRING 21 when cuffed (`+0x118` = 1), else 20"
 level = "confirmed-code"
 coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::stepGameOver"
@@ -2637,7 +2637,7 @@ status = "legacy"
 [[function]]
 address = 0x0041ce98
 name = "GameState_SetCheckPoint"
-page = "characters.md#level-starts"
+page = "characters-players.md#level-starts"
 level = "confirmed-code"
 note = "the level is from [scripting.md#level99](scripting.md#level99)"
 coney = "src/scripting/script_bindings.cpp:makeSetCheckPoint"
@@ -2646,7 +2646,7 @@ status = "legacy"
 [[function]]
 address = 0x0041d890
 name = "GameState_EnableGameOverCheck"
-page = "characters.md#warriors-functions"
+page = "characters/index.md#warriors-functions"
 role = "`EnableGameOverCheck`: byte `+0x155` (1 at set-up)"
 level = "confirmed-code"
 coney = "src/warriors/game_over.h:GameOverCheck::setEnabled"

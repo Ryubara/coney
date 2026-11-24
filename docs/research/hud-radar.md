@@ -202,8 +202,8 @@ second later and they were gone some 5.5 s after; with `0x005104f8` set they sta
 (`0x00510500`) split into three arcs, in this order from the start angle: the **fill** (colour A), the **lost** part
 (colour B) and the part **beyond the capacity** (colour C). Two numbers on a 0-100 scale set them: the fill ends at
 `value` % of the circle and the lost part at `capacity` %. Both rings scale by the human's power class byte `+0x40`
-([Power classes](characters.md#power-classes)) as `k` = byte / 100 (35 for Rembrandt's class 64, confirmed (runtime);
-the field is otherwise untraced):
+([Power classes](characters-classes.md#power-classes)) as `k` = byte / 100 (35 for Rembrandt's class 64, confirmed
+(runtime); the field is otherwise untraced):
 
 | Ring | value | capacity | A | B | C |
 | --- | --- | --- | --- | --- | --- |

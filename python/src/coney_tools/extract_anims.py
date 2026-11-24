@@ -9,7 +9,7 @@
   resolved to clip files (`null` where the slot uses the default), and the Anim Range List decoded;
 * `animations/index.json`: every clip with its file, length and the resources that hold it.
 
-Research: docs/research/formats/animation.md, docs/research/characters.md#files
+Research: docs/research/formats/animation.md, docs/research/characters-appearance.md#files
 """
 
 from __future__ import annotations

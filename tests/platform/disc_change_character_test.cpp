@@ -88,8 +88,8 @@ TEST_CASE("Change character rebuilds the player as another type where he stands"
     // The level's own player takes his class as a changed one does: one path (human::playerClassOf()).
     const int startS1 = punchDamage(mode);
     const int startPower = mode.player().human().fighterProfile().powerClass.powerMax;
-    // His stats from level99's configuration (normal, docs/research/characters.md#stats): Rembrandt's power class 64
-    // (400 power, 135 stamina) and Warrior class 6 (1800 health x 50 % = 900, a rage of 78).
+    // His stats from level99's configuration (normal, docs/research/characters-classes.md#stats): Rembrandt's power
+    // class 64 (400 power, 135 stamina) and Warrior class 6 (1800 health x 50 % = 900, a rage of 78).
     const coney::human::Human& start = mode.player().human();
     CHECK(start.health().maximum() == 900);
     CHECK(start.stamina().maximum() == 135);

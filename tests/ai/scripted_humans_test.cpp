@@ -679,8 +679,8 @@ TEST_CASE("HuChangePlayerGang hands player 1 to the new gang's lowest priority; 
 }
 
 TEST_CASE("an anim a human starts twice in one step calls its animation callback once", "[ai][scripted]") {
-    // Expected: characters.md#anim-callbacks, confirmed (code): the callback runs when the human starts the anim;
-    // one call for two starts in one step is Coney's step, which runs the callbacks after the characters' step.
+    // Expected: characters-animation.md#anim-callbacks, confirmed (code): the callback runs when the human starts the
+    // anim; one call for two starts in one step is Coney's step, which runs the callbacks after the characters' step.
     // Declared before the level: the level's destructor detaches itself from the callbacks, so they must outlive it.
     coney::script::AnimCallbacks callbacks;
     Level level;
@@ -703,8 +703,9 @@ TEST_CASE("an anim a human starts twice in one step calls its animation callback
 
 TEST_CASE("HuEnableController hands a player's human to its pad or its brain; an AI human or a bad handle is untouched",
           "[ai][scripted]") {
-    // Expected: characters.md#code-script, confirmed (code): lua_HuEnableController (0x0035c120) reads the human as a
-    // handle and `enable` as a boolean (nil false); Human_EnableController (0x002384f8) writes the per-player record's
+    // Expected: characters-script.md#code-script, confirmed (code): lua_HuEnableController (0x0035c120) reads the human
+    // as a handle and `enable` as a boolean (nil false); Human_EnableController (0x002384f8) writes the per-player
+    // record's
     // `+0x1b` of the human the handle names, nothing for a bad handle.
     Level level;
     Brain& thug = level.add({44.0F, 40.0F, 0.0F});
@@ -724,9 +725,9 @@ TEST_CASE("HuEnableController hands a player's human to its pad or its brain; an
 TEST_CASE("an AI human who falls out of the world is knocked out once faded: his message 18 and his gang's run once, "
           "and he is no longer alive",
           "[ai][scripted]") {
-    // Expected: characters.md#out-of-world, confirmed (code) at 0x00249108 (the fade), 0x0021c7c8 (Human_Destroy),
-    // 0x00230328 and 0x0028c3b0 (the knock-out's event 18) and 0x00166220 (the count still standing); confirmed
-    // (runtime) run r-20261122-fall-out-of-world (each handler ran once, the gang's with 0 standing)
+    // Expected: characters-ground.md#out-of-world, confirmed (code) at 0x00249108 (the fade), 0x0021c7c8
+    // (Human_Destroy), 0x00230328 and 0x0028c3b0 (the knock-out's event 18) and 0x00166220 (the count still standing);
+    // confirmed (runtime) run r-20261122-fall-out-of-world (each handler ran once, the gang's with 0 standing)
     Level level;
     coney::script::MessageHandlers messages;
     level.scripted->setMessages(&messages);

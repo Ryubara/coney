@@ -2,9 +2,9 @@
 
 // Checks against the player's own disc that player 1 stays player 1 when `level99` goes from checkpoint 1 to 2 in one
 // session, as the story plays it: `P1.Cleanup` sets checkpoint 2 and `P2.SetupLesson1` makes a new Rembrandt and hands
-// him the player with `HuChangePlayerGang` (docs/research/characters.md#level99-handover), with the new human's own
-// health even when the old one was hurt (docs/research/teleports.md#handover). From then on every lookup of
-// player 1 must name the new human, or the street lesson stalls: the stereo theft's handler `P2.CarRadioStolen` asks
+// him the player with `HuChangePlayerGang` (docs/research/characters-players.md#level99-handover), with the new human's
+// own health even when the old one was hurt (docs/research/teleports.md#handover). From then on every lookup of player
+// 1 must name the new human, or the street lesson stalls: the stereo theft's handler `P2.CarRadioStolen` asks
 // `HuIsAPlayer` of the thief and only then schedules the next step. The level plays in the game session as
 // `--play-level level99` plays it (support/disc_session.h), the course's end called by the test (as level99's street
 // test does), the cars' step called once the street scene is skipped, and the theft driven with the pad (stick turned

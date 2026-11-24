@@ -19,7 +19,7 @@ using coney::debug::kDropDepth;
 using coney::test::AiScene;
 
 TEST_CASE("drop-ai picks the AI human by handle or the nearest to the player, never the player", "[debug][fighters]") {
-    // Expected: unverified, #481 (a Coney debug aid; the fall it starts is characters.md#out-of-world)
+    // Expected: unverified, #481 (a Coney debug aid; the fall it starts is characters-ground.md#out-of-world)
     AiScene scene; // the player stands at (40, 40)
     Brain& far = scene.add({60.0F, 40.0F, 0.0F}, 0.0F);
     Brain& near = scene.add({44.0F, 40.0F, 0.0F}, 0.0F);
@@ -42,8 +42,8 @@ TEST_CASE("drop-ai picks the AI human by handle or the nearest to the player, ne
 }
 
 TEST_CASE("an AI human drop-ai drops is kDropDepth below where he stood and out of the world", "[debug][fighters]") {
-    // Expected: unverified, #481 (a Coney debug aid; the fall it starts is characters.md#out-of-world, confirmed (code)
-    // at 0x0023fea8)
+    // Expected: unverified, #481 (a Coney debug aid; the fall it starts is characters-ground.md#out-of-world, confirmed
+    // (code) at 0x0023fea8)
     AiScene scene;
     Brain& fighter = scene.add({44.0F, 40.0F, 0.0F}, 0.0F);
     const float before = fighter.human().position().z;

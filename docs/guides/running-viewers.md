@@ -283,7 +283,7 @@ made; the pieces it cut first stay, so a building never shows twice.
 
 `--view-character [NAME]` loads a character by its model name, as the Character List names it, and plays one of its
 clips on the skinned model in place, on the fixed 1/30 s step
-([Characters](../research/characters.md#coneys-implementation)). Without a name it shows Rembrandt (`warr_re_cv`).
+([Characters](../research/characters/index.md#coneys-implementation)). Without a name it shows Rembrandt (`warr_re_cv`).
 `--anim CLIP` picks the clip by anim id (a number, such as `408`, Rembrandt's walk) or by name (such as `gen_walk`);
 without it the viewer plays id 408, or the character's first clip when 408 is not set. Clips loop. There is no level,
 movement or follow camera; the character stands in a slate-blue void, and Coney prints a summary when it stops (counts
@@ -351,7 +351,7 @@ icons of at most 64 x 64 that `LEGAL.md` allows for the docs.
 
 - **Characters** (`characters/`, 256x256): every Character List record once, standing as the character viewer's first
   frame shows it (its default clip, id 408 or else its first clip, at time 0), textured
-  ([Characters](../research/characters.md#coneys-implementation)).
+  ([Characters](../research/characters/index.md#coneys-implementation)).
 - **Objects** (`objects/`, 256x256): every Object List record once, its model read as the level file's models are,
   stood up and turned to face the camera ([The Object List](../research/level-loading.md#the-object-list)).
 - **Cars** (`cars/`, 256x256): the six car types, each its Object List record's 47-atomic model with only the first 26

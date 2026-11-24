@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The level simulation's hats: each human's class hat put on when he is made, a script's hat put on, the hat kept on
 // his head (the platform draws it there: src/platform/play_level_world.cpp), knocked off when he goes down, and
-// falling until it lies on the ground (docs/research/characters.md#hats).
+// falling until it lies on the ground (docs/research/characters-appearance.md#hats).
 #include <cmath>
 #include <format>
 #include <optional>
@@ -49,7 +49,7 @@ void PlayLevelSimulation::stepHats() {
     for (std::size_t i = 0; i < fighters.size(); ++i) {
         human::Human& human = *fighters[i].human;
         // **Coney's stand-in** for the hat's removal (state -5): a deleted human's hat goes with him
-        // (docs/research/characters.md#coneys-implementation, Hats).
+        // (docs/research/characters/index.md#coneys-implementation, Hats).
         if (fighters[i].removed) {
             removeWornHat(human);
             continue;

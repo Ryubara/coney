@@ -318,7 +318,7 @@ TEST_CASE("the status icon pulses on an 800 ms triangle wave, cubed", "[hud][cre
     CHECK(coney::hud::crewStatusAlpha(1000) == Approx(0.875F));
 }
 
-// Expected: hud-functions-parts.md#crew-status, confirmed (code); the kinds: characters.md#code-core
+// Expected: hud-functions-parts.md#crew-status, confirmed (code); the kinds: characters/index.md#code-core
 TEST_CASE("crew portraits show the Warrior outside co-op and whose gang in co-op", "[hud][crew]") {
     CrewMember member = warrior(10.0);
     CrewFrame frame;

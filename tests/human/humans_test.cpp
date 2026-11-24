@@ -308,8 +308,8 @@ TEST_CASE("of two enemies the same distance and angle away, square takes the one
 
 TEST_CASE("a human more than 20 m below the mesh's lowest point fades by 10 an update and is destroyed once faded",
           "[human][humans]") {
-    // Expected: characters.md#out-of-world, confirmed (code) at 0x0023fea8 (the bit) and 0x00249108 (the fade and the
-    // destroy), confirmed (runtime) run r-20261122-fall-out-of-world (255 before, 5 at Human_Destroy)
+    // Expected: characters-ground.md#out-of-world, confirmed (code) at 0x0023fea8 (the bit) and 0x00249108 (the fade
+    // and the destroy), confirmed (runtime) run r-20261122-fall-out-of-world (255 before, 5 at Human_Destroy)
     Pair pair;
     std::vector<int> destroyedAt;
     int step = 0;

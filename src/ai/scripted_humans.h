@@ -113,7 +113,7 @@ class ScriptedHumans final : public script::HumanBindingHost {
     bool useAnyAnim(double human, std::uint32_t animId, std::string_view anim, bool loaded) override;
     /// Nothing when player 1 is in that gang already; otherwise the gang is noted (playerGang()) and player 1 handed
     /// to its next player (ScriptedBrains::changePlayerGang()). Coney has one player, so there is no second to hand
-    /// over. Research: docs/research/characters.md#players
+    /// over. Research: docs/research/characters-players.md#players
     void changePlayerGang(int gang, bool stamp) override;
     /// 0 for player 1's human.
     [[nodiscard]] std::optional<int> playerIndex(double handle) const override;

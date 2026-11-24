@@ -68,7 +68,7 @@ Read in the scripts and the screens' code; each line gives its level.
 | Behaviour | Function | Section |
 | --- | --- | --- |
 | Is this an Armies level (60-69) | `0x0041d110` `GameState_IsArmiesLevel` | [Rules](#stages) |
-| Character models: every human drawn with its type's `_a` model, by `Human_Init`'s own test of levels 60-64 (not the 60-69 above) | `0x00218008` `Human_Init` | [Characters: from a type to a model](characters.md#type-to-model) |
+| Character models: every human drawn with its type's `_a` model, by `Human_Init`'s own test of levels 60-64 (not the 60-69 above) | `0x00218008` `Human_Init` | [Characters: from a type to a model](characters-classes.md#type-to-model) |
 | Camera: the rail's mode 3, trailing the hindmost fighter at a fixed downward pitch, forward only | `0x0013dcc8` `CamRail_PlaceMode3` | [Camera: mode 3](camera.md#rail-mode3) |
 | HUD: the two `ANHud` panels (health, power, the boss picture) | `0x00210e48` `ANHud_Update`, `0x00211938` `ANHud_Draw` | [HUD: the Armies panel](hud-functions-panels.md#fn-anhud) |
 | The join message at the set-up and its clear on the first attach | `0x004ec650` `ANHud_SetPlayer`, `0x002107e8` `ANHud_Init` | [The join messages](#the-join-messages) |

@@ -11,7 +11,7 @@ namespace coney::characters {
 
 /// A character type's behaviour class, as `Human_Init` remaps `HuCreate`'s type with a fixed switch: a type in the
 /// switch is either a plain alias of its class or a variant of it (which sets a flag); a type not in it is its own
-/// class (docs/research/characters.md#type-to-model).
+/// class (docs/research/characters-classes.md#type-to-model).
 struct CharacterClass {
     int id = 0;           ///< The class (`+0xcc`): 30 for types 30, 31 and 32.
     bool variant = false; ///< The type is a variant of the class (32 of 30), not a plain alias (31 of 30).
@@ -50,7 +50,7 @@ inline constexpr int kOtherWarriorClass = 9;
 /// The Warrior class (human `+0x1ba`, the `CfgWarriorClass` record) of character type `type`: 0 Ajax (types 11-14),
 /// 1 Cleon (1-4, 189), 2 Cochise (15-17), 3 Cowboy (18-20, 188), 4 Fox (21-25), 5 Vermin (26-29, 191), 6 Rembrandt
 /// and Ash (30-32, 38-40), 7 Snow (33-37, 190), 8 Swan (5-10), kOtherWarriorClass for any other
-/// (docs/research/characters.md#power-classes). **Coney's name**: the research gives the function no name.
+/// (docs/research/characters-classes.md#power-classes). **Coney's name**: the research gives the function no name.
 /// @orig 0x00222c20 Human_WarriorClassOfType (unknown)
 [[nodiscard]] int warriorClassOf(int type);
 
@@ -61,13 +61,13 @@ inline constexpr int kOtherWarriorClass = 9;
 
 /// The power class a human of `type` plays with, as `Human_Init` sets `+0x1b9`: the type's own `CfgChar` byte `+0x11d`
 /// (`ownClass`), except that a type of category kWarriorsCategory takes warriorPowerClassOf(), whoever the human is
-/// (`+0x1b8` always keeps the record's byte; docs/research/characters.md#power-classes).
+/// (`+0x1b8` always keeps the record's byte; docs/research/characters-classes.md#power-classes).
 [[nodiscard]] int powerClassOf(int type, int category, int ownClass);
 
 /// The size `Human_ApplyTypeScale` gives a human of class `classType` (`+0xcc`, characterClassOf()): 1.02 for 5, 0.97
 /// for 18 and 30, 0.98 for 21, 23 and 24, 1.03 for 33, 1.16 for 89, 1.2 for 119, 120 and 135, 1.175 for 128, 1.11 for
 /// 161; in co-op (`coop`, game state `+0x158`) 1.1 for 89, 119, 120, 128 and 161 and 1.03 for 135. Nothing for any
-/// other class: the human keeps the size it has (docs/research/characters.md#body-scale).
+/// other class: the human keeps the size it has (docs/research/characters-classes.md#body-scale).
 /// @orig 0x00219638 Human_ApplyTypeScale (unknown)
 [[nodiscard]] std::optional<float> typeScaleOf(int classType, bool coop);
 

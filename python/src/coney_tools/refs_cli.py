@@ -216,7 +216,8 @@ STARTERS: dict[str, dict[str, Any]] = {
         "source": "config_preload2.lua, CfgChar",
         "about": "Every character type `CfgChar` configures. A level script creates a character (a *human*) with\n"
         "`HuCreate(name, type, position, heading, ...)`, and the type picks everything below: the model, health,\n"
-        "damage and attack tables, voice, hat and weapon. See [Characters](../research/characters.md#classes).\n\n"
+        "damage and attack tables, voice, hat and weapon. See\n"
+        "[Characters](../research/characters-classes.md#classes).\n\n"
         "Speeds are what the game uses in play: each clip's root displacement over its length, for the clip the\n"
         "type's character data plays in the walk, jog, run and sprint slots (the generic clip when it has none of\n"
         "its own). The [speed class](speed-classes.md) is only a fallback.",
@@ -228,8 +229,9 @@ STARTERS: dict[str, dict[str, Any]] = {
         "source": "warriors.glr, Character List (chunk 0x44)",
         "evidence": "confirmed-code",
         "about": "The Character List in `warriors.glr`: one record per character model, naming its model, texture\n"
-        "dictionary and character data (animations) by hash ([Characters](../research/characters.md#files)). A\n"
-        "`<model>_a` record is the variant used in levels 60-64.",
+        "dictionary and character data (animations) by hash\n"
+        "([Characters](../research/characters-appearance.md#files)). A `<model>_a` record is the variant used in "
+        "levels 60-64.",
         "complete": "Every record (543) is listed. Names are recovered by hashing candidate strings; a record\n"
         "without a name has none of its candidates on the disc yet.",
     },
@@ -245,7 +247,8 @@ STARTERS: dict[str, dict[str, Any]] = {
         "title": "Speed classes",
         "source": "config_preload2.lua, CfgSpeedClass",
         "about": "The fallback speed table `CfgSpeedClass` fills at `0x006b6548` (six floats per class). In play the\n"
-        "game uses each human's own clip speeds instead ([Characters](../research/characters.md#speed-classes)).",
+        "game uses each human's own clip speeds instead\n"
+        "([Characters](../research/characters-classes.md#speed-classes)).",
         "complete": "All five classes are listed.",
     },
     "objects": {
@@ -310,7 +313,7 @@ STARTERS: dict[str, dict[str, Any]] = {
         "`HuCreate` for player 1 in the function the level script calls for `GetCheckPoint()`) and one per mode of a\n"
         "Rumble arena (the first flag of the list `fP1` in `level<N>_<mode>_init.lua`, which the arena teleports\n"
         "player 1 to).\n"
-        "How the game gets there: [Characters](../research/characters.md#level-starts).",
+        "How the game gets there: [Characters](../research/characters-players.md#level-starts).",
         "complete": "Every story level whose script creates player 1 at a literal position, and every Rumble flag\n"
         "script whose name is known. The hub (`level95`) places the Warchief at a flag and is hand-written.\n"
         "A checkpoint's own script may move the player again once it has loaded (see each entry's notes).",
@@ -383,9 +386,10 @@ STARTERS: dict[str, dict[str, Any]] = {
         "title": "Anim ids",
         "source": "royal.lua (names); character data (clips); 0x005105d8 (slots)",
         "about": "The 722 anim ids every character data maps to clips. A character's own slot wins; an unset slot\n"
-        "plays the generic character data's clip ([Characters](../research/characters.md#files)). Scripts name ids\n"
+        "plays the generic character data's clip\n"
+        "([Characters](../research/characters-appearance.md#files)). Scripts name ids\n"
         "with the `ANIM_*` constants of `royal.lua`; the locomotion slots are\n"
-        "[Characters, Anim slots](../research/characters.md#anim-slots).",
+        "[Characters, Anim slots](../research/characters-animation.md#anim-slots).",
         "complete": "All 722 ids are listed with the generic clip and Rembrandt's own clip where he has one. Names\n"
         "exist only for the ids `royal.lua` defines.",
     },

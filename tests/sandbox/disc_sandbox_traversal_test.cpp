@@ -236,7 +236,8 @@ TEST_CASE("Rembrandt sprints along the parkour lane while L2 and stamina last", 
         CHECK(run.frames[i].stamina == 0);
     }
     // L2 let go: 40 a second at the run. The stick let go at that steady run: the speed measured there is a rounding
-    // short of the run speed, so no skid and no run stop, the idle at once (docs/research/characters.md#run-stop).
+    // short of the run speed, so no skid and no run stop, the idle at once
+    // (docs/research/characters-locomotion.md#run-stop).
     CHECK(run.frames[359].stamina >= 38);
     CHECK(run.frames[359].stamina <= 42);
     CHECK(run.frames[361].traversal == Traversal::None);
@@ -312,8 +313,8 @@ TEST_CASE("Rembrandt climbs over a short fence and a fence from a run, not one o
     SECTION("a 2 m fence: the running fence climb (440), through it") {
         const Run run = runScript(course, "fence", "parkour_fence_tall.txt", {-30.0F, 8.0F, 0.0F}, 150);
         CHECK(firstFrameOf(run, 440) > 0);
-        // The original's clip lengths (docs/research/characters.md#climb): 440 runs from the tap's update through the
-        // move to the start point, unfaded, for 11 updates; 441 and 442 move nothing on their first update.
+        // The original's clip lengths (docs/research/characters-traversal.md#climb): 440 runs from the tap's update
+        // through the move to the start point, unfaded, for 11 updates; 441 and 442 move nothing on their first update.
         CHECK(framesWithClip(run, 440) == 11);
         CHECK(framesWithClip(run, 441) == 15);
         CHECK(framesWithClip(run, 442) == 13);
@@ -403,9 +404,9 @@ TEST_CASE("Rembrandt walks up the parkour stairs onto the platform at the top", 
     REQUIRE(engine.has_value());
     const Course course = loadCourse(discPath);
     // The landing a flight ends at must hold no wall face taller than a riser within the walking sphere's reach of the
-    // last step (docs/research/characters.md#walls): a full-height front face stopped him on the last step, below the
-    // platform. Each run starts 3 m before the flight with a 65 % stick (tests/support/parkour_stairs.txt) and is read
-    // at the first update the feet are over the platform's middle.
+    // last step (docs/research/characters-ground.md#walls): a full-height front face stopped him on the last step,
+    // below the platform. Each run starts 3 m before the flight with a 65 % stick (tests/support/parkour_stairs.txt)
+    // and is read at the first update the feet are over the platform's middle.
     struct Landing {
         const char* label;
         float x;

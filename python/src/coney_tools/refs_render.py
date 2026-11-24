@@ -282,7 +282,7 @@ def index(
         "",
         '**Characters are "humans".** The game calls every person, the player included, a human: scripts create one',
         "with `HuCreate`, the engine updates them all in `Humans_Update`, and most character bindings start with `Hu`.",
-        "A human is the game's equivalent of GTA's ped; see [Characters (research)](../research/characters.md).",
+        "A human is the game's equivalent of GTA's ped; see [Characters (research)](../research/characters/index.md).",
         "",
     ]
     if entities_page:

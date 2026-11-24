@@ -221,8 +221,8 @@ TEST_CASE("HuCreate's human of a sized class takes its size; any other is made a
 
 TEST_CASE("HuCreate's random size counts any woman byte but 0, and any hat name but none, an empty one too",
           "[ai][hu_create]") {
-    // Expected: characters.md#body-scale, confirmed (code) (the woman byte at +0x3b8 is tested for not 0, the hat
-    // name compared with "none" at 0x0021900c)
+    // Expected: characters-classes.md#body-scale, confirmed (code) (the woman byte at +0x3b8 is tested for not 0, the
+    // hat name compared with "none" at 0x0021900c)
     Level level;
     // Class 300 has the women's byte 2; class 301 an empty hat name; class 302 the hat none. Category 9, brain 0.
     std::vector<Value> woman = cfgChar(300, 9, 2, "none");

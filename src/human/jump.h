@@ -5,7 +5,7 @@
 
 // The player's jump: triangle at a run or a sprint leaves the ground at 5.5 m/s up, at the run or sprint speed
 // forward, and steers in the air. Pure rules; the human (src/human/human.*) applies them.
-// Research: docs/research/characters.md#jump
+// Research: docs/research/characters-traversal.md#jump
 
 namespace coney::human {
 

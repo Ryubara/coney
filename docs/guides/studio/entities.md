@@ -364,8 +364,8 @@ header the Inspector shows one **Source** row per asset the entity uses, read-on
 - **What is listed**: the value of every `asset` property of the kind ([What a property says](#property-fields)): a
   primitive's texture, a mesh's model, a spawn point's character file, an emitter's sound; the asset the kind implies,
   for a character of a game type its model (`game:/characters/<type>`, [From a type to a
-  model](../../research/characters.md#type-to-model)); and for an instance, its prefab file. An entity with no asset
-  shows no Sources part.
+  model](../../research/characters-classes.md#type-to-model)); and for an instance, its prefab file. An entity with no
+  asset shows no Sources part.
 - **The full path**, as [Paths](content-and-formats.md#paths) writes it (`game:/textures/warr_re_cv/warr_re_cv`,
   `project:/models/bench.glb`, `mod:/crate-pack/models/crate.glb`), never shortened, with the property it fills
   (*Texture*, *Model*) as the row's label.

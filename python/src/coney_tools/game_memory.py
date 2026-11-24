@@ -9,10 +9,10 @@ of Python is allowed, so a scenario file cannot run code.
 Names and functions (the layouts are on the research pages named; every address is in NTSC-U `SLUS_212.15`):
 
 - `player`: the human the player controls, the one of the 60 humans (`0x00640c80 + i * 0x6d0`) in use (`+0xd4` not
-  0) whose player number `+0x1b0` is 0 (docs/research/characters.md#the-human-object).
+  0) whose player number `+0x1b0` is 0 (docs/research/characters/index.md#the-human-object).
 - `human(name)`: the human in use whose name (`+0x80`, up to 15 characters) is `name`.
 - `index(h)`: the human's handle index, the `s16` at `+0x92`.
-- `rec(h)`: the human's record, the pointer at `+0xd4` (docs/research/characters.md#the-record).
+- `rec(h)`: the human's record, the pointer at `+0xd4` (docs/research/characters/index.md#the-record).
 - `prec(h)`: its per-player record, `0x00660f50 + index * 0x2c`.
 - `tf(h)`: its transform, `0x00714b00 + index * 0x20`: position `x, y, z` at `+0x0`, rotation quaternion at `+0x10`.
 - `brain(h)`: its second per-human record, `0x006d53f0 + index * 0x2f0`.

@@ -37,8 +37,8 @@ constexpr float kIdleSpeedShare = 0.25F;
 // that ends clips is known.
 constexpr std::uint32_t kAnimBatComboS1 = 34;
 
-// The bits the locomotion's clips hold on the record +0x08 (docs/research/characters.md#the-record): a move's start
-// clip, a jump's landing, the run stop and the climbs, and 389 after a move.
+// The bits the locomotion's clips hold on the record +0x08 (docs/research/characters/index.md#the-record): a move's
+// start clip, a jump's landing, the run stop and the climbs, and 389 after a move.
 constexpr HeldFlags kStartClipHeld{.held = kFlagStartClip, .set = kFlagStartClip};
 constexpr HeldFlags kLandingHeld{.held = kFlagLanding, .set = kFlagLanding};
 constexpr HeldFlags kRunStopHeld{.held = kFlagRunStop, .set = kFlagRunStop};
@@ -399,7 +399,7 @@ void HumanAnimator::startClimb(std::uint32_t firstId, bool running) {
     chain = clipThen(firstId + 1, std::move(chain), nullptr, kRunStopHeld);
     chain = clipThen(firstId, std::move(chain), nullptr, kRunStopHeld);
     // No fade-in: the first clip moves the body at its full root speed from its first update, as at runtime
-    // (docs/research/characters.md#climb).
+    // (docs/research/characters-traversal.md#climb).
     m_tasks.change(std::move(chain), 0.0F);
     m_state = AnimState::Climb;
 }
@@ -645,7 +645,7 @@ void HumanAnimator::choose(const AnimInputs& inputs) {
     }
     // The state: falling, moving (asked to, or still going faster than a quarter of the walk), or idle. A start clip
     // no longer asked for gives way to the idle at once whatever its root motion's speed, as the idle's builder fades
-    // over a start clip still playing (`0x0025f770`, docs/research/characters.md#clip-selection).
+    // over a start clip still playing (`0x0025f770`, docs/research/characters-animation.md#clip-selection).
     AnimState next = AnimState::Idle;
     if (inputs.airborne) {
         next = AnimState::Fall;

@@ -898,9 +898,10 @@ The humans in view are drawn in the world pass after the `s` world ([The streame
 (`0x00174320`), back-face culling (`0x0050c69c`), Z test and Z write on, and the fog distance set to draw distance ×
 0.5 instead of × the level's fog start. Confirmed (code). Per human, in order, confirmed (code) unless marked:
 
-1. **Texture.** The model's material is untextured on the disc ([Characters](characters.md#character-geometry)).
-   For the draw, the geometry's first material gets the character's texture: the texture at `+0x10` of the instance's
-   texture resource (`RpMaterialSetTexture`, `0x0046d010`). After the draw it is set back to none.
+1. **Texture.** The model's material is untextured on the disc
+   ([Characters](characters-appearance.md#character-geometry)). For the draw, the geometry's first material gets the
+   character's texture: the texture at `+0x10` of the instance's texture resource (`RpMaterialSetTexture`,
+   `0x0046d010`). After the draw it is set back to none.
 2. **Blood.** The same material is a MatFX **dual-texture** material. Its second texture is one of three shared
    blood textures, kept by the resource manager, chosen by the health percentage `h` (`Human_GetHealthPercentRaw`,
    `0x00222ef0`: health / maximum × 100), with `i = min(trunc(h / 30), 2)`:
@@ -925,7 +926,7 @@ The humans in view are drawn in the world pass after the `s` world ([The streame
 
     **No build-up.** The texture and the blend are worked out from the current health at every draw; the human keeps
     no blood state of its own, so the blood never accumulates and goes away as soon as health rises again (a heal, or
-    `Human_ResetStats`, [Characters](characters.md), giving a new or respawned human its class health). At a
+    `Human_ResetStats`, [Characters](characters/index.md), giving a new or respawned human its class health). At a
     checkpoint it shows whatever health the checkpoint leaves. Confirmed (runtime), PCSX2 2.9.94, `level99`
     checkpoint 1 (scenario [`blood_textures`](repo:research/traces/scenarios/blood_textures.toml), hook `human-blood` at
     `0x0017450c`): the player standing still, its health written to 95, 89, 61, 59, 31 and 29 % of 900 twenty updates
@@ -956,7 +957,7 @@ matrix palette the skin is drawn with; `HumanRender_Draw` passes `full` = 1.
    (`Quat_ToMatrix`) with the position × the human's scale (`Human_GetScale`) as its translation.
 3. `R` = the human's world transform: the rotation and position of the object transform table `0x00714b00` at the
    human's index (`+0x92`), 32 bytes each, the rotation a quaternion at `+0x10` (confirmed (code))
-   ([Characters](characters.md#ground)).
+   ([Characters](characters-ground.md#ground)).
 4. Each skin matrix `i = b − 2` (the matrix array of the first atomic's hierarchy, 64 bytes each, flags word `+0x0c` =
    3) = `Mat_MulSwapYZ(R, L_b)` (`0x00336940`, confirmed (code)): the row-vector product `L_b × R` (bone first, then the
    human's placement), re-expressed in RenderWare's y-up axes: a game vector `(x, y, z)` becomes `(x, z, −y)`, so the
@@ -966,10 +967,10 @@ matrix palette the skin is drawn with; `HumanRender_Draw` passes `full` = 1.
    human's origin.
 6. Then the hierarchy's frame is marked dirty for RenderWare (`0x00483bf8`).
 
-So skin matrix `i` belongs to HAnim node `i` (pose bone `i + 2`, [Characters](characters.md#character-geometry)), and
-a vertex is placed, inferred from RenderWare's skinning and the disc's inverse bind matrices, as
-`Σ weight_k × (v × inverseBind_k × skin_k)` over its up to four weights. Whether the VU1 microcode renormalises the
-weights was not read.
+So skin matrix `i` belongs to HAnim node `i` (pose bone `i + 2`,
+[Characters](characters-appearance.md#character-geometry)), and a vertex is placed, inferred from RenderWare's skinning
+and the disc's inverse bind matrices, as `Σ weight_k × (v × inverseBind_k × skin_k)` over its up to four weights.
+Whether the VU1 microcode renormalises the weights was not read.
 
 ### Drawing a car {#car-draw}
 
@@ -1214,7 +1215,7 @@ Names are ours. Confirmed (code) at each address.
 | `0x0016e420` | `CharDataRes_Destruct` | frees each of the 722 animation slots that differs from the resource manager's default set (`+0x70`), the slot table, the heap | confirmed (code) |
 | `0x0016e6a8` | `AnimPackRes_Construct` | holder of one named animation pack (vtable `0x00538970`), same layout | confirmed (code) |
 | `0x0016e740` | `AnimPackRes_Destruct` | frees the pack, its heap and stream | confirmed (code) |
-| `0x0016e8f0` | `ResourceMgr_GetCharData` | get, type 5 (file `"%u"` of the id, [Characters](characters.md#files)) | confirmed (code) |
+| `0x0016e8f0` | `ResourceMgr_GetCharData` | get, type 5 (file `"%u"` of the id, [Characters](characters-appearance.md#files)) | confirmed (code) |
 | `0x0016ea20` | `ResourceMgr_RequestCharData` | request, type 5 | confirmed (code) |
 | `0x0016eb10` | `ResourceMgr_FreeCharData` | free, type 5 | confirmed (code) |
 | `0x0016f128` | `ResourceMgr_GetAnimPack` | get, type 7, keyed by the CRC-32 of the pack's name (`0x0010bc38` loads named packs through it) | confirmed (code) |
@@ -1288,9 +1289,9 @@ What [Cars](cars.md#drawn) says is drawn, as code. Confirmed (code).
 ### Characters: instance, task stack and model {#code-characters}
 
 `Character.cpp` and `CharacterModel.cpp` are the render side of a human: the `CharacterInstance` (0x330 bytes,
-vtable `0x00538a78`; [Characters](characters.md), its [task stack](formats/animation.md#task-stack)) and the character
-model and its resource-manager methods (type 3 at map `+0x00`). Confirmed (code) at each address. Instance fields
-used here:
+vtable `0x00538a78`; [Characters](characters/index.md), its [task stack](formats/animation.md#task-stack)) and the
+character model and its resource-manager methods (type 3 at map `+0x00`). Confirmed (code) at each address. Instance
+fields used here:
 
 | Offset | Meaning |
 | --- | --- |
@@ -1311,7 +1312,7 @@ used here:
 | `0x00174d00` | `CharacterInstance_Construct(model, data, tex)` | full instance: default pose `0x00598420`, reference pose (`0x00100a80`), empty stack and queue | confirmed (code) |
 | `0x00174e70` | `CharacterInstance_ConstructPoseOnly(data)` | the same without a model (`0x00177b80` when no model is wanted) | confirmed (code) |
 | `0x00174f40` | `CharacterInstance_Destruct` | frees every stacked and queued task | confirmed (code) |
-| `0x00175080` | `CharacterInstance_GetAnim(id)` | [Characters](characters.md#files) | confirmed (code) |
+| `0x00175080` | `CharacterInstance_GetAnim(id)` | [Characters](characters-appearance.md#files) | confirmed (code) |
 | `0x00175120` | `CharacterInstance_ReleaseClip(clip)` | one user of a clip less (`+0x43`), telling the human first when the clip has flag 4 | confirmed (code) |
 | `0x00175178`, `0x00175180` | `TaskStack_Count`, `TaskStack_SetCount` | `+0x2ac` | confirmed (code) |
 | `0x00175188`, `0x001751c0`, `0x00175208` | `TaskStack_TopRaw`, `TaskStack_FromTop(n)`, `TaskStack_Bottom` | the top task, the n-th below it, task 0 | confirmed (code) |
@@ -1336,7 +1337,7 @@ used here:
 | `0x001771a0` | `TaskStack_TopCallEvent(arg)` | when the top task has flag `0x80` and slot `+0x110` agrees, calls its slot `+0xb8` | confirmed (code) |
 | `0x00177210` | `Clump_GetFirstAtomicCb` | atomic callback: keeps the atomic's geometry | confirmed (code) |
 | `0x00177240` | `CharacterInstance_UpdateSkeleton(inst, full)` | [the bone matrices](#human-draw) | confirmed (code) |
-| `0x001774d0` | `ResourceMgr_HasCharacter(rm, desc, dataOnly, needRef)` | is resident for a character: data, and unless `dataOnly` texture dictionary and model ([Characters](characters.md#files)) | confirmed (code) |
+| `0x001774d0` | `ResourceMgr_HasCharacter(rm, desc, dataOnly, needRef)` | is resident for a character: data, and unless `dataOnly` texture dictionary and model ([Characters](characters-appearance.md#files)) | confirmed (code) |
 | `0x001775d8` | `ResourceMgr_CharacterFits` | fits, for a character's model, data and textures in turn | confirmed (code) |
 | `0x00177b00` | `ResourceMgr_RequestCharacter(rm, desc, dataOnly)` | request its model, data and textures | confirmed (code) |
 | `0x00177b80` | `ResourceMgr_CreateCharacterInstance(rm, desc, dataOnly)` | gets them and makes a `CharacterInstance` (`0x00174d00`, or `0x00174e70` without a model) | confirmed (code) |
@@ -1550,7 +1551,7 @@ cited:
 | `0x00189628`, `0x001896c0` | `ResourceMgr_ResetNearest`, `ResourceMgr_ResetNearestGangs` | clear the per-kind distance records (`+0xbbc`, `+0xc00`) | confirmed (code) |
 | `0x00189718` | `ResourceMgr_ResetStreaming` | both resets and the dynamic animations released (level unload) | confirmed (code) |
 | `0x00189750` | `ResourceMgr_NearestWanted` | the next dependency to load, or the nearest missing kind's distance ([The streamed world](world.md)) | confirmed (code) |
-| `0x001897a8` | `ResourceManager_LoadNearestModel` | [World objects](objects.md), [Characters](characters.md) | confirmed (code) |
+| `0x001897a8` | `ResourceManager_LoadNearestModel` | [World objects](objects.md), [Characters](characters/index.md) | confirmed (code) |
 | `0x00189ed8` | `ResourceMgr_StreamGangs` | gang spawners: loads the nearest missing one's character, unloads the farthest when room is short | confirmed (code) |
 | `0x0018a2b0` | `ResourceMgr_EvictFarthest` | drops the farthest resident character, object or car instance when it is no longer used | confirmed (code) |
 | `0x0018a430` | `ResourceMgr_NoteHuman(dist, rm, human)` | records a human's squared distance (farthest loaded / nearest missing) and puts its clump in or out of the collision world by the camera's range | confirmed (code) |

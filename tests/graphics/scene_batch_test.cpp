@@ -335,9 +335,9 @@ TEST_CASE("the GPU skinning formula places a vertex as characters::skinVertices(
           "[graphics][gpu-renderer][scene][skinning]") {
     // Expected: ../engine/gpu-renderer.md#skinning: the shader blends a vertex as the GL3 renderer's skinning shader
     // (platform/character_skin.cpp) and the CPU skinning before it (characters::skinVertices(),
-    // docs/research/characters.md#character-geometry): each weighted bone's placement of the position and turn of the
-    // normal times the weight, summed with the weights as stored (a hair below 1 here), the normal made unit. A
-    // synthetic mesh of three vertices under three bones: a turn, a move and a scaled turn.
+    // docs/research/characters-appearance.md#character-geometry): each weighted bone's placement of the position and
+    // turn of the normal times the weight, summed with the weights as stored (a hair below 1 here), the normal made
+    // unit. A synthetic mesh of three vertices under three bones: a turn, a move and a scaled turn.
     const float c = std::cos(0.6F);
     const float s = std::sin(0.6F);
     const std::array<coney::anim::Mat34, 3> matrices{

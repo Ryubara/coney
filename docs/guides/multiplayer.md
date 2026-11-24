@@ -383,7 +383,7 @@ one definition, as Quake 3's `netField_t` tables do. `writeField()` and `readFie
 
 | Kind | Fields | Bits in full |
 | --- | --- | --- |
-| Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (16 bits each, -32,768 to 32,767: the original's s16 numbers, which a lethal hit takes below 0, [Characters](../research/characters.md)), four animation layers, as many as `AnimTaskStack` shows at once ([A human's state](snapshots.md#human-state)): each one's clip (12 bits), playhead (10 bits, a share of the clip) and gait value (10 bits, 0 to 4, for a walk or run blend), and each older layer's fade under the one above it (10 bits), then grounded, knocked out, the hidden move style and his character (10 bits, a Character List index plus one: [A human's character](snapshots.md#character)) | 267 |
+| Human | position (3 x 18 bits, -1,024 to 1,024 m, under 8 mm a step), heading (10 bits), health and its maximum (16 bits each, -32,768 to 32,767: the original's s16 numbers, which a lethal hit takes below 0, [Characters](../research/characters/index.md)), four animation layers, as many as `AnimTaskStack` shows at once ([A human's state](snapshots.md#human-state)): each one's clip (12 bits), playhead (10 bits, a share of the clip) and gait value (10 bits, 0 to 4, for a walk or run blend), and each older layer's fade under the one above it (10 bits), then grounded, knocked out, the hidden move style and his character (10 bits, a Character List index plus one: [A human's character](snapshots.md#character)) | 267 |
 | World object | position, heading, door opening (10 bits), state (a byte), broken, hidden | 84 |
 | Car | position, heading, speed (12 bits, -64 to 64 m/s) | 76 |
 | Player HUD (by slot, not id) | rage and its maximum (16 bits each, the s16 range), raging, the banner's blue-grey, the score (25 bits), the money (16 bits), the four item counts (8 bits each), SELECT shows the panel, knocked out, the camera ignores the stick ([HUD state](snapshots.md#hud-state)) | 110 |
@@ -510,13 +510,13 @@ in a session) and sends each joined player a **LoadLevel**: the level's name, th
 next checkpoint), a **change** for any other level, and **join** for a player who joins a host already in a level: they
 are sent the current load straight after their Welcome. The checkpoint travels in 16 bits and counts from 1, as the
 original's does (`W_GameState + 0x33a`, confirmed (code), [Where a level puts the
-player](../research/characters.md#level-starts)); a level name is at most 32 bytes (Coney's choice: the original's level
-record keeps the name in 16, [The level record](../research/level-loading.md#the-level-record), and Coney's own levels
-may be longer) of ASCII letters, digits, `_` and `-` only (`net::validLevelName()`): the original's are named like
-`level34` ([Levels](../references/levels.md)), and a name off the network then can never be a path (no slash, no dot)
-or hold a NUL or a control byte. A LoadLevel with any other name does not decode, and a host that orders one asserts.
-The client keeps the newest order for its game (`NetClient::takeLevelOrder()`, a newer one replacing one not yet taken)
-and is **loading** until its game calls `levelLoaded(load)`, which sends **LevelLoaded** at once.
+player](../research/characters-players.md#level-starts)); a level name is at most 32 bytes (Coney's choice: the
+original's level record keeps the name in 16, [The level record](../research/level-loading.md#the-level-record), and
+Coney's own levels may be longer) of ASCII letters, digits, `_` and `-` only (`net::validLevelName()`): the original's
+are named like `level34` ([Levels](../references/levels.md)), and a name off the network then can never be a path (no
+slash, no dot) or hold a NUL or a control byte. A LoadLevel with any other name does not decode, and a host that orders
+one asserts. The client keeps the newest order for its game (`NetClient::takeLevelOrder()`, a newer one replacing one
+not yet taken) and is **loading** until its game calls `levelLoaded(load)`, which sends **LevelLoaded** at once.
 
 **The barrier.** `LevelBarrier` (`src/net/level_barrier.h`, plain data in the server's steps) holds which joined players
 are loading the current load. `NetServer::levelReady()` is true when none is, and `NetPlay::holdsStep()` says the host's

@@ -10,7 +10,7 @@ class Brains;
 
 // The input script's `drop-ai` (docs/guides/running-input.md#input-scripts): a debug aid that puts an AI human far
 // below the world, so the characters' step takes him away as it takes a human who fell out of it
-// (docs/research/characters.md#out-of-world). A build with the debug tools only; the release build's game has no
+// (docs/research/characters-ground.md#out-of-world). A build with the debug tools only; the release build's game has no
 // sink for the line.
 
 namespace coney::debug {

@@ -75,8 +75,8 @@ std::vector<coney::test::Tri> ground() { return floorAt(0.0F, 0.0F, 80.0F, 0.0F,
 } // namespace
 
 TEST_CASE("a step under 0.25 m is walked onto in one update with no change of speed or clip", "[human][traversal]") {
-    // The runtime's test step (docs/research/characters.md#walls): walked at 35 % and 50 % up to 0.24 m, run at 100 %
-    // onto 0.245 m; the feet rise by the step's height on one update, the speed and the clip unchanged.
+    // The runtime's test step (docs/research/characters-ground.md#walls): walked at 35 % and 50 % up to 0.24 m, run at
+    // 100 % onto 0.245 m; the feet rise by the step's height on one update, the speed and the clip unchanged.
     const TestCharacter character;
     struct Case {
         float height;
@@ -116,8 +116,8 @@ TEST_CASE("a step under 0.25 m is walked onto in one update with no change of sp
 
 TEST_CASE("a face from 0.25 m stops the body where its 0.4704 m sphere meets the face's top edge",
           "[human][traversal]") {
-    // The runtime's stops (docs/research/characters.md#walls): 0.395, 0.399 and 0.423 m from faces 0.255, 0.26 and
-    // 0.30 m tall, sqrt(0.4704² − (0.5204 − h)²) + the 0.01 m kept clear; a 0.5 m ledge and a full wall 0.480 m.
+    // The runtime's stops (docs/research/characters-ground.md#walls): 0.395, 0.399 and 0.423 m from faces 0.255, 0.26
+    // and 0.30 m tall, sqrt(0.4704² − (0.5204 − h)²) + the 0.01 m kept clear; a 0.5 m ledge and a full wall 0.480 m.
     const TestCharacter character;
     struct Case {
         float height;
@@ -417,7 +417,7 @@ TEST_CASE("a fence stops a walk, and a running climb carries the body through it
         }
         // The first clip ran through the 2-update move to the start point, unfaded: on the next update its root
         // motion moves the body at its full 3 m/s × 0.75. The second and third clips move nothing on their first
-        // update, then go at their own speed (docs/research/characters.md#climb).
+        // update, then go at their own speed (docs/research/characters-traversal.md#climb).
         REQUIRE(moved.size() > 3);
         CHECK(clips[2] == 446U);
         CHECK(moved[2] == Approx(3.0F * 0.75F / 30.0F).margin(1e-4));
@@ -482,8 +482,8 @@ TEST_CASE("walking north into a corner's edge, the body slides round it where th
           "[human][traversal]") {
     // A building's convex corner at (40, 40), as level5's at (-60.2, -163.7): the player walks due north 0.2 m east of
     // it, so his sphere meets only the vertical edge. With the edge named the corner slide carries him round it
-    // (docs/research/characters.md#walls, step 6: past in about a second at runtime); a push along the face's normal
-    // alone holds him there.
+    // (docs/research/characters-ground.md#walls, step 6: past in about a second at runtime); a push along the face's
+    // normal alone holds him there.
     const TestCharacter character;
     for (const bool named : {true, false}) {
         const auto mesh = makeMesh(join(ground(), coney::test::convexCorner(30.0F, 40.0F, 40.0F, 50.0F, 3.0F, named)));
@@ -501,9 +501,9 @@ TEST_CASE("walking north into a corner's edge, the body slides round it where th
 
 TEST_CASE("walking into a face that leans back beside a rising floor, the body slides up along it and over the top",
           "[human][traversal]") {
-    // A heap as level99's gravel (docs/research/characters.md#slopes): a floor rising north at 1 in 2 (n.z 0.89) from
-    // the street at y = 30 to a top at z = 1.5 at y = 33, east of x = 40; west of it a face leaning back with
-    // n (0.806, -0.265, 0.530), too steep to be floor, whose foot is the floor's west edge; the top behind both. The
+    // A heap as level99's gravel (docs/research/characters-ground.md#slopes): a floor rising north at 1 in 2 (n.z 0.89)
+    // from the street at y = 30 to a top at z = 1.5 at y = 33, east of x = 40; west of it a face leaning back with n
+    // (0.806, -0.265, 0.530), too steep to be floor, whose foot is the floor's west edge; the top behind both. The
     // player walks at 60 % into the face 20° off its normal, toward the top. At runtime such a walk slid along the
     // face's foot up the floor and over the heap.
     const TestCharacter character;

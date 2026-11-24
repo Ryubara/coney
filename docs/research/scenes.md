@@ -4,8 +4,8 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 `coney-tools wad scenes` ([coney-tools](../guides/coney-tools.md#scenes)) parsed all 2,765 records of the NTSC-U disc on
 2026-10-06 and prints counts and hashes only. Runtime claims come from the `warriors_passive` trace
 (`repo:research/traces/scenarios/warriors_passive.toml`, recorded in PCSX2 2.9.94 on 2026-10-05,
-[AI](ai-fights.md#level99-fight)) and from [Characters](characters.md#creation), and from the scene-binding hooks of
-[Cast at runtime](#cast-runtime) (`repo:research/traces/scenarios/scene_cast_state.toml` and
+[AI](ai-fights.md#level99-fight)) and from [Characters](characters/index.md#creation), and from the scene-binding hooks
+of [Cast at runtime](#cast-runtime) (`repo:research/traces/scenarios/scene_cast_state.toml` and
 `repo:research/traces/scenarios/scene_cast_fence.toml`, PCSX2 2.9.94, 2026-10-11).
 
 ## Purpose
@@ -454,7 +454,7 @@ instead. Confirmed (code).
 `Generic1` holds goal `0x29` with scene 2627 (`l99_c5`) for 481 updates (16.0 s of the scene's 16.7 s; the state was
 saved after it began); when it pops, `Generic2` stands at (−282.55, 128.97), role 3 `warrlynx`'s end position
 (−282.56, 128.97), and the player at role 6's (−286.93, 121.58). After `l99_c1`, Rembrandt stood at role 2
-`warrrecv`'s end position (−289.03, 120.29) ([Characters](characters.md#creation)).
+`warrrecv`'s end position (−289.03, 120.29) ([Characters](characters/index.md#creation)).
 
 ### The reset at the join {#join-reset}
 
@@ -534,7 +534,7 @@ nobody binds plays nothing. Confirmed (code):
   8 puts it back at its attached pose ([`simple_object`](objects.md#simple-object)). 775 of the 2,317 object slots on
   the disc are `s_` names (`s_spraycan01`).
 - **What decides the look**: a human's model is its **character type**, the second argument of the `HuCreate` that
-  made it ([Characters](characters.md#creation), [character list](../references/characters.md)), so the same role
+  made it ([Characters](characters/index.md#creation), [character list](../references/characters.md)), so the same role
   wears different models in different scripts (`l11_c1`'s `warrcl` is Cleon's `warr_cl_gen`, `l80_c1`'s Cleon is
   `warr_cl`). An object's model is its **object type**: the scripts bind `Objects.<key>`, which holds the
   `ObjSpawn(type, ...)` of that type (a type spawned again is keyed `<type>01`, `<type>02`), or a door's leaf
@@ -544,7 +544,7 @@ nobody binds plays nothing. Confirmed (code):
   class `0x12`, `0x14` or `0xbc` (Cowboy's classes) with no hat object at `+0x364` gets the handle of a free object of
   its class's hat type (class `+0x14c`, looked up by name among the object manager's kind-24 objects and taken only
   if not attached), so a Cowboy who lost his hat may wear it again in the scene (inferred: the hat,
-  [Characters: where a hat comes from](characters.md#creation)).
+  [Characters: where a hat comes from](characters/index.md#creation)).
 
 **The names are labels** (inferred from the disc): the 1,236 differently named headers hold 3,144 role slots under
 689 distinct names, in several conventions: a model name without its underscores (`warrrecv` for `warr_re_cv`), the

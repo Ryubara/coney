@@ -90,7 +90,7 @@ log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "task"
 
 [hook.sweep-radius]
 description = "Each walking sweep's sphere in PhysicsMesh_SweepCapsule (0x00347c08), before the scale multiplies it: the body, shape +0x40 x body +0x60 (f1), body +0x60 (f3) and Human_GetScale's result (f0); the radius is f1 x f0."
-research = "docs/research/characters.md#walls"
+research = "docs/research/characters-ground.md#walls"
 address = 0x00347cbc
 # mul.s f1,f1,f0; sw t1,0x47a8(sp)
 original = [0x46000842, 0xafa947a8]

@@ -275,7 +275,7 @@ void CharacterMesh::preparePose(std::span<const anim::Mat34> skinning) {
 void CharacterMesh::commitPose(const anim::Mat34& placement) {
     // The blend stays in the character's space and the frame places its result, as the per-vertex placement did:
     // folded into each bone's matrix, the placement would move a vertex by its weights' sum, which the stored weights
-    // keep a hair below 1 (characters.md#character-geometry).
+    // keep a hair below 1 (characters-appearance.md#character-geometry).
     placeFrame(m_atomic, placement);
     placeFrame(m_blood, placement);
     if (m_gpu) {

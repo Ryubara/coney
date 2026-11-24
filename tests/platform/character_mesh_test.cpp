@@ -21,7 +21,7 @@ using coney::test::placedTheOldWay;
 using coney::test::worldVertex;
 
 TEST_CASE("a character model becomes librw geometry whose vertices follow the skinning", "[character_mesh]") {
-    // Expected: characters.md#character-geometry, confirmed (code): the fixture's vertices, as decoded
+    // Expected: characters-appearance.md#character-geometry, confirmed (code): the fixture's vertices, as decoded
     // librw on its NULL device: no window or GPU.
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     REQUIRE(engine.has_value());
@@ -45,7 +45,7 @@ TEST_CASE("a character model becomes librw geometry whose vertices follow the sk
 }
 
 TEST_CASE("the placement turns, leans and moves a point as the per-vertex placement did", "[character_mesh]") {
-    // Expected: characters.md#coneys-implementation, Coney's choice of the lean's axis and pivot: the play mode's
+    // Expected: characters/index.md#coneys-implementation, Coney's choice of the lean's axis and pivot: the play mode's
     // per-vertex placement before GPU skinning, placedTheOldWay()
     const coney::anim::Vec3 feet{3.0F, -2.0F, 0.5F};
     const float heading = 0.7F;
@@ -62,7 +62,8 @@ TEST_CASE("the placement turns, leans and moves a point as the per-vertex placem
 }
 
 TEST_CASE("posing a mesh on the CPU skins and places every vertex, the blood layer too", "[character_mesh]") {
-    // Expected: characters.md#character-geometry, confirmed (code): characters::skinVertices(), then the placement
+    // Expected: characters-appearance.md#character-geometry, confirmed (code): characters::skinVertices(), then the
+    // placement
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     REQUIRE(engine.has_value());
     auto model = coney::characters::decodeCharacterModel(
@@ -93,7 +94,8 @@ TEST_CASE("posing a mesh on the CPU skins and places every vertex, the blood lay
 }
 
 TEST_CASE("the posed box of the bones' boxes holds every skinned vertex", "[character_mesh]") {
-    // Expected: characters.md#character-geometry, confirmed (code): characters::skinVertices() on the same matrices
+    // Expected: characters-appearance.md#character-geometry, confirmed (code): characters::skinVertices() on the same
+    // matrices
     auto model = coney::characters::decodeCharacterModel(
         coney::test::characterClump(coney::test::testCharacterFields()).span(), coney::test::testBoneOffsets().span());
     REQUIRE(model.has_value());

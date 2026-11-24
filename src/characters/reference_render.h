@@ -19,7 +19,7 @@
 namespace coney::characters {
 
 /// **Coney's choice** for the reference camera: three-quarter front. The character faces +y in the pose's axes (z up,
-/// characters.md#character-geometry); the camera stands this far round from straight in front, towards the
+/// characters-appearance.md#character-geometry); the camera stands this far round from straight in front, towards the
 /// character's right (+x), and this far above the horizontal, looking at the model's middle.
 inline constexpr float kReferenceYaw = 0.6108652F;   // 35 degrees
 inline constexpr float kReferencePitch = 0.1745329F; // 10 degrees

@@ -16,8 +16,8 @@ namespace coney::net {
 inline constexpr std::int32_t kNoCharacter = 0;
 
 /// The most a human's character field holds: 10 bits, a Character List index plus one. The disc's Character List has
-/// 543 records (docs/research/characters.md#files), so the width is fixed by the original's own data, with room to
-/// spare.
+/// 543 records (docs/research/characters-appearance.md#files), so the width is fixed by the original's own data, with
+/// room to spare.
 /// @coney-only network play; the original has none
 inline constexpr std::int32_t kMostCharacterId = 1023;
 

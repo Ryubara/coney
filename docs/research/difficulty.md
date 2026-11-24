@@ -15,7 +15,7 @@ state that the game's code and the level scripts read. The profile's own choice,
 [Profiles, options and saving](save.md) and [the PM_Difficulty screen](frontend.md#fn-pm-difficulty); this page is the
 difficulty in force, who sets it and every reader of it. Most of what a difficulty changes is not code at all but the
 difficulty script's configuration (the Warrior classes, the characters' stats), on
-[Characters: stats](characters.md#stats).
+[Characters: stats](characters-classes.md#stats).
 
 ## Rules
 
