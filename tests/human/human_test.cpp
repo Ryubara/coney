@@ -261,6 +261,24 @@ TEST_CASE("a move longer than the body's reach meets the wall from where it star
     CHECK(human.position().x == Approx(50.0F - coney::human::playerWalkingRadius(1.0F) - 0.01F).margin(0.002));
 }
 
+TEST_CASE("in the air a pending push moves the body whole, its vertical part too", "[human]") {
+    const TestCharacter character;
+    const auto high = coney::test::makeMesh(coney::test::floorAt(10.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    const auto empty = coney::test::makeMesh(coney::test::floorAt(-100.0F, 0.0F, 1.0F, 0.0F, 1.0F));
+    Human human = spawnHuman(character, high.get(), Vec3{40.0F, 40.0F, 10.0F});
+    human.step(stick(0.0F, 0.0F), high.get());
+    human.step(stick(0.0F, 0.0F), empty.get()); // no ground under the feet: airborne
+    REQUIRE(human.airborne());
+    // The next airborne update has no gravity yet and no velocity: only the push moves the body.
+    human.addPush(Vec3{0.1F, 0.0F, 0.3F});
+    human.step(stick(0.0F, 0.0F), empty.get());
+    // Expected: 0x0023d8c8 (Human_Move, docs/research/characters-ground.md#falling), confirmed (code): in the air the push
+    // is added to the move with its z; only the ground branch takes the z off.
+    REQUIRE(human.airborne());
+    CHECK(human.position().x == Approx(40.1F).margin(1e-4));
+    CHECK(human.position().z == Approx(10.3F).margin(1e-4));
+}
+
 TEST_CASE("running into a wall at a steep angle brakes the player to the slid speed", "[human]") {
     const TestCharacter character;
     const auto mesh =
@@ -318,10 +336,10 @@ TEST_CASE("an airborne human lands by the original's landing test, on the update
         REQUIRE(human.airborne());
         REQUIRE(human.position().z == Approx(10.0F));
         human.step(stick(0.0F, 0.0F), low.get());
-        // Expected: docs/research/physics-bodies.md#u3-tests (test 18: a contact at fraction 0.4737, or 0 when the hit
-        // is nearer than 1 m), confirmed (code) at 0x0023e408 (docs/research/physics-bodies.md#u3-landing): the landing
-        // contact is found on this update, its handler lands the human (`Human_Land`, 0x00219d50,
-        // docs/research/characters-ground.md#falling, confirmed (code)), and the ground snap that follows a move ending on
+        // Expected: docs/research/physics-bodies.md#u3-tests (test 18), confirmed (code) at 0x0023e408
+        // (docs/research/physics-bodies.md#u3-landing): the landing contact is found on this update, its handler
+        // (`Human_OnContact`, 0x00219d50) lands the human (`Human_Land`, 0x0023e090, docs/research/characters-ground.md
+        // #falling, confirmed (code)), and the ground snap that follows a move ending on
         // the ground (`Human_Move`, 0x0023d8c8, docs/research/characters-ground.md#falling, confirmed (code)) puts the feet
         // on the floor.
         CHECK_FALSE(human.airborne());
@@ -345,15 +363,30 @@ TEST_CASE("a fall lands on the update its moved feet pass the floor", "[human]")
             coney::test::makeMesh(coney::test::join(coney::test::floorAt(height, 0.0F, 80.0F, 0.0F, 20.0F),
                                                     coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F)));
         Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 17.0F, height});
+        const float dt = human.stepSeconds();
         std::vector<float> airborneEnds;
-        for (int i = 0; i < 150 && (airborneEnds.empty() || human.airborne()); ++i) {
+        bool landed = false;
+        for (int i = 0; i < 150 && !landed; ++i) {
+            const bool wasAirborne = human.airborne();
+            const float start = human.position().z;
             human.step(stick(0.0F, 0.35F), mesh.get());
             if (human.airborne()) {
                 airborneEnds.push_back(human.position().z);
             }
+            if (!wasAirborne) {
+                continue; // still on the ledge, or the update that leaves it
+            }
+            landed = !human.airborne();
+            // The update's move down: the vertical speed after this update's gravity (taken back from the landing's 0).
+            const float drop = (landed ? human.lastLandingSpeed() : human.velocity().z) * dt;
+            // Expected: docs/research/physics-bodies.md#u3-landing, confirmed (code) at 0x0023e408: the segment ends
+            // at the moved feet, so the update lands exactly when they pass the floor, neither earlier (the feet still
+            // above it) nor later; confirmed (runtime), run r-20261124-fall-rise2-landing
+            // (docs/research/characters-ground.md#falling).
+            CHECK(landed == (start + drop < 0.0F));
         }
         REQUIRE(airborneEnds.size() >= 2);
-        CHECK_FALSE(human.airborne());
+        CHECK(landed);
         CHECK(human.position().z == Approx(0.0F).margin(1e-4));
         // Expected: docs/research/physics-bodies.md#u3-landing, confirmed (code) at 0x0023e408.
         CHECK(*std::ranges::min_element(airborneEnds) >= 0.0F);
