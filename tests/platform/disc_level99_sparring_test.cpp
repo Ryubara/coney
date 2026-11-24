@@ -28,6 +28,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <typeinfo>
 #include <utility>
 #include <vector>
 
@@ -182,12 +183,34 @@ void countGloat(Watched& watched) {
     watched.gloats.see(gloating ? taunt : nullptr);
 }
 
+// One line of the fight's trace for update `update`: the player's place and health, and each sparring Warrior's place,
+// heading, top goal, front action and counts, the floats in hexadecimal so that a difference in the last bit shows.
+std::string traceLine(int update, const coney::platform::PlayLevelMode& level, const std::vector<Watched>& warriors) {
+    const coney::human::Human& player = level.player().human();
+    const coney::anim::Vec3 p = player.position();
+    std::string line =
+        std::format("{} player {:a} {:a} {:a} health {}", update, p.x, p.y, p.z, player.fighter().health().value());
+    for (const Watched& watched : warriors) {
+        const coney::human::Human& human = watched.brain->human();
+        const coney::anim::Vec3 at = human.position();
+        const coney::ai::Goal* top = watched.brain->topGoal();
+        const coney::ai::Action* front = watched.brain->frontAction();
+        line += std::format(" | {:a} {:a} {:a} heading {:a} goal {} action {} attacks {} taunts {} gloats {}", at.x,
+                            at.y, at.z, human.heading(),
+                            top != nullptr ? coney::ai::goalTypeName(top->type()) : std::string_view("none"),
+                            front != nullptr ? typeid(*front).name() : "none", watched.attacks, watched.taunts.count(),
+                            watched.gloats.count());
+    }
+    return line;
+}
+
 // Every AI sequence the lesson can take: the brains' variation (`--ai-seed`) 0-7, each a test case of its own so that
 // ctest runs them in parallel (docs/guides/testing.md#one-test-per-item).
 constexpr std::array<std::uint32_t, 8> kSeeds{0, 1, 2, 3, 4, 5, 6, 7};
 
-// The lesson's fight under one AI seed: the Warriors close on the player and attack.
-void playSparringFight(std::uint32_t seed) {
+// The lesson's fight under one AI seed: the Warriors close on the player and attack. When `trace` is given, a line of
+// the fight for each update is added to it (traceLine()), so two runs of one seed can be compared.
+void playSparringFight(std::uint32_t seed, std::vector<std::string>* trace = nullptr) {
     CAPTURE(seed);
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
@@ -367,6 +390,9 @@ void playSparringFight(std::uint32_t seed) {
             countGloat(watched);
             countFightStart(watched);
         }
+        if (trace != nullptr) {
+            trace->push_back(traceLine(i, *play(), warriors));
+        }
     }
     // The rest of the recorded fight, for the taunts and the gloats alone.
     for (int i = kFightFrames; i < kTauntFrames; ++i) {
@@ -375,6 +401,9 @@ void playSparringFight(std::uint32_t seed) {
             countTaunt(watched);
             countGloat(watched);
             countFightStart(watched);
+        }
+        if (trace != nullptr) {
+            trace->push_back(traceLine(i, *play(), warriors));
         }
     }
     const int healthAfter = play()->player().human().fighter().health().value();
@@ -438,5 +467,79 @@ void playSparringFight(std::uint32_t seed) {
             seed);
     },
     [](std::uint32_t seed) { playSparringFight(seed); });
+
+// The update at which two traces first differ, or -1 when they are the same.
+int firstDifference(const std::vector<std::string>& a, const std::vector<std::string>& b) {
+    const std::size_t common = std::min(a.size(), b.size());
+    for (std::size_t i = 0; i < common; ++i) {
+        if (a[i] != b[i]) {
+            return static_cast<int>(i);
+        }
+    }
+    return a.size() == b.size() ? -1 : static_cast<int>(common);
+}
+
+// A 64-bit FNV-1a hash of a trace, printed so that runs in separate processes can be compared too.
+std::uint64_t traceHash(const std::vector<std::string>& trace) {
+    std::uint64_t hash = 0xcbf29ce484222325ULL;
+    for (const std::string& line : trace) {
+        for (const char c : line) {
+            hash = (hash ^ static_cast<unsigned char>(c)) * 0x100000001b3ULL;
+        }
+        hash = (hash ^ static_cast<unsigned char>('\n')) * 0x100000001b3ULL;
+    }
+    return hash;
+}
+
+// A seeded run on the fixed step reproduces exactly (docs/guides/testing.md, test mode): one AI sequence played twice
+// in one process, with another sequence played between, gives the same fight update for update, the counts the test
+// keeps included (#1668: the taunt count of one sequence varied between runs while the fight itself did not).
+TEST_CASE("the disc's level99: the sparring fight under one AI seed plays the same twice in one process, and after "
+          "another seed",
+          "[disc][story][ai]") {
+    // Sequence 2 is one whose taunt count varied (4 or 5); 6 is played between.
+    constexpr std::uint32_t kSeed = 2;
+    constexpr std::uint32_t kOtherSeed = 6;
+    std::vector<std::string> first;
+    playSparringFight(kSeed, &first);
+    std::vector<std::string> other;
+    playSparringFight(kOtherSeed, &other);
+    std::vector<std::string> again;
+    playSparringFight(kSeed, &again);
+    std::printf("%s", std::format("  level99 sparring fight traces (seed {}): {:016x}, then {:016x}; seed {} between: "
+                                  "{:016x}\n",
+                                  kSeed, traceHash(first), traceHash(again), kOtherSeed, traceHash(other))
+                          .c_str());
+    REQUIRE(first.size() == static_cast<std::size_t>(kTauntFrames));
+    const int differs = firstDifference(first, again);
+    if (differs >= 0) {
+        const auto at = static_cast<std::size_t>(differs);
+        UNSCOPED_INFO("first run:  " << (at < first.size() ? first[at] : std::string("(ended)")));
+        UNSCOPED_INFO("second run: " << (at < again.size() ? again[at] : std::string("(ended)")));
+    }
+    CHECK(differs == -1);
+}
+
+// The counter of the taunts and gloats counts each action that starts, also one the brain made where it had just freed
+// the last one, at the same address: counted by address, such a taunt was missed in some runs and not others, as the
+// heap reused an address or did not (#1668). The kind's actions here are stand-ins, two objects whose address the test
+// chooses.
+TEST_CASE("the sparring test's counter counts a new action at the address of the one before it", "[ai]") {
+    const int taunt = 0;
+    const int other = 0;
+    coney::test::ActionStarts starts;
+    // A taunt for three updates, a gap of one, then another taunt where the first lived.
+    starts.see(&taunt);
+    starts.see(&taunt);
+    starts.see(&taunt);
+    starts.see(nullptr);
+    starts.see(&taunt);
+    CHECK(starts.count() == 2);
+    // Another taunt, at another address, the update after one ends.
+    starts.see(&other);
+    CHECK(starts.count() == 3);
+    starts.see(&other);
+    CHECK(starts.count() == 3);
+}
 
 } // namespace
