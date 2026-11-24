@@ -68,6 +68,7 @@
 #include "scripting/config_strings.h"
 #include "scripting/lua_value.h"
 #include "scripting/script_system.h"
+#include "support/action_starts.h"
 #include "support/each_case.h"
 #include "world/sector_budget.h"
 
@@ -142,13 +143,11 @@ struct Watched {
     bool tackled = false;    // held the player while its run-in was on top: the charge as a tackle (then a mount)
     float chargeAt = -1.0F;  // the distance when its charge was first seen (the run or the hold); -1 for none
     std::uint64_t lastNextAttack = 0;
-    int taunts = 0;                               // reposition taunts started (a `cheer2` fight fidget)
-    const coney::ai::Action* lastTaunt = nullptr; // the taunt last counted, so that one is counted once
-    int gloats = 0;                               // gloats over the downed player started (a taunt action, kind 3 or 4)
-    const coney::ai::Action* lastGloat = nullptr; // the gloat last counted
-    int fightStarts = 0;                          // fight goals started (a new one on top, its update count afresh)
-    const coney::ai::Goal* lastFight = nullptr;   // the fight goal last seen on top
-    std::uint32_t lastFightUpdates = 0;           // its update count then
+    coney::test::ActionStarts taunts;           // reposition taunts started (a `cheer2` fight fidget)
+    coney::test::ActionStarts gloats;           // gloats over the downed player started (a taunt action, kind 3 or 4)
+    int fightStarts = 0;                        // fight goals started (a new one on top, its update count afresh)
+    const coney::ai::Goal* lastFight = nullptr; // the fight goal last seen on top
+    std::uint32_t lastFightUpdates = 0;         // its update count then
 };
 
 // Counts `watched`'s fight goal starts: a fight goal on top that is another than the last seen, or whose update count
@@ -169,10 +168,8 @@ void countFightStart(Watched& watched) {
 // says `cheer2` (the original's FidgetAction_Start says it, 0x002fa090).
 void countTaunt(Watched& watched) {
     const auto* fidget = dynamic_cast<const coney::ai::FidgetAction*>(watched.brain->frontAction());
-    if (fidget != nullptr && fidget->started() && fidget->line() == kTauntLine && fidget != watched.lastTaunt) {
-        watched.lastTaunt = fidget;
-        ++watched.taunts;
-    }
+    const bool taunting = fidget != nullptr && fidget->started() && fidget->line() == kTauntLine;
+    watched.taunts.see(taunting ? fidget : nullptr);
 }
 
 // Counts `watched`'s gloat over the downed player when one has just started at the front of its actions: the taunt
@@ -180,11 +177,9 @@ void countTaunt(Watched& watched) {
 // 0x00292d80; the original's call of TauntAction_Init is 0x00293428).
 void countGloat(Watched& watched) {
     const auto* taunt = dynamic_cast<const coney::ai::TauntAction*>(watched.brain->frontAction());
-    if (taunt != nullptr && taunt != watched.lastGloat &&
-        (taunt->kind() == coney::ai::kCheerTaunt || taunt->kind() == coney::ai::kTauntAtTaunt)) {
-        watched.lastGloat = taunt;
-        ++watched.gloats;
-    }
+    const bool gloating =
+        taunt != nullptr && (taunt->kind() == coney::ai::kCheerTaunt || taunt->kind() == coney::ai::kTauntAtTaunt);
+    watched.gloats.see(gloating ? taunt : nullptr);
 }
 
 // Every AI sequence the lesson can take: the brains' variation (`--ai-seed`) 0-7, each a test case of its own so that
@@ -390,15 +385,16 @@ void playSparringFight(std::uint32_t seed) {
     int taunts = 0;
     int gloats = 0;
     for (const Watched& watched : warriors) {
-        taunts += watched.taunts;
-        gloats += watched.gloats;
+        taunts += watched.taunts.count();
+        gloats += watched.gloats.count();
         std::printf("  level99 sparring Warrior (seed %u): %.2f m from the player when sent, %s at up to %.1f m/s, %s, "
                     "charge at %.2f m, run-in ended at %.2f m, nearest %.2f m, %d attacks, %d taunts, %d gloats, %d "
                     "fight goals started, "
                     "%zu goals\n",
                     seed, watched.startDistance, watched.engaged ? "ran in" : "did not run in", watched.fastest,
                     watched.tackled ? "tackled" : "no tackle", watched.chargeAt, watched.engageEnd, watched.nearest,
-                    watched.attacks, watched.taunts, watched.gloats, watched.fightStarts, watched.brain->goalCount());
+                    watched.attacks, watched.taunts.count(), watched.gloats.count(), watched.fightStarts,
+                    watched.brain->goalCount());
         engaged += watched.engaged ? 1 : 0;
         closed += watched.nearest < kCloseRange ? 1 : 0;
         attacked += watched.attacks > 0 ? 1 : 0;
