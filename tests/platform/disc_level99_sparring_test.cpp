@@ -528,8 +528,8 @@ TEST_CASE("the disc's level99: the sparring fight under one AI seed plays the sa
 TEST_CASE("the sparring test's counter counts a new action at the address of the one before it", "[ai]") {
     const int taunt = 0;
     const int other = 0;
-    // Expected: ai-fights.md#fight-reposition, confirmed (code): taunts 1000-2000 ms apart, never on consecutive
-    // updates
+    // Expected: ai-fights.md#fight-order, confirmed (code): the fight goal waits while actions are queued, so a
+    // taunt never follows another at the front on the very next update
     coney::test::ActionStarts starts;
     // A taunt for three updates, a gap of one, then another taunt where the first lived.
     starts.see(&taunt);

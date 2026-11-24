@@ -12,9 +12,12 @@ namespace coney::test {
 ///
 /// An action is new when it was not at the front the update before. Its address alone does not tell: the brain frees
 /// a finished action and the next of the kind is often made where it lived, so a count by address missed it in some
-/// runs and not others, as the heap reused the address or did not (#1668). Only a new one at the same address the very
-/// update after the last would be missed, and none comes so soon: the fight's taunt timer is 1000-2000 ms
-/// (docs/research/ai-fights.md#fight-reposition).
+/// runs and not others, as the heap reused the address or did not (#1668). Only a new one at the same address at the
+/// front the very update after the last would be missed. A reposition taunt never comes so soon: the fight goal waits
+/// while any action is queued (src/ai/fight_goal.cpp, its step 7) and each update runs the goals before the actions
+/// (Brain::update()), so the update the last action is popped queues nothing behind it. The taunt timer does not rule
+/// it out, as it is re-armed when the taunt is queued and may run out while a long one plays. A gloat is queued by an
+/// event, not by the goal, so one could in theory follow another that way; the test only prints the gloats.
 class ActionStarts {
   public:
     /// Notes this update's front action of the kind (null for none), counting it when it is a new one.
