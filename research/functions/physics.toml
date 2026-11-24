@@ -29,6 +29,54 @@ coney = "src/world_objects/loose_objects.cpp:integrateAngular"
 status = "legacy"
 
 [[function]]
+address = 0x0033cd70
+name = "IPhysics_ForgetIgnoredOwner"
+page = "physics-bodies.md#u8-forget"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::forgetIgnoredOwner"
+status = "compared"
+
+[[function]]
+address = 0x0033d1a0
+name = "IPhysics_AllocObjectSphere"
+page = "physics-bodies.md#u8-pools"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::takeFromPool"
+status = "compared"
+
+[[function]]
+address = 0x0033d1e8
+name = "IPhysics_AllocObjectBox"
+page = "physics-bodies.md#u8-pools"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::takeFromPool"
+status = "compared"
+
+[[function]]
+address = 0x0033d230
+name = "IPhysics_AllocCarBox"
+page = "physics-bodies.md#u8-pools"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::takeFromPool"
+status = "compared"
+
+[[function]]
+address = 0x0033d278
+name = "IPhysics_AllocBigSphere"
+page = "physics-bodies.md#u8-pools"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::takeFromPool"
+status = "compared"
+
+[[function]]
+address = 0x0033d2c8
+name = "IPhysics_FreeShape"
+page = "physics-bodies.md#u8-pools"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::freeShape"
+status = "compared"
+
+[[function]]
 address = 0x0033d2d8
 name = "IPhysics_SweepShapeVsMesh"
 page = "physics-bodies.md#unit-2"
@@ -115,13 +163,98 @@ coney = "src/human/human_contacts.h:contactPush"
 status = "legacy"
 
 [[function]]
+address = 0x0033ebb8
+name = "IPhysics_OverlapShape"
+page = "physics-bodies.md#u7-overlapshape"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::overlapShape"
+status = "compared"
+
+[[function.gaps]]
+what = "a human body's shapes are its capsule chain"
+relation = "stand-in"
+issue = 376
+
+[[function]]
+address = 0x0033feb0
+name = "IPhysics_QueryBox"
+page = "physics-bodies.md#u7-querybox"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::queryBox"
+status = "compared"
+
+[[function]]
+address = 0x00340120
+name = "IPhysics_QueryBoxFiltered"
+page = "physics-bodies.md#u7-queryboxfiltered"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::queryBoxFiltered"
+status = "compared"
+
+[[function]]
+address = 0x003404a8
+name = "BodyList_Insert"
+page = "physics-bodies.md#u7-insert"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::insert"
+status = "compared"
+
+[[function]]
+address = 0x003405d8
+name = "BodyList_Remove"
+page = "physics-bodies.md#u7-remove"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::remove"
+status = "compared"
+
+[[function]]
+address = 0x00340628
+name = "BodyList_Reinsert"
+page = "physics-bodies.md#u7-reinsert"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::reinsert"
+status = "compared"
+
+[[function]]
+address = 0x00340668
+name = "IPhysics_AddBody"
+page = "physics-bodies.md#u7-addremove"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::addBody"
+status = "compared"
+
+[[function]]
+address = 0x00340700
+name = "IPhysics_RemoveBody"
+page = "physics-bodies.md#u7-addremove"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::removeBody"
+status = "compared"
+
+[[function]]
+address = 0x00340890
+name = "IPhysics_FindFreeIgnoreSlot"
+page = "physics-bodies.md#u8-find"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::findFreeIgnoreSlot"
+status = "compared"
+
+[[function]]
+address = 0x003408d8
+name = "IPhysics_FindFreeStrikeSphere"
+page = "physics-bodies.md#u8-pools"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::takeFromPool"
+status = "compared"
+
+[[function]]
 address = 0x00340918
 name = "IPhysics_Step"
 page = "physics-world.md#u15-step"
 level = "confirmed-code"
 note = "the level is from [physics.md#step](physics.md#step)"
-coney = "src/world_objects/loose_objects.h:SettleTurn::tick"
-status = "legacy"
+coney = "src/physics/physics_world.h:PhysicsWorld::refreshBound"
+status = "compared"
 
 [[function]]
 address = 0x00340b38
@@ -142,6 +275,14 @@ coney = "src/world_objects/loose_objects.h:settleTarget"
 status = "legacy"
 
 [[function]]
+address = 0x00341190
+name = "PhysicsShape_GetBounds"
+page = "physics-bodies.md#u6-bounds"
+level = "confirmed-code"
+coney = "src/physics/shapes.h:shapeBounds"
+status = "compared"
+
+[[function]]
 address = 0x003414c0
 name = "AABB_ScaleAboutCentre"
 page = "physics-bodies.md#u3-scale-box"
@@ -151,12 +292,105 @@ coney = "src/physics/body_sweep.h:scaleAboutCentre"
 status = "legacy"
 
 [[function]]
+address = 0x00341638
+name = "PhysicsBody_ComputeBounds"
+page = "physics-bodies.md#u7-bounds"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::computeBounds"
+status = "compared"
+
+[[function]]
+address = 0x00341660
+name = "AABB_FromSphere"
+page = "physics-bodies.md#u6-aabb"
+level = "confirmed-code"
+coney = "src/physics/shapes.h:aabbFromSphere"
+status = "compared"
+
+[[function]]
+address = 0x00341708
+name = "AABB_FromUprightCylinder"
+page = "physics-bodies.md#u6-aabb"
+level = "confirmed-code"
+coney = "src/physics/shapes.h:aabbFromUprightCylinder"
+status = "compared"
+
+[[function]]
+address = 0x003417c0
+name = "PhysicsBody_AddShapeBounds"
+page = "physics-bodies.md#u7-bounds"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::addShapeBounds"
+status = "compared"
+
+[[function]]
 address = 0x00341840
 name = "AABB_ExtendByMove"
 page = "physics-bodies.md#u3-extend"
 level = "confirmed-code"
-coney = "src/physics/body_sweep.h:extendByMove"
-status = "legacy"
+coney = "src/physics/physics_world.cpp:growByMove"
+status = "compared"
+
+[[function]]
+address = 0x00341970
+name = "PhysicsBody_ConstructForOwner"
+page = "physics-bodies.md#u7-construct"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::createBodyForOwner"
+status = "compared"
+
+[[function]]
+address = 0x00341a68
+name = "PhysicsBody_SetOwner"
+page = "physics-bodies.md#u7-set-owner"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::setOwner"
+status = "compared"
+
+[[function]]
+address = 0x00341aa8
+name = "PhysicsBody_AddShape"
+page = "physics-bodies.md#u7-shapes"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::addShape"
+status = "compared"
+
+[[function]]
+address = 0x00341ae8
+name = "PhysicsBody_IsIgnoring"
+page = "physics-bodies.md#u8-is"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::bodyIsIgnoring"
+status = "compared"
+
+[[function]]
+address = 0x00341b20
+name = "PhysicsBody_Ignore"
+page = "physics-bodies.md#u8-ignore"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::bodyIgnore"
+status = "compared"
+
+[[function]]
+address = 0x00341b80
+name = "PhysicsBody_StopIgnoring"
+page = "physics-bodies.md#u8-stop"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::bodyStopIgnoring"
+status = "compared"
+
+[[function]]
+address = 0x00341c10
+name = "PhysicsBody_Update"
+page = "physics-bodies.md#u7-update"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::updateBody"
+status = "compared"
+
+[[function.gaps]]
+what = "the update sweep against the bodies and its contact resolution"
+relation = "not-ported"
+issue = 377
 
 [[function]]
 address = 0x00341e18
@@ -167,6 +401,38 @@ coney = "src/physics/body_sweep.h:contactScale"
 status = "legacy"
 
 [[function]]
+address = 0x00341e40
+name = "PhysicsBody_Moved"
+page = "physics-bodies.md#u7-moved"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::bodyMoved"
+status = "compared"
+
+[[function]]
+address = 0x003421d0
+name = "PhysicsHumanBody_IsIgnoring"
+page = "physics-bodies.md#u8-human"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::humanBodyIsIgnoring"
+status = "compared"
+
+[[function]]
+address = 0x00342230
+name = "PhysicsHumanBody_Ignore"
+page = "physics-bodies.md#u8-human"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::humanBodyIgnore"
+status = "compared"
+
+[[function]]
+address = 0x00342260
+name = "PhysicsHumanBody_StopIgnoring"
+page = "physics-bodies.md#u8-human"
+level = "confirmed-code"
+coney = "src/physics/physics_world.h:PhysicsWorld::humanBodyStopIgnoring"
+status = "compared"
+
+[[function]]
 address = 0x00342288
 name = "PhysicsHumanBody_GetContactScale"
 page = "physics-bodies.md#u3-human-scale"
@@ -175,13 +441,85 @@ coney = "src/physics/body_sweep.h:contactScale"
 status = "legacy"
 
 [[function]]
+address = 0x00342b08
+name = "PhysicsSphere_Pose"
+page = "physics-bodies.md#u6-sphere-pose"
+level = "confirmed-code"
+coney = "src/physics/shapes.h:poseSphere"
+status = "compared"
+
+[[function]]
+address = 0x00342d08
+name = "PhysicsSphere_SetMatrix"
+page = "physics-bodies.md#u6-record"
+level = "confirmed-code"
+coney = "src/physics/shapes.h:setSphereMatrix"
+status = "compared"
+
+[[function]]
+address = 0x00342dc0
+name = "PhysicsBox_SetSize"
+page = "physics-bodies.md#u6-box-record"
+level = "confirmed-code"
+coney = "src/physics/shapes.h:setBoxSize"
+status = "compared"
+
+[[function]]
+address = 0x00342df8
+name = "PhysicsBox_Pose"
+page = "physics-bodies.md#u6-box-pose"
+level = "confirmed-code"
+coney = "src/physics/shapes.h:poseBox"
+status = "compared"
+
+[[function]]
+address = 0x00343040
+name = "PhysicsBox_SetMatrix"
+page = "physics-bodies.md#u6-box-set-matrix"
+level = "confirmed-code"
+coney = "src/physics/shapes.h:setBoxMatrix"
+status = "compared"
+
+[[function]]
+address = 0x003430e8
+name = "PhysicsBox_GetCorners"
+page = "physics-bodies.md#u6-box-corners"
+level = "confirmed-code"
+coney = "src/physics/shapes.h:boxCorners"
+status = "compared"
+
+[[function]]
+address = 0x00343508
+name = "PhysShapeCapsule_SetSize"
+page = "physics-bodies.md#u6-capsule-record"
+level = "confirmed-code"
+coney = "src/physics/shapes.h:setCapsuleSize"
+status = "compared"
+
+[[function]]
 address = 0x00343518
 name = "PhysicsCapsule_Pose"
 page = "physics-bodies.md#u6-capsule-pose"
 level = "confirmed-code"
 note = "the level is from [combat/index.md#capsule-strike](combat/index.md#capsule-strike)"
-coney = "src/human/human.h:Human::struckCapsule"
-status = "legacy"
+coney = "src/physics/shapes.h:poseCapsule"
+status = "compared"
+
+[[function]]
+address = 0x00343798
+name = "PhysicsCapsule_SetMatrix"
+page = "physics-bodies.md#u6-record"
+level = "confirmed-code"
+coney = "src/physics/shapes.h:setCapsuleMatrix"
+status = "compared"
+
+[[function]]
+address = 0x00343810
+name = "PhysShapeSegment_Pose"
+page = "physics-bodies.md#u6-segment-pose"
+level = "confirmed-code"
+coney = "src/physics/shapes.h:poseSegment"
+status = "compared"
 
 [[function]]
 address = 0x00343a90
@@ -616,3 +954,11 @@ role = "the world object's integrator (vtable `+0x144`)"
 level = "confirmed-code"
 coney = "src/world_objects/loose_objects.h:LooseObjects::update"
 status = "legacy"
+
+[[function]]
+address = 0x004f11c8
+name = "PhysicsShape_SetEnabled"
+page = "physics-bodies.md#u6-reset"
+level = "confirmed-code"
+coney = "src/physics/shapes.h:setEnabled"
+status = "compared"

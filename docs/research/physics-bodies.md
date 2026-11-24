@@ -1378,12 +1378,20 @@ this update (inferred from step 4.2; which bodies carry `0x801` is [Unit 9](#uni
 
 ### PhysicsBody_Moved {#u7-moved}
 
-`0x00341e40`, vtable `+0x18`. `void (Body* b)`: resets the **first** shape's previous position (shape vtable `+0x30`),
-`b`'s AABB = that shape's bounds only (`PhysicsBody_ComputeBounds`), then `BodyList_Reinsert(0x00597198's IPhysics,
-b)`. Other shapes are neither reset nor bounded, the dirty flag is not touched. The human body has its own
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
+`0x00341e40`, vtable `+0x18`. `void (Body* b, const mat4* m)`: sets the **first** shape from the matrix `m` (shape
+vtable `+0x30`, [the shape vtable](#u6-record): a box or capsule keeps its old position as the previous one, a sphere
+only moves), `b`'s AABB = that shape's bounds only (`PhysicsBody_ComputeBounds`), then
+`BodyList_Reinsert(0x00597198's IPhysics, b)`. Other shapes are neither set nor bounded, the dirty flag is not
+touched. The function never writes `a1`
+before the call through the slot (`0x00341e50`-`0x00341e60`), so its caller's second argument is the matrix the
+shape is set from (confirmed (code)). The human body has its own
 (`0x00342828`, [The human body](physics.md#human-body)).
 
 ### BodyList_Insert {#u7-insert}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 `0x003404a8`. `void BodyList_Insert(IPhysics* p, Body* b, Body* hint)`:
 
@@ -1400,6 +1408,12 @@ b)`. Other shapes are neither reset nor bounded, the dirty flag is not touched. 
 
 The tie rule is therefore not "stable": a body lands after its equals when it is placed moving forward and before
 them when moving backward.
+
+**The live list** in `level99` matches these rules, confirmed (runtime), run r-20261123-body-list-sort: walked from
+the head of the IPhysics `0x00597198` points to, twice, about six seconds of play apart, all 146 bodies of the body
+vector are on the list, each `prev` names the node before it, each index names its own slot of the vector, min x
+never falls along the list (33 neighbours share a min x) and no box is inverted; `+0x14` equals the widest body's
+width (44.89) both times, the tick counter having passed its 120th tick between the reads.
 
 ### BodyList_Remove {#u7-remove}
 
@@ -1514,6 +1528,8 @@ which `keep` functions exist, is [Unit 11](#unit-11)'s (callers not traced here)
 
 ### IPhysics_OverlapShape {#u7-overlapshape}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 `0x0033ebb8`, 0x328 bytes. `int IPhysics_OverlapShape(IPhysics* p, Contact* out, const OverlapQuery* q)` → contacts
 written to `out`. The record and the contact it fills are on [Unit 4](physics-kernels.md#overlapshape); here, every bit
 and limit.
@@ -1542,8 +1558,11 @@ on: the push sphere's `0x2000` (`0x2012`) and the climb's `0x4` and `0x8` (`0xd`
       (several contacts per candidate are possible).
 5. **Copy out** `k = min(count, max)` contacts, in sorted order, 0xc0 bytes each (`0x0033eddc`-`0x0033ee44`).
 6. **The mesh**: if `k < max` (unsigned) and `0x1`, and the querying shape's type has a mesh overlap (`p+0xf4 + type ×
-   4`): `k += meshOverlap(q+0x28, q+0x2c, out + k, max − k, &box, q+0x00)` (floats in `f12`, `f13`; then `a0`-`a3`;
-   `0x0033ee84`-`0x0033eea8`). Return `k`.
+   4`): `k += meshOverlap(q+0x28, q+0x2c, out + k, max − k, &node, q+0x00)` (floats in `f12`, `f13`; then `a0`-`a3`;
+   `0x0033ee84`-`0x0033eea8`). Return `k`. The box handed on is the **stack node** (`a2 = sp`, `0x0033eea4`), not the
+   box of step 1: with `0x400` the node was never filled (the given box only feeds the body query, `0x0033ec10`), so
+   the mesh is asked about the zero box `PhysicsNode_Init` left at the origin (confirmed (code); whether a caller
+   sets both `0x400` and `0x1` is Unit 11's).
 
 **Limits, none checked** (`0x0033ec44`, `0x0033ed10`, `0x0033ed8c`): 512 candidates, 50 contact slots, 52 sorted
 pointers (`sp+0x2db0`-`sp+0x2e7f`). A 51st hit writes its contact over the sorted list, and the insert writes
@@ -1552,14 +1571,15 @@ use small boxes and max 1 to 32).
 
 ### The 512 candidates {#u7-cap}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 Neither query has a cap, and neither is told the size of `out`. Every caller provides 512 entries:
 `IPhysics_OverlapShape` (`sp+0x30`, 0x800 bytes), `IPhysics_CollideShape` (`sp+0x26a0`-`sp+0x2e9f`),
 `PhysicsBody_SweepHumanMask` (`sp+0x000`-`sp+0x7ff`), `IPhysics_RayCastBodies` (`sp+0x20`-`sp+0x81f`); in
 `Human_TestStrikes` the list is at `sp+0x130` and the next local at `sp+0x990` (room for 536). Confirmed (code) for
 the four frames; past 512 the original writes over its own stack (whatever lies after the list), which is undefined
 behaviour, not a rule to reproduce. The pools allow 60 + 1 + 416 + 255 + 18 = 750 bodies, so a level-sized box could
-pass 512 (inferred; no caller asks for one). Coney: a growable list, and a debug assertion at 512 so a test can see
-the original's limit.
+pass 512 (inferred; no caller asks for one).
 
 ### The callers' arguments {#u7-callers}
 
@@ -1706,6 +1726,8 @@ Who asks `IsIgnoring` (body vtable `+0x30`) is not traced here: the static calls
 
 ### The shape pools {#u8-pools}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 Every shape is built once by the IPhysics constructor (flags `0x1`, enabled, by `PhysicsShape_Construct`
 `0x00342a30`; `0x8` clear). The allocators scan from index 0 and take the **first** shape whose test passes; past the
 end they return null. They write only `+0x32` (and the big sphere's radius): type, bone, offset and size keep the
@@ -1721,7 +1743,8 @@ previous user's values until the caller sets them.
 | ignore slots | `+0xf4e0` | 60 × 12 | `IPhysics_FindFreeIgnoreSlot` `0x00340890` | `+0x04` == 0 | nothing; `Ignore` fills it |
 
 The counts are the loop limits `0x1a0`, `0x1a0`, `0x24`, `0x1e`, `0x3c`, `0x3c` (signed compares for the shape
-pools). `0xb` = enabled `0x1`, `0x2`, allocated `0x8`. The strike spheres are switched off and given `0x2` by the
+pools). `0xb` = enabled `0x1`, `0x2`, allocated `0x8`.
+The strike spheres are switched off and given `0x2` by the
 constructor (`0x0033c7e0`-`0x0033c814`), so they start free; a strike sphere stays taken while it is enabled, and the
 same one is returned again until its caller enables it.
 

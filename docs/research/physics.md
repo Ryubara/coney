@@ -800,13 +800,37 @@ cases that divide by zero say what the original then does.
 
 ## Coney's implementation
 
-Coney has Units 1 to 3 (`src/physics/`) and placed world objects (`src/world_objects/`), but no `IPhysics` and no
-bodies of its own yet. A dropped object's fall, bounces, settle and stop are
+Coney has Units 1 to 3 and 6 to 8 (`src/physics/`) and placed world objects (`src/world_objects/`), but nothing in
+play builds a world of bodies yet. A dropped object's fall, bounces, settle and stop are
 `world_objects::LooseObjects` (`repo:src/world_objects/loose_objects.h`), stepped by the play mode: each 1/30 s step
 runs the object's update, then two settle ticks, so the settle keeps its 11 ticks. Its move is a ray from the body's
 centre against the level mesh, as long as the move plus the box's or sphere's reach that way; humans, cars and other
 objects are not met yet. A thrown object starts the same way with its throw's velocity and spin
 ([World objects](objects.md#coneys-implementation)).
+
+Units 6 to 8 (issue #375) are written and tested; nothing in play uses them. `repo:src/physics/shapes.h` holds the
+shape record ([Unit 6](physics-bodies.md#unit-6), `ShapeRecord`) with a pose function per type that reads the owner's
+transforms and bone through `ShapeOwner`, the set-from-a-matrix functions, the corners, the bound and the two AABB
+helpers. `repo:src/physics/physics_world.h` holds `PhysicsWorld` ([Unit 7](physics-bodies.md#unit-7) and
+[Unit 8](physics-bodies.md#unit-8)): the body vector, the x-sorted list, the `+0x14` bound and its refresh in the
+step, the two box queries and the overlap query, the ignore slots and the shape pools. Bodies and shapes are ids into
+the world's stores (`BodyId`, `ShapeId`). The queries' lists grow with no cap, as the original's callers' 512 is
+checked by nothing and past it the original writes over its own stack, so there is no behaviour to keep
+([The 512 candidates](physics-bodies.md#u7-cap)); Coney's pools may also pass the original's counts. The tests keep
+the invariants the live body list shows in PCSX2 ([BodyList_Insert](physics-bodies.md#u7-insert)): order by min x,
+consistent links and the widest-body bound, on bodies the tests make. The pools and the ignore slots keep the
+original's counts and "first free" scans, and Coney lifts both: when all are taken one more is built (`shapePoolCap`,
+`ignoreSlotCap`, [Beyond the original](../engine/beyond-the-original.md)), and the engine limits preset keeps the
+original's counts.
+`PhysicsWorld::updateBody` hands back the update sweep's box and move; the sweep against the bodies is Unit 11's
+(#377). The overlap query's candidates answer their own shape chain; a human body's capsule chain, and moving
+`Human::struckCapsule` and `world_objects/object_bodies.*` onto the shape record, are Units 9 and 10 (#376); a level
+owning a world is Unit 15's (#379). The human body's grab partner is passed in by the caller. Coney's choices, each
+marked in the code: an ownerless candidate of the filtered query has state 0 (the original calls through its null
+owner); a free ignore slot is never "forgotten" (the original would call through its null body); a human with no model
+takes 0 for its head's height (the original's capsule pose reads a stack word nothing wrote). The three small shape
+vtable entries Coney ports have functions in Ghidra since 2026-11-23: `PhysicsShape_SetEnabled` (`0x004f11c8`),
+`PhysicsSphere_SetMatrix` (`0x00342d08`) and `PhysicsCapsule_SetMatrix` (`0x00343798`).
 
 The world objects in the world have their bodies (`world_objects::ObjectBodies`,
 `repo:src/world_objects/object_bodies.h`): each type's box or sphere at its object's pose, with its `PHYFLAG` layers,
