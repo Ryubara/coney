@@ -141,10 +141,10 @@ OVERRIDES: dict[int, Override] = {
         "sound-events.md (Covered): the section is about the byte it sets; 'Confirmed (code)'",
     ),
     0x00165678: Override(  # Gang_GetLeader
-        "ai-gangs.md#tactic-kinds",
+        "gang-records.md#leader",
         "confirmed-code",
-        "ai-gangs.md: **Leader**: gang `+0x44` holds the leader's handle; `0x00165678` returns him",
-        "ai-gangs.md (Tactic kinds): the first bullet of 'Shared behaviour, confirmed (code):' describes it",
+        "gang-records.md: `Gang_GetLeader` (`0x00165678`) keeps the human",
+        "gang-records.md (The leader): the paragraph opens with the function and ends 'Confirmed (code).'",
     ),
     0x003860B8: Override(  # Object_SetLuaMsgHandler
         "scripting.md#message-handlers",
