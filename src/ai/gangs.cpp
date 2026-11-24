@@ -4,8 +4,6 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <iterator>
-#include <optional>
 #include <span>
 #include <string_view>
 #include <utility>
@@ -14,7 +12,6 @@
 #include "ai/attack_kinds.h"
 #include "ai/script_services.h"
 #include "ai/targeting.h"
-#include "characters/character_class.h"
 #include "core/crowd_limits.h"
 #include "human/human_flags.h"
 
@@ -38,43 +35,10 @@ constexpr float kNoBounds = 1.0e9F;
 // The handle of `brain`, or the null handle (0) for none.
 double handleOf(const Brain* brain) { return brain != nullptr ? brain->handle() : 0.0; }
 
-// Whether `brain`'s human is dead (Human_HasStateFlag100000000, 0x00227eb0). Coney's stand-in: Coney keeps no dead
-// bit, so out of health stands for dead, as Gang::standing() reads it.
-bool dead(const Brain& brain) { return brain.human().fighter().health().depleted(); }
-
-// Whether `brain`'s human is cuffed (Human_IsCuffed, 0x00223b70): the script's arrested state.
-bool cuffed(const Brain& brain) { return brain.human().script().arrested; }
-
-// The class roles Gang_PickLeader takes before any other member: 12 and 13, the police (CharClass +0x11b).
-constexpr int kFirstLeaderRole = 12;
-constexpr int kLastLeaderRole = 13;
-
-// The character type that brings its gang its own cower clips (Gang_AddMember, 0x00166308), and those clips
-// (0x0050cb30).
-constexpr int kGunmanType = 0xed;
-constexpr std::array<std::string_view, 4> kGunmanCower{"l55_gun_aim", "l55_gun_fire", "l55_gun_warn", "l55_gun_wave"};
-
-// The clip groups Gang_Create (0x0016cdf0) gives a new gang of the police kind (0x0050cbb0), of the police-like kind
-// (0x0050cb80, 0x0050cb90, 0x0050cba0) and of the dealers' kind (0x0050cbc0, 0x0050cbe0).
-constexpr std::array<std::string_view, 4> kPoliceCower{"cop_lost_target_search", "cop_spotting_trouble",
-                                                       "cop_fidget_idle", "cop_radio"};
-constexpr std::array<std::string_view, 4> kBumCower{"gen_cower_plead", "cop_lost_target_search", "gen_cower_point",
-                                                    "hurry_up"};
-constexpr std::array<std::string_view, 4> kBumFidgets{"fidget_crossarms", "fidget_head_scratch", "fidget_nose_wipe",
-                                                      "fidget_tie_shoe"};
-constexpr std::array<std::string_view, 4> kBumAdvance{"taunt1_adv", "taunt2_adv", "taunt3_adv", "taunt4_adv"};
-constexpr std::array<std::string_view, 8> kDealerFidgets{"dlr_offer_flash", "money_give",   "dlr_refuse_1",
-                                                         "dlr_refuse_2",    "dlr_goodbye1", "dlr_thanks_1",
-                                                         "dlr_thanks_2",    "dlr_nearfight"};
-constexpr std::array<std::string_view, 3> kDealerCower{"dlr_becken_1", "dlr_becken_2", "money_take"};
-
-// What GangSetRespondPercent holds after a gang's reset (+0xd7, Gang_Reset 0x00164808).
-constexpr int kResetRespondPercent = 30;
-
 } // namespace
 
-// The count Gang_AddMember tests a gang's members against (and then ignores), which the fighter sides' rollover to a
-// new gang reads.
+// The count Gangs::addMember() tests a gang's members against, which the fighter sides' rollover to a new gang reads.
+// Gangs::addMember() holds the same test inline, as the original does: keep the two alike.
 // @coney-only a named accessor for the member limit Gang_AddMember tests inline
 std::size_t Gang::capacity() const { return policeLike(m_kind) ? kGangMemberSlots : kGangMembers; }
 
@@ -305,8 +269,6 @@ int Gangs::create(int kind, std::string_view name) {
     if (free == m_gangs.end()) {
         return -1;
     }
-    // The record reset (Gang_Reset 0x00164808), in use, calm, its kind and name. Coney's stand-in: the music track
-    // names, the spot-line flag (+0xd2) and the spawners' reset are not kept on the record (Spawners has them, #645).
     Gang& gang = *free;
     gang.m_inUse = true;
     gang.m_kind = kind;
@@ -316,39 +278,13 @@ int Gangs::create(int kind, std::string_view name) {
     gang.m_suspended = false;
     gang.m_invincible = false;
     gang.m_alwaysSeen = false;
-    gang.m_slots.fill(nullptr);
     gang.m_members.clear();
     gang.m_tactic.reset();
     gang.m_handlers.clear();
     gang.m_clipGroups.clear();
-    gang.m_orders = GangOrders{};
-    gang.m_orders.respondPercent = kResetRespondPercent;
-    gang.m_chosenTarget = nullptr;
     gang.m_alertState = kGangCalm;
     gang.m_fleeCount = -1;
     gang.m_canFlee = true;
-    // The kind's own clip groups: the police's cower clips; the police-like kind's cower clips, idle fidgets and
-    // advancing taunts; the dealers' fidgets and cower clips.
-    if (kind == kPoliceKind) {
-        gang.setClipGroup(kCowerClips, kPoliceCower);
-    } else if (kind == kPoliceLikeKind) {
-        gang.setClipGroup(kCowerClips, kBumCower);
-        gang.setClipGroup(kIdleFidgetClips, kBumFidgets);
-        gang.setClipGroup(kTauntAdvanceClips, kBumAdvance);
-    } else if (kind == kNoFidgetsKind) {
-        gang.setClipGroup(kCombatFidgetClips, kDealerFidgets);
-        gang.setClipGroup(kCowerClips, kDealerCower);
-    }
-    // A new police gang: every other wanted gang is made hostile to the police, both ways unless the crime level is
-    // forced (game state +0x28c).
-    if (kind == kPoliceKind) {
-        const bool mutual = !m_lookups.crimeLevelForced || !m_lookups.crimeLevelForced();
-        for (const Gang& other : m_gangs) {
-            if (other.m_inUse && &other != &gang && m_lookups.wanted && m_lookups.wanted(other.m_id)) {
-                setHostileToKind(other.m_id, kPoliceKind, mutual);
-            }
-        }
-    }
     return gang.m_id;
 }
 
@@ -361,7 +297,6 @@ void Gangs::remove(int id) {
     for (Brain* member : gang->m_members) {
         member->setGang(nullptr);
     }
-    gang->m_slots.fill(nullptr);
     gang->m_members.clear();
     gang->m_inUse = false;
     // No other gang keeps it as an enemy or a friend.
@@ -421,23 +356,20 @@ void Gangs::addMember(int id, Brain& brain) {
         removeMember(brain);
         static_cast<void>(old->onEvent(brain, BrainEvent{.id = kGangMessageMembers, .other = &brain, .value = 0}));
     }
-    // Joining: the gang's count against its cap (capacity()) only calls Gangs_ResolveAllMembers, which changes
-    // nothing, so a full gang takes him all the same. Coney's stand-in: Brain_LoadAttackWeights is not run again, so
-    // his weights stay those he was made with (or a script set since).
+    // The limit Gang::capacity() names for the fighter sides; kept inline so this ported body stays as it was.
+    const std::size_t cap = policeLike(gang->m_kind) ? kGangMemberSlots : kGangMembers;
+    if (gang->m_members.size() >= cap && !gang->m_members.empty()) {
+        removeMember(*gang->m_members.front());
+    }
+    gang->m_members.push_back(&brain);
     brain.setGang(gang);
-    // An invincible gang's new member is invincible too; he takes the first free of the 16 slots (none free: he is in
-    // the gang but no slot holds him); a player joining leads it (the war chief).
+    // An invincible gang's new member is invincible too (0x00166308); a player joining leads it (the war chief);
+    // then event 0x16 with 1, on which a follow tactic gives every member his goal again.
     if (gang->m_invincible) {
         brain.human().setFlag(human::flag::kGod, true);
     }
-    gang->putInFreeSlot(brain);
     if (brain.type() == BrainType::Player) {
         gang->m_orders.leader = brain.handle();
-    }
-    // A human of type 0xed brings the gang his own cower clips; then event 0x16 with 1, on which a follow tactic gives
-    // every member his goal again.
-    if (characters::characterClassOf(brain.characterClass()).id == kGunmanType) {
-        gang->setClipGroup(kCowerClips, kGunmanCower);
     }
     static_cast<void>(gang->onEvent(brain, BrainEvent{.id = kGangMessageMembers, .other = &brain, .value = 1}));
 }
@@ -447,21 +379,13 @@ void Gangs::removeMember(Brain& brain) {
     if (gang == nullptr) {
         return;
     }
-    gang->clearSlot(brain);
+    std::erase(gang->m_members, &brain);
     brain.setGang(nullptr);
 }
 
-Gang* Gangs::record(int id) {
-    if (id < 0 || id >= static_cast<int>(kGangSlots)) {
-        return nullptr;
-    }
-    return &m_gangs[static_cast<std::size_t>(id)];
-}
-
 void Gangs::makeEnemies(int a, int b) {
-    // Only -1 is refused: a record not in use is written too. Coney's choice: an id outside the records does nothing.
-    Gang* first = record(a);
-    Gang* second = record(b);
+    Gang* first = find(a);
+    Gang* second = find(b);
     if (first == nullptr || second == nullptr) {
         return;
     }
@@ -472,9 +396,8 @@ void Gangs::makeEnemies(int a, int b) {
 }
 
 void Gangs::makeFriends(int a, int b) {
-    // As makeEnemies(): any record, in use or not. Coney's choice: an id outside the records does nothing.
-    Gang* first = record(a);
-    Gang* second = record(b);
+    Gang* first = find(a);
+    Gang* second = find(b);
     if (first == nullptr || second == nullptr) {
         return;
     }
@@ -512,9 +435,7 @@ void Gangs::makeNeutralOfType(int id, int kind) {
     }
 }
 
-void Gangs::makeEnemiesOfType(int id, int kind) { setHostileToKind(id, kind, true); }
-
-void Gangs::setHostileToKind(int id, int kind, bool mutual) {
+void Gangs::makeEnemiesOfType(int id, int kind) {
     Gang* gang = find(id);
     if (gang == nullptr) {
         return;
@@ -524,10 +445,8 @@ void Gangs::setHostileToKind(int id, int kind, bool mutual) {
         if (second == nullptr || second->m_kind != kind) {
             continue;
         }
-        if (mutual) {
-            gang->m_friends &= ~bitOf(other);
-            gang->m_enemies |= bitOf(other);
-        }
+        gang->m_friends &= ~bitOf(other);
+        gang->m_enemies |= bitOf(other);
         second->m_friends &= ~bitOf(id);
         second->m_enemies |= bitOf(id);
     }
@@ -792,72 +711,22 @@ void Gang::setSharedTarget(Brain* target) {
 }
 
 Brain* Gang::leader() const {
-    // The stored leader stays unless he is gone or dead, or is an AI cuffed or down: a player leader keeps the lead
-    // while arrested or down.
-    Brain* stored = resolve(m_orders.leader);
-    if (stored != nullptr && !dead(*stored) &&
-        (stored->type() == BrainType::Player || (!cuffed(*stored) && !humanIsDownOrDead(*stored)))) {
-        return stored;
-    }
-    // Gang_PickLeader: the leader cleared, then three passes over the slots, the first hit stored.
-    m_orders.leader = 0;
-    const ScriptServices* scripts = m_owner != nullptr ? m_owner->scripts() : nullptr;
-    const Brain* playerOne = scripts != nullptr ? scripts->player() : nullptr;
-    const bool playerOneDead = playerOne != nullptr && dead(*playerOne);
-    // 1. Player 1 (any player while player 1 is dead), or a member of a police role who is not cuffed.
-    const auto leadsFirst = [&](const Brain& member) {
-        if (member.type() == BrainType::Player && (&member == playerOne || playerOneDead)) {
-            return true;
+    // Whether `brain` can lead: a member, alive, no player's and on its feet.
+    const auto canLead = [](const Brain* brain) {
+        return brain != nullptr && brain->type() != BrainType::Player &&
+               !brain->human().fighter().health().depleted() && brain->human().state() == human::TargetState::Standing;
+    };
+    for (Brain* member : m_members) {
+        if (member->handle() == m_orders.leader && canLead(member)) {
+            return member;
         }
-        const std::optional<int> role = m_owner != nullptr ? m_owner->roleOf(member) : std::nullopt;
-        return role && *role >= kFirstLeaderRole && *role <= kLastLeaderRole && !cuffed(member);
-    };
-    // 2. A member neither down nor cuffed; 3. any member.
-    const auto free = [](const Brain& member) { return !humanIsDownOrDead(member) && !cuffed(member); };
-    const auto pick = [this](const auto& test) -> Brain* {
-        const auto found = std::ranges::find_if(m_members, [&test](const Brain* member) { return test(*member); });
-        return found != m_members.end() ? *found : nullptr;
-    };
-    Brain* chosen = pick(leadsFirst);
-    if (chosen == nullptr) {
-        chosen = pick(free);
     }
-    if (chosen == nullptr && !m_members.empty()) {
-        chosen = m_members.front();
+    for (Brain* member : m_members) {
+        if (canLead(member)) {
+            return member;
+        }
     }
-    m_orders.leader = handleOf(chosen);
-    return chosen;
-}
-
-Brain* Gang::resolve(double handle) const {
-    if (handle == 0.0) {
-        return nullptr;
-    }
-    const auto member = std::ranges::find_if(m_members, [handle](const Brain* m) { return m->handle() == handle; });
-    if (member != m_members.end()) {
-        return *member;
-    }
-    const ScriptServices* scripts = m_owner != nullptr ? m_owner->scripts() : nullptr;
-    return scripts != nullptr ? scripts->brain(handle) : nullptr;
-}
-
-void Gang::putInFreeSlot(Brain& brain) {
-    const auto free = std::ranges::find(m_slots, nullptr);
-    if (free == m_slots.end()) {
-        return;
-    }
-    *free = &brain;
-    relistMembers();
-}
-
-void Gang::clearSlot(const Brain& brain) {
-    std::ranges::replace(m_slots, &brain, nullptr);
-    relistMembers();
-}
-
-void Gang::relistMembers() {
-    m_members.clear();
-    std::ranges::copy_if(m_slots, std::back_inserter(m_members), [](const Brain* slot) { return slot != nullptr; });
+    return nullptr;
 }
 
 } // namespace coney::ai
