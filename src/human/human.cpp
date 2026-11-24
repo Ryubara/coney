@@ -961,6 +961,8 @@ void Human::snapToGround(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
 }
 
 void Human::land(anim::Vec3 feet) {
+    // Not ported: `Human_Land`'s fall damage by this speed and the player camera's landing kind (#667), and the arm of
+    // the impact sound (#684); lastLandingSpeed() keeps the speed they read (docs/research/characters.md#falling).
     m_lastLandingSpeed = m_velocity.z;
     ++m_landings;
     m_position = feet;
@@ -1018,8 +1020,11 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
 
 // @orig 0x0023d8c8 Human_Move (unknown)
 void Human::moveInAir(const raycast::CollisionMesh& mesh) {
+    // The push others' contacts left goes with the move whole, its z too: the sweep adds a body's pending push-out to
+    // `v x dt` as it is (docs/research/physics.md#sweep), and in the air `Human_Move` sweeps its velocity plus the
+    // human's stored push (+0x2f0) with no z taken off, which only its ground branch does (0x0023d8c8).
     const anim::Vec3 push = std::exchange(m_pendingPush, anim::Vec3{});
-    const anim::Vec3 displacement = anim::add(anim::scale(m_velocity, m_stepSeconds), anim::Vec3{push.x, push.y, 0.0F});
+    const anim::Vec3 displacement = anim::add(anim::scale(m_velocity, m_stepSeconds), push);
     const anim::Vec3 across{m_position.x + displacement.x, m_position.y + displacement.y, m_position.z};
     // The airborne body breaks the panes it reaches first, so a pane broken now no longer blocks the sweep
     // (docs/research/objects.md#pane-break). **Coney stand-in**: the push-out sphere stands for both the body and the
@@ -1039,7 +1044,7 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
                                .raised = m_jumping || (m_animator.flags() & kRecordRaisedLanding) != 0,
                                .raise = kLandingRaise * m_scale,
                                .takeOffZ = m_lastGround.z};
-    const Swept moved = sweep(mesh, m_velocity, anim::Vec3{push.x, push.y, 0.0F}, false, &landing);
+    const Swept moved = sweep(mesh, m_velocity, push, false, &landing);
     if (moved.ground) {
         m_groundNormal = moved.ground->normal;
         m_groundMaterial = moved.ground->material;
