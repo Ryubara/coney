@@ -8,6 +8,7 @@
 #include <functional>
 #include <limits>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_math.h"
@@ -19,7 +20,8 @@
 // (docs/research/physics-bodies.md#unit-8): the body record and its update, the body vector, the list of bodies kept
 // sorted by their bound's min x with its widest-body bound, the box queries every shape, sweep, strike and ray test
 // starts from, the overlap query, the ignore slots a body uses to pass through owners, and the shape pools. Bodies and
-// shapes are named by ids into the world's own stores; the original's pointers become those ids.
+// shapes are named by ids into the world's own stores, owners by the game mode's ids: the original's pointers become
+// those ids, so the world's state can be copied and named across machines.
 // Research: docs/research/physics-bodies.md#unit-7, docs/research/physics-bodies.md#unit-8
 
 namespace coney::physics {
@@ -75,7 +77,7 @@ inline constexpr std::size_t kOrigIgnoreSlots = 60;
 /// One ignore slot (docs/research/physics-bodies.md#u8-slot): free while `owner` is null.
 struct IgnoreSlot {
     BodyId body = kNoBody;             ///< `+0x00`: the body whose chain holds it.
-    const BodyOwner* owner = nullptr;  ///< `+0x04`: the owner passed through (matched by identity).
+    OwnerId owner = kNoOwner;          ///< `+0x04`: the owner passed through.
     IgnoreSlotId next = kNoIgnoreSlot; ///< `+0x08`: the next slot of that body's chain.
 };
 
@@ -87,7 +89,7 @@ struct WorldBody {
     BodyId prev = kNoBody;                    ///< `+0x24`: the previous body of the x-sorted list.
     BodyId next = kNoBody;                    ///< `+0x28`: the next body of the x-sorted list.
     ShapeId firstShape = kNoShape;            ///< `+0x30`: the first shape of its chain.
-    BodyOwner* owner = nullptr;               ///< `+0x34`.
+    OwnerId owner = kNoOwner;                 ///< `+0x34`.
     IgnoreSlotId ignoreChain = kNoIgnoreSlot; ///< `+0x38`: the first slot of its ignore chain.
     std::int16_t group = 0;                   ///< `+0x3c`: bodies of one non-zero group may skip each other.
     std::uint32_t flags = kBodyFlagDirty | kBodyFlagWriteVelocity; ///< `+0x40`: kBodyFlag* bits.
@@ -110,15 +112,15 @@ struct UpdateSweep {
 /// The filters of IPhysics_QueryBoxFiltered (docs/research/physics-bodies.md#u7-queryboxfiltered), in the order they
 /// apply.
 struct BodyFilter {
-    const BodyOwner* ignored = nullptr;   ///< A body of this owner is dropped (null: ownerless bodies are).
+    OwnerId ignored = kNoOwner;           ///< A body of this owner is dropped (kNoOwner: ownerless bodies are).
     std::uint32_t typeMask = 0xffffffffU; ///< A body sharing no bit with it is dropped.
     std::uint32_t flagMask = 0;           ///< When not 0, a body sharing no flag with it is dropped.
     std::uint32_t excludedFlags = 0;      ///< A body with any of these flags is dropped.
     std::uint32_t excludedState = 0;      ///< A body whose owner's state has any of these bits is dropped.
     /// The candidate owner's state flags (owner vtable `+0x50`), asked of every candidate past the first four filters.
-    std::function<std::uint64_t(const BodyOwner*)> stateOf;
+    std::function<std::uint64_t(OwnerId)> stateOf;
     /// When set, a candidate is dropped when this answers false for (the querying body's owner, its owner).
-    std::function<bool(const BodyOwner*, const BodyOwner*)> keep;
+    std::function<bool(OwnerId, OwnerId)> keep;
 };
 
 /// An overlap query (docs/research/physics-kernels.md#overlapshape): the querying body and shape, the options and
@@ -133,7 +135,7 @@ struct OverlapQuery {
     float meshLow = 0.0F;       ///< `+0x28`: handed to the mesh overlap.
     float meshHigh = 0.0F;      ///< `+0x2c`: handed to the mesh overlap.
     /// kOverlapAskOwner: the querying owner's answer (owner vtable `+0x110`) about a candidate's owner; false skips it.
-    std::function<bool(const BodyOwner*, const BodyOwner*)> accepts;
+    std::function<bool(OwnerId, OwnerId)> accepts;
 };
 
 /// The world of bodies: the original IPhysics's body vector, x-sorted list, bound, ignore slots and shape pools.
@@ -152,6 +154,14 @@ class PhysicsWorld {
     /// @coney-only the world's stores and tables; porting IPhysics_Construct (0x0033c288) is Unit 15's (#379)
     explicit PhysicsWorld(EngineLimits limits = EngineLimits::Coney);
 
+    /// What a contact's owner pointer is resolved from: the game mode's owner for an id (null when it has none).
+    using OwnerLookup = std::function<BodyOwner*(OwnerId)>;
+    /// Sets how owner ids are resolved for the contacts the world fills; unset, their owner pointers stay null.
+    void setOwnerLookup(OwnerLookup lookup) { m_ownerLookup = std::move(lookup); }
+    /// The owner `id` resolves to, or null (kNoOwner, or no lookup set).
+    /// @coney-only the id-to-owner lookup that replaces the original's owner pointers
+    [[nodiscard]] BodyOwner* ownerPointer(OwnerId id) const;
+
     /// Adds a shape record to the store and returns its id.
     /// @coney-only the world's shape store; the original's shapes live in its pools and bodies
     ShapeId addShapeRecord(const ShapeRecord& record);
@@ -165,15 +175,15 @@ class PhysicsWorld {
     BodyId createBody();
     /// Adds a body for `owner`, whose type mask is `typeMask` (owner vtable `+0x20`, read only for an owner).
     /// @orig 0x00341970 PhysicsBody_ConstructForOwner (unknown)
-    BodyId createBodyForOwner(BodyOwner* owner, std::uint32_t typeMask);
+    BodyId createBodyForOwner(OwnerId owner, std::uint32_t typeMask);
     /// The body `id`.
     [[nodiscard]] WorldBody& body(BodyId id) { return m_bodies.at(id); }
     /// The body `id`.
     [[nodiscard]] const WorldBody& body(BodyId id) const { return m_bodies.at(id); }
 
-    /// Sets the body's owner; its type mask is set to `typeMask` only when `owner` is not null.
+    /// Sets the body's owner; its type mask is set to `typeMask` only when `owner` is not kNoOwner.
     /// @orig 0x00341a68 PhysicsBody_SetOwner (unknown)
-    void setOwner(BodyId id, BodyOwner* owner, std::uint32_t typeMask);
+    void setOwner(BodyId id, OwnerId owner, std::uint32_t typeMask);
     /// Appends `shape` to the end of the body's chain (no check that it is already there).
     /// @orig 0x00341aa8 PhysicsBody_AddShape (unknown)
     void addShape(BodyId id, ShapeId shape);
@@ -218,8 +228,8 @@ class PhysicsWorld {
     /// with `typeMask`, or (`flagMask` not 0) it shares no flag with `flagMask`. Coney's list grows: the original's
     /// callers hold 512 and nothing checks it.
     /// @orig 0x0033feb0 IPhysics_QueryBox (unknown)
-    [[nodiscard]] std::size_t queryBox(std::vector<BodyId>& out, const Aabb& box, BodyId start,
-                                       const BodyOwner* ignored, std::uint32_t typeMask, std::uint32_t flagMask) const;
+    [[nodiscard]] std::size_t queryBox(std::vector<BodyId>& out, const Aabb& box, BodyId start, OwnerId ignored,
+                                       std::uint32_t typeMask, std::uint32_t flagMask) const;
     /// queryBox() with the filters of `filter`; `query` is the body whose owner `filter.keep` is asked about.
     /// @orig 0x00340120 IPhysics_QueryBoxFiltered (unknown)
     [[nodiscard]] std::size_t queryBoxFiltered(std::vector<BodyId>& out, BodyId query, const Aabb& box, BodyId start,
@@ -261,10 +271,10 @@ class PhysicsWorld {
     /// Whether the body passes through `owner` (body vtable `+0x30`); `grabPartner` is the body owner's grab partner
     /// (`Human_GetGrabOther`), which a human body always passes through.
     /// @coney-only the body vtable's +0x30 dispatch to the base or the human body's
-    [[nodiscard]] bool isIgnoring(BodyId id, const BodyOwner* owner, const BodyOwner* grabPartner = nullptr) const;
+    [[nodiscard]] bool isIgnoring(BodyId id, OwnerId owner, OwnerId grabPartner = kNoOwner) const;
     /// Makes the body pass through `owner` (body vtable `+0x40`).
     /// @coney-only the body vtable's +0x40 dispatch to the base or the human body's
-    void ignore(BodyId id, const BodyOwner* owner);
+    void ignore(BodyId id, OwnerId owner);
     /// Frees slot `slot` of the body's chain, or every slot of it for kNoIgnoreSlot (body vtable `+0x38`).
     /// @coney-only the body vtable's +0x38 dispatch to the base or the human body's
     void stopIgnoring(BodyId id, IgnoreSlotId slot);
@@ -312,24 +322,25 @@ class PhysicsWorld {
     ShapeId takeFromPool(ShapePool pool);
     // The base body: whether its chain holds a slot naming `owner` (false for null).
     // @orig 0x00341ae8 PhysicsBody_IsIgnoring (unknown)
-    [[nodiscard]] bool bodyIsIgnoring(BodyId id, const BodyOwner* owner) const;
+    [[nodiscard]] bool bodyIsIgnoring(BodyId id, OwnerId owner) const;
     // The base body: takes a free slot for `owner` and pushes it at the front of the chain; no duplicate check.
     // @orig 0x00341b20 PhysicsBody_Ignore (unknown)
-    void bodyIgnore(BodyId id, const BodyOwner* owner);
+    void bodyIgnore(BodyId id, OwnerId owner);
     // The base body: unlinks and zeroes `slot` (found or not), or zeroes the whole chain for kNoIgnoreSlot.
     // @orig 0x00341b80 PhysicsBody_StopIgnoring (unknown)
     void bodyStopIgnoring(BodyId id, IgnoreSlotId slot);
     // The human body: a null owner asks about the level; its owner's grab partner is always passed through.
     // @orig 0x003421d0 PhysicsHumanBody_IsIgnoring (unknown)
-    [[nodiscard]] bool humanBodyIsIgnoring(BodyId id, const BodyOwner* owner, const BodyOwner* grabPartner) const;
+    [[nodiscard]] bool humanBodyIsIgnoring(BodyId id, OwnerId owner, OwnerId grabPartner) const;
     // The human body: a null owner makes it ignore the level.
     // @orig 0x00342230 PhysicsHumanBody_Ignore (unknown)
-    void humanBodyIgnore(BodyId id, const BodyOwner* owner);
+    void humanBodyIgnore(BodyId id, OwnerId owner);
     // The human body: kNoIgnoreSlot also stops it ignoring the level.
     // @orig 0x00342260 PhysicsHumanBody_StopIgnoring (unknown)
     void humanBodyStopIgnoring(BodyId id, IgnoreSlotId slot);
 
     EngineLimits m_limits;
+    OwnerLookup m_ownerLookup;
     std::deque<ShapeRecord> m_shapes;
     std::deque<WorldBody> m_bodies;
     std::vector<BodyId> m_vector;          // `+0x4f450`: the body vector
