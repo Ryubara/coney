@@ -144,8 +144,8 @@ struct Watched {
     bool tackled = false;    // held the player while its run-in was on top: the charge as a tackle (then a mount)
     float chargeAt = -1.0F;  // the distance when its charge was first seen (the run or the hold); -1 for none
     std::uint64_t lastNextAttack = 0;
-    coney::test::ActionStarts taunts;           // reposition taunts started (a `cheer2` fight fidget)
-    coney::test::ActionStarts gloats;           // gloats over the downed player started (a taunt action, kind 3 or 4)
+    coney::test::ActionStarts taunts{};         // reposition taunts started (a `cheer2` fight fidget)
+    coney::test::ActionStarts gloats{};         // gloats over the downed player started (a taunt action, kind 3 or 4)
     int fightStarts = 0;                        // fight goals started (a new one on top, its update count afresh)
     const coney::ai::Goal* lastFight = nullptr; // the fight goal last seen on top
     std::uint32_t lastFightUpdates = 0;         // its update count then
