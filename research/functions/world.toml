@@ -98,6 +98,44 @@ coney = "src/scripting/story_bindings.cpp:addStoryBindings"
 status = "legacy"
 
 [[function]]
+address = 0x0040d900
+name = "WorldManager_Construct"
+page = "physics-world.md#u18-construct"
+role = "the world manager's constructor: the Global Data Pool (101 % of warriors.glr) made in the Sector Pool and warriors.glr's chunks read into it"
+level = "confirmed-code"
+coney = "src/world/world_manager.h:WorldManager::WorldManager"
+status = "compared"
+
+[[function.gaps]]
+what = "only the Global Data Pool's reservation: the pack queue, draw list and pointers are not kept here, and warriors.glr's chunks are read by the platform's loaders"
+relation = "not-ported"
+issue = 380
+
+[[function.gaps]]
+what = "the Global Data Pool goes back with the manager, which lives as long as the level's scenery, where the original never frees it"
+relation = "stand-in"
+issue = 380
+
+[[function]]
+address = 0x0040dbb8
+name = "WorldManager_LoadLevel"
+page = "physics-world.md#u18-load"
+role = "loads a level: the World Level Pool (103 % of the level file, at least 256 KB), the Lua pool pushed, the streamed worlds, then the level file"
+level = "confirmed-code"
+coney = "src/world/world_manager.h:WorldManager::loadLevel"
+status = "compared"
+
+[[function.gaps]]
+what = "only the World Level Pool's reservation: the worlds and the level file are loaded by loadLevelScenery, the header-only load, the load priority and the prints are not ported"
+relation = "not-ported"
+issue = 380
+
+[[function.gaps]]
+what = "a name without a level file reserves no level pool"
+relation = "stand-in"
+issue = 380
+
+[[function]]
 address = 0x0040e100
 name = "WorldManager_NearestPendingDistance"
 page = "world.md#original-structure"
@@ -124,6 +162,20 @@ issue = 657
 what = "the level's occluders and the PVS are not consulted, no camera is added to each world, and the throw arcs' place in the order"
 relation = "stand-in"
 issue = 657
+
+[[function]]
+address = 0x0040f5b8
+name = "WorldManager_Unload"
+page = "physics-world.md#u18-unload"
+role = "unloads a level: the worlds and the water always; without keep, the Lua pool popped, the level released into the World Level Pool and that pool's block given back"
+level = "confirmed-code"
+coney = "src/world/world_manager.h:WorldManager::unload"
+status = "compared"
+
+[[function.gaps]]
+what = "only the World Level Pool's reservation: the worlds and the level object are released by LevelScenery's members as it goes, the render queue flush, the task manager call and the water are not ported"
+relation = "not-ported"
+issue = 380
 
 [[function]]
 address = 0x0040f8a0

@@ -22,6 +22,7 @@
 #include "world/level_object.h"
 #include "world/sector_budget.h"
 #include "world/streamed_world.h"
+#include "world/world_manager.h"
 
 namespace coney::platform {
 
@@ -34,6 +35,16 @@ struct WorldViewerStats {
     std::uint32_t noRoom = 0;    ///< Frames where a wanted part did not fit and nothing could go.
     std::uint32_t maxDrawn = 0;  ///< Most atomics drawn in one frame.
     std::uint64_t frames = 0;    ///< Frames run.
+};
+
+/// A level's scenery as the world viewer and the play mode load it: the world manager's pools, its streamed worlds and,
+/// when it has one, its level file's level object. Dropping it unloads the level as WorldManager_Unload does with
+/// nothing kept: the worlds first, then the level object, then the pools go back to the budget (the members go in
+/// reverse order).
+struct LevelScenery {
+    world::WorldManager pools;                 ///< The `Global Data` and `World Level` pools' reservations.
+    std::unique_ptr<world::LevelObject> level; ///< Null for a name without a level file.
+    std::unique_ptr<WorldSet> set;
 };
 
 /// Coney's streamed-world viewer, behind `coney --view-world NAME` (docs/guides/running-viewers.md#the-world-viewer): a
@@ -97,15 +108,16 @@ class WorldViewerMode final : public GameMode {
     [[nodiscard]] float drawDistance() const { return m_drawDistance.current(); }
 
   private:
-    WorldViewerMode(RenderEngine& engine, std::unique_ptr<WorldSet> set, std::unique_ptr<world::LevelObject> level,
-                    world::SectorBudget& budget, world::Vec3 start, std::function<void(std::string_view)> print);
+    WorldViewerMode(RenderEngine& engine, LevelScenery scenery, world::SectorBudget& budget, world::Vec3 start,
+                    std::function<void(std::string_view)> print);
 
     // The view through `camera` with `drawDistance` as its far clip: pose, view window for the window's shape.
     [[nodiscard]] WorldView view(const world::DebugCamera& camera, float drawDistance) const;
 
     RenderEngine& m_engine;
-    std::unique_ptr<WorldSet> m_set;
+    world::WorldManager m_pools;                 // the level's pools, given back after the level and worlds below go
     std::unique_ptr<world::LevelObject> m_level; // null without a level file
+    std::unique_ptr<WorldSet> m_set;
     world::SectorBudget& m_budget;
     Interpolated<world::DebugCamera> m_camera; // at the last two steps
     WorldRenderer m_renderer;
@@ -117,17 +129,11 @@ class WorldViewerMode final : public GameMode {
     std::shared_ptr<WorldEditHook> m_edits; // setEditHook(); null: none
 };
 
-/// A level's scenery as the world viewer and the play mode load it: its streamed worlds and, when it has one, its level
-/// file's level object.
-struct LevelScenery {
-    std::unique_ptr<WorldSet> set;
-    std::unique_ptr<world::LevelObject> level; ///< Null for a name without a level file.
-};
-
 /// Loads the worlds `name` stands for (worldNamesFor()) from `wad`, charging `budget` first with the pools a running
 /// game holds before them: the `Global Data Pool` for `warriors.glr` and the `World Level Pool` for `<name>.lev`, when
-/// those files exist; then the level file itself, when there is one (loadLevel()). `print` receives a summary (counts
-/// only). Fails as worldNamesFor(), WorldSet::load() and loadLevel() do.
+/// those files exist (world::WorldManager); then the level file itself, when there is one (loadLevel()). `print`
+/// receives a summary (counts only). Fails as worldNamesFor(), WorldSet::load() and loadLevel() do, having given back
+/// whatever it reserved.
 [[nodiscard]] std::expected<LevelScenery, Error> loadLevelScenery(RenderEngine& engine, const io::Wad& wad,
                                                                   std::string_view name, world::SectorBudget& budget,
                                                                   const std::function<void(std::string_view)>& print);

@@ -26,6 +26,7 @@
 #include "scenes/scene_host.h"
 #include "world/level_object.h"
 #include "world/sector_budget.h"
+#include "world/world_manager.h"
 #include "world_objects/object_list.h"
 #include "world_objects/object_types.h"
 #include "world_objects/spawn_records.h"
@@ -135,8 +136,9 @@ class FrontEndWorldScene final : public FrontEndScene, public scenes::SceneHost 
     RenderEngine& m_engine;
     std::function<void(std::string_view)> m_print;
     world::SectorBudget m_budget{world::kSectorPoolSize}; // before the worlds charged to it
-    std::unique_ptr<WorldSet> m_set;
+    std::optional<world::WorldManager> m_pools; // the level's pools, given back after the level and worlds below go
     std::unique_ptr<world::LevelObject> m_level;
+    std::unique_ptr<WorldSet> m_set;
     graphics::LevelLighting m_lighting;
     effects::ScreenTint m_tint;
     std::optional<std::uint64_t> m_lastStepMs; // the game time of the last update(), which the tint's blend steps from

@@ -65,8 +65,9 @@ FrontEndWorldScene::create(RenderEngine& engine, const io::Wad& wad, std::string
     if (!scenery) {
         return std::unexpected(std::move(scenery.error()));
     }
-    scene->m_set = std::move(scenery->set);
+    scene->m_pools.emplace(std::move(scenery->pools));
     scene->m_level = std::move(scenery->level);
+    scene->m_set = std::move(scenery->set);
     // The dynamic objects' models come by the Object List; without it the scene draws none.
     scene->m_source = objects;
     if (objects.records != nullptr && objects.types != nullptr) {

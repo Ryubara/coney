@@ -370,6 +370,7 @@ add_executable(coney_tests
     world/path_map_test.cpp
     world/streamed_world_test.cpp
     world/view_frustum_test.cpp
+    world/world_manager_test.cpp
     world/world_manifest_test.cpp
     world/world_streamer_test.cpp
     world/world_streams_test.cpp
