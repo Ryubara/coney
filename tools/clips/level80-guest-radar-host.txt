@@ -1,0 +1,7 @@
+# The host's pad for tools/clips/level80-guest-radar.toml (docs/guides/coney-tools-clips.md#clips-pair-guest). The
+# host's steps are held for the guest's load while its script keeps counting, and a scene takes a skip only after 60
+# of its updates, so the intro scene's skip is tapped at frame 95 and again at 110, as the level99 guest scenario's
+# host does; then Cleon stands while the first tutorial hint shows. Frames are 1/30 s from the host's first frame of
+# play. Format: docs/guides/running-input.md#input-scripts
+95 tap cross
+110 tap cross

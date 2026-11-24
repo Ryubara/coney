@@ -1,0 +1,4 @@
+# The guest's pad for tools/clips/level80-guest-radar.toml: at rest. Its port 1 plays the host's port 2, which drives
+# no human yet, and its right stick would turn the guest's own view; left still, the guest's view follows the host's
+# player and its radar turns with him. Format: docs/guides/running-input.md#input-scripts
+1 stick right 0 0
