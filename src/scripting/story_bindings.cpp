@@ -285,6 +285,7 @@ NativeFunction makeWcEnableCommand(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         const std::optional<std::size_t> player = playerOf(*context, handleArg(args, 0));
         const int command = intArg(args, 1);
+        // Coney's choice: a command outside 0-6 is refused.
         if (player && command >= 0 && command < kWarriorCommandCount) {
             const bool on = boolArg(args, 2);
             context->state->characters.warriorCommands.at(*player).at(static_cast<std::size_t>(command)) = on;
