@@ -10,8 +10,6 @@
 #include <utility>
 #include <variant>
 
-#include "ai/fidget_action.h"
-#include "ai/taunt_action.h"
 #include "animation/anim_clip.h"
 #include "animation/anim_task.h"
 #include "combat/anim_ids.h"
@@ -1307,20 +1305,6 @@ void Human::turnOverClip(std::uint32_t clip, anim::Vec3 point, float share) {
     const anim::Vec3 to = anim::subtract(point, m_position);
     const float turn = std::hypot(to.x, to.y) > 1e-4F ? wrapAngle(headingOf(to) - m_heading) : 0.0F;
     m_clipTurn = ClipTurn{.clip = clip, .updatesLeft = updates, .turnStep = turn / static_cast<float>(updates)};
-}
-
-// @coney-only the entry the fidget action calls; the stop itself, with Human_StopFidget's tag, is stopOverlay()
-void Human::stopFidget(std::uint32_t held) {
-    // The clips a standing stop ends are the fight and idle fidgets (0x25b, 0x25c), the AI's own constants.
-    stopOverlay(held, static_cast<std::uint32_t>(ai::kFightFidgetAnim),
-                static_cast<std::uint32_t>(ai::kIdleFidgetAnim));
-}
-
-// @coney-only the entry the taunt action calls; the stop itself, with Human_StopTaunt's tag, is stopOverlay()
-void Human::stopTaunt(std::uint32_t held) {
-    // The taunts' clips are 0x253 to 0x25a (the knife fidget's, the last kind's, among them).
-    stopOverlay(held, static_cast<std::uint32_t>(ai::kTauntFirstAnim),
-                static_cast<std::uint32_t>(ai::tauntAnim(ai::kNoClipTaunt - 1)));
 }
 
 void Human::stopOverlay(std::uint32_t held, std::uint32_t firstIdle, std::uint32_t lastIdle) {
