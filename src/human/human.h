@@ -494,10 +494,10 @@ class Human final : public Holdable {
     /// it goes; standing, the idle comes back only when the clip is the fight or idle fidget (603, 604), so the knife
     /// fidget plays on. **Coney stand-in**: `held` is the scripted clip's held bits (ai::kScriptedClipHeld) in place
     /// of the original's `0x100`.
-    void stopFidget(std::uint32_t held) { stopOverlay(held, kFightFidgetAnim, kIdleFidgetAnim); }
+    void stopFidget(std::uint32_t held);
     /// An AI's taunt cut short (docs/research/ai-reimpl.md#taunt-action): as stopFidget(), with the taunts' clips
     /// (595 to 602). **Coney stand-in**: `held` stands for the original's `0x300000`, as for stopFidget().
-    void stopTaunt(std::uint32_t held) { stopOverlay(held, kFirstTauntAnim, kLastTauntAnim); }
+    void stopTaunt(std::uint32_t held);
     /// A workout's clips (HumanAnimator::playWorkout()), its loop blend once playing, and its exit
     /// (HumanAnimator::endWorkout()).
     void playWorkout(const anim::AnimClip& enter, const std::array<const anim::AnimClip*, 3>& loops) {
@@ -1445,12 +1445,6 @@ class Human final : public Holdable {
     // Starts a turn to `point` spread over `share` of `clip`'s playing time; nothing when the clip is not loaded.
     // @orig 0x00221c20 Human_TurnToFacePoint (unknown)
     void turnOverClip(std::uint32_t clip, anim::Vec3 point, float share);
-    // The fidgets' and the taunts' anim ids that a stop, standing, ends with the idle: the fight and idle fidgets
-    // (0x25b, 0x25c) and the taunts (0x253 to 0x25a, the knife fidget among them).
-    static constexpr std::uint32_t kFightFidgetAnim = 603;
-    static constexpr std::uint32_t kIdleFidgetAnim = 604;
-    static constexpr std::uint32_t kFirstTauntAnim = 595;
-    static constexpr std::uint32_t kLastTauntAnim = 602;
     // The stop that stopFidget() and stopTaunt() share: nothing unless a clip holds any of `held`; moving, the clip
     // gives way at once; standing, the idle comes back only for a clip from `firstIdle` to `lastIdle`.
     // @orig 0x00231b60 Human_StopFidget (unknown)

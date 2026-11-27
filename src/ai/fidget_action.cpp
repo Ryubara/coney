@@ -74,8 +74,8 @@ ActionStatus FidgetAction::update(Brain& brain) {
 }
 
 bool FidgetAction::abort(Brain& brain) {
-    // The fidget stops and the clear is accepted. Not built yet (#664): the refusal while cleared for an idle Warrior
-    // whose crew follows a free, idle chief with nobody fighting.
+    // The fidget stops and the clear is accepted. **Coney stand-in** (#664): the refusal while cleared for an idle
+    // Warrior whose crew follows a free, idle chief with nobody fighting is not built.
     if (m_heldFlags != 0) {
         brain.human().stopFidget(m_heldFlags);
     }
