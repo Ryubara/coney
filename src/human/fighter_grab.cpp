@@ -382,13 +382,15 @@ void Fighter::placeAttached(const FighterInput& input, float heading) {
     // **Coney stand-in**: with its grabber gone the original's victim gets its own movement back and runs it; Coney's
     // grabber calls this, so it always has one, and a victim whose grabber stops updating frees itself
     // (freeFromLostGrabber()).
-    // Where the pair stands now, for a pair the rounds cannot settle.
+    // Where the pair stands now, for a pair the rounds cannot settle. The grabber is read from itself, not from the
+    // update's input: a snap earlier in this update may have swept it already.
+    const anim::Vec3 grabberStart = input.self != nullptr ? input.self->position() : input.position;
     const anim::Vec3 victimStart = m_held->position();
     const float victimHeading = m_held->heading();
     // 1. The victim's move: from where it stands to the grabber's transform times the stored offset.
     anim::Vec3 victimAt = victimStart;
-    anim::Vec3 grabberAt = input.position;
-    anim::Vec3 move = anim::subtract(fromFrame(input.position, heading, m_holdOffset), victimStart);
+    anim::Vec3 grabberAt = grabberStart;
+    anim::Vec3 move = anim::subtract(fromFrame(grabberStart, heading, m_holdOffset), victimStart);
     int rounds = 0;
     while (rounds < kAttachRounds) {
         // 2. The victim swept by the move; settled when it falls short by less than the threshold.
@@ -411,10 +413,10 @@ void Fighter::placeAttached(const FighterInput& input, float heading) {
     }
     if (rounds == kAttachRounds) {
         // 5. Unsettled after three rounds: both go back where they stood, the grabber stopped. **Coney stand-in**: the
-        // grabber goes back to where this update's fight found it, where the original restores the transform its body
+        // grabber goes back to where this call found it, where the original restores the transform its body
         // cached before the update's move, and its stop (Human::place()) also ends its locomotion's turn.
         m_held->place(victimStart, victimHeading);
-        input.self->place(input.position, heading);
+        input.self->place(grabberStart, heading);
         return;
     }
     // 6. Settled: the victim stands where the sweeps left it, turned to the hold's relative rotation. **Coney
