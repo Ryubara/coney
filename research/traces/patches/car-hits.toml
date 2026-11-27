@@ -1,0 +1,10 @@
+# The car-hit pass (docs/research/cars.md#hit-volumes, issue #1698): what a car's hit handler returns to the strike
+# that touched it, which Strike_Contact sounds on.
+
+[hook.car-hit-return]
+description = "Each return of a car's hit handler (Car_OnHit, 0x0038bea0) to Strike_Contact (at 0x0021b788): the parts it returned (outside the glass), the car's removed and off masks before the strike's own test, and the tick count."
+research = "docs/research/cars.md#hit-volumes"
+address = 0x0021b788
+# lw a1,0x11f0(s0); sltu s3,zero,v0
+original = [0x8e0511f0, 0x0002982b]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "v0", name = "returned" }, { value = "[s0 + 0x11f0]", name = "removed" }, { value = "[s0 + 0x11f8]", name = "parts_off" }]

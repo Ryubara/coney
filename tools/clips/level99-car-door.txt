@@ -1,0 +1,11 @@
+# The parked sedan at (41.23, 44.76) squared twice at its front-left door, for the `level99-car-door` clips pair
+# scenario (tools/clips/level99-car-door.toml), played from checkpoint 2 (`--play-level level99 --checkpoint 2
+# --skip-movies`): cross skips the checkpoint's scene. Frames are 1/30 s from the level's first frame of play.
+65 tap cross
+# Round the car's west end, along its left side, then up to the front-left door (a steer stops 1 m short of its last
+# point), facing the car.
+160 steer 100 37.0,47.3 37.0,42.0
+260 steer 60 40.73,41.9 40.73,44.2
+# Two squares: window 15 alone (it shields door 14), then the door (docs/research/cars.md#windows).
+400 tap square
+460 tap square

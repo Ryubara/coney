@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261127-car-door"
+date = "2026-11-27"
+kind = "trace"
+tool = "trace original"
+digest = "9139560321327427631bbf07573c3b5f7e68f8393fce7ef951612f2a30daaf6f"
+
+[who]
+agent = "a7f5517c0ab71483d"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["car-hit-return", "right-stick", "scripted-pad"]
+
+[run]
+name = "car_door"
+method = ""
+
+[values]
+updates = 161
+missed_updates = 0
+columns = 18
+
+[hashes]
+trace_csv = "b62c2923f46d3d5d0c9b5c9476584c32795f7780971669c4c43d625825cf5e10"

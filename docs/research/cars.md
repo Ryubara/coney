@@ -483,6 +483,10 @@ damages comes from the zone tables, never from the part's own box. Confirmed (co
   as [Explosion](#explode) and [Hit effects](#hit-effects) say. The handler returns the zone's parts outside the glass
   (`s5 & 0xffd57f3f` at `0x0038c794`, the parts off included, as for the sparks), and `Strike_Contact` plays the impact
   sound (9, or `0x1a` for a charge) on material 13 when it returns any, at volume 0.5 for a player, 1 for an AI human.
+  Confirmed (runtime), run r-20261127-car-door: in `level99` beside the parked sedan's front-left door, the first square
+  broke window 15 alone and the handler returned 0 (no impact sound), the second returned door 14's bit `0x4000`;
+  run r-20261127-car-corner-return: at its front-left corner both squares returned `0x4000504` (parts 2, 8, 10 and
+  the lamp glass 26), lamp 8 and bit 26 already off at the second.
 - **What the hit gives the player.** `Strike_Contact` counts crime 11 for a player when the hit reached a part not
   yet off (and for every player when the striker is a Warrior whose gang leader is a player). A held human slammed
   into the car (`0x1400000`, the throw into an object) takes 100 pending damage (one less than his health when he
