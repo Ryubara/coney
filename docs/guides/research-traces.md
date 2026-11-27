@@ -243,7 +243,9 @@ leave its first value from that step by more than 5 cm somewhere before the trac
 exits 1 and names the scenario, the step, how far he went and the likely cause (a scene or script holding the pad: add
 `wait_for_control = true`). The trace is kept so you can read it. A fall or a slide counts as moving, and a script with
 no such stick (a scenario that watches, or only presses buttons) has nothing to check. The check is on the `[coney]`
-side only: the original's side is the saved slot, which stands where the game put him.
+side only: the original's side is the saved slot, which stands where the game put him. It also cannot catch a
+scene that keeps moving him after the stick's step (any 5 cm from that step counts as moving, whoever moved him), so a
+scenario that waits for control has still to be read once.
 
 ## Differential playthroughs {#differential-playthroughs}
 

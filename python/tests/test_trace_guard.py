@@ -59,7 +59,7 @@ def test_a_player_who_walks_passes(tmp_path: Path) -> None:
 
 
 def test_a_fall_counts_as_moving(tmp_path: Path) -> None:
-    # A player dropped from a height and held still by the stick's dead zone still moves in z.
+    # A player who stays put in x and y but falls in z (the stick is at 100 %) still moves, so the guard passes.
     positions = [(1.0, 2.0, 40.0)] * 40 + [(1.0, 2.0, 40.0 - 0.5 * step) for step in range(1, 61)]
     trace = load_trace(_trace(tmp_path, positions))
     assert standing_player(parse_input_script("10 stick left 0 100\n"), trace) is None
