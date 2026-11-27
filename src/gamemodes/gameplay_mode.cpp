@@ -837,7 +837,7 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
 // Mode 1's frame of play in the original's order (docs/research/level-loading.md#a-frame-of-play).
 // @orig 0x00158728 Gm_Level_Update (unknown)
 ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& frame) {
-    // Not ported: a failure outside an Armies level's death camera, music fade, tint and blur and their end (#703);
+    // Not ported: a failure outside an Armies level's death camera, music fade, tint and blur and their end (#1008);
     // state 2's mission-complete mode (#670); a second player joining and his view's HUD (#549); the flip time limit
     // during a fade, the call at 0x0048d420, the frame-rate statistics, a held player's ear, the debug heal, the file
     // manager's service and the script system's and device's calls (#1008).
