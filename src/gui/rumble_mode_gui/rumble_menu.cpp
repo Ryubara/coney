@@ -43,13 +43,14 @@ OptionGridItem playerItem(std::string_view text, int code) {
 }
 
 // The Game Mode confirm's copy of `mode` into `setup`: its id, its gang size, its title after a ':', its three player
-// options and, for a mode with preset fighters, all nine members of each side.
+// options and, for a mode with preset fighters, all nine members of each side. A mode has presets when either side's
+// is set: the original tests the 32-bit word that holds both.
 void applyMode(const RumbleModeEntry& mode, RumbleSetup& setup) {
     setup.values.at(RumbleSetup::kGameType) = mode.mode;
     setup.values.at(RumbleSetup::kGangSize) = mode.gangSize;
     setup.modeLabel = ":" + mode.title;
     setup.playerOptions = mode.playerOptions;
-    setup.presetGangs = mode.presets[0] != 0;
+    setup.presetGangs = mode.presets[0] != 0 || mode.presets[1] != 0;
     if (setup.presetGangs) {
         for (std::size_t i = 0; i < RumbleSetup::kGangMembers; ++i) {
             setup.values.at(RumbleSetup::kGang1Types + i) = mode.presets[0];
@@ -162,7 +163,7 @@ const TextWidget& RumbleMenu::entryText(std::size_t row) const {
 
 std::vector<int> RumbleMenu::takeCues() { return std::exchange(m_cues, {}); }
 
-RumbleMenuResult RumbleMenu::update(const GuiFrame& frame, std::size_t connectedPads, const Pad* /*secondPad*/) {
+RumbleMenuResult RumbleMenu::update(const GuiFrame& frame, std::size_t connectedPads, const Pad* secondPad) {
     // The background's colour cycle runs on whatever screen is up.
     m_background.setColour(rumbleBackgroundColour(frame.timeMs - m_startMs));
 
@@ -172,10 +173,9 @@ RumbleMenuResult RumbleMenu::update(const GuiFrame& frame, std::size_t connected
         return RumbleMenuResult::Started;
     }
 
-    // The Game Type message goes after its time.
-    if (m_screen == RumbleScreen::GameType && m_messageUntilMs != 0 && frame.timeMs >= m_messageUntilMs) {
-        m_messageUntilMs = 0;
-        m_message.setText({});
+    // The Game Type screen's message and player 2's START.
+    if (m_screen == RumbleScreen::GameType) {
+        updatePlayers(frame, connectedPads, secondPad);
     }
 
     // This frame's command, handed to the screen's input.
@@ -323,6 +323,9 @@ void RumbleMenu::showModes() {
 
 // @orig 0x001fc5b0 RM_NumPlayers_Init (RM_NumPlayers.cpp)
 void RumbleMenu::showPlayers() {
+    // Coney's choice: the original also builds the screen on its first frame only, picks one of three layouts by the
+    // display flags (0x0050cdb4; here always the default one, kMessageY), frees the second HUD pad, makes a sprite
+    // batch and makes the badges and the sprite between them, which this screen does not draw yet.
     constexpr std::array<std::uint32_t, RumbleModeEntry::kPlayerOptions> kLabels{kOnePlayerString, kCoopString,
                                                                                  kVersusString};
     // The entries the mode offers, in one centred row.
@@ -346,16 +349,19 @@ void RumbleMenu::showPlayers() {
     for (OptionGridItem& item : items) {
         m_grid.addItem(std::move(item));
     }
-    // The message for player 2, hidden until a two-player confirm.
+    // The message for player 2, grey, hidden until a two-player confirm; player 2 has not pressed START yet.
     m_message.init();
     m_message.setup(TextWidgetSetup{.x = 0.5F,
                                     .y = kMessageY,
                                     .scale = kEntryScale,
-                                    .colour = kMenuRed,
+                                    .colour = kMenuGrey,
                                     .alignment = TextAlignment::Centre,
                                     .fontSlot = kBigFontSlot});
     m_messageShown = false;
-    m_messageUntilMs = 0;
+    m_playerTwoStarted = false;
+    m_blinkRising = false;
+    m_blinkStartMs = 0;
+    m_lastPlayerEntry.reset();
     setUsage(m_grid.items() == 1 ? kUsageOneEntry : kUsageOneRow);
 }
 
@@ -407,6 +413,8 @@ void RumbleMenu::showAreas() {
 // Accept copies the entry into the set-up and opens the Game Type screen; back leaves the menu.
 // @orig 0x001f8d80 RM_GameMode_OnInput (RM_GameMode.cpp)
 RumbleMenuResult RumbleMenu::onModeInput(MenuCommand command, std::uint64_t nowMs) {
+    // Coney's choice: back always ends the menu here, and RumbleMenuMode sets "cancelled" only when the menu came from
+    // the front end. In game the original pops back to RM_Main, which Coney does not make, so the menu closes.
     if (command == MenuCommand::Back) {
         m_cues.push_back(kRumbleBackCue);
         return RumbleMenuResult::Cancelled;
@@ -423,7 +431,8 @@ RumbleMenuResult RumbleMenu::onModeInput(MenuCommand command, std::uint64_t nowM
     return RumbleMenuResult::Stay;
 }
 
-// Accept writes the players: one player at once; co-op and versus first show the message, then need a second pad.
+// Accept writes the players: one player at once; co-op and versus show the message until player 2 has pressed START
+// (updatePlayers() sends accept again then), and then need a second pad.
 // @orig 0x001fd1c8 RM_NumPlayers_OnInput (RM_NumPlayers.cpp)
 RumbleMenuResult RumbleMenu::onPlayersInput(MenuCommand command, std::size_t connectedPads, std::uint64_t nowMs) {
     if (command == MenuCommand::Back) {
@@ -436,41 +445,104 @@ RumbleMenuResult RumbleMenu::onPlayersInput(MenuCommand command, std::size_t con
         return RumbleMenuResult::Stay;
     }
     const auto id = static_cast<std::size_t>(*chosen);
-    if (id != 0 && (!m_messageShown || connectedPads < 2)) {
-        // The message for player 2 (and Coney's stand-in for the no-second-controller screen); no cue.
+    // Shows the message for player 2, blinking up from clear.
+    const auto showMessage = [this, nowMs] {
         m_messageShown = true;
-        m_messageUntilMs = nowMs + kMessageMs;
+        m_blinkRising = true;
+        m_blinkStartMs = nowMs;
         m_message.setText(text(kPlayerTwoString));
+    };
+    if (id != 0 && !m_playerTwoStarted) {
+        // The message, no cue.
+        showMessage();
         return RumbleMenuResult::Stay;
     }
+    setup().values.at(RumbleSetup::kGameMode) = kPlayersOfEntry.at(id);
     m_cues.push_back(kRumbleConfirmCue);
+    if (id != 0 && connectedPads < 2) {
+        // Stand-in: with no second pad the original opens the No 2nd Controller screen, which Coney does not make; it
+        // stays here and shows the message again.
+        showMessage();
+        return RumbleMenuResult::Stay;
+    }
     applyPlayers(kPlayersOfEntry.at(id), setup());
     show(setup().presetGangs ? RumbleScreen::ChooseArea : RumbleScreen::ChooseGangs, 0, nowMs);
     return RumbleMenuResult::Stay;
 }
 
-// Up and down choose the active side's gang, left and right its warchief (not in co-op), accept locks the side and,
-// with both locked, writes the gangs; back unlocks, or with nothing locked returns to the Game Type screen.
+// Coney's choice: the badges and the sprite between them, which the original places here each frame by the entry, are
+// not drawn (the Game Type screen has no sprites yet).
+// @orig 0x001fd408 RM_NumPlayers_Update (RM_NumPlayers.cpp)
+void RumbleMenu::updatePlayers(const GuiFrame& frame, std::size_t connectedPads, const Pad* secondPad) {
+    // Coney's choice: the original returns at once while its screen is not the active one or the Rumble mode is
+    // frozen; update() calls this only on the Game Type screen, and Coney's Rumble mode has no freeze.
+    // A change of entry hides the message.
+    const std::size_t selected = m_grid.selected();
+    if (m_lastPlayerEntry != selected) {
+        m_messageShown = false;
+        m_message.setText({});
+    }
+    m_lastPlayerEntry = selected;
+
+    // While it shows, player 2's START sends accept again, which now goes on.
+    if (m_messageShown && secondPad != nullptr && secondPad->connected() && secondPad->pressed(pad::kStart)) {
+        m_playerTwoStarted = true;
+        (void)onPlayersInput(MenuCommand::Accept, connectedPads, frame.timeMs);
+        if (m_screen != RumbleScreen::GameType) {
+            return;
+        }
+    }
+
+    // The blink: each half the alpha runs linearly from clear to opaque or back, then the direction turns.
+    std::uint64_t elapsed = frame.timeMs - m_blinkStartMs;
+    if (elapsed >= kMessageBlinkMs) {
+        m_blinkStartMs = frame.timeMs;
+        elapsed = 0;
+        m_blinkRising = !m_blinkRising;
+    }
+    const float t = static_cast<float>(elapsed) / static_cast<float>(kMessageBlinkMs);
+    const float alpha = 255.0F * (m_blinkRising ? t : 1.0F - t);
+    graphics::Rgba colour = kMenuGrey;
+    colour.a = static_cast<std::uint8_t>(alpha);
+    m_message.style().colour = colour;
+}
+
+// Up and down move the active side's gang unless it is locked; left and right rotate its roster (side 1's left and
+// side 2's right back, the others forward) unless one human chooses for side 2, the side is locked or the mode is
+// co-op; accept locks the side and, with both locked, writes the gangs, else passes to the other side; back unlocks,
+// returns to the Game Type screen, or in versus on side 2 with nothing of its own locked does nothing.
 // @orig 0x001ef7c0 RM_ChooseGangs_OnInput (RM_ChooseGangs.cpp)
 RumbleMenuResult RumbleMenu::onGangsInput(MenuCommand command, std::uint64_t nowMs) {
+    const std::size_t side = m_gangs.activeSide();
+    const std::uint16_t players = setup().values.at(RumbleSetup::kGameMode);
+    const bool coop = players == kRumbleCoop;
+    // One human chooses both sides unless the mode is versus.
+    const bool oneHuman = players != kRumbleVersus;
+    // Coney's choice: the original also stamps the side's input time (+0x160, which times the fighters' respawn, #88)
+    // and clears its bump flag (+0x1e8, auto-repeat off after a bump at a list end); Coney keeps neither yet.
     switch (command) {
     case MenuCommand::Up:
-        m_gangs.move(-1);
-        m_cues.push_back(kRumbleMoveCue);
-        break;
     case MenuCommand::Down:
-        m_gangs.move(1);
-        m_cues.push_back(kRumbleMoveCue);
+        if (!m_gangs.locked(side)) {
+            m_gangs.move(command == MenuCommand::Up ? -1 : 1);
+            m_cues.push_back(kRumbleMoveCue);
+        }
         break;
     case MenuCommand::Left:
     case MenuCommand::Right:
-        if (setup().values.at(RumbleSetup::kGameMode) != kRumbleCoop) {
-            m_gangs.rotate(command == MenuCommand::Left);
+        if (oneHuman && side == 1) {
+            return RumbleMenuResult::Stay;
+        }
+        if (!m_gangs.locked(side) && !coop) {
+            // Mirrored: side 1's right and side 2's left rotate forward.
+            m_gangs.rotate((command == MenuCommand::Right) == (side == 0));
             m_cues.push_back(kRumbleMoveCue);
         }
         break;
     case MenuCommand::Accept:
-        m_cues.push_back(kRumbleConfirmCue);
+        if (!m_gangs.locked(side)) {
+            m_cues.push_back(kRumbleConfirmCue);
+        }
         if (m_gangs.lock()) {
             m_gangs.apply(setup());
             show(RumbleScreen::ChooseArea, 0, nowMs);
@@ -478,8 +550,16 @@ RumbleMenuResult RumbleMenu::onGangsInput(MenuCommand command, std::uint64_t now
         }
         break;
     case MenuCommand::Back:
-        m_cues.push_back(kRumbleBackCue);
-        if (!m_gangs.unlock()) {
+        if (oneHuman && side == 1 && m_gangs.locked(0)) {
+            // One human on side 2: back unlocks side 1 and returns to it.
+            m_gangs.setActive(0);
+            m_gangs.unlock(0);
+            m_cues.push_back(kRumbleBackCue);
+        } else if (m_gangs.locked(side)) {
+            m_gangs.unlock(side);
+            m_cues.push_back(kRumbleBackCue);
+        } else if (oneHuman || side == 0) {
+            m_cues.push_back(kRumbleBackCue);
             show(RumbleScreen::GameType, 0, nowMs);
             return RumbleMenuResult::Stay;
         }
@@ -515,7 +595,8 @@ void RumbleMenu::launchArena(std::size_t entry) {
 }
 
 void RumbleMenu::refreshGangs() {
-    // Each side's gang name; the side choosing grey, a locked or waiting side dim.
+    // Each side's gang name; the side choosing grey, a locked or waiting side dim. Stand-in: the original also selects
+    // the side in its option grid of side labels, which Coney does not make; the names' colours show the side.
     for (std::size_t side = 0; side < RumbleGangChooser::kSides; ++side) {
         const RumbleGangEntry* gang = m_gangs.gang(side);
         TextWidget& name = m_gangNames.at(side);
@@ -523,9 +604,10 @@ void RumbleMenu::refreshGangs() {
         const bool choosing = side == m_gangs.activeSide() && !m_gangs.locked(side);
         name.style().colour = choosing ? kMenuGrey : kDimGrey;
     }
-    // The usage line: 0x18 in co-op or while side 2 is active, else 0x24.
-    const bool coop = setup().values.at(RumbleSetup::kGameMode) == kRumbleCoop;
-    setUsage(coop || m_gangs.activeSide() == 1 ? kUsageSelectBack : kUsageGangSides);
+    // The usage line: 0x18 in co-op, or while one human chooses for side 2; else 0x24.
+    const std::uint16_t players = setup().values.at(RumbleSetup::kGameMode);
+    const bool oneHumanOnSide2 = players != kRumbleVersus && m_gangs.activeSide() == 1;
+    setUsage(players == kRumbleCoop || oneHumanOnSide2 ? kUsageSelectBack : kUsageGangSides);
 }
 
 void RumbleMenu::refreshEntries() {

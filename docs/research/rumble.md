@@ -226,8 +226,11 @@ them ([Rumble roster](../references/rumble.md)).
 ## The intro and countdown {#intro}
 
 `ShowRumbleModeIntro(onDone, names)` (`0x0036ed48` → `0x001b5f88`) opens the HUD's **RM_Intro** screen (`0x600840 +
-0xe530`): `0x001f9418` keeps `onDone` and up to 10 non-empty names; `0x001f9558` builds a text widget per name, a
-separator between two names and a prompt (global string `0x25`), queues screen effect 0 and loads a sound bank (`0x001f93a0`).
+0xe530`): `0x001f9418` copies `onDone` and keeps the ten name slots in place, zeroing an empty one; `0x001f9558` counts
+the names up to the first empty slot (so a name after an empty one is never shown), builds a text widget per name, a
+separator between two names and a prompt (global string `0x25`), queues screen effect 0 and loads a sound bank
+(`0x001f93a0`). Confirmed (code) at `0x001f9418` and `0x001f9558`; the orig sweep corrected an earlier reading that the
+non-empty names were all kept.
 The update (`0x001fad40`) runs four phases (byte `+0xe4`), confirmed (code):
 
 1. **Names** (`0x001fa170`), one at a time: the announcer names the gang (`dj_gang_<pack + 1>`, the pack from set-up

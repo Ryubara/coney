@@ -97,26 +97,26 @@ struct RumbleMenuServices {
 /// title y, size kTitleScale, `big_font`, kMenuGrey; its usage line centred at the layout's usage y. Game Mode is a
 /// ScrollingMenu of at most three entries, each the mode's title (size 1.6, `big_font`) over its description, the
 /// selected entry kMenuGrey and the others kDimGrey; Game Type a centred one-row OptionGrid at the layout's grid y,
-/// size 1.15, kDimGrey, with message `0x77` at (0.5, kMessageY); Choose Gangs the two sides' gang names at x 0.2505 and
-/// 0.7495 and "vs." between them, mid-way between the title and the usage line, size 1.2.
+/// size 1.15, kDimGrey, with message `0x77` at (0.5, kMessageY), kMenuGrey, blinking; Choose Gangs the two sides' gang
+/// names at x 0.2505 and 0.7495 and "vs." between them, mid-way between the title and the usage line, size 1.2.
 ///
 /// **Coney's choices** where the page is silent or a resource is not found yet: Game Mode's entries start at
 /// kModeEntryX (where they are measured) and are stacked kModeEntryGap apart, without the wrap width, backdrops or
 /// scroll arrows (sheet-table record 28 is not named); Choose Area lists its arenas' labels in a ScrollingMenu,
 /// centred, instead of the framed preview pictures in rows of three; Choose Gangs has no name boxes, badges, arrows,
 /// bars or 3D fighters, and its cursors keep RumbleGangChooser's rules; the Game Type entries are joined by `" : "` as
-/// the message box's measured choices are; the message `0x77` is kMenuRed; a title string the strings do not hold falls
-/// back to the screen's name. As before: an arena's label is its level record's title (`+0x49`); a second two-player
-/// confirm with no second pad stays on the screen and shows the message again (the No 2nd Controller screen is not
-/// made); the HUD player's pad drives both sides of the gang screen; back from a later screen returns to the one before
-/// with its first entry selected (the Game Mode screen keeps the mode chosen).
+/// the message box's measured choices are; a title string the strings do not hold falls back to the screen's name. As
+/// before: an arena's label is its level record's title (`+0x49`); a two-player confirm (after player 2's START) with
+/// no second pad stays on the screen and shows the message again (the No 2nd Controller screen is not made); the HUD
+/// player's pad drives both sides of the gang screen; back from a later screen returns to the one before with its
+/// first entry selected (the Game Mode screen keeps the mode chosen).
 ///
 /// Research: docs/research/frontend.md#rumble-setup, docs/research/frontend.md#rumble-data,
 /// docs/research/frontend.md#rumble-screens
 class RumbleMenu {
   public:
-    /// How long the Game Type screen's message stays, in milliseconds.
-    static constexpr std::uint64_t kMessageMs = 1500;
+    /// How long each half of the Game Type message's blink lasts (clear to opaque, then back), in milliseconds.
+    static constexpr std::uint64_t kMessageBlinkMs = 1500;
     /// The HUD strings of the Game Type screen: its three entries and its message.
     static constexpr std::uint32_t kOnePlayerString = 0x34;
     static constexpr std::uint32_t kCoopString = 0x35;
@@ -165,9 +165,11 @@ class RumbleMenu {
     /// @orig 0x001f1e00 RumbleController_Init (unknown)
     void start(std::uint64_t nowMs);
 
-    /// One frame: launches an arena confirmed the frame before, reads the command `frame.pad` gives and acts on it (a
-    /// confirm writes into the state's set-up), and advances the texts and the background. `connectedPads` decides
-    /// whether two players can be chosen; `secondPad` is player 2's pad (null: none).
+    /// One frame: launches an arena confirmed the frame before, runs the Game Type screen's message and player 2's
+    /// START (`secondPad`, null for none), reads the command `frame.pad` gives and acts on it (a confirm writes into
+    /// the state's set-up), and advances the texts and the background. `connectedPads` decides whether two players can
+    /// be chosen.
+    /// @coney-only the menu's frame: the original's screen flow runs each screen's update and input
     [[nodiscard]] RumbleMenuResult update(const GuiFrame& frame, std::size_t connectedPads,
                                           const Pad* secondPad = nullptr);
 
@@ -219,6 +221,10 @@ class RumbleMenu {
     RumbleMenuResult onPlayersInput(MenuCommand command, std::size_t connectedPads, std::uint64_t nowMs);
     RumbleMenuResult onGangsInput(MenuCommand command, std::uint64_t nowMs);
     RumbleMenuResult onAreaInput(MenuCommand command, std::uint64_t nowMs);
+    // The Game Type screen's update: hides the message when the entry changes, goes on at player 2's START while it
+    // shows, and blinks it.
+    void updatePlayers(const GuiFrame& frame, std::size_t connectedPads, const Pad* secondPad);
+
     // Writes the level number of arena list entry `entry`: the end of the menu.
     void launchArena(std::size_t entry);
     // The gang screen's names and usage line, after a change of side or gang.
@@ -245,11 +251,14 @@ class RumbleMenu {
     std::vector<std::string> m_entries;
     RumbleGangChooser m_gangs;
     RumbleScreen m_screen = RumbleScreen::GameMode;
-    std::uint64_t m_startMs = 0;                // when the background's cycle started
-    std::size_t m_mode = 0;                     // the mode list entry chosen on the Game Mode screen
-    bool m_messageShown = false;                // `+0x90`: the Game Type screen showed its message
-    std::uint64_t m_messageUntilMs = 0;         // when the message goes
-    std::optional<std::size_t> m_launchPending; // `+0xc4`: the arena confirmed, launched on the next update
+    std::uint64_t m_startMs = 0;                  // when the background's cycle started
+    std::size_t m_mode = 0;                       // the mode list entry chosen on the Game Mode screen
+    bool m_messageShown = false;                  // `+0x8c`: the Game Type screen shows its message
+    bool m_playerTwoStarted = false;              // `+0x90`: player 2 pressed START while it showed
+    bool m_blinkRising = false;                   // `+0x98`: the message's blink is fading in
+    std::uint64_t m_blinkStartMs = 0;             // `+0x9c`: when the blink's half began
+    std::optional<std::size_t> m_lastPlayerEntry; // `+0xa0`: the Game Type entry selected on the last update
+    std::optional<std::size_t> m_launchPending;   // `+0xc4`: the arena confirmed, launched on the next update
     std::vector<int> m_cues;
 };
 

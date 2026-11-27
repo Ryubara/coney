@@ -123,12 +123,12 @@ ModeResult RumbleMenuMode::update(GameModeStack& stack, const FrameTime& frame) 
         m_fade.queue(graphics::ScreenFade::kFadeIn, kFadeInSeconds, nowMs);
     }
 
-    // One frame of the screens, read from the HUD player's pad (port 1); a confirm writes the set-up. Once they have
-    // ended they are frozen.
+    // One frame of the screens, read from the HUD player's pad (port 1), with port 2 as player 2's (the only other pad
+    // the original's HUD can bind); a confirm writes the set-up. Once they have ended they are frozen.
     gui::RumbleMenuResult result = gui::RumbleMenuResult::Stay;
     if (!m_leaving) {
         const gui::GuiFrame guiFrame{nowMs, &stack.pads().port(0)};
-        result = m_menu.update(guiFrame, stack.pads().connectedCount());
+        result = m_menu.update(guiFrame, stack.pads().connectedCount(), &stack.pads().port(1));
     }
     m_menu.render(m_canvas);
     for (const int cue : m_menu.takeCues()) {

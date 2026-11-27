@@ -591,7 +591,7 @@ page = "frontend.md#fn-rm_choosearea"
 role = "(CfgRumbleArena) Adds a `0xc`-byte entry {+4 level-table index, +8 picture} to the arena list `0x0063ee40` only when level is 101-199, unlocked (Unlocks kind 2) and its mode list (up to 16, 0-ended) holds the current gameType (`0x0063eec2`); an empty list never matches"
 level = "confirmed-code"
 coney = "src/gui/rumble_mode_gui/rumble_data.h:addRumbleArena"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001eb0c8
@@ -621,13 +621,22 @@ coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::launchArena"
 status = "legacy"
 
 [[function]]
+address = 0x001ebfc0
+name = "RM_Roster_SlotToMember"
+page = "frontend.md#fn-rm_choosegangs"
+role = "a roster's slot (0-8, left to right on screen) to its member: 8, 6, 4, 2, 0, 1, 3, 5, 7, the warchief in the centre"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_gang_chooser.h:rosterMemberInSlot"
+status = "compared"
+
+[[function]]
 address = 0x001ec028
 name = "RM_GangData_RotateForward"
 page = "frontend.md#fn-rm_choosegangs"
 role = "shifts side's nine-member roster (+8 + side x `0x24`) one slot to the right in display order, the last wrapping to slot 0 (Choose Gangs left/right) ([Data](frontend.md#rumble-data))"
 level = "confirmed-code"
-coney = "src/gui/rumble_mode_gui/rumble_gang_chooser.h:RumbleGangChooser::rotate"
-status = "legacy"
+coney = "src/gui/rumble_mode_gui/rumble_gang_chooser.h:rotateRosterForward"
+status = "compared"
 
 [[function]]
 address = 0x001ec130
@@ -635,8 +644,8 @@ name = "RM_GangData_RotateBack"
 page = "frontend.md#fn-rm_choosegangs"
 role = "the opposite rotation, one slot to the left ([Data](frontend.md#rumble-data))"
 level = "confirmed-code"
-coney = "src/gui/rumble_mode_gui/rumble_gang_chooser.h:RumbleGangChooser::rotate"
-status = "legacy"
+coney = "src/gui/rumble_mode_gui/rumble_gang_chooser.h:rotateRosterBack"
+status = "compared"
 
 [[function]]
 address = 0x001ec490
@@ -672,7 +681,16 @@ page = "frontend.md#fn-rm_choosegangs"
 role = "(input vtable `0x0053cdc0` slot `+0x08`) up/down gang, left/right rotate the roster (mirrored for side 1; not in co-op or when locked), accept lock, back unlock or result 1; stamps the side's input time (`+0x160`) ([Data](frontend.md#rumble-data))"
 level = "confirmed-code"
 coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::onGangsInput"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the time of each side's input (`+0x160`), the bump flag (`+0x1e8`) and the side labels' grid are left out; the HUD player's pad drives both sides (no second input object)"
+relation = "stand-in"
+
+[[function.gaps]]
+what = "the side's 3D fighters are not respawned after a rotation (`RM_ChooseGangs_SpawnFighters`)"
+relation = "not-ported"
+issue = 88
 
 [[function]]
 address = 0x001f0e60
@@ -744,7 +762,11 @@ page = "frontend.md#fn-rm_gamemode"
 role = "(input slot `+0x08`) accept copies the mode into the set-up, back cancels or pops ([Data](frontend.md#rumble-data))"
 level = "confirmed-code"
 coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::onModeInput"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "back always ends the menu; the mode sets cancelled only from the front end, and in game, where the original pops to RM_Main, the menu closes (Coney has no RM_Main)"
+relation = "stand-in"
 
 [[function]]
 address = 0x001f9418
@@ -752,8 +774,8 @@ name = "RM_Intro_Open"
 page = "frontend.md#fn-rm_intro"
 role = "copies onDone (`+0x64`) and keeps the non-empty names (`+0x68`) ([Intro](rumble.md#intro))"
 level = "confirmed-code"
-coney = "src/gui/rumble_mode_gui/rumble_intro.h:RumbleIntro"
-status = "legacy"
+coney = "src/gui/rumble_mode_gui/rumble_intro.h:RumbleIntro::open"
+status = "compared"
 
 [[function]]
 address = 0x001f9558
@@ -761,8 +783,12 @@ name = "RM_Intro_Init"
 page = "frontend.md#fn-rm_intro"
 role = "layout per video mode, the HUD's pad, a text per name and a separator (`0x1d0000`) between, the prompt `0x25`, the countdown text"
 level = "confirmed-code"
-coney = "src/gui/rumble_mode_gui/rumble_intro.h:RumbleIntro"
-status = "legacy"
+coney = "src/gui/rumble_mode_gui/rumble_intro.h:RumbleIntro::open"
+status = "compared"
+
+[[function.gaps]]
+what = "the layout per video mode, the names' placing (`RM_Intro_LayoutNames`), the separator sprite (a VS text instead), the screen effect and the countdown voice's bank are Coney's stand-ins; the screen is built on each open, not once, with no sprite batch, and reads the frame's pad"
+relation = "stand-in"
 
 [[function]]
 address = 0x001fad40
@@ -780,7 +806,11 @@ page = "frontend.md#fn-rm-numplayers"
 role = "the screen's widgets: title `0x2e`; the badges `+0xb0` (P1), `+0xb4` (P2), `+0xb8` (CPU), size 0.1, depth 8,100, rectangle by language (`0x0051489c + 0x120`); sprite 28/29 (`+0xa8`) at **(0.5, 0.5)** turned −π/2; usage line `+0xc8`; message `0x77` (`+0xc0`) at (0.5, 0.78), hidden; `OptionGrid` (`+0xbc`) with `0x34` / `0x35` / `0x36` as the mode offers them; message blink period 1,500 ms (`+0x94`); player 2's pad unbound"
 level = "confirmed-code"
 coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::showPlayers"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the badges, the sprite between them and the per-video-mode message y are not drawn; the screen is built on each show, not once, and makes no sprite batch; the second HUD pad is not freed"
+relation = "stand-in"
 
 [[function]]
 address = 0x001fd1c8
@@ -789,7 +819,24 @@ page = "frontend.md#fn-rm-numplayers"
 role = "input slot `+0x08`: [the Game Type input](frontend.md#rumble-data)"
 level = "confirmed-code"
 coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::onPlayersInput"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "with no second pad Coney stays on the screen and shows the message (the No 2nd Controller screen, result 4, is not made)"
+relation = "stand-in"
+
+[[function]]
+address = 0x001fd408
+name = "RM_NumPlayers_Update"
+page = "frontend.md#fn-rm-numplayers"
+role = "(slot `+0x30`) a change of entry hides the message; while it shows, player 2's START sets `+0x90` and re-sends accept; the message blinks 0 to 255 and back in 1,500 ms halves; places the badges by the entry and sizes the sprite"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::updatePlayers"
+status = "compared"
+
+[[function.gaps]]
+what = "the badges and the sprite between them are not placed or drawn; no early return for an inactive screen or a frozen Rumble mode (Coney calls it only on the Game Type screen and has no freeze)"
+relation = "stand-in"
 
 [[function]]
 address = 0x001fe048
@@ -807,7 +854,11 @@ page = "frontend.md#fn-rumble-globals"
 role = "the two sides' gang names `0x0063eef0`, `0x0063ef10` ([the set-up](frontend.md#rumble-setup))"
 level = "confirmed-code"
 coney = "src/gui/rumble_mode_gui/rumble_gang_chooser.cpp:setGangName"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the name is cut at 32 bytes, the field's size; the original copies its whole length"
+relation = "stand-in"
 
 [[function]]
 address = 0x001fe0c8
@@ -825,7 +876,11 @@ page = "frontend.md#fn-rumble-globals"
 role = "the two sides' gang names `0x0063eef0`, `0x0063ef10` ([the set-up](frontend.md#rumble-setup))"
 level = "confirmed-code"
 coney = "src/gui/rumble_mode_gui/rumble_gang_chooser.cpp:setGangName"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the name is cut at 32 bytes, the field's size; the original copies its whole length"
+relation = "stand-in"
 
 [[function]]
 address = 0x00203110

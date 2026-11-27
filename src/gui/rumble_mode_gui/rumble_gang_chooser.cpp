@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gui/rumble_mode_gui/rumble_gang_chooser.h"
 
-#include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -13,12 +13,40 @@ namespace coney::gui {
 
 namespace {
 
-// Copies a gang's name the way the menu does, at most 32 bytes.
+// The slots' members, left to right (the table RM_Roster_SlotToMember builds).
+constexpr std::array<std::size_t, RumbleGangEntry::kMembers> kSlotMembers{8, 6, 4, 2, 0, 1, 3, 5, 7};
+
+// Copies a gang's name into the set-up's name of its side, as the original's copy does.
 // @orig 0x001fe070 RumbleMode_SetGang1Name (unknown)
 // @orig 0x001fe0d8 RumbleMode_SetGang2Name (unknown)
+// Coney's choice: at most 32 bytes, the size of the original's field, which copies the whole name (its length,
+// with no limit) and so would write past the field for a longer one.
 void setGangName(std::string& name, const std::string& gang) { name = gang.substr(0, RumbleSetup::kGangNameLength); }
 
 } // namespace
+
+std::size_t rosterMemberInSlot(std::size_t slot) {
+    CONEY_ASSERT(slot < kSlotMembers.size());
+    return kSlotMembers.at(slot);
+}
+
+void rotateRosterForward(RumbleGangEntry::Roster& roster) {
+    // From the right end leftwards each slot takes its left neighbour's member; the rightmost goes to the leftmost.
+    const std::uint32_t rightmost = roster.at(rosterMemberInSlot(RumbleGangEntry::kMembers - 1));
+    for (std::size_t slot = RumbleGangEntry::kMembers - 1; slot > 0; --slot) {
+        roster.at(rosterMemberInSlot(slot)) = roster.at(rosterMemberInSlot(slot - 1));
+    }
+    roster.at(rosterMemberInSlot(0)) = rightmost;
+}
+
+void rotateRosterBack(RumbleGangEntry::Roster& roster) {
+    // From the left end rightwards each slot takes its right neighbour's member; the leftmost goes to the rightmost.
+    const std::uint32_t leftmost = roster.at(rosterMemberInSlot(0));
+    for (std::size_t slot = 0; slot + 1 < RumbleGangEntry::kMembers; ++slot) {
+        roster.at(rosterMemberInSlot(slot)) = roster.at(rosterMemberInSlot(slot + 1));
+    }
+    roster.at(rosterMemberInSlot(RumbleGangEntry::kMembers - 1)) = leftmost;
+}
 
 void RumbleGangChooser::start(std::span<RumbleGangEntry> gangs) {
     m_gangs = gangs;
@@ -36,15 +64,15 @@ void RumbleGangChooser::move(int step) {
     m_cursor.at(m_active) = static_cast<std::size_t>(next);
 }
 
-void RumbleGangChooser::rotate(bool toLeft) {
+void RumbleGangChooser::rotate(bool forward) {
     if (m_gangs.empty()) {
         return;
     }
     RumbleGangEntry::Roster& roster = m_gangs[m_cursor.at(m_active)].rosters.at(m_active);
-    if (toLeft) {
-        std::ranges::rotate(roster, roster.begin() + 1);
+    if (forward) {
+        rotateRosterForward(roster);
     } else {
-        std::ranges::rotate(roster, roster.end() - 1);
+        rotateRosterBack(roster);
     }
 }
 
@@ -57,22 +85,6 @@ bool RumbleGangChooser::lock() {
         return true;
     }
     m_active = 1 - m_active;
-    return false;
-}
-
-bool RumbleGangChooser::unlock() {
-    // The side locked last is the one that is not active (both are never locked here: a lock of both leaves the
-    // screen).
-    const std::size_t other = 1 - m_active;
-    if (m_locked.at(m_active)) {
-        m_locked.at(m_active) = false;
-        return true;
-    }
-    if (m_locked.at(other)) {
-        m_locked.at(other) = false;
-        m_active = other;
-        return true;
-    }
     return false;
 }
 

@@ -30,31 +30,19 @@ constexpr std::array kStandIns{
     StandIn{0x103, 0xfd}, StandIn{0x106, 0xff}, StandIn{0x105, 0x102},
 };
 
-// The modes list of `CfgRumbleArena` ends at the first of these.
+// The modes list of `CfgRumbleArena`: at most this many values are read, and a 0 ends it.
+constexpr std::size_t kModesRead = 16;
 constexpr std::int64_t kModesEnd = 0;
-constexpr std::int64_t kModesEndAlt = -1;
+
+// The arena levels: 101 to 199.
+constexpr int kFirstArenaLevel = 101;
+constexpr int kLastArenaLevel = 199;
 
 // `text` in capitals, as `CfgRumbleChar` stores its name and description.
 std::string upperCased(std::string text) {
     std::ranges::transform(text, text.begin(),
                            [](char c) { return static_cast<char>(std::toupper(static_cast<unsigned char>(c))); });
     return text;
-}
-
-// Whether the arena's `modes` list allows `mode`: a first value of 0 allows every mode.
-bool allowsMode(std::span<const std::int64_t> modes, std::int64_t mode) {
-    if (modes.empty() || modes.front() == kModesEnd) {
-        return true;
-    }
-    for (const std::int64_t allowed : modes) {
-        if (allowed == kModesEnd || allowed == kModesEndAlt) {
-            break;
-        }
-        if (allowed == mode) {
-            return true;
-        }
-    }
-    return false;
 }
 
 } // namespace
@@ -86,8 +74,23 @@ bool addRumbleGang(RumbleData& data, const Unlockables& unlocks, std::int32_t id
 
 bool addRumbleArena(RumbleData& data, const GameState& state, int levelNumber, std::uint32_t value,
                     std::span<const std::int64_t> modes) {
-    if (!state.unlockables.isUnlocked(UnlockKind::RumbleArena, levelNumber) ||
-        !allowsMode(modes, state.rumble.values.at(RumbleSetup::kGameType))) {
+    if (levelNumber < kFirstArenaLevel || levelNumber > kLastArenaLevel ||
+        !state.unlockables.isUnlocked(UnlockKind::RumbleArena, levelNumber)) {
+        return false;
+    }
+    // The mode list must hold the chosen mode; a 0 ends it, so a list that starts with 0 holds none.
+    const std::int64_t chosen = state.rumble.values.at(RumbleSetup::kGameType);
+    bool listed = false;
+    for (const std::int64_t mode : modes.first(std::min(modes.size(), kModesRead))) {
+        if (mode == kModesEnd) {
+            break;
+        }
+        if (mode == chosen) {
+            listed = true;
+            break;
+        }
+    }
+    if (!listed) {
         return false;
     }
     // The entry keeps the level's record index, which the launch reads; an arena the table lacks is left out (Coney's

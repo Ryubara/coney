@@ -62,8 +62,6 @@ enum class RumbleIntroPhase : std::uint8_t {
 /// voice lengths a line lasts kStandInVoiceMs.
 ///
 /// Research: docs/research/rumble.md#intro
-/// @orig 0x001f9418 RM_Intro_Open (unknown)
-/// @orig 0x001f9558 RM_Intro_Build (unknown)
 class RumbleIntro : public Widget {
   public:
     /// The most names kept.
@@ -100,10 +98,12 @@ class RumbleIntro : public Widget {
     void setRandom(GameRandom* random) { m_random = random; }
     void setDoneSink(std::function<void(std::string_view onDone)> done) { m_done = std::move(done); }
 
-    /// `ShowRumbleModeIntro(onDone, names)`: keeps `onDone` and the first kMaxNames non-empty names, with `packs`
-    /// (set-up values 3 and 4) naming the gang lines, and starts the first name at `nowMs`. With no names it goes
-    /// straight to the prompt.
+    /// `ShowRumbleModeIntro(onDone, names)`: keeps `onDone` and the names up to the first empty one (at most
+    /// kMaxNames), with `packs` (set-up values 3 and 4) naming the gang lines, lays out a line per name and a separator
+    /// between each two, and starts the first name at `nowMs`. With no names it goes straight to the prompt.
     /// @orig 0x001b5f88 ShowRumbleModeIntro (unknown)
+    /// @orig 0x001f9418 RM_Intro_Open (unknown)
+    /// @orig 0x001f9558 RM_Intro_Init (unknown)
     void open(std::string_view onDone, std::span<const std::string> names, std::array<int, 2> packs,
               std::uint64_t nowMs);
 

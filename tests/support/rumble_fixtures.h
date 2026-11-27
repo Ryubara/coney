@@ -94,11 +94,11 @@ inline std::vector<std::byte> rumbleGangChunk(const std::vector<TestGang>& gangs
     return luaChunk(code.end());
 }
 
-/// `rumble_arena.lua`: arena 101 (locked; mode 2 only), 102 (modes 12, 14 and 1) and 103 (every mode, locked).
+/// `rumble_arena.lua`: arena 101 (locked; mode 2 only), 102 (modes 12, 14 and 1) and 103 (locked; mode 24 only).
 inline std::vector<std::byte> rumbleArenaChunk() {
     LuaAsm code;
     const std::vector<std::pair<std::int32_t, std::vector<std::int32_t>>> arenas{
-        {101, {2, -1}}, {102, {12, 14, 1, -1}}, {103, {0}}};
+        {101, {2, -1}}, {102, {12, 14, 1, -1}}, {103, {24, 0}}};
     for (const auto& [level, modes] : arenas) {
         code.getGlobal("CfgRumbleArena").pushInt(level).pushInt(9);
         pushNumberTable(code, "modes", modes);
