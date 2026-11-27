@@ -249,8 +249,9 @@ void applyTurnConfig(const script::RecordedCalls& recorded);
 /// `config_preload2.lua` needs to build the tables `config_preload3.lua` reads (`doFile`, `GetLanguage`,
 /// `GetPlatform`); every other binding is skipped. For a run that plays no game of its own, a network guest, which
 /// still needs each level's record (its radar map) and runs none of the preloads. Fails as `source` does when
-/// `config_preload3.lua` is missing, and when it fails to run. Every line the scripts log goes to `log`, prefixed
-/// `level table: `, so an earlier preload that fails (and leaves `config_preload3.lua` running) is in the run log.
+/// `config_preload3.lua` is missing, and when it fails to run. Each script error goes to `log` as `script error: level
+/// table: ...` (the script category's error), so an earlier preload that fails (and leaves `config_preload3.lua`
+/// running) is in the run log; the bindings the read skips and what the scripts print are not logged.
 ///
 /// Research: docs/research/frontend.md#the-level-table, docs/guides/client-world.md#client-hud
 /// @coney-only runs the preloads alone, outside the game, for a network guest; the original runs them in its boot

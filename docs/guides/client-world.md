@@ -314,9 +314,10 @@ runs all four preloads in the legal screen's order (`enum_preload.lua`, `config_
 `config_preload3.lua`) with only four bindings: the real `CfgLevelName`, and `doFile`, `GetLanguage` and `GetPlatform`,
 which `config_preload2.lua` needs to build the tables `config_preload3.lua`'s objects read; every other call is
 skipped. It fails only when `config_preload3.lua` is missing or does not run; an earlier preload that fails is named in
-the run log (`level table: script error: ...`). Each level's HUD
-is given the map of the host's level's record when the level loads (`radarMapOf()`, the same function `GameplayMode`
-gives its own HUD the map with), so the guest draws the disc the host draws. A level its table has no record of has
+the run log as a script error (`script error: level table: ...`), and nothing else the read does is logged: the
+bindings it skips are left out on purpose, and what the scripts print is the game's text. Each level's HUD is given
+the map of the host's level's record when the level loads (`radarMapOf()`, the same function `GameplayMode` gives its
+own HUD the map with), so the guest draws the disc the host draws. A level its table has no record of has
 no map, and its radar draws the blips and the arrow with no disc; that is a mod's level, which the host numbers at run
 time, and whose record on the host has no map floats, so the host draws no disc for it either.
 

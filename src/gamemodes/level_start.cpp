@@ -329,8 +329,10 @@ std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& sour
     context.state = &state;
     context.strings = &strings;
     context.host = &host;
-    // The last line the script system logged (why a script did not run), and every line to the caller's log.
-    std::string lastLine;
+    // The last script error (why a script did not run), without its newline. Only script errors reach the caller's
+    // log, tagged with the read: the skipped bindings are left out on purpose, so they are not missing, and what the
+    // scripts print is the game's own text, which stays off the log file (docs/guides/run-log.md#categories).
+    std::string lastError;
     script::ScriptSystem scripts(
         source,
         [&context](script::ScriptSystem& system, script::LuaVm& vm) {
@@ -340,10 +342,18 @@ std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& sour
                 }
             }
         },
-        [&lastLine, &log](std::string_view line) {
-            lastLine = std::string(line);
+        [&lastError, &log](std::string_view line) {
+            constexpr std::string_view kError = "script error: ";
+            if (!line.starts_with(kError)) {
+                return;
+            }
+            std::string_view what = line.substr(kError.size());
+            while (what.ends_with('\n')) {
+                what.remove_suffix(1);
+            }
+            lastError = std::string(what);
             if (log) {
-                log(std::format("level table: {}", line));
+                log(std::format("{}level table: {}\n", kError, what));
             }
         });
     scripts.create();
@@ -357,7 +367,7 @@ std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& sour
             if (auto read = source(name); !read) {
                 return std::unexpected(std::move(read.error()));
             }
-            return fail(ErrorCode::Invalid, std::format("the level table: {} did not run: {}", name, lastLine));
+            return fail(ErrorCode::Invalid, std::format("the level table: {} did not run: {}", name, lastError));
         }
     }
     return state.levels;
