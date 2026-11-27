@@ -163,7 +163,7 @@ page = "physics-bodies.md#unit-2"
 level = "confirmed-code"
 note = "the level is from [characters-ground.md#walls](characters-ground.md#walls)"
 coney = "src/physics/body_sweep.h:MeshWorld::sweepMesh"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0033d340
@@ -171,7 +171,7 @@ name = "IPhysics_SweepBodyVsMesh"
 page = "physics-bodies.md#u3-mesh"
 level = "confirmed-code"
 coney = "src/physics/body_sweep.h:MeshWorld::sweepMesh"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0033d498
@@ -380,7 +380,7 @@ page = "physics-bodies.md#u3-scale-box"
 level = "confirmed-code"
 note = "the level is from [physics.md#original-structure](physics.md#original-structure)"
 coney = "src/physics/body_sweep.h:scaleAboutCentre"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00341638
@@ -868,7 +868,7 @@ page = "physics-bodies.md#unit-2"
 level = "confirmed-code"
 note = "the level is from [physics-bodies.md#u3-sweep](physics-bodies.md#u3-sweep)"
 coney = "src/physics/mesh_sweep.h:beginShapeQuery"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00347300
@@ -904,7 +904,7 @@ page = "physics-bodies.md#unit-2"
 level = "confirmed-code"
 note = "the level is from [physics.md#dispatch](physics.md#dispatch)"
 coney = "src/physics/mesh_sweep.h:overlapSphereMesh"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00348a50
@@ -913,7 +913,7 @@ page = "physics-bodies.md#unit-2"
 level = "confirmed-code"
 note = "the level is from [physics-kernels.md#issue-150](physics-kernels.md#issue-150)"
 coney = "src/physics/mesh_sweep.h:sweepSphereMesh"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00349a60

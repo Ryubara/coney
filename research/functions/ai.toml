@@ -815,8 +815,8 @@ address = 0x0021c0a8
 name = "Human_IsWayClearTo"
 page = "ai-brain-types.md#warrior-swap"
 level = "confirmed-code"
-coney = "src/gamemodes/gameplay_mode.h:GameplayMode::wayClearTo"
-status = "legacy"
+coney = "src/human/way_clear.h:wayClear"
+status = "compared"
 
 [[function]]
 address = 0x0021d428
