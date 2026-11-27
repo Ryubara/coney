@@ -88,11 +88,12 @@ constexpr int kFightFrames = 300;
 constexpr int kTauntFrames = 1198;
 // The taunt's line, `cheer2`.
 constexpr int kTauntLine = 0x11;
-// The fewest taunts every AI sequence gives over those updates. The original's three said 11 (10 in the recorded run,
-// which started 6 updates later: the two waiters 7 and 3 from the band 4-4.75 m out, the faced one none); Coney's eight
-// sequences give 4, 7, 5, 8, 7, 6, 9 and 4 with the band-keeping move and the charging fighter of #606 (the fewest, 4,
-// is 2 above this bound; before #606 sequence 2 sat exactly at it), and gave 0-8 while its waiters stood where their
-// last attack left them, inside the taunt's 2.75 m (docs/research/ai-fights.md#runtime-taunts).
+// The fewest taunts every AI sequence but 1 gives over those updates (sequence 1 is not checked until #1684). The
+// original's three said 11 (10 in the recorded run, which started 6 updates later: the two waiters 7 and 3 from the
+// band 4-4.75 m out, the faced one none); Coney's eight sequences give 4, 7, 5, 8, 7, 6, 9 and 4 with the band-keeping
+// move and the charging fighter of #606 (the fewest, 4, is 2 above this bound; before #606 sequence 2 sat exactly at
+// it), and gave 0-8 while its waiters stood where their last attack left them, inside the taunt's 2.75 m
+// (docs/research/ai-fights.md#runtime-taunts).
 constexpr int kLeastTaunts = 2;
 // The AI seed whose fight goes through #1684's grab off the roof: its taunts are not counted until that is fixed.
 constexpr std::uint32_t kGrabbedOffRoofSeed = 1;
