@@ -1,0 +1,12 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level87 checkpoint 1, the tutorial's first tag.
+# The input script skips the opening scene, puts the player at the tag spot through the developer console's `lua`
+# (`TeleportToFlag` to the flag the chapter's script keeps for its first tag), sprays (triangle), and once the stick
+# game is live pushes the stick off the pattern, which slips: the game pauses and the spray clips restart
+# (docs/research/crimes.md#tag-look). For a change to the spray's clips: their fades (0.05 s in, 0.5 s on a restart) and
+# the busy bit they hold, which stops the stance's movement.
+description = "level87 checkpoint 1: the player slips off the tag's pattern and the spray clips restart"
+level = "level87"
+checkpoint = 1
+input = "tools/clips/level87-spray-restart.txt"
+start_frame = 470
+seconds = 6

@@ -1,0 +1,8 @@
+# The sandbox's raised panel for the `sandbox-raised-climb` clips pair scenario
+# (tools/clips/sandbox-raised-climb.toml): the player starts 7 m south of the panel, facing it, and walks at 40 % of the
+# stick toward its middle, reaching its face at about frame 135; triangle pressed from frame 124 on, within 0.6 m of the
+# face, climbs it (clip 437, the standing fence climb). Frames are 1/30 s from the level's first frame of play.
+10 steer 40 0,3
+124 tap triangle
+128 tap triangle
+132 tap triangle

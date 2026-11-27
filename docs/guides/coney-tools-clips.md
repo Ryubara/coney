@@ -148,6 +148,18 @@ and square at frame 680 plays the kill (clips 637 and 638). Its before for the s
 that change's commit, or `--before` a hand-made commit where later commits edit its lines. `level87-hide` is the same
 route without the kill.
 
+`level87-spray-restart` is the scenario for the tag spray's clips: from level87's checkpoint 1 the input script skips the
+opening scene, puts the player at the first tag's spot with the developer console's `lua` (`TeleportToFlag` to the flag
+the chapter's script keeps for it), sprays with triangle, and once the stick game is live pushes the stick off the pattern,
+which slips: the game pauses and the spray clips restart ([Tag look](../research/crimes.md#tag-look)). Where a change to
+the spray's fades (0.05 s in, 0.5 s on a restart) or to the busy bit its clips hold shows (#664).
+
+`sandbox-raised-climb` is the scenario for a climb over a face only the high forward ray meets (#664): no level on the
+disc has one a player is stopped by (a scan of every level's collision mesh found two such faces, level80's and a
+level without a story, and the body walks through both), so it plays the sandbox's `raised` layout, one panel hanging
+from 1.0 m up, walks the player to it and presses triangle. The layout is Coney's own file, so a merge base older than
+it takes it from `--before`: a commit of the merge base with `assets/sandbox/raised.layout` added.
+
 `level99-sparring` is the scenario for a fighter's run-in and charge: the last lesson of level99's combat tutorial,
 which the story reaches only by finishing the lessons before it, so its input script calls the lesson's set-up through
 the developer console's [`lua`](console.md#catalog) (`300 console lua P1.SetupWarriors()`), as the sparring disc test
