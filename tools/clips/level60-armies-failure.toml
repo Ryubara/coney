@@ -1,0 +1,10 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): the first stage of Armies of the Night
+# (level60, docs/research/armies.md#stages) with player 1 knocked out through the developer console's `lua` line
+# (`HuSetConscious(player, false)`, the global the level script keeps for Swan), so the game-over check fails the stage
+# (docs/research/combat-reactions.md#mission-failing). For a change to the failure's hand-off in an Armies level: its
+# countdown (90 updates there, 180 in a story level), the HUD it keeps, and the Armies game over it opens.
+description = "level60: player 1 knocked out by the console, the Armies failure's hand-off and its game over"
+level = "level60"
+input = "tools/clips/level60-armies-failure.txt"
+start_frame = 270
+seconds = 10
