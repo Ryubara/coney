@@ -1029,7 +1029,7 @@ type 3 throws the attacker into 629. A blocked hit gives the attacker half the r
   (`0x00231a38`); `+0x14` cleared and nothing else when `0x00225498` refuses; otherwise it keeps its foe
   (`Human_GetFoe`, `0x002267a0`) if he is within 1.25 × the far range of anim 617 (`0x00254508`); with no foe it runs
   the counter search (`0x0027ac30`) in that range but drops its result (`0x00255160`), so nobody else is countered
-  (confirmed (code), [#683](issue:683)). With a target it clears `+0x14`, cuts a block or reaction clip short
+  (confirmed (code)). With a target it clears `+0x14`, cuts a block or reaction clip short
   (`0x00228488`, then `0x0022f8d8`, unless human `+0xe0` has `0x8000000`), and plays the **duck counter**
   (`0x002617f8`): 617-620 `BLOCK_COUNTER_FRONT`, `_RIGHT`, `_BACK`, `_LEFT` by where the target stands (`0x002672d0`),
   steered onto the target (`0x002761c8`, 0.1 s) when it is within the clip's far range, with record `+0x18` = 11, state

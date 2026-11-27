@@ -68,7 +68,12 @@ relation = "not-ported"
 issue = 685
 
 [[function.gaps]]
-what = "the counter's target is the foe within 1.25 x 617's far range (Coney: its reach, and no foe is kept), and the reaction clip and the stun end only in a reaction clip without state 0x8000000"
+what = "the rise counter's target is the foe within 1.25 x 617's far range: Coney keeps no foe, so the target search's pick in that range stands in"
+relation = "stand-in"
+issue = 683
+
+[[function.gaps]]
+what = "the reaction clip and the stun end only in a reaction clip without state 0x8000000; a held object of kind 8 refusing the counter is not tested"
 relation = "not-ported"
 issue = 683
 

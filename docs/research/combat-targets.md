@@ -597,7 +597,7 @@ There are two steer functions, and the attack record's **flag `0x8`** (record `+
 | Slide time | the caller's time, cut to the first event + 0.1 s. `Attack_Start`, `Attack_StartAtTarget` and `Attack_StartSolo` pass the time to the first event (`0x00101658`), so the slide lasts **the time to the first event**; `Attack_StartSnap` passes 0.1 s | always **the time to the first event + 0.1 s**; the caller's time is not read |
 | Target point | the target's position (its task `+0x10`) | the target's **slot point 0** (`Human_GetLedSlotPoint(target, 0)`, `0x00226aa0`) |
 | Lead, turn | the same in both: the lead by the target's velocity × (first event + 0.1 s), cut to 0.5 m; the reach along the line in x and y; the goal at the attacker's own height | |
-| Reach | the clip's reach, +0.07 m for a target scaled above 1.1, else −0.1 m from behind him | the clip's plain reach (`AttackTable_GetReach`): no change for a big target or from behind (confirmed (code) at `0x00275678`, re-read for [#683](issue:683)) |
+| Reach | the clip's reach, +0.07 m for a target scaled above 1.1, else −0.1 m from behind him | the clip's plain reach (`AttackTable_GetReach`): no change for a big target or from behind (confirmed (code) at `0x00275678`) |
 
 `0x005102c4` is 1 on the disc and only read by these two callers (no write was found), so in practice flag `0x8`
 alone decides (inferred from the callers). So **653** (flags `0x26`) and **645** (`0x23`), both started by
