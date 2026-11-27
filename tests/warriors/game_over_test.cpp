@@ -54,14 +54,15 @@ TEST_CASE("a knocked-out player without a flash fails at once; with no one to he
 }
 
 TEST_CASE("with a flash and help near the failure waits; the 4th failed route check in a row fails it", "[game-over]") {
+    // Expected: combat-reactions.md#mission-failing, confirmed (code)
     GameOverCheck check;
     const GameOverPlayer out{.knockedOut = true, .holdsFlash = true};
     // A member who can reach him: waits for good.
     for (int i = 0; i < 400; ++i) {
         CHECK_FALSE(once(check, out, false, true).has_value());
     }
-    // No route: every 37th update counts a no; the 4th fails.
-    check.reset();
+    // No route: every 37th update of a new game state counts a no; the 4th fails.
+    check = GameOverCheck{};
     int updates = 0;
     std::optional<GameOverReason> result;
     while (!result && updates < 1000) {
@@ -77,22 +78,23 @@ TEST_CASE("with a flash and help near the failure waits; the 4th failed route ch
 }
 
 TEST_CASE("the mission-failed screen comes 180 updates after the failure, 10 once cross is pressed", "[game-over]") {
+    // Expected: combat-reactions.md#mission-failing, confirmed (code)
     GameOverCheck check;
-    CHECK_FALSE(check.stepHandOff(false)); // nothing before a failure
+    CHECK_FALSE(check.stepHandOff(false, false)); // nothing before a failure
     REQUIRE(once(check, GameOverPlayer{.knockedOut = true}, false).has_value());
     int updates = 1;
-    while (!check.stepHandOff(false)) {
+    while (!check.stepHandOff(false, false)) {
         ++updates;
     }
     CHECK(updates == GameOverCheck::kHandOffUpdates);
-    CHECK_FALSE(check.stepHandOff(false)); // once
+    CHECK_FALSE(check.stepHandOff(false, false)); // once
     check.reset();
     REQUIRE(once(check, GameOverPlayer{.knockedOut = true}, false).has_value());
     for (int i = 0; i < 20; ++i) {
-        CHECK_FALSE(check.stepHandOff(false));
+        CHECK_FALSE(check.stepHandOff(false, false));
     }
     updates = 1;
-    while (!check.stepHandOff(updates == 1)) {
+    while (!check.stepHandOff(updates == 1, false)) {
         ++updates;
     }
     CHECK(updates == GameOverCheck::kHandOffCut);

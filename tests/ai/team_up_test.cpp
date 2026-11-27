@@ -470,6 +470,29 @@ TEST_CASE("a gang may join a fight against an enemy gang that fights and has a m
     CHECK_FALSE(orphans.noneAbleToHelp(nullptr));
 }
 
+TEST_CASE("with no exception the free-to-help test counts every member: a gang of one downed member has no one",
+          "[ai][gangs][game-over]") {
+    // Expected: combat-reactions.md#defeat-helpers, confirmed (code): Gang_NoneAbleToHelp skips only its exception, and
+    // free is not cuffed (0x20000), not knocked out (0x40000) and not wounded (0x10000).
+    AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    std::vector<Brain*> alone;
+    const Gang& one = *gangs.find(makeGang(scene, kOurKind, "Alone", {{40.0F, 40.0F, 0.0F}}, alone));
+    CHECK_FALSE(one.noneAbleToHelp(nullptr));
+    alone[0]->human().script().knockedOut = true;
+    CHECK(one.noneAbleToHelp(nullptr));
+    std::vector<Brain*> three;
+    const Gang& crew = *gangs.find(makeGang(scene, kTheirKind, "Crew", row(3), three));
+    three[0]->human().script().knockedOut = true;
+    three[1]->human().setArrested(true);
+    CHECK_FALSE(crew.noneAbleToHelp(nullptr));
+    three[2]->human().setWounded(true);
+    CHECK(crew.noneAbleToHelp(nullptr));
+    // A gang with no members is not "none able": the game-over check goes on to the route test.
+    std::vector<Brain*> none;
+    CHECK_FALSE(gangs.find(makeGang(scene, kOurKind, "Empty", {}, none))->noneAbleToHelp(nullptr));
+}
+
 TEST_CASE("CfgGang's strategy table gives a gang kind's seven weights as bytes", "[ai][gangs][teamup]") {
     // Expected: ai-reimpl.md#gang-strategy, confirmed
     // (code)

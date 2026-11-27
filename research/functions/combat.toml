@@ -42,9 +42,14 @@ relation = "not-ported"
 issue = 1008
 
 [[function.gaps]]
-what = "the death camera's start, fades and restore and the +0x152 bit 2 cut are not ported"
+what = "the death camera's start, fades and restore are not ported"
 relation = "not-ported"
-issue = 703
+issue = 1695
+
+[[function.gaps]]
+what = "a story failure hides the HUD at the hand-off's first update, not in the death camera's start (which waits for the failed camera and is skipped after a fall); an Armies level keeps it, as the original"
+relation = "stand-in"
+issue = 1695
 
 [[function.gaps]]
 what = "the mission-complete launch from state 2 is not ported here"

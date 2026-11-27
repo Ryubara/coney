@@ -9,12 +9,20 @@
 
 namespace coney {
 
-bool LevelCrimeServices::isPlayer(double handle) {
-    if (m_humans == nullptr) {
-        return false;
-    }
-    const HumanCreation* human = m_humans->find(handle);
-    return human != nullptr && human->playerIndex != 0;
+int LevelCrimeServices::playerIndex(double handle) {
+    const HumanCreation* human = m_humans != nullptr ? m_humans->find(handle) : nullptr;
+    return human != nullptr && (human->playerIndex == 1 || human->playerIndex == 2) ? human->playerIndex - 1 : -1;
+}
+
+int LevelCrimeServices::brainType(double handle) {
+    const ai::Brain* brain = m_brains != nullptr ? m_brains->brain(handle) : nullptr;
+    return brain != nullptr ? static_cast<int>(brain->type()) : -1;
+}
+
+std::optional<double> LevelCrimeServices::gangLeader(double offender) {
+    const ai::Brain* brain = m_brains != nullptr ? m_brains->brain(offender) : nullptr;
+    const ai::Brain* leader = brain != nullptr && brain->gang() != nullptr ? brain->gang()->leader() : nullptr;
+    return leader != nullptr ? std::optional<double>(leader->handle()) : std::nullopt;
 }
 
 std::optional<CrimeGang> LevelCrimeServices::gangOf(double handle) {
@@ -36,9 +44,25 @@ void LevelCrimeServices::callCrimeCallback(const std::string& function, int gang
     (void)m_scripts.call(function, args);
 }
 
-void LevelCrimeServices::markStoreRobbed(const CrimePosition& at, int offenderGang) {
-    if (m_robStore) {
-        m_robStore(at, offenderGang);
+std::optional<CrimeStore> LevelCrimeServices::nearestStore(const CrimePosition& at) {
+    return m_stores.nearest ? m_stores.nearest(at) : std::nullopt;
+}
+
+void LevelCrimeServices::robStore(const CrimePosition& at) {
+    if (m_stores.rob) {
+        m_stores.rob(at);
+    }
+}
+
+void LevelCrimeServices::claimStore(const CrimePosition& at, int gang) {
+    if (m_stores.claim) {
+        m_stores.claim(at, gang);
+    }
+}
+
+void LevelCrimeServices::scoreCrime(double human, int event) {
+    if (m_stores.scoreCrime) {
+        m_stores.scoreCrime(human, event);
     }
 }
 

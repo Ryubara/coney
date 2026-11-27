@@ -20,33 +20,17 @@ bool validType(int type) { return type >= 0 && type < crime::kTypes; }
 // Types whose offender's gang only becomes a target: the police turn hostile, but not the gang to them.
 bool oneWayHostility(int type) { return type == crime::kGangCurfew || type == crime::kTrespassing; }
 
-// The responders' spawn kind for `type`: 1 for most, 3 for a precinct attack; nothing for the types that send none.
-std::optional<int> responderKind(int type) {
-    switch (type) {
-    case crime::kAssault:
-    case crime::kBreakAndEnter: // Coney's reading (the header)
-    case crime::kCopAssault:
-    case crime::kCopKill:
-    case crime::kCustom: // Coney's reading (the header)
-    case crime::kDisorderlyConduct:
-    case crime::kMugging:
-    case crime::kTheft:
-    case crime::kVandalism:
-        return 1;
-    case crime::kPrecinctAttack:
-        return 3;
-    default:
-        return std::nullopt;
-    }
-}
-
-// Types that note the offender's gang's time (gang `+0x5f4`).
-bool notesAssault(int type) {
-    return type == crime::kAssault || type == crime::kCopAssault || type == crime::kCopKill || type == crime::kMugging;
-}
-
-// Types that score a player offender's statistic against the victim.
-bool scoresVictim(int type) { return type == crime::kAssault || type == crime::kCopAssault || type == crime::kMugging; }
+// The brain kinds whose humans score as victims: a cop (1, crime event 3), a civilian (4) or a dealer (5) (event 0).
+constexpr int kCopBrain = 1;
+constexpr int kCivilianBrain = 4;
+constexpr int kDealerBrain = 5;
+constexpr int kCopVictimEvent = 3;
+constexpr int kVictimEvent = 0;
+// The crime event a store's new gang scores for its leader.
+constexpr int kStoreClaimEvent = 1;
+// The responders' spawn kinds: 1, or 3 for a precinct attack.
+constexpr int kResponderKind = 1;
+constexpr int kPrecinctResponderKind = 3;
 
 } // namespace
 
@@ -97,28 +81,53 @@ void CrimeReports::report(CrimeServices& services, int type, const CrimePosition
         services.moveCrimeScene(at);
     }
 
-    // 4. Responders, when the report asks for them.
-    if (sendResponders) {
-        if (const std::optional<int> kind = responderKind(type)) {
-            const int responding = type == crime::kCustom ? count : responders(type);
-            const double delay = type == crime::kBreakAndEnter ? m_breakInDelay : 0.0;
-            services.queueResponders(type, *kind, responding, at, delay);
+    // 4. By type: the responders when the report asks for them (mode 1), the assault time, the victim's score and the
+    // break-in's store.
+    switch (type) {
+    case crime::kAssault:
+    case crime::kCopAssault:
+    case crime::kMugging:
+        if (sendResponders) {
+            services.queueResponders(type, kResponderKind, responders(type), at, 0.0);
+            if (gang.has_value()) {
+                m_lastAssault[gang->id] = nowMs;
+            }
         }
-    }
-    if (gang.has_value() && notesAssault(type)) {
-        m_lastAssault[gang->id] = nowMs;
+        scoreVictim(services, offender, victim);
+        break;
+    case crime::kBreakAndEnter:
+        breakIn(services, at, offender, gang, sendResponders);
+        break;
+    case crime::kCopKill:
+        if (sendResponders) {
+            services.queueResponders(type, kResponderKind, responders(type), at, 0.0);
+            if (gang.has_value()) {
+                m_lastAssault[gang->id] = nowMs;
+            }
+        }
+        break;
+    case crime::kCustom:
+        if (sendResponders && count != 0) {
+            services.queueResponders(type, kResponderKind, count, at, 0.0);
+        }
+        break;
+    case crime::kDisorderlyConduct:
+    case crime::kTheft:
+    case crime::kVandalism:
+        if (sendResponders) {
+            services.queueResponders(type, kResponderKind, responders(type), at, 0.0);
+        }
+        break;
+    case crime::kPrecinctAttack:
+        if (sendResponders) {
+            services.queueResponders(type, kPrecinctResponderKind, responders(type), at, 0.0);
+        }
+        break;
+    default: // a gang fight, a curfew, tagging, trespassing and no crime send no one
+        break;
     }
 
-    // 5. A break-in robs the store; an assault-like crime scores the player offender, once per victim.
-    if (type == crime::kBreakAndEnter) {
-        services.markStoreRobbed(at, gang.has_value() ? gang->id : -1);
-    }
-    if (scoresVictim(type) && victim != 0.0 && offender != 0.0 && services.isPlayer(offender) &&
-        m_scoredVictims.insert(victim).second) {
-        services.scoreAssault(offender, victim);
-    }
-
-    // 6. Player 1's gang: the last crime type (unless it holds 7 or 12) and the HUD.
+    // 5. Player 1's gang: the last crime type (unless it holds 7 or 12) and the HUD.
     if (gang.has_value() && gang->id == services.playerOneGang()) {
         if (m_lastCrime != crime::kGangCurfew && m_lastCrime != crime::kTrespassing) {
             m_lastCrime = type;
@@ -127,15 +136,65 @@ void CrimeReports::report(CrimeServices& services, int type, const CrimePosition
     }
 }
 
+void CrimeReports::breakIn(CrimeServices& services, const CrimePosition& at, double offender,
+                           const std::optional<CrimeGang>& gang, bool sendResponders) {
+    // No store front within 10 m: nothing.
+    const std::optional<CrimeStore> store = services.nearestStore(at);
+    if (!store.has_value()) {
+        return;
+    }
+    // Not yet robbed: the responders after the break-in delay, with no offender, then the store robbed and its alarm.
+    // **Not ported (#1008)**: the store's buyers and browsers switched off (`Flags_DisableGangActivity`) and game
+    // state `+0x2b4` cleared.
+    if (!store->robbed) {
+        if (sendResponders) {
+            services.queueResponders(crime::kBreakAndEnter, kResponderKind, responders(crime::kBreakAndEnter), at,
+                                     m_breakInDelay);
+        }
+        services.robStore(at);
+        return;
+    }
+    // Robbed already, by no gang yet: the offender's gang takes it, and its leader scores when he is a player.
+    if (store->gang == CrimeStore::kNoGang && gang.has_value()) {
+        services.claimStore(at, gang->id);
+        if (const std::optional<double> leader = services.gangLeader(offender);
+            leader.has_value() && services.playerIndex(*leader) >= 0) {
+            services.scoreCrime(*leader, kStoreClaimEvent);
+        }
+    }
+}
+
+void CrimeReports::scoreVictim(CrimeServices& services, double offender, double victim) {
+    // **Coney's choice**: with no offender the original reads a player index from address 0x1b0; Coney scores none.
+    if (offender == 0.0 || victim == 0.0) {
+        return;
+    }
+    const int player = services.playerIndex(offender);
+    if (player < 0) {
+        return;
+    }
+    const int brain = services.brainType(victim);
+    if (brain != kCopBrain && brain != kCivilianBrain && brain != kDealerBrain) {
+        return;
+    }
+    // Once per victim and player (a bit per player on the victim's brain).
+    if (m_scoredVictims.emplace(victim, player).second) {
+        services.scoreCrime(offender, brain == kCopBrain ? kCopVictimEvent : kVictimEvent);
+    }
+}
+
 void CrimeReports::update(CrimeServices& services, std::uint64_t nowMs) {
+    // **Not ported (#1008)**: the third timer (gang `+0x5ec`, the IssueWarning goal's) cleared once past.
+    std::set<int> held; // wanted gangs held by ForceCrimeLevel: their second timers are not checked
     for (auto entry = m_wantedUntil.begin(); entry != m_wantedUntil.end();) {
-        // Forced: the gang is held wanted at 10 s from now.
+        // Forced: the gang is held wanted at 10 s from now, and nothing else of it is checked.
         if (m_forced) {
             entry->second = nowMs + kWantedMs;
+            held.insert(entry->first);
             ++entry;
             continue;
         }
-        if (nowMs < entry->second) {
+        if (nowMs <= entry->second) {
             ++entry;
             continue;
         }
@@ -147,9 +206,10 @@ void CrimeReports::update(CrimeServices& services, std::uint64_t nowMs) {
             m_lastCrime = crime::kNoCrime;
         }
     }
-    // The second timers run out (**Coney's reading**: `ForceCrimeLevel` holds only the first; the all-clear callback
-    // at their end is not built).
-    std::erase_if(m_secondUntil, [nowMs](const auto& entry) { return nowMs >= entry.second; });
+    // The second timers run out once past. **Not ported (#1008)**: the all-clear callback (`SetAllClearCallBack`,
+    // game state `+0x2bc`) at the end of player 1's gang's.
+    std::erase_if(m_secondUntil,
+                  [nowMs, &held](const auto& entry) { return !held.contains(entry.first) && nowMs > entry.second; });
 }
 
 float CrimeReports::wantedFraction(int gang, std::uint64_t nowMs) const {

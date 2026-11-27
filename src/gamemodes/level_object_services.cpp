@@ -76,34 +76,54 @@ void LevelObjectServices::moveCrimeSceneFlag(anim::Vec3 at) {
     }
 }
 
-void LevelObjectServices::robStore(anim::Vec3 at, int gang) {
-    constexpr int kStoreActivity = 14;
-    constexpr float kStoreReach = 10.0F;
-    constexpr float kStrobeReach = 6.0F;
-    // The nearest store flag within reach of the break-in.
+namespace {
+
+// A store front's flag: activity 14, and its group word's bits (docs/research/flags.md#groups).
+constexpr int kStoreActivity = 14;
+constexpr float kStoreReach = 10.0F;
+constexpr float kStrobeReach = 6.0F;
+constexpr std::uint32_t kRobbedBit = 1U << 16;
+constexpr std::uint32_t kGangShift = 18;
+constexpr std::uint32_t kGangMask = 0x1fU << kGangShift;
+constexpr std::uint32_t kStoreByte = 0xffU << 8;
+
+} // namespace
+
+const world_objects::WorldFlag* LevelObjectServices::storeNear(anim::Vec3 at) const {
+    // The nearest store flag, then the reach test (strictly inside 10 m).
     const world_objects::WorldFlag* store = nullptr;
-    float best = kStoreReach * kStoreReach;
+    float best = 0.0F;
     for (const world_objects::WorldFlag& flag : m_flags.all()) {
         if (flag.kind != kStoreActivity) {
             continue;
         }
         const anim::Vec3 d{flag.position[0] - at.x, flag.position[1] - at.y, flag.position[2] - at.z};
-        if (const float distance = anim::dot(d, d); distance <= best) {
+        if (const float distance = anim::dot(d, d); store == nullptr || distance < best) {
             best = distance;
             store = &flag;
         }
     }
+    return store != nullptr && best < kStoreReach * kStoreReach ? store : nullptr;
+}
+
+std::optional<CrimeStore> LevelObjectServices::nearestStore(anim::Vec3 at) const {
+    const world_objects::WorldFlag* store = storeNear(at);
+    if (store == nullptr) {
+        return std::nullopt;
+    }
+    const auto group = static_cast<std::uint32_t>(store->kind2);
+    return CrimeStore{.robbed = (group & kRobbedBit) != 0, .gang = static_cast<int>((group & kGangMask) >> kGangShift)};
+}
+
+void LevelObjectServices::robStore(anim::Vec3 at) {
+    const world_objects::WorldFlag* store = storeNear(at);
     if (store == nullptr) {
         return;
     }
-    // Robbed (group bit 16), by the offender's gang in bits 18-22 (31: none).
+    // Robbed (bit 16), bits 8-15 set, and no gang (31) until a later break-in names one.
     if (world_objects::WorldFlag* robbed = m_flags.find(store->handle)) {
-        constexpr std::uint32_t kRobbedBit = 1U << 16;
-        constexpr std::uint32_t kGangShift = 18;
-        constexpr std::uint32_t kGangMask = 0x1fU << kGangShift;
-        const std::uint32_t gangBits = (static_cast<std::uint32_t>(gang < 0 ? 31 : gang) << kGangShift) & kGangMask;
         robbed->kind2 =
-            static_cast<int>((static_cast<std::uint32_t>(robbed->kind2) & ~kGangMask) | kRobbedBit | gangBits);
+            static_cast<int>(static_cast<std::uint32_t>(robbed->kind2) | kStoreByte | kGangMask | kRobbedBit);
     }
     if (m_particles == nullptr) {
         return;
@@ -112,6 +132,18 @@ void LevelObjectServices::robStore(anim::Vec3 at, int gang) {
     const anim::Vec3 flagAt{store->position[0], store->position[1], store->position[2]};
     if (effects::ParticleSystem* strobe = m_particles->nearestNamed("strobe", flagAt, kStrobeReach)) {
         effects::ParticleSystems::setEmitting(*strobe, true);
+    }
+}
+
+void LevelObjectServices::claimStore(anim::Vec3 at, int gang) {
+    const world_objects::WorldFlag* store = storeNear(at);
+    if (store == nullptr) {
+        return;
+    }
+    if (world_objects::WorldFlag* claimed = m_flags.find(store->handle)) {
+        const std::uint32_t gangBits = (static_cast<std::uint32_t>(gang) << kGangShift) & kGangMask;
+        claimed->kind2 =
+            static_cast<int>((static_cast<std::uint32_t>(claimed->kind2) & ~kGangMask) | kRobbedBit | gangBits);
     }
 }
 

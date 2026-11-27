@@ -3,16 +3,21 @@
 
 #include <algorithm>
 
+#include "human/human.h"
+
 namespace coney {
 
-void GameOverCheck::reset() {
-    m_enabled = true;
-    m_reason.reset();
-    m_waitUpdates = 0;
-    m_routeNoes = 0;
-    m_handOff = kHandOffUpdates;
-    m_handedOff = false;
+GameOverPlayer gameOverPlayer(const human::Human& human, bool holdsFlash) {
+    // Coney's stand-ins: never dead, never able to free himself, the wait never blocked (see the declaration).
+    return GameOverPlayer{.dead = false,
+                          .knockedOut = human.knockedOut(),
+                          .cuffed = human.script().arrested,
+                          .canFreeSelf = false,
+                          .holdsFlash = holdsFlash,
+                          .waitBlocked = false};
 }
+
+bool asksForRoute(const human::Human& member) { return !member.script().arrested && !member.downOrDead(); }
 
 GameOverReason GameOverCheck::fail(const GameOverPlayer& first) {
     m_reason = first.cuffed ? GameOverReason::Busted : GameOverReason::Beaten;
@@ -22,17 +27,21 @@ GameOverReason GameOverCheck::fail(const GameOverPlayer& first) {
 
 std::optional<GameOverReason> GameOverCheck::update(std::span<const GameOverPlayer> players, bool noneAbleToHelp,
                                                     const std::function<bool()>& canReachToHelp) {
+    // The game state counts its updates before the check (`GameState_Tick`), whatever the check does.
+    ++m_updates;
+    // Off, failed or with no players: nothing. Game state `+0x158` would also stop it, but nothing ever sets it.
     if (!m_enabled || failed() || players.empty()) {
         return std::nullopt;
     }
     const GameOverPlayer& first = players.front();
-    // 1. A dead player fails at once.
+    // 1. A dead player fails at once, always as beaten (`+0x118` = 0).
     if (std::ranges::any_of(players, &GameOverPlayer::dead)) {
-        return fail(first);
+        m_reason = GameOverReason::Beaten;
+        m_handOff = kHandOffUpdates;
+        return m_reason;
     }
-    // 2. Nothing while any player is still in the fight.
+    // 2. Nothing while any player is still in the fight (the route checks' count stays).
     if (std::ranges::any_of(players, [](const GameOverPlayer& p) { return !p.knockedOut && !p.cuffed; })) {
-        m_waitUpdates = 0;
         return std::nullopt;
     }
     // 3. A cuffed player 1 who can free himself is spared.
@@ -43,16 +52,15 @@ std::optional<GameOverReason> GameOverCheck::update(std::span<const GameOverPlay
     if (noneAbleToHelp) {
         return fail(first);
     }
-    // 5. Cuffed (not out) or holding a flash: wait for help, asking every 37 updates whether a member can reach him;
-    // the 4th no in a row fails. Out without a flash fails at once.
+    // 5. Cuffed (not out) or holding a flash: wait for help, asking on every 37th update of the game state whether a
+    // member can reach him; the 4th no in a row fails. Out without a flash fails at once.
     const bool canWait = (first.cuffed && !first.knockedOut) || first.holdsFlash;
     if (!canWait || first.waitBlocked) {
         return fail(first);
     }
-    if (++m_waitUpdates < kRouteCheckUpdates) {
+    if (m_updates % kRouteCheckUpdates != 0) {
         return std::nullopt;
     }
-    m_waitUpdates = 0;
     if (canReachToHelp && canReachToHelp()) {
         m_routeNoes = 0;
         return std::nullopt;
@@ -63,12 +71,20 @@ std::optional<GameOverReason> GameOverCheck::update(std::span<const GameOverPlay
     return std::nullopt;
 }
 
-bool GameOverCheck::stepHandOff(bool crossPressed) {
+bool GameOverCheck::stepHandOff(bool crossPressed, bool fellOut) {
     if (!failed() || m_handedOff) {
         return false;
     }
+    // An Armies level's countdown is capped; cross cuts it; it runs down; a fall out of the world ends it.
+    if (m_armies) {
+        m_handOff = std::min(m_handOff, kArmiesHandOffCap);
+    }
     m_handOff = crossPressed ? std::min(m_handOff, kHandOffCut) : m_handOff;
-    if (--m_handOff > 0) {
+    --m_handOff;
+    if (fellOut) {
+        m_handOff = 0;
+    }
+    if (m_handOff > 0) {
         return false;
     }
     m_handedOff = true;

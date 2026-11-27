@@ -164,6 +164,11 @@ flashbacks complete it walks Swan to the cabinet and presses triangle, and Armie
 before for the change that made the cabinet work (#569) is `--before` a commit that takes that fix out, as the base
 has no `--complete-levels`.
 
+`level60-armies-failure` is the scenario for a failure in an Armies level: on Armies of the Night's first stage the
+developer console's `lua` knocks player 1 out (`HuSetConscious(player, false)`), the game-over check fails the stage,
+and the hand-off runs: 90 updates in an Armies level, with the HUD kept, then the Armies game over
+([The mission failing](../research/combat-reactions.md#mission-failing), #703).
+
 `level99-register` is the scenario for a two-handed object: from level99's checkpoint 2 it breaks the store's window,
 walks to the cash register and lifts it with triangle, carries it with the stick and drops it, for a change to how such
 an object is held or carried ([Two-handed objects](../research/objects.md#two-handed), #433).
