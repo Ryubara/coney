@@ -680,6 +680,11 @@ level = "confirmed-code"
 coney = "src/gui/rumble_mode_gui/rumble_data.h:addRumbleGang"
 status = "legacy"
 
+[[function.gaps]]
+what = "Coney's fresh profile unlocks gangs 5 and 3 only; the original's fresh boot also lists TURNBULL ACS"
+relation = "not-ported"
+issue = 1704
+
 [[function]]
 address = 0x001ecae0
 name = "RM_ChooseGangs_Init"

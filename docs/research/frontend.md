@@ -2425,15 +2425,23 @@ arena 102, gangs 5 and 3, and no character type (so every type in the stand-in t
 defaults show). Which records the story unlocks: [Unlockables](../references/unlockables.md); every mode, arena, gang
 and character: [Rumble roster](../references/rumble.md).
 
+**Known gap:** a fresh boot of the original lists a third gang, TURNBULL ACS, in Choose Gangs besides gangs 5 and 3
+(confirmed (runtime), run `r-20261127-rumble-choose-gangs-moves`), so the set above is incomplete: what unlocks that
+gang on a fresh profile is not found yet. Tracked in issue #1704 (function database gap on `0x001ec980`). Until then
+side 1's cursor in Coney stays on BASEBALL FURIES where the original would move down onto it.
+
 Coney's choices: an arena's label is its level record's fifth `CfgLevelName` argument (`level102`'s is "Fight Pen"),
 since the page does not say where the Choose Area screen's text comes from; side 2's cursor starts on the gang list's
-second entry and side 1's on its first (the fresh boot's pairing), and the cursors wrap; rotating left makes the
-second member the warchief; a two-player confirm with fewer than two pads shows message `0x77` again instead of
-screen 4 (not researched); the HUD player's pad drives both sides; back from a later screen goes to the one before
-with its first entry selected (the Game Mode screen keeps the mode chosen). The "vs" title is not a menu screen in
-Coney: it is read as the arena's intro, `ShowRumbleModeIntro`, which `DoRules` calls after the menu has popped
-(inferred from the chain); Coney does not have that binding yet. Each change of screen is logged
-(`rumble menu: Game Mode`).
+second entry and side 1's on its first (the fresh boot's pairing); the cursors do not wrap: up and down stop at either
+end of the list with cue `0xe` and step past the other side's gang unless one fights a side (`RumbleGangChooser::move`,
+from `0x001ef5a8` and `0x001ef6d8`, [the input](#rumble-data)); left and right rotate the roster in display
+order, mirrored per side, so the warchief becomes member 1 or 2 (side 1's left and side 2's right: member 1; the
+others: member 2), and do nothing in co-op or while one human chooses for side 2 (`0x001ef7c0`); a two-player confirm
+with fewer than two pads shows message `0x77` again instead of screen 4 (not researched); the HUD player's pad drives
+both sides; back from a later screen goes to the one before with its first entry selected (the Game Mode screen keeps
+the mode chosen). The "vs" title is not a menu screen in Coney: it is read as the arena's intro,
+`ShowRumbleModeIntro`, which `DoRules` calls after the menu has popped (inferred from the chain); Coney does not have
+that binding yet. Each change of screen is logged (`rumble menu: Game Mode`).
 
 **Menu commands** (`src/gui/menu_input.h`, `MenuInput`, `MenuInput_Dispatch` `0x001e95c0`), from [Input](#input): up,
 down, left and right from the auto-repeating d-pad query or the left stick past ±0.5; accept on the release of cross;
