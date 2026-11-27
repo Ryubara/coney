@@ -5,6 +5,14 @@
 
 namespace coney {
 
+bool noneAbleToHelp(std::span<const GangHelper> members) {
+    if (members.size() < 2) {
+        return false;
+    }
+    return std::ranges::none_of(members.subspan(1),
+                                [](const GangHelper& m) { return !m.cuffed && !m.knockedOut && !m.held; });
+}
+
 void GameOverCheck::reset() {
     m_enabled = true;
     m_reason.reset();

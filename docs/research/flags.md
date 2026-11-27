@@ -159,7 +159,8 @@ The activities by their first clip, and the flag names that carry each (names in
 
 The fifth argument is a number other code compares. One reader is traced, confirmed (code): when a crime of type 1 is
 reported (`0x0041b8b0`), the game finds the nearest activity-14 flag (a store front) within 10 m, marks it used (bit
-16 of `+0xd8`, with a gang number in bits 18-22) and switches off (`0x00417540`, `FlagEnable`'s writer) every flag
+16 of `+0xd8`; bits 18-22 hold 31, no gang, until a later break-in there writes the offender's gang) and switches off
+(`0x00417540`, `FlagEnable`'s writer) every flag
 of activity 2 or 22 within 10 m whose group equals the store's low byte: the store's buyers and browsers leave. On
 store flags the group is the store's number (24-45). On flags of activity 0 it looks like a bit set of path networks,
 from the names (inferred): 1 `PedNet` and `fPedStrip`, 2 `fCopPoint` and `fCopNet`, 4 `fBumNet` and `SewerNet`, 64

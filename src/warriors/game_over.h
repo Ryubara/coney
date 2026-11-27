@@ -22,6 +22,16 @@ struct GameOverPlayer {
     bool waitBlocked = false; ///< Game state `+0x414 + player` set: no waiting for help.
 };
 
+/// A member of player 1's gang as the gang test sees him (state words).
+struct GangHelper {
+    bool cuffed = false;     ///< State `0x20000`.
+    bool knockedOut = false; ///< State `0x40000` (`Human_IsKnockedOut`).
+    bool held = false;       ///< State `0x10000` (`Human_IsWounded`).
+};
+
+/// Whether no member of player 1's gang is free to help (stub: the old rule, player 1 (first) left out).
+[[nodiscard]] bool noneAbleToHelp(std::span<const GangHelper> members);
+
 /// Why the mission failed: the `GSTRING.HUD` id of the mission-failed screen's title (`MissionFailed_SetReason`).
 enum class GameOverReason : std::uint8_t {
     Beaten = 20, ///< Player 1 is not cuffed (`+0x118` = 0).
@@ -64,6 +74,11 @@ class GameOverCheck {
     /// the mission-failed mode is to open (once).
     /// @orig 0x00158728 Mode1::Update (unknown)
     bool stepHandOff(bool crossPressed);
+    /// Stub: the fall is not read yet.
+    bool stepHandOff(bool crossPressed, bool /*fellOut*/) { return stepHandOff(crossPressed); }
+    /// Stub: whether the level is an Armies level (not read yet).
+    void setArmiesLevel(bool on) { m_armies = on; }
+    [[nodiscard]] bool armiesLevel() const { return m_armies; }
     /// The hand-off's countdown, updates left.
     [[nodiscard]] int handOffLeft() const { return m_handOff; }
 
@@ -77,6 +92,7 @@ class GameOverCheck {
     int m_routeNoes = 0;   // `+0x56e6`: route checks failed in a row
     int m_handOff = kHandOffUpdates;
     bool m_handedOff = false;
+    bool m_armies = false;
 };
 
 } // namespace coney

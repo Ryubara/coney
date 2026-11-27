@@ -39,6 +39,13 @@ struct CrimeGang {
     int kind = 0;
 };
 
+/// The store front nearest a break-in (stub).
+struct CrimeStore {
+    static constexpr int kNoGang = 31;
+    bool robbed = false;
+    int gang = kNoGang;
+};
+
 /// A position in metres, game axes.
 using CrimePosition = std::array<float, 3>;
 
@@ -80,6 +87,14 @@ class CrimeServices {
     /// Tells the HUD of player 1's crime state (`HUD_SetWanted`, `0x001b2520`): `message` 7 for a new crime (the HUD
     /// shows lastCrime()'s `CfgCrimeMessage`), `0xb` when the wanted time ran out.
     virtual void notifyHud(int /*message*/) {}
+    /// Stubs.
+    [[nodiscard]] virtual int playerIndex(double /*handle*/) { return -1; }
+    [[nodiscard]] virtual int brainType(double /*handle*/) { return -1; }
+    virtual void scoreCrime(double /*human*/, int /*event*/) {}
+    [[nodiscard]] virtual std::optional<CrimeStore> nearestStore(const CrimePosition& /*at*/) { return std::nullopt; }
+    virtual void robStore(const CrimePosition& /*at*/) {}
+    virtual void claimStore(const CrimePosition& /*at*/, int /*gang*/) {}
+    [[nodiscard]] virtual std::optional<double> gangLeader(double /*offender*/) { return std::nullopt; }
 };
 
 /// The game state's crime fields and the crime report (`0x0041b8b0` on the game state `0x0051489c`): reporting on or

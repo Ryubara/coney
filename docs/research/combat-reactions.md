@@ -878,26 +878,32 @@ runs every game-state update (`0x0041a370`), while three things hold:
 
 - the check is on (`EnableGameOverCheck`, game state `+0x155`,
   [Bindings](../references/bindings/level.md#enablegameovercheck));
-- game state `+0x158` is 0;
+- game state `+0x158` is 0 (nothing in `SLUS_212.15` stores anything but 0 there: only the constructor
+  `0x004187c0` and the level's reset `0x00418ca0` write it, confirmed (code), so this gate never closes);
 - no level end is pending (`+0x14c` = 0).
 
 It works through these cases, confirmed (code):
 
-1. **A dead player** (state `0x100000000`) fails at once.
+1. **A dead player** (state `0x100000000`) fails at once, always with reason 20 (beaten, `+0x118` = 0), whether
+   player 1 is cuffed or not. Confirmed (code) at `0x004197a8`.
 2. Nothing more happens while any player is neither knocked out nor cuffed.
 3. A cuffed player 1 who can free himself (upgrade (6, 15) and a key) is spared.
-4. When no one else in player 1's gang is free to help (`Gang_NoneAbleToHelp`, `0x00169dd8`: not cuffed, knocked out
-   or wounded), the mission fails at once. Confirmed (code).
+4. When no one in player 1's gang is free to help (`Gang_NoneAbleToHelp`, `0x00169dd8`: not cuffed, knocked out or
+   wounded), the mission fails at once. The check passes no exception (0, at `0x00419910`), so player 1 is tested
+   like any member; as he is down by now, a gang of player 1 alone fails here. Confirmed (code).
 5. When others are free, and player 1 is cuffed (not out) or holds a flash (item 1), and game state
    `+0x414 + player` is 0 (the crew was within 50 m at the last range check, [out-of-range
-   flag](ai-gangs.md#warrior-range-flag)), it **waits**; with the byte set it fails at once. Every 37 updates it asks
-   whether a free member has a route to him (`Gang_CanReachToHelp`, `0x00169ea0`; [who can help](#defeat-helpers)). A
-   yes resets the count at `+0x56e6`; the 4th no in a row fails the mission. Confirmed (code) at `0x004197a8`. A
-   knocked-out player without a flash fails at once.
+   flag](ai-gangs.md#warrior-range-flag)), it **waits**; with the byte set it fails at once. On each update whose
+   game-state counter `+0x230` is a multiple of 37 it asks whether a free member has a route to him
+   (`Gang_CanReachToHelp`, `0x00169ea0`; [who can help](#defeat-helpers)). The counter is the one `0x0041a370`
+   raises by one before each check and only the constructor zeroes (`0x004187bc`), so the first question comes 1 to
+   37 updates into the wait, not 37 after it began. A yes resets the count at `+0x56e6`; the 4th no in a row fails
+   the mission. Getting up does not reset the count: only a yes and the level's reset (`0x00418da4`) do. Confirmed
+   (code) at `0x004197a8`, `0x0041a370`. A knocked-out player without a flash fails at once.
 
-A failure sets `+0x14c` = 1 and the menu's title (`MissionFailed_SetReason`, `0x001d1fb8`): `GSTRING.HUD` 21 with game
-state `+0x118` = 1 when player 1 is cuffed (busted), else 20 with `+0x118` = 0 ([Text
-labels](../references/text-labels.md#text-gstring-hud)).
+A failure sets `+0x14c` = 1 and the menu's title (`MissionFailed_SetReason`, `0x001d1fb8`): in cases 4 and 5,
+`GSTRING.HUD` 21 with game state `+0x118` = 1 when player 1 is cuffed (busted), else 20 with `+0x118` = 0; a dead
+player (case 1) always 20 ([Text labels](../references/text-labels.md#text-gstring-hud)).
 
 **The hand-off** (`Gm_Level_Update`, `0x00158728`), confirmed (code):
 
@@ -911,8 +917,12 @@ labels](../references/text-labels.md#text-gstring-hud)).
    - keeps the music volume, then fades it toward 0.7 while the failed camera runs.
 
    At 180 the system music stops.
-3. A pad's newly pressed button bit `0x40` cuts the countdown to 10 and the tint to 1/3 s. Game state `+0x152`
-   bit `0x2` cuts it to 0.
+3. A pad's newly pressed button bit `0x40` cuts the countdown to 10 and the tint to 1/3 s. After the update's
+   step down, game state `+0x152` bit `0x2` cuts it to 0 on a failure (`+0x14c` = 1). That word is set to 2 by
+   `Human_StateUpdate` (`0x0023fea8`, the store at `0x002403ec`) when a player falls more than 20 m below the level's
+   collision floor while game state `+0x150` bit `0x2` is set; the same fall fails the mission with `GSTRING.HUD` 19
+   and `+0x118` = 0. So a player fallen out of the world gets no failed camera and the screen at once. Confirmed
+   (code).
 4. At 0, `MissionFailed_Toggle` pushes mode `0xc`, the [mission-failed screen](pause.md#the-mission-failed-screen)
    (`ANGameOver_Toggle` on an Armies level). A level end of 2 launches the mission-complete screen instead.
 
@@ -924,9 +934,12 @@ engine. `HUDLaunchMissionFailed` is only the scripts' own route.
 Read in Ghidra: confirmed (code) where no other level is given.
 
 Both tests walk the 16 member slots (gang `+0x48`) of the gang passed in (player 1's) and skip empty slots and the
-downed player himself. Players count as members like anyone else. Confirmed (code):
+human passed as the exception. Players count as members like anyone else. `GameState_CheckGameOver` passes player 1
+to the route test but **no exception (0) to `Gang_NoneAbleToHelp`** (`0x00419910`), so that test walks player 1
+too; he is cuffed or knocked out whenever it runs, so he is never free. Confirmed (code):
 
-- **`Gang_NoneAbleToHelp(gang, player)`** (`0x00169dd8`) returns 1 when no other member is free. A member is free when
+- **`Gang_NoneAbleToHelp(gang, except)`** (`0x00169dd8`) returns 1 when no member but the exception is free. A member
+  is free when
   he is not cuffed (state `0x20000`), not knocked out (`Human_IsKnockedOut` `0x00227dd8`: state `0x40000`) and not
   wounded (`Human_IsWounded`, `0x00227d98`: state `0x10000`, which `Human_StartWounded` sets;
   [Combat](combat/index.md#state-flags) also names it on a tackled victim). Both state tests also count a human with no

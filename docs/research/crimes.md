@@ -966,10 +966,12 @@ player and adds no loot item.
 A store is a set of flags ([World flags: groups](flags.md#groups)) with a store front (activity 14), browsers and
 buyers. A **break-in** (crime type 1) comes from an alarmed pane ([panes](objects.md#pane)), a lock pick that was not
 perfect, or a third abandoned pick. The report ([AI: crimes](ai-gangs.md#crimes)), confirmed (code) at `0x0041b8b0`: within
-10 m the store front is marked robbed (bit 16 of its group word, the offender's gang in bits 18-22), the store's
-buyers and browsers are switched off, the nearest `strobe` within 6 m gets message `0x12`, and responders are queued
-with a delay of `CfgBreakAndEnterDelay` (15, 10 or 7 by difficulty). The first gang to rob a store scores crime event
-4-1 for its leader when he is a player. `ResetStore` (`0x0041ddd8`) clears the robbed bit, sets the group word's bits
+10 m a store front not yet robbed is marked robbed (bit 16 of its group word, with bits 8-15 set to `0xff` and the
+gang bits 18-22 to 31, no gang), the store's buyers and browsers are switched off, the nearest `strobe` within 6 m
+gets message `0x12`, and responders are queued with a delay of `CfgBreakAndEnterDelay` (15, 10 or 7 by difficulty).
+A break-in at a store already robbed whose gang bits still hold 31 writes the offender's gang there and scores crime
+event 4-1 for that gang's leader when he is a player; it calls no police. Confirmed (code) at `0x0041b8b0`.
+`ResetStore` (`0x0041ddd8`) clears the robbed bit, sets the group word's bits
 8-15 to `0xff` and the gang bits to 31, and restocks the store; its 7 m test (squared distance under 49, message
 `0x13`) is a strobe's distance from the store's flag, not the player's (confirmed (code)). The two strobe distances
 differ in the code: a break-in reaches a strobe within 6 m of the store's flag, a reset one within 7 m. `EnterStore` /
@@ -1037,15 +1039,21 @@ only). **Coney fixes**:
 
 **Wanted** is per gang, confirmed (code): every crime report with an offender sets the offender's gang wanted for
 **10 s** (gang `+0x5e8` = now + 10,000 ms, `0x00169878`), after making the police hostile to it. `Gang_UpdateWanted`
-(`0x001698f0`) holds it at 10 s from now while `ForceCrimeLevel` is on (game state `+0x28c`); otherwise, once it
-passes, `GangClearWanted`'s work runs (`0x00169a20`): the police are neutral again and, for the player's gang, the HUD
-is told (`0x001b2520` message `0xb`) and the last crime type becomes 14 (`NoCrime`). While wanted, the HUD shows
+(`0x001698f0`) holds it at 10 s from now while `ForceCrimeLevel` is on (game state `+0x28c` = 1) and then returns, so
+a wanted gang's second timer (below) is held too; otherwise, once the game time is **past** the end (later than it,
+not equal), `GangClearWanted`'s work runs (`0x00169a20`): the police are neutral again and, for the player's gang, the
+HUD is told (`0x001b2520` message `0xb`) and the last crime type becomes 14 (`NoCrime`). The code also keeps a gang
+wanted, unrefreshed, for any other non-zero `+0x28c`, but the binding (`0x0037a644`) writes only 0 or 1, so that
+branch is never taken. Each update it also clears a third timer, gang `+0x5ec` (the IssueWarning goal's,
+[AI goals](ai-goals.md#goal-issue-warning)), once the time is past it. Confirmed (code) at `0x001698f0`. While wanted,
+the HUD shows
 `CfgCrimeMessage` of the last crime type (a plain assault: 0) and the first report of each wanted spell sounds the
 `hudalarm` cue ([HUD: the crime message](hud-functions-parts.md#fn-radar-frame)). The HUD shows the time left as a
 fraction of 10 s (`0x001aa9b0`; full above 0.9). Gang `+0x5f0` is a second timer drawn the same way, and
 `GangIsWanted(gang, false)` tests it. `GangRespond` and `GoalCallGang` set it (`Gang_SetSecondWantedTimer`,
-`0x001698c8`); when it runs out, `Gang_UpdateWanted` (`0x001698f0`) calls the all-clear callback at game state
-`+0x2bc`. Confirmed (code). The first time the player's gang is wanted, hint 6
+`0x001698c8`); when the time is past it, `Gang_UpdateWanted` (`0x001698f0`) clears it and, for player 1's gang, calls
+the all-clear callback named at game state `+0x2bc` (`SetAllClearCallBack`) when one is set. Confirmed (code). The
+first time the player's gang is wanted, hint 6
 (`Humans_Update`).
 
 **The crime level** (game state `+0x291`, 0-3) is set only by `InitLevel` and `SetCrimeLevel`, which no script calls.
