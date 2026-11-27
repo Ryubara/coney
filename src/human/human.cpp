@@ -720,7 +720,7 @@ Human::Swept Human::sweep(const raycast::CollisionMesh& mesh, anim::Vec3 velocit
     // A body that does not move meets nothing.
     const anim::Vec3 displacement = anim::add(anim::scale(velocity, m_stepSeconds), push);
     if (anim::length(displacement) <= 0.0F) {
-        return Swept{.feet = from, .velocity = std::nullopt};
+        return Swept{.feet = from, .velocity = std::nullopt, .landed = false, .ground = std::nullopt};
     }
     // The other humans' capsules first. **Coney's choice**: the original sorts the humans' and the walls' contacts of
     // a pass by fraction together; here the humans take their part of the move before the walls take theirs. Their
