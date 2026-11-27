@@ -276,8 +276,8 @@ TEST_CASE("a break-in lights the alarm strobe nearest the store's flag", "[gamep
     auto group = static_cast<std::uint32_t>(store->kind2);
     CHECK((group & (1U << 16)) != 0);
     CHECK(((group >> 18) & 0x1fU) == 31);
-    REQUIRE(services.nearestStore(coney::anim::Vec3{2.0F, 2.0F, 0.0F}).has_value());
-    CHECK(services.nearestStore(coney::anim::Vec3{2.0F, 2.0F, 0.0F})->robbed);
+    const std::optional<coney::CrimeStore> robbedStore = services.nearestStore(coney::anim::Vec3{2.0F, 2.0F, 0.0F});
+    CHECK((robbedStore.has_value() && robbedStore->robbed));
     services.claimStore(coney::anim::Vec3{2.0F, 2.0F, 0.0F}, 3);
     group = static_cast<std::uint32_t>(store->kind2);
     CHECK(((group >> 18) & 0x1fU) == 3);
