@@ -164,6 +164,9 @@ std::optional<int> WarCommandDisplay::issue() {
 
 void WarCommandDisplay::update(std::uint8_t stickX, std::uint8_t stickY, const Chief& chief, std::uint64_t nowMs,
                                const HudSound& audio) {
+    // Stand-ins: the chief's knock-out closes the menu from GameplayMode (close()); the sprites are always resident
+    // (+0x10); the out-of-range byte (+0x414) is not kept (#1520), so render() picks entry 6 from Look::allLocked;
+    // the name's text, the slots' places and sizes and the name's box are render()'s, from fixed values.
     m_allowed = chief.allowed;
     if (!m_shown) {
         return;
