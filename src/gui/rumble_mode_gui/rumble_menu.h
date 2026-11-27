@@ -167,8 +167,9 @@ class RumbleMenu {
 
     /// One frame: launches an arena confirmed the frame before, reads the command `frame.pad` gives and acts on it (a
     /// confirm writes into the state's set-up), and advances the texts and the background. `connectedPads` decides
-    /// whether two players can be chosen.
-    [[nodiscard]] RumbleMenuResult update(const GuiFrame& frame, std::size_t connectedPads);
+    /// whether two players can be chosen; `secondPad` is player 2's pad (null: none).
+    [[nodiscard]] RumbleMenuResult update(const GuiFrame& frame, std::size_t connectedPads,
+                                          const Pad* secondPad = nullptr);
 
     /// Adds the background and the current screen's sprites to `canvas` and the background's batch, placing the Game
     /// Mode entries with the canvas's fonts.

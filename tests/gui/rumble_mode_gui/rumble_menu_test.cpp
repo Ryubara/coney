@@ -223,17 +223,18 @@ TEST_CASE("the Game Type entries write 3 for one player, 2 for co-op and 1 for v
     }
 }
 
-TEST_CASE("co-op shows the second player's message and needs a second pad", "[rumble_menu]") {
+TEST_CASE("co-op shows the second player's message until a second pad presses START", "[rumble_menu]") {
+    // Expected: frontend.md#rumble-data, confirmed (code)
     Harness h("10 stick left 0 -60\n12 stick left 0 0\n20 tap cross\n30 tap right\n40 tap cross\n"
-              "50 tap cross\n120 p2 connect\n125 tap cross\n");
+              "50 tap cross\n120 p2 connect\n125 p2 tap start\n");
     h.to(45);
     CHECK(h.menu->screen() == RumbleScreen::GameType);
     CHECK(h.menu->message().text() == "SECOND PAD");
-    // Still one pad: the second confirm stays and shows the message again; it goes after 1.5 s.
+    // Player 1's second confirm stays; the message blinks on, it does not go.
     h.to(55);
     CHECK(h.menu->screen() == RumbleScreen::GameType);
     h.to(110);
-    CHECK(h.menu->message().text().empty());
+    CHECK(h.menu->message().text() == "SECOND PAD");
     h.to(130);
     CHECK(h.menu->screen() == RumbleScreen::ChooseGangs);
     CHECK(h.setup().values.at(RumbleSetup::kGameMode) == coney::gui::kRumbleCoop);

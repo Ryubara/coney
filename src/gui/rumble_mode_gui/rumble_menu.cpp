@@ -162,7 +162,7 @@ const TextWidget& RumbleMenu::entryText(std::size_t row) const {
 
 std::vector<int> RumbleMenu::takeCues() { return std::exchange(m_cues, {}); }
 
-RumbleMenuResult RumbleMenu::update(const GuiFrame& frame, std::size_t connectedPads) {
+RumbleMenuResult RumbleMenu::update(const GuiFrame& frame, std::size_t connectedPads, const Pad* /*secondPad*/) {
     // The background's colour cycle runs on whatever screen is up.
     m_background.setColour(rumbleBackgroundColour(frame.timeMs - m_startMs));
 
