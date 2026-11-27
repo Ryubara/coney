@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261127-car-corner"
+date = "2026-11-27"
+kind = "trace"
+tool = "trace original"
+digest = "c23b9d23abe7b036ebcbeade204354fc32c353219bfd9787b5174d9893e3359a"
+
+[who]
+agent = "a997e7a8de447727b"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "car_corner"
+method = ""
+
+[values]
+updates = 161
+missed_updates = 0
+columns = 19
+
+[hashes]
+trace_csv = "dd3a0ffbe3831ac9732aab5f5a0a5b82fb3bca74d618a85a1843ae145adc7554"

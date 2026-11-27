@@ -162,7 +162,11 @@ environment map or dual texture from the car's second texture resource.
   the parts already removed, flying or off. Callers: the hit handler `0x0038bea0` (0.34 per hit from a weapon or
   thrown object, 0.51 from a human with flag `0x400000`, 0.115 from other humans, on the parts the hit's zone
   selects), `CarSetPartDamage`, `0x0038b0e8` (mask `0x2a80c0`), and `Car_DoExplode` (`0x0038ab50`, every part,
-  instant, its `quiet`). Confirmed (code).
+  instant, its `quiet`). Confirmed (code). Confirmed (runtime), run r-20261127-car-corner: the player in `level99`
+  beside the parked sedan's left front wing (the body table's front band, left column: parts 2, 8, 10 and the lamp
+  glass bit 26) pressed square; the first hit took lamp 8 to damage 1 at once (off) and put bit 26 in `+0x11f0` and
+  `+0x11f8`, with bumper 2 and panel 10 at 0.115 and all four bits in `+0x11ec`; the second hit added 0.115 to 2 and
+  10 only.
 - **Repair** (`CarMakeGoodAsNew` → `Car_Repair` `0x0038e068` → `Car_ResetParts` `0x003875e8`): every one of the 26
   part records is reset (damage 0, the state byte that holds open cleared, its loose piece sent message `0x15`), and
   `+0x11ec`, `+0x11f0`, `+0x11f4`, `+0x11f8`, the rock `+0x12d6` and the exploded flag `+0x12d5` are cleared, so a
