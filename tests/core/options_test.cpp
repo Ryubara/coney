@@ -589,9 +589,7 @@ TEST_CASE("the freeze option freezes a played level's world", "[options]") {
 }
 
 TEST_CASE("the wait-for-control option starts a played level's run when player 1 has control", "[options]") {
-    // Expected: Coney's own test aid with no counterpart in the original
-    // (docs/guides/running-play-level.md#wait-for-control): a level that opens with a scene holding the pad (level99
-    // checkpoint 3) starts the run, its script, trace and frames, only once he answers the pad.
+    // Expected: Coney's own aid, no counterpart in the original (docs/guides/running-play-level.md#wait-for-control).
     auto waiting =
         parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "level99", "--wait-for-control"});
     REQUIRE(waiting.has_value());
