@@ -150,23 +150,26 @@ environment map or dual texture from the car's second texture resource.
   `Car_OpenPart` does nothing for any other part, for a removed one or one marked in `+0x11f4`; it sets bit 2 of the
   part state and, once the model is loaded, calls `0x0038cb70` (a hinge turn, [the atomics](#model)) for atomic `p`
   and, when `p` ≤ 21, `p + 25`. Confirmed (code).
-- **Damage** (`Car_AddPartDamage`, `0x0038a4d8(amount, car, part record, part, instant, quiet)`): adds `amount` to
-  the part's damage (`+0x230 + part × 0xa0`); `instant`, or bit `0x10` of the part record's byte `+0x01` (the roof,
-  glass 6 and 7, lamps 8 and 9, the windows, and on the van its boot and panels 12 and 13: [Type
-  tables](#type-tables)), sets it to 1 at once. At 1.0 the part comes off (bit in `+0x11f8`), and then, in this
-  order: a door (14, 16, 18, 20) coming off a non-instant call gives its window (the next part) damage 1 the same way
-  when that is not off yet; window 15 frees the stereo ([Windows](#windows)); the roof (part 1) ends the police car's
-  lights (`+0x1210`, message `0x15`); the boot releases its item (below). Last, a part its record throws (`0x02` on a
-  non-instant call, `0x04` on an instant one) flies off and the car is rescheduled at once, or, with `quiet`, is put in
-  `+0x11f0` and `+0x11f8` instead ([What is drawn](#drawn)). The function itself skips no part; its callers pass over
-  the parts already removed, flying or off. Callers: the hit handler `0x0038bea0` (0.34 per hit from a weapon or
-  thrown object, 0.51 from a human with flag `0x400000`, 0.115 from other humans, on the parts the hit's zone
-  selects), `CarSetPartDamage`, `0x0038b0e8` (mask `0x2a80c0`), and `Car_DoExplode` (`0x0038ab50`, every part,
-  instant, its `quiet`). Confirmed (code). Confirmed (runtime), run r-20261127-car-corner: the player in `level99`
-  beside the parked sedan's left front wing (the body table's front band, left column: parts 2, 8, 10 and the lamp
-  glass bit 26) pressed square; the first hit took lamp 8 to damage 1 at once (off) and put bit 26 in `+0x11f0` and
-  `+0x11f8`, with bumper 2 and panel 10 at 0.115 and all four bits in `+0x11ec`; the second hit added 0.115 to 2 and
-  10 only.
+- **Damage** (`Car_AddPartDamage`, `0x0038a4d8(amount, car, part record, part, instant, quiet)`): adds `amount` to the
+  part's damage (`+0x230 + part × 0xa0`); `instant`, or bit `0x10` of the part record's byte `+0x01` (the roof, glass 6
+  and 7, lamps 8 and 9, the windows, and on the van its boot and panels 12 and 13: [Type tables](#type-tables)), sets it
+  to 1 at once. At 1.0 the part comes off (bit in `+0x11f8`), and then, in this order: a door (14, 16, 18, 20) coming
+  off a non-instant call gives its window (the next part) damage 1 the same way when that is not off yet; window 15
+  frees the stereo ([Windows](#windows)); the roof (part 1) ends the police car's lights (`+0x1210`, message `0x15`);
+  the boot releases its item (below). Last, a part its record throws (`0x02` on a non-instant call, `0x04` on an instant
+  one) flies off and the car is rescheduled at once, or, with `quiet`, is put in `+0x11f0` and `+0x11f8` instead ([What
+  is drawn](#drawn)). The function itself skips no part, and its callers differ: the hit handler and `Car_DoExplode`
+  pass over the parts removed, flying or off (`+0x11f0`, `+0x11f4`, `+0x11f8`); `Car_DamagePartsByMask` (`0x0038b0e8`,
+  called by `World_BreakGlassInRadius` `0x003963b8`) over those removed or off; `Car_BreakPartByIndex` (`0x0038a7e8`,
+  `CarSetPartDamage` through `0x0038dee8`) over none. So a part a script removed still takes damage from
+  `CarSetPartDamage`, and a door knocked off breaks a window that is only removed (`+0x11f0`), since the door's test
+  reads `+0x11f8` alone. Confirmed (code) at each address. Callers: the hit handler `0x0038bea0` (0.34 per hit from a
+  weapon or thrown object, 0.51 from a human with flag `0x400000`, 0.115 from other humans, on the parts the hit's zone
+  selects), `CarSetPartDamage`, `0x0038b0e8` (mask `0x2a80c0`), and `Car_DoExplode` (`0x0038ab50`, every part, instant,
+  its `quiet`). Confirmed (code). Confirmed (runtime), run r-20261127-car-corner: the player in `level99` beside the
+  parked sedan's left front wing (the body table's front band, left column: parts 2, 8, 10 and the lamp glass bit 26)
+  pressed square; the first hit took lamp 8 to damage 1 at once (off) and put bit 26 in `+0x11f0` and `+0x11f8`, with
+  bumper 2 and panel 10 at 0.115 and all four bits in `+0x11ec`; the second hit added 0.115 to 2 and 10 only.
 - **Repair** (`CarMakeGoodAsNew` → `Car_Repair` `0x0038e068` → `Car_ResetParts` `0x003875e8`): every one of the 26
   part records is reset (damage 0, the state byte that holds open cleared, its loose piece sent message `0x15`), and
   `+0x11ec`, `+0x11f0`, `+0x11f4`, `+0x11f8`, the rock `+0x12d6` and the exploded flag `+0x12d5` are cleared, so a
@@ -218,8 +221,10 @@ the effect at once. Confirmed (code) at the addresses cited.
 **When.** Only `Car_OnHit` (`0x0038bea0`) and `Car_OnLanded` (`0x00389f00`, [Physics](physics.md)) send it, confirmed
 (code):
 
-1. Each hit that touches any part outside the glass mask (`s5 & 0xffd57f3f`) sends **kind 0 at the hit point**
-   (hit record `+0x90`), direction (0, 1, 0). Confirmed (code).
+1. Each hit that touches any part outside the glass mask (`s5 & 0xffd57f3f`) sends **kind 0 at the hit point** (hit
+   record `+0x90`), direction (0, 1, 0). `s5` is the zone's parts after the window shield, before the parts removed,
+   flying or off are passed over, so a hit on a corner whose parts are all off still sparks; the lamps' glass (26-29) is
+   outside the mask's glass and counts. Confirmed (code) at `0x0038c4c8` (the mask, before the loop that skips them).
 2. Then, for each hit part `p` (bits 1-29 of the hit's part mask) not removed, flying or off, after its damage:
    **the first time that part is ever hit** (bit `p` of `+0x11ec`, set here; cleared only by the repair) the car
    calls `Car_BreakWindow(car, p, hit)` (`0x0038a830`), which picks the kind below and sends it. A part coming off
@@ -433,17 +438,17 @@ damages comes from the zone tables, never from the part's own box. Confirmed (co
 | 0 | a world object nobody holds (thrown, rolling) | 0.34 | none | the contact point, as kind 1; the body table drops the windows (`0xffd57fff`), the cabin table the doors (`0xffeabfff`) | an intact window shields its door |
 
 - **A human's strike** reaches the car through the [strike test](combat/index.md#moving-strikes): `Human_TestStrikes`
-  (`0x0033f110`) tests the clip's enabled strike shapes against every body near the human, the car's body included
-  (an object's body is tested against its own shapes, here the two boxes), and the first overlap calls
-  `Strike_Contact` (`0x0021b290`), which sees a car (`Car_FromObject`, type word `0x100000`) and calls `Car_OnHit`.
-  So **any punch or kick whose hand, forearm, foot or shin overlaps either box hits the car**, whether the car is
-  the square's target or not; the square's object attack (661 / 662, [Breakables](combat-targets.md#breakables)) is only
-  the way the player aims at it. Once struck, the body goes on the striking body's contact list and is not struck again
-  until the shapes go off. **Confirmed (runtime)** (`car_glance`): the player 0.14 m beside the sedan's right side,
-  facing 55° away from it (so the car fails the target's facing test), pressed square: the plain `S1` (clip 12)
-  broke window 21 five updates after it started, and a second `S1` reached door 20 (its first-hit bit); the car
-  rocked both times. Standing at the car's y = −0.08 m, just behind the −0.034 threshold, both hits took the rear
-  door's zone (20, 21), not the front door beside his hand.
+  (`0x0033f110`) tests the clip's enabled strike shapes against every body near the human, the car's body included (an
+  object's body is tested against its own shapes, here the two boxes), and the first overlap calls `Strike_Contact`
+  (`0x0021b290`), which sees a car (`Car_FromObject`, type word `0x100000`) and calls `Car_OnHit`. So **any punch or
+  kick whose hand, forearm, foot or shin overlaps either box hits the car**, whether the car is the square's target or
+  not; the square's object attack (661 / 662, [Breakables](combat-targets.md#breakables)) is only the way the player
+  aims at it. Once struck, the body goes on the striking body's contact list and is not struck again until the shapes go
+  off. **Confirmed (runtime), run r-20261127-car-glance** (`car_glance`): the player 0.14 m beside the sedan's right
+  side, facing 55° away from it (so the car fails the target's facing test), pressed square: the plain `S1` (clip 12)
+  broke window 21 five updates after it started, and a second `S1` reached door 20 (its first-hit bit); the car rocked
+  both times. Standing at the car's y = −0.08 m, just behind the −0.034 threshold, both hits took the rear door's zone
+  (20, 21), not the front door beside his hand.
 - **The parts come from the striker's feet, not from the hand.** For kind 3 the contact point is not used: standing
   beside the front door, every hit reaches the front door's zone wherever the fist lands. The square's aim point
   ([Targeting a car](#windows)) only decides the clip (661 at the feet, 662 at 1.5 m for glass).
@@ -458,10 +463,12 @@ damages comes from the zone tables, never from the part's own box. Confirmed (co
   system at the car (direction (0, 0, 1)), sets `+0x1200` = 120, prepares `vags/fire/car_explodes<n>` (`n` 1-3) at
   the car into `+0x12fc`, sends message `0x19` `(car, thrower, -1, 0)`, and for a player thrower keeps his handle in
   `+0x1208` and counts crime 11 (`Stats_AddCrime(…, 0xb, 1)`); then the 30 m noise and message 6. The car's update
-  counts `+0x1200` down once per update and calls `Car_DoExplode` at 0 ([Explosion](#explode)).
-- **The gang lock**: a car whose `+0x12d8` is not `0x19` ignores a striker (or holder, or thrower) whose gang
-  (brain `+0x20c` → `+0x2c`) differs. `CarCanBeDamagedBy(car, gang)` (`lua_CarCanBeDamagedBy` `0x00378790` →
-  `0x0038e030`) sets it.
+  counts `+0x1200` down once per update and calls `Car_DoExplode` at 0 ([Explosion](#explode)). Confirmed (code) at
+  `0x0038bea0`; the countdown is inferred from the 120 set there and `Car_TryExplode` (`0x0038ab18`) refusing while
+  it runs.
+- **The gang lock**: a car whose `+0x12d8` is not `0x19` ignores a striker (or holder, or thrower) whose gang (brain
+  `+0x20c` → `+0x2c`) differs. `CarCanBeDamagedBy(car, gang)` (`lua_CarCanBeDamagedBy` `0x00378790` → `0x0038e030`,
+  `Car_SetDamageFilter`) sets it. Confirmed (code) at `0x0038bea0` and `0x0038e030`.
 - **The contact point** (hit record `+0x60`, x and y) is read against the type's thresholds without any transform. It is
   the point in the **struck box's own frame**, along the box's axes from the **box's centre** (not the car's origin),
   and `+0x90` holds the same point in the world, which the rock, the dent sound and the window-break effect use.
@@ -473,11 +480,15 @@ damages comes from the zone tables, never from the part's own box. Confirmed (co
   `Car_AddPartDamage` `0x0038a4d8`). Confirmed (code); not seen at runtime.
 - **After the parts**, for each part 1-29 reached, not removed, flying or off: parts 1-25 take the damage
   (`Car_AddPartDamage`), parts 26-29 are only marked removed and off (`+0x11f0`, `+0x11f8`). A part among 4, 5, 10-14,
-  16, 18 and 20 whose damage crosses 0.5 in this hit (its dent) plays `Sound_PlayMaterialPair(1, 129 CAR_DAMAGE,
-  129 CAR_DAMAGE)` at the hit point ([Sound events](sound-events.md#cars)). Message `0x19` and the first-hit effect
-  follow as [Explosion](#explode) and [Hit effects](#hit-effects) say. The handler returns the parts reached
-  outside the glass, and `Strike_Contact` plays the impact sound (9, or `0x1a` for a charge) on material 13 when it
-  returns any, at volume 0.5 for a player, 1 for an AI human.
+  16, 18 and 20 whose damage crosses 0.5 in this hit (its dent) plays `Sound_PlayMaterialPair(1, 129 CAR_DAMAGE, 129
+  CAR_DAMAGE)` at the hit point ([Sound events](sound-events.md#cars)). Message `0x19` and the first-hit effect follow
+  as [Explosion](#explode) and [Hit effects](#hit-effects) say. The handler returns the zone's parts outside the glass
+  (`s5 & 0xffd57f3f` at `0x0038c794`, the parts off included, as for the sparks), and `Strike_Contact` plays the impact
+  sound (9, or `0x1a` for a charge) on material 13 when it returns any, at volume 0.5 for a player, 1 for an AI human.
+  Confirmed (runtime), run r-20261127-car-door: in `level99` beside the parked sedan's front-left door, the first square
+  broke window 15 alone and the handler returned 0 (no impact sound), the second returned door 14's bit `0x4000`;
+  run r-20261127-car-corner-return: at its front-left corner both squares returned `0x4000504` (parts 2, 8, 10 and
+  the lamp glass 26), lamp 8 and bit 26 already off at the second.
 - **What the hit gives the player.** `Strike_Contact` counts crime 11 for a player when the hit reached a part not
   yet off (and for every player when the striker is a Warrior whose gang leader is a player). A held human slammed
   into the car (`0x1400000`, the throw into an object) takes 100 pending damage (one less than his health when he
@@ -487,9 +498,9 @@ damages comes from the zone tables, never from the part's own box. Confirmed (co
   alarm sound (`vags/ambient/alarms/alarmbell_loop`, `alarm_emitter`) belongs to scripts' sound emitters
   (`Sound_AddScriptEmitter`), and no car code plays it. Confirmed (code).
 
-**Runtime: squares at a door** (`car_punch`, confirmed (runtime)). The player held 0.44 m outside the sedan's right
-side beside its front door (the car's x = +1.64, y = +0.03), facing it, square every 30 to 60 updates (an attack
-and its recovery take 60):
+**Runtime: squares at a door** (`car_punch`, confirmed (runtime), run r-20261127-car-punch). The player held 0.44 m
+outside the sedan's right side beside its front door (the car's x = +1.64, y = +0.03), facing it, square every 30 to 60
+updates (an attack and its recovery take 60):
 
 | Square | Clip | Lands (updates after the press) | Result |
 | --- | --- | --- | --- |
@@ -646,17 +657,19 @@ first 26 atomics of each car, each at its frame and given the dictionary's first
   instant call, or a part of record flag `0x10`, sets it to 1) and at 1 the part comes off (its kept removed bit); a
   door knocked off takes its window, window 15 frees the stereo and the roof ends the police lights; the boot coming
   off a non-instant call moves the pinned boot object there, or else adds a `dyn_money` spawn record holding the
-  boot's dollars and spends them; an instant call loses the item, and `CarRemovePart` releases nothing. Dollars and
+  boot's dollars and spends them; an instant call loses the item, and `CarRemovePart` releases nothing. It skips no
+  part itself: the hit and the explosion pass over the parts removed or off before they call it. Dollars and
   an object are kept apart, an object only when its handle resolves. A quiet explosion hides the parts a blast
   throws.
-- **Windows and hits** (`repo:src/world_objects/car_hits.h`, from [Windows, hits and the stereo](#windows)): the
-  body and cabin zone tables by where the hitter stands, the facing test, the car pass's reach (1 m outside the box,
-  the 3 × 54° cone, 2 m in height), the aim point (1 m ahead at feet + 1.5 m for a window, so square plays 662), and
-  `Cars::humanHit()`: an intact window shields its door, each part takes 0.115, the lamps' glass (bits 26-29) is
-  knocked off at once, a player standing above the car takes the cabin table in body bands 1-4, and the parts removed
-  or off are passed over. `PlayLevelMode` offers each car the
-  player can target among the object targets and passes the strike to `Cars::humanHit()`. The stereo and the boot
-  item sit at the documented offsets.
+- **Windows and hits** (`repo:src/world_objects/car_hits.h`, from [Windows, hits and the stereo](#windows)): the body
+  and cabin zone tables by where the hitter stands, the facing test, the car pass's reach (1 m outside the box, the 3 ×
+  54° cone, 2 m in height), the aim point (1 m ahead at feet + 1.5 m for a window, so square plays 662), and
+  `Cars::humanHit()`: an intact window shields its door, each part takes 0.115, the lamps' glass (bits 26-29) is knocked
+  off at once, a player standing above the car takes the cabin table in body bands 1-4, and the parts removed or off are
+  passed over. It sparks and returns the zone's parts outside the glass, off ones too, and the strike sounds on the
+  car's material when that is any: a window alone is silent, a corner whose parts are all off is not. `PlayLevelMode`
+  offers each car the player can target among the object targets and passes the strike to `Cars::humanHit()`. The stereo
+  and the boot item sit at the documented offsets.
 - **The stereo's model** (`world_objects::stereoDraws()`): the play mode draws `dyn_carstereo` at the stereo's offset,
   turned with the car, while it is in the car or freed, and no more once stolen.
 - **Hit effects** (`Cars::takeHitEffects()`, `PlayLevelMode::carHitEffects()`, `carBreakWindowEffect()`): a human hit
@@ -693,15 +706,18 @@ Coney's stand-ins, where this page is silent:
 - Only the square's object attack hits a car; these are not ported: the gang lock (`+0x12d8`), the exploding car, the
   charge's, weapons' and thrown objects' contact-point hits, a molotov's fire (its `-1, 0` message and the
   `+0x1200` countdown that also refuses an explosion), the rock, the dent and squeak sounds and the statistic
-  ([The fix](#coney-fix)). A hit sparks only off a part still on, and returns the glass it struck too, so the
-  strike sounds for a window alone.
+  ([The fix](#coney-fix)).
 - No part flies off (`+0x11f4` is not kept): a part a hit or a loud blast throws keeps its damaged form in place.
+- Two callers of `Car_AddPartDamage` are not ported ([#1702](issue:1702)): `CarSetPartDamage` (`0x0038dee8` →
+  `Car_BreakPartByIndex` `0x0038a7e8`) has no binding, and `BreakGlassInRadius` breaks the panes only, not a car's
+  glass (`World_BreakGlassInRadius` `0x003963b8` → `Car_DamagePartsByMask` `0x0038b0e8`, [Parts](#parts)).
 - The money pickup's 15 s life is not applied.
 - A name that is not one of the six types still makes a car, which draws nothing.
 - The explosion's pieces flying off (the car shows every part's damaged form where it was), effects, sound, 300
   damage within 5 m, statistic and alert to the AI are not built; its message carries 0 as the other object and the
   number, and both the car's handler and the general one are called (which the manager's slots reach, and in which
-  order, is not on the page). A car with `+0x1200` set is not skipped.
+  order, is not on the page). A car with `+0x1200` set is not skipped. On any explosion, quiet or loud, the wreck's
+  first box is not lowered and the flags near it are not switched off ([Explosion](#explode), step 4).
 
 ### Coney status and the fix for the implementer {#coney-fix}
 
@@ -743,15 +759,15 @@ particular spots", comes from these gaps:
    and part boxes (the part flags and the all-broken masks are in). Tests: per type, a table-driven test of the zone
    at a few points (the coupe's band 3 gives 14-17, the van's back gives its rear doors 18-21, the wagon's middle
    band 4 gives 12, 13).
-3. **Contact-point hits.** Kinds 2, 1 and 0: the charge (0.51, body table, two columns, no window shield), a held
-   weapon (0.34, the holder's side only, each part once per swing via a per-human mask cleared when the shapes go
-   off), a thrown object (0.34, no windows from the body, no doors from the cabin); the roof coming off ending the
-   police lights; the gang lock (`CarCanBeDamagedBy`); the molotov (fire particle, 120-update countdown, the
-   prepared sound, message `(car, thrower, -1, 0)`, crime 11). Tests: each kind's parts and damage from a synthetic
-   contact; a molotov car explodes on the 120th update; a locked car ignores another gang.
+3. **Contact-point hits.** Kinds 2, 1 and 0: the charge (0.51, body table, two columns, no window shield), a held weapon
+   (0.34, the holder's side only, each part once per swing via a per-human mask cleared when the shapes go off), a
+   thrown object (0.34, no windows from the body, no doors from the cabin); the gang lock (`CarCanBeDamagedBy`); the
+   molotov (fire particle, 120-update countdown, the prepared sound, message `(car, thrower, -1, 0)`, crime 11). Tests:
+   each kind's parts and damage from a synthetic contact; a molotov car explodes on the 120th update; a locked car
+   ignores another gang.
 4. **Feedback: rock and sounds.** The rock of [The rock](#rock) (state per car, six sub-steps an update, ends on
    settling, leaves the lean), `shocks_squeak_0<n>` at its start, the dent sound (129 × 129 when a part among 4, 5,
-   10-14, 16, 18, 20 crosses 0.5), the strike's impact sound on material 13 at volume 0.5 for the player. Tests: the
+   10-14, 16, 18, 20 crosses 0.5). Tests: the
    rock's `p`.z sequence for a strength-2 push (−1.51, −1.71, settling at −0.30 within 30 updates, ending by 47)
    within 0.01; the dent sound once on the 5th door hit.
 5. **Flying pieces.** A part with record flag `0x02` coming off by a hit flies ([What is drawn](#drawn),

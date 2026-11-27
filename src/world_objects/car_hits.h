@@ -52,8 +52,9 @@ inline constexpr float kHumanCarHitDamage = 0.115F;
 /// @orig 0x0038c990 Car_HitZoneHasParts (unknown)
 [[nodiscard]] std::optional<anim::Vec3> carAimPoint(const Car& car, anim::Vec3 feet, anim::Vec3 forward);
 
-/// The parts a plain human hit from `standing` (a player's when `player`) damages: carZoneParts() less each door whose
-/// window is still whole (an intact window shields its door), and less the parts removed or off.
+/// The parts a plain human hit from `standing` (a player's when `player`) reaches: carZoneParts() less each door
+/// whose window is not off yet (an intact window shields its door). The parts removed or off stay in: the hit passes
+/// over them when it damages, but they count for its sparks and its sound (docs/research/cars.md#hit-effects).
 /// @orig 0x0038bea0 Car_OnHit (unknown)
 [[nodiscard]] CarPartMask carHumanHitParts(const Car& car, anim::Vec3 standing, bool player = false);
 

@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261127-car-corner-return"
+date = "2026-11-27"
+kind = "trace"
+tool = "trace original"
+digest = "2a16593ac00a74fb312694ec0c77680c797ac3be5791a073313d412391369fd3"
+
+[who]
+agent = "a7f5517c0ab71483d"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["car-hit-return", "right-stick", "scripted-pad"]
+
+[run]
+name = "car_corner_return"
+method = ""
+
+[values]
+updates = 161
+missed_updates = 0
+columns = 19
+
+[hashes]
+trace_csv = "dd3a0ffbe3831ac9732aab5f5a0a5b82fb3bca74d618a85a1843ae145adc7554"

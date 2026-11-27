@@ -162,7 +162,9 @@ starts which anim id and which script callback it runs). The level80 passes adde
 before each; [Sound](../research/sound.md#speech-cut-in)), and the scene-mapping pass `scene-find`, `scene-bind-human`,
 `scene-bind-object` (what each scene binds, [Scenes](../research/scenes.md#cast-runtime)) and `lua-exec-source`
 (`lua-exec` with the chunk name's text), and the gang-battle pass `set-target`, `help-call` and `send-helper` (who
-changes a fighter's target, help calls and helpers sent; [Gang fights](../research/gang-fights.md#runtime)). One run
+changes a fighter's target, help calls and helpers sent; [Gang fights](../research/gang-fights.md#runtime)), and the
+car-hit pass `car-hit-return` (what a car's hit handler returns to the strike, which sounds on it;
+[Cars](../research/cars.md#hit-volumes)). One run
 installs at most 64 hooks, fewer than the file holds, so name only the ones a pass needs. Two hooks at one address
 cannot be installed together (`hint-show` and `event-hint` are the same place): pick one, and add any extra value it
 needs to the one you keep. When the update of an entry matters, log the tick count and use it: in that pass one Lua

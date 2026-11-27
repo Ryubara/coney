@@ -70,11 +70,14 @@ TEST_CASE("the car pass takes a car within 1 m of its box and aims at a window 1
 }
 
 TEST_CASE("the first hit breaks the window, which shielded its door, and window 15 frees the stereo", "[cars]") {
+    // Expected: cars.md#hit-volumes, confirmed (runtime), run r-20261127-car-door: the window alone first (the handler
+    // returns 0), then the door; cars.md#windows for the stereo.
     Cars cars;
     REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
     cars.spawnRadio(1);
     const Vec3 standing{-1.6F, 0.5F, 0};
-    CHECK(cars.humanHit(1, standing, standing) == bit(15));
+    // Glass alone: nothing outside the glass to sound on (cars.md#hit-volumes).
+    CHECK(cars.humanHit(1, standing, standing) == 0);
     CHECK((cars.find(1)->removedKept & bit(15)) != 0);
     CHECK(cars.find(1)->stereo == StereoState::Freed);
     // The window is gone: now the door takes a plain hit's damage.
@@ -84,7 +87,8 @@ TEST_CASE("the first hit breaks the window, which shielded its door, and window 
     // Window 19 does not free a stereo.
     REQUIRE(cars.spawn("car_osedan", Vec3{10, 0, 0}, Quat{}, 2) != nullptr);
     cars.spawnRadio(2);
-    CHECK(cars.humanHit(2, Vec3{8.4F, -0.5F, 0}, Vec3{}) == bit(19));
+    CHECK(cars.humanHit(2, Vec3{8.4F, -0.5F, 0}, Vec3{}) == 0);
+    CHECK((cars.find(2)->removedKept & bit(19)) != 0);
     CHECK(cars.find(2)->stereo == StereoState::InCar);
 }
 
@@ -110,7 +114,7 @@ TEST_CASE("a hit reports each part it damaged and whether it broke, and the hit 
     REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
     const Vec3 standing{-1.6F, 0.5F, 0};
     std::vector<coney::world_objects::CarHitReport> reports;
-    CHECK(cars.humanHit(1, standing, standing, &reports) == bit(15));
+    CHECK(cars.humanHit(1, standing, standing, &reports) == 0);
     REQUIRE(reports.size() == 1);
     CHECK(reports[0].part == 15);
     CHECK(reports[0].broke);
@@ -167,8 +171,11 @@ TEST_CASE("a window a script removed is not struck, nor the door it no longer sh
     REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
     // CarRemovePart on door 14 removes window 15 too (+0x11f0 only); the door is off (+0x11f8).
     cars.removePart(1, 14, true);
-    CHECK(coney::world_objects::carHumanHitParts(*cars.find(1), Vec3{-1.6F, 0.5F, 0}) == 0);
+    // The zone less the door its window (not off, +0x11f8) still shields; the loop then passes over the window.
+    CHECK(coney::world_objects::carHumanHitParts(*cars.find(1), Vec3{-1.6F, 0.5F, 0}) == bit(15));
     CHECK(cars.humanHit(1, Vec3{-1.6F, 0.5F, 0}, Vec3{}) == 0);
+    CHECK(cars.find(1)->damage.at(15) == 0.0F);
+    CHECK(cars.find(1)->damage.at(14) == 0.0F);
 }
 
 TEST_CASE("a hit at a front corner knocks the headlight glass off at once and sprays it", "[cars]") {
@@ -203,7 +210,9 @@ TEST_CASE("the all-broken message counts the parts of the car's type: the coupe'
     }
     const Vec3 standing{-1.6F, 0.5F, 0};
     std::vector<coney::world_objects::CarHitReport> reports;
-    CHECK(cars.humanHit(1, standing, standing, &reports) == bit(15));
+    CHECK(cars.humanHit(1, standing, standing, &reports) == 0);
+    REQUIRE(reports.size() == 1);
+    CHECK(reports[0].part == 15);
     // Door 14 is the last of the coupe's parts: the hit that takes it off reports the car all broken.
     constexpr int kMostHits = 20;
     for (int hit = 0; hit < kMostHits; ++hit) {
@@ -216,4 +225,54 @@ TEST_CASE("the all-broken message counts the parts of the car's type: the coupe'
     REQUIRE(reports.size() == 2);
     CHECK(reports[0].part == 14);
     CHECK(reports[1].part == coney::world_objects::kCarHitAllBroken);
+}
+
+TEST_CASE("a hit sounds and sparks when its zone holds a part outside the glass, though every part there is off",
+          "[cars]") {
+    // Expected: cars.md#hit-volumes, confirmed (code): Car_OnHit returns the zone's parts outside the glass (mask
+    // 0xffd57f3f) before it passes over the parts off, and Strike_Contact sounds on any; cars.md#hit-effects: the
+    // sparks (kind 0) take the same test.
+    using coney::world_objects::CarHitEffectKind;
+    Cars cars;
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    // The front-left corner's zone: bumper 2, lamp 8, panel 10 and the headlight glass 26, every one off already.
+    for (const std::uint32_t part : {2U, 8U, 10U}) {
+        static_cast<void>(cars.damagePart(1, part, 1.0F, true));
+    }
+    Car& car = *cars.find(1);
+    car.removedParts |= bit(26);
+    car.removedKept |= bit(26);
+    static_cast<void>(cars.takeHitEffects());
+    std::vector<coney::world_objects::CarHitReport> reports;
+    const Vec3 point{-1.0F, 3.0F, 0.5F};
+    CHECK(cars.humanHit(1, Vec3{-1.6F, 3.5F, 0}, point, &reports) == (bit(2) | bit(8) | bit(10) | bit(26)));
+    // Nothing is damaged again, and only the sparks come.
+    CHECK(reports.empty());
+    const auto effects = cars.takeHitEffects();
+    REQUIRE(effects.size() == 1);
+    CHECK(effects[0].kind == CarHitEffectKind::Sparks);
+    CHECK(effects[0].position == point);
+}
+
+TEST_CASE("a hit and a blast pass over a part a script removed but did not take off", "[cars]") {
+    // Expected: cars.md#parts, confirmed (code): Car_OnHit and Car_DoExplode skip the parts in +0x11f0, +0x11f4 and
+    // +0x11f8 before they call Car_AddPartDamage.
+    Cars cars;
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    // Bumper 2 only removed (+0x11f0), as a door's window is when its door is.
+    cars.find(1)->removedParts |= bit(2);
+    std::vector<coney::world_objects::CarHitReport> reports;
+    static_cast<void>(cars.humanHit(1, Vec3{-1.6F, 3.5F, 0}, Vec3{}, &reports));
+    const Car& car = *cars.find(1);
+    CHECK(car.damage.at(2) == 0.0F);
+    CHECK((car.firstHits & bit(2)) == 0);
+    for (const coney::world_objects::CarHitReport& report : reports) {
+        CHECK(report.part != 2);
+    }
+    // Panel 10 beside it took the hit.
+    CHECK(car.damage.at(10) == Approx(coney::world_objects::kHumanCarHitDamage));
+    CHECK(cars.explode(1));
+    CHECK(car.damage.at(2) == 0.0F);
+    CHECK((car.firstHits & bit(2)) == 0);
+    CHECK((car.removedKept & bit(2)) == 0);
 }

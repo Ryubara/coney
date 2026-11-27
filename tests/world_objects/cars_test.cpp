@@ -111,10 +111,10 @@ TEST_CASE("a hit sends sparks off a solid part and each part's first-hit effect 
     Cars cars;
     REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 4) != nullptr);
     // Standing at the front-left door: the first square breaks window 15 only, a small shatter on the atomic's frame
-    // (its first row, negated), and no sparks (glass only).
+    // (its first row, negated), and no sparks and nothing to sound on (glass only).
     const Vec3 standing{-1.6F, 0.5F, 0};
     const Vec3 point{-0.6F, 0.5F, 1.5F};
-    REQUIRE(cars.humanHit(4, standing, point) == (1U << 15U));
+    REQUIRE(cars.humanHit(4, standing, point) == 0);
     auto effects = cars.takeHitEffects();
     REQUIRE(effects.size() == 1);
     CHECK(effects[0].kind == CarHitEffectKind::SmallShatter);
@@ -170,6 +170,8 @@ TEST_CASE("a stereo is drawn in its car until a theft takes it", "[cars]") {
 }
 
 TEST_CASE("a boot's item is released when the boot is knocked off, not when removed or blown off", "[cars]") {
+    // Expected: cars.md#parts, confirmed (code): Car_AddPartDamage releases the item when part 5 comes off a
+    // non-instant call, and skips no part itself.
     Cars cars;
     coney::world_objects::SpawnRecords records;
     double next = 100;
@@ -202,14 +204,17 @@ TEST_CASE("a boot's item is released when the boot is knocked off, not when remo
     REQUIRE(records.find(100) != nullptr);
     CHECK(records.find(100)->typeName == coney::world_objects::kMoneyPickup);
     CHECK(records.find(100)->money == 5);
-    // Car 3's $5 is lost when the car blows up (instant), and CarRemovePart releases nothing.
+    // Car 3: CarRemovePart releases nothing. Car_AddPartDamage skips no part itself (its hit and blast callers do), so
+    // a knock-off call on the boot afterwards (CarSetPartDamage's path) still releases the $5 (cars.md#parts).
     cars.placeInTrunk(3, 0, 5);
     cars.removePart(3, coney::world_objects::kBootPart, true);
     CHECK(cars.find(3)->trunkLoaded);
-    CHECK_FALSE(cars.damagePart(3, coney::world_objects::kBootPart, 1.0F, false)); // gone already: hits skip it
+    CHECK_FALSE(cars.damagePart(3, coney::world_objects::kBootPart, 1.0F, false)); // off already
+    CHECK_FALSE(cars.find(3)->trunkLoaded);
+    // Car 2's $5 stays when an instant call takes a part off.
     cars.placeInTrunk(2, 0, 5);
     CHECK(cars.damagePart(2, 4, 0.0F, true));
-    CHECK(records.all().size() == 2);
+    CHECK(records.all().size() == 3);
 }
 
 TEST_CASE("an explosion knocks every part off once and loses a loaded boot's item", "[cars]") {
@@ -346,6 +351,21 @@ TEST_CASE("a door knocked off by damage takes its window off with it; blown off,
     REQUIRE(cars.spawn("car_osedan", Vec3{10, 0, 0}, Quat{}, 2) != nullptr);
     CHECK(cars.damagePart(2, 18, 1.0F, true));
     CHECK((cars.find(2)->removedKept & partBit(19)) == 0);
+}
+
+TEST_CASE("a door knocked off takes its window even when a script only removed the window", "[cars]") {
+    // Expected: cars.md#parts, confirmed (code): Car_AddPartDamage skips no part; the door's window is damaged when it
+    // is not off (+0x11f8), whatever +0x11f0 holds.
+    Cars cars;
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    cars.spawnRadio(1);
+    // Window 15 only removed (+0x11f0), as CarRemovePart leaves a door's window.
+    cars.find(1)->removedParts |= partBit(15);
+    CHECK(cars.damagePart(1, 14, 1.0F, false));
+    const Car& car = *cars.find(1);
+    CHECK(car.damage.at(15) == 1.0F);
+    CHECK((car.removedKept & partBit(15)) != 0);
+    CHECK(car.stereo == StereoState::Freed);
 }
 
 TEST_CASE("the parts their record marks come off at the first damage: the roof, glass 6 and 7, lamps 8 and 9",

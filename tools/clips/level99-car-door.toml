@@ -1,0 +1,11 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level99's parked sedan at (41.23, 44.76),
+# squared twice at its front-left door. The input script skips the checkpoint's scene, walks round the car's west end
+# and stops beside the door by frame 360; the clip starts there and shows the two squares: the first breaks window 15
+# only (glass, so the strike makes no impact sound), the second dents the door (sparks and the impact sound). For a
+# change to a car's hit sound, its sparks or its windows.
+description = "level99 street: two squares at the parked sedan's front-left door (window 15, then the door)"
+level = "level99"
+input = "tools/clips/level99-car-door.txt"
+checkpoint = 2
+start_frame = 370
+seconds = 6

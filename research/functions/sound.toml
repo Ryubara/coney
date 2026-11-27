@@ -1056,11 +1056,6 @@ what = "only the plain human hit (kind 3) is ported: the charge, held weapons, t
 relation = "not-ported"
 issue = 72
 
-[[function.gaps]]
-what = "the sparks need a part not off yet, and every part struck is returned (the original returns those outside the glass)"
-relation = "stand-in"
-issue = 72
-
 [[function]]
 address = 0x00393538
 name = "ThrownObject_OnContact"

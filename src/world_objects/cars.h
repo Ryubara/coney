@@ -195,8 +195,9 @@ class Cars {
     /// the first damage: the roof, glass 6 and 7, lamps 8 and 9, the windows); at 1 it comes off (its bit in the kept
     /// removed parts, `+0x11f8`). Coming off a non-instant call, a door takes its window too and the boot (part 5)
     /// releases a loaded boot's item; an instant one (the car exploding) loses it; window 15 frees the stereo and the
-    /// roof ends the police lights. With `quiet` (a quiet explosion) a part its record throws is hidden instead. A part
-    /// removed or off takes nothing. Returns whether the part came off now (docs/research/cars.md#parts).
+    /// roof ends the police lights. With `quiet` (a quiet explosion) a part its record throws is hidden instead. No
+    /// part is skipped: the callers pass over the parts removed or off. Returns whether the part came off now, from
+    /// not off before (docs/research/cars.md#parts).
     /// @orig 0x0038a4d8 Car_AddPartDamage (unknown)
     bool damagePart(double handle, std::uint32_t part, float amount, bool instant, bool quiet = false);
     /// `CarExplode(car, quiet)`'s wreck: a car not yet exploded has each hit bit 1-29 not off yet knocked off (parts
@@ -207,12 +208,13 @@ class Cars {
     /// @orig 0x0038ab50 Car_DoExplode (unknown)
     bool explode(double handle, bool quiet = false);
     /// A plain human's strike from `standing` (a player's when `player`) reached the car at `point` (the hit record's
-    /// `+0x90`): a hit on any part outside the glass sends sparks at `point`; each part carHumanHitParts() names takes
-    /// kHumanCarHitDamage (some break at once), each lamp's glass (26-29) is knocked off, and each one's first hit ever
-    /// sends its carBreakWindowEffect() (takeHitEffects()). Returns the parts struck; `reports` (when given) gets what
-    /// message 0x19 says of the hit: each part 1-25 it damaged, and after a part 1-21 kCarHitAllBroken when the type's
-    /// breakable parts are all off. **Coney's reading**: the gang lock (`+0x12d8`), the exploding car, the rock and
-    /// the strikes of other kinds are not modelled yet (#72).
+    /// `+0x90`): a hit reaching any part outside the glass, off or not, sends sparks at `point`; each part
+    /// carHumanHitParts() names and not removed or off takes kHumanCarHitDamage (some break at once), each lamp's glass
+    /// (26-29) is knocked off, and each one's first hit ever sends its carBreakWindowEffect() (takeHitEffects()).
+    /// Returns the parts reached outside the glass, off ones too, which the strike sounds on; `reports` (when given)
+    /// gets what message 0x19 says of the hit: each part 1-25 it damaged, and after a part 1-21 kCarHitAllBroken when
+    /// the type's breakable parts are all off. **Coney's reading**: the gang lock (`+0x12d8`), the exploding car, the
+    /// rock and the strikes of other kinds are not modelled yet (#72).
     /// @orig 0x0038bea0 Car_OnHit (unknown)
     CarPartMask humanHit(double handle, anim::Vec3 standing, anim::Vec3 point,
                          std::vector<CarHitReport>* reports = nullptr, bool player = false);

@@ -206,11 +206,9 @@ bool Cars::damagePart(double handle, std::uint32_t part, float amount, bool inst
         return false;
     }
     const std::uint32_t bit = 1U << part;
-    // The callers' skip (Car_OnHit, Car_DoExplode): a part removed or off takes nothing. **Coney's stand-in**: here
-    // for every caller, so a door's window only removed (`+0x11f0`) is skipped too, which the original damages.
-    if ((passedOver(*car) & bit) != 0) {
-        return false;
-    }
+    // No part is skipped here: the hit and the blast pass over the parts removed or off before they call, and a
+    // knock-off call on one (CarSetPartDamage's path) runs in full.
+    const bool wasOff = (car->removedKept & bit) != 0;
     // The damage adds up; an instant call, or a part whose record says so, takes it to 1 at once.
     const std::uint8_t how = comesOff(*car, part);
     float& damage = car->damage.at(part);
@@ -220,7 +218,8 @@ bool Cars::damagePart(double handle, std::uint32_t part, float amount, bool inst
     }
     damage = 1.0F;
     car->removedKept |= bit;
-    // A door knocked off (not blown off) takes its window with it, at full damage, unless that is off already.
+    // A door knocked off (not blown off) takes its window with it, at full damage, unless that is off already
+    // (`+0x11f8` alone: a window only removed is damaged).
     if (const std::optional<std::uint32_t> window = linkedCarPart(part);
         !instant && window && (car->removedKept & (1U << *window)) == 0) {
         static_cast<void>(damagePart(handle, *window, 1.0F, false));
@@ -247,7 +246,7 @@ bool Cars::damagePart(double handle, std::uint32_t part, float amount, bool inst
     if ((how & thrownBy) != 0 && quiet) {
         car->removedParts |= bit;
     }
-    return true;
+    return !wasOff;
 }
 
 bool Cars::explode(double handle, bool quiet) {
@@ -272,8 +271,9 @@ bool Cars::explode(double handle, bool quiet) {
         }
         car->firstHits |= bit;
     }
-    // **Coney's stand-in**: the loud blast's statistic, heat wave, AI alert, 300 damage, broken glass, the wreck's
-    // lower box and the flags switched off near it are not ported (#72); its message 0x19 is the binding's.
+    // **Coney's stand-in**: the loud blast's statistic, heat wave, AI alert, 300 damage and broken glass are not
+    // ported, nor, on any blast, quiet or loud, the wreck's lower first box and the flags switched off near it (#72);
+    // the loud blast's message 0x19 is the binding's.
     car->exploded = true;
     // The stereo, in the car or freed, is destroyed with it.
     if (car->stereo == StereoState::InCar || car->stereo == StereoState::Freed) {
@@ -289,9 +289,9 @@ CarPartMask Cars::humanHit(double handle, anim::Vec3 standing, anim::Vec3 point,
         return 0;
     }
     const CarPartMask struck = carHumanHitParts(*car, standing, player);
-    // Any part outside the glass: sparks and dust at the hit point. **Coney's stand-in**: only for a part not off yet,
-    // as carHumanHitParts() leaves the others out; the original sparks for any (#72).
-    if (const CarPartMask solid = struck & ~kCarGlassParts; solid != 0) {
+    // Any part outside the glass reached, off or not: sparks and dust at the hit point, and what the strike sounds on.
+    const CarPartMask solid = struck & ~kCarGlassParts;
+    if (solid != 0) {
         m_effects.push_back(CarHitEffect{.car = handle,
                                          .part = static_cast<std::uint32_t>(std::countr_zero(solid)),
                                          .kind = CarHitEffectKind::Sparks,
@@ -300,8 +300,8 @@ CarPartMask Cars::humanHit(double handle, anim::Vec3 standing, anim::Vec3 point,
                                          .carPosition = car->position,
                                          .carRotation = car->rotation});
     }
-    // Each hit bit 1-29 struck and not passed over (a door's window may have gone with it): a part takes the damage, a
-    // lamp's glass is removed and off; then its first hit ever sends its effect.
+    // Each hit bit 1-29 struck and not passed over (removed or off; a door's window may have gone with it): a part
+    // takes the damage, a lamp's glass is removed and off; then its first hit ever sends its effect.
     for (std::uint32_t part = 1; part <= kLastHitBit; ++part) {
         const std::uint32_t bit = 1U << part;
         if ((struck & bit) == 0 || (passedOver(*car) & bit) != 0) {
@@ -327,9 +327,7 @@ CarPartMask Cars::humanHit(double handle, anim::Vec3 standing, anim::Vec3 point,
             m_effects.push_back(carBreakWindowEffect(*car, part, point));
         }
     }
-    // **Coney's stand-in**: every part struck is returned; the original returns those outside the glass, which its
-    // caller sounds (#72).
-    return struck;
+    return solid;
 }
 
 CarHitEffect carBreakWindowEffect(const Car& car, std::uint32_t part, anim::Vec3 point) {
