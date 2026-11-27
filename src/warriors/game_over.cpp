@@ -8,15 +8,16 @@
 namespace coney {
 
 GameOverPlayer gameOverPlayer(const human::Human& human, bool holdsFlash) {
-    return GameOverPlayer{.knockedOut = human.fighter().health().depleted() || human.script().knockedOut,
+    // Coney's stand-ins: never dead, never able to free himself, the wait never blocked (see the declaration).
+    return GameOverPlayer{.dead = false,
+                          .knockedOut = human.knockedOut(),
                           .cuffed = human.script().arrested,
-                          .holdsFlash = holdsFlash};
+                          .canFreeSelf = false,
+                          .holdsFlash = holdsFlash,
+                          .waitBlocked = false};
 }
 
-bool asksForRoute(const human::Human& member) {
-    const bool out = member.fighter().health().depleted() || member.script().knockedOut;
-    return !member.script().arrested && !out && !member.attached();
-}
+bool asksForRoute(const human::Human& member) { return !member.script().arrested && !member.downOrDead(); }
 
 GameOverReason GameOverCheck::fail(const GameOverPlayer& first) {
     m_reason = first.cuffed ? GameOverReason::Busted : GameOverReason::Beaten;

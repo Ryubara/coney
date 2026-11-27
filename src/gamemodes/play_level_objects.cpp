@@ -551,23 +551,13 @@ void PlayLevelSimulation::stepGameOver(const Pad& pad) {
             (void)m_gameOver->update({}, false, nullptr);
             return;
         }
-        // Player 1 as the check sees him. **Coney's stand-ins**: none is dead (0 health counts as knocked out), none
-        // frees himself (Coney has no uncuffing) and `+0x414` never blocks the wait.
-        const human::Human& human = m_player->human();
-        const GameOverPlayer player{.dead = false,
-                                    .knockedOut = human.fighter().health().depleted() || human.script().knockedOut,
-                                    .cuffed = human.script().arrested,
-                                    .canFreeSelf = false,
-                                    .holdsFlash = m_pickups->carried(0, item::kRevive) > 0,
-                                    .waitBlocked = false};
+        // Player 1 as the check sees him (gameOverPlayer(), with its stand-ins).
+        const GameOverPlayer player = gameOverPlayer(m_player->human(), m_pickups->carried(0, item::kRevive) > 0);
         // Whether no one of player 1's gang is free to help: the gang's own test with no exception, so player 1 counts
         // too (docs/research/combat-reactions.md#defeat-helpers); no gang is not "none able". The others of the gang
         // for the route test.
         const ai::Gang* gang = m_ai->playerBrain().gang();
         const bool noneAble = gang != nullptr && gang->noneAbleToHelp(nullptr);
-        const auto knockedOut = [](const human::Human& h) {
-            return h.fighter().health().depleted() || h.script().knockedOut;
-        };
         std::vector<const human::Human*> others;
         if (gang != nullptr) {
             for (const ai::Brain* member : gang->members()) {
@@ -581,16 +571,13 @@ void PlayLevelSimulation::stepGameOver(const Pad& pad) {
         // **Coney's stand-in**: the route request stands for Nav_CanReach (it fails off the polygons, off the graph or
         // with no route); Coney's links are never blocked, and a level with no path data finds a route always.
         // @orig 0x00169ea0 Gang_CanReachToHelp (unknown)
-        const auto canReachToHelp = [this, &others, &knockedOut] {
+        const auto canReachToHelp = [this, &others] {
             if (m_planner == nullptr) {
                 return true;
             }
             const anim::Vec3 goal = m_player->human().position();
-            return std::ranges::any_of(others, [this, &goal, &knockedOut](const human::Human* other) {
-                if (other->script().arrested || knockedOut(*other) || other->attached()) {
-                    return false;
-                }
-                return m_planner->request(other->position(), goal, 0xffff).has_value();
+            return std::ranges::any_of(others, [this, &goal](const human::Human* other) {
+                return asksForRoute(*other) && m_planner->request(other->position(), goal, 0xffff).has_value();
             });
         };
         if (const std::optional<GameOverReason> reason =

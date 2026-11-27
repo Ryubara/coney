@@ -2640,7 +2640,7 @@ coney = "src/warriors/game_over.h:GameOverCheck::update"
 status = "compared"
 
 [[function.gaps]]
-what = "no player is dead (0 health counts as knocked out), none frees himself from cuffs, game state +0x414 never blocks the wait, and a held member stands for state 0x10000"
+what = "no player is dead (Coney keeps no dead state), none frees himself from cuffs, and game state +0x414 never blocks the wait"
 relation = "stand-in"
 issue = 1008
 

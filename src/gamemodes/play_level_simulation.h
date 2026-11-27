@@ -446,10 +446,10 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // docs/research/combat-reactions.md#defeat) reads each update: player 1 as it sees him and whether his gang has no
     // one free to help (ai::Gang::noneAbleToHelp(nullptr)); then the failure's hand-off: a story failure's HUD hidden
     // at its first update (an Armies level keeps it), and after 180 updates (90 in an Armies level, 10 once cross is
-    // newly pressed) the failure's mode with the reason's `GSTRING.HUD` title. **Coney's stand-ins**: a player at 0
-    // health counts as knocked out and none as dead; no player frees himself (Coney has no uncuffing); `+0x414` never
-    // blocks the wait; the route check is a route request (no blocked links in Coney); no player falls out of the
-    // world; the failed camera, the tint, the blur and the music's fade are not built.
+    // newly pressed) the failure's mode with the reason's `GSTRING.HUD` title. **Coney's stand-ins**: none is dead; no
+    // player frees himself (Coney has no uncuffing); `+0x414` never blocks the wait; the route check is a route request
+    // (no blocked links in Coney); no player falls out of the world; the failed camera, the tint, the blur and the
+    // music's fade are not built.
     // @orig 0x00169ea0 Gang_CanReachToHelp (unknown)
     void stepGameOver(const Pad& pad);
     // Player 1's flash (command 0x28, d-pad right, docs/research/combat-rage.md#flash): with a flash carried and health

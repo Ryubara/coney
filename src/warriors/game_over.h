@@ -26,10 +26,18 @@ struct GameOverPlayer {
     bool waitBlocked = false; ///< Game state `+0x414 + player` set: no waiting for help.
 };
 
-/// Player 1 as the game-over check reads him from his human (`holdsFlash`: he carries a flash).
+/// Player 1 as the game-over check reads him from his human (`holdsFlash`: he carries a flash): knocked out is
+/// `Human_IsKnockedOut` (state `0x40000`, human::Human::knockedOut(): set at his dying clip's end, not at 0 health) and
+/// cuffed `0x20000`. **Coney's stand-ins**: none is dead (Coney keeps no dead state), none frees himself (Coney has no
+/// uncuffing) and `+0x414` never blocks the wait.
+/// Research: docs/research/combat-reactions.md#mission-failing
+/// @orig 0x004197a8 GameState_CheckGameOver (unknown)
 [[nodiscard]] GameOverPlayer gameOverPlayer(const human::Human& human, bool holdsFlash);
 
-/// Whether the route test asks this member of player 1's gang for a route to him.
+/// Whether the route test asks this member of player 1's gang for a route to him: not cuffed (`Human_IsCuffed`) and
+/// not down or dead (`Human_IsDownOrDead`, human::Human::downOrDead(): dying, knocked out, wounded or dead).
+/// Research: docs/research/combat-reactions.md#defeat-helpers
+/// @orig 0x00169ea0 Gang_CanReachToHelp (unknown)
 [[nodiscard]] bool asksForRoute(const human::Human& member);
 
 /// Why the mission failed: the `GSTRING.HUD` id of the mission-failed screen's title (`MissionFailed_SetReason`).

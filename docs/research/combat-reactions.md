@@ -1340,16 +1340,18 @@ Readings and stand-ins:
 ### The mission failing {#game-over-coney}
 
 `repo:src/warriors/game_over.h`, `PlayLevelSimulation::stepGameOver()`: the check runs each update in the order of [The
-mission failing](#mission-failing), on at each level's start and switched by `EnableGameOverCheck`; the gang test is
-the gang's own port (`ai::Gang::noneAbleToHelp`, with no exception: cuffed, knocked out and wounded, as the original). A
-story failure hides the HUD at once (the original hides it in the failed camera's start, which waits for that camera
-and is skipped after a fall out of the world; the camera is #1695), an Armies level keeps it, and 180 updates later (90
-in an Armies level, 10 once cross is newly pressed) the failure's mode opens: the mission-failed mode with `GSTRING.HUD`
-20 or 21 as its title, or the Armies game over. Stand-ins ([Open questions](#open-questions): when a player is dead): a
-player whose health ran out counts as knocked out from the hit (the original waits for his dying clip's end, [When the
-knock-out comes](#knockout-timing)) and none as dead, no player frees himself from cuffs, the wait's `+0x414` never
-blocks it, and the route check is a route request (Coney has no blocked links, and a level without path data always
-finds a route); the failed camera, the tint, the blur, the music's fade and the `dyn_cross` icon are not built.
+mission failing](#mission-failing), on at each level's start and switched by `EnableGameOverCheck`; the gang test is the
+gang's own port (`ai::Gang::noneAbleToHelp`, with no exception: cuffed, knocked out and wounded, as the original),
+player 1 is knocked out when `Human::knockedOut()` says so (state `0x40000`, at his dying clip's end, [When the
+knock-out comes](#knockout-timing)), and the route test asks each member not cuffed and not down or dead
+(`Human::downOrDead()`, wounded among them), as the original. A story failure hides the HUD at once (the original hides
+it in the failed camera's start, which waits for that camera and is skipped after a fall out of the world; the camera
+is #1695), an Armies level keeps it, and 180 updates later (90 in an Armies level, 10 once cross is newly pressed) the
+failure's mode opens: the mission-failed mode with `GSTRING.HUD` 20 or 21 as its title, or the Armies game over.
+Stand-ins ([Open questions](#open-questions): when a player is dead): none is dead, no player frees himself from cuffs,
+the wait's `+0x414` never blocks it, and the route check is a route request (Coney has no blocked links, and a level
+without path data always finds a route); the failed camera, the tint, the blur, the music's fade and the `dyn_cross`
+icon are not built.
 
 ## Open questions
 
