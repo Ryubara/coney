@@ -30,7 +30,12 @@ namespace {
 // Walk 60 % up from the first step of the run, the scenarios' walk (research/traces/scenarios/walk60.txt).
 constexpr std::string_view kWalk = "0 stick left 0 60\n";
 // `walk60`'s start: where the original's slot 1 stands, in the street past the lesson's fence.
-constexpr coney::StartPlace kStreet{.x = 75.155F, .y = 41.1354F, .z = 0.2231F, .headingDegrees = 91.909F};
+constexpr coney::StartPlace kStreet{.x = 75.155F,
+                                    .y = 41.1354F,
+                                    .z = 0.2231F,
+                                    .headingDegrees = 91.909F,
+                                    .cameraDistance = std::nullopt,
+                                    .cameraYawDegrees = std::nullopt};
 // The opening's length that the old fixed settle stood in for: the scene alone holds him for longer than this.
 constexpr std::uint64_t kOldSettle = 300;
 // The most the opening may take before the test calls it hung (the level's own script gives the pad back at about 750).
