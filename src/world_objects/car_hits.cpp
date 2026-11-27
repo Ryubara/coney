@@ -186,16 +186,14 @@ std::optional<anim::Vec3> carAimPoint(const Car& car, anim::Vec3 feet, anim::Vec
 
 CarPartMask carHumanHitParts(const Car& car, anim::Vec3 standing, bool player) {
     CarPartMask mask = carZoneParts(car, standing, player);
-    // An intact window shields its door from this hit.
+    // A window not off yet (`+0x11f8`) shields its door from this hit.
     for (const std::uint32_t window : {15U, 17U, 19U, 21U}) {
         const CarPartMask bit = 1U << window;
         if ((mask & bit) != 0 && (car.removedKept & bit) == 0) {
             mask &= ~(1U << (window - 1U));
         }
     }
-    // Car_OnHit passes over the parts removed (`+0x11f0`) or off (`+0x11f8`). **Coney's stand-in**: the flying parts
-    // (`+0x11f4`) are not modelled (#72).
-    return mask & ~(car.removedParts | car.removedKept);
+    return mask;
 }
 
 anim::Vec3 carStereoPosition(const Car& car) { return fromLocal(car, anim::Vec3{-0.75F, 0.25F, 0.1F}); }
