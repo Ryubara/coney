@@ -1,7 +1,9 @@
 # Rumble mode
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`) and the compiled Lua chunks
-of the retail disc. One runtime observation: [the intro](#intro).
+of the retail disc. Runtime observations: the wait before a fight ([Starting a match](#match-start)) and the
+[gang battle trace](#gang-battle-trace); what the intro showed of the world is speculative until recorded
+([q-intro-world](#q-intro-world)).
 
 ## Purpose
 
@@ -231,7 +233,8 @@ Confirmed (code) at the cited functions unless marked.
 
 `ShowRumbleModeIntro(onDone, names)` (`0x0036ed48` → `0x001b5f88`) opens the HUD's **RM_Intro** screen (`0x00600840 +
 0xe530`): `0x001f9418` copies `onDone` and keeps the ten name slots in place, zeroing an empty one; `0x001f9558` counts
-the names up to the first empty slot (so a name after an empty one is never shown), builds a text widget per name, a
+the names up to the first empty slot (so a name after an empty one is never shown; with all ten slots filled its loop
+ends on the bound before it stores the count, which stays 0, so no name is shown), builds a text widget per name, a
 separator between two names and a prompt (global string `0x25`), queues screen effect 0 and loads a sound bank
 (`0x001f93a0`). Confirmed (code) at `0x001f9418` and `0x001f9558`; the orig sweep corrected an earlier reading that the
 non-empty names were all kept.

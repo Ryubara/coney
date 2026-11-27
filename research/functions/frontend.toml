@@ -690,6 +690,24 @@ coney = "src/gui/rumble_mode_gui/rumble_menu.cpp:RumbleMenu::showGangs"
 status = "legacy"
 
 [[function]]
+address = 0x001ef5a8
+name = "RM_ChooseGangs_MoveUp"
+page = "frontend.md#fn-rm_choosegangs"
+role = "previous gang for the side, past the other side's unless the gang size is 1 (`+0x1e4`), cue 4; at the first, or with only the other side's gang above, cue `0xe` and the bump flag (`+0x1e8`) ([Data](frontend.md#rumble-data))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_gang_chooser.h:RumbleGangChooser::move"
+status = "compared"
+
+[[function]]
+address = 0x001ef6d8
+name = "RM_ChooseGangs_MoveDown"
+page = "frontend.md#fn-rm_choosegangs"
+role = "next gang for the side, as MoveUp: no wrap, cue `0xe` at the last ([Data](frontend.md#rumble-data))"
+level = "confirmed-code"
+coney = "src/gui/rumble_mode_gui/rumble_gang_chooser.h:RumbleGangChooser::move"
+status = "compared"
+
+[[function]]
 address = 0x001ef7c0
 name = "RM_ChooseGangs_OnInput"
 page = "frontend.md#fn-rm_choosegangs"
@@ -789,7 +807,7 @@ issue = 661
 address = 0x001f9418
 name = "RM_Intro_Open"
 page = "frontend.md#fn-rm_intro"
-role = "copies onDone (`+0x64`) and keeps the non-empty names (`+0x68`) ([Intro](rumble.md#intro))"
+role = "copies onDone (`+0x64`) and keeps the ten name slots in place (`+0x68`), zeroing an empty one ([Intro](rumble.md#intro))"
 level = "confirmed-code"
 coney = "src/gui/rumble_mode_gui/rumble_intro.h:RumbleIntro::open"
 status = "compared"

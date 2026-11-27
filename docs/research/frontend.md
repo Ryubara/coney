@@ -377,8 +377,9 @@ Confirmed (code) at the cited functions unless marked.
 
 **The screens**, from a boot with no save: QUICK RUMBLE → **Game Mode** (two entries: "1 ON 1", 1P or VS, and "WAR
 PARTY", five to a side, 1P, COOP or VS) → **Game Type** ("1 Player : Vs." against the computer, or two players) →
-**Choose Gangs** (up / down picks the gang, left / right the warchief; default player 1 **BASEBALL FURIES** against
-the computer's **ORPHANS**) → **Choose Area** (one arena offered, the **Fight Pen**). Confirmed (runtime), run
+**Choose Gangs** (up / down picks the gang, left / right the warchief; default player 1 gang 5 against the
+computer's gang 3, the **BASEBALL FURIES** and the **ORPHANS** (the names inferred from `rumble_gang.lua`'s entries
+for those ids)) → **Choose Area** (one arena offered, the **Fight Pen**). Confirmed (runtime), run
 r-20261127-rumble-choose-gangs-rosters. After the arena come a "BASEBALL FURIES vs ORPHANS" title and the fight in
 `level102`, speculative ([q-rumble-unrecorded](#q-rumble-unrecorded)). The other modes are unlocked by the story,
 inferred from the mode records' unlock test (`0x001f8110`, [below](#rumble-data)) and the list of two without a
@@ -413,8 +414,9 @@ the level number (`0x001ebb90`, confirmed (code)), **102** for the Fight Pen (sp
 `0x001fe0d8`: a terminator at the name's length, then a copy of the name's whole length (`strlen`) from the chosen gang
 record's name pointer, its shorts `[2..3]`, with no limit, so a name of 32 characters or more would run past the 32-byte
 field; confirmed (code), correcting an earlier "at most 32 bytes"; Coney stops at 32 bytes,
-[q-rumble-gang-name](#q-rumble-gang-name)). Once both sides are confirmed they hold `"BASEBALL FURIES"` and
-`"ORPHANS"` by default (confirmed (runtime), run r-20261127-rumble-choose-gangs-rosters). `ParseLuaData` asks for them
+[q-rumble-gang-name](#q-rumble-gang-name)). Once both sides are confirmed they hold the names of gangs 5 and 3 by
+default (the ids confirmed (runtime), run r-20261127-rumble-choose-gangs-rosters), `"BASEBALL FURIES"` and
+`"ORPHANS"` (inferred from `rumble_gang.lua`'s entries for those ids). `ParseLuaData` asks for them
 only when `gameMode` is not 255 (`Rumble.gang1Name`, `gang2Name`), confirmed (code) in `level102.lua`.
 
 ### Where the Rumble data lives {#rumble-data}
@@ -474,8 +476,9 @@ So **WAR PARTY** writes `gameType` 14, `gangSize` 5, `":WAR PARTY"` to `0x0063ef
 
 **The Game Type screen** (input `0x001fd1c8`, confirmed (code)) lists up to three entries, each only when the mode
 offers it: id 0 "1 Player : Vs." (global string `0x34`), id 1 (`0x35`), id 2 (`0x36`). Confirm maps id 0 to
-`gameMode` 3, id 1 to **2 (co-op)** and id 2 to **1 (versus)**. WAR PARTY lists one player, co-op and versus in that
-order (confirmed (runtime), run r-20261127-rumble-game-type-coop); 1 ON 1, which offers no co-op, lists one player and
+`gameMode` 3, id 1 to **2 (co-op)** and id 2 to **1 (versus)**. WAR PARTY lists one player first with co-op to its right
+(confirmed (runtime), run r-20261127-rumble-game-type-coop) and versus last (confirmed (code) at `0x001fc5b0`, which
+adds the offered entries by id); 1 ON 1, which offers no co-op, lists one player and
 versus (confirmed (code) at `0x001fc5b0` with the mode's flags). For ids 1 and 2:
 
 - while player 2 has not pressed START (screen `+0x90` clear), a confirm only shows the message (global string
@@ -528,7 +531,10 @@ input handler.
 The Choose Gangs input (`0x001ef7c0`), by event, confirmed (code); `+0x150` is 2 in versus (two humans) and 1
 otherwise, `+0x154` the active side:
 
-- 0 / 1 move the active side's cursor, unless that side is locked.
+- 0 / 1 move the active side's cursor, unless that side is locked (`RM_ChooseGangs_MoveUp` `0x001ef5a8`,
+  `RM_ChooseGangs_MoveDown` `0x001ef6d8`): one entry, cue 4, stepping past the other side's gang unless the gang size
+  is 1 (flag `+0x1e4`, set by `0x001ecae0` from min(gangSize, 5) = 1); at either end, or when the only entry beyond
+  is the other side's gang, the cursor stays, cue `0xe`, and the bump flag (`+0x1e8`) is set. No wrap.
 - 2 / 3 (left / right) do nothing at all while one human chooses for side 2; otherwise, unless the side is locked or
   the mode is co-op (`gameMode` 2), rotate its roster, which picks the warchief, **mirrored**: left is the back
   rotation (`0x001ec130`) for side 1 and the forward one (`0x001ec028`) for side 2, right the opposite. Both rotate in
@@ -624,9 +630,9 @@ Confirmed (code) at the cited functions unless marked.
 | Screen (`Init`, input) | Widgets (default mode) | Input and cues |
 | --- | --- | --- |
 | **Game Mode** `RM_GameMode` (`0x001f85c0`, `0x001f8d80`; update `0x001f9068`) | Title `0x2c`; usage `0x18`. A `ScrollingMenu` (`0x001f82c0`) of at most **3 visible** entries, set up at (0.42, 0.21), recentred each frame so its top is at 0.5 − h/2 + 0.02 (`0x001f8f98`); each entry a `ScrollingTextWidget` (`0x001e2f40`, wrap width 0.66 `0x0050f464`, backdrop 28/28) whose text is `<SIZE 1.6><BIGFONT>` title `</BIGFONT><SIZE 1.3><CR><SIZE 1.0>` description (`0x00557880`; both from `CfgRumbleGame`); scroll arrows at y 0.5 ∓ (h/2 + 0.03). Measured: entries left-aligned near x 0.20, the selected entry grey and the other dimmer. | Up / down as `ScrollingMenu`. Accept: cue 8, next. Back: cue `0xf`; from the front end "cancelled", in game a pop. |
-| **Game Type** `RM_NumPlayers` (`0x001fc5b0`, `0x001fd1c8`; update `0x001fd408`, render `0x001fdaf8`) | Title `0x2e`; usage `0x21` with one entry, else `0x17`. `OptionGrid` at (0.5, 0.84), centred: `0x34`, `0x35`, `0x36` as offered, size 1.15, colour `0x005fd320`. **Badges** (size 0.1, depth 8,100, by language: English P1 28/0, P2 28/5, CPU 28/20; Spanish 4, 9, 20; French 1, 6, 21; Italian 3, 8, 20; German 2, 7, 22) at y 0.56, x 0.5 − 0.04 (right edge) and 0.5 + 0.04 (left edge): one player P1 vs CPU, co-op P1 at 0.505 and P2 at 0.615 vs CPU, versus P1 vs P2. A sprite 28/29 centred at (0.5, 0.5), turned −90°, 0.28 × 0.15 (`0x001fc5b0`, `0x001fd408`). Message `0x77` at (0.5, 0.78), size 1.15, hidden. | Left / right move between the entries (one grid row). Accept: cue 8 (none on the message-showing first accept); see [the set-up](#rumble-data) for the values. Back: `0xf`, pop. |
+| **Game Type** `RM_NumPlayers` (`0x001fc5b0`, `0x001fd1c8`; update `0x001fd408`, render `0x001fdaf8`) | Title `0x2e`; usage `0x21` with one entry, else `0x17`. `OptionGrid` at (0.5, 0.84), centred: `0x34`, `0x35`, `0x36` as offered, size 1.15, colour `0x005fd320`. **Badges** (size 0.1, depth 8,100, by language: English P1 28/0, P2 28/5, CPU 28/20; Spanish 4, 9, 20; French 1, 6, 21; Italian 3, 8, 20; German 2, 7, 22) at y 0.56, x 0.5 − 0.04 (right edge) and 0.5 + 0.04 (left edge): one player P1 vs CPU, co-op P1 at 0.505 and P2 at 0.615 vs CPU, versus P1 vs P2. A sprite 28/29 centred at (0.5, 0.5), turned −90°, 0.28 × 0.15 (`0x001fc5b0`, `0x001fd408`). Message `0x77` at (0.5, 0.78), size 1.15, hidden. | Left / right move between the entries (one grid row). Accept: cue 8, none on an accept that shows the message instead (each co-op or versus accept before player 2's START, `0x001fd1c8`); see [the set-up](#rumble-data) for the values. Back: `0xf`, pop. |
 | **No 2nd Controller** `RM_No2ndController` (`0x001fbe68`; update `0x001fc200`) | Text `0x3d` (a multi-line text widget) at (0.5, 0.5), wrap 0.6, grey, `big_font`; usage `0x1e` at (0.5, 0.75). | Each frame looks for a second pad (`0x001fe5d0`); when one appears it becomes player 2's and the result is 1 (Choose Gangs), or 2 for a mode with preset gangs (Choose Area). Back pops. |
-| **Choose Gangs** `RM_ChooseGangs` (`0x001ecae0`, `0x001ef7c0`) | Title `0x2b`; usage `0x18` in co-op or while one human chooses for side 2, else `0x24`. Two name boxes (`SimpleHeader`, 0.425 × 0.07, size 1.2, backdrop 28/10) at x **0.2505** and **0.7495**, mid-height (title bottom + 0.91) / 2, each with the gang's name and a sprite 28/23 (191, 191, 191) 0.13 above it, depth 11,000; a centre box (0.5, mid, 0.1 × 0.07) with `0x2f` ("vs."). Badges P1 / P2 / CPU (size 0.08) at (0.259, 0.19) and (0.745, 0.19), co-op's P2 at (0.339, 0.205). `OptionGrid` at (0.5, 0.84): `0x37` / `0x39` with one human, `0x37` / `0x38` with two (side labels; inferred). Two `Bar`s at (0.15, 0.62) and (0.65, 0.62), 0.27 × 0.03, back (64, 64, 64), fill (134, 26, 26) (role not traced). Arrows: up / down 0.022 beside the active side, left / right 0.015 (turned ±π/2) around its name. **3D fighters**: each side's first gang-size members (at most 5), `Human_Create` named `RM_HUMAN_%d` in the gang group `RM_Gangs0` / `RM_Gangs1`, dead (no AI), placed in camera space (`0x0011b970`) **5.7 m ahead and 1.05 m down, side 1 at x −1.15 and side 2 at +1.15**, further members alternating lateral steps of 0.5 and 0.325 m and 0.45 m further back, turned to face the camera; rebuilt when a gang or warchief changes (`0x001ef150`). | Up / down move the active side's gang cursor, cue 4; **no wrap**: at an end it stays with cue `0xe`; the two sides may not hold the same gang unless the gang size (`+0x1e4`) is 1 (the cursor skips the other side's gang, or bumps). Left / right rotate the roster (warchief), cue 4, unless the side is locked, both are locked or co-op. Accept locks the side, cue 8. Back unlocks, cue `0xf`; with nothing locked (one human, or side 1) result 1 (Game Type). |
+| **Choose Gangs** `RM_ChooseGangs` (`0x001ecae0`, `0x001ef7c0`) | Title `0x2b`; usage `0x18` in co-op or while one human chooses for side 2, else `0x24`. Two name boxes (`SimpleHeader`, 0.425 × 0.07, size 1.2, backdrop 28/10) at x **0.2505** and **0.7495**, mid-height (title bottom + 0.91) / 2, each with the gang's name and a sprite 28/23 (191, 191, 191) 0.13 above it, depth 11,000; a centre box (0.5, mid, 0.1 × 0.07) with `0x2f` ("vs."). Badges P1 / P2 / CPU (size 0.08) at (0.259, 0.19) and (0.745, 0.19), co-op's P2 at (0.339, 0.205). `OptionGrid` at (0.5, 0.84): `0x37` / `0x39` with one human, `0x37` / `0x38` with two (side labels; inferred). Two `Bar`s at (0.15, 0.62) and (0.65, 0.62), 0.27 × 0.03, back (64, 64, 64), fill (134, 26, 26) (role not traced). Arrows: up / down 0.022 beside the active side, left / right 0.015 (turned ±π/2) around its name. **3D fighters**: each side's first gang-size members (at most 5), `Human_Create` named `RM_HUMAN_%d` in the gang group `RM_Gangs0` / `RM_Gangs1`, dead (no AI), placed in camera space (`0x0011b970`) **5.7 m ahead and 1.05 m down, side 1 at x −1.15 and side 2 at +1.15**, further members alternating lateral steps of 0.5 and 0.325 m and 0.45 m further back, turned to face the camera; rebuilt when a gang or warchief changes (`0x001ef150`). | Up / down move the active side's gang cursor, cue 4; **no wrap**: at an end it stays with cue `0xe`; the two sides may not hold the same gang unless the gang size is 1 (flag `+0x1e4`) (the cursor skips the other side's gang, or bumps). Left / right rotate the roster (warchief), cue 4, unless one human chooses for side 2 (`+0x150` = 1 with `+0x154` = 1), the side is locked or the mode is co-op. Accept locks the side, cue 8. Back unlocks, cue `0xf`; with nothing locked (one human, or side 1) result 1 (Game Type). |
 | **Choose Area** `RM_ChooseArea` (`0x001eb0c8`, `0x001eb9f8`; list `0x001eabc0`, update `0x001ebc10`, launch `0x001ebb90`) | Title `0x2a`; usage `0x21` with one arena, `0x17` with fewer than two rows, else `0x1a`. A `ScrollingMenu` of `GridContainer` rows: up to **3 arenas a row** and **2 visible rows** (one row with fewer than 4 arenas), row width 0.95 (× count / 3 when short), row height 0.28, scroll arrows at y 0.18 and 0.845 (size 0.03). Each arena a `RumbleAreaPreviewWidget` (`0x00201fc0`, set-up `0x00202090`): the picture is the sprite word at its **level record `+0x80`**, white, depth about 9,001; frame 28/10 (about 8,001) and 28/19 (the highlight; inferred); a black label of size 0.055 at offset (0.002, −0.04) with the level record's **`+0x49` name** ("Fight Pen"). With two or more arenas a blocking preload (`0x0040e2d8`, up to 50,000 ms) loads `rumble_mode_arenas_<gameType>` first. Measured (one arena): the framed picture spans GUI x 0.40-0.57, y 0.43-0.55. | Move as `ScrollingMenu`. Accept: cue 8 (only if that sound slot is free), marks the arena; the next update launches it. Back: `0xf`, pop. |
 
 #### The Swap Soldier screen {#rm-swap-soldier}
@@ -1197,7 +1203,7 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | [ ] | Rumble menu frame | the cycling background, centred titles (2.23 at 0.08), usage at 0.91, fades 0.7 in and 1.5 / 0.7 out, the bank and cues | `RM_Camera` and the world behind, once the 3D fighters need them ([Rumble screens](#rumble-screens)) |
 | [ ] | Game Mode | three-row `ScrollingMenu` of title over description, no wrap, cues 4 / `0xe`, 100 ms | the backdrops and scroll arrows (record 28), the animated scroll, the measured entry spacing |
 | [ ] | Game Type | centred one-row grid at 0.84, dim grey, message `0x77` at 0.78 | the P1 / P2 / CPU badges by language (record 28), the blinking `0x77` |
-| [ ] | Choose Gangs | the names at 0.2505 / 0.7495 with "vs.", wrapping cursors | name boxes, badges, arrows, bars, the 3D fighters, no wrap, no shared gang |
+| [ ] | Choose Gangs | the names at 0.2505 / 0.7495 with "vs.", cursors that stop at the ends and skip the other side's gang | name boxes, badges, arrows, bars, the 3D fighters |
 | [ ] | Choose Area | the labels in a `ScrollingMenu` | framed preview pictures (level record `+0x80`) in rows of 3, label `+0x49` |
 | [ ] | No 2nd Controller | not made | text `0x3d`, waits for a second pad |
 | [x] | Input timing | repeat, 110 ms gap, release-to-accept; the `ScrollingMenu`'s 100 ms gap and end-stop | nothing |
@@ -2404,7 +2410,8 @@ grid at 0.84, size 1.15, dim grey, with message `0x77` at (0.5, 0.78); Choose Ga
 (sheet-table record 28 is not named); the Game Type entries are joined by `" : "`, as the message box's choices are;
 Choose Area lists its arenas' labels in a centred `ScrollingMenu` instead of the framed previews in rows of three;
 Choose Gangs has no name boxes, badges, arrows, bars or 3D fighters ([what the fighters
-need](#rm-choose-gangs-fighters)), and its cursors still wrap; a title string the
+need](#rm-choose-gangs-fighters)), and the bump flag that turns a held direction's auto-repeat off at a list end is
+not kept; a title string the
 strings do not hold falls back to the screen's name. Screenshots on the disc match the measured title and usage
 positions.
 

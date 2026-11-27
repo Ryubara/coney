@@ -15,7 +15,8 @@ play (counted as an input script is, from 0), so a scripted run longer than a cl
 `--join ADDR --net-view` the same, counted from the first frame the guest's client game has the host's level, which is
 also where the guest's `--input-script` starts ([a guest's view](coney-tools-clips.md#clips-pair-guest)); with neither,
 the N-th frame of the run from boot, as an input script counts there, so a clip can show a menu reached through the
-front end (a `--join` without `--net-view` is refused). Coney's own debug tooling, with no counterpart in the original.
+front end (a `--join` with neither `--play-level` nor `--net-view` is refused).
+Coney's own debug tooling, with no counterpart in the original.
 
 ```sh
 CLIPS=$(uv run --project python coney-tools clips folder my-task)   # the absolute path of the clips folder
