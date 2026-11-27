@@ -240,6 +240,12 @@ scenario's clips for a human who moves. Its before is `--before` a commit of the
 options only, where the guest's view is the old stand-in: a camera fixed behind the lowest-id human, which follows him
 but rigidly, turning with his heading and not lagging behind it.
 
+`level80-guest-radar` is the scenario for the guest's radar (#1670): the host skips level80's intro scene, after which
+the level's script shows the HUD and turns the radar on, and its player stands at the start while the first tutorial
+hint shows; the guest, which joins once the host prints the scene's end (`join_after`), draws the radar's disc, the
+host's blips and the arrow in the corner. Its before is the merge base, whose guest draws the blips and the arrow with
+no disc.
+
 <!-- command-reference:begin clips -->
 ## Parameters of `clips` {#clips-parameters}
 

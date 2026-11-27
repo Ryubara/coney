@@ -52,6 +52,7 @@
 #include "support/recording_device.h"
 #include "support/test_paths.h"
 #include "warriors/disk_profile_store.h"
+#include "warriors/level_table.h"
 
 using coney::GameModeStack;
 using coney::GameplayMode;
@@ -601,6 +602,8 @@ TEST_CASE("story: behind the loading screen the level loads after the fade in an
 }
 
 TEST_CASE("story: a level's intro movie plays before the level's first step", "[story_start][loading_screen][movies]") {
+    // Expected: level-loading.md#initlevel, confirmed (code) (step 12: the intro movie L<n>_IN, n the record's level
+    // number, before the level is entered)
     // As InitLevel blocks in Movie_Play: had the world stepped first, its first scene would have loaded and prepared
     // its soundtrack, and the movie's stop of every sound would have thrown it away
     // (docs/research/sound.md#scene-sound).
@@ -652,4 +655,159 @@ TEST_CASE("story: a level's intro movie plays before the level's first step", "[
     CHECK(run.stack.topId() == GameplayMode::kId);
     run.frames(1);
     CHECK(run.levelUpdates == 1);
+}
+
+namespace {
+
+// The level table's scripts, shaped like the game's: enum_preload.lua sets SUBWAY_BLUE = 3; config_preload.lua calls
+// a sound binding (skipped); config_preload2.lua runs its strings file by name (doFile, which sets ANNOUNCED = 5) and
+// builds the table PHYS = {OBB = ANNOUNCED}, as CfgHats builds the tables the objects use; config_preload3.lua
+// configures an object with PHYS.OBB (CfgObj, a binding the table's read skips; with no PHYS, indexing it stops the
+// script, as config_preload3.lua's objects do on the disc) and then two levels the way CfgLevels does, with all 18
+// arguments: level99 on the world level99 with the map floats -1, 61 and 95 (whole numbers: the hand-built bytecode
+// pushes integers), the logo PHYS.OBB and the colour SUBWAY_BLUE; and a test level on another level's world (as
+// `combatselect` is on level5's).
+std::map<std::string, std::vector<std::byte>, std::less<>> levelTableScripts() {
+    using coney::test::LuaAsm;
+    std::map<std::string, std::vector<std::byte>, std::less<>> files;
+    LuaAsm enums;
+    enums.pushInt(3).setGlobal("SUBWAY_BLUE");
+    files["enum_preload.lua"] = coney::test::luaChunk(enums.end());
+    LuaAsm sounds;
+    sounds.getGlobal("NewMaterialSlots").pushInt(4).call(1);
+    files["config_preload.lua"] = coney::test::luaChunk(sounds.end());
+    LuaAsm strings;
+    strings.pushInt(5).setGlobal("ANNOUNCED");
+    files["config_strings_en.lua"] = coney::test::luaChunk(strings.end());
+    LuaAsm global;
+    global.getGlobal("doFile").pushString("config_strings_en").call(1);
+    global.newTable().setGlobal("PHYS");
+    global.getGlobal("PHYS").pushString("OBB").getGlobal("ANNOUNCED").setTable();
+    files["config_preload2.lua"] = coney::test::luaChunk(global.end());
+    LuaAsm config;
+    config.getGlobal("CfgObj").pushString("barrel").getGlobal("PHYS").getField("OBB").call(2);
+    config.getGlobal("CfgLevelName").pushInt(1).pushString("level99").pushString("1:Title").pushString("level99");
+    config.pushString("Coney").pushInt(99).pushInt(3).pushInt(1).pushInt(0).pushInt(1).pushInt(0).pushInt(0);
+    config.pushInt(-1).pushInt(61).pushInt(95).getGlobal("PHYS").getField("OBB").getGlobal("SUBWAY_BLUE");
+    config.pushInt(1441803).call(18);
+    config.getGlobal("CfgLevelName").pushInt(90).pushString("combatselect").pushString("").pushString("level5");
+    config.pushString("").pushInt(422).pushInt(0).pushInt(0).pushInt(0).pushInt(0).pushInt(0).pushInt(0);
+    config.pushInt(191).pushInt(326).pushInt(560).pushInt(0).pushInt(0).pushInt(0).call(18);
+    files["config_preload3.lua"] = coney::test::luaChunk(config.end());
+    return files;
+}
+
+// A script source over `files`.
+coney::script::ScriptSource sourceOver(const std::map<std::string, std::vector<std::byte>, std::less<>>& files) {
+    return [&files](std::string_view name) -> std::expected<std::vector<std::byte>, coney::Error> {
+        const auto found = files.find(name);
+        if (found == files.end()) {
+            return coney::fail(coney::ErrorCode::NotFound, "no such script");
+        }
+        return found->second;
+    };
+}
+
+} // namespace
+
+TEST_CASE("the level table read alone holds each level's record as the preloads fill it, in their order",
+          "[story_start][radar]") {
+    // Expected: frontend.md#the-level-table, confirmed (code) (CfgLevelName's 18 arguments, LevelRecord's reading of
+    // their order); the guest's read of it is Coney's own (docs/guides/client-world.md#client-hud)
+    const auto files = levelTableScripts();
+    const auto table = coney::loadLevelTable(sourceOver(files));
+    REQUIRE(table.has_value());
+    CHECK(table->count() == 2);
+    const std::optional<std::size_t> index = table->find("level99");
+    REQUIRE(index.has_value());
+    const coney::LevelRecord* record = table->at(index.value_or(0));
+    REQUIRE(record != nullptr);
+    CHECK(record->worldName == "level99");
+    CHECK(record->number == 99.0);
+    CHECK(record->values.at(coney::LevelRecord::kRadarOffsetXValue) == -1.0);
+    CHECK(record->values.at(coney::LevelRecord::kRadarOffsetYValue) == 61.0);
+    CHECK(record->values.at(coney::LevelRecord::kRadarScaleValue) == 95.0);
+    // The preloads ran in their order first: the colour is enum_preload.lua's SUBWAY_BLUE, the logo the table
+    // config_preload2.lua built from its strings file.
+    CHECK(record->values.at(coney::LevelRecord::kSubwayValue) == 3.0);
+    CHECK(record->values.at(coney::LevelRecord::kLogoValue) == 5.0);
+    const coney::LevelRecord* test = table->at(90);
+    REQUIRE(test != nullptr);
+    CHECK(test->name == "combatselect");
+    CHECK(test->worldName == "level5");
+}
+
+TEST_CASE("the level table read alone fails without config_preload3.lua", "[story_start][radar]") {
+    // Expected: unverified, #1670 (Coney's own: a guest with no level table says why; docs/guides/client-world.md)
+    auto files = levelTableScripts();
+    files.erase("config_preload3.lua");
+    CHECK_FALSE(coney::loadLevelTable(sourceOver(files)).has_value());
+}
+
+TEST_CASE("the level table read alone logs an earlier preload that fails and still reads the records",
+          "[story_start][radar]") {
+    // Expected: unverified, #1670 (Coney's own: the guest's run log says which preload failed, as a script error, as
+    // the level table can still load without it; docs/guides/client-world.md#client-hud)
+    auto files = levelTableScripts();
+    files["config_preload.lua"] = std::vector<std::byte>{std::byte{0x01}, std::byte{0x02}};
+    std::vector<std::string> lines;
+    const auto table =
+        coney::loadLevelTable(sourceOver(files), [&lines](std::string_view line) { lines.emplace_back(line); });
+    REQUIRE(table.has_value());
+    CHECK(table->find("level99").has_value());
+    // A script error line, which the run log files as the script category's error (logging::routeOf()).
+    CHECK(std::ranges::any_of(lines, [](const std::string& line) {
+        return line.starts_with("script error: level table: config_preload.lua");
+    }));
+}
+
+TEST_CASE("the level table read alone logs neither the bindings it skips nor what the scripts print",
+          "[story_start][radar]") {
+    // Expected: unverified, #1670 (Coney's own: the read leaves bindings out on purpose, so they are not missing; the
+    // scripts' printed text is the game's own, kept off the log file; docs/guides/run-log.md#rules)
+    auto files = levelTableScripts();
+    coney::test::LuaAsm enums;
+    enums.getGlobal("print").pushString("hello").call(1);
+    enums.pushInt(3).setGlobal("SUBWAY_BLUE");
+    files["enum_preload.lua"] = coney::test::luaChunk(enums.end());
+    std::vector<std::string> lines;
+    const auto table =
+        coney::loadLevelTable(sourceOver(files), [&lines](std::string_view line) { lines.emplace_back(line); });
+    REQUIRE(table.has_value());
+    // NewMaterialSlots and CfgObj are skipped; print ran.
+    CHECK(lines.empty());
+}
+
+TEST_CASE("the level table read alone says on one line why config_preload3.lua did not run", "[story_start][radar]") {
+    // Expected: unverified, #1670 (Coney's own: the guest's log line for a level table that did not load)
+    auto files = levelTableScripts();
+    files["config_preload3.lua"] = std::vector<std::byte>{std::byte{0x01}, std::byte{0x02}};
+    const auto table = coney::loadLevelTable(sourceOver(files));
+    REQUIRE_FALSE(table.has_value());
+    CHECK(table.error().message.find("config_preload3.lua") != std::string::npos);
+    CHECK_FALSE(table.error().message.ends_with('\n'));
+}
+
+TEST_CASE("a level's radar map is its record's world sheet and map floats, and no record has none",
+          "[story_start][radar]") {
+    // Expected: hud-radar.md#the-radar-on-screen, confirmed (code) (Radar_Setup 0x001c3de0 names the sheet after the
+    // record's world +0x39; Radar_Render 0x001c60b0 reads +0x6c, +0x70, +0x74; level99's -1.33, 61.55 and 95
+    // confirmed (runtime))
+    coney::LevelRecord record;
+    record.name = "combatselect";
+    record.worldName = "level5";
+    record.values.at(coney::LevelRecord::kRadarOffsetXValue) = -1.33;
+    record.values.at(coney::LevelRecord::kRadarOffsetYValue) = 61.55;
+    record.values.at(coney::LevelRecord::kRadarScaleValue) = 95.0;
+    const coney::hud::RadarMap map = coney::radarMapOf(&record);
+    CHECK(map.usable());
+    CHECK(map.sheet == "level5");
+    CHECK(map.offsetX == -1.33F);
+    CHECK(map.offsetY == 61.55F);
+    CHECK(map.scale == 95.0F);
+    CHECK_FALSE(coney::radarMapOf(nullptr).usable());
+    // A record with no map floats (a mod's level, modLevelRecord()) names its world but draws no disc.
+    coney::LevelRecord mod;
+    mod.worldName = "level140";
+    CHECK_FALSE(coney::radarMapOf(&mod).usable());
 }

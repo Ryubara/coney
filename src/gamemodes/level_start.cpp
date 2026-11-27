@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gamemodes/level_start.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <expected>
 #include <format>
 #include <memory>
 #include <optional>
@@ -21,7 +23,11 @@
 #include "human/locomotion.h"
 #include "scripting/hud_bindings.h"
 #include "scripting/lua_value.h"
+#include "scripting/lua_vm.h"
+#include "scripting/natives.h"
 #include "scripting/script_bindings.h"
+#include "warriors/game_state.h"
+#include "warriors/level_table.h"
 #include "world_objects/placed_objects_file.h"
 
 namespace coney {
@@ -30,6 +36,12 @@ namespace {
 
 // The script frames runLevelScriptAlone() runs after the start: one second of the fixed 1/30 s step.
 constexpr std::uint64_t kSettleSteps = 30;
+
+// The preload whose CfgLevels fills the level table (docs/research/frontend.md#the-level-table).
+constexpr std::string_view kLevelTableScript = "config_preload3.lua";
+// The bindings loadLevelTable() gives the preloads: the level records, and what config_preload2.lua needs to run its
+// strings file and reach the tables config_preload3.lua's objects use. Every other call is skipped.
+constexpr std::array<std::string_view, 4> kLevelTableBindings{"CfgLevelName", "doFile", "GetLanguage", "GetPlatform"};
 
 // Reads `<level>_objs.txt` through the scripts' source and adds its objects to `records` and its emitters to
 // `particles` (when given: a particle system of the line's name at its pose, its fields past the pose unused, and no
@@ -286,6 +298,79 @@ LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::stri
     run.flags = prepared.flags().all().size();
     run.recorded = std::move(prepared.recorded());
     return run;
+}
+
+// The sheet is named after the record's world; the floats are the ones Radar_Render reads from the record each frame,
+// which Coney copies once here (the record does not change while a level plays).
+// @orig 0x001c3de0 Radar_Setup (RadarHUD.cpp)
+hud::RadarMap radarMapOf(const LevelRecord* record) {
+    hud::RadarMap map;
+    if (record == nullptr) {
+        return map;
+    }
+    map.sheet = record->worldName;
+    map.offsetX = static_cast<float>(record->values.at(LevelRecord::kRadarOffsetXValue));
+    map.offsetY = static_cast<float>(record->values.at(LevelRecord::kRadarOffsetYValue));
+    map.scale = static_cast<float>(record->values.at(LevelRecord::kRadarScaleValue));
+    return map;
+}
+
+// The legal screen's preloads in a state holding only the bindings the level table needs (the header's comment).
+// @coney-only runs the level table's scripts alone, for a network guest
+std::expected<LevelTable, Error> loadLevelTable(const script::ScriptSource& source,
+                                                const script::ScriptSystem::Log& log) {
+    // What the bindings work on: a game state of its own (CfgLevelName fills its table, GetLanguage reads its language,
+    // English as a fresh state has). The strings and the host are there only because the bindings are built together
+    // (buildNatives() needs them); nothing here calls them.
+    GameState state;
+    gui::GlobalStrings strings;
+    QuietBindingHost host;
+    script::BindingContext context;
+    context.state = &state;
+    context.strings = &strings;
+    context.host = &host;
+    // The last script error (why a script did not run), without its newline. Only script errors reach the caller's
+    // log, tagged with the read: the skipped bindings are left out on purpose, so they are not missing, and what the
+    // scripts print is the game's own text, which stays off the log file (docs/guides/run-log.md#categories).
+    std::string lastError;
+    script::ScriptSystem scripts(
+        source,
+        [&context](script::ScriptSystem& system, script::LuaVm& vm) {
+            for (script::Native& native : script::buildNatives(system, context)) {
+                if (std::ranges::find(kLevelTableBindings, native.name) != kLevelTableBindings.end()) {
+                    vm.registerFunction(native.name, std::move(native.call));
+                }
+            }
+        },
+        [&lastError, &log](std::string_view line) {
+            constexpr std::string_view kError = "script error: ";
+            if (!line.starts_with(kError)) {
+                return;
+            }
+            std::string_view what = line.substr(kError.size());
+            while (what.ends_with('\n')) {
+                what.remove_suffix(1);
+            }
+            lastError = std::string(what);
+            if (log) {
+                log(std::format("{}level table: {}\n", kError, what));
+            }
+        });
+    scripts.create();
+    // Every preload in the legal screen's order: config_preload3.lua's objects read the tables config_preload2.lua
+    // builds (after running its strings file by name), and its CfgLevels reads the enumerations. Only the last must
+    // run; an earlier one that fails is in the log, and shows as the last one's failure when the last needed it.
+    scripts.runFiles(script::kEnumPreloadScripts);
+    for (const std::string_view name : script::kConfigPreloadScripts) {
+        if (!scripts.runFile(name) && name == kLevelTableScript) {
+            // A missing script says so as the source does; one that is there and failed is bad data.
+            if (auto read = source(name); !read) {
+                return std::unexpected(std::move(read.error()));
+            }
+            return fail(ErrorCode::Invalid, std::format("the level table: {} did not run: {}", name, lastError));
+        }
+    }
+    return state.levels;
 }
 
 } // namespace coney
