@@ -598,9 +598,10 @@ void Fighter::releaseFromGrab(HumanAnimator& animator) {
 void Fighter::playCounter(const FighterInput& input, HumanAnimator& animator, anim::Vec3 target) {
     const int counter = combat::duckCounterClip(combat::victimSide(input.position, input.heading, target));
     m_combat.startCounter(counter, combat::combatTuning());
-    // Its fade over the old tasks is 0 s, as an attack's: the 0.2 s Block_DuckCounter gives its chained task is the
-    // blend into the idle after it. **Coney stand-ins** (#683): no steer onto the foe over 0.1 s within the clip's far
-    // range, and the block state 0x8000 is not cleared, as Coney's duck keeps none.
+    // Its fade over the old tasks is 0 s, as an attack's. **Coney stand-ins** (#683): the 0.2 s Block_DuckCounter
+    // gives its chained task, the blend into the idle after it, is not given (playCombat() takes a fade-in only); no
+    // steer onto the foe over 0.1 s within the clip's far range; the block state 0x8000 is not cleared, as Coney's
+    // duck keeps none; the push sphere is not turned off.
     animator.playCombat(clips::one(clips::clipOf(counter)), kAnimFightIdle, AnimState::Attack, kAttackFade,
                         clips::kCounterHolds);
 }
