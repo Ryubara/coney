@@ -1497,6 +1497,8 @@ void Fighter::steerOnto(int animId, const Combatant& target, const FighterInput&
     const SteerGoal goal = attackSteerGoal(input.position, point, target.velocity(), reach, toEvent);
     const anim::Vec3 toAim = anim::subtract(goal.aim, input.position);
     const float aim = std::hypot(toAim.x, toAim.y) > 1e-4F ? headingOf(toAim) : headingOf(to);
+    // **Coney stand-in**: both steers first drop the target's own turn (Human_ClearTurn on him), which a Combatant
+    // does not offer; the attacker's was dropped as the attack started (steer()).
     m_steer.turnToOver(heading, wrapAngle(aim - attackDirection(animId)), time);
     m_steer.moveToOver(input.position, goal.stand, time);
 }

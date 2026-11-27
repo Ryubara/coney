@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261127-s1-rear-led-steer"
+date = "2026-11-27"
+kind = "trace"
+tool = "trace original"
+digest = "c7a438317dac0da09b3de5e6a5220d0c5302e773a8e537e95407722f2f491de4"
+
+[who]
+agent = "a61a17eab68add352"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "s1_rear"
+method = ""
+
+[values]
+updates = 71
+missed_updates = 0
+columns = 45
+
+[hashes]
+trace_csv = "576cb0d80a832b527837abaf9baea64106ee1a644ef1b3f4b055f525a6b08a5e"

@@ -621,8 +621,10 @@ Read in Ghidra: confirmed (code) where no other level is given.
 - **Lead.** The target's velocity × (time to the first event + 0.1 s) is added to the head point: in full when it is
   at most 1 m long, or when the led point is nearer the attacker than the head itself; otherwise cut to 0.5 m long.
 - **The point serves both the turn and the stand.** The standing point is the led head point minus the reach (the
-  clip's own, `AttackTable_GetReach`, with none of the other steer's big-target or rear changes) along the unit line
-  from the attacker to it in plan; the turn (`Human_TurnToOver`) is to that line's heading (less the
+  clip's own, `AttackTable_GetReach`, with none of the other steer's big-target or rear changes; confirmed (runtime),
+  run r-20261127-s1-rear-led-steer: `S1` (reach 0.94 m) from behind PoizoCiv 1.2 m ahead, his back to the player and
+  his brain off, set the goal 0.944 m from his slot point 0, where the rear change would have given 0.84 m) along the
+  unit line from the attacker to it in plan; the turn (`Human_TurnToOver`) is to that line's heading (less the
   attack's own direction offset, `AttackTable_GetOffset`); the slide (`Human_MoveToOver`) runs over the time to the
   first event + 0.1 s.
 - **How far off the position**, confirmed (runtime), PCSX2 2.9.94, a copy of slot 6: X1 pressed at update 41 at
