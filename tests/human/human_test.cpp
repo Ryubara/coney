@@ -341,13 +341,13 @@ TEST_CASE("an airborne human lands by the original's landing test, on the update
         // (docs/research/physics-bodies.md#u3-landing): the landing contact is found on this update, its handler
         // (`Human_OnContact`, 0x00219d50) lands the human (`Human_Land`, 0x0023e090, docs/research/characters-ground.md
         // #falling, confirmed (code)), and the ground snap that follows a move ending on
-        // the ground (`Human_Move`, 0x0023d8c8, docs/research/characters-ground.md#falling, confirmed (code)) puts the feet
-        // on the floor.
+        // the ground (`Human_Move`, 0x0023d8c8, docs/research/characters-ground.md#falling, confirmed (code)) puts the
+        // feet on the floor.
         CHECK_FALSE(human.airborne());
         CHECK(human.landings() == 1U);
         CHECK(human.position().z == Approx(10.0F - test.feet).margin(1e-4));
-        // Expected: docs/research/characters-ground.md#falling, confirmed (code): `Human_Land` takes the vertical speed at
-        // the contact (the update's, -g dt) for its fall damage and then sets it to 0.
+        // Expected: docs/research/characters-ground.md#falling, confirmed (code): `Human_Land` takes the vertical speed
+        // at the contact (the update's, -g dt) for its fall damage and then sets it to 0.
         CHECK(human.lastLandingSpeed() == Approx(-Human::kGravity * dt));
         CHECK(human.velocity().z == 0.0F);
     }
@@ -422,8 +422,8 @@ TEST_CASE("a jump lands on the update its raised, moved feet pass the floor, fal
         // Expected: docs/research/physics-bodies.md#u3-landing, confirmed (code) at 0x0023e408.
         CHECK(landed == (raised + drop < 0.0F));
         if (landed) {
-            // Expected: docs/research/characters-ground.md#falling, confirmed (runtime): the landing update starts with the
-            // feet under the floor.
+            // Expected: docs/research/characters-ground.md#falling, confirmed (runtime): the landing update starts with
+            // the feet under the floor.
             CHECK(start < 0.0F);
         }
     }
