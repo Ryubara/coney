@@ -77,10 +77,13 @@ Read in Ghidra: confirmed (code) where no other level is given; each runtime blo
 `Strike_Contact` (`0x0021b290`) takes the [damage table](combat/index.md#damage-table)'s value, adds a held weapon's
 bonus, and for a player applies upgrade percentages (categories `0x13` / `0x19` and `0x1e` / `0x21` / `0x1d` / `0x20`,
 inferred to be the upgrade levels). An attacker with flag `0x20` deals the victim's whole health. `0x0021d680` →
-`Human_AddPendingDamage` (`0x00264bd8`) stores it at record `+0x118` if larger than what is pending, with its weight at
-`+0x11a` ([Scripted knockdowns](#scripted-knockdowns)); the damage is **doubled** when the attacker has human flag
-`0x4000` and **quartered** for class `0x80` (`bopp_bo`, the Boppers' boss) against brain type 3, after the doubling,
-with an arithmetic shift right by 2. Confirmed (code): every damage path reaches it (`Strike_Contact`,
+`Human_AddPendingDamage` (`0x00264bd8`) stores it at record `+0x118` when its absolute value is at least that of what
+is pending (a tie replaces it), with its weight at `+0x11a` ([Scripted knockdowns](#scripted-knockdowns)); only the
+damage kept is then **doubled** when the attacker has human flag `0x4000` and **quartered** for class `0x80`
+(`bopp_bo`, the Boppers' boss) against brain type 3, after the doubling, with an arithmetic shift right by 2. So the
+test compares the new hit's own damage with the pending one as stored (doubled or quartered already): 20 pending beats a
+doubled 17, which would have been 34. Confirmed (code) at `0x00264bd8` (re-read 2026-11-27 for
+[#683](issue:683)): every damage path reaches it (`Strike_Contact`,
 `Human_DealDamage` from the grab strikes, mounts and throws), so a grab strike is quartered too; the grabbed side's
 strike-backs are only a player's (`Player_UpdateGrabbed`, brain type 0), so they are never quartered. Health (record
 `+0x144`) fell by exactly the table's value on every hit tested (confirmed (runtime)). Grab moves (`0x00262ac8`) apply
@@ -509,14 +512,17 @@ Confirmed (code). A mounted human is state `0x800` instead, and the dispatcher s
   `BLOCK_COUNTER_LEFT`** at update 97 against the puppet standing at the player's left, state `0x20000001`; it hit at
   103 for **50** and knocked the puppet down (288, then 196 and 199). Without the press (`ground_kicked`) the player
   rose into 356 / 357. Confirmed (runtime). The path is the duck's counter: `Human_UpdateActions` (`0x00254e78`), when
-  record `+0x14` is `0xe` and the human is free to react, finds the foe within 1.25 × 617's far range (or the
-  nearest one, `Player_FindCounterTarget`), ends the reaction clip and the stun, and calls `Block_DuckCounter`
+  record `+0x14` is `0xe` and the human is free to react, takes the foe (`Human_GetFoe`, `0x002267a0`) when he is
+  within 1.25 × 617's far range (`AttackTable_GetFarRange`, `0x00254508`: the far range, or 1.25 × the reach when the
+  record's far range is not above it), ends the reaction clip and the stun, and calls `Block_DuckCounter`
   (`0x002617f8`), which plays 617-620 by the target's side ([Block](combat/index.md#block)). This test comes before
   `Human_UpdateDown` and the dispatcher, so being down (`0x80000`) does not stop it. Confirmed (code). The counter's
   hit is 617-620's own, 50 health points, their damage in the generic set's [Anim Range
-  List](combat/index.md#damage-table) (Disc check: read from the disc; the 50 confirmed (runtime) above). With no
-  target in range nothing plays, and the request lasts while the window is open (inferred from the duck counter's
-  rule: each `0x25` of the window asks again).
+  List](combat/index.md#damage-table) (Disc check: read from the disc; the 50 confirmed (runtime) above). A foe beyond
+  that range leaves no one (`0x00255184`); with no foe at all `Player_FindCounterTarget` (`0x0027ac30`) is called but
+  its result is never used (`0x00255160`: `v0` is not moved into `s0`, which stays 0), so **only the foe can be
+  countered** (confirmed (code), re-read for [#683](issue:683)). With no target in range nothing plays, and the request
+  lasts while the window is open (inferred from the duck counter's rule: each `0x25` of the window asks again).
 - **What opens it: the rise's own `0x25` events.** 199's clip, `gen_face_up_ground_get_up` (21 frames; the generic
   set's, and no character maps 199 to another clip), carries event **`0x25` on frames 11-18**, the duck's event
   ([Block](combat/index.md#block)); its other events are `0x43` and 7 at frame 0, `0x44` at 6, `0xb` at 9 and 14, and **`0x48`
@@ -1170,6 +1176,8 @@ loses its stun at a knockdown; the original keeps it until after the rise (`Huma
 
 Coney quarters a fighter's strikes and grab strikes on class `0x80` when its brain is a Warrior's
 (`human::Fighter::quarteredFor`), as [Damage](#damage) reads it (re-read in Ghidra 2026-10-21).
+A free strike's doubling and quartering come after the largest test (`human::Victim::hit`, [#683](issue:683)). **Gap**:
+a grab strike is still quartered before the test (`Fighter::landGrapple`), and the grab's own doubling is not this one.
 
 ### Moves a hit cannot stop {#protected-moves-coney}
 
@@ -1205,6 +1213,12 @@ Read 2026-10-11, the rise counter 2026-10-13 (`src/combat`, `src/human`, `src/ai
   nothing; cross pressed at 14 counters at 15 on its release; 618 to the right; no target, an AI, or the manual stun:
   nothing) and `repo:tests/platform/disc_rise_counter_test.cpp` (the disc's 199 events; on `level99` a square at
   k = 16 counters and one at 18 does not).
+- Built (2026-11-27, [#683](issue:683)): the counter's range is 1.25 × 617's far range (`Fighter::counterRange`), a
+  duck counters only the attacker that made it duck (no search in his place), and the counter shows its pose from its
+  first update. Tests: the far-range cases in `repo:tests/human/rise_counter_test.cpp` and
+  `repo:tests/human/being_hit_test.cpp`. **Stand-ins** left: the rise counter's target is the search's pick in that range,
+  as Coney's victim side keeps no foe; the counter does not steer onto its foe over 0.1 s, does not clear the block
+  state `0x8000`, and an AI is never asked (`0x0028c6a8`), all on [#683](issue:683).
 - Built (2026-11-16): the grounded mount and the mounted human's inputs. A circle (tap or hold) whose search finds no
   standing human finds one lying in the grounded idle or under half through his rise (`Fighter::mountableOnGround`,
   `Human_CanBeGrabbed`'s knocked-down branch read through the clips, since Coney's victim leaves the ground as 199

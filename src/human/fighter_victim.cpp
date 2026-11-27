@@ -598,9 +598,14 @@ void Fighter::releaseFromGrab(HumanAnimator& animator) {
 void Fighter::playCounter(const FighterInput& input, HumanAnimator& animator, anim::Vec3 target) {
     const int counter = combat::duckCounterClip(combat::victimSide(input.position, input.heading, target));
     m_combat.startCounter(counter, combat::combatTuning());
-    animator.playCombat(clips::one(clips::clipOf(counter)), kAnimFightIdle, AnimState::Attack, kCombatFade,
+    // Its fade over the old tasks is 0 s, as an attack's: the 0.2 s Block_DuckCounter gives its chained task is the
+    // blend into the idle after it. **Coney stand-ins** (#683): no steer onto the foe over 0.1 s within the clip's far
+    // range, and the block state 0x8000 is not cleared, as Coney's duck keeps none.
+    animator.playCombat(clips::one(clips::clipOf(counter)), kAnimFightIdle, AnimState::Attack, kAttackFade,
                         clips::kCounterHolds);
 }
+
+float Fighter::counterRange() const { return combat::kDuckCounterReachScale * reachOf(combat::kDuckCounterFront); }
 
 bool Fighter::riseCounter(const FighterInput& input, HumanAnimator& animator) {
     const std::uint32_t playing = animator.animId();
@@ -629,12 +634,8 @@ bool Fighter::riseCounter(const FighterInput& input, HumanAnimator& animator) {
         return false;
     }
     // 3. The target: **Coney's stand-in** for the foe (the human who knocked him down, not kept by Coney's victim
-    // side) is the target search's pick within 1.25 x 617's reach, which finds the nearest when there is one.
-    const combat::AnimRange* range =
-        m_ranges != nullptr ? m_ranges->find(static_cast<std::size_t>(combat::kDuckCounterFront)) : nullptr;
-    const float reach =
-        combat::kDuckCounterReachScale * (range != nullptr && range->reach > 0.0F ? range->reach : 1.0F);
-    const Combatant* found = pickTarget(input, reach, m_target);
+    // side) is the target search's pick within the counter's range, which finds the nearest when there is one.
+    const Combatant* found = pickTarget(input, counterRange(), m_target);
     if (found == nullptr) {
         return false;
     }
@@ -650,21 +651,12 @@ bool Fighter::riseCounter(const FighterInput& input, HumanAnimator& animator) {
 bool Fighter::duckCounter(const FighterInput& input, HumanAnimator& animator) {
     const std::uint32_t duck = clips::clipOf(combat::kBlockDodge);
     const bool ducking = animator.animId() == duck && animator.drivingClipPlaying();
-    // 1. Asked for on an earlier update: the counter by the side its target stands on, once one is in reach (the
-    // attacker that made the player duck, else the nearest within 1.25 × the counter's reach).
+    // 1. Asked for on an earlier update: the counter by the side its foe stands on, once he is within the counter's
+    // range. The foe is the attacker that made the player duck; no one else is countered, as the original's search
+    // without a foe has its result dropped (0x00255160).
     if (m_counterAsked) {
-        const combat::AnimRange* range =
-            m_ranges != nullptr ? m_ranges->find(static_cast<std::size_t>(combat::kDuckCounterFront)) : nullptr;
-        const float reach =
-            combat::kDuckCounterReachScale * (range != nullptr && range->reach > 0.0F ? range->reach : 1.0F);
-        std::optional<anim::Vec3> target;
-        if (std::hypot(m_duckAttacker.x - input.position.x, m_duckAttacker.y - input.position.y) <= reach) {
-            target = m_duckAttacker;
-        } else if (const Combatant* found = pickTarget(input, reach); found != nullptr) {
-            target = found->position();
-        }
-        if (target.has_value()) {
-            playCounter(input, animator, *target);
+        if (std::hypot(m_duckAttacker.x - input.position.x, m_duckAttacker.y - input.position.y) <= counterRange()) {
+            playCounter(input, animator, m_duckAttacker);
             m_counterAsked = false;
             ++m_duckCounters;
             return true;
