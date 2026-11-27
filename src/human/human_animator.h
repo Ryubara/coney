@@ -19,11 +19,11 @@
 // changes, builds the animation tasks for it; while moving it keeps the gait blend's target on the speed. The human
 // starts the actions (a jump, its landing, a run stop, a climb) itself; their clips play out before the controller
 // chooses again.
-// Research: docs/research/characters.md#clip-selection
+// Research: docs/research/characters-animation.md#clip-selection
 
 namespace coney::human {
 
-/// The anim slots a human plays its locomotion from, by slot number (docs/research/characters.md#anim-slots).
+/// The anim slots a human plays its locomotion from, by slot number (docs/research/characters-animation.md#anim-slots).
 struct AnimSlots {
     static constexpr std::size_t kCount = 35;
     std::array<std::uint32_t, kCount> ids{};
@@ -182,7 +182,7 @@ class HumanAnimator {
     /// traced; the move fade of 0.1333 s is Coney's too.
     void startRunStop();
     /// A climb: the chain `firstId`, + 1, + 2, then a gait blend at the run (`running`) or the idle, with no fade-in
-    /// (docs/research/characters.md#climb).
+    /// (docs/research/characters-traversal.md#climb).
     void startClimb(std::uint32_t firstId, bool running);
     /// Ends whatever plays with the idle (a climb that cannot go on).
     void stopToIdle();
@@ -348,7 +348,7 @@ class HumanAnimator {
     /// use; null puts the character's own idle back) plays wherever the idle would, under the idle's anim id, and at
     /// once with the idle's fade when the human stands idle now. **Coney stand-in**: a dynamic clip plays at rate 1
     /// (its rate flags are not traced).
-    /// Research: docs/research/characters.md#scripts-hold, docs/research/rumble.md#match-end
+    /// Research: docs/research/characters/index.md#scripts-hold, docs/research/rumble.md#match-end
     void setIdleClip(const anim::AnimClip* clip);
     /// `HuUseAnyAnim`'s replacement for anim `id` (human `+0x3c8`) other than the idle (setIdleClip()): `clip` (which
     /// must outlive its use; null puts the character's own back) plays wherever this human's set would give `id`.

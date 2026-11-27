@@ -129,7 +129,8 @@ TEST_CASE("Rembrandt stands at level99's start, walks, runs, turns and stops und
     REQUIRE(engine.has_value());
     const Level99 loaded = loadLevel99(discPath);
 
-    // His speeds come from the clips: the runtime values of characters.md.
+    // His speeds come from the clips: the runtime values of characters-classes.md#speed-classes.
+    // Expected: characters-classes.md#speed-classes, confirmed (runtime), run r-20261124-chars-turn-table
     const coney::human::Speeds speeds =
         coney::human::speedsOf(loaded.character->anims(), coney::human::AnimSlots::player());
     CHECK(speeds.walk == Approx(1.629F).margin(1e-3));
@@ -156,8 +157,8 @@ TEST_CASE("Rembrandt stands at level99's start, walks, runs, turns and stops und
     CHECK(run[165].speed == Approx(speeds.run).margin(1e-3));
     CHECK(run[165].animId == 410U);
     // Let go at frame 240 at a steady run: the speed measured there is a rounding short of the run speed, so he does
-    // not skid (as in about 9 releases in 10 at runtime, docs/research/characters.md#run-stop) and stops at once in
-    // the idle.
+    // not skid (as in about 9 releases in 10 at runtime, docs/research/characters-locomotion.md#run-stop) and stops at
+    // once in the idle.
     CHECK(run[240].animId == 388U);
     CHECK(run[240].speed == 0.0F);
     CHECK(run[268].animId == 388U);
@@ -232,7 +233,7 @@ TEST_CASE("running into level99's scenery stops Rembrandt without letting him th
 TEST_CASE("walking north past level5's building corner at (-60.2, -163.7), Rembrandt slides round its edge",
           "[disc][player]") {
     // mission7's walk to level5's bar met this corner 0.2 m east of its vertical edge and stopped dead; the original's
-    // corner slide carries a body round an edge its triangles name (docs/research/characters.md#walls, step 6).
+    // corner slide carries a body round an edge its triangles name (docs/research/characters-ground.md#walls, step 6).
     const char* discPath = SDL_getenv("CONEY_DISC");
     if (discPath == nullptr || *discPath == '\0') {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -258,8 +259,8 @@ TEST_CASE("level3's chase roof at z 10.3: the wall at x 167.4 does not climb, th
           "[disc][player][traversal]") {
     // The rooftop chase (docs/missions/level3.md, checkpoint 4) lands on a roof at z 10.3 after its fifth gap. Its
     // south part (y 361.5-366.7) is closed at x 167.4 by a 3.6 m wall of material 152 with no climbable flag, taller
-    // than any climb's window (docs/research/characters.md#climb); the way on is the steel stairs beside it (y
-    // 367-369.5, two flights at 33° and a landing) to a platform at z 16.46 and the gallery jump. A pad script that
+    // than any climb's window (docs/research/characters-traversal.md#climb); the way on is the steel stairs beside it
+    // (y 367-369.5, two flights at 33° and a landing) to a platform at z 16.46 and the gallery jump. A pad script that
     // steered into the wall stood there tapping triangle until it walked back off the roof. Rembrandt stands in for
     // Snow: both are players on the same collision.
     const char* discPath = SDL_getenv("CONEY_DISC");

@@ -144,7 +144,8 @@ LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, Creat
 }
 
 // The player's turning as the preload scripts configure it (`CfgSetTurnRates`, `CfgTurnRate` in config_preload2.lua,
-// recorded by their stubs): the values the original plays with (docs/research/characters.md#movement-constants).
+// recorded by their stubs): the values the original plays with
+// (docs/research/characters-locomotion.md#movement-constants).
 // @coney-only Coney's replay of the recorded configuration calls into the turning's setters
 void applyTurnConfig(const script::RecordedCalls& recorded) {
     // A recorded argument as a float; nil and strings count as nothing.

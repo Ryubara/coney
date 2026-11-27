@@ -3,7 +3,7 @@
 # m/s. Addresses are expressions (python/src/coney_tools/game_memory.py); a formula works a value out from the fields
 # before it. Format: docs/guides/research-traces.md#recording-a-trace.
 
-# The player human: docs/research/characters.md (the human object, the record, the per-player record, the transform
+# The player human: docs/research/characters/index.md (the human object, the record, the per-player record, the transform
 # table) and docs/research/combat/index.md#record-fields.
 [[player]]
 name = "x"
@@ -406,7 +406,7 @@ formula = "hypot(e_x - x, e_y - y)"
 # What decides a run stop: the locomotion's skid test (Human_PlayerLocomotion 0x00240e38, at 0x00241300) reads the
 # gait (human +0x1a8), the speed against the run speed, and the previous update's stick (the per-player record's other
 # buffer); the stick's last angle and magnitude (+0x5d8, +0x5dc) and the turn step and error (+0x5e0, +0x5e4) carry
-# over between updates. Research: docs/research/characters.md#locomotion.
+# over between updates. Research: docs/research/characters-locomotion.md#locomotion.
 [[stop]]
 name = "s_gait"
 address = "player + 0x1a8"

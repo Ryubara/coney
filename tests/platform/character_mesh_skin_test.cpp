@@ -27,10 +27,10 @@ using coney::test::worldNormal;
 using coney::test::worldVertex;
 
 TEST_CASE("posing a mesh whose weights sum below one places it after the blend", "[character_mesh]") {
-    // Expected: characters.md#character-geometry, confirmed (code): stored weights lose their low bits and are used as
-    // stored, so a vertex's weights may sum below 1 (on the disc, 71,380 of 150,509 vertices; the smallest sum
-    // 0.999908); the placement then moves the blended vertex whole, as the per-vertex placement did, and the blended
-    // normal is normalised, whatever its weights sum to, then turned by the placement
+    // Expected: characters-appearance.md#character-geometry, confirmed (code): stored weights lose their low bits and
+    // are used as stored, so a vertex's weights may sum below 1 (on the disc, 71,380 of 150,509 vertices; the smallest
+    // sum 0.999908); the placement then moves the blended vertex whole, as the per-vertex placement did, and the
+    // blended normal is normalised, whatever its weights sum to, then turned by the placement
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     REQUIRE(engine.has_value());
     auto model = coney::characters::decodeCharacterModel(
@@ -106,8 +106,8 @@ TEST_CASE("the bone palette holds each skinning matrix column by column up to 64
 }
 
 TEST_CASE("the skinned vertex data packs four weights and four bone indices per vertex", "[character_mesh]") {
-    // Expected: characters.md#character-geometry, confirmed (code): up to four weights per vertex, each with its node
-    // index, 0 in an unused slot
+    // Expected: characters-appearance.md#character-geometry, confirmed (code): up to four weights per vertex, each with
+    // its node index, 0 in an unused slot
     std::vector<coney::characters::SkinVertex> vertices(3);
     vertices[0].weights = {0.6F, 0.4F, 0.0F, 0.0F};
     vertices[0].bones = {3, 7, 0, 0};

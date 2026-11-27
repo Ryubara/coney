@@ -1,0 +1,3 @@
+# The heap walk (docs/research/characters-ground.md#slopes): stand while the camera settles, then the left stick at
+# 60 % straight up (a walk) to the end.
+60 stick left 0 60

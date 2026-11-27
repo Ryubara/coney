@@ -68,7 +68,7 @@ use when its record pointer (`+0xd4`) is set; its name is at `+0x80`, its player
 1, -1 for an AI human) and its handle index at `+0x92`, which indexes the transform table at `0x00714b00` (position
 at `+0x0`, rotation quaternion at `+0x10`). The heading is `2 * atan2(qz, qw)`, 0 facing +y, anticlockwise.
 """
-research = ["docs/research/characters.md#the-human-object"]
+research = ["docs/research/characters/index.md#the-human-object"]
 ghidra = ["0x00228730 Humans_StaticInit", "0x0021b0b8 Object_SetPosition"]
 evidence = "confirmed-code"
 confirmed_runtime = { date = "2026-10-21", copy = "pcsx2-d", pcsx2 = "2.9.129 (PCSX2-MCP fork)", state = "level99 street (slot 6)", note = "9 humans listed, the player Rembrandt at index 2" }
@@ -83,7 +83,7 @@ are indexed by the handle index `+0x92`, never by the table position: the per-pl
 * 0x2c`, the brain at `0x006d53f0 + index * 0x2f0` and the transform at `0x00714b00 + index * 0x20`. The record is
 the pointer at `+0xd4` (`0x0065a540 + i * 0x180`).
 """
-research = ["docs/research/characters.md#the-human-object", "docs/research/characters.md#the-record", "docs/research/ai/index.md#brain"]
+research = ["docs/research/characters/index.md#the-human-object", "docs/research/characters/index.md#the-record", "docs/research/ai/index.md#brain"]
 ghidra = ["0x00228730 Humans_StaticInit", "0x00146078 PlayerRecord_Update"]
 evidence = "confirmed-code"
 confirmed_runtime = { date = "2026-10-21", copy = "pcsx2-d", pcsx2 = "2.9.129 (PCSX2-MCP fork)", state = "level99 street (slot 6)" }
@@ -106,7 +106,7 @@ how = """
 Names are the ones level scripts give `HuCreate` (`+0x80`, up to 15 characters); `humans` lists them. Pick a puppet
 or a target by name rather than by distance: the nearest human changes as pedestrians walk.
 """
-research = ["docs/research/characters.md#the-human-object"]
+research = ["docs/research/characters/index.md#the-human-object"]
 ghidra = ["0x00235010 Human_FindByName"]
 evidence = "confirmed-code"
 confirmed_runtime = { date = "2026-10-21", copy = "pcsx2-d", pcsx2 = "2.9.129 (PCSX2-MCP fork)", state = "level99 street (slot 6)", note = "PoizoCiv" }
@@ -133,7 +133,7 @@ The transform table (`0x00714b00 + index * 0x20`) is the authoritative position 
 into `+0x10` / `+0x20` at the start of each update. Speed across the ground is `+0x1ac` (m/s) and the gait `+0x1a8`
 (0 standing to 5 sprint).
 """
-research = ["docs/research/characters.md#ground", "docs/research/characters.md#the-human-object"]
+research = ["docs/research/characters-ground.md#ground", "docs/research/characters/index.md#the-human-object"]
 ghidra = ["0x0021b0b8 Object_SetPosition"]
 evidence = "confirmed-code"
 confirmed_runtime = { date = "2026-10-21", copy = "pcsx2-d", pcsx2 = "2.9.129 (PCSX2-MCP fork)", state = "level99 street (slot 6)" }
@@ -158,7 +158,7 @@ update. Unlike the script's `Teleport` (`0x00385bb8`, which calls `Human_SetTran
 to the ground or break a grab, so give a z on the ground (read one with `position`) and do not move a human that is
 holding or held. For the script's own teleport, run `lua` with `Teleport(...)`.
 """
-research = ["docs/research/characters.md#ground", "docs/research/characters.md#teleport"]
+research = ["docs/research/characters-ground.md#ground", "docs/research/characters-players.md#level-starts"]
 ghidra = ["0x0021b0b8 Object_SetPosition", "0x0023d440 Human_SetTransform"]
 evidence = "confirmed-runtime"
 confirmed_runtime = { date = "2026-10-21", copy = "pcsx2-d", pcsx2 = "2.9.129 (PCSX2-MCP fork)", state = "level99 street (slot 6)", note = "player moved 3 m along x and turned to 90 degrees; read back after 30 updates" }
@@ -192,7 +192,7 @@ Writes the human's transform as `teleport` does, with z `height` metres above th
 after 1, 10, 20 and 40 updates. A human that is not standing on anything falls under the character step's gravity: in the run
 below the height went 5.223, 4.596, 2.244 and 0.223 at 1, 10, 20 and 40 updates, the ground it stopped on. Pick a pedestrian by name (`humans` lists them); one that is walking is moved off its route.
 """
-research = ["docs/research/characters.md#ground", "docs/research/characters.md#teleport"]
+research = ["docs/research/characters-ground.md#ground", "docs/research/characters-players.md#level-starts"]
 ghidra = ["0x0021b0b8 Object_SetPosition", "0x0023d440 Human_SetTransform"]
 evidence = "confirmed-runtime"
 emulation = "running"
@@ -226,7 +226,7 @@ how = """
 Health and its maximum are `s16`s in the human's record (`+0x144`, `+0x146`), the power meter is `+0x148` and stamina
 `+0x14a`; rage is the human's `s32` at `+0x650` (up to the class maximum, 78 for class 6).
 """
-research = ["docs/research/characters.md#the-record", "docs/research/combat-rage.md#rage"]
+research = ["docs/research/characters/index.md#the-record", "docs/research/combat-rage.md#rage"]
 ghidra = ["0x00237848 Human_SetHealth", "0x00264cf8 Human_AddRage"]
 evidence = "confirmed-code"
 confirmed_runtime = { date = "2026-10-21", copy = "pcsx2-d", pcsx2 = "2.9.129 (PCSX2-MCP fork)", state = "level99 street (slot 6)" }
@@ -249,7 +249,7 @@ stored as given, and the human dies at its next damage update. Keep it at or und
 reads it); `HuSetMaxHealth` (`0x00237be0`) changes that. For a death through the game's own path, run `lua` with
 `HuKill(handle)`.
 """
-research = ["docs/research/characters.md#the-record"]
+research = ["docs/research/characters/index.md#the-record"]
 ghidra = ["0x00237848 Human_SetHealth"]
 evidence = "confirmed-runtime"
 confirmed_runtime = { date = "2026-10-21", copy = "pcsx2-d", pcsx2 = "2.9.129 (PCSX2-MCP fork)", state = "level99 street (slot 6)" }
@@ -327,7 +327,7 @@ picked up `+0x33c`, and a carried prop `+0x348` / `+0x34c`. To give a weapon, pu
 human and let it pick it up (the weapon pickup scenarios do), or spawn one with `lua` (`ObjSpawn`): `HuGiveWeapon`
 (`0x00299470`) is called by no script and what it feeds is not traced.
 """
-research = ["docs/research/characters.md#the-human-object", "docs/research/combat-moves.md"]
+research = ["docs/research/characters/index.md#the-human-object", "docs/research/combat-moves.md"]
 ghidra = ["0x00299470 Human_SetPendingWeapon"]
 evidence = "confirmed-code"
 confirmed_runtime = { date = "2026-10-21", copy = "pcsx2-d", pcsx2 = "2.9.129 (PCSX2-MCP fork)", state = "level99 street (slot 6)", note = "empty hands: 0xffffffff" }
@@ -516,7 +516,7 @@ human named by `like`, so the model is already resident: a `Civilians*` human gi
 `coney_spawned` (`lua-globals coney`); `HuCreate` returns the null handle when all 60 slots are taken. Remove it with
 `lua` `HuDelete(coney_spawned)`.
 """
-research = ["docs/research/characters.md#creation"]
+research = ["docs/research/characters/index.md#creation"]
 ghidra = ["0x00358428 lua_HuCreate", "0x00233d60 Human_Create"]
 evidence = "confirmed-runtime"
 patches = ["call-brains"]
@@ -691,7 +691,7 @@ which must be a Warrior whose model is resident (`Ash`, a member of the player's
 automatic switching off). Its handle is left in the global `coney_spawned`.
 Remove it with `lua` `HuDelete(coney_spawned)`. The recipe waits 10 updates and runs `crew`'s member list.
 """
-research = ["docs/research/characters.md#creation", "docs/research/ai-gangs.md#gang-record"]
+research = ["docs/research/characters/index.md#creation", "docs/research/ai-gangs.md#gang-record"]
 ghidra = ["0x00358428 lua_HuCreate", "0x00233d60 Human_Create"]
 evidence = "confirmed-runtime"
 patches = ["call-brains"]

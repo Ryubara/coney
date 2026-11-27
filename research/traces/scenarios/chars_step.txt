@@ -1,0 +1,25 @@
+# The step trials (docs/research/characters-ground.md#walls): per trial of 120 updates, the player is put 1.26 m
+# in front of the test step for the first three updates, the stick is pushed straight up from update 20 to 100, then
+# let go. The trials' heights and stick percentages are listed in chars_step.toml.
+20 stick left 0 35
+100 stick left 0 0
+140 stick left 0 35
+220 stick left 0 0
+260 stick left 0 35
+340 stick left 0 0
+380 stick left 0 50
+460 stick left 0 0
+500 stick left 0 50
+580 stick left 0 0
+620 stick left 0 50
+700 stick left 0 0
+740 stick left 0 100
+820 stick left 0 0
+860 stick left 0 100
+940 stick left 0 0
+980 stick left 0 50
+1060 stick left 0 0
+1100 stick left 0 50
+1180 stick left 0 0
+1220 stick left 0 50
+1300 stick left 0 0

@@ -15,7 +15,7 @@
 // The hats humans wear: the hat-fit sets `CfgHat` fills, where a worn hat sits on the head, and a knocked-off hat's
 // fall. A worn hat is a world object (a spawn record) the wearer draws at his head; a knocked-off one falls and then
 // lies where it landed like any other object.
-// Research: docs/research/characters.md#hats, docs/research/script-types.md#hat-object
+// Research: docs/research/characters-appearance.md#hats, docs/research/script-types.md#hat-object
 
 namespace coney::world_objects {
 
@@ -40,7 +40,7 @@ struct HatFit {
 /// The hat-fit sets (`0x00662b70`, 0xa90 bytes each): per set, the character type that owns it and up to kHatSlots
 /// hats by name, each with its fitting.
 ///
-/// Research: docs/research/characters.md#hats, docs/references/hats.md
+/// Research: docs/research/characters-appearance.md#hats, docs/references/hats.md
 class HatFits {
   public:
     /// The sets of the `CfgHat` calls in `recorded`, in their order.

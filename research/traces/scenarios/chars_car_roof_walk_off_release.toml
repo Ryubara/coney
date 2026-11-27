@@ -1,0 +1,27 @@
+# Walking off the roof of a car with the stick let go in the air (unit 364, the characters research split): as
+# chars_car_roof_walk_off, but the stick is centred on the first update he is airborne (77), so the landing builder
+# takes the drop land (429) instead of the jump end with a gait blend (436, stick above 0.12). The anim state (record
+# +0x18), the state flags' high word and record +0x08 (`phase`) show the drop and its landing.
+# Research: docs/research/characters-ground.md#falling.
+description = "level99 street (slot 2): climb onto a car, walk off its roof at stick 50 %, the stick let go in the air"
+research = "docs/research/characters-ground.md#falling"
+input = "chars_car_roof_walk_off_release.txt"
+updates = 200
+fields = ["player"]
+
+[original]
+slot = 2
+patches = ["scripted-pad", "right-stick"]
+
+[coney]
+level = "level99"
+
+[[field]]
+name = "state_hi"                         # record +0x04, the state flags' high word (0x8 airborne, 0x20 landing)
+address = "rec(player) + 0x4"
+type = "u32"
+
+[[field]]
+name = "anim_state"                       # record +0x18
+address = "rec(player) + 0x18"
+type = "s32"

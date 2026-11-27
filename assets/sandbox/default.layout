@@ -1,7 +1,7 @@
 # Coney sandbox: the general movement course (docs/guides/sandbox.md).
 # Game axes and units: metres, z up; the spawn faces +y ("north"). One texture tile is 1 m: the bright grid lines
 # fall every 50 cm, the faint ones every 12.5 cm, and on walls they measure the height above the ground.
-# Heights and distances cite docs/research/characters.md where a value comes from the game; the rest are Coney choices.
+# Heights and distances cite docs/research/characters/index.md where a value comes from the game; the rest are Coney choices.
 
 title Movement course
 
@@ -48,7 +48,7 @@ box at=0,-3,0 size=0.05,0.6,0.02 texture=marker solid=no repeat=21 step=1,0,0
 cylinder at=0,-3.6,0 radius=0.08 height=1 segments=8 texture=marker repeat=5 step=5,0,0
 
 # Slope gallery, north-west: ramps 3 m wide and 2 m high at 10° to 60°, low ends on y = 10, each with a platform at
-# the top. A character lands only on ground whose normal has z > 0.65, about 49° (docs/research/characters.md#ground),
+# the top. A character lands only on ground whose normal has z > 0.65, about 49° (docs/research/characters-ground.md#ground),
 # so the 50° and 60° ramps are red: steeper than the game's walkable limit.
 # The walkable ramps (10° to 40°) end at a platform of two boxes, the top one a rise (0.2 m) deep: a full-height box
 # would put its 2 m face and top edge within the walking sphere's reach of the last metre of ramp and hold the player
@@ -79,7 +79,7 @@ stairs at=12,11.2,0 width=2.5 steps=8 rise=0.25 run=0.3 texture=stairs
 stairs at=16,11.05,0 width=2.5 steps=7 rise=0.30 run=0.3 texture=stairs
 stairs at=20,10.75,0 width=2.5 steps=5 rise=0.40 run=0.3 texture=stairs
 # The walkable sets' landings are two boxes, the top one a rise deep, so no wall face taller than a riser stands where
-# the player's 0.47 m walking sphere reaches it from the last step (docs/research/characters.md#walls). The 25, 30 and
+# the player's 0.47 m walking sphere reaches it from the last step (docs/research/characters-ground.md#walls). The 25, 30 and
 # 40 cm sets are not walkable in the original (a riser of 0.25 m or more is a wall), so their landings are plain boxes.
 box at=0,17.5,0 size=2.5,3,1.9 texture=ledge
 box at=0,17.5,1.9 size=2.5,3,0.1 texture=ledge
@@ -92,7 +92,7 @@ box at=16,13.6,0 size=2.5,3,2.1 texture=ledge
 box at=20,13.0,0 size=2.5,3,2.0 texture=ledge
 
 # Step-up and climb ledges, east: 3 m blocks from 10 cm to 3 m high along x = 32. A walking body ignores wall faces
-# under 0.25 m and the ground snap lifts the feet on (docs/research/characters.md#walls): the 10 cm block is walked
+# under 0.25 m and the ground snap lifts the feet on (docs/research/characters-ground.md#walls): the 10 cm block is walked
 # onto, and so is the 25 cm one, whose 3 m wide face splits into two slivers the same rule skips; from 50 cm a block
 # is a wall. The red blocks are above the short climbs' 1.7 m.
 box at=32,-12,0 size=3,3,0.1 texture=ledge
@@ -107,7 +107,7 @@ box at=32,20,0 size=3,3,2.5 texture=marker
 box at=32,24,0 size=3,3,3.0 texture=marker
 
 # Gaps, west: 1 m high platforms 4 m long along x = -50 with gaps of 0.5 to 4 m between them, and a ramp up to the
-# first. A drop of more than 0.5 m is a fall (docs/research/characters.md#ground), so stepping off is a fall.
+# first. A drop of more than 0.5 m is a fall (docs/research/characters-ground.md#ground), so stepping off is a fall.
 ramp at=-50,-21.374,0 width=3 height=1 angle=20 texture=ramp
 box at=-50,-18,0 size=3,4,1 texture=ledge
 box at=-50,-13.5,0 size=3,4,1 texture=ledge

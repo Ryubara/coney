@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-fence-tap3"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "9fca9f626d144f9eb0c5317f0223749239daf3ae33101c6840ea6b9fb73c3b03"
+
+[who]
+agent = "ae31bd6736d3cec63"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-c"
+
+[start]
+state = "fence-run-jump"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "chars_fence_tap3"
+method = ""
+
+[values]
+updates = 141
+missed_updates = 0
+columns = 27
+
+[hashes]
+trace_csv = "9ce6aa0444636592f494ad3081f24cbe0213307ee57f30ad5c8858c350949e61"

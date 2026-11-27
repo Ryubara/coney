@@ -18,8 +18,8 @@ state machine that brings a pad into analog and pressure mode, the pad queries o
 Lua pad handlers, and the per-player record that turns buttons into **command ids**. What the commands mean and how
 they are matched is on [Combat, Commands](combat/index.md#commands); the pad record and the per-frame pad update are on
 [Front end, Pad record](frontend.md#pad-record) and [Input on the front end](frontend.md#input); the per-player record
-is on [Characters](characters.md#buttons). Every function from `0x00144a08` to `0x00148358` and from `0x00149520` to
-`0x00149ef8` is listed here.
+is on [Characters](characters-locomotion.md#buttons). Every function from `0x00144a08` to `0x00148358` and from
+`0x00149520` to `0x00149ef8` is listed here.
 
 ## Original structure
 
@@ -92,7 +92,7 @@ the unsupported one when the pad has no other mode), and a DualShock 2 ends in p
 
 The script bindings are on [character bindings](../references/bindings/character.md); the tables and the matching
 order on [Combat, Commands](combat/index.md#commands); the record (`0x00660f50 + i × 0x2c`) on
-[Characters](characters.md#buttons). The nine tables live at `0x005ddd10`-`0x005de130` with their counts at
+[Characters](characters-locomotion.md#buttons). The nine tables live at `0x005ddd10`-`0x005de130` with their counts at
 `0x0050b740`-`0x0050b760`. Confirmed (code) for the addresses.
 
 | Address | Name | Role | Evidence |
@@ -124,7 +124,7 @@ order on [Combat, Commands](combat/index.md#commands); the record (`0x00660f50 +
 
 The pad record (`0x005dd810 + i × 0x50`) is laid out on [Front end, Pad record](frontend.md#pad-record), the `libpad`
 records (`0x005de3c0 + i × 0x140`) under [The libpad state machine](#libpad) and the per-player record
-(`0x00660f50 + i × 0x2c`) on [Characters](characters.md#buttons). Confirmed (code).
+(`0x00660f50 + i × 0x2c`) on [Characters](characters-locomotion.md#buttons). Confirmed (code).
 
 ## Behaviour
 

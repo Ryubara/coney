@@ -6,7 +6,7 @@
 // The human flag word (human `+0xe0`, a u64): the switches the scripts set on a human (`HuSetGodMode`,
 // `HuSetUnstunnable`, ...) and the ones combat, climbing and the meters read. Only the bits the research names are
 // listed; the word keeps any other bit a caller sets.
-// Research: docs/research/combat/index.md#human-flags, docs/research/characters.md#the-record,
+// Research: docs/research/combat/index.md#human-flags, docs/research/characters/index.md#the-record,
 // docs/references/bindings/character.md
 
 namespace coney::human::flag {
@@ -79,7 +79,7 @@ inline constexpr std::uint64_t kNoThrowWeapon = 0x4000000000;
 /// is on the page, so Coney only keeps it).
 inline constexpr std::uint64_t kNoAutoLock = 0x8000000000;
 /// Driving a wheelchair (`HuSetWheelchairControl`, `0x00234188`): a pad-driven human with it runs the wheelchair's
-/// control (docs/research/characters.md#wheelchair).
+/// control (docs/research/characters-locomotion.md#wheelchair).
 inline constexpr std::uint64_t kWheelchair = 0x80000000000;
 /// Demi-god (`HuSetDemiGodMode`): one hit cannot take health below the floor fraction of the maximum, and reaching it
 /// sets kGod (`0x00265f70`, `0x00256f28`).

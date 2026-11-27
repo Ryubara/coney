@@ -129,7 +129,7 @@ class FlashDriver final : public coney::InputSource {
 
   private:
     // Sets the left stick to move toward (dx, dy) at kWalkStick, turned by the shown camera's heading: up is the
-    // camera's view along the ground, right its right (docs/research/characters.md#input).
+    // camera's view along the ground, right its right (docs/research/characters-locomotion.md#input).
     static void steer(coney::PadSample& pad, const coney::human::Player& player, float dx, float dy) {
         const coney::human::PlayerSnapshot& shot = player.current();
         float fx = shot.cameraTarget.x - shot.cameraEye.x;

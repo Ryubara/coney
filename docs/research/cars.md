@@ -654,7 +654,7 @@ first 26 atomics of each car, each at its frame and given the dictionary's first
   not at all; the paint on the parts of the paint mask (0, 4, 5, 10-14, 16, 18, 20), white elsewhere; each part one
   3D draw of the frame description ([Renderer](../engine/renderer.md#frame-description)). A car adds
   nothing to the collision mesh: as in the original, a walker meets and climbs it through its shell in the level's
-  own mesh ([Characters](characters.md#car-shells), [Physics](physics.md#layers)).
+  own mesh ([Characters](characters-traversal.md#car-shells), [Physics](physics.md#layers)).
 
 Coney's stand-ins, where this page is silent:
 

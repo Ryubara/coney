@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// A new human's random body size (docs/research/characters.md#body-scale): one Random_Int(99) on the gameplay stream
-// for the humans it does not skip, mapped by sex, hat, brain type and gang kind. The table is a synthetic one.
+// A new human's random body size (docs/research/characters-classes.md#body-scale): one Random_Int(99) on the gameplay
+// stream for the humans it does not skip, mapped by sex, hat, brain type and gang kind. The table is a synthetic one.
 #include "characters/body_size.h"
 
 #include <cstdint>
@@ -42,7 +42,7 @@ BodySizeInput gangMember() {
 } // namespace
 
 TEST_CASE("a man's random size: 1.0 to 30, 1.02 or 0.98 to 54, 1.01 to 89, then 1.0", "[characters]") {
-    // Expected: characters.md#body-scale, confirmed (code)
+    // Expected: characters-classes.md#body-scale, confirmed (code)
     const BodySizeInput man = gangMember();
     CHECK(sizeFor(man, 30) == std::optional<float>(1.0F));
     // 31-54 without a hat: a gang member of a gang of kind below 23 or a cop grows, anyone else shrinks.
@@ -72,7 +72,7 @@ TEST_CASE("a man's random size: 1.0 to 30, 1.02 or 0.98 to 54, 1.01 to 89, then 
 
 TEST_CASE("a woman's random size falls by 0.01 a quarter of the draw, a hat keeping it at 0.99 or more",
           "[characters]") {
-    // Expected: characters.md#body-scale, confirmed (code)
+    // Expected: characters-classes.md#body-scale, confirmed (code)
     BodySizeInput woman = gangMember();
     woman.woman = true;
     // value_or(-1) keeps an empty result a failed check rather than a read of an empty optional.
@@ -87,7 +87,7 @@ TEST_CASE("a woman's random size falls by 0.01 a quarter of the draw, a hat keep
 
 TEST_CASE("the random size draws once from the gameplay stream, and not at all for the humans it skips",
           "[characters]") {
-    // Expected: characters.md#body-scale, confirmed (code)
+    // Expected: characters-classes.md#body-scale, confirmed (code)
     GameRandom random = drawing(0);
     CHECK(randomBodySize(gangMember(), random).has_value());
     CHECK(random.index(RandomStream::Gameplay) == 1);

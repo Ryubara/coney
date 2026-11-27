@@ -1,0 +1,16 @@
+# The standing short-wall climb onto a parked car (level99 checkpoint 2, slot 2 = library state vehicle-side-window):
+# the stick at 50 % toward the car's side and triangle (455, 456, 457): how long each clip plays and how high the feet
+# rise. Research: docs/research/characters-traversal.md#climb.
+description = "level99 street: climb onto a parked car's side (stick 50 %, triangle)"
+research = "docs/research/characters-traversal.md#climb"
+input = "chars_car_climb.txt"
+updates = 90
+fields = ["player", "held"]
+
+[original]
+slot = 2
+patches = ["scripted-pad", "right-stick"]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "2"]

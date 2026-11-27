@@ -15,8 +15,8 @@ the flash, and the player arrives at the flash dealer hurt only because the tele
 alone.
 
 Creating a human (`HuCreate`, `Human_Init`) and where each level first puts the player are on
-[Characters](characters.md#creation) and [Where a level puts the player](characters.md#level-starts); what the flash
-does is on [Combat: the power meter, rage and the flash](combat-rage.md#flash); a scene's start and end are on
+[Characters](characters/index.md#creation) and [Where a level puts the player](characters-players.md#level-starts); what
+the flash does is on [Combat: the power meter, rage and the flash](combat-rage.md#flash); a scene's start and end are on
 [Scenes](scenes.md#humans).
 
 ## Rules
@@ -148,18 +148,18 @@ elsewhere on its next update (`Cam_Follow_Update`, `0x0012ae58`, [the follow upd
 ### The hand-over {#handover}
 
 `HuChangePlayerGang` makes a chosen AI human player 1 (`Human_MakePlayer`, `0x00229c40`, [the level99
-hand-over](characters.md#level99-handover)). The chosen human keeps its own health and maximum, each scaled by its
-Warrior class's health percentage (`CfgWarriorClass` byte `+0x05`, in single precision, rounded to the nearest), and
+hand-over](characters-players.md#level99-handover)). The chosen human keeps its own health and maximum, each scaled by
+its Warrior class's health percentage (`CfgWarriorClass` byte `+0x05`, in single precision, rounded to the nearest), and
 gets its power (`+0x148`) and stamina (`+0x14a`) at their maximums; its rage is not written. The old player's health
 plays no part. Confirmed (code) at `0x00229c40`.
 
 ### Falling out of the world {#out-of-world}
 
 The original puts no one back: a player more than 20 m below the collision mesh's lowest point fails the mission
-([Characters](characters.md#ground), [Camera](camera.md#death-camera)). Confirmed (code) at `0x002403ec`. Any human
-there is then faded out and destroyed, an AI human's knock-out reaching his scripts as event 18 ([Falling out of the
-world](characters.md#out-of-world)). Confirmed (code) at `0x00249108` and `0x0021c7c8`. The fade and the destroy test
-for no player, so a player there is destroyed too: inferred from the code, not run.
+([Characters](characters-ground.md#ground), [Camera](camera.md#death-camera)). Confirmed (code) at `0x002403ec`. Any
+human there is then faded out and destroyed, an AI human's knock-out reaching his scripts as event 18 ([Falling out of
+the world](characters-ground.md#out-of-world)). Confirmed (code) at `0x00249108` and `0x0021c7c8`. The fade and the
+destroy test for no player, so a player there is destroyed too: inferred from the code, not run.
 
 ### The level99 flash lesson {#flash-lesson}
 
@@ -218,7 +218,7 @@ the dealer. Script locators are given as file and function.
   `human::takeMetersOf()`).
 - A player who falls out of the world is put back at the level's start, snapped as a creation snaps (from 1 m above)
   with his health kept (`Human::putBack()`), where the original fails the mission (a known difference,
-  [Characters](characters.md#coneys-implementation)).
+  [Characters](characters/index.md#coneys-implementation)).
 
 ## Open questions
 

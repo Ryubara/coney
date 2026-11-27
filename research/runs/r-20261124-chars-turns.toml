@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-turns"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "7b2e2eef39568b40a389329ea6a1e34d67d4d0d42726003179e8f3b8d611284d"
+
+[who]
+agent = "a81ce522c25fb7730"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-e"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad", "skid-test", "state-code"]
+
+[run]
+name = "chars_turns"
+method = ""
+
+[values]
+updates = 201
+missed_updates = 0
+columns = 27
+
+[hashes]
+trace_csv = "e6ff36b32b5036cc3b0260aebd6cdad72081d9e3d1162d044c69a73f28b466e3"

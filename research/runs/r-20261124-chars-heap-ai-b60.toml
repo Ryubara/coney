@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-heap-ai-b60"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "c4d5a0814052b045eaff4b49510e90cdfb698520e616a645155e4912b8dc9adc"
+
+[who]
+agent = "a73f4eba7e7bccc32"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-d"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains", "right-stick", "scripted-pad"]
+
+[run]
+name = "chars_heap_ai_b60"
+method = ""
+
+[values]
+updates = 601
+missed_updates = 0
+columns = 53
+
+[hashes]
+trace_csv = "ae092f7e6c584f6ec07b88d9d83043f080f5994155d69ed1afcecfedc1c3c38b"

@@ -329,8 +329,8 @@ Read in Ghidra: confirmed (code) where no other level is given.
      he was the nearest, there is none. A target knocked over with health left (state `0x80000`) is **kept**
      (confirmed (code) at `0x0027ce90`; confirmed (runtime), run r-20261025-target-knockdown-kept, below).
   1. **The sprint**: state `0x1000000` is cleared, then set again while L2 is held with stamina (record `+0x14a`)
-     and `+0x08` free of `0x10`, which also clears `0x8008` and drops the target ([Sprint](characters.md#sprint)). A
-     target beyond **13 m** (169) loses the lock bit `0x8`.
+     and `+0x08` free of `0x10`, which also clears `0x8008` and drops the target
+     ([Sprint](characters-traversal.md#sprint)). A target beyond **13 m** (169) loses the lock bit `0x8`.
   2. **Running drops it** (confirmed (code)): with L2 held, or gait 4 or 5 with `+0x08` clear (`Human_IsRunningFree`,
      `0x00223a60`, gait 4; `Human_IsSprintingFree`, `0x00223a98`, gait 5), or
      human `+0xe0` `0x8000000000` while not locked, nothing else happens this update; a player in a stance with

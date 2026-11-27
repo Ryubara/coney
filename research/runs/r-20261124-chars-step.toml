@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-step"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "9e102d30652059af35c99f279e76f6e1c4e5a346363111bb3c8b8f3b6378505b"
+
+[who]
+agent = "a73f4eba7e7bccc32"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-d"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "chars_step"
+method = ""
+
+[values]
+updates = 1321
+missed_updates = 0
+columns = 27
+
+[hashes]
+trace_csv = "12e272ab01c28c2b184520ba16c9d831acb9945e34b457ab43557645254e324d"

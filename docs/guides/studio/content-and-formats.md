@@ -69,10 +69,10 @@ writes a hash in hex because the name is not recovered, so does the path.
 | Level | `game:/levels/<level>` (`level99`) | The level name: its `.lev`, script, object list and packs ([Level loading](../../research/level-loading.md#the-level-record)) |
 | World | `game:/worlds/<world>` | `<world>s_sec.wld` and `<world>d_sec.wld` ([The streamed world](../../research/world.md#file-names)) |
 | Model | `game:/models/<name>` | A model resource's hash ([WAD contents](../../research/formats/wad-contents.md)) |
-| Character type | `game:/characters/<type>` (a `CfgChar` type number) | The type, and through it the model name ([From a type to a model](../../research/characters.md#type-to-model)) |
+| Character type | `game:/characters/<type>` (a `CfgChar` type number) | The type, and through it the model name ([From a type to a model](../../research/characters-classes.md#type-to-model)) |
 | Object type | `game:/objects/<type name>` (`dyn_door_swinging`) | The Object List record ([Objects](../../references/objects.md)) |
 | Texture | `game:/textures/<dictionary>/<texture>` | The dictionary's resource hash and the texture's name |
-| Clip | `game:/animations/<clip>`, or `game:/characters/<type>#<anim id>` | The clip resource, or the anim id through the type's character data ([Files of a character](../../research/characters.md#files)) |
+| Clip | `game:/animations/<clip>`, or `game:/characters/<type>#<anim id>` | The clip resource, or the anim id through the type's character data ([Files of a character](../../research/characters-appearance.md#files)) |
 | Sound | `game:/sounds/<name>`, `game:/music/<track>` | The sound's name hash ([Audio data](../../research/formats/audio.md)) |
 | Script | `game:/scripts/<name>.lua` | The chunk's WAD entry |
 | Scene, movie | `game:/scenes/<record>`, `game:/movies/<name>` | The scene record, the `PSS/` file |
@@ -213,8 +213,8 @@ libraries, and the image and audio readers beside them, are chosen on the techno
 - **Axes and units.** glTF is metres with +Y up; FBX states its units and up axis in its header. The importer turns
   every source into the game's axes and units, metres with z up, the axes of every level, layout and native
   ([Collision](../../research/collision.md), [The layout format](../sandbox.md#the-layout-format)), and skinned data
-  into the pose's axes ([Character geometry](../../research/characters.md#character-geometry)); the sidecar can add a
-  scale.
+  into the pose's axes ([Character geometry](../../research/characters-appearance.md#character-geometry)); the sidecar
+  can add a scale.
 - **Audio**: WAV, FLAC, MP3 and Ogg Vorbis, through the technology design's readers, all decode to the same WAV engine
   form.
 - **These readers live in Studio's import step**, not in the game (principle 4): `coney` itself reads `.cmesh`,
@@ -373,7 +373,7 @@ which is how the sandbox's primitives collide. A project's collision is written 
 | Setting | Values | In the triangle |
 | --- | --- | --- |
 | Material | The `MATERIAL_*` names | `+0x08`, the material id; it chooses sounds and effects, and 30 `LOW_FENCE` makes a climbable fence ([Materials](../../research/collision.md#materials)) |
-| Climbable | no, by anyone, by a player | Flag bits 7 and 2 ([Triangles](../../research/collision.md#triangles), [Climbing](../../research/characters.md#climb)) |
+| Climbable | no, by anyone, by a player | Flag bits 7 and 2 ([Triangles](../../research/collision.md#triangles), [Climbing](../../research/characters-traversal.md#climb)) |
 | Sneak zone | on or off | Flag bit 4, the shadow ground where a human may hide ([Stealth](../../research/stealth.md#shadow-ground)) |
 | Two-sided | on or off | Flag bit 1 |
 | Area | 0 to 124 | `+0x09`, the area byte; a path area is matched against it ([Path data](../../research/level-loading.md#path-data)) |
@@ -475,7 +475,7 @@ listed), and textures are a presentation kind, so an override changes no gamepla
 ([Layers](../asset-and-script-architecture.md#asset-layers)). The PNG keeps its own size: a texture twice as large is
 drawn with the same texture coordinates, since they run from 0 to 1 whatever the size. A character entity
 may also take a texture of its own, for that one human: the game binds a character's one texture to its material at each
-draw ([Character geometry](../../research/characters.md#character-geometry), [Drawing a
+draw ([Character geometry](../../research/characters-appearance.md#character-geometry), [Drawing a
 human](../../research/graphics.md#human-draw)), so one human can wear another texture without touching the rest.
 
 **Edit: custom props.** An imported static model placed in a level is drawn at its transform, with the collision its
@@ -494,11 +494,12 @@ object types of a project's own.
 
 **What Coney has.** Every character shares one skeleton: 34 pose bones (0 the root's motion, 1 the pelvis, then 32
 skin bones, the HAnim nodes `n + 2`), with each model's bone offsets ([`skeleton.h`](repo:src/animation/skeleton.h),
-[Character geometry](../../research/characters.md#character-geometry)). A clip is a root velocity, a root translation,
-one rotation channel per animated bone, events and flags ([Animation](../../research/formats/animation.md)). A type's
-anim set is its character data's 722 slots over the generic set, and the anim slots choose what it plays for each
-movement ([Anim slots](../../research/characters.md#anim-slots)). The Animation player plays any set's clips on any
-character ([Animation player](../debug-menu.md#animation-player)).
+[Character geometry](../../research/characters-appearance.md#character-geometry)). A clip is a root velocity, a root
+translation, one rotation channel per animated bone, events and flags
+([Animation](../../research/formats/animation.md)). A type's anim set is its character data's 722 slots over the generic
+set, and the anim slots choose what it plays for each movement ([Anim
+slots](../../research/characters-animation.md#anim-slots)). The Animation player plays any set's clips on any character
+([Animation player](../debug-menu.md#animation-player)).
 
 **Show.** The Animation viewer plays a clip on any character, with a timeline, the bones it animates, its events (with
 their frames) and its flags; a type's anim set as the 722 slots with the clip in each; the skeleton with bone axes and
@@ -527,8 +528,8 @@ Importing a skinned glTF or FBX as a character:
 3. **Weights.** At most the number of weights the model format carries per vertex, the smallest dropped and the rest
    renormalised.
 4. **Textures.** The model's materials and their base colour textures, imported as PNG. The game's characters have one
-   material and one texture ([Character geometry](../../research/characters.md#character-geometry)); a custom model
-   may have several, which needs the renderer to draw a human with more than one material.
+   material and one texture ([Character geometry](../../research/characters-appearance.md#character-geometry)); a custom
+   model may have several, which needs the renderer to draw a human with more than one material.
 
 The result is a `.cmodel` (a `CharacterModel`) that Coney skins exactly as a disc model, with
 [`character_rig.h`](repo:src/characters/character_rig.h), and the custom character file that names it. Hats, the blood

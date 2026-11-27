@@ -14,7 +14,7 @@
 #include "fileio/wad.h"
 
 // The Character List of warriors.glr: how a character's model name leads to its three resources.
-// Format: docs/research/characters.md#files.
+// Format: docs/research/characters-appearance.md#files.
 
 namespace coney::characters {
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The hats humans wear: the hat-fit sets, where a hat sits on the head, and a knocked-off hat's throw and fall
-// (docs/research/characters.md#hats).
+// (docs/research/characters-appearance.md#hats).
 #include "world_objects/hats.h"
 
 #include <cstddef>

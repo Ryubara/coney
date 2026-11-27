@@ -144,7 +144,7 @@ TEST_CASE("letting go during the run start goes to the idle at once, whatever th
     REQUIRE(human.animator().startClipPlaying());
     REQUIRE(human.speed() > 0.5F);
     // The release: the idle replaces the run start (the idle builder's fade over a start clip), so its root motion
-    // stops carrying the body (docs/research/characters.md#clip-selection).
+    // stops carrying the body (docs/research/characters-animation.md#clip-selection).
     human.step(stick(0.0F, 0.0F), mesh.get());
     CHECK(human.animator().state() == AnimState::Idle);
     const Vec3 at = human.position();
@@ -292,9 +292,9 @@ TEST_CASE("the stick is camera-relative: up walks away from the camera", "[human
 
 TEST_CASE("a fall lands on the first update that starts 0.17 m or more below the floor, falling through until then",
           "[human]") {
-    // Ledges of several heights put the floor at different phases of the fall's steps (docs/research/characters.md
-    // #falling): whatever the phase, the last airborne update ends 0.17 m or more under the floor, and the one before
-    // it ends less than that under it (or above it).
+    // Ledges of several heights put the floor at different phases of the fall's steps
+    // (docs/research/characters-ground.md#falling #falling): whatever the phase, the last airborne update ends 0.17 m
+    // or more under the floor, and the one before it ends less than that under it (or above it).
     const TestCharacter character;
     for (const float height : {1.0F, 1.3F, 1.6F, 2.0F, 2.45F}) {
         const auto mesh =
@@ -978,8 +978,8 @@ TEST_CASE("clip event 0x45 reaches the sounds as a stop of the held sound, once"
 
 TEST_CASE("the World page's gravity adds its difference from the original's to an airborne human after his update",
           "[human][world_page]") {
-    // Expected: characters.md#ground, confirmed (code) at Human_StateUpdate 0x0023fea8: vz -= 15.68 × dt from the
-    // second airborne update, capped at -50 m/s; the extra pull is Coney's own debug tooling (debug-menu.md#world)
+    // Expected: characters-ground.md#ground, confirmed (code) at Human_StateUpdate 0x0023fea8: vz -= 15.68 × dt from
+    // the second airborne update, capped at -50 m/s; the extra pull is Coney's own debug tooling (debug-menu.md#world)
     const TestCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::join(coney::test::floorAt(3.0F, 0.0F, 80.0F, 0.0F, 20.0F),
                                                               coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F)));

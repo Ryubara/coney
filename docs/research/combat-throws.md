@@ -2,8 +2,10 @@
 kind: topic
 system: combat
 owns:
-  functions: ["0x00223ea0", "0x0025e5a8", "0x0026dd08", "0x002854b0", "0x002855f8", "0x002856b8", "0x002880d8",
-    "0x00288698", "0x00288838"]
+  functions: [
+    "0x00223ea0", "0x002570e8", "0x00257ce8", "0x00257d70", "0x00257e38", "0x0025e5a8", "0x0026dd08", "0x002854b0",
+    "0x002855f8", "0x002856b8", "0x002880d8", "0x00288698", "0x00288838",
+  ]
 ---
 # Combat: throws, weapons in hand and mugging
 
@@ -43,6 +45,7 @@ in the player's combat code after `cns/cnsplayertag.cpp`; the melee weapon's han
 | `0x002880d8` | `Player_CrossWithWeapon` | square and cross with a set 4-6 object: smash or throw ([Weapons](#weapons)) | confirmed (code) |
 | `0x00392b88` | `ThrownObject_HitHuman` | a held or thrown object's hit on a human: its `CfgObj` damage, not the clip's ([A bat's hit](#bat-knockdown)) | confirmed (code) |
 | `0x00257e38` / `0x00257d70` / `0x00257ce8` | `Human_EndThrowAimIfHurt` / `Human_EndThrowAimDropHeavy` / `Human_EndThrowAim` | the three drop helpers ([Dropping what is held](#keep-weapon)) | confirmed (code) |
+| `0x002570e8` | `Human_ComputeThrowVelocity` | the launch velocity of a thrown held object: aimed at the target (led by its speed) or along the facing, scaled by the object's weight and the human's scale ([World objects](objects.md#held)) | confirmed (code) |
 | `0x00288838` | `Player_ArmedSpecial` | commands `0x22` / `0x39` with a melee weapon: throw it (`Player_ThrowMeleeWeapon`, `0x00288698`; [Cross + square with a weapon in hand](#armed-special)) | confirmed (code) |
 | `0x00223ea0` | `Human_HeldIsThrowable` | whether what is held may be thrown: the armed special's gate ([Cross + square with a weapon in hand](#armed-special)) | confirmed (code) |
 | `0x0027ad80` | `Player_PickThrowTarget` | a throw's target, 2-20 m along the aim ([Cross + square with a weapon in hand](#armed-special)) | confirmed (code) |
@@ -355,13 +358,14 @@ are the human's own states (7 installs the grab hold 82 and the grab strikes 51 
 
 **Losing it.** Triangle with nothing to take drops the held bat at once, with no clip (`0x00257f38`, falling from the
 hand under physics: [Drop](objects.md#held)); confirmed (runtime). For a player that standing drop comes from the
-dispatcher's last step, after the climb, context action and jump tries ([step 6](characters.md#triangle-held));
-confirmed (code). A weapon **breaks** only on its message 1 (`MeleeWeapon_Break`, `0x003fd600`): shatter particles,
-hidden (`0x100000`), message 7 to its holder (data `+0x18`; the human's message 7 pops sets 1-5), and state −5
-deletes it on its next update. Confirmed (code); what sends message 1 is open ([Open questions](#open-questions)). At
-runtime 12 bat hits on a civilian (64 damage each, 34 and 37 alternating) never broke it and its handler saw no
-message 1, so hits alone do not wear a bat out (confirmed (runtime)). A weapon's wear is the hit counter `+0x10d` /
-`+0x10e`, one less on each `use` event; `+0x128` is not its hitpoints ([Weapons](#weapons)); confirmed (code).
+dispatcher's last step, after the climb, context action and jump tries ([step
+6](characters-traversal.md#triangle-held)); confirmed (code). A weapon **breaks** only on its message 1
+(`MeleeWeapon_Break`, `0x003fd600`): shatter particles, hidden (`0x100000`), message 7 to its holder (data `+0x18`; the
+human's message 7 pops sets 1-5), and state −5 deletes it on its next update. Confirmed (code); what sends message 1 is
+open ([Open questions](#open-questions)). At runtime 12 bat hits on a civilian (64 damage each, 34 and 37 alternating)
+never broke it and its handler saw no message 1, so hits alone do not wear a bat out (confirmed (runtime)). A weapon's
+wear is the hit counter `+0x10d` / `+0x10e`, one less on each `use` event; `+0x128` is not its hitpoints
+([Weapons](#weapons)); confirmed (code).
 
 ### Moving attacks with something in hand {#armed-moves}
 
@@ -750,7 +754,7 @@ When a hit, a grab or a defeat makes a human let go of what he holds, and what h
 set by [rage's enter handler](combat-rage.md#rage-effects)) changes. "Set" is the held object's type byte `+0x87`, its
 move style ([Objects: the move style](objects.md#two-handed)): 1 knife, 2 baton, 3 bat, 4 two-handed prop, 5 throwable,
 6 ghetto blaster. "Hurt" is `Human_IsHurt` (`0x00222ff8`): health below the power class's `+0x04` fraction of the
-maximum (0.35 for a street civilian, [Characters: power classes](characters.md#power-classes)). Every drop is
+maximum (0.35 for a street civilian, [Characters: power classes](characters-classes.md#power-classes)). Every drop is
 `Human_DropHeld` (`0x00257f38`, [Objects: drop](objects.md#held)).
 
 **Three helpers decide** (each first ends a throw aim, `Human_CancelThrowAim`, and drops a held set 4 or 6 object

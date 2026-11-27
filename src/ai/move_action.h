@@ -80,7 +80,7 @@ struct MoveRequest {
 };
 
 /// The speed of gait `gait` for a human of speeds `speeds` (`Human_SpeedForGait`): 1 sneak, 2 walk, 3 jog, 4 run, 5
-/// sprint; 0 and any other value give 0 (docs/research/characters.md).
+/// sprint; 0 and any other value give 0 (docs/research/characters-locomotion.md#ai-locomotion).
 /// @orig 0x0022ae40 Human_SpeedForGait (unknown)
 [[nodiscard]] float gaitSpeed(const human::Speeds& speeds, int gait);
 

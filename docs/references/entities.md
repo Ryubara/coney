@@ -76,7 +76,7 @@ objects whose behaviour comes from their `CfgObj` class and type, not from subcl
 
 | Thing | Limit | Set by |
 | --- | --- | --- |
-| humans (and brains, per-player records, physics bodies) | 60 | fixed ([Characters](../research/characters.md#the-human-object)) |
+| humans (and brains, per-player records, physics bodies) | 60 | fixed ([Characters](../research/characters/index.md#the-human-object)) |
 | world objects alive | 384 | fixed |
 | placed objects (spawn records) | the level's count + 500 | `CfgSetDatabaseSizes` |
 | world flags | the level's count + 4 | `CfgSetDatabaseSizes` ([World flags](../research/flags.md#pool)) |
@@ -91,7 +91,7 @@ objects whose behaviour comes from their `CfgObj` class and type, not from subcl
 ## Lifetime {#lifetime}
 
 - **Humans.** `HuCreate` takes a free slot of the 60; when none is free the game removes corpses (`CullCorpses`)
-  and tries once more, else returns `NilHandle` ([Characters: creation](../research/characters.md#creation)).
+  and tries once more, else returns `NilHandle` ([Characters: creation](../research/characters/index.md#creation)).
   `HuDelete` frees the slot at once; `CullCorpses` clears the dead.
 - **Placed objects** are spawn records. Each frame the object manager spawns the objects of enabled zones within
   **70 m** of a player and removes others ([Tasks: the play tick](../research/tasks.md#tick); the removal rule is

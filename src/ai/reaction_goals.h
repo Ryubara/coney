@@ -38,11 +38,11 @@ class ReactionGoal final : public Goal {
 /// @orig 0x002b4bb8 StunnedGoal_Process (unknown)
 [[nodiscard]] bool reactionHolds(GoalType type, const human::Human& human);
 
-/// Whether `human` is busy (`Human_IsBusy`, docs/research/characters.md): a busy bit of his record's
+/// Whether `human` is busy (`Human_IsBusy`, docs/research/characters/index.md#code-core): a busy bit of his record's
 /// `+0x08` (human::kBusyFlags), in the air, or a busy state: grabbed or mugged, tackling, tackled, down or out of
 /// health, stunned. Grabbing is not busy. **Coney reading**: the state word's bits (`0x79b9e1e0f30`) are read from the
 /// fighter's states, as the reaction goals read them. A hit also keeps an AI busy for his power class's `+0x32` ms
-/// (record `+0x108`, human::Fighter::busyUntilMs(), docs/research/characters.md#power-class-bytes).
+/// (record `+0x108`, human::Fighter::busyUntilMs(), docs/research/characters-classes.md#power-class-bytes).
 /// @orig 0x00228258 Human_IsBusy (unknown)
 [[nodiscard]] bool humanBusy(const human::Human& human);
 

@@ -9,7 +9,7 @@
 #include "characters/character_data.h"
 
 // The clips one character can play, by anim id, with their playback rates and the speeds their root motion gives.
-// Research: docs/research/characters.md#files, docs/research/formats/animation.md#playback-rate
+// Research: docs/research/characters-appearance.md#files, docs/research/formats/animation.md#playback-rate
 
 namespace coney::characters {
 

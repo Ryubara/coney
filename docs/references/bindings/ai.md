@@ -2300,7 +2300,7 @@ GoalMoveToExitFlag(human, flag, gait, angle, distance, radius)
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human (a pedestrian, vendor or extra leaving the scene). |
 | 2 | `flag` | number, truncated to an unsigned integer | Handle of the exit flag to head for (a flag with activity 8); the goal may switch to another exit flag on the way. |
-| 3 | `gait` | number, truncated to an integer | Gait id: 2 walk, 3 jog, 4 run, 5 sprint ([Characters](../../research/characters.md#locomotion)). |
+| 3 | `gait` | number, truncated to an integer | Gait id: 2 walk, 3 jog, 4 run, 5 sprint ([Characters](../../research/characters-locomotion.md#locomotion)). |
 | 4 | `angle` | number (single precision) | Direction in degrees of an offset from the flag's point; used only when it or `distance` is above 0. |
 | 5 | `distance` | number (single precision) | Length of the offset in metres (0 for the flag itself). |
 | 6 | `radius` | number (single precision) | Arrival radius in metres (scripts use 0.3). |
@@ -2338,7 +2338,7 @@ GoalMoveToFlag(human, flag, gait, angle, distance, radius, intervalMs, faceFlag,
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human to move. |
 | 2 | `flag` | number, truncated to an unsigned integer | Handle of the destination flag (a named point placed in the level, found with `FindFlag` or a level's flag table). |
-| 3 | `gait` | number, truncated to an integer | How fast to go: the gait id, 2 walk, 3 jog, 4 run, 5 sprint ([Characters](../../research/characters.md#locomotion)). |
+| 3 | `gait` | number, truncated to an integer | How fast to go: the gait id, 2 walk, 3 jog, 4 run, 5 sprint ([Characters](../../research/characters-locomotion.md#locomotion)). |
 | 4 | `angle` | number (single precision) | Direction in degrees of an offset from the flag's point (0 with `distance` 0 means the flag itself). |
 | 5 | `distance` | number (single precision) | Length of that offset in metres: the human goes to the point `distance` metres from the flag in direction `angle`. |
 | 6 | `radius` | number (single precision) | Arrival radius in metres; the goal is reached within this distance (scripts use 0.3-0.5). |

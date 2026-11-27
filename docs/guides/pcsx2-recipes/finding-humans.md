@@ -24,7 +24,7 @@ rotation quaternion at `+0x10`). The heading is `2 * atan2(qz, qw)`, 0 facing +y
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (code) |
 | Ghidra | `0x00228730 Humans_StaticInit`, `0x0021b0b8 Object_SetPosition` |
-| Research | [research/characters.md#the-human-object](../../research/characters.md#the-human-object) |
+| Research | [research/characters/index.md#the-human-object](../../research/characters/index.md#the-human-object) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); 9 humans listed, the player Rembrandt at index 2 |
 
 ```sh
@@ -52,7 +52,7 @@ the brain at `0x006d53f0 + index * 0x2f0` and the transform at `0x00714b00 + ind
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (code) |
 | Ghidra | `0x00228730 Humans_StaticInit`, `0x00146078 PlayerRecord_Update` |
-| Research | [research/characters.md#the-human-object](../../research/characters.md#the-human-object), [research/characters.md#the-record](../../research/characters.md#the-record), [research/ai/index.md#brain](../../research/ai/index.md#brain) |
+| Research | [research/characters/index.md#the-human-object](../../research/characters/index.md#the-human-object), [research/characters/index.md#the-record](../../research/characters/index.md#the-record), [research/ai/index.md#brain](../../research/ai/index.md#brain) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6) |
 
 ```sh
@@ -86,7 +86,7 @@ target by name rather than by distance: the nearest human changes as pedestrians
 | Preconditions | patches: none; running or paused |
 | Evidence | confirmed (code) |
 | Ghidra | `0x00235010 Human_FindByName` |
-| Research | [research/characters.md#the-human-object](../../research/characters.md#the-human-object) |
+| Research | [research/characters/index.md#the-human-object](../../research/characters/index.md#the-human-object) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2-d`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); PoizoCiv |
 
 ```sh

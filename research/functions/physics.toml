@@ -81,7 +81,7 @@ address = 0x0033d2d8
 name = "IPhysics_SweepShapeVsMesh"
 page = "physics-bodies.md#unit-2"
 level = "confirmed-code"
-note = "the level is from [characters.md#walls](characters.md#walls)"
+note = "the level is from [characters-ground.md#walls](characters-ground.md#walls)"
 coney = "src/physics/body_sweep.h:MeshWorld::sweepMesh"
 status = "legacy"
 

@@ -8,7 +8,8 @@ read the NTSC-U disc's WAD with throwaway scripts outside the repository and rep
 How a character's animations are stored and played: the clip's descriptor and keyframes, how keys are quantised
 and interpolated, how a pose is built for the 32-bone skeleton, and how a character finds a clip by its anim id.
 The game does not use RenderWare's HAnim animation format for characters; the clump's HAnim hierarchy only
-supplies the skeleton ([Characters](../characters.md#files)). Every walk, run, attack and scene clip uses this format.
+supplies the skeleton ([Characters](../characters-appearance.md#files)). Every walk, run, attack and scene clip uses
+this format.
 
 In one paragraph: a clip is two chunks inside a character data resource: a **descriptor** (chunk `0x02`, 80 bytes:
 duration, root displacement, section sizes, a bone mask, a name) and its **keyframes** (chunk `0x00`): root velocity
@@ -36,7 +37,7 @@ Names are ours.
 | `0x00101950` | `Anim_RootDisplacementLength` | the length of the descriptor's displacement | confirmed (code) |
 | `0x00336bb8` / `0x00336bf8` / `0x00336a00` | vector lerp / quaternion nlerp / quaternion slerp | | confirmed (code) |
 | `0x0010bb60` | `WarAnimInstance` (in a free list, `AnimationMgr.cpp`) | the playing state of one clip | confirmed (code) |
-| `0x00175080` | `CharacterInstance_GetAnim(id)` | anim id → descriptor ([Characters](../characters.md#files)) | confirmed (code) |
+| `0x00175080` | `CharacterInstance_GetAnim(id)` | anim id → descriptor ([Characters](../characters-appearance.md#files)) | confirmed (code) |
 | `0x001048a0` / `0x001054c8` / `0x00105510` | `AnimTask` free list: create / take / give back | 360 tasks of 0x48 bytes, list at `0x0050a898` | confirmed (code) |
 | `0x00175610` | `CharacterInstance_RunQueuedTasks` | runs the instance's queued tasks once and empties the queue | confirmed (code) |
 | `0x001754e8` / `0x001753d8` | `TaskStack_InsertBottom` / `TaskStack_Push` | put a task under / on top of the instance's [task stack](#task-stack) | confirmed (code) |
@@ -228,7 +229,7 @@ Confirmed (code) at `0x001041f8`, `0x00104110`.
 ### Where clips are found
 
 - In a character data resource (resource type 5): pairs of `0x00` + `0x02` chunks, then the Anim Range List and the
-  Character Data table that maps 722 anim ids to these clips ([Characters](../characters.md#files)).
+  Character Data table that maps 722 anim ids to these clips ([Characters](../characters-appearance.md#files)).
 - **Which clip an id gets**: Character Data slot `n` counts the clips of the resource from the **last** one loaded
   (the chunk system pops them last-in first-out), confirmed (runtime) on Rembrandt's walk (id 408). After loading the
   slots hold descriptor pointers, which `CharacterInstance_GetAnim` (`0x00175080`) returns.
@@ -280,7 +281,7 @@ Confirmed (code) for the steps.
 lerp; with a bone given, only that bone's subtree (found through the parent table) is blended, so an upper-body clip
 can play over legs that walk. Confirmed (code). Every blend in the game goes through it; what decides the poses and
 the weights is the task system below. Which tasks the locomotion builds, and when, is on
-[Characters](../characters.md#clip-selection).
+[Characters](../characters-animation.md#clip-selection).
 
 ### Animation tasks {#animation-tasks}
 
@@ -405,7 +406,7 @@ the fade. When *t* passes *d*, or the stack holds more than 12 tasks, the fade g
 the new one (`0x00106cc8`), and on release clears the human flags it was given (`+0x24`, `0x00106ee8`). Confirmed
 (code) for the curve and the clean-up; that `w` weighs the outgoing pose is inferred (the other way round the change
 would pop at the start). At runtime a fade of 0.15 s ran 0, 0.033, 0.100 s and was gone at the next sample
-(PCSX2 2.9.94, the release in [Characters](../characters.md#clip-selection)).
+(PCSX2 2.9.94, the release in [Characters](../characters-animation.md#clip-selection)).
 
 ### Gait blend {#gait-blend}
 
@@ -455,7 +456,7 @@ A task's rate (`+0x0c`) is set by its constructor:
 - **Locomotion blends** (types 9, 10, 12, 13) use the human's speed multiplier `+0x3a4` (1.0 in play).
 
 The human's walking speeds (`0x00254078`) divide by the same rate, and the gait loops carry flag `0x1000` (rate 1.0),
-so the speeds on [Characters](../characters.md#speed-classes) stand.
+so the speeds on [Characters](../characters-classes.md#speed-classes) stand.
 
 ### When a clip ends {#clip-end}
 
@@ -539,7 +540,7 @@ first update showing the id to the first showing the next one, all match the rul
 
 The lengths measured before agree as well: 12 `S1` 20 ([Tasks](../tasks.md#held-flags)), 34 37 and 36 35 (a tie,
 25.5 / 0.75 = 34, one late) ([Cross with a bat in hand](../combat-throws.md#bat-cross)), 69 16, the fence climb's 440
-11, 441 15 (both ties) and 442 13 ([Characters](../characters.md#climb)), the dive 1 61
+11, 441 15 (both ties) and 442 13 ([Characters](../characters-traversal.md#climb)), the dive 1 61
 ([Combat](../combat-reactions.md#protected-moves)). The rule with the time summed in single precision rounded toward
 zero (the
 inferred rounding mode, above) gives every one of them; ceil(F / *r*) is one too many for 19, 20, 389, 34 and the
@@ -642,7 +643,7 @@ the channel count equals the mask's bit count in all; at most 606 keys in a chan
 keyframes into channels and pairs them as the chunk system loads them; `anim_pose.*` samples a clip into a pose
 (search per channel, lerp or nlerp, the last key held), blends poses and steps a cursor; `skeleton.*` holds the
 parent table and turns a pose into bone transforms; `anim_math.*` the vectors, quaternions and matrices. The
-characters' skinning is on [Characters](../characters.md#coneys-implementation).
+characters' skinning is on [Characters](../characters/index.md#coneys-implementation).
 
 `anim_task.*` is the task system the human plays through ([Animation tasks](#animation-tasks)): the looping clip
 (type 1), the clip that hands over to a next task (type 3), the gait blend (type 12: five clips on a 0-4 scale, the
@@ -677,13 +678,13 @@ unpaired or sampling to a non-finite pose; 957 clips have no section A, none lac
 disc; the character viewer plays clips in place at rate 1 with no root motion; a looping clip carries its overshoot
 into the next pass; a clip without section B has the pelvis at its skeleton offset (none on the disc).
 
-**The key in force** (inferred from the runtime speeds, [Characters](../characters.md#locomotion)): the sampler takes
-the key at or before the **nearest** whole frame (a tie going to the lower one) and carries it toward the next key by
-`t = (frame − key) / delta`, not clamped, so `t` is negative while the frame is still short of that key. Every clip's
-section A starts with a speed of 0 at frame 0, and a start clip's first update reaches frame 0.75 (its rate): a lerp
-from frame 0 gave 0.75 of the original's first speed, while this reading gives the walk start's, the run start's and
-the run stop's measured speeds on every update but the two that fall exactly half-way between keys (frames 4.5 and
-7.5), where the original took the lower key and Coney's float time comes out a hair above the half. It is how a
+**The key in force** (inferred from the runtime speeds, [Characters](../characters-locomotion.md#locomotion)): the
+sampler takes the key at or before the **nearest** whole frame (a tie going to the lower one) and carries it toward the
+next key by `t = (frame − key) / delta`, not clamped, so `t` is negative while the frame is still short of that key.
+Every clip's section A starts with a speed of 0 at frame 0, and a start clip's first update reaches frame 0.75 (its
+rate): a lerp from frame 0 gave 0.75 of the original's first speed, while this reading gives the walk start's, the run
+start's and the run stop's measured speeds on every update but the two that fall exactly half-way between keys (frames
+4.5 and 7.5), where the original took the lower key and Coney's float time comes out a hair above the half. It is how a
 cursor that steps its channels as each frame is passed ([Playing a clip](#playing-a-clip)) would behave if a frame
 counted as passed from half-way; the code of that step (`0x00104110`) has not been read for it. Every channel,
 rotations included, is sampled this way, except bone 0's turn, which takes the key in force without carrying it
@@ -733,7 +734,7 @@ In the task system:
   that, a clip's total turn does not depend on its rate ([Root motion](#root-motion)).
 - The root's motion is also data for the speeds: the descriptor's displacement over the duration is the speed of a
   looping gait (the game derives each character's walk, jog, run and sprint speeds from it,
-  [Characters](../characters.md#speed-classes)).
+  [Characters](../characters-classes.md#speed-classes)).
 - A synthetic test fixture is easy to make: one clip with two channels and a few keys per channel, checking the
   channel split, the scales and the interpolation; no game data is needed. The gait blend's leader rule and the fade
   curve can be tested with two synthetic clips of different lengths.
@@ -754,7 +755,7 @@ In the task system:
 - How section A drives the character during a start clip (confirm by comparing a clip's keys with the speeds
   sampled at runtime).
 - The exact HAnim bone ↔ pose bone mapping (inferred above; Coney's disc test supports `n + 2`,
-  [Character geometry](../characters.md#character-geometry)).
+  [Character geometry](../characters-appearance.md#character-geometry)).
 - Task types 5, 15 and 16 (and so type 4, the paired form of 5, beyond its constructor; it is built by the tackle and
   mount code, `0x00270b38`, `0x00271ef0`).
 - The human test `0x00223440` that makes `0x00176d60` take the queued tasks' pose as the default pose.

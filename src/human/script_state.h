@@ -14,7 +14,7 @@
 // disabled commands, the money and the item it carries, the callbacks, the marker icon, the head-look and the
 // animation overrides. Each field cites where the original keeps it. Some only wait for a subsystem Coney does not
 // have yet (the objects in hands, the icons, the head-look controller); the fields say so.
-// Research: docs/references/bindings/character.md, docs/research/characters.md#the-record
+// Research: docs/references/bindings/character.md, docs/research/characters/index.md#the-record
 
 namespace coney::human {
 
@@ -101,7 +101,7 @@ struct ScriptState {
     double heldObject = 0;
     std::string heldObjectName;
     /// The hat he wears (`+0x364`) by handle, and its object type; 0 (NilHandle) for none. The play mode makes its
-    /// object (a spawn record of that handle) and draws it on his head (docs/research/characters.md#hats).
+    /// object (a spawn record of that handle) and draws it on his head (docs/research/characters-appearance.md#hats).
     double hat = 0;
     std::string hatName;
     /// The head-look asked for, if any. **Coney stand-in**: no head-look controller yet.

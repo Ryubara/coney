@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-circle-stops"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "38044d3aa0aec7097b7e6c1db8bf578c78f53203bf6310c63d044684acf474a2"
+
+[who]
+agent = "a81ce522c25fb7730"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-e"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad", "skid-test", "state-code"]
+
+[run]
+name = "chars_circle_stop"
+method = ""
+
+[values]
+updates = 1061
+missed_updates = 0
+columns = 27
+
+[hashes]
+trace_csv = "98bddd0bf59d977777f6697ddaefbf2cf158367ee878bfa86138f7c6f4b36069"

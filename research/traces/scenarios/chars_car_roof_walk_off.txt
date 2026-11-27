@@ -1,0 +1,5 @@
+# Climb onto the car (the stick at 50 % toward it and triangle), then the stick at 50 % to the right once the climb is
+# over, held: across the roof and off its sloping front.
+0 stick left 0 50
+5 tap triangle
+46 stick left 50 0

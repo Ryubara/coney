@@ -726,7 +726,7 @@ single-player case.
 3. **Bookkeeping.** `+0x46e` = the player is in a fight stance that counts for the camera; the sprint-zoom latches
    ([Sprint zoom](#sprint-zoom)); and the **saved pitch** `+0x3d4` (kept by [ReactToLedge](#ledge)) is put back into the
    target pitch `+0x3b4` once the player no longer has state flag `0x1800000000` (falling or a long fall,
-   [Characters](characters.md)): after he lands.
+   [Characters](characters/index.md)): after he lands.
 4. **Previous look-at** (`+0x180` copied to `+0x270`), then the band eases toward a wanted near edge (`0x0012aae0`,
    the [sprint zoom](#sprint-zoom)) and the stick hold timer `+0x368` counts down by `dt`. Confirmed (code).
 5. **Look-at point** (`+0x180`, `0x00127d88`, called with 0 from the update at `0x0012b740`): the target's position
@@ -842,7 +842,7 @@ With one target that is a player (with any other target, only a 1.0 m sphere pus
    the look-at height) while `|d|` ≤ 0.27, unless the human has any of the state flags `0xe2c00`: `0x400` tackling (on
    top of the victim), `0x800` being tackled, `0x2000` (not named; paired attacks read it), `0x20000` arrested,
    `0x40000` knocked out, `0x80000` knocked down ([Combat](combat/index.md#state-flags),
-   [Characters](characters.md#the-record), `Human_EndDownState` `0x0025e250`), so on the ground or in a tackle the
+   [Characters](characters/index.md#the-record), `Human_EndDownState` `0x0025e250`), so on the ground or in a tackle the
    height follows the body with no dead band. Otherwise `d` is scaled by `max(0, (0.27 − |d|) × 0.9 / 0.27 + 0.1)` when
    `|d|` ≤ 0.27, by `min(1, (|d| − 0.27) × 0.9 / 0.27 + 0.1)` up to 0.54, and kept beyond; a negative `d` is lowered by
    `(offset z − 1) × 0.6` more when the look-at offset is above 1.25 m (0.24 in `level99`). The height goal `zt` =
@@ -1058,11 +1058,11 @@ and the street end's locked camera (0.192 and 4.70 m). The overshoot test also a
 ### Climbs {#climbs}
 
 The follow camera has no climbing mode: the climb start (`Climb_TryStart` `0x002826f0`,
-[Characters](characters.md#climb)) calls no camera function (confirmed (code) for its direct callees), and the only
-traversal hooks are the drop ([Ledges](#ledge)), the landing shake and the long-fall far edge (update step 19). There
-are no ladders or drainpipes: the executable holds no such names, and climbing is the fence and wall climb (inferred
-from the string search and the climb code). A climb is followed by the ordinary rules: the look-at point's distance
-limit (step 5) and the aim point.
+[Characters](characters-traversal.md#climb)) calls no camera function (confirmed (code) for its direct callees), and the
+only traversal hooks are the drop ([Ledges](#ledge)), the landing shake and the long-fall far edge (update step 19).
+There are no ladders or drainpipes: the executable holds no such names, and climbing is the fence and wall climb
+(inferred from the string search and the climb code). A climb is followed by the ordinary rules: the look-at point's
+distance limit (step 5) and the aim point.
 
 Does the original's camera jump when the player climbs? **No**, the climb itself moves it smoothly; one level spot
 pulls it in once. Confirmed (runtime), PCSX2 2.9.94, slot 7 (`level99` checkpoint 3, the street fence), scenario
@@ -1670,7 +1670,7 @@ rule) and `0x0050b19c` was 1. Confirmed (runtime) unless marked:
   constructor, `Cam_Follow_Deactivate` and a stick at rest set it to 1, and only the co-op view change
   (`0x001276a0`, its third argument) can clear it. So in one-player play the stick's frame is exactly the orientation
   the auto-centre rule measures `a` from. Inferred check, with the locomotion's
-  turn ([Characters](characters.md#locomotion),
+  turn ([Characters](characters-locomotion.md#locomotion),
   18° limit, ease to 2.0 rad, carry 0.8; steady step = 5 × 18° × ease(`e`)): at the run's circle the original turns
   6.37° an update, so `e` = 90° − 76.6° + 6.37° = 19.8° before the step, and the rule gives 6.47° (194°/s).
   **The circling rate** (re-measured, slot 1, stick held 90°
@@ -2521,7 +2521,7 @@ cited addresses:
    - **`+0x152` bit 2 means a player fell out of the world.** Its only writer besides the level reset (0,
      `GameState_ResetForLevel`) is `Human_StateUpdate` at `0x002403ec`. When player 1's or player 2's human
      (handles `+0x228`, `+0x22c`) is more than 20 m below the collision mesh's lowest vertex
-     ([Characters](characters.md#ground)), it sets the failure reason to global string `0x13`
+     ([Characters](characters-ground.md#ground)), it sets the failure reason to global string `0x13`
      (`MissionFailed_SetReason`, `0x001d1fb8`), `+0x118` = 0, `+0x14c` = 1 and `+0x152` = 2. It does this only while
      game-state `+0x150` has bit 2, which `GameState_ResetForLevel` sets (7) and nothing else writes: always, in
      practice (inferred). That same update the countdown goes to 0 and the mission-failed menu is pushed: no shot,
@@ -3438,10 +3438,10 @@ The world viewer keeps its own free camera with the player camera's lens
   not the look-at point (about 2° more at a run's circle; [In the street](#street)); with the stick held sideways the
   player runs in a circle. At `level99`'s checkpoint 1 it was not seen. Implement it, with the leash and the right
   stick. The player's stick is turned by the camera's heading before it reaches the character
-  ([Characters](characters.md#input)), so the camera must ease, never snap. Gate it on the gait (walk, run or sprint;
-  not idle, sneak speed or jog), not on which clip plays, and hold it off from a blocked main ray until the player stops
-  (the `+0x45d` latch; this is why checkpoint 1 has none). With the stick held sideways the original circles at about
-  190°/s at a run and 143°/s at a walk, the rule's turn plus the leash's drag.
+  ([Characters](characters-locomotion.md#input)), so the camera must ease, never snap. Gate it on the gait (walk, run or
+  sprint; not idle, sneak speed or jog), not on which clip plays, and hold it off from a blocked main ray until the
+  player stops (the `+0x45d` latch; this is why checkpoint 1 has none). With the stick held sideways the original
+  circles at about 190°/s at a run and 143°/s at a walk, the rule's turn plus the leash's drag.
 - **Sprint zoom** ([Sprint zoom](#sprint-zoom)): on the first update at the sprint gait save the band, zoom and
   target pitch and start a 0.5 s timer; the band's near edge moves by `d × |d| / T × dt` toward the minimum distance
   (`d` what is left, `T` the timer, after it has counted down once), the target pitch in a straight line to 7°;
@@ -3456,7 +3456,7 @@ The world viewer keeps its own free camera with the player camera's lens
   enabled bits must follow the game (doors, glass and barriers the game switches off), or a disabled panel pulls the
   camera in. The side probes and swing-away rules can come later.
 - **Update order**: the cameras update at the end of the characters' 30 Hz step, after movement
-  ([Characters](characters.md#update)), and the device takes the lens once per frame.
+  ([Characters](characters/index.md#update)), and the device takes the lens once per frame.
 - Keep the camera deterministic (no real time) so the test mode can compare frames.
 
 In Coney, `CamCanSee` asks whether player 1's current view sees the point 1 m above a human or 0.3 m above an

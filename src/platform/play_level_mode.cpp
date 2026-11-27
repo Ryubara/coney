@@ -123,7 +123,8 @@ PlayLevelMode::createWith(RenderEngine& engine, const io::Wad& wad, std::unique_
                       scenery->startSource(), setup.snapToGround ? "" : ", not snapped", speeds.walk, speeds.jog,
                       speeds.run, speeds.sprint));
     // The level's cars, particles and motion blur, when gameplay brought them. A car adds nothing to the collision:
-    // humans meet and climb it through its shell in the level's mesh (docs/research/characters.md#car-shells).
+    // humans meet and climb it through its shell in the level's mesh
+    // (docs/research/characters-traversal.md#car-shells).
     std::unique_ptr<PlayLevelEffects> levelEffects;
     if (cast != nullptr && (cast->effects != nullptr || cast->cars != nullptr)) {
         levelEffects = std::make_unique<PlayLevelEffects>(engine, wad, cast->effects, cast->cars, print);

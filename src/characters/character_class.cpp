@@ -17,7 +17,7 @@ struct ClassRow {
     std::array<int, 4> variants;
 };
 
-// The switch, from docs/research/characters.md#type-to-model.
+// The switch, from docs/research/characters-classes.md#type-to-model.
 constexpr std::array<ClassRow, 14> kClasses{{
     {1, {2}, {3, 4}},
     {5, {6}, {7, 8, 9, 10}},
@@ -66,10 +66,11 @@ constexpr int kOtherWarriorPowerClass = 7;
 constexpr int kFirstArmiesLevel = 60;
 constexpr int kLastArmiesLevel = 69;
 // The last level whose humans Human_Init draws with the `_a` model: its own test takes 60-64
-// (docs/research/characters.md#type-to-model).
+// (docs/research/characters-classes.md#type-to-model).
 constexpr int kLastArmiesModelLevel = 64;
 
-// One class's own size (docs/research/characters.md#body-scale): alone, and with game state `+0x158` set (co-op).
+// One class's own size (docs/research/characters-classes.md#body-scale): alone, and with game state `+0x158` set
+// (co-op).
 struct TypeScale {
     int classType;
     float scale;

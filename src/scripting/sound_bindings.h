@@ -272,7 +272,7 @@ inline constexpr std::array<std::string_view, 33> kSoundBindings{"AddAmbientSoun
 /// `+0x118`) among `recorded`'s calls; -1 when the type has none.
 ///
 /// **Coney's stand-in:** the type's own record; the alias rule that gives a player its class's record
-/// (docs/research/characters.md) and `HuSetVoiceIndex` are not applied.
+/// (docs/research/characters-classes.md#type-to-model) and `HuSetVoiceIndex` are not applied.
 [[nodiscard]] int voiceSetOfType(const RecordedCalls& recorded, int type);
 
 /// Registers kSoundBindings in `vm`, working on `context.sound` as it is at each call (null plays nothing: the music

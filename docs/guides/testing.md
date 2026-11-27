@@ -277,8 +277,8 @@ off, and the pursuers' speed, are inferred from the research ([level3](../resear
 [the devil run](../research/ai-scripting.md#devil-run)). It still passed for only half of the AI's seeds: it slowed to a
 walk before each climb, and the pursuers, who speed up as they fall behind, caught it there; the same route driven
 in the original lost Snow the same way. Now it sprints into the climbs (a running player takes a face 4.5 m off,
-[Climbing](../research/characters.md#climb)), charges again when a charge leaves the barrier standing, and the test
-runs every `--ai-seed` from 0 to 7, so a pass is no longer one lucky sequence. A jump leg also ends when he lands
+[Climbing](../research/characters-traversal.md#climb)), charges again when a charge leaves the barrier standing, and the
+test runs every `--ai-seed` from 0 to 7, so a pass is no longer one lucky sequence. A jump leg also ends when he lands
 after running off the edge past its take-off: a tap on the last update before the edge comes too late to jump, the
 lower roof beyond still catches him, and a driver that kept waiting for the jump stood still until the pursuers came.
 A climb counts only once it has taken him up or over the face: when the sliding doors began to work, the mimes came

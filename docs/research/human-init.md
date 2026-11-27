@@ -10,11 +10,11 @@ Verified against: `SLUS_212.15` (NTSC-U), read in the shared Ghidra project.
 ## Summary
 
 `Human_Init` (`0x00218008`) makes every human, the player included: it remaps the type to its class, picks the model,
-snaps the human to the ground and rolls its money ([Characters: Creation](characters.md#creation), [Starting
+snaps the human to the ground and rolls its money ([Characters: Creation](characters/index.md#creation), [Starting
 money](crimes.md#starting-money)). This page is the rest of what it gives a new human, in its order: the voice and the
 idle lines, the brain type, the brain's ped type, the task byte and the radar blip, the power class's switches in the
 human flags, the class's weapon in the hand, a byte from the character data's name, and the size. "The class" is the
-record after the [remap](characters.md#type-to-model), "the type" the one `HuCreate` was given.
+record after the [remap](characters-classes.md#type-to-model), "the type" the one `HuCreate` was given.
 
 ## Rules
 
@@ -82,8 +82,8 @@ civilians have none; any other the task byte 2. Confirmed (code) at `0x00218008`
 ### The class's switches {#class-switches}
 
 After the flags by brain type, `Human_ApplyClassFlags` (`0x00222c98`, confirmed (code)) copies bytes `+0x3a`-`+0x3f`
-of the human's power class ([Characters: power class fields](characters.md#power-class-bytes)) into the flag word
-`+0xe0`:
+of the human's power class ([Characters: power class fields](characters-classes.md#power-class-bytes)) into the flag
+word `+0xe0`:
 
 | Byte | `CfgPowerClass` argument | At 1 | At -1 | Otherwise |
 | --- | --- | --- | --- | --- |
@@ -104,7 +104,7 @@ with `+0x1b9`. Confirmed (code) at each address.
 When the class's weapon (`CfgChar` string `+0x18c`, its 17th argument) is not `none`, `Human_Init` calls
 `Human_PlaceItemInHand(h, name, 1, 1)` (`0x0024c280`): the object is made by name and goes into the hand. The police
 types carry `dyn_baton`. Confirmed (code) at `0x00218008`; what the object is afterwards is on
-[Characters: Character classes](characters.md#classes).
+[Characters: Character classes](characters-classes.md#classes).
 
 ### The name byte {#name-byte}
 
@@ -114,14 +114,14 @@ fidget 601 as an overlay on a 30 % roll. Confirmed (code) at both addresses.
 
 ### The size {#size}
 
-Last, the random body size ([Characters: Body scale](characters.md#body-scale): one `Random_Int(99)` on stream
+Last, the random body size ([Characters: Body scale](characters-classes.md#body-scale): one `Random_Int(99)` on stream
 `0x006eb880`, the gameplay stream, after the money's draws, for the humans it does not skip), then
 `Human_ApplyTypeScale` (`0x00219638`) for the class (`+0xcc`): 5 → 1.02; 18, 30 → 0.97; 21, 23, 24 → 0.98; 33 → 1.03; 89
 → 1.16; 119, 120, 135 → 1.2; 128 → 1.175; 161 → 1.11. With game state `+0x158` set (co-op) 89, 119, 120, 128 and 161
 take 1.1 and 135 takes 1.03. Any other class keeps the size before it: the random one, or 1.0 (`+0x65c`, set at the
 start of `Human_Init`) for the humans the random size skips, every Warrior among them. Confirmed (code) at `0x00219638`
-and `0x00218008`. Rembrandt (class 30) is the 0.97 read at runtime ([Characters: Walls](characters.md#walls)), and
-Vermin (class 26) the 1.0, confirmed (runtime), run r-20261029-class-size-vermin.
+and `0x00218008`. Rembrandt (class 30) is the 0.97 read at runtime ([Characters: Walls](characters-ground.md#walls)),
+and Vermin (class 26) the 1.0, confirmed (runtime), run r-20261029-class-size-vermin.
 
 ## In Coney
 
@@ -157,9 +157,9 @@ the steps for types 6 and 8, [GUI: Radar_Update's steps](gui.md#radar-update)); 
 the original's draws is made on its own stream ([Maths: random numbers](maths.md#random)), so the draws Coney leaves
 out here (the voice on `0x006eb8b0`, the woundable roll on `0x006eb898`) do not move the gameplay stream's.
 
-[Characters: Coney's implementation](characters.md#stats-coney) still lists the weapon as not traced and every human at
-the player's 0.97; this page is what Coney does until that legacy page's restructure ([#1164](issue:1164)) brings its
-table up to date.
+[Characters: Coney's implementation](characters-classes.md#stats-coney) still lists the weapon as not traced and every
+human at the player's 0.97; this page is what Coney does until that legacy page's restructure ([#1164](issue:1164))
+brings its table up to date.
 
 ## Open questions
 
@@ -188,7 +188,7 @@ of its callback answers it; Coney has no such fidget, so it keeps no `+0x3bc`.
 
 `lua_HuCreate` (`0x00358428`) writes the snapped position back into the script's table after `Human_Create`
 (`0x00233d60`); Coney neither snaps nor writes back while the script runs, as no collision is loaded then, and snaps
-when the play mode makes the human ([Characters: Creation](characters.md#creation)). Whether a script reads the
+when the play mode makes the human ([Characters: Creation](characters/index.md#creation)). Whether a script reads the
 table again after `HuCreate` is open; searching the decompiled scripts for a reuse of the table answers it.
 
 ### A fence removed at once {#q-early-removal}

@@ -90,7 +90,7 @@ class Humans {
     using Destroy = std::function<void(Human& human)>;
     /// Sets what destroys a human taken away once faded out (update()); empty: nothing, and he stays faded.
     void setDestroy(Destroy destroy) { m_destroy = std::move(destroy); }
-    /// A human taken away loses this much fade an update (docs/research/characters.md#out-of-world).
+    /// A human taken away loses this much fade an update (docs/research/characters-ground.md#out-of-world).
     static constexpr int kFadeStep = 10;
     /// While his fade is at least this he fades; below it he is destroyed.
     static constexpr int kFadeFloor = 11;
@@ -113,9 +113,9 @@ class Humans {
     /// human's actions (the dispatcher from its record, against the passive `targets` and the humans it is opposed to,
     /// as add() and setOpposition() say), the order alternating between first-to-last and last-to-first from one step
     /// to the next. A human taken away (Human::outOfWorld()) acts not: his fade drops by kFadeStep while it is at least
-    /// kFadeFloor, else he is destroyed (setDestroy(); docs/research/characters.md#out-of-world). `mesh` is what they
-    /// stand on (may be null). Every human advances by `stepSeconds`, the characters' step, which slow motion shortens
-    /// (docs/research/camera.md#slow-motion).
+    /// kFadeFloor, else he is destroyed (setDestroy(); docs/research/characters-ground.md#out-of-world). `mesh` is what
+    /// they stand on (may be null). Every human advances by `stepSeconds`, the characters' step, which slow motion
+    /// shortens (docs/research/camera.md#slow-motion).
     /// @orig 0x00249108 Humans_Update (unknown)
     void update(const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {},
                 float stepSeconds = kStepSeconds);

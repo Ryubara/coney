@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The scripts' animation callbacks (docs/research/characters.md#anim-callbacks): the 16-slot table, the first match
-// firing, all-humans slots, removal, and slots of humans gone counting as free. Synthetic handles.
+// The scripts' animation callbacks (docs/research/characters-animation.md#anim-callbacks): the 16-slot table, the first
+// match firing, all-humans slots, removal, and slots of humans gone counting as free. Synthetic handles.
 #include "scripting/anim_callbacks.h"
 
 #include <set>

@@ -16,7 +16,7 @@
 // The character types the configuration scripts define: one `CfgChar` call each, read from the calls the scripts made
 // (script::RecordedCalls), kept as the arguments give them. The AI fighters' configuration and the debug menus' change
 // of character read them here.
-// Research: docs/research/characters.md#classes, docs/references/bindings/config.md#cfgchar
+// Research: docs/research/characters-classes.md#classes, docs/references/bindings/config.md#cfgchar
 
 namespace coney::characters {
 
@@ -33,7 +33,7 @@ struct CharacterType {
     std::vector<std::uint8_t> attacks; ///< `+0x11e`: the attack table (an AI's attack weights), each clamped to a byte.
     std::string model;                 ///< The model name (`warr_re_cv`); empty when the call gave none.
     /// `+0x14c`: the type name of the hat a human of the class wears from his creation (`dyn_eh_ma2`), `none` for
-    /// most; empty when the call gave none (docs/research/characters.md#hats).
+    /// most; empty when the call gave none (docs/research/characters-appearance.md#hats).
     std::string hat;
     std::optional<int> warrior; ///< `+0x118`: the Warrior index of a playable character (inferred).
     /// `+0x14b`, `CfgChar`'s 13th argument: 1 for the women's types, whose vocal animation sounds use the `_female`
@@ -41,7 +41,7 @@ struct CharacterType {
     std::optional<int> female;
     /// `+0x18c`, `CfgChar`'s 17th argument (31 characters kept): the object type a human of the class holds from his
     /// creation (`dyn_baton` for the police), `none` for most; empty when the call gave none
-    /// (docs/research/characters.md#classes).
+    /// (docs/research/characters-classes.md#classes).
     std::string weapon;
 };
 
@@ -66,7 +66,7 @@ struct WarriorClass {
 [[nodiscard]] WarriorClass parseCfgWarriorClass(std::span<const script::Value> call);
 
 /// What a player of one character type takes from the configuration when he is made (`Human_Init`,
-/// `Human_AttachInstance`, `Human_MakePlayer`; docs/research/characters.md#stats).
+/// `Human_AttachInstance`, `Human_MakePlayer`; docs/research/characters-classes.md#stats).
 struct PlayerTraits {
     int classType = 0;                ///< The character class (characterClassOf()) whose record gives the damage.
     std::vector<std::int16_t> damage; ///< The class record's damage table (`+0xb8`); empty when it has none.

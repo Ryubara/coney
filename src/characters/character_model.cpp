@@ -17,7 +17,7 @@ namespace coney::characters {
 namespace {
 
 // A weight word: the weight is a float whose low 10 bits are replaced by (bone + 1) << 2, 0 for an unused slot (the
-// layout librw's PS2 skin code uses; confirmed on the disc data, characters.md).
+// layout librw's PS2 skin code uses; confirmed on the disc data, characters-appearance.md#character-geometry).
 constexpr std::uint32_t kBoneBits = 0x3FF;
 
 // The bones of the pose that have no HAnim node: the root and the pelvis. Node id n is pose bone n + 2.

@@ -7,7 +7,7 @@ about: |
   `HuCreate` for player 1 in the function the level script calls for `GetCheckPoint()`) and one per mode of a
   Rumble arena (the first flag of the list `fP1` in `level<N>_<mode>_init.lua`, which the arena teleports
   player 1 to).
-  How the game gets there: [Characters](../research/characters.md#level-starts).
+  How the game gets there: [Characters](../research/characters-players.md#level-starts).
 complete: |
   Every story level whose script creates player 1 at a literal position, and every Rumble flag
   script whose name is known. The hub (`level95`) places the Warchief at a flag and is hand-written.

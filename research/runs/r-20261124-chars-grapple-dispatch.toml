@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-grapple-dispatch"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "d18f680a01fec242283d39854f5617cdcf176086d26bdb8ef6f18b0d50d09b55"
+
+[who]
+agent = "aa3b25557b297e4e7"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "pedestrian-grab"
+patches = ["anim-callback-match", "anim-dispatch", "attack-score", "grab-start", "paired-start", "right-stick", "scripted-pad", "special-attack", "tackle-start", "tutorial-callback"]
+
+[run]
+name = "chars_grapple_dispatch"
+method = ""
+
+[values]
+updates = 151
+missed_updates = 0
+columns = 54
+
+[hashes]
+trace_csv = "ed0617a9f60f6a17a6b39aac3dc413ea43c53b7290459ca2e1796188ba0f8a0a"

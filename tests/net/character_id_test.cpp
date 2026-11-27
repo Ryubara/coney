@@ -52,7 +52,8 @@ struct Fixture {
 
 } // namespace
 
-// Expected: unverified, #1612 (Coney's own; the original keeps the Character List index at human +0x37c, characters.md)
+// Expected: unverified, #1612 (Coney's own; the original keeps the Character List index at human +0x37c,
+// characters/index.md)
 TEST_CASE("character ids: a Character List index plus one, 0 for none, and back", "[net][character]") {
     CHECK(kNoCharacter == 0);
     CHECK(characterIdOf(0) == 1);

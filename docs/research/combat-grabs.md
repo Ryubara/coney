@@ -392,8 +392,8 @@ the holds and strikes and carried only the spins' and connects' root motion (78:
   (`0x00510314`), or −0.5 when `|d|` is under 45° and `d`'s sign is the other of the last update's angle left (human
   `+0x5e4`); the pair turns by `r`, or by all of `d` when `r` is not smaller; the smoothing branch is taken because
   `0x00510308` is 1, with 4.0 at `0x00510318`. The formula is confirmed (code); the values are those in play, written by
-  `CfgTurnRate` (`Cfg_SetTurnRate`, `0x0023a5f8`, [Movement constants](characters.md#movement-constants)); the
-  executable's own defaults differ (0.5 at `0x00510314`). `max` comes from `0x002213d8`, which for a grab reads the
+  `CfgTurnRate` (`Cfg_SetTurnRate`, `0x0023a5f8`, [Movement constants](characters-locomotion.md#movement-constants));
+  the executable's own defaults differ (0.5 at `0x00510314`). `max` comes from `0x002213d8`, which for a grab reads the
   table at `0x005101b0`: 0.192 rad (11° per update) for a player, 0.0262 for the AI. Runtime table: 0.192, 0.0262,
   0.2793, 0.0436, 0.3142, 0.0698, 0.3142, 0.1047, 0.3491, 0.2094, 0.4189, 0.4189; constants from `0x005102e0`: 0.05, 0,
   0.95, 0, 0, 30, 60, 100, 115, 0, 1, 0.8, 2.0, 0.8, 4.0.
@@ -438,8 +438,8 @@ addresses cited unless marked.
    (`0x0025f4d0`) skips the gait blend and calls `Human_BuildPairedFourMix` (`0x0025af90`), which rebuilds that
    four-clip task **on the human and on its partner** (`+0xc4`) on the same update, after a fade of 1/15 s (0.1 s
    more with held flag `0x40000000`), starting at value 1 (the walk). The mix's target is the speed over the walk
-   speed, clamped to 0-1 ([Clip selection](characters.md#clip-selection)), so standing plays the hold idle, walking
-   plays the walk clip alone, and the blend eases between them at the task's speed.
+   speed, clamped to 0-1 ([Clip selection](characters-animation.md#clip-selection)), so standing plays the hold idle,
+   walking plays the walk clip alone, and the blend eases between them at the task's speed.
 5. **The victim's walk.** The victim moves by `Human_MoveAttached` (`0x00244e78`): its place is the grabber's
    transform composed with the stored hold offset, swept against the world up to three times, and the velocity it
    reports is **the grabber's** (the grabber's vtable `+0x94`). So its own four-clip task sees the same speed and

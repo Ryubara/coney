@@ -1,0 +1,35 @@
+version = 1
+id = "r-20261124-chars-heap-walk-b60"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "e84541b1e9dfaef162cbf24df33b39502b2646f9319f6e46316c05125eac8f3d"
+
+[who]
+agent = "a73f4eba7e7bccc32"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-d"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "chars_heap_walk"
+method = ""
+
+[run.args]
+b60 = "1.0"
+
+[values]
+updates = 471
+missed_updates = 0
+columns = 33
+
+[hashes]
+trace_csv = "2595d290da57574313e8c10814ceee6b0b71766f170f6b2ab2f862e74c1ca114"

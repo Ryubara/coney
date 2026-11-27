@@ -13,8 +13,8 @@ namespace {
 
 // The cursor's whole frame for the fractional `frame`: the nearest, a tie going to the lower one. The cursor steps its
 // channels' keys as each frame is passed (docs/research/formats/animation.md#playing-a-clip); **Coney's reading** of
-// the runtime speeds of the start clips and the run stop (docs/research/characters.md#locomotion) is that a frame
-// counts as passed from half-way to it: at frame 0.75 the key of frame 1 is already the current one.
+// the runtime speeds of the start clips and the run stop (docs/research/characters-locomotion.md#locomotion) is that a
+// frame counts as passed from half-way to it: at frame 0.75 the key of frame 1 is already the current one.
 float cursorFrame(float frame) { return std::ceil(frame - 0.5F); }
 
 // The index of the key in force at `frame`: the last whose frame is not after the cursor's whole frame, or 0 before

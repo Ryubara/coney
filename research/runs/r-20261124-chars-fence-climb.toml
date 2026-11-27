@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-fence-climb"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "7eba6c827978e23d56dcf896beab50b1571d39f84bb71e2db2947d7bbe11cb6f"
+
+[who]
+agent = "ae31bd6736d3cec63"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-c"
+
+[start]
+state = "fence-run-jump"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "fence_climb"
+method = ""
+
+[values]
+updates = 141
+missed_updates = 0
+columns = 64
+
+[hashes]
+trace_csv = "68bc0d049136644fc115c0fc45bb22e2827d64d24baf82e38525b6ed1620a1ca"

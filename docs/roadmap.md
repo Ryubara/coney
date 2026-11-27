@@ -120,7 +120,7 @@ gamepad or keyboard.
 **Done when** the player can walk around a level and other characters move in it.
 
 - Done: research pages for the player character, its model, skeleton and skin, the game's animation format,
-  movement, falling and the follow camera ([Characters](research/characters.md),
+  movement, falling and the follow camera ([Characters](research/characters/index.md),
   [Animation](research/formats/animation.md), [Cameras](research/camera.md)).
 - Done: loading and showing a character and its animations from the disc (`--view-character`).
 - Done: the player in the first mission's level under gamepad control, with the follow camera

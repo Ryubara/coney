@@ -120,7 +120,7 @@ class AiHumans {
     /// fighter profile (body sphere, player hit flags) and power class stay a player's, as after switchPlayer(); the
     /// scripts' player 1 handle still names him; there is no difficulty scaling to undo.
     /// @orig 0x0022a2a8 Human_ReleasePlayer (unknown)
-    /// Research: docs/research/characters.md#players, docs/research/rumble.md#coney
+    /// Research: docs/research/characters-players.md#players, docs/research/rumble.md#coney
     bool releasePlayer(BrainType leftAs);
     /// Whether releasePlayer() has run: no human is a player any more (the original's player list is empty).
     [[nodiscard]] bool playerReleased() const { return m_playerReleased; }

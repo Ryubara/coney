@@ -12,7 +12,7 @@ about: |
   Each difficulty script (`config_easy`, `config_normal`, `config_hard`, `config_fury`, and `config_rumble` for Rumble)
   sets every class when its `CfgDifficulty` runs, and re-runs `CfgChar` for 63 types, so a type's class can differ by
   difficulty; `config_preload2.lua` sets normal's at boot. The readers of each field:
-  [Characters: power classes](../research/characters.md#power-classes).
+  [Characters: power classes](../research/characters-classes.md#power-classes).
 complete: |
   Every class each difficulty sets is listed with every argument: 51 classes (0-10, 13-66 with gaps), 50 in Rumble.
   Every script sets class 39 twice; the second call wins and is the one listed. The boot set equals normal's and is

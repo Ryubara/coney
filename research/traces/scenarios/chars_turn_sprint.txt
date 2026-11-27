@@ -1,0 +1,7 @@
+# A sprint from standing (L2 and the stick straight up), the stick 90 degrees right for 8 updates, then let go.
+# Frames are character updates of 1/30 s.
+40 press l2
+40 stick left 0 100
+70 stick left 100 0
+78 stick left 0 0
+78 release l2

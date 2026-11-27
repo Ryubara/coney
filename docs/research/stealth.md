@@ -52,8 +52,8 @@ levels. No binding adds, moves or tests a hide area; level87's script has only v
 (`volCh5HB01`). Confirmed (code) at `0x0023eab8` for the test; no script reference to the bit found (inferred).
 
 **The test** (`Human_SnapToGround`, every update for every human): the ground ray (1.0 m above the feet, 1.5 m down,
-[Characters](characters.md#ground)) returns the triangle's flags. For each player `p`, a human that is `p` or a member
-of `p`'s gang, confirmed (code):
+[Characters](characters-ground.md#ground)) returns the triangle's flags. For each player `p`, a human that is `p` or a
+member of `p`'s gang, confirmed (code):
 
 1. **Off shadow ground** (bit `0x10` clear): brain `+0x2d5` = 0; for the player himself the radar tint goes grey;
    if he was hidden (brain `+0x2d4`), `Human_SetHiddenState(0)` ([leaving](#leaving)).
@@ -100,7 +100,8 @@ Confirmed (code) at the callers of `0x00230140`.
 
 **What hidden changes for the AI**: [the enemy scan](ai-fights.md#enemy-scan) and the spot test skip him ([Seen or
 not](#seen)); the follow camera raises its look-at point to 1.65 m ([Camera](camera.md#update)); his footsteps play at
-half volume ([Characters](characters.md)); the AI's enemy picks drop him ([AI: the score](ai-fights.md#enemy-score)).
+half volume ([Characters](characters/index.md)); the AI's enemy picks drop him ([AI: the
+score](ai-fights.md#enemy-score)).
 
 **The player's Warriors hide too** (`Player_UpdateHideOrder`, `0x0023e7e0`, while hidden on shadow ground, standing
 still: speed `+0x1ac` = 0, not busy, his gang able to help): after a delay (500 ms; with no command active, the time
@@ -122,13 +123,13 @@ There is no sneak button and no separate stick threshold: hidden, the player wal
 | 9, 10 (walk start, run start) | 413, 414 | **631** `STEALTH_WALK_START` |
 | 5, 6, 7 (jog, run, sprint) | unchanged | unchanged |
 
-The gait speeds are recomputed from the clips when the style changes ([Speed classes](characters.md#speed-classes)),
-so the hidden walk's speed is 633's root speed (about 2.31 m/s, [Combat moves](combat-moves.md#stealth)).
-The stick thresholds are the normal ones ([Locomotion](characters.md#locomotion)): above the 0.12 dead zone the
-player **walks** (633) at any deflection up to 0.95; above 0.95 he **runs** with the normal run clip and stays hidden
-while on shadow ground (inferred: no clearer for a run found; running only matters when he steps off, as no grace
-is given then); L2 sprints and ends it.
-**Transitions**: when the idle is rebuilt for a hidden player whose move style is not yet set, 634
+The gait speeds are recomputed from the clips when the style changes ([Speed
+classes](characters-classes.md#speed-classes)), so the hidden walk's speed is 633's root speed (about 2.31 m/s, [Combat
+moves](combat-moves.md#stealth)). The stick thresholds are the normal ones
+([Locomotion](characters-locomotion.md#locomotion)): above the 0.12 dead zone the player **walks** (633) at any
+deflection up to 0.95; above 0.95 he **runs** with the normal run clip and stays hidden while on shadow ground
+(inferred: no clearer for a run found; running only matters when he steps off, as no grace is given then); L2 sprints
+and ends it. **Transitions**: when the idle is rebuilt for a hidden player whose move style is not yet set, 634
 `STEALTH_TRANSITION_FROM_NORMAL` plays (holding `0x40000000`); when the idle is rebuilt for a player no longer
 hidden whose clip is still 630, 394 `NORMAL_TRANSITION_FROM_STEALTH` plays (`Human_BuildIdleTasks`, `0x0025f770`).
 Confirmed (code) for the clips; the move-style timing of 634 inferred.

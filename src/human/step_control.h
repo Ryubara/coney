@@ -6,7 +6,7 @@
 // The step control: an AI's single step (the TakeStep and GiveWay actions) as one clip on a heading. The step has no
 // distance of its own: the clip's root motion moves the body, and the human turns over half the clip so that the
 // clip's own direction ends along the heading.
-// Research: docs/research/characters.md#step-control
+// Research: docs/research/characters-locomotion.md#step-control
 
 namespace coney::human {
 

@@ -169,9 +169,10 @@ TEST_CASE("a gang always seen is listed anywhere in sight range, behind the scan
 }
 
 TEST_CASE("a wounded scanner's list goes, an arrested one's stays", "[ai][scan]") {
-    // Expected: ai-fights.md#enemy-scan and characters.md (Human_IsWounded 0x00227d98: state 0x10000), confirmed
-    // (code). Brain_ScanEnemies 0x0028b358 empties the list of a scanner Human_IsDownOrDead 0x00227e60 calls down:
-    // states 0x180050000, dead, dying, knocked out or wounded (0x10000); arrested is none of them.
+    // Expected: ai-fights.md#enemy-scan and characters-locomotion.md#ai-locomotion (Human_IsWounded 0x00227d98: state
+    // 0x10000), confirmed (code). Brain_ScanEnemies 0x0028b358 empties the list of a scanner Human_IsDownOrDead
+    // 0x00227e60 calls down: states 0x180050000, dead, dying, knocked out or wounded (0x10000); arrested is none of
+    // them.
     for (const bool wounded : {true, false}) {
         INFO((wounded ? "wounded" : "arrested"));
         coney::test::AiScene scene;

@@ -14,7 +14,7 @@
 
 namespace coney::combat {
 
-/// The player's power class values read at runtime (class 64, docs/research/characters.md#power-classes).
+/// The player's power class values read at runtime (class 64, docs/research/characters-classes.md#power-classes).
 inline constexpr int kPlayerPowerMax = 400;            ///< `+0x28`, the power meter's maximum.
 inline constexpr int kPlayerPowerRefillPerSecond = 60; ///< `+0x2a`.
 /// The player's Warrior class values (class 6): the rage maximum (s16 `+0x00`) and the gain percentage (`+0x02`).

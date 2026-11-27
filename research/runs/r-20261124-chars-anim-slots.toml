@@ -1,0 +1,68 @@
+version = 1
+id = "r-20261124-chars-anim-slots"
+date = "2026-11-24"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "3e781476055645188c19d162894684f3b5be03a5489fa96175a534a57e52293a"
+
+[who]
+agent = "aa3b25557b297e4e7"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "street-end-run"
+patches = []
+
+[run]
+name = ""
+method = "Loaded the state unchanged and, with the game running and Rembrandt (the player) standing idle, read his anim slots through the pcsx2 MCP server: human 2 (table 0x00640c80 + 2 x 0x6d0, name Rembrandt), its 0x180 record (human +0xd4), the 35 words at record +0x28 (slot n at +0x28 + 4n) and the id playing at record +0x20. Read twice, on two loads of the state, alike."
+
+[values]
+playing = 388
+slot0 = 388
+slot1 = 401
+slot2 = 403
+slot3 = 407
+slot4 = 408
+slot5 = 409
+slot6 = 410
+slot7 = 411
+slot8 = 390
+slot9 = 412
+slot10 = 413
+slot11 = 358
+slot12 = 366
+slot13 = 368
+slot14 = 380
+slot15 = 360
+slot16 = 12
+slot17 = 11
+slot18 = 212
+slot19 = 193
+slot20 = 104
+slot21 = 605
+slot22 = 608
+slot23 = 606
+slot24 = 607
+slot25 = 427
+slot26 = 428
+slot27 = 429
+slot28 = 388
+slot29 = 653
+slot30 = 434
+slot31 = 668
+slot32 = 317
+slot33 = 417
+slot34 = 0
+
+[addresses]
+human_table = 0x00640c80
+default_slots = 0x005105d8
+slots_init = 0x00253608
+slot_set = 0x002535f0

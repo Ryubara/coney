@@ -179,10 +179,10 @@ The starting goal is the one behaviour a level gives a human without a script: w
 ## Stats {#human-stats}
 
 What the character type gives the human when he is made, from the four configuration tables
-([Characters: Stats](../../research/characters.md#stats)), shown read-only so a user sees where the other groups'
-defaults come from: category, behaviour, speed class, power class, Warrior class, health, the stamina and power maxima
-and refills, the hurt threshold, the stun and knockdown times, the damage and attack tables, the hat, the voice, the
-drop group and chance. Setting one per human waits on the engine keeping per-human stats (the rest of the stats
+([Characters: Stats](../../research/characters-classes.md#stats)), shown read-only so a user sees where the other
+groups' defaults come from: category, behaviour, speed class, power class, Warrior class, health, the stamina and power
+maxima and refills, the hurt threshold, the stun and knockdown times, the damage and attack tables, the hat, the voice,
+the drop group and chance. Setting one per human waits on the engine keeping per-human stats (the rest of the stats
 inventory on [#723](issue:723)); until then a different set of stats is a different character type.
 
 ## Trigger and events

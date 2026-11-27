@@ -1,0 +1,5 @@
+# A sprint jump (slot 1, the street): L2 held and the stick at 100 % straight up from the start, triangle tapped
+# 50 updates in.
+0 press l2
+0 stick left 0 100
+50 tap triangle

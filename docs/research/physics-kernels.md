@@ -458,10 +458,10 @@ on both sides, so the centre's projection is never past two edges of one triangl
 **Over a kerb and onto a ledge** (issue #348). Level99's mesh (1,718 triangles, read over PINE) has no kerb or
 jumpable ledge on the street, so the 2.62 × 0.61 m box of material 41 at (47.40-48.01, 51.85-54.47), against a wall,
 was given new heights in RAM (its eight vertices serve its ten triangles only, as in the
-[step test](characters.md#walls)): a **0.15 m kerb** (`corner_kerb`, walk 60 % over it into the wall behind) and a
-**0.6 m ledge** (`corner_ledge`, a run at 100 % and a jump that leaves the ground 2.8, 1.5, 1.0 or 0.5 m before it). The
-`tri-sweep-tri` hook (`0x0034ee68`, two instructions into `Sweep_SphereTriangle`) logged every triangle that reached the
-kernel and its caller. The kerb row and the 1.5 m row are the committed scenarios; the other jumps differ only in
+[step test](characters-ground.md#walls)): a **0.15 m kerb** (`corner_kerb`, walk 60 % over it into the wall behind) and
+a **0.6 m ledge** (`corner_ledge`, a run at 100 % and a jump that leaves the ground 2.8, 1.5, 1.0 or 0.5 m before it).
+The `tri-sweep-tri` hook (`0x0034ee68`, two instructions into `Sweep_SphereTriangle`) logged every triangle that reached
+the kernel and its caller. The kerb row and the 1.5 m row are the committed scenarios; the other jumps differ only in
 the frame of the triangle tap (33, 40, 42 instead of 38) and were logged with the hook at the function's entry (the
 1.5 m jump logged that way gave 2,937 sphere calls and 244 on the box, the rest equal). Confirmed (runtime),
 PCSX2 2.9.94, slot 1:
@@ -475,8 +475,8 @@ PCSX2 2.9.94, slot 1:
 | ledge, take-off 0.5 m before: hits the face, falls back | 2,879 / 4,661 | 108 / 418 | 258 (132) | **0** |
 
 - **A kerb never reaches the kernel.** Its faces are under 0.25 m, so the walking capsule sweep drops them before the
-  kernel (the low-triangle rule of `0x00347c08`, [Characters](characters.md#walls)), and the snap lifts the feet onto
-  it; no corner contact of any kind can come from a kerb on the ground. Confirmed (code) at `0x00347c08` and
+  kernel (the low-triangle rule of `0x00347c08`, [Characters](characters-ground.md#walls)), and the snap lifts the feet
+  onto it; no corner contact of any kind can come from a kerb on the ground. Confirmed (code) at `0x00347c08` and
   (runtime) above.
 - **A jump takes a second path to the kernel.** In the air the walking sweep (caller `0x0034813c`) still runs, and
   `Human_PushOutInAir` (`0x0021a490`) adds, in the air and in a few states around it (50 to 371 of its calls fell in
@@ -1490,7 +1490,7 @@ Returns 1 on a hit, else 0 with nothing written. Confirmed (code) at `0x00344618
 | box (type 1) | `+0x40`, `+0x44`, `+0x48` half extents h0, h1, h2; `+0x50`, `+0x60`, `+0x70` axes A0, A1, A2 (x, y, z); `+0x80` centre P |
 | capsule body | `+0x34` owner, which must be a human (`Object_AsHuman` `0x00229868` is called and its result used without a null test, `0x003446a0`; inferred safe: only human bodies hold capsules) |
 | box body | `+0x40` flags, bit `0x4` (`BLOCKHUMANS`, [layers](physics.md#layers)) |
-| owner | vtable slot `+0x50` / `+0x54`, the human's `0x004f4780`, which returns the object flags word `+0x54` (bit `0x4000000` airborne); state flag `0x2000000000` through `0x00227f40` (landing, [Characters](characters.md)) |
+| owner | vtable slot `+0x50` / `+0x54`, the human's `0x004f4780`, which returns the object flags word `+0x54` (bit `0x4000000` airborne); state flag `0x2000000000` through `0x00227f40` (landing, [Characters](characters/index.md)) |
 
 The box's own move is not an argument: the box is taken at rest at its current pose.
 

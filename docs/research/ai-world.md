@@ -7,7 +7,7 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 
 How an AI human touches the world, seen from the Human side. It covers which world uses an AI reaches, through
 which of the player's own functions, and which it never reaches. [AI humans](ai/index.md) explains the brains, goals and
-actions; this page fills the gaps between that page and the Human pages ([Characters](characters.md),
+actions; this page fills the gaps between that page and the Human pages ([Characters](characters/index.md),
 [Combat](combat/index.md), [Combat moves](combat-moves.md)). Where another page already covers a topic, it is linked
 here, not repeated.
 
@@ -20,7 +20,7 @@ here, not repeated.
 | How the scripts drive the AI | [AI: How the scripts drive the AI](ai-scripting.md#script-control) |
 | An AI's attacks and the held object's effect | [Combat: An AI's attacks](combat-targets.md#ai-attacks) |
 | Each weapon set's swings, throws and blocks | [Combat moves: Weapons](combat-throws.md#weapons) |
-| Steps and giving way | [Characters: Step control](characters.md#step-control), [AI: Giving way](ai-moving.md#giving-way) |
+| Steps and giving way | [Characters: Step control](characters-locomotion.md#step-control), [AI: Giving way](ai-moving.md#giving-way) |
 
 ## Behaviour
 
@@ -220,7 +220,7 @@ confirmed (code):
   The player's charge then breaks the object ([Combat: Breakables](combat-targets.md#breakables)).
 - **The climb** (`Route_ClimbLeg` `0x0029b848`, and `Route_TryClimbNear` `0x0029b9b0` for a fast climber, human flag
   `0x2`, at a gait above 3 within 4.5 m) calls the player's `Climb_TryStart`
-  ([Characters: Climbing](characters.md#climb)). The executable has no separate vault (no such function or
+  ([Characters: Climbing](characters-traversal.md#climb)). The executable has no separate vault (no such function or
   caller), so a low fence is the same climb; inferred.
 
 ### Doors {#doors}
@@ -242,13 +242,13 @@ An AI never opens a closed door on its own. Confirmed (code) at the addresses ci
     - `Door_OpenBy` sends the door DoorOpen (message `0x0b`) with the human, which swings the door ±170° away from
       him. It also runs the objects' script callback.
 
-  Confirmed (code) at each address. This action 26 is not the jump's anim state 26 ([Characters](characters.md)),
+  Confirmed (code) at each address. This action 26 is not the jump's anim state 26 ([Characters](characters/index.md)),
   which is the anim-state field `+0x18`.
 - **Gang spawners** (`GangSpawner_Update`, `0x001681a0`). When a member is spawned, the spawner opens its door
   (spawner `+0x70`, gang `+0x6b0` for the first). It keeps the new human at spawner `+0x10` and notes the time at
   `+0x78` and `+0x80`. Each update after that:
     - while that human has no character instance yet (human `+0xd8` is 0,
-      [Characters](characters.md#the-record)), the open time is renewed. So the door stays open until the human
+      [Characters](characters/index.md#the-record)), the open time is renewed. So the door stays open until the human
       has his model (inferred: the model is still loading);
     - once the time is more than `+0x6b4` ms past, the door closes;
     - otherwise the door is told to open again every 500 ms.

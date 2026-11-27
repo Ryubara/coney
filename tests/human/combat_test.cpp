@@ -499,8 +499,8 @@ TEST_CASE("after the connect the victim sits at the front hold's offset and foll
 TEST_CASE("a grab's hold id reaches the animation callbacks at the connect, once, not when the hold plays",
           "[human][combat]") {
     // The original builds the hold under the connecting clip and fires 82 then, the connecting clip's length before
-    // the hold plays (docs/research/characters.md#anim-callbacks): level99's PlayerState and P1.Power never share
-    // an update at lesson 5's end.
+    // the hold plays (docs/research/characters-animation.md#anim-callbacks): level99's PlayerState and P1.Power never
+    // share an update at lesson 5's end.
     const FightCharacter character;
     Fight fight(character, 1.5F);
     std::vector<std::pair<std::uint64_t, std::uint32_t>> started;

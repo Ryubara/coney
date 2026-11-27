@@ -77,8 +77,8 @@ ties `kHumanAnimLayers` to that rule, and a test drives the stack to its most an
 A snapshot says which character each human is, as one more field of his state (`character`): the **Character List
 index plus one** in 10 bits, 0 for none. The Character List of `warriors.glr` is the disc's own table of the characters'
 models, textures and clips (543 records), and the original keeps a human's index in it at `+0x37c` (the model index,
-[Characters](../research/characters.md), confirmed (code)). Coney sends that index as an id, never a pointer: a guest
-turns it back into the character's model, textures and clips from its own disc ([A guest's
+[Characters](../research/characters/index.md), confirmed (code)). Coney sends that index as an id, never a pointer: a
+guest turns it back into the character's model, textures and clips from its own disc ([A guest's
 characters](client-world.md#characters)), so it needs no configuration scripts to know a character's model. The `+1` is
 so that 0, a state's default, means "no character named" (`net::kNoCharacter`; `characterIdOf()` and
 `characterListIndexOf()` in `src/net/character_id.h` convert). Ten bits are fixed by the original's data, with room

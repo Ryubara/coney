@@ -410,7 +410,8 @@ TEST_CASE("the HUD's gang counters show the standing members: a member knocked o
 TEST_CASE("the standing count leaves out only the knocked out, dead and wounded: a gang whose last members are knocked "
           "down alive still counts them",
           "[ai][gangs]") {
-    // Expected: characters.md#out-of-world, confirmed (code) at 0x00166220 (out only if knocked out, dead or wounded)
+    // Expected: characters-ground.md#out-of-world, confirmed (code) at 0x00166220 (out only if knocked out, dead or
+    // wounded)
     AiScene scene;
     std::vector<Brain*> members;
     const int id = makeCountedGang(scene, members);

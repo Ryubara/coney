@@ -153,8 +153,8 @@ A world object's tint is a colour word at `+0xc8`, copied at `+0xcc`: `0xRRGGBBA
   component 0-255 comes out as itself and a 0-1 component does not (1.0 gives 1). The one script that calls it passes
   0-255 values.
 - `HuSetSpinningIconColor(human, steps, colour)` sends message `0x34` to the human's spinning icon (`0x00238b18`),
-  which fades its tint word to the colour over the steps ([Characters: the spinning icon](characters.md#spinning-icon));
-  no script calls it.
+  which fades its tint word to the colour over the steps ([Characters: the spinning
+  icon](characters-appearance.md#spinning-icon)); no script calls it.
 - The breakable doors write the word too: a broken `dyn_door_liz`, `dyn_door_dclub` or `dyn_door_stall` clears its
   alpha byte (`+0xcc` = `+0xc8` & `0xffffff00`, `0x003fa438`).
 
@@ -937,10 +937,11 @@ held object's type `+0x87` and, when it differs from the human's current style (
 - no style yet: the object's style is **pushed** (`0x00253ed0`; confirmed (code));
 - another style on top: that one is popped, the object's pushed, and the old one pushed back on top.
 
-A push applies the style with `Human_ApplyMoveStyle` (`0x00253688`): the [anim slots](characters.md#anim-slots) are
-reset to the defaults and the style's overrides written, then the gait speeds are recomputed from the new clips'
-root motion (`0x00253688` ends in the speed computation). Message `0x16` (sender not traced) calls the same function
-unless the human has state `0x180000`. Confirmed (code) at `0x002460f4` and `0x002469c8`.
+A push applies the style with `Human_ApplyMoveStyle` (`0x00253688`): the [anim
+slots](characters-animation.md#anim-slots) are reset to the defaults and the style's overrides written, then the gait
+speeds are recomputed from the new clips' root motion (`0x00253688` ends in the speed computation). Message `0x16`
+(sender not traced) calls the same function unless the human has state `0x180000`. Confirmed (code) at `0x002460f4` and
+`0x002469c8`.
 
 **Style 4, the two-handed carry** (`Human_ApplyMoveStyle` case 4, confirmed (code); clip names from the
 [anim id reference](../references/anim-ids.md)):
@@ -1197,7 +1198,8 @@ z up; the detach and the aim turn it into the world):
    across it by `f` × r × 8° (r random in −1 to 1 each, `0x6eb898`; 8° × 0.6 for an AI of brain kind 3). A target
    almost straight above or below (|u.z| ≥ 0.85) falls to the default.
 4. **The default** (no target): (0, 1, 0.1) normalised × 30 / `w`, or × 50 / `w` when the human's stored gait `+0x1a8`
-   ([Characters](characters.md)) is above 2 (jogging or faster) and he holds a set 4 or 6 object or a throwable one.
+   ([Characters](characters/index.md)) is above 2 (jogging or faster) and he holds a set 4 or 6 object or a throwable
+   one.
 
 So a bottle aimed at a target leaves at 30 m/s and a set 4 crate at 12 m/s, each with the lift that brings it down
 on the target. Nothing clamps the speed; the 45° rule is the only limit on the direction.
@@ -1353,7 +1355,7 @@ type tests in the pane's code are the spawn and hit cases of [A pane's life](#pa
 
 **The triangles.** Material 2 (`GLASS`) has no rule of its own in the human's wall sweep (`0x00347c08` never reads a
 triangle's material) or in its contact handler (`Human_OnContact`, `0x00219d50`, whose level-triangle branch tests
-only the fence materials 30, 31 and 122 while climbing, [Characters](characters.md#walls)). Both triangles are
+only the fence materials 30, 31 and 122 while climbing, [Characters](characters-ground.md#walls)). Both triangles are
 two-sided, so while they are enabled a pane stops a human from either side like any other wall face 0.25 m or taller.
 The hit disables them (message 1, [A pane's life](#pane)), and the sweep's resolution skips a contact on a disabled
 triangle (`0x0033d9d8` checks the triangle's enabled bit), so a pane broken during a sweep stops blocking at once.
@@ -1631,8 +1633,9 @@ this pose "now" is inferred: it is the only place the slerp happens. The door's 
 - **Scripts**: `OpenDoor` / `CloseDoor` / `DoorOpenDegree` (no human), `DoorOpen(door, human)` (away from the human),
   `OpenDoorAnimated(door, human)` (the human's state 26 with the door as target).
 - **Use**: a player whose current interaction record (human `+0x660`) names the door and has a kind other than 0, 2
-  or 3 sends the door message 0 on triangle (`0x0024d530`, the context action of [Characters: jumping](characters.md#jump)),
-  so the same animated open. Confirmed (code) for the dispatch; what puts a door in the record is not traced.
+  or 3 sends the door message 0 on triangle (`0x0024d530`, the context action of [Characters:
+  jumping](characters-traversal.md#jump)), so the same animated open. Confirmed (code) for the dispatch; what puts a
+  door in the record is not traced.
 - **The AI**: a door's number marks its links ([Doors and their numbers](#door-numbers)); a closed door's links carry
   the avoid bit, an open one's do not. AI humans do not open swinging doors by themselves as far as the route
   follower shows (its `0x10` and `0x40` handlers jump or charge). Inferred.
@@ -1830,10 +1833,10 @@ hitpoints, and `CollisionTri_SetMaterial` (`0x003a4a98`). Confirmed (code). `Col
 callers, every one an object init that owns triangles: the swinging door, the barrier classes (`0x003b2f40`,
 `0x003b3250`, `0x003b4128`, `0x003b5498`, `0x003b57d0`, `0x003b6220`), `dyn_door_barricade` (`0x003f6018`),
 `dyn_door_sliding` (`0x003f5d10`) and the glass pane (`0x003e29e8`). Nothing else is needed: the walking sweep
-meets them like any wall ([Characters](characters.md#walls), [Physics](physics.md#sweep)), and it tests no type bit, so
-`0x400` and `0x40` do not exempt them. A `dyn_door_swinging` type has `shape` `NONE` (the steel doors, the gates) or an
-`OBB` (`dyn_door_store`, the cabin doors), but no `PHYFLAG` that a walker's sweep selects, so the triangles are what
-stop him. Inferred from the layers ([Physics](physics.md#layers)); the per-type flags were not read at runtime.
+meets them like any wall ([Characters](characters-ground.md#walls), [Physics](physics.md#sweep)), and it tests no type
+bit, so `0x400` and `0x40` do not exempt them. A `dyn_door_swinging` type has `shape` `NONE` (the steel doors, the
+gates) or an `OBB` (`dyn_door_store`, the cabin doors), but no `PHYFLAG` that a walker's sweep selects, so the triangles
+are what stop him. Inferred from the layers ([Physics](physics.md#layers)); the per-type flags were not read at runtime.
 
 **Why two-sided matters.** On the disc a door's triangles are ordinary one-sided triangles: of the 150,567 triangles
 of the 64 level files only 4 carry flag `0x2` ([Collision](collision.md#triangles)). The walking sweep skips a
@@ -2363,8 +2366,8 @@ Coney's stand-ins, where this page is silent:
   and the name less a leading `dbl` (`dyn_door_fence` draws `dyn_dr_fence`). A model stage a splintering door or a
   cabin leaf takes is not drawn. Panes are not sorted by their distance within the frame (all share batch 0), a
   pane's body is a box only an airborne human meets ([Moving into a pane](#pane-break): the push-out sphere of
-  [Characters](characters.md#falling) stands for both the airborne body and the jump's strike shapes, and every whole
-  pane has its body whatever its distance from a camera), and the leaf's pose steps per 60 Hz tick.
+  [Characters](characters-ground.md#falling) stands for both the airborne body and the jump's strike shapes, and every
+  whole pane has its body whatever its distance from a camera), and the leaf's pose steps per 60 Hz tick.
 - `DoorOpen`'s "away" uses the door's turned y axis. `OpenDoorAnimated` and a lock pick's success open at once
   (`DoorOpen`), without human state 26.
 - A shard's offset is a random step of 1/1000 in ±1. A link's distance

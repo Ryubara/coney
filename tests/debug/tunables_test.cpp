@@ -117,8 +117,9 @@ TEST_CASE("removing a tunable drops it and its queued change", "[debug]") {
 }
 
 TEST_CASE("the game's movement and camera tunables edit the values the game reads", "[debug]") {
-    // Expected: characters.md#movement-constants, characters.md#walls, characters.md#sprint, characters.md#jump and
-    // characters.md#climb, confirmed (code), for the defaults; the counts per category are Coney's own registry
+    // Expected: characters-locomotion.md#movement-constants, characters-ground.md#walls,
+    // characters-traversal.md#sprint, characters-traversal.md#jump and characters-traversal.md#climb, confirmed (code),
+    // for the defaults; the counts per category are Coney's own registry
     // (../guides/debug-menu.md#tunables).
     TunableRegistry registry;
     coney::debug::registerGameTunables(registry);
@@ -159,8 +160,9 @@ TEST_CASE("the game's movement and camera tunables edit the values the game read
 
 TEST_CASE("the player's gait speeds are tunable as a scale on each gait, beside the existing Movement tunables",
           "[debug]") {
-    // Expected: unverified, #723 (the gait speeds come from the clips' root motion, characters.md#speed-classes, so the
-    // tunable is a scale on each; the combat walk's speed is already the Combat page's tunable)
+    // Expected: unverified, #723 (the gait speeds come from the clips' root motion,
+    // characters-classes.md#speed-classes, so the tunable is a scale on each; the combat walk's speed is already the
+    // Combat page's tunable)
     TunableRegistry registry;
     coney::debug::registerGameTunables(registry);
     const std::vector<std::pair<std::string, float*>> scales{

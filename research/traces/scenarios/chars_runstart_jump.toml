@@ -1,0 +1,25 @@
+# A jump from the run start (slot 7, by the fence): the stick at 100 % straight up from the start, triangle tapped while
+# the run start (414) plays, at about 3.35 m/s. Unit 364 (the characters research split). The anim state (record +0x18)
+# and the state flags' high word show whether the jump starts. Research: docs/research/characters-traversal.md#jump.
+description = "level99 by the fence (slot 7): triangle tapped during the run start, at about 3.35 m/s"
+research = "docs/research/characters-traversal.md#jump"
+input = "chars_runstart_jump.txt"
+updates = 80
+fields = ["player"]
+
+[original]
+slot = 7
+patches = ["scripted-pad", "right-stick"]
+
+[coney]
+level = "level99"
+
+[[field]]
+name = "state_hi"                         # record +0x04, the state flags' high word (0x4 jump, 0x8 air, 0x20 land)
+address = "rec(player) + 0x4"
+type = "u32"
+
+[[field]]
+name = "anim_state"                       # record +0x18
+address = "rec(player) + 0x18"
+type = "s32"

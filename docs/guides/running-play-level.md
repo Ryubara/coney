@@ -8,7 +8,7 @@ other pages are listed in [the overview](running.md#pages).
 
 `--play-level NAME` puts you in a level (`level2`, `level99`: any of the 79 with a streamed world, listed on the debug
 menu's [Levels page](debug-menu.md), which also switches between them) as player 1, driven with a gamepad's analog
-sticks, with the follow camera behind him ([Characters](../research/characters.md#coneys-implementation),
+sticks, with the follow camera behind him ([Characters](../research/characters/index.md#coneys-implementation),
 [Camera](../research/camera.md#coneys-implementation)). The level's worlds and level file load and stream as in [the
 world viewer](running-viewers.md#the-world-viewer); he stands where the level's own script creates player 1, as when the
 story reaches the level: Coney runs the scripts the original runs before it (the preloads, then a fresh Lua state with
@@ -16,30 +16,31 @@ story reaches the level: Coney runs the scripts the original runs before it (the
 player 1, and prints them (`gameplay: level2 checkpoint 3: player 1 Cleon (type 1, model warr_cl) at ...`).
 `--checkpoint N` picks the checkpoint (1 by default), so `--play-level level2 --checkpoint 3` starts where level2's
 third checkpoint does. He is drawn as the character the script's type names (Cleon at `level2 --checkpoint 3`, Snow at
-`level3 --checkpoint 4`), through the type's `CfgChar` model ([Characters](../research/characters.md#type-to-model)); a
-type with no model falls back to Rembrandt with a log line. The scripts' world flags are kept, so a script that
-teleports player 1 to a flag puts him there with the flag's heading, without snapping him to the ground, as the
-original: the hub, `level95`, starts the Warchief at one of its doors, chosen with the game's own random numbers (read
-from your disc's executable; door 5 while the tutorial is locked), and an arena run alone
-(`--play-level level102`) uses the Rumble menu's default set-up ([Flags](../research/flags.md#coneys-implementation)).
-The scripts keep running in play, one script frame per step: their scheduled calls, their volume-box triggers and their
-message handlers, and every other human they create is an AI human with its own model, driven by the scripts' goals and
-gangs ([AI](../research/ai/index.md#in-coney)); bindings Coney lacks are skipped with a log line. A level whose script
-creates no player 1 puts him above the middle of its first world's part 1, Coney's stand-in. He walks, runs, sprints,
-turns and leans into turns, stops, steps onto kerbs under 25 cm, slides along walls, jumps, climbs fences and walls, and
-falls off ledges on the level's collision mesh, with the original's speeds, turn rates and clips: the walk or run start,
-a blend across walk, jog, run and sprint, the idle, the run stop, the jump and its landing, and the climbs
-([Characters](../research/characters.md#sprint)). He fights as the original's player does
-([Combat](../research/combat/index.md#coneys-implementation)): the square and cross chains, the snaps, the run attack,
-the charge and the dive, the block, rage, the grab with its strikes, spins, throws and the mugging, and the tackle, with
-the original's commands, timing and clips; the sandbox's fight yard (`--play-level sandbox:combat`) has passive targets
-that take the hits. With a target (the one he attacked, or the one L1 picks) he locks onto it, as the original's default
-settings do: he faces it and the stick walks him at one speed in any direction with the combat walk until it is more
-than 2.5 m away or down. The level's glass panes and doors work: his hits break the panes and the breakable doors, and
-the lock pick opens a door ([World objects](../research/objects.md#coneys-implementation)). The level's scenes play and
-hand him back ([Scenes](../research/scenes.md#coneys-implementation)). A fall out of the world puts him back at the
-start. Coney prints a line whenever the clip changes and a summary when it stops (the player's position, speed, gait,
-clip, traversal state, stamina, the camera's distance and counts only).
+`level3 --checkpoint 4`), through the type's `CfgChar` model
+([Characters](../research/characters-classes.md#type-to-model)); a type with no model falls back to Rembrandt with a log
+line. The scripts' world flags are kept, so a script that teleports player 1 to a flag puts him there with the flag's
+heading, without snapping him to the ground, as the original: the hub, `level95`, starts the Warchief at one of its
+doors, chosen with the game's own random numbers (read from your disc's executable; door 5 while the tutorial is
+locked), and an arena run alone (`--play-level level102`) uses the Rumble menu's default set-up
+([Flags](../research/flags.md#coneys-implementation)). The scripts keep running in play, one script frame per step:
+their scheduled calls, their volume-box triggers and their message handlers, and every other human they create is an AI
+human with its own model, driven by the scripts' goals and gangs ([AI](../research/ai/index.md#in-coney)); bindings
+Coney lacks are skipped with a log line. A level whose script creates no player 1 puts him above the middle of its first
+world's part 1, Coney's stand-in. He walks, runs, sprints, turns and leans into turns, stops, steps onto kerbs under 25
+cm, slides along walls, jumps, climbs fences and walls, and falls off ledges on the level's collision mesh, with the
+original's speeds, turn rates and clips: the walk or run start, a blend across walk, jog, run and sprint, the idle, the
+run stop, the jump and its landing, and the climbs ([Characters](../research/characters-traversal.md#sprint)). He fights
+as the original's player does ([Combat](../research/combat/index.md#coneys-implementation)): the square and cross
+chains, the snaps, the run attack, the charge and the dive, the block, rage, the grab with its strikes, spins, throws
+and the mugging, and the tackle, with the original's commands, timing and clips; the sandbox's fight yard (`--play-level
+sandbox:combat`) has passive targets that take the hits. With a target (the one he attacked, or the one L1 picks) he
+locks onto it, as the original's default settings do: he faces it and the stick walks him at one speed in any direction
+with the combat walk until it is more than 2.5 m away or down. The level's glass panes and doors work: his hits break
+the panes and the breakable doors, and the lock pick opens a door ([World
+objects](../research/objects.md#coneys-implementation)). The level's scenes play and hand him back
+([Scenes](../research/scenes.md#coneys-implementation)). A fall out of the world puts him back at the start. Coney
+prints a line whenever the clip changes and a summary when it stops (the player's position, speed, gait, clip, traversal
+state, stamina, the camera's distance and counts only).
 
 | Pad | Keyboard | Does |
 | --- | --- | --- |

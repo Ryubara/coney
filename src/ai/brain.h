@@ -894,7 +894,7 @@ class TargetCauseScope {
 /// @orig 0x0021d480 Human_OnEvent (unknown)
 bool deliverEvent(Brain& brain, const BrainEvent& event);
 
-/// The brain side of `Human_ReleasePlayer(human, 0, 1)` (docs/research/characters.md#players): the
+/// The brain side of `Human_ReleasePlayer(human, 0, 1)` (docs/research/characters-players.md#players): the
 /// player's `brain` goes back to `leftAs` (its class's type, as `Human_Init` chose it), its goals and actions are
 /// cleared, it loses the pad's switch (Brain::setType()) and its human takes the flags releasedFlags() gives. The pad,
 /// the panel and the player list are the caller's (ai::AiHumans::releasePlayer()).

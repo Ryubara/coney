@@ -1,8 +1,8 @@
 # An AI on the gravel heap leg of level99 lesson 2: Vermin (slot 6, dead brain, sphere 0.35 m) on his own
 # GoalMoveToFlag (0x006e05e0 in this state) re-aimed at (-285.2, 124.2), walk, radius 2, from the leg's start.
-# Research: docs/research/characters.md#slopes.
+# Research: docs/research/characters-ground.md#slopes.
 description = "level99 gravel heap: Vermin (dead brain, radius 0.35) on his GoalMoveToFlag re-aimed at (-285.2, 124.2), gait 2, radius 2, from (-271.7, 129.4)"
-research = "docs/research/characters.md#slopes"
+research = "docs/research/characters-ground.md#slopes"
 input = "heap_ai.txt"
 updates = 600
 fields = ["player", "enemy"]

@@ -184,7 +184,7 @@ list.
 | Preconditions | patches: `call-brains`; emulation running; start state: `pedestrian-grab` ([state library](../pcsx2-states.md)) |
 | Evidence | confirmed (runtime) |
 | Ghidra | `0x00358428 lua_HuCreate`, `0x00233d60 Human_Create` |
-| Research | [research/characters.md#creation](../../research/characters.md#creation), [research/ai-gangs.md#gang-record](../../research/ai-gangs.md#gang-record) |
+| Research | [research/characters/index.md#creation](../../research/characters/index.md#creation), [research/ai-gangs.md#gang-record](../../research/ai-gangs.md#gang-record) |
 | Confirmed at runtime | 2026-10-21, copy `pcsx2`, PCSX2 2.9.129 (PCSX2-MCP fork), level99 street (slot 6); Crew1 appeared 3 m in front of Rembrandt as a type 3 brain in gang 1, listed among the members, and with attack in force (automatic switching off) had its goal 52 ten updates later |
 
 ```sh

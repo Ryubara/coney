@@ -135,10 +135,10 @@ flowchart TB
 
 Why server-authoritative and not peer-to-peer lockstep or rollback:
 
-- **The world is large and busy.** Up to 60 humans (the original's human pool, [Characters](../research/characters.md)),
-  brains, gangs, scripts and streaming. Lockstep makes every machine wait for the slowest and needs bit-exact floats
-  across compilers and platforms; rollback must copy and re-simulate all of that several times a frame. Both are right
-  for a fighting game with two characters ([GGPO](#sources)), not here.
+- **The world is large and busy.** Up to 60 humans (the original's human pool,
+  [Characters](../research/characters/index.md)), brains, gangs, scripts and streaming. Lockstep makes every machine
+  wait for the slowest and needs bit-exact floats across compilers and platforms; rollback must copy and re-simulate all
+  of that several times a frame. Both are right for a fighting game with two characters ([GGPO](#sources)), not here.
 - **Joining late.** Snapshots let a player drop in mid-level, as the original's player 2 does; lockstep needs the
   whole history.
 - **The trust model.** One authority decides every hit, item and mission step; a client that lies about its position

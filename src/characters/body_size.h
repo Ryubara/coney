@@ -5,7 +5,7 @@
 
 #include "core/game_random.h"
 
-// A new human's random body size (docs/research/characters.md#body-scale), drawn by Human_Init after the money.
+// A new human's random body size (docs/research/characters-classes.md#body-scale), drawn by Human_Init after the money.
 
 namespace coney::characters {
 

@@ -1,0 +1,46 @@
+version = 1
+id = "r-20261127-chars-human-fields"
+date = "2026-11-27"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "121382ae0c3cb96f22f3919baeefc24ef45efdfa0ad1b8e1e5f8c5ac853f8744"
+
+[who]
+agent = "a442fe13f581912bc"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-e"
+
+[start]
+state = "street-end-run"
+patches = []
+
+[run]
+name = ""
+method = "PCSX2 started on the street-end-run state (level99, checkpoint 2) and left running. The player's human is human 2 of the static array at 0x00640c80 (0x6d0 bytes each; the name at +0x80 is Rembrandt, handle index +0x92 = 2). Memory reads through the pcsx2 MCP server: human +0x10 position, +0xcc behaviour class and +0xd0 type (s32), +0xe0 human flags (u64, as its low and high u32), +0x1b9 the player power class (u8), +0x3a4 speed multiplier and +0x65c body scale (floats); the per-player record at 0x00660f50 + 2 * 0x2c, its +0x19 pad index and +0x1b; and the word at 0x005101e0."
+
+[values]
+pos_x = 75.155
+pos_y = 41.135
+pos_z = 0.223
+human_index = 2
+behaviour_class_cc = 30
+type_d0 = 30
+flags_lo = 38011911
+flags_hi = 512
+player_power_class = 64
+speed_multiplier = 1.0
+body_scale = 0.97
+pad_index = 0
+per_player_1b = 1
+class_speed_switch = 1
+
+[addresses]
+human_array = 0x00640c80
+per_player_records = 0x00660f50
+class_speed_switch = 0x005101e0
+human_init = 0x00218008

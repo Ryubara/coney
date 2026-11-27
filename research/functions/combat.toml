@@ -345,7 +345,7 @@ issue = 332
 [[function]]
 address = 0x0022f3c8
 name = "Human_GetUp"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "the end of being down, as the rise 199 ends: a stunned human's stun time starts again, else the fight stance"
 level = "confirmed-code"
 coney = "src/human/victim.h:Victim::step"
@@ -359,7 +359,7 @@ issue = 685
 [[function]]
 address = 0x0022f4f8
 name = "Human_SetDownTimers"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "the down and stun end times of a knockdown"
 level = "confirmed-code"
 coney = "src/human/victim.h:Victim::knockDown"
@@ -414,7 +414,7 @@ question = "combat-reactions.md#q-endstun-speed"
 [[function]]
 address = 0x0022f9e0
 name = "Human_SetStunTimer"
-page = "characters.md#code-core"
+page = "characters/index.md#code-core"
 role = "the stun end time from the class's stun time"
 level = "confirmed-code"
 coney = "src/human/victim.h:Victim::stun"

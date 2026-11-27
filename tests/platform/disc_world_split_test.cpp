@@ -47,7 +47,7 @@ using coney::debug::Vec3;
 // Vertices closer than this are one (the welding of connectedPieces()).
 constexpr float kWeld = 0.01F;
 // Below this the game's z is an interior: the rooms are built about 200 m under the street
-// (docs/research/characters.md, Teleport).
+// (docs/research/characters-players.md#level-starts).
 constexpr float kInteriorZ = -100.0F;
 // A piece this tall and this wide on both axes is the size of a building, not a kerb or a sign.
 constexpr float kBuildingSize = 3.0F;

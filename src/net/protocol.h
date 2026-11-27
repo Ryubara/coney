@@ -380,8 +380,8 @@ enum class LoadReason : std::uint8_t {
 /// answered with LevelLoaded (the loading barrier). Reliable.
 ///
 /// The packet: the load (a varint, 32 bits at most), the reason (8 bits), the checkpoint (16 bits, as the original's,
-/// docs/research/characters.md#level-starts), the level name (a string of at most kMaxLevelNameBytes bytes, only
-/// letters, digits, '_' and '-': validLevelName()).
+/// docs/research/characters-players.md#level-starts), the level name (a string of at most kMaxLevelNameBytes bytes,
+/// only letters, digits, '_' and '-': validLevelName()).
 struct LoadLevel {
     std::uint32_t load = 1;       ///< 1 for the session's first load, one more for each after
     std::string level;            ///< the level's name: validLevelName()

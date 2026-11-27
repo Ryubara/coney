@@ -47,7 +47,7 @@ struct HumanCreation {
 /// 60 human slots until the characters exist as game objects. The level flow clears it when a level starts; the play
 /// mode takes player 1 from it.
 ///
-/// Research: docs/research/characters.md#creation, docs/research/characters.md#level-starts
+/// Research: docs/research/characters/index.md#creation, docs/research/characters-players.md#level-starts
 class CreatedHumans {
   public:
     /// The most humans the original's slots hold; a creation past it gets no slot (`HuCreate` returns `NilHandle`).
@@ -61,8 +61,8 @@ class CreatedHumans {
     /// that player; null when there is none.
     [[nodiscard]] const HumanCreation* player(int index) const;
     /// Makes the human with `handle` player `index`'s from now on: `HuChangePlayerGang`'s hand-over to another human
-    /// (docs/research/characters.md#level99-handover), after which every lookup of player `index` (his pick-ups and
-    /// thefts, his crew's chief, his teleports) names the new human. A handle no human has changes nothing.
+    /// (docs/research/characters-players.md#level99-handover), after which every lookup of player `index` (his pick-ups
+    /// and thefts, his crew's chief, his teleports) names the new human. A handle no human has changes nothing.
     void setPlayer(int index, double handle);
     /// The human with `handle`; null when none has it.
     [[nodiscard]] HumanCreation* find(double handle);

@@ -129,7 +129,7 @@ enum class HumanField : std::uint8_t {
     PositionY,  ///< The feet, metres.
     PositionZ,  ///< The feet, metres (up).
     Heading,    ///< Radians, 0 facing +y.
-    Health,     ///< Health points (record `+0x144`, a 16-bit number; docs/research/characters.md).
+    Health,     ///< Health points (record `+0x144`, a 16-bit number; docs/research/characters/index.md).
     HealthMax,  ///< Its maximum (record `+0x146`).
     Clip,       ///< The anim id playing: the newest animation layer.
     Playhead,   ///< How far through the clip, 0 to 1.

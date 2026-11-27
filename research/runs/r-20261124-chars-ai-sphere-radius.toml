@@ -1,0 +1,46 @@
+version = 1
+id = "r-20261124-chars-ai-sphere-radius"
+date = "2026-11-24"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "d4dc9e01692f6f4280a0bc03f00112dfb82ecc12544a1c6ce47e76cbf4e84cd0"
+
+[who]
+agent = "a73f4eba7e7bccc32"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = []
+
+[run]
+name = ""
+method = "Paused at the state's start, over PINE: for every human in use (the table at 0x00640c80, 0x6d0 each), its physics body (+0x1a0), the body's shape (+0x30) radius field +0x40, the body's +0x60 and the human's scale +0x65c; the walking sweep's sphere radius is their product"
+
+[values]
+humans_in_use = 11
+ai_humans = 10
+ai_humans_body60_one = 10
+vermin_shape40 = 0.35
+vermin_body60 = 1.0
+vermin_scale = 1.0
+vermin_radius = 0.35
+bum_civilian_scale101_count = 6
+bum_shape40 = 0.3535
+bum_body60 = 1.0
+bum_scale = 1.01
+bum_radius = 0.357
+player_shape40 = 0.3395
+player_body60 = 1.4286
+player_scale = 0.97
+player_radius = 0.4705
+
+[addresses]
+human_table = 0x00640c80
+sweep = 0x00347c08

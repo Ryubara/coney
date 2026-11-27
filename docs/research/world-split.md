@@ -94,9 +94,9 @@ boot's load), confirmed (code). Nothing loads another world while a level runs: 
 level change is part of the street level's own two worlds.
 
 **Interiors sit below the street in the same worlds.** Rooms are placed about 200 m under the city
-([Characters](characters.md), interiors; [The hangout's railings](collision.md#hangout-railings)). Disc check: below z
-−100 there are 13,964 collision triangles in 20 levels, and 576 sectors lie wholly below it. So the interiors of those
-levels are sectors of the level's `s` and `d` worlds and triangles of its collision mesh, streamed like the rest
+([Characters](characters/index.md), interiors; [The hangout's railings](collision.md#hangout-railings)). Disc check:
+below z −100 there are 13,964 collision triangles in 20 levels, and 576 sectors lie wholly below it. So the interiors of
+those levels are sectors of the level's `s` and `d` worlds and triangles of its collision mesh, streamed like the rest
 (inferred from the counts and the single world load). `level99` has 2 collision triangles below the street, and
 `level95`, the hub, 1,057 of its 5,943: the clubhouse below the hub's street
 ([Collision](collision.md#hangout-railings)). A level that is wholly an interior is a level of its own: `level110`

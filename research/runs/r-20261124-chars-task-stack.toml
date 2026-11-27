@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-task-stack"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "81de981961f98a3358deda9a48d96c2ee5a919cb5d27fbc609b9a3416f5f0bdd"
+
+[who]
+agent = "aa3b25557b297e4e7"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "chars_task_stack"
+method = ""
+
+[values]
+updates = 301
+missed_updates = 0
+columns = 32
+
+[hashes]
+trace_csv = "01ae78f3ef047fce22f76d1f80878017d80a3080ac1d5a89a51904913d5810e2"

@@ -29,7 +29,8 @@ std::vector<std::string> PlayLevelControls::animSets() const {
     const PlayLevelMode& mode = *m_mode;
     std::vector<std::string> sets{std::format("Player: {}", mode.m_model), "Generic"};
     // Every model a player can be drawn as, once each, sorted: the models Change character offers. Every character
-    // shares the player's skeleton (docs/research/characters.md, 32 bones), so each can play on him.
+    // shares the player's skeleton (docs/research/characters-appearance.md#character-geometry, 32 bones), so each can
+    // play on him.
     std::set<std::string, std::less<>> models;
     for (const characters::CharacterChoice& choice : mode.characterChoices()) {
         models.insert(choice.model);

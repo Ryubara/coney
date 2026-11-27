@@ -1,0 +1,4 @@
+# A jump from the run start (slot 7): the stick at 100 % straight up from the start, triangle tapped after the sample
+# of update 7, when the run start (414) moves at 3.35 m/s.
+0 stick left 0 100
+7 tap triangle

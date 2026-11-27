@@ -41,7 +41,8 @@ inline constexpr std::uint16_t kTriangleShadow = raycast::kTriangleShadow;
 
 /// Whether the ground under `feet` (game axes) is a shadow to hide in: a ray straight down from 0.25 m above the feet
 /// meets, within 4 m, a triangle with kTriangleShadow. **Coney's stand-in** for the original's ground check
-/// (`0x0023eab8`, docs/research/characters.md), whose ray is not on the lighting page: the blob shadow's ray.
+/// (`0x0023eab8`, docs/research/characters-ground.md#ground), whose ray is not on the lighting page: the blob shadow's
+/// ray.
 [[nodiscard]] bool onShadowGround(const raycast::CollisionMesh& mesh, raycast::Vec3 feet);
 
 /// The humans' draw distance, metres (`0x0050cc60`, read at runtime in `level99`; `HumanRender_SetDrawDistance` keeps

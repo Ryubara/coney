@@ -143,7 +143,8 @@ TEST_CASE("the World page sets the fog, the shadows, the gravity and the parts, 
           "[debug][world_page]") {
     // Expected: unverified, #216 (Coney's own debug menu: the World page, docs/guides/debug-menu.md#world); the level's
     // values shown are the original's: world.md#fog (SetFogColor, SetFogDistance), xbox-lighting.md#shadow-light
-    // (SetShadowColor, SetShadowLightOffset), characters.md (gravity 15.68 m/s², Human_StateUpdate 0x0023fea8)
+    // (SetShadowColor, SetShadowLightOffset), characters-ground.md#falling (gravity 15.68 m/s², Human_StateUpdate
+    // 0x0023fea8)
     GameTunables tunables;
     FakePlay play;
     DebugServices services;

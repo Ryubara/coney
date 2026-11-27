@@ -15,7 +15,8 @@
 #include "fileio/wad.h"
 
 // A character's model, decoded into plain skinned vertices and triangles: what the model resource's clump (chunk
-// 0x47) and bone offsets (chunk 0x28) hold. Format: docs/research/characters.md#files and #character-geometry.
+// 0x47) and bone offsets (chunk 0x28) hold. Format: docs/research/characters-appearance.md#files and
+// #character-geometry.
 
 namespace coney::characters {
 

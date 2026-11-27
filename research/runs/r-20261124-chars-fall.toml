@@ -1,0 +1,35 @@
+version = 1
+id = "r-20261124-chars-fall"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "a3acabb8ed7a4c719ccdb558bbac07950fdd4033329622f674bb6a1972b82e2d"
+
+[who]
+agent = "a635829b69ef6a330"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "fall_heights"
+method = ""
+
+[run.args]
+rise = "10"
+
+[values]
+updates = 301
+missed_updates = 0
+columns = 39
+
+[hashes]
+trace_csv = "15f289b3f34d1bf1f2840da5eaff95c772af494b7439684e9fb67d45faa9bc96"

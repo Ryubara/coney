@@ -12,7 +12,7 @@ name to pass, a contributor the value to expect.
 
 **Characters are "humans".** The game calls every person, the player included, a human: scripts create one
 with `HuCreate`, the engine updates them all in `Humans_Update`, and most character bindings start with `Hu`.
-A human is the game's equivalent of GTA's ped; see [Characters (research)](../research/characters.md).
+A human is the game's equivalent of GTA's ped; see [Characters (research)](../research/characters/index.md).
 
 **Start with [Entities](entities.md)**: every kind of thing the game has at run time (humans, objects,
 cars, flags, cameras, gangs ...), how scripts refer to each, how many there can be, and which lists and

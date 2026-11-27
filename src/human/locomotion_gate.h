@@ -10,8 +10,8 @@
 
 namespace coney::human {
 
-/// Bits of the record `+0x08` the locomotion's own clips hold (docs/research/characters.md#the-record): a move's start
-/// clip, the run stop and the climbs, a jump's landing, and 389 `NORMAL_FROM_FIGHT`.
+/// Bits of the record `+0x08` the locomotion's own clips hold (docs/research/characters/index.md#the-record): a move's
+/// start clip, the run stop and the climbs, a jump's landing, and 389 `NORMAL_FROM_FIGHT`.
 inline constexpr std::uint32_t kFlagStartClip = 0x10000000;
 inline constexpr std::uint32_t kFlagRunStop = 0x80000;
 inline constexpr std::uint32_t kFlagLanding = 0x1000000;

@@ -42,7 +42,7 @@ address unless a section says otherwise.
 | [The human body](#human-body) | `PhysicsHumanBody_Construct` `0x00341e98`, `_Destroy` `0x00341f00`, `PhysicsBody_ApplyHumanScale` `0x00341f28`, `PhysicsHumanBody_SetPushSphere` `0x003420d0`, `_GetShapes` `0x003420c8`, `_OnStruck` `0x00342130`, `_AddStrikeSphere` `0x00342158`, `_ClearStrikeSpheres` `0x00342168`, `_GetContactScale` `0x00342288`, `_Update` `0x003422d0`, `_PushAwayHumans` `0x003425c0`, `_Moved` `0x00342828`, `PhysBody_SetShapeEnabled` `0x003428d0`, `_AddBoneShape` `0x003429e8`, `Human_TestStrikes` `0x0033f110` ([Combat](combat/index.md#moving-strikes)) | confirmed (code) |
 | [Ignore lists](#ignore-lists) | `IPhysics_FindFreeIgnoreSlot` `0x00340890`, `IPhysics_ForgetIgnoredOwner` `0x0033cd70`, `PhysicsBody_IsIgnoring` / `_Ignore` / `_StopIgnoring` `0x00341ae8` / `0x00341b20` / `0x00341b80`, the human body's `0x003421d0` / `0x00342230` / `0x00342260` | confirmed (code) |
 | [Queries](#queries) | `IPhysics_QueryBox` `0x0033feb0`, `_QueryBoxFiltered` `0x00340120`, `_CollideShape` `0x0033e7f0`, `_OverlapShape` `0x0033ebb8`, `_RayCastBodies` `0x0033eee0` | confirmed (code) |
-| [Sweeping a body](#sweep) | `PhysicsBody_Sweep` `0x0033e278`, `IPhysics_SweepShapeVsMesh` `0x0033d2d8`, `_SweepBodyVsMesh` `0x0033d340`, `PhysicsBody_SweepHumanMask` `0x0033d498` (against the bodies), `PhysicsBody_PushOutOfWalls` `0x003477c0` ([Characters](characters.md#walls)) | confirmed (code) |
+| [Sweeping a body](#sweep) | `PhysicsBody_Sweep` `0x0033e278`, `IPhysics_SweepShapeVsMesh` `0x0033d2d8`, `_SweepBodyVsMesh` `0x0033d340`, `PhysicsBody_SweepHumanMask` `0x0033d498` (against the bodies), `PhysicsBody_PushOutOfWalls` `0x003477c0` ([Characters](characters-ground.md#walls)) | confirmed (code) |
 | [Contacts](#contacts) | `Contact_InsertSorted` `0x0033d718`, `PhysicsBody_ResolveContacts` `0x0033d9d8`, `PhysicsVec_BackOffPlane` `0x0033d7b8`, `Vec_RemoveNormalPart` `0x0033d870`, `PhysicsVec_Bounce` `0x0033d8f0` | confirmed (code) |
 | [Shape pairs](#dispatch) | 14 overlap functions `0x00345d58`-`0x00347148`, 16 sweep functions `0x00343cd8`-`0x00345d38`, 2 ray functions `0x003459f0`, `0x00345b90`, the mesh functions `0x003473b8`, `0x003473c0`, `0x003473c8`, `0x00347c08`, `0x00348530`, `0x00348a50` | confirmed (code) |
 | [Mesh tests](#mesh-tests) | `CollisionMesh_BeginShapeQuery` `0x00347170`, `MeshContacts_SortByFraction` `0x00347300`, the working triangle `0x00343a90`, `0x00343b20`, `0x00343c30`, `0x00343c90` | confirmed (code) |
@@ -113,7 +113,7 @@ ten bone shapes are the strike shapes; their bones, sizes and events are on [Com
 | `+0x40` | flags: `0x80000000` dirty (re-pose and re-sort on the next update), `0x800` update every time, `0x801` sweep the moved shape against the bodies in the update, `0x8000` no slide on contact; the starting values per kind are below |
 | `+0x44` | the owner's type mask, from owner vtable `+0x20` (`0x40` a human); queries filter by it |
 | `+0x50` | pending push-out, added to the next sweep's move |
-| `+0x60` | scale per axis (1.0; the player's capsule 1.4286, [Characters](characters.md#walls)) |
+| `+0x60` | scale per axis (1.0; the player's capsule 1.4286, [Characters](characters-ground.md#walls)) |
 | `+0x70` | the sweep's "could not move" counter |
 | `+0x74` | vtable |
 
@@ -161,7 +161,8 @@ What stops a walker at a parked car is the **collision mesh**. Confirmed (runtim
 (`+0x40` = 0) and a mesh triangle with flags `0xf00d` (enabled, type bits 2 and 3, top value 15) and material 0. The
 car code has no collision-mesh call, so these triangles are inferred to be part of the level's static mesh at the
 car's place; bit 2 is the player-climbable bit ([Collision](collision.md#triangles)), which matches the climb onto a
-car ([Characters](characters.md#climb)). The shells themselves are on [Characters](characters.md#car-shells).
+car ([Characters](characters-traversal.md#climb)). The shells themselves are on
+[Characters](characters-traversal.md#car-shells).
 
 The create functions take the first free body of a pool (owner 0), set the owner (`0x00341a68`) and flags, and add it to
 the body vector and the sorted list (`IPhysics_AddBody` `0x00340668`); the free functions undo that
@@ -331,7 +332,7 @@ the code that stores them, and each handler was decompiled. Confirmed (code):
 
 | Owner | Handler | Answers |
 | --- | --- | --- |
-| human (vtable `0x0053f088`) | `Human_OnContact` `0x00219d50` | `0`, `0x20000` or `0x20001` (slide) against the level and objects ([Characters](characters.md#walls)); `1` against a body with type flag `0x200`; against another human, `1` after a strike (`Strike_Contact` `0x0021b290`, its vtable `+0x104`), otherwise **`4`**, with `0x20000` added while airborne |
+| human (vtable `0x0053f088`) | `Human_OnContact` `0x00219d50` | `0`, `0x20000` or `0x20001` (slide) against the level and objects ([Characters](characters-ground.md#walls)); `1` against a body with type flag `0x200`; against another human, `1` after a strike (`Strike_Contact` `0x0021b290`, its vtable `+0x104`), otherwise **`4`**, with `0x20000` added while airborne |
 | world object (`0x005453a0`) | `WorldObject_OnContact` `0x00394050` | **`2`** against a body or a steep surface (normal z ≤ 0.7), `0x20002` on a floor, `0x10003` on a floor once settled ([Settling](#settle)); `0x10000` (after `0x00393e20`) while its byte `+0x10d` or `+0x10e` is clear; `0x40000` when, thrown, it hits a human; `0` or `5` (no branch) when `0x003951d8` gives it a human (its holder, inferred) |
 | car (`0x00544c08`) | `Car_OnLanded` `0x00389e08` | always **`2`**; with the level it also clears airborne and zeroes the velocity ([Cars](#cars)) |
 | glass pane (`0x00544ed0`), light task (`0x00545138`), particle system (`0x00545660`), scene (`0x005458c8`) ([Task classes](tasks.md#classes)) | `0x004dac20` | `0` |
@@ -418,7 +419,7 @@ setter, the contact handler and the bounce, so every value below is the game's o
 | Ticks after the drop | What happens |
 | --- | --- |
 | 0 | the drop: velocity set to 0 (`Human_DropHeld` clears `+0x10c`, so the [holder start](#movers) is not used); flags `0x4000000` airborne |
-| 1 | first update: `vz` = −0.2613 (dt 1/60: the drop's message 28 stamps the object's last-update time a tick back, `Task_SendMessage28` `0x002296c0`, [Characters](characters.md#code-index)) |
+| 1 | first update: `vz` = −0.2613 (dt 1/60: the drop's message 28 stamps the object's last-update time a tick back, `Task_SendMessage28` `0x002296c0`, [Characters](characters/index.md#code-index)) |
 | 3-19, every 2 | `vz −= 0.5226` (dt 1/30, interval 2 ticks), then the sweep moves it |
 | 20 | floor contact at −5.49 m/s: `WorldObject_OnContact` starts the settle (axis mask 5) and answers `0x20002`; the bounce (`e` = 0.1, the type's `+0x88`, [Attributes](#attributes)) gives +0.5379 m/s |
 | 22-28, every 2 | while settling, `vz` drops by only **0.2613** per update (+0.2766, +0.0153, −0.2459, −0.5072, −0.7685): the update's dt is 1/60, not 1/30 (the step's settle turn re-poses the object every tick, which inferred stamps its time) |
@@ -462,7 +463,7 @@ So `+0x14` is the classic sort-and-sweep bound: the step's refresh keeps it from
 
 ### Sweeping a body {#sweep}
 
-`PhysicsBody_Sweep` (`0x0033e278`, [Characters](characters.md#walls) for the human's use) moves a body by
+`PhysicsBody_Sweep` (`0x0033e278`, [Characters](characters-ground.md#walls) for the human's use) moves a body by
 `v × dt` plus its pending push-out (divided by the owner's push weight, attribute 7, unless body flag `0x1000`;
 cleared on every call), in up to three passes. A pass, confirmed (code):
 
@@ -500,9 +501,9 @@ set** (`0x0033e738`) and a stopping contact asked for it (not a level triangle w
 humans). Among humans only a player's body has `0x400` (world objects' bodies have it too, `0x80000500`):
 `Human_CreatePhysicsBody` (`0x0021ce08`) sets it with `+0x60` = `+0x64` = 1.4286 for a brain of type 0, as does
 `Human_MakePlayer` (`0x00229c40`); `Human_ReleasePlayer` (`0x0022a2a8`) clears it and puts `+0x60` / `+0x64` back to
-1.0. So a slide brakes the player ([Characters](characters.md#walls)) but never an AI, whose control asks for its speed
-again each update. Confirmed (code); the AI's unchanged speed is confirmed (runtime) on
-[Characters](characters.md#slopes).
+1.0. So a slide brakes the player ([Characters](characters-ground.md#walls)) but never an AI, whose control asks for its
+speed again each update. Confirmed (code); the AI's unchanged speed is confirmed (runtime) on
+[Characters](characters-ground.md#slopes).
 
 #### Human contacts {#human-contacts}
 
@@ -514,7 +515,7 @@ What a walking human meets of another human, confirmed (code) at the cited addre
   (`PhysicsSweep_CapsuleCapsule` `0x00343cd8`) uses each capsule's own radius (shape `+0x40`, 0.35 × the class
   scale, already scaled by `PhysicsBody_ApplyHumanScale`), **without** body `+0x60` or a second scale: centres meet at
   the sum of the radii (about 0.69 m for the player and a man of scale 1), and the two vertical ranges must overlap
-  during the move. The level's sphere radius ([Characters](characters.md#walls)) plays no part.
+  during the move. The level's sphere radius ([Characters](characters-ground.md#walls)) plays no part.
 - **Who is skipped.** A candidate without `BLOCKHUMANS` (`0x4`) in its body flags, one sharing the mover's non-zero
   group, and a disabled capsule. Human owners never refuse (owner vtable `+0x110` is `0x004dac30`, which returns 1),
   and the brain is not read, so a scripted or `BrDead` human is met like any other.
@@ -609,7 +610,7 @@ never touches. Filled by `IPhysics_Construct`, confirmed (code):
 
 | Per type | 1 box | 2 sphere | 3 capsule | 4 segment | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| mesh sweep `+0xe0` | `0x00348530` | `0x00348a50` | `PhysicsMesh_SweepCapsule` `0x00347c08` (one sphere, [Characters](characters.md#walls)) | none | confirmed (code) |
+| mesh sweep `+0xe0` | `0x00348530` | `0x00348a50` | `PhysicsMesh_SweepCapsule` `0x00347c08` (one sphere, [Characters](characters-ground.md#walls)) | none | confirmed (code) |
 | mesh overlap `+0xf4` | `0x003473b8` (returns 0) | `0x003473c8` | `0x003473c0` (returns 0) | none | confirmed (code) |
 | ray `+0x108` | `0x00345b90` | none | `0x003459f0` | none | confirmed (code) |
 
@@ -660,7 +661,7 @@ where a unit names a quirk: `Sweep_BoxTriangle`'s zero-speed reset gives fractio
 | `0x0034bbe8` and `0x0034b040`, `0x0034b3b8`, `0x0034b600`, `0x0034b7b0`, `0x0034baf0` | `Sweep_SphereOrientedBox` and its corner, edge, edges, face-edge and frame steps | moving sphere against an oriented box (also the camera's tilt over obstacles) | confirmed (code) |
 | `0x0034c430` | `Sweep_BoxBox` | moving oriented box against an oriented box: only whether they meet, no fraction (`PhysicsSweep_BoxBox` writes fraction 0, [Unit 13](physics-kernels.md#u13-box-box)) | confirmed (code) |
 | `0x0034d5d0`, `0x0034aa60`, `0x0034ab28` | `Sweep_BoxTriangle`, `BoxTri_ProjectBox`, `BoxTri_ProjectTriangle` | moving box against a triangle, axis by axis | confirmed (code) |
-| `0x0034ee60` (`0x0034ee40` calls it) | `Sweep_SphereTriangle` | moving sphere against a triangle: the face, then an edge (`0x0034e3b8`) or a corner's region (`0x0034e5d0`); what it does with a sphere that already overlaps is on [Characters](characters.md#slopes) | confirmed (code) |
+| `0x0034ee60` (`0x0034ee40` calls it) | `Sweep_SphereTriangle` | moving sphere against a triangle: the face, then an edge (`0x0034e3b8`) or a corner's region (`0x0034e5d0`); what it does with a sphere that already overlaps is on [Characters](characters-ground.md#slopes) | confirmed (code) |
 | `0x0034e3b8`, `0x0034e5d0`, `0x0034dff8`, `0x0034d938`, `0x0034e120` | `SphereSweep_Edge`, `SphereSweep_VertexRegion`, `SphereSweep_EdgeCylinder`, `Ray_InfiniteCylinder`, `Segment_SphereIntersect` | its edge steps: an edge already within the radius (fraction 0), else the edge as a cylinder; past a corner, one of the corner's two edges | confirmed (code) |
 | `0x0034e840`, `0x0034edd0` | `PointTriangle_DistanceSq`, `SphereTriangle_Penetration` | the distance of a point to a triangle; a sphere's depth into it | confirmed (code) |
 
@@ -668,8 +669,8 @@ where a unit names a quirk: `Sweep_BoxTriangle`'s zero-speed reset gives fractio
 
 None of this is in the step; it is listed so an implementer knows where each motion lives. Confirmed (code):
 
-- **Humans** sweep their body in `Human_Move` at 30 Hz ([Characters](characters.md#walls)). The physics world gives
-  the shape and the sweep; no body pushes another here.
+- **Humans** sweep their body in `Human_Move` at 30 Hz ([Characters](characters-ground.md#walls)). The physics world
+  gives the shape and the sweep; no body pushes another here.
 - **World objects** integrate in their update: by default `Task_Integrate` ([Tasks](tasks.md#task-object)),
   explicit Euler with dt = phase time − time of the last update (`0x003a1688`), so dt is the wheel interval.
   Airborne and with a body (`0x00395a10`), velocity first: `vz −= 15.68 × dt`, then `PhysicsBody_Sweep` with that
@@ -694,8 +695,8 @@ half-sizes at record `+0x00` and its offset at `+0x10`, box 2 at `+0x20` and `+0
 and clears the car's object flag `0x200`. Confirmed (code). The car never sweeps its body: it is moved with the car
 (pose on the next update) and is what objects and the camera meet. A walking human does not meet it: his layers
 leave the car's body out, and he meets and climbs the car's shell in the level's mesh ([layers](#layers),
-[Characters](characters.md#car-shells)). When a car explodes, box 1 loses 0.25 m of height ([Cars](cars.md#explode)).
-`Car_OnLanded` (`0x00389e08`) answers 2 to every contact; on the level it also
+[Characters](characters-traversal.md#car-shells)). When a car explodes, box 1 loses 0.25 m of height
+([Cars](cars.md#explode)). `Car_OnLanded` (`0x00389e08`) answers 2 to every contact; on the level it also
 clears the airborne flag, zeroes the velocity and sends message `0x3f` (kind 5) with the point (0, 1.84, 0.02) in the
 car's
 frame to the task whose handle is at `[0x005971b4] + 0x14`: the shared `sub_car_damage`, which makes a `sub_hood_smoke`
@@ -959,10 +960,11 @@ What differs, each marked in the code:
 
 - Hangout railing vault (checklist item 46: the vault plays but the player stays put): not explained by the door
   flags above, which only doors and panes write. The climb's pass-through (materials 30, 31 and 122 ignored while
-  record `+0x08` has `0x40`, [Characters](characters.md#walls)) and the railing triangles' material in `level95.lev`
-  are where to look next; not traced in this pass. A lead: of the clubhouse's triangles (z between −200 and −185 in
-  `level95.lev`) only 2 are material 122 and 7 material 31, against 137 of 7 (`LAMPOST`) and 56 of 3 (`STEEL`), so a
-  railing built of another material keeps its wall during the vault unless the original passes it some other way.
+  record `+0x08` has `0x40`, [Characters](characters-ground.md#walls)) and the railing triangles' material in
+  `level95.lev` are where to look next; not traced in this pass. A lead: of the clubhouse's triangles (z between −200
+  and −185 in `level95.lev`) only 2 are material 122 and 7 material 31, against 137 of 7 (`LAMPOST`) and 56 of 3
+  (`STEEL`), so a railing built of another material keeps its wall during the vault unless the original passes it some
+  other way.
 
 - How an object of a type with `axis` 0 comes to rest: nothing in its contact handler clears airborne, so it would
   keep bouncing at interval 2 (inferred); the throwable ones (`dyn_lawnchair_a`, `_b`) break on their first contact

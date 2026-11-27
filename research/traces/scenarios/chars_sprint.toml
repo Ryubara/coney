@@ -1,0 +1,23 @@
+# The sprint and stamina (level99 street, slot 1 = library state street-end-run): L2 and the stick at 100 % up from a
+# standstill, the speed-up to the sprint and the drain; stamina is then set to 6 once (the street is too short to
+# drain 135 points), so it runs out at the sprint's speed: the flag clears and the speed drops, L2 held on; L2 let go
+# for a run (the refill), L2 again (a sprint at once), the stick let go (the run stop) and the standing refill.
+# Research: docs/research/characters-traversal.md#sprint.
+description = "level99 street: sprint from rest, run out of stamina, refill in a run and standing"
+research = "docs/research/characters-traversal.md#sprint"
+input = "chars_sprint.txt"
+updates = 330
+fields = ["player", "held"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick"]
+setup = [
+  # Once, mid-sprint: stamina to 6, so the drain reaches 0 within the street.
+  { address = "rec(player) + 0x14a", type = "s16", value = "6", frame = 50, until = 50 },
+]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3", "--start", "75.155,41.1354,0.2231,91.909,5.3,89.854"]
+settle = 300

@@ -1193,7 +1193,7 @@
   depth: thorough
   notes: >-
     Layout and clamps confirmed (code) at 0x002288c0; the record is read through 0x00222b78. The meanings given in the
-    argument list are confirmed (code) at the cited readers (combat.md and characters.md); the others are not traced.
+    argument list are confirmed (code) at the cited readers (combat.md and characters/index.md); the others are not traced.
     The record has 31 fields; Coney needs all of them stored even before their meaning is known.
   usage: {chunks: 6, calls: 311, boot: true, mission1: false, result_used: false}
 
@@ -2080,7 +2080,7 @@
   calls:
     - {addr: 0x00228af8, name: Cfg_SetCharacterClass}
   args:
-    - {name: charType, lua: number, ctype: int, desc: "Character type id (the number HuCreate takes); record at 0x00684620 + charType x 0x1ac ([Characters](../../research/characters.md#classes))."}
+    - {name: charType, lua: number, ctype: int, desc: "Character type id (the number HuCreate takes); record at 0x00684620 + charType x 0x1ac ([Characters](../../research/characters-classes.md#classes))."}
     - {name: v2, lua: number, ctype: int, desc: "Byte at +0x11a (3 for the Warriors)."}
     - {name: v3, lua: number, ctype: int, desc: "Byte at +0x11b: the category (14 for the Warriors), which also picks the CfgCharClassAttribs record for the starting money."}
     - {name: speedClass, lua: number, ctype: int, desc: "Speed class (see CfgSpeedClass), byte at +0x11c."}
@@ -2155,7 +2155,7 @@
     - {name: class, lua: number, ctype: int, desc: "Speed class 0-4; record at 0x006b6548 + class x 0x18."}
     - {name: speeds, lua: table, elem: number, count: 6, written_back: true, desc: "Six speeds in metres per second: base, (no getter), walk, jog, run, sprint."}
   description: >-
-    Fills one speed class's six speeds ([Characters](../../research/characters.md#speed-classes)). In play the humans'
+    Fills one speed class's six speeds ([Characters](../../research/characters-classes.md#speed-classes)). In play the humans'
     own per-human values are used instead while 0x005101e0 is set.
   evidence: confirmed-code
   depth: thorough

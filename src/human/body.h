@@ -9,13 +9,13 @@
 
 // The human's body sizes: the walking sphere the physics world sweeps against the walls (src/physics/) and the
 // larger sphere a player is pushed out of walls with while airborne, with the materials a climb passes through.
-// Research: docs/research/characters.md#walls
+// Research: docs/research/characters-ground.md#walls
 
 namespace coney::human {
 
 /// A player's physics body `+0x60` (and `+0x64`), read in the street save: 0.5 / 0.35. The player's walking sphere is
 /// the shape's radius (0.35 × scale) × this × the scale again: 0.4704 m for Rembrandt
-/// (docs/research/characters.md#walls).
+/// (docs/research/characters-ground.md#walls).
 inline constexpr float kPlayerBodyFactor = 1.4286F;
 
 /// The body's sizes the debug menus may edit while the game runs (docs/guides/debug-menu.md#tunables). Each defaults
@@ -48,7 +48,7 @@ inline constexpr std::array<std::uint8_t, 3> kFenceMaterials{kMaterialLowFence, 
 /// A player's walking sphere's centre height above the feet: its radius plus 0.05.
 [[nodiscard]] float playerWalkingCentreHeight(float scale);
 /// An AI human's walking sphere radius for a human of `scale`: its body `+0x60` is 1.0, so 0.35 × scale × the scale
-/// again, as the player's (0.357 m for level99's bums at 1.01; docs/research/characters.md#walls, step 1).
+/// again, as the player's (0.357 m for level99's bums at 1.01; docs/research/characters-ground.md#walls, step 1).
 [[nodiscard]] float aiWalkingRadius(float scale);
 
 /// What a triangle is to the walking sweep, before the move and the sphere's side are known

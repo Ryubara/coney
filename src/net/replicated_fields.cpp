@@ -78,8 +78,8 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(HumanField::Count)> kHu
      .min = kPositionMin,
      .max = kPositionMax},
     {.name = "heading", .encoding = FieldEncoding::Angle, .bits = kHeadingBits},
-    // Health and its maximum are s16 in the original's per-player record (docs/research/characters.md) and a lethal hit
-    // takes health below 0 (combat-reactions.md#damage: 3 to -20), so the whole s16 range, exact.
+    // Health and its maximum are s16 in the original's per-player record (docs/research/characters/index.md) and a
+    // lethal hit takes health below 0 (combat-reactions.md#damage: 3 to -20), so the whole s16 range, exact.
     {.name = "health", .encoding = FieldEncoding::Integer, .bits = 16, .min = -32768.0F, .max = 32767.0F},
     {.name = "healthMax", .encoding = FieldEncoding::Integer, .bits = 16, .min = -32768.0F, .max = 32767.0F},
     // **Coney stand-in**: 12 bits hold every anim id Coney plays today (under 1000); the client's world (#555), which
@@ -112,7 +112,7 @@ constexpr std::array<FieldSpec, static_cast<std::size_t>(HumanField::Count)> kHu
     {.name = "moveStyle", .encoding = FieldEncoding::Bool, .bits = 1},
     // Which character the human is: a Character List index plus one, 0 for none (character_id.h). The list the original
     // keeps in its resource manager has 543 records, so 10 bits are fixed by its data
-    // (docs/research/characters.md#files).
+    // (docs/research/characters-appearance.md#files).
     {.name = "character",
      .encoding = FieldEncoding::Integer,
      .bits = 10,

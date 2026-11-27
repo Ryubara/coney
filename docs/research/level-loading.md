@@ -290,7 +290,7 @@ and a one-off count):
 ### The Object List's models {#the-object-list}
 
 The **Object List** of `warriors.glr` finds an object type's model and texture dictionary by its name, as the
-[Character List](characters.md#files) does for characters; its record layout is on
+[Character List](characters-appearance.md#files) does for characters; its record layout is on
 [WAD contents](formats/wad-contents.md#object-list).
 
 **The models** (all 1,406, disc check): 1,400 are clumps of one atomic and one geometry, like the level file's
@@ -547,7 +547,7 @@ What happens between choosing STORY and controlling Rembrandt, in order. The fro
     - `CfgSetStatValue`, six `SetDynamicAnimation` clips (loaded later by the resource manager);
     - **the player**: `AddWarriors2` creates the gang `Warriors2` and `HuCreate("Rembrandt", 32, {-284.4, 120.4,
       0.3}, 0, ..., 1, gang)`, then Ash as player 2's character (index 2); `player = Warriors.Rembrandt`. The human is
-      made, snapped to the ground and bound to pad 0 here ([Characters](characters.md#creation)); its model is
+      made, snapped to the ground and bound to pad 0 here ([Characters](characters/index.md#creation)); its model is
       attached once its resources are resident;
     - `preLoadFile("level99_combat", "Checkpoint1")`: an asynchronous read; the file manager delivers it later, and
       then the chunk runs and `Checkpoint1` is called ([Scripts](scripting.md#bindings-the-front-end-and-the-script-system-depend-on));
@@ -629,7 +629,7 @@ for the order; the roles of callees not named elsewhere are inferred from what t
 3. **The simulation**, when `0x005e536c` is 1 (during normal play; what clears it is not traced):
     - `0x00249b98` walks the 60 human slots and calls each live one's slot `+0xc4` (`0x0023bdb8`), which only marks
       the character's skeleton for an update (`+0x255` = 1, `0x00177240(+0xd8, 0)`); the humans themselves update
-      as task-manager objects ([Characters](characters.md#update));
+      as task-manager objects ([Characters](characters/index.md#update));
     - the task manager's phase 0 (`0x003a31a8`): the game objects' updates (inferred: the characters among them);
     - `CollisionMesh_UpdateEmpty` ([Collision](collision.md)).
 4. **`WorldManager_Update`** and the resource manager's update (`0x00186068`), when `0x0050c694` is set (it is in
@@ -650,10 +650,10 @@ for the order; the roles of callees not named elsewhere are inferred from what t
   pressed; a type-`0xc` camera gets a 6.5 s fade (`0x0018c988`). When it reaches 0, 1 leads to `0x00155408` or
   `0x001557f8` (chosen by `0x0041d110`) and 2 to `0x0015d420(0)`. **1 is a failure**: a player who falls more than
   20 m below the collision mesh sets it, with `+0x152` = 2, when the game-state flags `+0x150` have bit 1
-  (`Human_StateUpdate`, `0x002403e8`, [Characters](characters.md#ground)). **2 is a level completed**: `0x00160d00`
-  sets it together with the next level's index (`+0x56dc` + 1) for the load mode. Confirmed (code) for the writers;
-  that 1 means "mission failed" in general is inferred from this one writer. A story mission's normal ending does
-  not pass through here: its final scene pushes the mission-complete mode directly
+  (`Human_StateUpdate`, `0x002403e8`, [Characters](characters-ground.md#ground)). **2 is a level completed**:
+  `0x00160d00` sets it together with the next level's index (`+0x56dc` + 1) for the load mode. Confirmed (code) for the
+  writers; that 1 means "mission failed" in general is inferred from this one writer. A story mission's normal ending
+  does not pass through here: its final scene pushes the mission-complete mode directly
   ([Scripts: how the mission ends](scripting.md#level99)), and messages stop reaching Lua once this state is not 0.
 - **Any other value** (3 is what `MenuLoadLevel` sets, `LevelFlow_LoadLevelByName` `0x00160d78`): `Update` returns
   0, which pops the mode; its `Exit` then unloads the level ([Leaving gameplay](#unload)), and `UnloadLevel`
@@ -889,7 +889,7 @@ Coney's play mode plays a level with Rembrandt (`--play-level`). Details on
 [The streamed world](world.md#coneys-implementation).
 
 **Mode 1 and the player's start** (2026-10-05), written from [From STORY to the player in level99](#story-into-level99)
-and [Characters](characters.md#level-starts):
+and [Characters](characters-players.md#level-starts):
 
 - **`GameplayMode`** (`src/gamemodes/gameplay_mode.h`) is mode 1. The level flow selects the chosen level and pushes it
   ([Front end](frontend.md#coneys-implementation)). Its `enter` is `InitLevel` in the order that matters for the
@@ -929,7 +929,7 @@ Coney's choices and stand-ins for mode 1:
   REASON` and plays on.
 - `HuCreate` does not snap the position or write it back into the script's table (no collision is loaded while the
   script runs; the play mode snaps it); the unused string and the flag are not kept.
-- The player is drawn as the model his type names ([Characters](characters.md#coneys-implementation)), Rembrandt
+- The player is drawn as the model his type names ([Characters](characters/index.md#coneys-implementation)), Rembrandt
   when there is none.
 - A creation whose position is not a table of three numbers is kept without a position and counts as a start only
   when a teleport places it; otherwise the play mode falls back to its stand-in.

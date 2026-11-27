@@ -929,9 +929,9 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   until the play mode has loaded the level and made the humans; `release` then makes each `HuCreate`d human (player 1
   bound to the player's brain, the others AI humans of the class `aiConfigFrom` gives their type, drawn with their own
   model, `repo:src/gamemodes/play_level_cast.cpp`) and replays the held calls in order. A later `HuCreate` of player 1
-  is an AI human until `HuChangePlayerGang` hands player 1 over ([Characters](../characters.md#coneys-implementation)),
-  and `GangDelete` takes every member but player 1 out of the world at once ([Deleting a gang](../ai-gangs.md#gang-delete)).
-  A teleport moves an AI human;
+  is an AI human until `HuChangePlayerGang` hands player 1 over
+  ([Characters](../characters/index.md#coneys-implementation)), and `GangDelete` takes every member but player 1 out of
+  the world at once ([Deleting a gang](../ai-gangs.md#gang-delete)). A teleport moves an AI human;
   `GetPosition` and the look-ats read a human's live position.
 - **Scripted goals**: `MoveToFlagGoal` (offset target, radius, the face-the-flag turn, a new move each time one ends
   short, message 8 and the gang's notice through `FlagServices`), `TurnAction` (look-at, to a point, to a heading;
@@ -987,7 +987,7 @@ next step after the health runs out, with no attacker. **Stand-in:** event 1 (da
 the strike: `Human_DealDamage`, `0x0021d680`, confirmed (code)) is sent at the brains' step after a human's health
 falls, with the nearest other human that can fight as the attacker and the damage as its value; while it is sent the hit
 timer (record `+0x108`) reads as the brains last saw it, since the original's event comes before the hit's own timer is
-written ([Power class fields](../characters.md#power-class-bytes)). Only the timer is set back: the stun or
+written ([Power class fields](../characters-classes.md#power-class-bytes)). Only the timer is set back: the stun or
 knockdown that the victim's update starts for the same hit is still seen by the late event's busy test (`gangEvent`,
 `repo:src/ai/brain_events.cpp`), where the original's strike-time event sees neither. The fall is measured before the
 gangs' tactics run,
@@ -1378,7 +1378,7 @@ Build in this order; each step is testable without the game.
 - Whether `CfgSetDefaultFollowSlotSet` (`Cfg_SetDefaultFollowSlotSet` `0x00294788`) rewrites the slots of
   formations in use or only the pool's defaults for formations made later.
 - A turf box's radius `+0x40` (Coney: half its diagonal). Human `+0x333` is the detail level from the camera
-  distance ([Characters](../characters.md#ai-locomotion)).
+  distance ([Characters](../characters-locomotion.md#ai-locomotion)).
 - The hold's damage (`0x00510acc`) of `GoalGrabTarget` and the boxing attack weights (`0x00511120`) of
   `GoalBoxer`.
 - Which sound each hub goal line plays (`beckon`, `store_greet`, `phone_gang`, `dead_meat`, `cower`, `mug_grunt`).

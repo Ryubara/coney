@@ -85,7 +85,7 @@ std::expected<Message, Error> readLoadLevelBody(BitReader& in) {
         *reason > static_cast<std::uint8_t>(LoadReason::Join)) {
         return fail(ErrorCode::Invalid, "network level order has an unknown reason");
     }
-    // The original's checkpoints count from 1 (docs/research/characters.md#level-starts).
+    // The original's checkpoints count from 1 (docs/research/characters-players.md#level-starts).
     if (*checkpoint == 0) {
         return fail(ErrorCode::Invalid, "network level order names checkpoint 0");
     }

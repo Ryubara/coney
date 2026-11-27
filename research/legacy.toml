@@ -84,16 +84,6 @@ evidence = 20
 address-resolve = 1
 history = 2
 
-["docs/research/characters.md"]
-front-matter = 1
-skeleton = 2
-verified = 1
-evidence = 98
-address-resolve = 6
-copied = 1
-history = 10
-length = 1799
-
 ["docs/research/chunk-system.md"]
 front-matter = 1
 verified = 1

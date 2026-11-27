@@ -22,7 +22,7 @@ class SceneAssets;
 
 /// A dictionary resource's first texture, converted for drawing, with the dictionaries that own it (null when the
 /// first dictionary holds none). A character's and an object's dictionary holds the texture their untextured material
-/// is drawn with (docs/research/characters.md#files, docs/research/level-loading.md#the-object-list).
+/// is drawn with (docs/research/characters-appearance.md#files, docs/research/level-loading.md#the-object-list).
 struct FirstTexture {
     std::vector<TextureDictionary> dictionaries;
     rw::Texture* texture = nullptr;

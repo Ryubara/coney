@@ -547,8 +547,8 @@ TEST_CASE("a hit with reactions off takes health and plays no reaction", "[ai]")
 }
 
 TEST_CASE("a hit keeps an AI busy for his class's +0x32 ms; a player is never kept busy so", "[ai]") {
-    // Expected: characters.md#power-class-bytes, confirmed (code): Human_ApplyPendingDamage (0x00265f70) sets the
-    // record's +0x108 to the game time + the class's +0x32 for a human whose brain kind is not 0, and Human_IsBusy
+    // Expected: characters-classes.md#power-class-bytes, confirmed (code): Human_ApplyPendingDamage (0x00265f70) sets
+    // the record's +0x108 to the game time + the class's +0x32 for a human whose brain kind is not 0, and Human_IsBusy
     // (0x00228258) is true while the game time is below it. 750 ms is class 2's on normal
     // (references/power-classes.md).
     coney::combat::PowerClass power = coney::ai::kWarriorPowerClass;
@@ -584,10 +584,10 @@ TEST_CASE("a hit keeps an AI busy for his class's +0x32 ms; a player is never ke
 
 TEST_CASE("a hit's own event 1 reads the hit timer from before the hit, so a gang soldier hit once fights back",
           "[ai]") {
-    // Expected: characters.md#power-class-bytes, confirmed (code): Strike_Contact (0x0021b290) calls Human_DealDamage
-    // (0x0021d680), which sends event 1 through Human_OnEvent (0x0021d480) at the strike, before the victim's update
-    // writes record +0x108 (Human_ApplyPendingDamage 0x00265f70). So GangBrain_OnEvent (0x00304fa8) finds the hit
-    // soldier not busy and fights the hitter, though the hit then keeps him busy for +0x32 ms.
+    // Expected: characters-classes.md#power-class-bytes, confirmed (code): Strike_Contact (0x0021b290) calls
+    // Human_DealDamage (0x0021d680), which sends event 1 through Human_OnEvent (0x0021d480) at the strike, before the
+    // victim's update writes record +0x108 (Human_ApplyPendingDamage 0x00265f70). So GangBrain_OnEvent (0x00304fa8)
+    // finds the hit soldier not busy and fights the hitter, though the hit then keeps him busy for +0x32 ms.
     coney::combat::PowerClass power = coney::ai::kWarriorPowerClass;
     power.busyAfterHitMs = 750;
     Scene scene;
@@ -838,7 +838,7 @@ TEST_CASE("the brains' variation moves every brain's and the gangs' rolls, the s
 
 TEST_CASE("a player released to the AI takes his class's brain, loses his goals, actions and pad, keeps fighting flags",
           "[ai][revive]") {
-    // Expected: characters.md#players, confirmed (code)
+    // Expected: characters-players.md#players, confirmed (code)
     namespace flag = coney::human::flag;
     Scene scene;
     Brain& player = scene.playerBrain();

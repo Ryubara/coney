@@ -941,7 +941,7 @@ address = 0x00243848
 name = "Human_UpdateControl"
 page = "ai-moving.md#ai-gaits"
 level = "confirmed-code"
-note = "the level is from [characters.md#ai-locomotion](characters.md#ai-locomotion)"
+note = "the level is from [characters-locomotion.md#ai-locomotion](characters-locomotion.md#ai-locomotion)"
 coney = "src/human/human.h:Human::aiCombatWalk"
 status = "legacy"
 

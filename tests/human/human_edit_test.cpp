@@ -74,7 +74,7 @@ struct TuningGuard {
 
 TEST_CASE("a speed scale on a human multiplies the speed of every gait it walks, runs and sprints at",
           "[human][debug]") {
-    // Expected: unverified, #723 (Coney's own debug tooling; the base speeds are characters.md#speed-classes)
+    // Expected: unverified, #723 (Coney's own debug tooling; the base speeds are characters-classes.md#speed-classes)
     const TestCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 400.0F, 0.0F, 400.0F));
     Human human = spawnHuman(character, mesh.get(), Vec3{200.0F, 5.0F, 0.0F});
@@ -194,7 +194,7 @@ TEST_CASE("an animation rate scales how fast every clip plays and how far its ro
 }
 
 TEST_CASE("scaling a human scales its collision with the mesh unless it is switched off", "[human][debug]") {
-    // Expected: unverified, #723 (the walking sphere's size is characters.md#walls; the toggle is Coney's own)
+    // Expected: unverified, #723 (the walking sphere's size is characters-ground.md#walls; the toggle is Coney's own)
     const TestCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
     Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});

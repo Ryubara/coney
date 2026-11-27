@@ -1,0 +1,5 @@
+# The stick straight up from standing (the run start, then the run), triangle tapped at the run, the stick held through
+# the jump and the landing. Frames are updates of 1/30 s.
+40 stick left 0 100
+70 tap triangle
+130 stick left 0 0

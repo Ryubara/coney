@@ -118,8 +118,8 @@ stereo (kind 3) the stereo is not below the human's feet. Confirmed (code) at `0
 
 **Triangle pressed** (command `0xa`, [Commands](combat/index.md#commands)) runs `Player_TriangleAction` **after** a climb
 is tried for a pad-controlled human (an AI's triangle runs it alone), and before the jump and the drop
-([Triangle with something in hand](characters.md#triangle-held)); an earlier reading here had it before the climb.
-Confirmed (code) at `0x0027c120`, `0x002811f0`:
+([Triangle with something in hand](characters-traversal.md#triangle-held)); an earlier reading here had it before the
+climb. Confirmed (code) at `0x0027c120`, `0x002811f0`:
 
 1. Nothing while a move or a state blocks it (state mask `0x7bf9e9f7ff0`, record `+0x08` mask `0x2fefefff`).
 2. A human with no player number standing by a cuffed player uses a key (item 6) if either holds one
@@ -162,7 +162,7 @@ then sets state `0x20000000`. Confirmed (code) at the cited addresses.
 2. Its push weight (attribute 7, vtable `+0xe4`) becomes 1e9, so nothing shoves it. State `0x8000` (block) is
    cleared and `0x20000` (cuffed) set.
 3. Movement style `0x11` is pushed (`Human_PushMoveStyle`, `0x00253ed0`), which puts 320 `ANIM_ARRESTED_IDLE` in
-   anim slots 0 and 11 ([Anim slots](characters.md#anim-slots)). The action (record `+0x14`) becomes 0.
+   anim slots 0 and 11 ([Anim slots](characters-animation.md#anim-slots)). The action (record `+0x14`) becomes 0.
 4. `Brain_OnArrested(brain, 1)` (`0x0028c5d8`): the brain's actions are cleared, its target dropped and its goals
    popped down to a goal of type `0x41` if it has one. Then the human gets **event 17** `{+0x00 the other human of a
    grab (record +0xc4), +0x04 1}`, which a script handler receives as `(self, other, 1)`
@@ -1061,7 +1061,7 @@ values, `0x002c0ca8`). So in the shipped game the level stays 0 (inferred) and *
 
 Every crime function of the human code (`0x002176b8`-`0x00288000`) that the sections above do not walk through, in
 address order, with what it does. Names are ours, as in the local Ghidra project, where each function also carries a
-plate comment. The rest of the human code is indexed on [Characters](characters.md#code-index).
+plate comment. The rest of the human code is indexed on [Characters](characters/index.md#code-index).
 
 ### Mini-games, mugging and tags {#code-crimes}
 

@@ -3,11 +3,15 @@ kind: topic
 system: ai
 owns:
   functions: [
-    "0x002221e0", "0x00243848", "0x0024fbf8", "0x00250708", "0x00250760", "0x00251070", "0x002511c8", "0x002513a8",
-    "0x00251680", "0x002517b0", "0x00251890", "0x00251a70", "0x00288cc8", "0x00289010", "0x00289138", "0x00289ed0",
-    "0x0028a248", "0x0028aac0", "0x0028ab28", "0x0029a8c0", "0x0029aa88", "0x0029b4b8", "0x0029b6d8", "0x0029e5d8",
-    "0x0029eb38", "0x002fb9e8", "0x002fc158", "0x002fc330", "0x002fc420", "0x002fc560", "0x002fc5c0", "0x002fcd90",
-    "0x002fcf50", "0x002fcff0", "0x002fd068", "0x002fd128", "0x002fd158", "0x002fd4e8", "0x004eef40",
+    "0x002221e0", "0x00243848", "0x0024fbf8", "0x00250708", "0x00250760", "0x00251070", "0x002510a8", "0x00251188",
+    "0x002511c8", "0x002513a8", "0x00251680", "0x002516d0", "0x002516f0", "0x00251710", "0x00251718", "0x00251768",
+    "0x002517b0", "0x00251820", "0x00251890", "0x00251a00", "0x00251a70", "0x00253068", "0x00253118", "0x00253170",
+    "0x00253190", "0x002531b8", "0x002531c0", "0x00253268", "0x00253350", "0x00253398", "0x002533b8", "0x00253480",
+    "0x002534a8", "0x002534c0", "0x002534d0", "0x00253528", "0x00253538", "0x00253560", "0x00253598", "0x002535c0",
+    "0x00288cc8", "0x00289010", "0x00289138", "0x00289ed0", "0x0028a248", "0x0028aac0", "0x0028ab28", "0x0029a8c0",
+    "0x0029aa88", "0x0029b4b8", "0x0029b6d8", "0x0029e5d8", "0x0029eb38", "0x002fb9e8", "0x002fc158", "0x002fc330",
+    "0x002fc420", "0x002fc560", "0x002fc5c0", "0x002fcd90", "0x002fcf50", "0x002fcff0", "0x002fd068", "0x002fd128",
+    "0x002fd158", "0x002fd4e8", "0x004eef40",
   ]
 ---
 # AI moving: gaits, path planning, routes and steering {#moving}
@@ -29,8 +33,8 @@ skipping what it can see past, climbing and jumping on the links that say so. Ea
 walk round the human most in the way, and the corner speed slows a runner before a turn too tight for his gait.
 
 What this page is not: the brain and its goals are on [AI humans](ai/index.md); the human's own locomotion, clips and
-speeds on [Characters](characters.md#ai-locomotion); the level's path data on [Level loading](level-loading.md#path-data);
-holes, waypoint claims and jump legs on [AI pathing](ai-pathing.md).
+speeds on [Characters](characters-locomotion.md#ai-locomotion); the level's path data on [Level
+loading](level-loading.md#path-data); holes, waypoint claims and jump legs on [AI pathing](ai-pathing.md).
 
 ## Map
 
@@ -53,6 +57,42 @@ The entry points are the move actions' Start and Update, which `Brain_RunActions
 ([AI humans](ai/index.md#update-goals)), and `Human_UpdateControl`, the human's control. Confirmed (code) at
 `0x0028fe28` and `0x00243848`.
 
+### The path search's helpers {#path-search-code}
+
+`0x002510a8`-`0x002535c0` (inferred from where the rows lie; each row is graded): the request slots, the node lists,
+the open heap and the closed list that `Route_AStar` uses ([Path planning](#path-planning)).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x002510a8` | `NavNode_IsLinkBlocked` | Whether a node's link list holds a link to the given node with a negative cost (a blocked edge). | confirmed (code) |
+| `0x00251188` | `PathRequests_Clear` | Clears the 32 path-request slots (0x110 bytes each, at 0x006cc340 downward). | confirmed (code) |
+| `0x002516d0` | `PathNode_SetIndex` | Stores a node pointer as its index (offset from the node array 0x006ca21c / 32) at slot i of a list. | confirmed (code) |
+| `0x002516f0` | `PathNode_GetAt` | The node pointer at slot i of a list (the node array 0x006ca21c + index x 32). | confirmed (code) |
+| `0x00251710` | `Ptr_Set` | Writes a word: a one-line setter. | confirmed (code) |
+| `0x00251718` | `PathNode_IsEdgeBlocked` | Whether the edge between list slots i and i+1 is blocked (NavNode_IsLinkBlocked). | confirmed (code) |
+| `0x00251768` | `PathNodes_ResetParents` | Sets every path node's parent (+0x1c) to none (0xffff) before a search. | confirmed (code) |
+| `0x00251820` | `Path_DistanceCost` | The A* cost of a distance: length x 16, as a u16. | confirmed (code) |
+| `0x00251a00` | `PathNodes_ClearOpenMarks` | Clears the +0x18 mark of every node on the open list after a search. | confirmed (code) |
+| `0x00253068` | `PathSearch_ResetCount` | Global 0x005105b0 = 0. | confirmed (code) |
+| `0x00253118` | `PathSearch_InitLists` | Static initialiser: the open heap, the closed list and two small lists of the path search. | confirmed (code) |
+| `0x00253170` | `PathSearch_StaticInit` | Calls PathSearch_InitLists(1, 0xffff). | confirmed (code) |
+| `0x00253190` | `PathHeap_Construct` | Constructs the open heap (count 0). | confirmed (code) |
+| `0x002531b8` | `PathHeap_Clear` | Count = 0. | confirmed (code) |
+| `0x002531c0` | `PathHeap_Push` | Pushes a node on the binary min-heap keyed by the node's cost (+0x16), at most 1000. | confirmed (code) |
+| `0x00253268` | `PathHeap_PopMin` | Removes and returns the cheapest node of the heap. | confirmed (code) |
+| `0x00253350` | `PathHeap_Find` | The heap position of a node, or 0xffff. | confirmed (code) |
+| `0x00253398` | `PathHeap_IsEmpty` | Count is 0. | confirmed (code) |
+| `0x002533b8` | `PathHeap_SiftUp` | Moves a node whose cost dropped up the heap. | confirmed (code) |
+| `0x00253480` | `PathList_Construct` | Constructs the closed list. | confirmed (code) |
+| `0x002534a8` | `PathList_Get` | Entry i of the closed list. | confirmed (code) |
+| `0x002534c0` | `PathList_Clear` | Count (+6000) = 0, last (+0x1772) = -1. | confirmed (code) |
+| `0x002534d0` | `PathList_Add` | Appends a node to the closed list, at most 3000. | confirmed (code) |
+| `0x00253528` | `PathList_Count` | The closed list's count. | confirmed (code) |
+| `0x00253538` | `PathPair_Construct` | Constructs a three-short record (zeroed). | confirmed (code) |
+| `0x00253560` | `PathPair_Clear` | Zeroes the three shorts. | confirmed (code) |
+| `0x00253598` | `PathCursor_Construct` | Constructs a two-short record (zeroed). | confirmed (code) |
+| `0x002535c0` | `PathCursor_Clear` | Zeroes the two shorts. | confirmed (code) |
+
 ## Data
 
 | Field | Meaning | Evidence |
@@ -65,8 +105,8 @@ The entry points are the move actions' Start and Update, which `Brain_RunActions
 | brain `+0x284` | why the last move failed: 1 no polygon or route, 2 or 4 an edge, 3 stuck (`MoveAction_CheckStuck` `0x002fc330`) | confirmed (code) |
 
 The human's control (`Human_UpdateControl` `0x00243848`) moves him from those fields: speeds, turn limits, start and
-turn clips are on [Characters](characters.md#ai-locomotion). Confirmed (code) at `0x00243848`. The sector record is
-under [Neighbour sectors](#neighbour-sectors).
+turn clips are on [Characters](characters-locomotion.md#ai-locomotion). Confirmed (code) at `0x00243848`. The sector
+record is under [Neighbour sectors](#neighbour-sectors).
 
 ## Behaviour
 
@@ -80,7 +120,8 @@ addresses cited.
   `Brain_SetMoveSpeed` (`0x0028ab28`) stores any speed directly (FollowFormation, DevilRun, RunCarrot set speeds
   between gaits).
 - `Human_SpeedForGait` (`0x0022ae40`, jump table `0x0055bec0`) reads the human's anim record (`+0xd4`) speeds
-  ([Speed classes](characters.md#speed-classes)) without the `+0x3a4` multiplier; a human with no anim record gets 0.
+  ([Speed classes](characters-classes.md#speed-classes)) without the `+0x3a4` multiplier; a human with no anim record
+  gets 0.
 - `Human_GaitForSpeed` (`0x00221760`) maps back: 5 at or above the sprint speed, 4 at or above the run, 3 the jog, 2
   the walk, else 0. The move action and the steering use it to tell standing from moving.
 
@@ -94,8 +135,8 @@ addresses cited.
 | 5 | sprint | `+0x17c` | 10.245 |
 | (stance) | fight-stance walk | `+0x164` | 3.429 (clip 380; 372 for an AI with turn boost ≤ 0, [brain bytes](ai-gangs.md#brain-boosts)) |
 
-The speeds are each class's own clip speeds; Rembrandt's were read at run time ([Characters](characters.md)). What a
-civilian's move looked like in a run: [How this was checked](#runtime-civilian-move).
+The speeds are each class's own clip speeds; Rembrandt's were read at run time ([Characters](characters/index.md)). What
+a civilian's move looked like in a run: [How this was checked](#runtime-civilian-move).
 
 **The gait each goal asks for** (the gait argument of its move actions; confirmed (code) at each Process):
 
@@ -124,7 +165,7 @@ civilian's move looked like in a run: [How this was checked](#runtime-civilian-m
 6. **Far away** (detail level `+0x333` 2 or more, [The enemy scan](ai-fights.md#enemy-scan)) and no held flag of `0x310c0880`:
    velocity = `w` along brain `+0x110`, and the heading is **set** to `+0x110` at once (no turn limit, no clips).
 7. Otherwise the turn ([Turning](#ai-turn)). **Stopped** (`w` = 0): when the heading error is above 15° and no
-   flag is held, a turn on the spot starts (`Human_StartTurnOnSpot`, the clip is [Human](characters.md)'s); within
+   flag is held, a turn on the spot starts (`Human_StartTurnOnSpot`, the clip is [Human](characters/index.md)'s); within
    15° nothing turns. A rear grabber turns at twice the limit and walks.
 
 ### Turning {#ai-turn}
@@ -136,10 +177,11 @@ A human with no pad (per-player `+0x1b` = 0) is moved by `Human_UpdateControl` (
 update it turns the human's heading toward brain `+0x110` by at most `Human_MaxTurn` (`0x002213d8`), **linearly**:
 the eased turn of `CfgTurnRate` (`0x00510308`-`0x00510310`) is read only on the pad path, in the air and while
 grabbing, so it does not apply to the AI. While moving faster than a jog, a large heading change may instead start a
-turn clip (`0x0025c5b8`, [Human](characters.md)); the switch `0x005104e8` is 1. Confirmed (code).
+turn clip (`0x0025c5b8`, [Human](characters/index.md)); the switch `0x005104e8` is 1. Confirmed (code).
 
-`Human_MaxTurn` picks one word of a pair at `0x005101b0` ([Movement constants](characters.md#movement-constants)):
-the player's word for a pad human whose brain is not dead, the **AI word** otherwise. In order:
+`Human_MaxTurn` picks one word of a pair at `0x005101b0` ([Movement
+constants](characters-locomotion.md#movement-constants)): the player's word for a pad human whose brain is not dead, the
+**AI word** otherwise. In order:
 
 | State | Pair | AI word per update | Boost applies |
 | --- | --- | --- | --- |
@@ -157,8 +199,9 @@ the player's word for a pad human whose brain is not dead, the **AI word** other
 the [turn boost](ai-gangs.md#brain-boosts) `+0x0b` (× (b + 1), or ÷ (1 − b) when negative); the other rows do not. At 30
 Hz a walking AI turns 360°/s, a running one 120°/s, unboosted. Confirmed (code); the AI words are `.data` values that
 `CfgSetTurnRates` does not change: it writes only each pair's first (player) word, so its sixth argument is the
-player's stance turn (`0x005101d8`), and an AI's is always `0x005101dc`'s 24° ([Characters](characters.md#ai-locomotion)).
-The rows are tested top down, so a wounded AI turns 0.375° per update even in a fight stance.
+player's stance turn (`0x005101d8`), and an AI's is always `0x005101dc`'s 24°
+([Characters](characters-locomotion.md#ai-locomotion)). The rows are tested top down, so a wounded AI turns 0.375° per
+update even in a fight stance.
 
 ### The move action {#move-action}
 
@@ -195,7 +238,7 @@ a "flag kind `0x12`" bit.
        (`Vec_DistSq`, height included), → brain `+0x284` = 3, done; else the point is saved again and the count
        restarts. A climb up a slope counts its height. Confirmed (code). An AI walking a heap too steep for floor
        is not braked by its wall slides and covers about 1.1 m per 60 updates there
-       ([Characters](characters.md#slopes)), well clear of the test.
+       ([Characters](characters-ground.md#slopes)), well clear of the test.
 - **The speed and the legs** (confirmed (code) at `0x002fc778`-`0x002fc7a8` and `0x002fc988`-`0x002fc998`):
     - **Where the speed comes from.** Just before the route step, the update takes its speed: the steering override
       (`+0x34`) while its count `+0x32` is non-zero, else the action's own `+0x40`. That one value goes by pointer to
@@ -228,7 +271,7 @@ a "flag kind `0x12`" bit.
   any is left. `GoalMoveToFlag`'s delay is `Random_IntRange(0, 250)` ms, so a draw within one update (about 33 ms)
   starts the move in the same think with no gap, and a longer one leaves up to 7 thinks at speed 0; the control
   slows a walk to rest in two updates and restarts it at once at the walking speed
-  ([Characters](characters.md#ai-locomotion)).
+  ([Characters](characters-locomotion.md#ai-locomotion)).
 
 ### The corner speed {#corner-speed}
 
@@ -555,9 +598,9 @@ Confirmed (code) at `0x0029ad04`-`0x0029adb8`:
 
 The **climb** (`0x0029b848`): each update it aims at the waypoint (brain `+0x90`, heading `+0x110`, `+0x11c` = 1),
 turns the body to it (`0x0021b100`) and calls `Climb_TryStart` (`0x002826f0`), the player's own climb
-([Characters: Climbing](characters.md#climb)): the forward probes must find a climbable face. On success the route
-state `+0x0c` = 3 (kind 8) or 4 (kind `0x80`), brain `+0x11d` = 1, and the clips play; otherwise it runs on at gait 4
-(`0x0028aac0`) and tries again, giving up (move done) after 31 failed updates (counter `+0x13`, cleared when the
+([Characters: Climbing](characters-traversal.md#climb)): the forward probes must find a climbable face. On success the
+route state `+0x0c` = 3 (kind 8) or 4 (kind `0x80`), brain `+0x11d` = 1, and the clips play; otherwise it runs on at
+gait 4 (`0x0028aac0`) and tries again, giving up (move done) after 31 failed updates (counter `+0x13`, cleared when the
 waypoint changes). When the **next** leg is 8 or `0x80`, a human with flag `0x2` (human `+0xe0`, a fast climber,
 `HuSetFastClimber`) whose gait (human `+0x1a8`) is above 3 starts the climb early, within 4.5 m (3D) of the **next**
 waypoint (`Route_TryClimbNear` `0x0029b9b0`): on success the state is 3, the route moves on at once
@@ -609,9 +652,9 @@ exists only while the record is rebuilt. `Sectors_Construct` (`0x0029e250`) clea
 point from the owner minus the owner's heading, wrapped to [0, 2π). **Sector *k* is centred on *k* × 45°**, with
 edges at ±22.5° (0.3927 rad), so 0 is straight ahead. Both angles are the game's headings (`Vec_HeadingFromTo` and
 `Quat_Heading` inside `Heading_RelativeTo` `0x00386798`), which grow from `+y` toward `+x`, clockwise seen from above
-and toward the human's right ([Characters: Step control](characters.md#step-control) gives the proof). So the index
-rises **clockwise**: 2 is his right, 4 behind, 6 his left. Confirmed (code). A bearing exactly on an edge goes to the
-lower index on the right half (0 to π) and to the higher index on the left half. A port whose headings grow
+and toward the human's right ([Characters: Step control](characters-locomotion.md#step-control) gives the proof). So the
+index rises **clockwise**: 2 is his right, 4 behind, 6 his left. Confirmed (code). A bearing exactly on an edge goes to
+the lower index on the right half (0 to π) and to the higher index on the left half. A port whose headings grow
 anticlockwise (the turn angle θ about `+z`, minus the game's heading) must number the sectors the other way round, or
 negate its bearings first; otherwise every "first try *s* + 1" below leans the wrong way.
 
@@ -879,7 +922,7 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
 
 A standing AI in a mover's way steps aside one sector (45°) with a **GiveWay** action. Confirmed (code) at
 `Brain_GiveWayTo` (`0x00289ed0`) unless marked. The step itself, its clips and how it ends are on the Human side:
-[Characters: Step control](characters.md#step-control).
+[Characters: Step control](characters-locomotion.md#step-control).
 
 **Entry.** `Brain_PushAside(mover, stander, point, step)` (`0x0028a248`) is the only way in. The mover's path is the
 line through `point` along `step`. Its seven callers, confirmed (code) at the call addresses:
@@ -955,7 +998,7 @@ becomes the target and is fought off. A world object in the way is handled by th
 1. The stander's brain **type** `+0x04` is not 0 (not a player's brain), or its "dead" byte `+0x09` is set. Confirmed
    (code) at `0x00289f1c`-`0x00289f2c`.
 2. **Neither is a threat to the other.** `Human_IsThreatTo` (`0x00222a48`) must be false both ways. It is
-   `Brain_IsThreat` on the two brains ([Characters: Step control](characters.md#step-control) gives the exact
+   `Brain_IsThreat` on the two brains ([Characters: Step control](characters-locomotion.md#step-control) gives the exact
    test).
 3. **The stander is idle under its control.** `Human_IsIdleUnderControl` (`0x00225390`) needs these:
    - the control is `Human_UpdateControl` or the step control;
@@ -1024,8 +1067,8 @@ humans than points, else `0x00299b50`), then up to 5 passes swap pairs whose pat
   instead of playing turn clips 395-398. `Brain::update` clears the move first (`Brain::stopMove`, as `Brain_StopMove` starts
   `Brain_UpdateGoals`), so the human follows only what this update's goals and actions wrote. In a fight stance (the
   fighter locked onto a target) a human no pad drives runs `Human::aiCombatWalk`
-  ([An AI's locomotion](characters.md#ai-locomotion)), and so does a player whose pad a script took (per-player
-  `+0x1b` clear, his brain set dead), so a script's turn steers a player locked on a foe, as the workouts'
+  ([An AI's locomotion](characters-locomotion.md#ai-locomotion)), and so does a player whose pad a script took
+  (per-player `+0x1b` clear, his brain set dead), so a script's turn steers a player locked on a foe, as the workouts'
   GoalMoveToFlag at the heavy bag needs ([Workouts](workouts.md#coney)): the facing turns to the brain's heading
   at the AI's own stance
   word (24°, `human::aiStanceTurn`, which the player's tuning does not change) whenever the move asks for a speed, at
@@ -1084,9 +1127,9 @@ humans than points, else `0x00299b50`), then up to 5 passes swap pairs whose pat
   "he is nearer the shared node than I am", the human the claim would keep. **Left out**: the waypoint claims and
   queues.
 - **Giving way** (`repo:src/ai/give_way.h`, [Giving way](ai-moving.md#giving-way); the step in `repo:src/human/step_control.h`,
-  [Characters: Step control](characters.md#step-control)): `pushAside` (yes while a GiveWay lives, no inside another
-  push-aside, both brains marked for the call) and `giveWayTo` (an AI's or a "dead" brain, no threat either way, the
-  stander idle under his control); the first free sector gets a `GiveWayAction` on the facing + sector × 45° after
+  [Characters: Step control](characters-locomotion.md#step-control)): `pushAside` (yes while a GiveWay lives, no inside
+  another push-aside, both brains marked for the call) and `giveWayTo` (an AI's or a "dead" brain, no threat either way,
+  the stander idle under his control); the first free sector gets a `GiveWayAction` on the facing + sector × 45° after
   0-124 ms, dashing (turn boost + 1) from a player at a jog or faster, else the human nearest in each sector is asked
   in turn. `TakeStepAction` stops the move and enters the human's step control, which waits while he is busy, then
   plays one clip (the fight stance's shuffle while locked on, the step, or the dash with a boost) holding `0x80000`

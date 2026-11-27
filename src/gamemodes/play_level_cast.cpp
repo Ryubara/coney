@@ -2,7 +2,7 @@
 // The level simulation's cast: the humans a level's scripts create (`HuCreate`), made AI humans in the scene once the
 // level has loaded, each playing the character its type's model names (the platform draws him as it) and fighting as
 // its class, its brain bound to the handle the scripts name it by (docs/research/ai/index.md#in-coney,
-// docs/research/characters.md#creation); and the fighters a sandbox layout or the debug menus spawn.
+// docs/research/characters/index.md#creation); and the fighters a sandbox layout or the debug menus spawn.
 #include <array>
 #include <expected>
 #include <format>
@@ -158,8 +158,8 @@ ai::Brain* PlayLevelSimulation::castHuman(const HumanCreation& human) {
 }
 
 void PlayLevelSimulation::takePlace(const ai::Brain& to) {
-    // **Coney's stand-in** for HuChangePlayerGang's hand-over (docs/research/characters.md#level99-handover): the
-    // original makes the chosen AI human player 1 and leaves the old one in the world as an AI until its gang is
+    // **Coney's stand-in** for HuChangePlayerGang's hand-over (docs/research/characters-players.md#level99-handover):
+    // the original makes the chosen AI human player 1 and leaves the old one in the world as an AI until its gang is
     // deleted. Coney has one player human, so he takes the chosen human's place instead: put where it stands (placed
     // there, the camera following him there by its own rules), standing afresh as the chosen human does (nothing of the
     // old body's fight carried over) with its meters as Human_MakePlayer leaves them (its own health scaled by its

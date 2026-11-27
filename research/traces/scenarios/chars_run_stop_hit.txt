@@ -1,0 +1,3 @@
+# run_stop's straight run, released at frame 97 instead of 100. Frames are updates of 1/30 s.
+40 stick left 0 100
+97 stick left 0 0

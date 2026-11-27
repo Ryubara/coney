@@ -67,7 +67,8 @@ enum class Want : std::uint8_t {
 };
 
 // A pad driven by what player 1 is doing: it steers him toward the goal through the shown camera's heading (the stick
-// moves the player relative to the camera, docs/research/characters.md#input) and presses what the test asks for.
+// moves the player relative to the camera, docs/research/characters-locomotion.md#input) and presses what the test asks
+// for.
 class ReviveDriver final : public coney::InputSource {
   public:
     explicit ReviveDriver(std::function<const coney::human::Player*()> player) : m_player(std::move(player)) {}

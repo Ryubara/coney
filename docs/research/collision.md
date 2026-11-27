@@ -122,7 +122,7 @@ Flags, confirmed (code) at `0x00350778` and `0x00351468` unless stated:
 | --- | --- |
 | 0 (`0x0001`) | **enabled**; set on every triangle at load, switched by `CollisionMesh_SetEnabledInBox` |
 | 1 (`0x0002`) | **two-sided** |
-| 2-10 (`0x07fc`) | type bits: a query skips a triangle when `flags & 0xfff & mask & ~0x801` is non-zero. Known meanings: bit 2 (`0x0004`) **climbable by a player** and bit 7 (`0x0080`) **climbable** (by anyone), read from a ray's result by `Climb_TryStart` (`0x002826f0`, [Characters](characters.md#climb)); bit 4 (`0x0010`) **shadow ground**, where a human may hide ([Stealth](stealth.md#shadow-ground)); bit 5 (`0x0020`) sets human byte `+0x5b7` under the feet (`0x002195e0`). The rest are not traced |
+| 2-10 (`0x07fc`) | type bits: a query skips a triangle when `flags & 0xfff & mask & ~0x801` is non-zero. Known meanings: bit 2 (`0x0004`) **climbable by a player** and bit 7 (`0x0080`) **climbable** (by anyone), read from a ray's result by `Climb_TryStart` (`0x002826f0`, [Characters](characters-traversal.md#climb)); bit 4 (`0x0010`) **shadow ground**, where a human may hide ([Stealth](stealth.md#shadow-ground)); bit 5 (`0x0020`) sets human byte `+0x5b7` under the feet (`0x002195e0`). The rest are not traced |
 | 11 (`0x0800`) | testable while disabled, if the query's mask has `0x800` |
 | 12-15 | a value 1 to 15; never read by the queries on this page (meaning unknown). The physics sweep of a walking body reads bits 14-15 as an index (`0x00347c08`, not traced) |
 
@@ -145,7 +145,7 @@ from the names). **Disc check:** 31 ids occur in the level meshes: 0-7, 12, 13, 
 Materials that change movement, confirmed (code): a triangle of material **30** (`LOW_FENCE`) is climbable whatever
 its flags (`Climb_TryStart`), and while a human climbs over (record `+0x08` `0x40`), its body's contacts with
 materials **30**, **31** (`OPAQUE_FENCE`) and **122** (`RAILING`) are ignored (`0x00219d50`), so it passes through
-the fence ([Characters](characters.md#walls)). In `level99`'s mesh (1,718 triangles, read at runtime) the
+the fence ([Characters](characters-ground.md#walls)). In `level99`'s mesh (1,718 triangles, read at runtime) the
 material-30 triangles stand away from the start room. Material 2 (`GLASS`) has no movement rule: a pane's triangles
 are walls until it breaks, and only the line-of-sight ray of a strike excludes them
 ([Moving into a pane](objects.md#pane-break)).
@@ -284,8 +284,8 @@ to −197.58 (material 5). Read from the disc, 2026-10-10:
   and 7 of material 31 (the balcony's edge faces below the railings, facing the room below). None is climbable.
 
 So a climb over a hangout railing meets material 7, which `Human_OnContact` does not skip; the original passes it
-because no sweep runs while climbing over ([Characters](characters.md#climb)). Outside the clubhouse, the level's
-climbable short faces (0.69 to 1.7 m tall, flag `0x80` or `0x4`) are of materials 0, 1, 3, 5, 6, 12, 13, 15, 41,
+because no sweep runs while climbing over ([Characters](characters-traversal.md#climb)). Outside the clubhouse, the
+level's climbable short faces (0.69 to 1.7 m tall, flag `0x80` or `0x4`) are of materials 0, 1, 3, 5, 6, 12, 13, 15, 41,
 47, 116 and 122, so most are not fence materials either (material 30's 96 wall triangles there are all 1.7 m
 tall or more).
 
@@ -312,12 +312,13 @@ tall or more).
 - Unit tests on synthetic meshes cover a floor, a one- and a two-sided triangle, a wall from either side, the type
   bits, the mask, disabled triangles, material exclusion, a triangle listed in many cells, a long diagonal ray across
   the grid, marked ground and refused data.
-- The human (`src/human/human.*`, [Characters](characters.md#coneys-implementation)) stands, lands and spawns with
+- The human (`src/human/human.*`, [Characters](characters/index.md#coneys-implementation)) stands, lands and spawns with
   `rayCast` (mask 0; while climbing over, the fence materials 30, 31 and 122 excluded), and is pushed out of walls by
   its own nearest-triangle test rather than `spherePush` (`src/human/body.*`): the walking sphere is kept a radius
   from the closest point of each wall triangle (`|n.z|` ≤ 0.65) that the move goes into and that is not under 0.25 m
   tall, so it cannot slip past a convex edge, which the face-only test allowed. Its climbs read the triangles' flags
-  `0x4` and `0x80` and material 30 ([Climbing](characters.md#climb)). The follow camera casts with mask `0x200`.
+  `0x4` and `0x80` and material 30 ([Climbing](characters-traversal.md#climb)). The follow camera casts with mask
+  `0x200`.
 - `src/raycast/collision_builder.h` (Coney's own, for [the sandbox](../guides/sandbox.md)) writes the six chunks
   above from a list of triangles and loads them through `CollisionMesh::build`, so a built mesh passes the same
   checks as a level's. Shared corners become one vertex. The grid's cells are the size asked for; the matrix maps the
@@ -351,7 +352,7 @@ the original also takes any object with a box at `+0x10` / `+0x20`.
 - **The cameras' and characters' use** (partly answered): characters stand on the ground by a ray 1.0 m above the
   feet, 1.5 m down, each update, and land on triangles with `n.z` > 0.65; walls for walking bodies are the physics
   code's own swept sphere against triangles with `|n.z|` ≤ 0.65, skipping those under 0.25 m tall
-  ([Characters](characters.md#walls)); climbs read flags `0x4` and `0x80` and material 30
-  ([Characters](characters.md#climb)). The masks and exclusion lists of the other `WorldManager_RayCast` callers
-  are not listed.
+  ([Characters](characters-ground.md#walls)); climbs read flags `0x4` and `0x80` and material 30
+  ([Characters](characters-traversal.md#climb)). The masks and exclusion lists of the other `WorldManager_RayCast`
+  callers are not listed.
 - **`ChangeCollision`**: whether the Lua binding reaches `0x0034fba0`.

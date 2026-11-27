@@ -12,8 +12,8 @@ a material 30 fence 19.04 m ahead of the fence save) are exactly where `level99`
 What it takes for Coney's player to *feel* like the original's: the same scripted analog inputs were played in the
 original and in Coney, from the same spot, and the per-update traces of position, speed, heading, clip and camera were
 compared. This page lists every difference beyond noise with the original's value and its evidence, and which Coney
-value or rule to change. The mechanics themselves are on [Characters](characters.md) and [Camera](camera.md), which
-were corrected in place where the runs contradicted them.
+value or rule to change. The mechanics themselves are on [Characters](characters/index.md) and [Camera](camera.md),
+which were corrected in place where the runs contradicted them.
 
 ## Method
 
@@ -129,8 +129,8 @@ run read per update; the turn values are also confirmed (code), below.
   the idle (35, 60 and 80 % sticks), as Coney does.
 - **Walls.** The player's physics body has `+0x60` = `+0x64` = 1.4286 (= 0.5 / 0.35) in the save, and its shape's
   radius `+0x40` is 0.3395 (0.35 × 0.97); times the scale again (0.97) makes the walking sphere 0.4705 m
-  ([Characters](characters.md#walls)), and the measured stops were 0.480 m from the face (a straight wall, an angled
-  wall and the fence). After a blocked move the velocity is the slid
+  ([Characters](characters-ground.md#walls)), and the measured stops were 0.480 m from the face (a straight wall, an
+  angled wall and the fence). After a blocked move the velocity is the slid
   velocity, so the next update's speed starts from its length: running at 20° off a wall's normal settled at
   `0.8 k / (1 − k)` with `k` = sin 20° (0.42 m/s measured, 0.416 predicted) until the speed fell under a quarter of
   the sneak-walk speed (0.396 m/s) and the idle played. Confirmed (runtime), slot 1; the body fields read from the
@@ -140,7 +140,7 @@ run read per update; the turn values are also confirmed (code), below.
 
 ## Coney's implementation
 
-The fixes below are in Coney ([Characters](characters.md#coneys-implementation),
+The fixes below are in Coney ([Characters](characters/index.md#coneys-implementation),
 [Camera](camera.md#coneys-implementation)); the values are from Coney's own trace (`--trace`,
 [Running Coney](../guides/running.md#tracing)) on the sandbox's parkour lane with the same kind of scripted stick:
 
@@ -206,9 +206,10 @@ The fixes in order of how much they change the feel:
 7. **Small timings**: no body speed on the update a start clip begins; start clips one update shorter; root motion
    × the body scale (0.97) from the clip's first moving update, with no ramp; jump allowed during a start clip; land
    on the first update that starts with the feet 0.17 m or more below the floor, with the horizontal speed kept on
-   that update ([Characters](characters.md#falling)); the fence climb's first clip ends against the fence
+   that update ([Characters](characters-ground.md#falling)); the fence climb's first clip ends against the fence
    (about 0.48 m), and its clock runs from the climb's first update, through the two snap updates, with no fade-in (11
-   updates in all); the first update of 441 and 442 does not move the body ([Characters](characters.md#climb)).
+   updates in all); the first update of 441 and 442 does not move the body
+   ([Characters](characters-traversal.md#climb)).
 
 ## Open questions
 
@@ -216,7 +217,8 @@ The fixes in order of how much they change the feel:
   ([Running Coney](../guides/running.md#tracing)).
 - **The 0.25 m step at runtime** (answered): a test step made in the street's collision mesh was walked onto at
   0.10-0.245 m in one update and stopped the player from 0.255 m, at the distances the 0.4705 m sphere predicts
-  with about 0.006 m clearance ([Characters](characters.md#walls)). A real kerb in a later level would corroborate it.
+  with about 0.006 m clearance ([Characters](characters-ground.md#walls)). A real kerb in a later level would
+  corroborate it.
 - **The auto-follow option's default** (answered): 1 for both bytes, so the auto-centre rule runs on a fresh boot
   ([Details](#details-behind-the-table)); the default rule (`0x0012a400`) runs only after the options menu turns it
   off. Still open: what a new profile saves. The "not seen" reading at `level99` checkpoint 1 is the blocked-view
@@ -230,15 +232,15 @@ The fixes in order of how much they change the feel:
   original's ray skips near the look-at point ([Camera](camera.md#street)), and the fence is skipped by material: the
   camera's rays exclude 30, 122 and 107 ([Camera](camera.md#collision)).
 - **The landing update** (answered at runtime): the feet go on below the floor until an update starts 0.17 m or more
-  under it, so the 0.19 m dip is real ([Characters](characters.md#falling)); why 0.17 m in the code is open.
+  under it, so the 0.19 m dip is real ([Characters](characters-ground.md#falling)); why 0.17 m in the code is open.
 - **The circling rate** (answered): about 191°/s running and 143°/s walking in the original, the rule's turn plus the
   leash's drag ([Camera](camera.md#street)); Coney's 190°/s matches. The 122°/s compared before was the rule's share.
 - **The slow first updates** (answered): the original's start clips and run stop move the body at the clip's root
-  speed from their first moving update, with no ramp ([Characters](characters.md#locomotion)). Coney's were slow
-  because it lerped from a clip's frame 0, whose root speed is 0; the original's cursor already stands on the key of
-  the nearest frame, and every per-update speed of the three clips fits that reading (inferred from the runtime
+  speed from their first moving update, with no ramp ([Characters](characters-locomotion.md#locomotion)). Coney's were
+  slow because it lerped from a clip's frame 0, whose root speed is 0; the original's cursor already stands on the key
+  of the nearest frame, and every per-update speed of the three clips fits that reading (inferred from the runtime
   speeds, [Coney's implementation](#coneys-implementation)). Still open: which way the original's half-frame ties
   go, and why.
 - **The fence climb's first clip** (answered: 440 is 11 updates in the original because it starts the clip with the
-  move to the start point and does not fade it in, [Characters](characters.md#climb); Coney now does the same and
-  gives 11). Still open: why the first update of 441 and 442 moves nothing.
+  move to the start point and does not fade it in, [Characters](characters-traversal.md#climb); Coney now does the same
+  and gives 11). Still open: why the first update of 441 and 442 moves nothing.

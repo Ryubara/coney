@@ -9,7 +9,7 @@
 // human's anim slots, and the slots each style writes over the defaults. A held object pushes its type's anim set
 // (`CfgObj` `+0x87`) as a style, so a two-handed object (set 4) is carried with the barrel idle and walks; the hidden
 // style `0x14` is the stealth walk.
-// Research: docs/research/objects.md#two-handed, docs/research/characters.md#anim-slots,
+// Research: docs/research/objects.md#two-handed, docs/research/characters-animation.md#anim-slots,
 // docs/research/stealth.md#sneaking
 
 namespace coney::human {

@@ -297,8 +297,9 @@ TEST_CASE("a human's meshes carry his bones, weights and texture for the GPU ren
           "[platform][humans][scene-assets][skinning]") {
     // Expected: ../engine/gpu-renderer.md#skinning: the GPU renderer skins a human from his converted meshes, so both
     // (the body and the blood layer) carry each vertex's four bones and weights as the model has them
-    // (packSkinVertices(), docs/research/characters.md#character-geometry), and the character's texture is held with
-    // them, so his materials name it (as the GL3 renderer draws his atomic with it); all of it goes when he does.
+    // (packSkinVertices(), docs/research/characters-appearance.md#character-geometry), and the character's texture is
+    // held with them, so his materials name it (as the GL3 renderer draws his atomic with it); all of it goes when he
+    // does.
     auto engine = startHeadless();
     auto model = coney::characters::decodeCharacterModel(
         coney::test::characterClump(coney::test::testCharacterFields()).span(), coney::test::testBoneOffsets().span());

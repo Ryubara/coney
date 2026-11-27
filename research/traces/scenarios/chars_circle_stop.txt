@@ -1,0 +1,27 @@
+# run_circle's run and circle (stick up, then held left), let go; then 11 more times the stick held left from standing
+# for 60 updates and let go for 20. Frames are updates of 1/30 s.
+40 stick left 0 100
+70 stick left -100 0
+130 stick left 0 0
+150 stick left -100 0
+210 stick left 0 0
+230 stick left -100 0
+290 stick left 0 0
+310 stick left -100 0
+370 stick left 0 0
+390 stick left -100 0
+450 stick left 0 0
+470 stick left -100 0
+530 stick left 0 0
+550 stick left -100 0
+610 stick left 0 0
+630 stick left -100 0
+690 stick left 0 0
+710 stick left -100 0
+770 stick left 0 0
+790 stick left -100 0
+850 stick left 0 0
+870 stick left -100 0
+930 stick left 0 0
+950 stick left -100 0
+1010 stick left 0 0

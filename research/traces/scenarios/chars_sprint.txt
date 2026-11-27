@@ -1,0 +1,8 @@
+# Sprint from rest (L2 and the stick at 100 % up), stamina set to 6 at update 50 by the setup; L2 held 1.5 s past
+# the drain's end, then let go for a run; L2 again for a sprint, the stick let go (the run stop), then standing.
+10 press l2
+10 stick left 0 100
+110 release l2
+150 press l2
+158 stick left 0 0
+160 release l2

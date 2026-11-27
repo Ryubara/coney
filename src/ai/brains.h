@@ -59,7 +59,7 @@ class Brains {
     /// longer counts him standing) and his brain. His leaving the scripts, his gang and the world is the caller's
     /// (ai::AiHumans::destroy()). Nothing for a human with no brain. **Not ported** (#1640): the rest of
     /// `Human_Destroy` (`Human_CreditDefeat`'s statistics and event 2, the held object, sounds, icons, the spawner).
-    /// Research: docs/research/characters.md#out-of-world
+    /// Research: docs/research/characters-ground.md#out-of-world
     /// @orig 0x0021c7c8 Human_Destroy (unknown)
     void destroy(human::Human& human);
     /// `human`'s brain (his first in slot order, when he has two); null when he has none. Constant time: the slot is
@@ -91,7 +91,7 @@ class Brains {
     /// (event 18, the attacker unknown). **Coney choices**: the books are kept every step (the original counts
     /// attackers every 300 updates); event 18 is sent at the brains' next step after the health runs out (in the
     /// original `Brain_OnKnockedOut`, `0x0028c3b0`, sends it from `Human_KnockOut` with the foe, as destroy() does;
-    /// docs/research/characters.md#out-of-world) and gives no attacker.
+    /// docs/research/characters-ground.md#out-of-world) and gives no attacker.
     /// @orig 0x00293b28 Brains_Update (unknown)
     void update();
     /// What human::Humans runs at the brains' place: update().
@@ -155,9 +155,9 @@ class Brains {
     // Event 1 for each human whose health fell since the last step, about the nearest other human that can fight, the
     // damage as its value; while it is sent his hit timer (record +0x108) reads as this function last saw it.
     // **Coney stand-in**: the original sends it at the strike (Human_DealDamage 0x0021d680) with the attacker, before
-    // the victim's update applies the hit and writes the timer (docs/research/characters.md#power-class-bytes). So it
-    // sends the health lost, not the hit's damage: a lethal hit's is what health was left (a downed human's run-out
-    // health counts as 0, though he keeps 1), and a hit on a downed human, which takes nothing, sends none.
+    // the victim's update applies the hit and writes the timer (docs/research/characters-classes.md#power-class-bytes).
+    // So it sends the health lost, not the hit's damage: a lethal hit's is what health was left (a downed human's
+    // run-out health counts as 0, though he keeps 1), and a hit on a downed human, which takes nothing, sends none.
     // @coney-only stand-in for Human_DealDamage's event 1, sent after the hit is applied since the attacker is not kept
     void reportDamage();
 

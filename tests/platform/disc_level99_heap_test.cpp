@@ -6,13 +6,13 @@
 // start of the heap's kind-1 walk leg, (-271.7, 129.4), and sent as `GoalMoveToFlag` would to (-285.2, 124.2), the
 // point a lesson-2 bum was walking to when he stuck at the heap's foot. His route climbs the heap to the lesson-2
 // platform at (-277.7, 132.0, 3.1) and down the far side, beside a face too steep for floor (n.z 0.53,
-// docs/research/characters.md#slopes). It runs only when the environment variable CONEY_DISC names the disc and skips
-// otherwise; it prints positions only (LEGAL.md).
+// docs/research/characters-ground.md#slopes). It runs only when the environment variable CONEY_DISC names the disc and
+// skips otherwise; it prints positions only (LEGAL.md).
 //
 // It failed before the fix of 2026-10-11: the bum stopped for good at (-275.4, 131.6), at the face's foot. Coney's
 // push-out left his sphere 0.01 m off the face each update, so the face was never a fraction-0 contact he slides along,
 // and his move fell under the stuck test (0.2 m in 60 updates). A face within the radius and that clearance now counts
-// as touched (docs/research/characters.md, "Coney's implementation").
+// as touched (docs/research/characters-ground.md#coneys-implementation).
 
 #include <algorithm>
 #include <cmath>

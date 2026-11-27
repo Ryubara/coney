@@ -325,7 +325,7 @@ class Riot {
         m_pad.held = 0;
     }
     // Sets the stick toward `point` at `gait`, turned by the camera as it faces now (up is the camera's view along the
-    // ground, docs/research/characters.md#input), and L2 when the gait sprints.
+    // ground, docs/research/characters-locomotion.md#input), and L2 when the gait sprints.
     void steer(Vec3 point, Gait gait) {
         const Vec3 forward = player().record().cameraForward;
         const coney::SteerView view{

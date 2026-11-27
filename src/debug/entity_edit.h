@@ -66,8 +66,8 @@ struct EntityCommand {
 };
 
 /// The number a Model edit names model `model` by: the CRC-32 of its lower-case name, as the Character List keys its
-/// models (docs/research/characters.md#files), so a run log names the same model in every run and on every disc
-/// layout. Exact in a double, as every 32-bit number is.
+/// models (docs/research/characters-appearance.md#files), so a run log names the same model in every run and on every
+/// disc layout. Exact in a double, as every 32-bit number is.
 [[nodiscard]] std::uint32_t modelId(std::string_view model);
 /// The model of `models` whose modelId() is `id`; nothing when none is, or `id` is no 32-bit whole number.
 [[nodiscard]] std::optional<std::string> modelWithId(std::span<const std::string> models, double id);

@@ -29,7 +29,8 @@ struct ObjectType {
     /// grip (0.39 m for `dyn_bat_tuff`, docs/research/objects.md#held).
     float grip = 0.0F;
     /// `CfgObj`'s 21st and 22nd arguments: the offset (metres) and rotation the object takes when held or worn; a
-    /// hat on a human who is not a Warrior sits there in his head's frame (docs/research/characters.md#hats).
+    /// hat on a human who is not a Warrior sits there in his head's frame
+    /// (docs/research/characters-appearance.md#hats).
     anim::Vec3 holdPosition{};
     anim::Quat holdRotation{};
     int secondHits = 0; ///< `+0x5b`, `CfgObj`'s 5th argument: the hits a flying or held object spends first.

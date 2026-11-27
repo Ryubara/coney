@@ -205,9 +205,9 @@ again whole.
 The placement in the world (the lean, the heading, the feet and RenderWare's axes) is the atomic's frame on both
 paths, so it moves the blended vertex whole. Folded into each bone matrix instead, it would move a vertex by the sum
 of its weights, and the stored weights sum a hair below 1 (the decoder clears the bits that hold the bone,
-[Character geometry](../research/characters.md#character-geometry)): on the disc, 71,380 of the 150,509 distinct
-vertices fall short, by 1.9 × 10⁻⁵ on average and 9.2 × 10⁻⁵ at most, which would pull a human towards the world's
-origin by up to a centimetre a hundred metres out.
+[Character geometry](../research/characters-appearance.md#character-geometry)): on the disc, 71,380 of the 150,509
+distinct vertices fall short, by 1.9 × 10⁻⁵ on average and 9.2 × 10⁻⁵ at most, which would pull a human towards the
+world's origin by up to a centimetre a hundred metres out.
 
 The bounding sphere that chooses a human's lights and fades it out at a distance comes from the box round each skin
 node's vertices as the node's matrix moves it, and round the feet (`posedBox()`), which holds every vertex and is a

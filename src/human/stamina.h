@@ -7,7 +7,7 @@
 
 // The sprint and its stamina: L2 held asks for a sprint every update, stamina (record `+0x14a`) drains while the
 // human moves at the sprint gait and refills otherwise, with no delay and no threshold.
-// Research: docs/research/characters.md#sprint
+// Research: docs/research/characters-traversal.md#sprint
 
 namespace coney::human {
 
@@ -18,14 +18,14 @@ struct StaminaTuning {
     float drainPerSecond = 20.0F; ///< Lost each second at the sprint gait (`0x005101f4`, CfgBurnRates rate 5).
 };
 
-/// Rembrandt's class 64: 135 points, refilled 40 a second (docs/research/characters.md#power-classes).
+/// Rembrandt's class 64: 135 points, refilled 40 a second (docs/research/characters-classes.md#power-classes).
 inline constexpr int kPlayerStaminaMax = 135;
 inline constexpr float kPlayerStaminaRefillPerSecond = 40.0F;
 
 /// The one StaminaTuning the game uses; at its defaults unless a debug menu changed it.
 [[nodiscard]] StaminaTuning& staminaTuning();
 
-/// Why the refill gains nothing this update (docs/research/characters.md#sprint): any one blocks it.
+/// Why the refill gains nothing this update (docs/research/characters-traversal.md#sprint): any one blocks it.
 struct RefillBlocks {
     Gait gait = Gait::Standing; ///< The gait of the velocity (`+0x1a8`): the sprint gait blocks the refill.
     bool airborne = false;      ///< A jump or a fall (state flags `0x1c00000000`).

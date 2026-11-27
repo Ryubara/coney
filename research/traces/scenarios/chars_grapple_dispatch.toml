@@ -1,0 +1,26 @@
+# strong_grapple with the anim-callback hooks: the strong grapple (circle + cross) at a civilian 1.0 m in front, held
+# there facing the player until the connect (so the front grab is taken), with a full power meter, logging every
+# AnimCallback_Dispatch (who starts which anim id, and from where), every slot it matches and the tutorial callback.
+# Research: docs/research/characters-animation.md#anim-callbacks.
+description = "slot 6: circle + cross at PoizoCiv 1.0 m ahead; the anim ids each human starts, their callbacks and the tutorial callback"
+research = "docs/research/characters-animation.md#anim-callbacks"
+input = "strong_grapple.txt"
+updates = 150
+fields = ["player", "held", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "special-attack", "grab-start", "tackle-start", "paired-start", "attack-score", "tutorial-callback", "anim-dispatch", "anim-callback-match"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "rec(player) + 0x148", type = "s16", value = "400", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.0 * sin(heading(player))", until = 15 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.0 * cos(heading(player))", until = 15 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 15 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 15 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 15 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]

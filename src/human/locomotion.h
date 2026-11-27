@@ -10,8 +10,8 @@
 // The player's locomotion as plain functions: the stick turned into an intent, the target speed, the gait, the turn
 // with its limit and ease, the acceleration, the slope factor and the gait blend's value for a speed. No state but
 // what the caller passes, so each rule can be tested on its own. Every per-update constant is the original's at its
-// 30 Hz step (docs/research/characters.md#movement-constants).
-// Research: docs/research/characters.md#locomotion
+// 30 Hz step (docs/research/characters-locomotion.md#movement-constants).
+// Research: docs/research/characters-locomotion.md#locomotion
 
 namespace coney::human {
 
@@ -27,7 +27,7 @@ inline constexpr float kAcceleration = 24.0F;
 inline constexpr float kStandingSpeed = 0.5F;
 /// The ease's full-rate heading error (0x00510310), and the share of the last turn step carried over (0x0051030c), as
 /// `config_preload2.lua`'s `CfgTurnRate(true, false, 2.0, 0.8)` sets them in play (`.data` holds 1.5 rad for the ease;
-/// docs/research/characters.md#movement-constants).
+/// docs/research/characters-locomotion.md#movement-constants).
 inline constexpr float kTurnEaseError = 2.0F;
 inline constexpr float kTurnCarry = 0.8F;
 /// The player's turn limits per update in play, degrees: the player words of the table at 0x005101b0 as
@@ -60,7 +60,7 @@ struct LocomotionTuning {
     float turnCarry = kTurnCarry;                 ///< turnToward(): the share of the last step carried over.
     float leanFactor = 0.4F;     ///< leanStep(): the turn times this times the speed is the lean asked for.
     float walkLeanFactor = 8.0F; ///< leanStep(): the same, walking.
-    // A multiplier on each of the player's gait speeds, 1 as the clips give them (docs/research/characters.md
+    // A multiplier on each of the player's gait speeds, 1 as the clips give them (docs/research/characters-classes.md
     // #speed-classes: the speeds come from the clips' root motion, so a scale is the tunable, not a speed). Coney's
     // own debug tooling, and only the player's: another human's speed scale is its own (Human::setSpeedScale()).
     float sneakSpeedScale = 1.0F;  ///< The sneak gait's (slot 3).
@@ -76,7 +76,8 @@ struct LocomotionTuning {
 /// Gaits, as the original numbers them (0x0022aeb0, 0x00221760).
 enum class Gait : std::uint8_t { Standing = 0, Sneak = 1, Walk = 2, Jog = 3, Run = 4, Sprint = 5 };
 
-/// A human's speeds in m/s, each from its locomotion clip's root motion (docs/research/characters.md#speed-classes).
+/// A human's speeds in m/s, each from its locomotion clip's root motion
+/// (docs/research/characters-classes.md#speed-classes).
 struct Speeds {
     float base = 0.0F;   ///< Slot 14, the combat walk.
     float sneak = 0.0F;  ///< Slot 3.
@@ -153,14 +154,14 @@ struct TurnState {
 
 /// An AI human's turn limit per update in a fight stance, radians: the stance's AI word `0x005101dc`, 24°, which
 /// nothing writes (`CfgSetTurnRates` sets only the player's, stanceTurn()) and no turn boost scales; a wounded human
-/// turns 0.375°, as the hurt test comes first (docs/research/characters.md#ai-locomotion).
+/// turns 0.375°, as the hurt test comes first (docs/research/characters-locomotion.md#ai-locomotion).
 /// @orig 0x002213d8 Human_MaxTurn (unknown)
 [[nodiscard]] float aiStanceTurn(bool wounded);
 
 /// An AI human's speed this update from `current` toward the brain's `asked` speed, m/s (`Human_UpdateControl`,
-/// docs/research/characters.md#ai-locomotion): from rest min(asked, 2.0); speeding up 0.267 m/s an update (8 m/s²),
-/// or 1.067 (32 m/s²) while that would still leave more than 2 m/s to go, never past `asked`; slowing down 1.067 an
-/// update, never below `asked`.
+/// docs/research/characters-locomotion.md#ai-locomotion): from rest min(asked, 2.0); speeding up 0.267 m/s an update (8
+/// m/s²), or 1.067 (32 m/s²) while that would still leave more than 2 m/s to go, never past `asked`; slowing down 1.067
+/// an update, never below `asked`.
 /// @orig 0x00243848 Human_UpdateControl (unknown)
 [[nodiscard]] float aiApproachSpeed(float current, float asked);
 
@@ -197,7 +198,7 @@ void setTurnEase(float easeError, float carry);
 /// measured length, compared exactly as the original's `c.le.S`: run ≤ speed, with no slack), after a stick that was
 /// over kRunThreshold, the stick now under 0.2 or more than 120° from the velocity. At a steady run the measured
 /// speed is the run speed give or take a few units in the last place, so whether a run's release skids turns on them
-/// (docs/research/characters.md#run-stop).
+/// (docs/research/characters-locomotion.md#run-stop).
 [[nodiscard]] bool skids(Gait gait, float speed, const Speeds& speeds, float lastMagnitude, float magnitude,
                          anim::Vec3 velocityDirection, anim::Vec3 stickDirection);
 

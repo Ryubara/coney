@@ -132,7 +132,7 @@ the speed that covers the remaining plan distance in that time, recomputed each 
 ground (the follower then stops running, below), so it slows as it nears the edge and leaves it at the speed that
 lands it on the point (inferred from the formula). Over 10 m/s, or with the landing point level or higher, it jumps
 instead. A drop of more than about 7.1 m lands faster than the fall-damage threshold of 14.9 m/s
-([Characters: Falling](characters.md#falling)).
+([Characters: Falling](characters-ground.md#falling)).
 
 **`Human_BeginJump` for an AI** (`0x0023db48`): with the argument 1 it refuses while record `+0x08` holds any of
 `0x5cfeafb` or the state flags any of `0x7bf9e9f7ff0` (airborne and landing among them). The gait (3 or more) and
@@ -140,7 +140,8 @@ instead. A drop of more than about 7.1 m lands faster than the fall-damage thres
 take-off gait `+0x3c0` is not written. No run-up or lining up is needed; the handler has already turned the body.
 
 **The launch** (`Human_LaunchJump`, `0x002217f0`, on the same update). For a human whose per-player record `+0x1b` is
-0 it takes the velocity from `0x0029ade0` instead of the player's run speed ([Characters: Jumping](characters.md#jump)):
+0 it takes the velocity from `0x0029ade0` instead of the player's run speed ([Characters:
+Jumping](characters-traversal.md#jump)):
 
 - route state 1: turn the body to the landing point again; try the vertical speeds *v* = 0.5, 1.25, 2.0, … m/s
   (steps of 0.75) and, for each, the time *t* at which the arc *v t* − 7.84 *t*² comes down to *d*.z (the larger

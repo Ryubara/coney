@@ -44,7 +44,7 @@
 // mesh, and its animation, stepped at the characters' fixed 30 Hz in the original's three passes (animation, state
 // update, actions; human/humans.h runs them across every human). Platform-neutral and deterministic: no clock, no
 // randomness, so a scripted pad gives the same path on every run (test mode).
-// Research: docs/research/characters.md, docs/research/tasks.md#humans-update
+// Research: docs/research/characters/index.md, docs/research/tasks.md#humans-update
 
 namespace coney::human {
 
@@ -62,7 +62,7 @@ struct HumanInput {
     float stickX = 0.0F;        ///< Left stick, -1 (left) to 1 (right), after the pad's own dead zone.
     float stickY = 0.0F;        ///< Left stick, -1 (down) to 1 (up).
     anim::Vec3 cameraForward;   ///< The camera's view direction; only its part across the ground is used.
-    bool sprintHeld = false;    ///< L2 is held: asks for a sprint (docs/research/characters.md#sprint).
+    bool sprintHeld = false;    ///< L2 is held: asks for a sprint (docs/research/characters-traversal.md#sprint).
     bool actionPressed = false; ///< Triangle went down this update (command 10): a climb, an action or a jump.
     combat::CommandId command = combat::command::kNone; ///< This update's command (combat::CommandMatcher).
     std::uint16_t buttons = 0;                          ///< The held buttons (the block reads R1).
@@ -82,7 +82,7 @@ struct BrainMove {
     /// The brain's turn boost (`+0x0b`): its gait turn limits × (boost + 1), or ÷ (1 − boost) below 0.
     int turnBoost = 0;
     /// The point the move aims at (`+0x90`, ai::Brain::setMoveAim()): in a fight stance the feet walk along the line
-    /// to it while the facing follows `heading` (docs/research/characters.md#ai-locomotion).
+    /// to it while the facing follows `heading` (docs/research/characters-locomotion.md#ai-locomotion).
     anim::Vec3 aim{};
 };
 
@@ -178,7 +178,7 @@ class Human final : public Holdable {
     /// A human this far below the collision mesh's lowest vertex has fallen out of the world.
     static constexpr float kOutOfWorldDepth = 20.0F;
     /// A whole human's fade (the character instance's colour alpha, `+0x2b`): 255 at runtime before a fall (run
-    /// r-20261122-fall-out-of-world, docs/research/characters.md#out-of-world).
+    /// r-20261122-fall-out-of-world, docs/research/characters-ground.md#out-of-world).
     static constexpr int kWholeFade = 255;
     /// After this many airborne updates with the body unable to move as long, the human is put back on its last
     /// ground.
@@ -190,7 +190,7 @@ class Human final : public Holdable {
     static constexpr float kLandingTestHeight = 1.0F;
     /// A fall or a jump lands on the first update that starts with the feet this far or more below a floor its moves
     /// have passed; until then the body falls on through it (between 0.161 and 0.176 m at runtime,
-    /// docs/research/characters.md#falling).
+    /// docs/research/characters-ground.md#falling).
     static constexpr float kLandingDepth = 0.17F;
 
     /// A human playing `anims` (which must outlive it) through `slots`, bones its clips leave out taking
@@ -387,7 +387,7 @@ class Human final : public Holdable {
     [[nodiscard]] bool airborne() const { return m_airborne; }
     /// The human fell more than kOutOfWorldDepth below the mesh: record state `0x200000000`, which has him taken away
     /// (faded out, then destroyed: human::Humans::update()); not dead. It stays put until spawned or put back.
-    /// Research: docs/research/characters.md#out-of-world
+    /// Research: docs/research/characters-ground.md#out-of-world
     [[nodiscard]] bool outOfWorld() const { return m_outOfWorld; }
     /// The fade of a human being taken away: his character instance's colour alpha (instance `+0x2b`), kWholeFade
     /// until the characters' step lowers it (human::Humans::update()). **Coney stand-in**: kept, not drawn (the only
@@ -508,7 +508,7 @@ class Human final : public Holdable {
     /// The replacements applied by setOverrideClip(), by anim id.
     [[nodiscard]] const std::map<std::uint32_t, std::string>& overrideClipNames() const { return m_overrideNames; }
     /// Called with each anim id the human starts playing, for the scripts' animation callbacks
-    /// (docs/research/characters.md#anim-callbacks); empty for none.
+    /// (docs/research/characters-animation.md#anim-callbacks); empty for none.
     void setAnimStartHook(std::function<void(std::uint32_t animId)> hook) { m_animator.setStartHook(std::move(hook)); }
     /// The sounds its updates asked for since the last call, oldest first: its clips' animation sounds (clip event
     /// 11) and the hit sounds of the hits it took (docs/research/sound-events.md). Kept only once asked for
@@ -607,7 +607,7 @@ class Human final : public Holdable {
     }
     /// The radius of its collision capsule (the shape's `+0x40`, 0.35 m, × its scale): human::walkingRadius().
     [[nodiscard]] float capsuleRadius() const { return walkingRadius(collisionScale()); }
-    /// The walking sphere the wall sweep moves (docs/research/characters.md#walls, step 1): a player's
+    /// The walking sphere the wall sweep moves (docs/research/characters-ground.md#walls, step 1): a player's
     /// playerWalkingRadius(), an AI human's aiWalkingRadius(), of its scale now.
     /// @coney-only the body's size as Coney's sweep takes it (the original keeps it on its physics body)
     [[nodiscard]] float walkingSphereRadius() const;
@@ -615,7 +615,7 @@ class Human final : public Holdable {
     /// @coney-only the body's size as Coney's sweep takes it (the original keeps it on its physics body)
     [[nodiscard]] float walkingSphereCentreHeight() const;
     /// The sphere the airborne body is pushed out of walls with: BodyTuning::airRadius × the scale, its centre its
-    /// radius plus the foot gap above the feet (docs/research/characters.md#walls).
+    /// radius plus the foot gap above the feet (docs/research/characters-ground.md#walls).
     /// @coney-only the body's size as Coney's push-out takes it (the original keeps it on its physics body)
     [[nodiscard]] float airSphereRadius() const;
     /// Its capsule as another human's sweep meets it, and as the way-clear test (human::wayClear()) takes it.
@@ -1170,7 +1170,7 @@ class Human final : public Holdable {
     // @orig 0x00243848 Human_UpdateControl (unknown)
     void aiLocomote(bool gated);
     // `wheelchairControl` for a pad-driven human with the wheelchair flag: L1 and R1 push, one alone turns, cross
-    // brakes; the sticks are not read (docs/research/characters.md#wheelchair).
+    // brakes; the sticks are not read (docs/research/characters-locomotion.md#wheelchair).
     void wheelchairControl(bool locked);
     // The jump's state function: the heading turns toward the stick at the air limit, the speed is kept.
     // @orig 0x00240898 Human_AirControl (unknown)
@@ -1227,10 +1227,10 @@ class Human final : public Holdable {
     // the clip playing goes on. A human no pad drives runs aiCombatWalk() instead.
     // @orig 0x00241b90 Human_FightStanceMove (unknown)
     void combatWalk(const Combatant& target, bool gated);
-    // The AI's fight stance (docs/research/characters.md#ai-locomotion): the facing turns to the brain's heading at
-    // aiStanceTurn() while the move asks for a speed (always when wounded), and does not follow the target; the feet
-    // strafe along the line to the move's point at the stance walk (the walk when wounded) when it asks for more than
-    // 0.1, else stand. With the velocity `gated`, it only turns.
+    // The AI's fight stance (docs/research/characters-locomotion.md#ai-locomotion): the facing turns to the brain's
+    // heading at aiStanceTurn() while the move asks for a speed (always when wounded), and does not follow the target;
+    // the feet strafe along the line to the move's point at the stance walk (the walk when wounded) when it asks for
+    // more than 0.1, else stand. With the velocity `gated`, it only turns.
     // @orig 0x00243848 Human_UpdateControl (unknown)
     void aiCombatWalk(bool gated);
     // Combat's update from the record: the stick turned into the facing frame, the game time, the targets; and when the
@@ -1440,8 +1440,8 @@ class Human final : public Holdable {
 
 /// Ends the rage of every human in `humans` that rages, at once (Human::setRageMode() off, the meters left where they
 /// are), as a scene's bind does whoever it binds (docs/research/scenes.md#join-reset). **Coney's reading**: the
-/// research calls them every player (scenes.md) and every human in rage (characters.md); either way a raging human
-/// stops, so the caller passes every human it has.
+/// research calls them every player (scenes.md) and every human in rage (characters/index.md); either way a raging
+/// human stops, so the caller passes every human it has.
 /// @orig 0x00232538 Humans_EndAllRage (unknown)
 void endAllRage(std::span<Human* const> humans);
 

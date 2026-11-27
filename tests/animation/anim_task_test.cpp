@@ -219,7 +219,7 @@ TEST_CASE("a gait blend counts each wrap of its leading clip and plays at the ra
 
 TEST_CASE("a follow-on announced when built is heard then, and not again when it begins playing", "[anim_task]") {
     // A grab's connect: the connecting clip (657) hands over to the hold (82), which the original builds, and so
-    // reports, at the connect (docs/research/characters.md#anim-callbacks).
+    // reports, at the connect (docs/research/characters-animation.md#anim-callbacks).
     const AnimClip connecting = testClip(0.3F, 1.0F);
     const AnimClip hold = testClip(1.0F, 0.0F);
     AnimTaskStack stack;

@@ -176,7 +176,7 @@ class Gang {
     /// (human::Human::knockedOut(), `0x00227dd8`, so a member knocked out with health left, by a script or a fall out
     /// of the world, is not standing), not dead (`0x00227eb0`, state `0x100000000`: in Coney the health run out) and
     /// not wounded (`0x00227d98`, state `0x10000`: the script state's wounded). A member knocked down alive stands.
-    /// Research: docs/research/characters.md#out-of-world
+    /// Research: docs/research/characters-ground.md#out-of-world
     /// @orig 0x00166220 Gang_CountStanding (unknown)
     [[nodiscard]] int standing() const;
     /// The gangs it belongs to.

@@ -272,7 +272,7 @@ TEST_CASE("the mesh format keeps a strip geometry's strips as librw built them",
 }
 
 TEST_CASE("the mesh format takes each vertex's bones and weights from the skin", "[asset_convert]") {
-    // Expected: characters.md#character-geometry, confirmed (code): four weights with their bones per vertex
+    // Expected: characters-appearance.md#character-geometry, confirmed (code): four weights with their bones per vertex
     auto engine = startHeadless();
     rw::Geometry* geometry = square(0);
     coney::platform::SkinVertexData skin;

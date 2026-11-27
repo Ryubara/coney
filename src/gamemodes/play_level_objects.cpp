@@ -544,7 +544,8 @@ void PlayLevelSimulation::stepGameOver(const Pad& pad) {
     }
     if (!m_gameOver->failed()) {
         // The check runs over the players; once player 1 is handed to the AI (`--ai-player`) the list is empty and
-        // nothing fails the mission (docs/research/combat-reactions.md#defeat, docs/research/characters.md#players).
+        // nothing fails the mission (docs/research/combat-reactions.md#defeat,
+        // docs/research/characters-players.md#players).
         if (m_ai->playerReleased()) {
             return;
         }

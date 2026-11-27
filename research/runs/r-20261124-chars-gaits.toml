@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261124-chars-gaits"
+date = "2026-11-24"
+kind = "trace"
+tool = "trace original"
+digest = "b1dd8c72b15eb0b32ddb21ca7a6b4e21a1c7124ba243098b2e5177b7c27409bc"
+
+[who]
+agent = "a81ce522c25fb7730"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-e"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad", "skid-test", "state-code"]
+
+[run]
+name = "chars_gaits"
+method = ""
+
+[values]
+updates = 521
+missed_updates = 0
+columns = 27
+
+[hashes]
+trace_csv = "19040fe5e27b87098f42deb1a583d40e5c3f3a7b90eb651c463e062c39d1dcb5"

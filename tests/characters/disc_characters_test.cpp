@@ -5,9 +5,9 @@
 // offsets) with every material's texture in its texture dictionary (read with librw on its NULL device); every
 // distinct character data resource resolves its anim table; and each character is posed with its first clip and
 // skinned over the reference pose, the joints checked with characters::jointMismatch(), and its bind rotations compared
-// with the reference pose (bone 2's angle). docs/research/characters.md has the results. It runs
-// only when the environment variable CONEY_DISC names the disc and skips otherwise, so CI never needs the game. It
-// prints counts only, never data (LEGAL.md).
+// with the reference pose (bone 2's angle). docs/research/characters-appearance.md#character-geometry has the results.
+// It runs only when the environment variable CONEY_DISC names the disc and skips otherwise, so CI never needs the game.
+// It prints counts only, never data (LEGAL.md).
 
 #include <algorithm>
 #include <cmath>
@@ -86,7 +86,7 @@ void sumWeights(const coney::characters::CharacterModel& model, CharacterTotals&
     }
 }
 
-// Whether a model has the shape characters.md gives every skinned character.
+// Whether a model has the shape characters-appearance.md gives every skinned character.
 bool hasCharacterShape(const coney::characters::CharacterModel& model) {
     return model.clump.frames.size() == 33 && model.clump.hierarchy.size() == 32 && model.clump.skin.boneCount == 32 &&
            model.clump.skin.maxWeights <= 4;
