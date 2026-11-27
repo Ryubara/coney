@@ -1167,8 +1167,17 @@ marker's body has `THROWNWEAPONTARGET` alone), which is why the script tests for
 start) = **466** `gen_1hand_throw_enter`, slot 23 (the block sustain) and the idles in slots 0 and 11 = **469**
 `gen_1hand_throw_cycle`, slot 24 (the block shuffle) = **470** `gen_1hand_throw_turn`. So he enters with 466, holds
 469 and plays 470 while the stick turns him (action 10); inferred from the slots' names, not watched at runtime. No
-code names **468** `gen_1hand_throw_exit`: leaving (`Human_ExitThrowAim` `0x00227aa8`) only removes the style, so the
+code names **468** `gen_1hand_throw_exit`: leaving (`Human_ExitThrowAim` `0x00227a90`) only removes the style, so the
 idle returns; whether 468 plays through the anim data is not traced. The throw from the aim is 467 (standing).
+
+<span id="aim-relock"></span>**Leaving stamps a 264 ms re-aim delay.** `Human_ExitThrowAim` also clears state
+`0x200000000000`, gives the control back when it is still the aim's, and writes record `+0xf8` = the game time +
+264 ms (`0x108`). The only reader of record `+0xf8` is `Player_OnL1Pressed` (`0x0027da10`; the only load of `0xf8`
+off a record in the executable's code, found by a search of every `lw` with that offset): with a set 5 object in
+hand, a press inside L1's release window (record `+0xf4`, [the L1 window](combat-targets.md#targets)) and past
+`+0xf8` enters the aim at once; a press outside the window, or within the 264 ms, takes the lock-on path first and
+enters the aim only when that finds no hostile target. So the stamp keeps a quick second L1 tap after leaving from
+going straight back into the aim. Confirmed (code); not watched at runtime.
 
 **The aim trace** (`Human_TraceThrowAim`, `0x0018fee0`, each aiming frame) writes the two holder fields the first
 flying update reads: **`+0x5f0`, the release point** = `+0x610` + `+0x620` turning **(0.3009, −0.6354, 1.5865)** (x

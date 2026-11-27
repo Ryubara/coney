@@ -307,8 +307,11 @@ one:
 
 `dyn_bat_tuff` is `OneHandPickUp` (the objects list), hence 461 from the ground. Before the clip, a pick-up
 animation of 5 or 6, or an anim set of 4 or 6 on the human, drops what the human holds (`0x00257f38`) when he holds
-something. The clip plays with a 0.2 s blend and chains into the human's idle (clip slot 0) or, with state bits 3,
-his fight idle (slot `0xb`, record `+0x18` = `0xb`); while that follow-on is set up, the object's anim set is
+something. The old pose fades out over **0.15 s** (the fade task, `0x3e19999a`) while the clip comes in; the clip's
+task holds **`0x4000`** (and `0x4000` is set on the record at once, `Human_SetHeldFlag`), not the grab bit `0x10`;
+the 0.2 s it passes to `AnimTaskChained_Construct` is its blend into what follows, at its end. It chains into the
+human's idle (clip slot 0, record `+0x18` = 0, action 0) or, with state bits 3, his fight idle (slot `0xb`, record
+`+0x18` = `0xb`, action 1); while that follow-on is set up, the object's anim set is
 pushed (and popped after) when the human lacks state `0x200000` or the set is 4 (`OVERHEAD_WEAPON_SET`) or 6
 (`GHETTO_SET`). The steer (`0x00275d10`) gets the time to the clip's first event. A type 44 object (`0x2c`) is
 checked against an inventory count first (`0x0041e420`, `0x0041ded0`, not traced). Confirmed (code).

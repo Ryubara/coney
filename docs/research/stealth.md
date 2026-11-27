@@ -79,11 +79,15 @@ take the same rules without the radar and the hide order. Bit 5 (`0x0020`) of th
 `Brain_SetHiddenInShadow(brain, on)` writes brain `+0x2d4` (and, on entering, the time at brain `+0x10`); for a
 player (human `+0x1b0` not −1) it also runs, confirmed (code):
 
-- **Entering** (`Human_EnterShadow`, `0x0022ff88`), unless already hidden, in state `0x1000000` (sprinting) or
-  aiming a throw with a kind-4 or 6 object: cancel any throw aim, drop the L1 target bit (state `0x8`), leave the
-  fight stance and lock (`Player_ExitStanceAndLock`), set state **`0x200000`** (hidden), set state `0x20000000`
-  (rebuild the anim state) when his actions are free, and push **move style `0x14`** unless busy (state
-  `0x7839e1f7ff0`). The grace time (record `+0x114`) is cleared.
+- **Entering** (`Human_EnterShadow`, `0x0022ff88`), unless already hidden, in state `0x1000000` (sprinting),
+  aiming a throw (his control function is `Human_MoveThrowAim`) or holding an object of anim set 4 or 6
+  (`Human_HoldsKind4Or6`, `0x00224000`: the held object's type `+0x87`): cancel any throw aim, drop the L1 target bit
+  (state `0x8`), leave the fight stance and lock (`Player_ExitStanceAndLock`), set state **`0x200000`** (hidden), set
+  state `0x20000000` (rebuild the anim state) when his actions are free, and push **move style `0x14`** unless busy
+  (state `0x7839e1f7ff0`). The grace time (record `+0x114`) is cleared **on every call**, refused or not, so a
+  human who steps back onto the shadow within the grace stays hidden for good; then `Player_UpdateHiddenLoopSound`
+  (`0x002301f0`) runs. Confirmed (code). An earlier reading on this page took the throw aim and the held set as
+  one test, and the grace as cleared only on entering.
 - <span id="leaving"></span>**Leaving** (`Human_LeaveShadow`, `0x002300c0`), when hidden: if he is **not running
   and has a target** (an L1 target, [the stealth kill](#stealth-kill)), the hidden state is kept for a
   **grace of 4 s**: record `+0x114` = now + 4000 ms (once; an earlier deadline is kept). Otherwise it ends at once

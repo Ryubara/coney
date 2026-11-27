@@ -63,7 +63,7 @@ bool TauntAction::abort(Brain& brain) {
     // Else the taunt stops (the idle again while its clip still plays), and a taunt that waits for its clip refuses
     // while the clip still holds its flags.
     if (m_heldFlags != 0) {
-        brain.human().stopScripted(static_cast<std::uint32_t>(m_playing), m_heldFlags);
+        brain.human().stopTaunt(m_heldFlags);
     }
     return !(m_wait && m_heldFlags != 0 && (brain.human().animator().flags() & m_heldFlags) != 0);
 }

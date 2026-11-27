@@ -688,9 +688,13 @@ drops the held object only when its type's anim set (`+0x87`) is 4 (`OVERHEAD_WE
 `CfgObj`'s 20th argument) and **stays in the hand**; what 334/335 do with it is not traced. It queues 334
 `ANIM_TAGGING_INTRO` (end hook `Tag_OnIntroEnd`), then the loop 335 (loop hook `Tag_StartSprayEffect`), sets held
 flag `0x400` (meaning not traced) and calls `Human_TurnToFacePoint(0.5 × the play time of 334, human, the tag's
-point)`: the turn to the tag object's position is spread over the first half of the intro. Confirmed (code). When a
-pause begins (a slip or a new charge; `TagGame_IsPaused` `0x002745e8` turns on during the update),
-`Tag_RestartSprayClips` (`0x00278210`) plays 337 and then the loop 335 again, with the same hooks.
+point)`: the turn to the tag object's position is spread over the first half of the intro. The old pose fades out
+over **0.05 s** (its fade task, `0x3d4ccccd`); 334's task holds `0x400`; the record's `+0x18` and the action are set
+to 0 and human byte `+0x3ba` cleared; and all of it only when the tag object (human `+0x36c`) still resolves.
+Confirmed (code). When a pause begins (a slip or a new charge; `TagGame_IsPaused` `0x002745e8` turns on during the
+update), `Tag_RestartSprayClips` (`0x00278210`) stops his voice (`Human_StopVoice`) and, the tag still resolving,
+plays 337 and then the loop 335 again, with the same hooks: 337 **holds `0x400`** as 334 does, the fade is **0.5 s**
+(`0x3f000000`), a set 4 or 6 object is dropped and `0x400` is set on the record. Confirmed (code).
 
 **The end** (issue #407). Confirmed (code) at the addresses unless marked. `Tag_EndSprayClips` (`0x002783b0`) plays
 336 `ANIM_TAGGING_END`, whose event `0x31` at frame 7 removes the can that 334's event `0x30` made at frame 10

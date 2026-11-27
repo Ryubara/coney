@@ -437,9 +437,10 @@ class Human final : public Holdable {
 
     /// Whether it is hidden (state `0x200000`), the grace after leaving the shadow included.
     [[nodiscard]] bool hidden() const { return m_hidden; }
-    /// Enters the hidden state: nothing when already hidden or sprinting. Its target no longer locks
-    /// (Fighter::setLockBlocked()), so it leaves the fight stance, and its locomotion takes the hidden move style
-    /// (HumanAnimator::setStealthStyle()); any grace is cleared.
+    /// Enters the hidden state: nothing when already hidden, sprinting, aiming a throw or holding an object of anim set
+    /// 4 or 6. Its target no longer locks (Fighter::setLockBlocked()), so it leaves the fight stance, and its
+    /// locomotion takes the hidden move style (HumanAnimator::setStealthStyle()). Any grace is cleared on every call,
+    /// refused or not, so a human back on the shadow within it stays hidden.
     /// @orig 0x0022ff88 Human_EnterShadow (unknown)
     void enterHiding();
     /// Leaves the hidden state, as stepping off the shadow does: when it is not running and has a target, the state
@@ -489,18 +490,14 @@ class Human final : public Holdable {
     void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held) {
         m_animator.playScripted(clip, animId, rate, fade, held);
     }
-    /// Ends the scripted clip of anim `animId` with the idle while it still plays holding any of `held` (an AI's
-    /// fidget or taunt cut short, `Human_StopFidget`); nothing otherwise.
-    /// @orig 0x00231b60 Human_StopFidget (unknown)
-    void stopScripted(std::uint32_t animId, std::uint32_t held) {
-        if ((m_animator.flags() & held) != 0 && m_animator.animId() == animId) {
-            m_animator.stopToIdle();
-        }
-    }
-    /// Stub for the test commit: the fidget's stop as stopScripted() does it.
-    void stopFidget(std::uint32_t held) { stopScripted(m_animator.animId(), held); }
-    /// Stub for the test commit: the taunt's stop as stopScripted() does it.
-    void stopTaunt(std::uint32_t held) { stopScripted(m_animator.animId(), held); }
+    /// An AI's fidget cut short (docs/research/ai-reimpl.md#fidget-action): while a clip holds any of `held`, moving
+    /// it goes; standing, the idle comes back only when the clip is the fight or idle fidget (603, 604), so the knife
+    /// fidget plays on. **Coney stand-in**: `held` is the scripted clip's held bits (ai::kScriptedClipHeld) in place
+    /// of the original's `0x100`.
+    void stopFidget(std::uint32_t held) { stopOverlay(held, kFightFidgetAnim, kIdleFidgetAnim); }
+    /// An AI's taunt cut short (docs/research/ai-reimpl.md#taunt-action): as stopFidget(), with the taunts' clips
+    /// (595 to 602). **Coney stand-in**: `held` stands for the original's `0x300000`, as for stopFidget().
+    void stopTaunt(std::uint32_t held) { stopOverlay(held, kFirstTauntAnim, kLastTauntAnim); }
     /// A workout's clips (HumanAnimator::playWorkout()), its loop blend once playing, and its exit
     /// (HumanAnimator::endWorkout()).
     void playWorkout(const anim::AnimClip& enter, const std::array<const anim::AnimClip*, 3>& loops) {
@@ -1042,12 +1039,12 @@ class Human final : public Holdable {
     /// The breakable objects square may strike from now on (the level's whole panes), given each step.
     void setObjectTargets(std::vector<ObjectTarget> objects) { m_objectTargets = std::move(objects); }
     /// Picks up the object `handle` of anim set `heldSet` (its type's `CfgObj` `+0x87`) at `point` with clip `clip`
-    /// (world_objects::pickupClip()): the clip plays after a world_objects::kPickupBlend blend, holding the grab bit
-    /// `0x10` so the human neither moves nor acts, then hands over to the idle the object's move style gives
+    /// (world_objects::pickupClip()): the clip plays as the old pose fades out over 0.15 s, holding `0x4000` so the
+    /// human neither moves nor acts, then hands over to the idle the object's move style gives
     /// (HumanAnimator::pickUpLoop(): 509 for a two-handed object, docs/research/objects.md#two-handed); the human turns
     /// to the object over the time to the clip's first event, when the object is taken (takePickedUp()). Returns
-    /// false, doing nothing, when the anim set lacks the clip. **Coney's stand-ins**: the turn for `0x00275d10`'s steer
-    /// (inferred to be like the attack's, without its slide); the grab bit for what the clip holds.
+    /// false, doing nothing, when the anim set lacks the clip (docs/research/combat-throws.md#bat). **Coney's
+    /// stand-in**: the turn for `0x00275d10`'s steer (inferred to be like the attack's, without its slide).
     /// @orig 0x0025e5a8 Human_PlayPickupClip (unknown)
     bool startPickUp(double handle, anim::Vec3 point, std::uint32_t clip, int heldSet = 0);
     /// The take's message 3 to the holder: the held object's anim set `set` goes on as his move style
@@ -1148,13 +1145,14 @@ class Human final : public Holdable {
     void turnToFace(anim::Vec3 point, float seconds);
     /// Starts a tag's spray clips (`Tag_StartSprayClips`): 334 `ANIM_TAGGING_INTRO`, then the loop 335, turning to face
     /// the tag at `point` over half of 334's length (`Human_TurnToFacePoint`); the human stays where he stands.
-    /// 334 holds the busy bit `0x400`, so the stance's movement sets no velocity while it plays; and while any spray
-    /// clip plays (tagSprayPlaying()) the stance, the commands and the anim-state choice wait.
+    /// 334, after a 0.05 s fade, holds the busy bit `0x400`, so the stance's movement sets no velocity while it plays;
+    /// and while any spray clip plays (tagSprayPlaying()) the stance, the commands and the anim-state choice wait.
     /// Returns false when the intro clip is not loaded (he then turns to the tag at once).
     /// docs/research/crimes.md#tag-look, docs/research/scripting.md#level87-fixes (fix 2)
     /// @orig 0x00278018 Tag_StartSprayClips (unknown)
     bool startTagSpray(anim::Vec3 point);
-    /// A pause of the stick game began (a slip or a new charge): 337, then the loop 335 again.
+    /// A pause of the stick game began (a slip or a new charge): 337, holding the busy bit `0x400` as 334 does, after
+    /// a 0.5 s fade, then the loop 335 again (docs/research/crimes.md#tag-look).
     /// @orig 0x00278210 Tag_RestartSprayClips (unknown)
     void restartTagSpray();
     /// Whether the spray's intro is over and its loop plays: the moment the stick game goes live (the intro's end hook
@@ -1447,6 +1445,17 @@ class Human final : public Holdable {
     // Starts a turn to `point` spread over `share` of `clip`'s playing time; nothing when the clip is not loaded.
     // @orig 0x00221c20 Human_TurnToFacePoint (unknown)
     void turnOverClip(std::uint32_t clip, anim::Vec3 point, float share);
+    // The fidgets' and the taunts' anim ids that a stop, standing, ends with the idle: the fight and idle fidgets
+    // (0x25b, 0x25c) and the taunts (0x253 to 0x25a, the knife fidget among them).
+    static constexpr std::uint32_t kFightFidgetAnim = 603;
+    static constexpr std::uint32_t kIdleFidgetAnim = 604;
+    static constexpr std::uint32_t kFirstTauntAnim = 595;
+    static constexpr std::uint32_t kLastTauntAnim = 602;
+    // The stop that stopFidget() and stopTaunt() share: nothing unless a clip holds any of `held`; moving, the clip
+    // gives way at once; standing, the idle comes back only for a clip from `firstIdle` to `lastIdle`.
+    // @orig 0x00231b60 Human_StopFidget (unknown)
+    // @orig 0x00231c58 Human_StopTaunt (unknown)
+    void stopOverlay(std::uint32_t held, std::uint32_t firstIdle, std::uint32_t lastIdle);
     std::optional<double> m_pickedUp; // the object a pick-up reached, until takePickedUp()
     bool m_throwRelease = false;      // a release event passed, until takeThrowRelease()
     ContextAction m_contextAction;

@@ -57,19 +57,26 @@ bool climbable(const raycast::RayHit& hit, bool player) {
 std::optional<ClimbProbe> probeClimb(const raycast::CollisionMesh& mesh, anim::Vec3 feet, anim::Vec3 direction,
                                      float length, bool player) {
     const ClimbTuning& tuning = climbTuning();
-    // 1. The two forward rays: a face both meet at about the same distance is tall; the low ray alone, short.
-    const auto high = castAhead(mesh, feet, direction, tuning.highProbe, length);
-    const auto low = castAhead(mesh, feet, direction, tuning.lowProbe, length);
-    if (!low) {
-        return std::nullopt;
+    // 1. The two forward rays. Both meeting the face at about the same distance drop the low hit (one tall face);
+    // further apart, the high one (the low face is the one ahead).
+    auto high = castAhead(mesh, feet, direction, tuning.highProbe, length);
+    auto low = castAhead(mesh, feet, direction, tuning.lowProbe, length);
+    if (high && low) {
+        if (std::abs(high->t - low->t) < tuning.tallTolerance) {
+            low.reset();
+        } else {
+            high.reset();
+        }
     }
+    // A climbable high hit is tall, a face only the high ray meets included; else a climbable low hit is short.
     bool tall = false;
-    raycast::RayHit hit = *low;
-    if (high && std::abs(high->t - low->t) < tuning.tallTolerance) {
+    raycast::RayHit hit;
+    if (high && climbable(*high, player)) {
         tall = true;
         hit = *high;
-    }
-    if (!climbable(hit, player)) {
+    } else if (low && climbable(*low, player)) {
+        hit = *low;
+    } else {
         return std::nullopt;
     }
     // 2. The face must look at the climber.

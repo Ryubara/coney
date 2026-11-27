@@ -345,7 +345,12 @@ page = "crimes.md#code-crimes"
 role = "Requeues the spray clips (the spray effect hook) when the tag still exists, dropping a kind 4 or 6 weapon."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::restartTagSpray"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the voice stop (Human_StopVoice), record +0x18, the top task's stop call and the push sphere set to 0 are not ported"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x002783b0

@@ -2,24 +2,36 @@
 // The hidden state of a human (state `0x200000`): entering it in the shadow, the grace after leaving it with a target,
 // and what ends it on the human's side (a sprint, the fight stance). Who may hide and when is the ground rule's
 // (ai/hiding.h).
-// **Coney stand-in** in enterHiding(): Human_EnterShadow (0x0022ff88) also refuses while the held object's set is 4 or
-// 6 (Human_HoldsKind4Or6); not built, so a carrier can hide (docs/research/objects.md#two-handed).
 // Research: docs/research/stealth.md#hidden, docs/research/stealth.md#sneaking
 #include "human/human.h"
 
 namespace coney::human {
 
+namespace {
+
+// The held object's anim sets that refuse hiding (Human_HoldsKind4Or6, 0x00224000): the overhead weapons and the
+// ghetto set.
+constexpr int kOverheadSet = 4;
+constexpr int kGhettoSet = 6;
+
+} // namespace
+
 void Human::enterHiding() {
-    // Not while already hidden or sprinting (state 0x1000000).
-    if (m_hidden || m_sprinting) {
+    // The grace's end is cleared on every call, refused or not, so a human back on the shadow before the grace runs
+    // out stays hidden.
+    m_hideGraceUntil.reset();
+    // Not while already hidden, sprinting (state 0x1000000) or aiming a throw, nor holding an object of anim set 4 or
+    // 6 (its type's +0x87, which the fighter's anim set is).
+    const int heldSet = m_fighter.animSet();
+    if (m_hidden || m_sprinting || m_script.throwAiming || heldSet == kOverheadSet || heldSet == kGhettoSet) {
         return;
     }
     // Out of the fight stance and its lock (a target kept no longer locks while hidden); then the state and the move
-    // style. **Coney's reading**: the throw aim and the busy test before the style are not built (Coney has no throw
-    // aim yet), so the style goes on at once.
+    // style. The aim needs no cancel: it refused above. **Coney stand-in**: the L1 target bit (state 0x8), the anim
+    // state's rebuild (0x20000000) and the busy test before the style (0x7839e1f7ff0) are not built, so the style goes
+    // on at once; the hidden loop line (Player_UpdateHiddenLoopSound) is not played.
     m_fighter.setLockBlocked(true);
     m_hidden = true;
-    m_hideGraceUntil.reset();
     m_animator.setStealthStyle(true);
 }
 
