@@ -159,7 +159,7 @@ comment = 1
 tag = 11
 
 ["src/ai/scripted_brains.cpp"]
-tag = 66
+tag = 65
 
 ["src/ai/scripted_brains.h"]
 comment = 5
@@ -172,7 +172,7 @@ tag = 11
 tag = 16
 
 ["src/ai/scripted_humans.cpp"]
-tag = 51
+tag = 49
 
 ["src/ai/scripted_humans.h"]
 comment = 2
@@ -204,7 +204,7 @@ tag = 8
 tag = 1
 
 ["src/ai/story_goals.cpp"]
-tag = 12
+tag = 11
 
 ["src/ai/story_tactics.cpp"]
 tag = 20
@@ -625,7 +625,7 @@ tag = 8
 tag = 1
 
 ["src/gamemodes/level_items.cpp"]
-tag = 5
+tag = 4
 
 ["src/gamemodes/level_object_services.cpp"]
 tag = 18
@@ -998,7 +998,7 @@ comment = 1
 tag = 1
 
 ["src/human/human_animator.cpp"]
-tag = 37
+tag = 33
 
 ["src/human/human_animator.h"]
 comment = 3
@@ -1073,9 +1073,6 @@ tag = 5
 ["src/human/victim.h"]
 comment = 4
 
-["src/human/way_clear.cpp"]
-tag = 1
-
 ["src/human/workout.cpp"]
 tag = 4
 
@@ -1107,7 +1104,7 @@ comment = 1
 comment = 2
 
 ["src/physics/body_sweep.cpp"]
-tag = 10
+tag = 9
 
 ["src/physics/contact.h"]
 tag = 3
@@ -1510,13 +1507,13 @@ citation = 3
 citation = 4
 
 ["tests/ai/fight_goal_test.cpp"]
-citation = 10
+citation = 7
 
 ["tests/ai/fight_reactions_test.cpp"]
 citation = 7
 
 ["tests/ai/fight_trace_test.cpp"]
-citation = 23
+citation = 22
 
 ["tests/ai/formations_test.cpp"]
 citation = 4
@@ -1552,13 +1549,13 @@ citation = 4
 citation = 6
 
 ["tests/ai/scripted_goals_test.cpp"]
-citation = 16
+citation = 15
 
 ["tests/ai/scripted_hub_test.cpp"]
 citation = 5
 
 ["tests/ai/scripted_humans_test.cpp"]
-citation = 19
+citation = 18
 
 ["tests/ai/scripted_story_test.cpp"]
 citation = 15
@@ -1924,7 +1921,7 @@ citation = 3
 citation = 1
 
 ["tests/gamemodes/story_start_test.cpp"]
-citation = 11
+citation = 10
 
 ["tests/gamemodes/text_viewer_mode_test.cpp"]
 citation = 1
@@ -2161,10 +2158,10 @@ citation = 3
 citation = 6
 
 ["tests/physics/body_sweep_test.cpp"]
-citation = 15
+citation = 14
 
 ["tests/physics/mesh_sweep_test.cpp"]
-citation = 14
+citation = 12
 
 ["tests/physics/overlaps_test.cpp"]
 citation = 11
@@ -2179,7 +2176,7 @@ citation = 8
 citation = 4
 
 ["tests/platform/disc_anim_player_test.cpp"]
-citation = 2
+citation = 1
 
 ["tests/platform/disc_change_character_test.cpp"]
 citation = 1
@@ -2302,7 +2299,7 @@ citation = 2
 citation = 1
 
 ["tests/platform/disc_level99_store_register_test.cpp"]
-citation = 2
+citation = 1
 
 ["tests/platform/disc_level99_story_sounds_test.cpp"]
 citation = 1
@@ -2425,13 +2422,13 @@ citation = 1
 citation = 1
 
 ["tests/platform/world_set_test.cpp"]
-citation = 3
+citation = 2
 
 ["tests/raycast/collision_builder_test.cpp"]
 citation = 6
 
 ["tests/raycast/collision_extras_test.cpp"]
-citation = 4
+citation = 3
 
 ["tests/raycast/collision_mesh_test.cpp"]
 citation = 12
@@ -2632,7 +2629,7 @@ citation = 3
 citation = 2
 
 ["tests/world_objects/object_tasks_test.cpp"]
-citation = 8
+citation = 7
 
 ["tests/world_objects/pickups_test.cpp"]
 citation = 8
