@@ -733,7 +733,10 @@ grabber goes back to where its fight update found it; the held human is not hand
 port (#1684) the hold put the held human straight at its point: in the level99 sparring fight under AI seed 1 a
 Warrior's pick-up from the mount put the player through the roof fence, the spin that followed let go of him over the
 drop, and the spin's end snapped him back up from 5.6 m below. Unit test: `repo:tests/human/human_grab_test.cpp`, the
-case of a hold point through a wall.
+case of a hold point through a wall. The snap (`Fighter::snapAttach`, `Pair_SnapAttach` and `Pair_Attach`) is handed
+the offset and turn in the grabber's frame, where the original builds the world place and turns it back into the same
+offset and relative rotation; a stand-in there gives every grabber the grabbing movement once attached, where the
+original gives `Human_MoveGrabbing` only to a grabber with a player's controls.
 
 **Where Coney differs: the hold walk** ([The hold walk](#hold-walk), #86). `Fighter::moveGrab` turns the pair and
 walks it backward along the stick at the fixed `grabWalkFront` / `grabWalkRear` tunables (1.125 and 1.22 m/s). The

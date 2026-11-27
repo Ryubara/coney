@@ -1722,10 +1722,10 @@ status = "legacy"
 address = 0x00276d98
 name = "Pair_SnapAttach"
 page = "combat-grabs.md#grab-posing"
-role = "puts the victim at the hold's offset and ties its movement to the grabber"
+role = "works out the victim's place at the hold's offset and heading and hands it to Pair_Attach; moves nothing"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::snapAttach"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00276ff0
@@ -2511,10 +2511,10 @@ status = "compared"
 address = 0x002802a0
 name = "Pair_Attach"
 page = "combat-grabs.md#grab-posing"
-role = "puts the victim at the hold's offset and ties its movement to the grabber"
+role = "stores the place as an offset and relative rotation in the grabber's frame and switches the victim's movement to Human_MoveAttached; moves nothing"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::snapAttach"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00280548
