@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <numbers>
@@ -686,6 +687,63 @@ TEST_CASE("square in the duck's window counters with 617 at an attacker in front
         .warning = combat::AttackWarning::Duck, .attackAnim = 17, .code = 0x2b, .attacker = kInFront});
     fight.run("0 press r1\n2 tap square\n", 25);
     CHECK(fight.human().fighter().duckCounters() == 1);
+}
+
+namespace {
+
+// What a duck's counter run left: the counters played and the task stack's layers on the counter's first update.
+struct DuckRun {
+    int counters = 0;
+    std::size_t firstLayers = 0;
+};
+
+// R1 held, a duck warned from `attacker`, square held for two updates in the duck's window (as above), with the
+// fight's target `ahead` m in front of the player.
+DuckRun duckFrom(const FightCharacter& character, Vec3 attacker, float ahead = 30.0F) {
+    Fight fight(character, ahead);
+    fight.run("0 press r1\n", 5);
+    fight.human().warn(coney::human::AttackNotice{
+        .warning = combat::AttackWarning::Duck, .attackAnim = 17, .code = 0x2b, .attacker = attacker});
+    DuckRun run;
+    fight.run("0 press r1\n10 press square\n12 release square\n", 20, [&](std::uint64_t) {
+        if (run.firstLayers == 0 && fight.human().animator().animId() == 617U) {
+            run.firstLayers = fight.human().animator().tasks().layerCount();
+        }
+    });
+    run.counters = fight.human().fighter().duckCounters();
+    return run;
+}
+
+} // namespace
+
+TEST_CASE("the duck's counter reaches its foe within 1.25 x 617's far range, not its reach", "[human][combat]") {
+    // Expected: combat-reactions.md#ground-escape, confirmed (code) at Human_UpdateActions (0x00254e78): the foe counts
+    // within 1.25 x AttackTable_GetFarRange(617) (0x00254508, the call at 0x00255134). With 617's far range 2 m (reach
+    // 1 m) an attacker 2.2 m ahead is within 2.5 m; with no far range of its own (taken as 1.25 x the reach) he is not.
+    FightCharacter far;
+    far.ranges = coney::test::fightRanges({}, {}, {{617, 2000}, {618, 2000}, {619, 2000}, {620, 2000}});
+    CHECK(duckFrom(far, Vec3{40.0F, 42.2F, 0.0F}).counters == 1);
+    const FightCharacter plain;
+    CHECK(duckFrom(plain, Vec3{40.0F, 42.2F, 0.0F}).counters == 0);
+}
+
+TEST_CASE("the duck's counter shows its pose from its first update", "[human][combat]") {
+    // Expected: combat-moves.md#input, confirmed (code) at Block_DuckCounter (0x002617f8): the fade it pushes over the
+    // old tasks is 0 s (AnimTaskBlendOut_Construct with 0); the 0.2 s it gives its chained task is the blend into the
+    // idle after it, as for the attacks.
+    const FightCharacter character;
+    const DuckRun run = duckFrom(character, kInFront);
+    REQUIRE(run.counters == 1);
+    CHECK(run.firstLayers == 1);
+}
+
+TEST_CASE("a duck whose foe stands out of the counter's range counters no one, not the nearest human",
+          "[human][combat]") {
+    // Expected: combat-reactions.md#ground-escape, confirmed (code) at Human_UpdateActions (0x00254e78): a foe beyond
+    // 1.25 x 617's far range leaves no one (0x00255184), and the counter search runs only without a foe, its result
+    // unused (0x00255160). So a human 1 m ahead does not take the counter of a duck from an attacker 2 m away.
+    const FightCharacter character;
+    CHECK(duckFrom(character, Vec3{40.0F, 42.0F, 0.0F}, 1.0F).counters == 0);
 }
 
 TEST_CASE("six X1 hits in a row on the target halve the seventh's rage", "[human][combat]") {
