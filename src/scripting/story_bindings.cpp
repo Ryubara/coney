@@ -239,7 +239,7 @@ void dispatchWarriorCommand(ScriptSystem& scripts, const BindingContext& context
     if (rules.warriorCommandsLocked) {
         return;
     }
-    // **Coney reading** of the war-chief test (human `+0x3ac`, not kept): every human a player controls leads his
+    // **Coney's choice** for the war-chief test (human `+0x3ac`, not kept): every human a player controls leads his
     // crew.
     const std::optional<std::size_t> player = playerOf(context, chief);
     if (!player || story.menuLocked.at(*player) ||

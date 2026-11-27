@@ -718,7 +718,9 @@ bool ScriptedStory::startWarriorCommand(double chief, int command, bool forced) 
     if (crew == nullptr) {
         return true;
     }
-    // Every command first clears the crew's shared target; the menu's attack sets it from the chief.
+    // Every command first clears the crew's shared target; the menu's attack sets it from the chief. **Stand-in**:
+    // the chief's clip of an unforced attack or defend (0x2a3, 0x2a4, 0x2a7, 0x2a8) is not played, and neither is
+    // his line (the steal or vandal choice at a store is the line's).
     crew->setSharedTarget(nullptr);
     if (command == kCrewAttack && !forced) {
         if (Brain* target = chiefsTarget(*lead); target != nullptr) {
@@ -758,6 +760,8 @@ bool ScriptedStory::startWarriorCommand(double chief, int command, bool forced) 
             continue;
         }
         member->flush();
+        // Stand-in: defend has each member track the chief instead of the defend tactic round him (Tactic_Defend,
+        // given 2.25); the scatter tactic (0x00319570) is not built, so scatter, like 6, starts nothing more.
         if (command == kCommandDefend) {
             static_cast<void>(
                 goalTrackHuman(*member, *m_scripted, m_scripted->owner().formations(), chief, kCrewTrackDistance));

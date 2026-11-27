@@ -502,13 +502,14 @@ NativeFunction makeChangePlayerGang(const BindingContext& context) {
 }
 
 // `WCEnableAllCommands(on)`: all seven Warrior commands, and whether the command display may open, of each player
-// whose human is there; a player with none keeps his. **Coney reading** of the war-chief test (human `+0x3ac`, not
-// kept): every player's human leads his crew.
+// whose human is there; a player with none keeps his. **Coney's choice** for the war-chief test (human `+0x3ac`,
+// not kept): every player's human leads his crew.
 // @orig 0x0041db08 GameState_EnableAllWarriorCommands (unknown)
 NativeFunction makeWcEnableAllCommands(const BindingContext& context) {
     return rulesCall(context, [context = &context](CharacterRules& rules, std::span<const Value> args) {
         const bool on = boolArg(args, 0);
         for (std::size_t player = 0; player < rules.warriorCommands.size(); ++player) {
+            // Only a player whose human is there (Coney's choice: and so leads his crew).
             if (!playerHuman(*context, player)) {
                 continue;
             }
