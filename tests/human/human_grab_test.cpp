@@ -209,6 +209,54 @@ TEST_CASE("the full stick drags a held human with the grabber, at the hold's off
     CHECK(local.y == Approx(1.01F).margin(0.01F));
 }
 
+TEST_CASE("a held human whose hold point lies through a wall is swept against it, and the grabber gives way",
+          "[human][combat]") {
+    // Expected: combat-grabs.md#grab-posing, confirmed (code)
+    // Human_MoveAttached (0x00244e78) sweeps the held body to the hold's point against the level; what it falls short
+    // by moves the grabber back. A wall facing -x at x = 40.5, 0.5 m to the right of both bodies: the front hold's
+    // point is 0.38 m to the grabber's right, so the held human (a 0.35 m sphere) stops at the wall's face, short of
+    // the point, and the grabber at x = 40 gives way until the offset holds again.
+    const FightCharacter character;
+    constexpr float kWallX = 40.5F;
+    constexpr float kHeldRadius = 0.35F;
+    HumanFight fight(character, 1.5F, coney::test::wallFacingMinusX(kWallX, 30.0F, 50.0F, 0.0F, 3.0F));
+    float farthest = 0.0F;
+    bool attached = false;
+    fight.run("5 tap circle\n", 40, [&](std::uint64_t /*frame*/) {
+        attached = attached || fight.other().attached();
+        farthest = std::max(farthest, fight.other().position().x);
+    });
+    REQUIRE(attached);
+    REQUIRE(fight.player().fighter().pairStage() == coney::human::PairStage::Attached);
+    // Never into the wall: the sphere's centre stays its radius from the face.
+    CHECK(farthest <= kWallX - kHeldRadius + 0.01F);
+    // The grabber has moved away from the wall, so the held human is at the hold's offset again.
+    CHECK(fight.player().position().x < 40.0F - 0.2F);
+    const Vec3 local =
+        coney::human::toFrame(fight.player().position(), fight.player().heading(), fight.other().position());
+    CHECK(local.x == Approx(0.38F).margin(0.03F));
+    CHECK(local.y == Approx(1.01F).margin(0.03F));
+}
+
+TEST_CASE("a held human put back after a fall out of the world is let go and stands on the ground", "[human][combat]") {
+    // Expected: combat-grabs.md#pair-break, confirmed (code)
+    // The put-back is Coney's (teleports.md#out-of-world); it places the human, and every placement breaks the pair
+    // (Human_BreakPair from Human_SetTransform), so no hold outlives it, and he stands on the ground.
+    const FightCharacter character;
+    HumanFight fight(character, 1.5F);
+    fight.run("5 tap circle\n", 40);
+    REQUIRE(fight.player().fighter().held() == &fight.other());
+    fight.other().putBack(nullptr, Vec3{30.0F, 30.0F, 0.0F}, 0.0F);
+    CHECK_FALSE(fight.other().fighter().holdState().has_value());
+    CHECK_FALSE(fight.other().attached());
+    CHECK_FALSE(fight.other().airborne());
+    fight.run("", 1);
+    CHECK(fight.player().fighter().held() == nullptr);
+    CHECK_FALSE(fight.other().fighter().inPair());
+    CHECK_FALSE(fight.other().airborne());
+    CHECK(fight.other().position().x == Approx(30.0F).margin(0.05F));
+}
+
 TEST_CASE("circle held tackles another human: it is mounted and its reaction goal is the tackled one",
           "[human][combat]") {
     // Expected: combat-grabs.md#grab, confirmed (code) (the tackled victim's reaction goal: ai/index.md#reaction-goals)
