@@ -599,14 +599,82 @@ def test_a_progress_comment_that_failed_is_posted_by_the_rerun(world: World) -> 
     assert world.record().progress_posted is True and len(world.log().stamps) == 2
 
 
-def test_a_record_whose_worktree_is_gone_is_not_silently_remade(world: World) -> None:
+def lose_worktree(world: World, branch: bool = False) -> None:
+    """The worktree of the started unit goes (as `workspace clean` once did), and with `branch` its branch too."""
+    git(world.main, "worktree", "remove", "--force", str(world.worktree()))
+    if branch:
+        git(world.main, "branch", "-D", TASK)
+
+
+def test_a_record_whose_worktree_is_gone_is_made_again_on_its_branch_and_says_so(world: World) -> None:
     world.ready()
     assert world.run() == 0
-    git(world.main, "worktree", "remove", "--force", str(world.worktree()))
+    git(world.worktree(), "commit", "-q", "--allow-empty", "-m", "own")
+    tip = git(world.worktree(), "rev-parse", "HEAD").strip()
+    lose_worktree(world)
     world.output.clear()
-    assert world.run() == 1
-    assert "worktree is gone" in world.said()
-    assert str(world.scratch / TASK / "unit.json").replace("\\", "/") in world.said().replace("\\", "/")
+    assert world.run() == 0
+    said = world.said().replace("\\", "/")
+    assert "worktree was gone" in said and f"on its branch {TASK}" in said and "already started" in said
+    assert world.worktree().is_dir()
+    assert git(world.worktree(), "rev-parse", "--abbrev-ref", "HEAD").strip() == TASK
+    assert git(world.worktree(), "rev-parse", "HEAD").strip() == tip
+
+
+def test_a_record_whose_worktree_and_branch_are_gone_starts_again_from_the_recorded_base(world: World) -> None:
+    world.ready()
+    assert world.run() == 0
+    base = world.record().base_commit
+    world.push_to_origin()
+    lose_worktree(world, branch=True)
+    world.output.clear()
+    assert world.run() == 0
+    said = world.said()
+    assert "worktree was gone" in said and "branch was gone too" in said and base[:12] in said
+    assert git(world.worktree(), "rev-parse", "HEAD").strip() == base
+    assert git(world.worktree(), "rev-parse", "--abbrev-ref", "HEAD").strip() == TASK
+    assert world.record().base_commit == base
+
+
+def test_the_worktree_made_again_keeps_the_stamps_and_posts_nothing_new(world: World) -> None:
+    world.ready()
+    assert world.run() == 0
+    stamp_count, posted = len(world.log().stamps), len(world.posted)
+    lose_worktree(world)
+    assert world.run() == 0
+    assert len(world.log().stamps) == stamp_count and len(world.posted) == posted
+
+
+def test_a_dry_run_says_it_would_make_the_worktree_again_and_makes_nothing(world: World) -> None:
+    world.ready()
+    assert world.run() == 0
+    lose_worktree(world, branch=True)
+    world.output.clear()
+    assert world.run(dry_run=True) == 0
+    assert "would make the worktree again" in world.said()
+    assert not world.worktree().exists() and TASK not in world.branches()
+
+
+def test_a_fix_whose_worktree_is_gone_gets_the_parents_branch_back(world: World) -> None:
+    started_parent(world)
+    fix_file(world)
+    assert world.run(FIX) == 0
+    lose_worktree(world)
+    world.output.clear()
+    assert world.run(FIX) == 0
+    assert world.worktree().is_dir() and "worktree was gone" in world.said()
+    assert git(world.worktree(), "rev-parse", "--abbrev-ref", "HEAD").strip() == TASK
+
+
+def test_a_fix_whose_branch_is_gone_too_is_refused_since_its_work_would_be_lost(world: World) -> None:
+    started_parent(world)
+    fix_file(world)
+    assert world.run(FIX) == 0
+    lose_worktree(world, branch=True)
+    world.output.clear()
+    assert world.run(FIX) == 1
+    assert "branch" in world.said() and "ask the coordinator" in world.said()
+    assert not world.worktree().exists()
 
 
 def not_made(world: World, task: str = TASK) -> bool:
