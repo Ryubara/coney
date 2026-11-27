@@ -179,10 +179,12 @@ class CrimeReports {
   private:
     // Type 1's store test (its `case 1`): police only at a store front within 10 m not yet robbed; a robbed one that
     // no gang holds goes to the offender's gang and scores its leader.
+    // @orig 0x0041b8b0 GameState_ReportCrime (unknown)
     void breakIn(CrimeServices& services, const CrimePosition& at, double offender,
                  const std::optional<CrimeGang>& gang, bool sendResponders);
     // A player offender's score against `victim` (types 0, 2 and 8): for a cop, civilian or dealer, once per victim
     // and player.
+    // @orig 0x0041b8b0 GameState_ReportCrime (unknown)
     void scoreVictim(CrimeServices& services, double offender, double victim);
 
     bool m_reporting = true;

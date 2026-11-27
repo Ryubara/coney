@@ -46,6 +46,8 @@ enum class GameOverReason : std::uint8_t {
 /// game state's update counter).
 class GameOverCheck {
   public:
+    /// A new check: on, no failure, the update counter at 0 (the game state's constructor).
+    GameOverCheck() = default;
     /// The route check runs on the game state's updates whose count is a multiple of this while the failure waits.
     static constexpr int kRouteCheckUpdates = 37;
     /// The route check's failures in a row that fail the mission.
@@ -57,8 +59,8 @@ class GameOverCheck {
     static constexpr int kArmiesHandOffCap = 90;
 
     /// The level's start (`0x00418c68`): the check on, no failure pending, no route checks failed, not an Armies level.
-    /// The update counter runs on (only the game state's constructor zeroes it).
-    void reset();
+    /// The update counter runs on (only the game state's constructor zeroes it): a fresh check that keeps it.
+    void reset() { *this = GameOverCheck(m_updates); }
     /// `EnableGameOverCheck(on)`.
     /// @orig 0x0041d890 GameState_EnableGameOverCheck (unknown)
     void setEnabled(bool on) { m_enabled = on; }
@@ -93,6 +95,8 @@ class GameOverCheck {
     [[nodiscard]] int handOffLeft() const { return m_handOff; }
 
   private:
+    // A fresh check whose update counter stands at `updates`.
+    explicit GameOverCheck(std::uint32_t updates) : m_updates(updates) {}
     // Fails the mission with player 1's reason.
     GameOverReason fail(const GameOverPlayer& first);
 

@@ -13,15 +13,6 @@ bool noneAbleToHelp(std::span<const GangHelper> members) {
     return std::ranges::none_of(members, [](const GangHelper& m) { return !m.cuffed && !m.knockedOut && !m.held; });
 }
 
-void GameOverCheck::reset() {
-    m_enabled = true;
-    m_reason.reset();
-    m_routeNoes = 0;
-    m_handOff = kHandOffUpdates;
-    m_handedOff = false;
-    m_armies = false;
-}
-
 GameOverReason GameOverCheck::fail(const GameOverPlayer& first) {
     m_reason = first.cuffed ? GameOverReason::Busted : GameOverReason::Beaten;
     m_handOff = kHandOffUpdates;

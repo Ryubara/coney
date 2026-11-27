@@ -53,22 +53,29 @@ class LevelCrimeServices final : public CrimeServices {
     [[nodiscard]] int playerOneGang() override;
 
     /// The player index of a human the level made as a player (1 or 2 made: 0 or 1).
+    /// @coney-only the crime report's seam to the level's humans, brains and objects
     [[nodiscard]] int playerIndex(double handle) override;
     /// The brain kind of the human with `handle`, through his brain.
+    /// @coney-only the crime report's seam to the level's humans, brains and objects
     [[nodiscard]] int brainType(double handle) override;
     /// The leader of the offender's gang, through the offender's brain.
+    /// @coney-only the crime report's seam to the level's humans, brains and objects
     [[nodiscard]] std::optional<double> gangLeader(double offender) override;
     /// Calls the Lua function `function` with the gang and the type.
     void callCrimeCallback(const std::string& function, int gang, int type) override;
     /// Hands the move to `moveScene`.
     void moveCrimeScene(const CrimePosition& at) override;
     /// The store hooks' answer (none without them).
+    /// @coney-only the crime report's seam to the level's humans, brains and objects
     [[nodiscard]] std::optional<CrimeStore> nearestStore(const CrimePosition& at) override;
     /// Hands the break-in to the store hooks.
+    /// @coney-only the crime report's seam to the level's humans, brains and objects
     void robStore(const CrimePosition& at) override;
     /// Hands the store's new gang to the store hooks.
+    /// @coney-only the crime report's seam to the level's humans, brains and objects
     void claimStore(const CrimePosition& at, int gang) override;
     /// Hands the crime event to the store hooks' statistics.
+    /// @coney-only the crime report's seam to the level's humans, brains and objects
     void scoreCrime(double human, int event) override;
     /// Hands the message to setHud()'s receiver.
     void notifyHud(int message) override {

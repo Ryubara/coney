@@ -113,7 +113,7 @@ bindings](../references/bindings/gang.md)).
 | `0x00169b00` | `Gang_CalmMembers` | Each AI member: target and enemies cleared, actions cleared, goals `0xf` and `0x41` popped, and goal `0x74` brought to the top and marked done | Confirmed (code) |
 | `0x00169cc8` | `Gang_ClearMembersBrainByte290` | Brain `+0x290` = 0 on every member | Confirmed (code) |
 | `0x00169d30` | `Gang_CheckNeutralRule` | A gang of kind `0x17` or `0x18` whose members all have threat response 0 is made neutral with the kind-0 gangs | Confirmed (code) |
-| `0x00169dd8` | `Gang_NoneAbleToHelp` | True when the gang has members and none other than the given human is free (not cuffed, knocked out or wounded); the game-over check passes no human, so it counts player 1 too | Confirmed (code) |
+| `0x00169dd8` | `Gang_NoneAbleToHelp` | True when the gang has members and none other than the given human is free (not cuffed, knocked out or wounded) | Confirmed (code) |
 | `0x00169ea0` | `Gang_CanReachToHelp` | Whether a member other than the human, not cuffed or down, has a navigation route to the human's nav area | Confirmed (code) |
 | `0x00169fe0` | `Gang_ProbeGroundFlag10` | Casts a ray down from 0.1 m above the point and reports a hit whose surface has flag `0x10` (`0x00249050`) | Confirmed (code) |
 | `0x0016a000` | `Gang_SetInvincible` | `+0xd8` and god mode on every current member | Confirmed (code) |

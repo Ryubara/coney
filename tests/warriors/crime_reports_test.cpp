@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The crime report and the wanted timers as the original's code has them (docs/research/crimes.md#break-in-police,
-// docs/research/ai-gangs.md#crimes, docs/research/crimes.md#wanted): the break-in's store test, the assault time,
+// docs/research/crimes.md#report-types, docs/research/crimes.md#wanted): the break-in's store test, the assault time,
 // the victim's score, a custom crime's count and what ForceCrimeLevel holds. Synthetic services.
 #include <algorithm>
 #include <map>
@@ -114,7 +114,7 @@ TEST_CASE("a robbed store with no gang yet goes to the offender's gang and score
 }
 
 TEST_CASE("the offender gang's assault time is noted only when the report sends responders", "[crimes]") {
-    // Expected: ai-gangs.md#crimes, confirmed (code)
+    // Expected: crimes.md#report-types, confirmed (code)
     CrimeReports crimes;
     StoreServices services;
     crimes.report(services, crime::kAssault, CrimePosition{}, 1.0, 0.0, false, 0, 1000);
@@ -127,7 +127,7 @@ TEST_CASE("the offender gang's assault time is noted only when the report sends 
 
 TEST_CASE("a player's victim scores for a cop (event 3) or a civilian or dealer (event 0), once per victim and player",
           "[crimes]") {
-    // Expected: ai-gangs.md#crimes, confirmed (code)
+    // Expected: crimes.md#report-types, confirmed (code)
     CrimeReports crimes;
     StoreServices services;
     services.players[1.0] = 0;
@@ -151,7 +151,7 @@ TEST_CASE("a player's victim scores for a cop (event 3) or a civilian or dealer 
 }
 
 TEST_CASE("a custom crime with a count of 0 queues no responders", "[crimes]") {
-    // Expected: ai-gangs.md#crimes, confirmed (code)
+    // Expected: crimes.md#report-types, confirmed (code)
     CrimeReports crimes;
     StoreServices services;
     crimes.report(services, crime::kCustom, CrimePosition{}, 0.0, 0.0, true, 0, 0);

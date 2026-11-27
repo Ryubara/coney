@@ -961,6 +961,20 @@ crew member does not have (`+0x380` = −1, which `Inventory_AddItem` ignores), 
 panel** (the player's, without notify), with item 10's pick-up sound played in 2D. So a crew member's theft pays the
 player and adds no loot item.
 
+### The report by type {#report-types}
+
+What `GameState_ReportCrime` (`0x0041b8b0`) does per type beyond [AI: crimes](ai-gangs.md#crimes), confirmed (code)
+at `0x0041b8b0`:
+
+- **Responders** are queued only when the report asks for them (`mode` 1). A custom crime (type 4) queues its own
+  count, and **none for a count of 0**.
+- **The assault time** (gang `+0x5f4`, now) is noted for the offender's gang on types 0, 2, 3 and 8 **in mode 1
+  only**, beside the responders.
+- **The victim's score**, on types 0, 2 and 8 in any mode: a player offender (human `+0x1b0` not -1) scores crime
+  event 3 (`Stats_AddCrime`, `0x004ed948`) against a victim of brain kind 1 (a cop), or event 0 against kind 4 or 5
+  (a civilian or a dealer); other kinds score nothing. It is **once per victim and player**: bit (player index) of
+  the victim's brain byte `+0x290` marks it.
+
 ### Stores {#stores}
 
 A store is a set of flags ([World flags: groups](flags.md#groups)) with a store front (activity 14), browsers and
@@ -991,19 +1005,19 @@ differ in the code: a break-in reaches a strobe within 6 m of the store's flag, 
    CfgBreakAndEnterDelay (0x005148a4) seconds, the crime scene, no target, no offender)`. Then the strobe's message
    `0x12` and the store's buyers switched off ([above](#stores)). A store already robbed only fills in the robbing
    gang (when the bits hold 31) and scores its leader's crime event; **a second break-in at the same store brings no
-   police** until `ResetStore`.
+   police** until `ResetStore`. Confirmed (code).
 3. `Responders_Queue` (`0x0016df68`) does nothing for a count of 0. Otherwise it takes, over all 32 gangs' four
    spawners, the one in state **4** (police dispatch) or **6** (dispatching) nearest the crime scene whose queue is not
    full (`+0xb0` < 4), and `Spawner_QueueCall` (`0x0016dc70`) appends the entry: due at now + delay × 1,000 ms, the
    type, kind and count. **No spawner in state 4 or 6 anywhere: no police.** The spawner then makes a `Responder<n>`
    gang of type 1 when the entry is due, while the police count is under its limit, and places the squad out of sight
-   ([AI: spawners](ai-gangs.md#spawners), steps 4-6).
+   ([AI: spawners](ai-gangs.md#spawners), steps 4-6). Confirmed (code).
 
 **Who reports a break-in** and with what, confirmed (code):
 
 | Reporter | Position | Offender | Mode |
 | --- | --- | --- | --- |
-| A lock pick that was not all perfect, or a third abandoned pick (`LockPick_End` `0x0022d908`, both calls) | the picker's position | **none** (`0x006ebd30`), so no wanted time, no police hostility, no callback | 1 |
+| A lock pick that was not all perfect, or a third abandoned pick (`LockPick_End` `0x0022d908`, both calls; confirmed (code)) | the picker's position | **none** (`0x006ebd30`), so no wanted time, no police hostility, no callback | 1 |
 | An alarmed pane ([panes](objects.md#pane)) and the others in [AI: crimes](ai-gangs.md#crimes) | their own | their own | their own |
 
 So a lock-picked store door brings `CfgCrimeResponders(1)` police after `CfgBreakAndEnterDelay` seconds (15, 10 or 7
@@ -1014,10 +1028,9 @@ Whether the responders then attack the player's gang when the pick reported no o
 set) is not traced: the dispatch goal's target is the crime scene (inferred from the queued entry, which carries no
 target).
 
-**User item 13 (no police on a break-in)**: Coney's report (`repo:src/warriors/crime_reports.cpp`, checked
-2026-10-11) calls `CrimeServices::queueResponders`, whose only implementation is the interface's empty default, so
-nothing is ever queued; Coney also has no dispatch queue on its spawners (`GameplayMode`'s scout hook logs its call
-only). **Coney fixes**:
+**User item 13 (no police on a break-in)**: Coney's report (`repo:src/warriors/crime_reports.cpp`) calls
+`CrimeServices::queueResponders`, whose only implementation is the interface's empty default, so nothing is ever queued;
+Coney also has no dispatch queue on its spawners (`GameplayMode`'s scout hook logs its call only). **Coney fixes**:
 
 1. Build the spawner dispatch queue ([AI: spawners](ai-gangs.md#spawners) steps 1, 4-6, [Spawner
    states](../references/spawner-states.md) 4 and 6): four entries per spawner (time due, type, kind, count, target,
