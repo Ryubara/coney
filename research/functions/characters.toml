@@ -532,7 +532,7 @@ status = "legacy"
 [[function]]
 address = 0x00226a20
 name = "Human_GetHeadPoint"
-page = "characters.md#falling"
+page = "characters-ground.md#falling"
 role = "the upper point of the landing segment: the feet + `+0x4e8` - 0.16 x scale"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::headPointHeight"
@@ -541,7 +541,7 @@ status = "compared"
 [[function.gaps]]
 what = "a human with no skeleton takes the idle's pelvis height for the body point"
 relation = "stand-in"
-question = "characters.md#q-landing-inputs"
+question = "characters-ground.md#q-landing-inputs"
 
 [[function]]
 address = 0x00228258
@@ -1962,7 +1962,7 @@ status = "compared"
 [[function.gaps]]
 what = "a jump's raise is not ended by a long fall (no long-fall state); the take-off height is the last ground"
 relation = "stand-in"
-question = "characters.md#q-landing-inputs"
+question = "characters-ground.md#q-landing-inputs"
 
 [[function]]
 address = 0x0023eab8

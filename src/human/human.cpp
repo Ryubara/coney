@@ -127,9 +127,9 @@ class WalkingOwner final : public physics::BodyOwner {
     }
     [[nodiscard]] physics::Body* body() override { return m_body; }
     // `Human_OnContact` (`0x00219d50`) for the level: a climbing human passes through the fence it climbs (code 0);
-    // every other triangle slides, with the contact scale (`0x20001`; docs/research/characters-ground.md#walls, step 4).
-    // A landing contact lands the human first, whatever the triangle (`Human_Land`, with the airborne state cleared at
-    // once, so the rest of the sweep moves a human on the ground; the human makes the rest of the landing after it).
+    // every other triangle slides, with the contact scale (`0x20001`; docs/research/characters-ground.md#walls, step
+    // 4). A landing contact lands the human first, whatever the triangle (`Human_Land`, with the airborne state cleared
+    // at once, so the rest of the sweep moves a human on the ground; the human makes the rest of the landing after it).
     // @orig 0x00219d50 Human_OnContact (unknown)
     [[nodiscard]] std::uint32_t onContact(const physics::Contact& contact) override {
         if ((contact.flags & physics::kContactLanding) != 0) {
@@ -964,7 +964,7 @@ void Human::land(anim::Vec3 feet) {
     // Not ported: `Human_Land`'s fall damage by this speed, the player camera's landing kind, the release of a grab,
     // the switch of the body's capsule, its body mode, the dead or limp branch and the game mode 0x11 case (all #667),
     // and the arm of the impact sound (#684); lastLandingSpeed() keeps the speed they read
-    // (docs/research/characters.md#falling).
+    // (docs/research/characters-ground.md#falling).
     m_lastLandingSpeed = m_velocity.z;
     ++m_landings;
     m_position = feet;
@@ -1036,8 +1036,8 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
         const float radius = airSphereRadius();
         (*m_bodyContact)(*this, anim::Vec3{across.x, across.y, across.z + radius + bodyTuning().footGap}, radius);
     }
-    // The whole velocity, the fall too, goes to the sweep (docs/research/characters-ground.md#falling): the walls take the
-    // move, airborne with no corner slide and a quarter of the speed a player slid with (the human body's contact
+    // The whole velocity, the fall too, goes to the sweep (docs/research/characters-ground.md#falling): the walls take
+    // the move, airborne with no corner slide and a quarter of the speed a player slid with (the human body's contact
     // scale, docs/research/physics-bodies.md#u3-human-scale), and each pass asks the landing test, whose floor lands
     // the human inside the sweep. stand-in: the take-off height (+0x560, written by Human_BeginJump) is the last ground
     // the human stood on, where a jump starts.
