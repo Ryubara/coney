@@ -95,6 +95,7 @@ std::optional<float> warCommandStickAngle(std::uint8_t x, std::uint8_t y) {
     }
     const float dx = static_cast<float>(x) - kAxisCentre;
     const float dy = static_cast<float>(y) - kAxisCentre;
+    // Coney's choice: a byte of 128 or more is right (x) or down (y); the original's quadrant tests overlap at 128.
     const bool right = x >= 128;
     const bool down = y >= 128;
     if (right && !down) {
@@ -124,11 +125,14 @@ std::size_t warCommandSlotAt(float angle, std::size_t current) {
 }
 
 void WarCommandDisplay::open(const Chief& chief, std::uint64_t nowMs) {
-    // A menu that is not allowed is left as it is, whoever opens it.
+    // A menu that is not allowed is left as it is, whoever opens it. Stand-in: Coney's display is always set up
+    // (vtable +0x4c).
     if (!chief.allowed) {
         return;
     }
-    // An allowed one hides for a human who leads no crew.
+    // An allowed one hides for a human who leads no crew. Coney's choice: the caller gives player 1's display and
+    // chief (the player found by his pad, the pad's index: GameplayMode); its sprites always exist and are resident
+    // (+0x10); +0x1550 is not kept, and the two-player x is not built (stand-in: centreX stays 0.5).
     if (!chief.warChief) {
         m_shown = false;
         return;
@@ -150,7 +154,8 @@ std::optional<int> WarCommandDisplay::issue() {
         return std::nullopt;
     }
     // **Stand-in**: a disabled command's name is not shut down here (MessageHUD_Shutdown); render() draws nothing
-    // after an order of a disabled command, so it would not show anyway.
+    // after an order of a disabled command, so it would not show anyway. The slot kept at +0x1544 is the highlight,
+    // and 0x0051480c (set to 0xff, its reader not traced) is not kept.
     m_issued = true;
     m_lit = true;
     m_afterIssue = 0;
@@ -282,6 +287,8 @@ void WarCommandDisplay::render(const HudCanvas& canvas, const Look& look, std::u
     } else {
         style.colour = chosenEnabled ? kNameGrey : kDark;
     }
+    // Stand-in: the original sets the text's +0x18c to 255 on every draw (its meaning not traced); the name fades
+    // with the other sprites.
     style.fade = others;
     style.timeMs = static_cast<std::uint32_t>(nowMs - std::min(m_textSince, nowMs));
     const gui::TextLayout text = gui::layoutText(name, style, canvas.text.fonts);
