@@ -16,7 +16,7 @@ crimes and police ([Crimes](crimes.md)) and every mission's encounters depend on
 
 ## Original structure
 
-The gang module is `0x00162518`-`0x0016e388`; its function-by-function index is on
+The gang module is `0x00162518`-`0x0016e388` (confirmed (code)); its function-by-function index is on
 [AI code index: the gang module](ai-code.md#gang-functions), and the tactic and goal classes are on
 [AI code index](ai-code.md) and [AI goals](ai-goals.md). The functions this page's behaviour starts from:
 
@@ -27,6 +27,9 @@ The gang module is `0x00162518`-`0x0016e388`; its function-by-function index is 
 | `0x001681a0` | `GangSpawner_Update` | One spawner's update and spawn | confirmed (code) |
 | `0x001672a8` | `GangSpawner_OnHumanGone` | A spawned human gone: the counts taken off | confirmed (code) |
 | `0x001664d8` | `Gang_RemoveMember` | A member leaves the gang | confirmed (code) |
+| `0x0016cdf0` | `Gang_Create` | Making a gang: [Gang records](gang-records.md#create) | confirmed (code) |
+| `0x00166308` | `Gang_AddMember` | A member joins: [Gang records](gang-records.md#join) | confirmed (code) |
+| `0x00165678` | `Gang_GetLeader` | The leader: [Gang records](gang-records.md#leader) | confirmed (code) |
 
 ## Gang fights {#gang-fights}
 
@@ -223,6 +226,8 @@ no time limit, `+0x28` the option.
 
 ### The scripted tactics {#tactic-kinds}
 
+Confirmed (code) at the cited addresses, unless marked.
+
 Every `Tactic<Name>` binding finds the gang (`0x0016c388`), takes a tactic from the pool, runs the class's
 constructor (base fields, the callback name interned by `0x003068f8`, then its own fields) and sets it (`0x00165640`),
 so the class's Start runs on the gang's next update. A tactic **fires its callback** with a code, the event names of
@@ -233,8 +238,8 @@ below unless marked.
 
 Shared behaviour, confirmed (code):
 
-- **Leader**: gang `+0x44` holds the leader's handle; `0x00165678` returns him while he is alive, not a player, not down
-  (`0x00223b70`) and not out of the fight (`0x00227e60`), else another member (`0x00165738`).
+- **Leader**: gang `+0x44` holds the leader's handle, which `Gang_GetLeader` keeps or picks again
+  ([Gang records](gang-records.md#leader); a player leader stays one while arrested or down).
 - **Moving as a group** (MoveToFlag, TravelPath, WalkinTall, Wander, Confront): the leader is popped to his goal base
   and re-marked (`0x0028d8c0`, `0x0028d8a0`), and the moving goal is pushed above his old goals; every other member
   that is not a player and not down joins the leader's

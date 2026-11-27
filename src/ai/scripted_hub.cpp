@@ -313,7 +313,7 @@ void ScriptedHub::canFlee(int gang, bool on) {
 
 void ScriptedHub::setLookups(HubLookups lookups) {
     m_lookups = std::move(lookups);
-    // The gangs' flight reads the same categories and flee shares.
+    // The gangs' flight reads the same categories and flee shares; a new police gang, the wanted gangs.
     m_scripted->owner().gangs().setLookups(
         GangLookups{.role = [category = m_lookups.category](const Brain& brain) -> std::optional<int> {
                         if (!category || brain.characterClass() < 0) {
@@ -321,7 +321,9 @@ void ScriptedHub::setLookups(HubLookups lookups) {
                         }
                         return category(characters::characterClassOf(brain.characterClass()).id);
                     },
-                    .fleeShare = m_lookups.fleePercent});
+                    .fleeShare = m_lookups.fleePercent,
+                    .wanted = m_lookups.gangWanted,
+                    .crimeLevelForced = m_lookups.crimeLevelForced});
 }
 
 void ScriptedHub::clearBums() {

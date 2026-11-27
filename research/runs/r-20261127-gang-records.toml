@@ -1,0 +1,52 @@
+version = 1
+id = "r-20261127-gang-records"
+date = "2026-11-27"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "a4f106071e8faa38f8ae198b44fac65b18b2177bfd715830e765f250a0753f0f"
+
+[who]
+agent = "ab40b01c373a0e87d"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "level99 cp2, call-brains hook: read the 32 gang records (0x005e6e30, stride 0xb10: in use +0x18, kind +0x2c, stored id +0x30, masks +0x38/+0x3c, leader +0x44, slots +0x48, wanted +0x5e8) around Lua calls. Leader: GangSetLeader(1, Ash), HuSetArrested(Ash) (flag 0x20000 at *(human+0xd4)), GangGetLeader(1); on a fresh launch HuSetArrested(player) then GangGetLeader(1). Relations: GangMakeEnemies(1, 9) (never made), GangMakeEnemies(1, 5) (made and deleted), GangCreate(19) taking record 5. Police: Gang_SetWantedTimer(record 2), then GangCreate(1) twice"
+
+[values]
+records_in_use_at_start = 5
+stored_id_record5_deleted = 5
+stored_id_record6_deleted = 6
+stored_id_never_made_records = 25
+stored_id_never_made_value = 0
+player_handle = 135931
+leader_after_player_arrested = 135931
+leader_set_to_ai = 201470
+leader_after_ai_arrested = 135931
+gang1_enemy_mask_after_make_enemies_never_made = 1
+gang1_friend_mask_before = 1
+gang1_friend_mask_after = 0
+gang1_enemy_mask_after_make_enemies_deleted = 33
+new_gang_record = 5
+gang1_enemy_mask_after_new_gang = 33
+crime_level_forced = 0
+wanted_gang2_enemy_mask_after_police = 192
+police_gang6_enemy_mask = 4
+police_gang7_enemy_mask = 4
+
+[addresses]
+gang_table = 0x005e6e30
+Gang_SetEnemyBit = 0x001690c8
+Gang_Create = 0x0016cdf0
+Gang_GetLeader = 0x00165678
+Gang_SetWantedTimer = 0x00169878

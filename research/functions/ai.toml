@@ -111,10 +111,30 @@ status = "legacy"
 [[function]]
 address = 0x00165678
 name = "Gang_GetLeader"
-page = "ai-gangs.md#tactic-kinds"
+page = "gang-records.md#leader"
+role = "The stored leader `+0x44` unless gone, dead, or an AI cuffed or down; else `Gang_PickLeader`"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gang::leader"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "dead is out of health and cuffed the script's arrested state (Coney keeps no state flags)"
+relation = "stand-in"
+question = "gang-records.md#q-state-flags"
+
+[[function]]
+address = 0x00165738
+name = "Gang_PickLeader"
+page = "gang-records.md#leader"
+role = "Stores and returns the first member who is player 1 (or a player while player 1 is dead) or of a police role and not cuffed; else the first neither down nor cuffed; else the first"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gang::leader"
+status = "compared"
+
+[[function.gaps]]
+what = "dead is out of health and cuffed the script's arrested state (Coney keeps no state flags)"
+relation = "stand-in"
+question = "gang-records.md#q-state-flags"
 
 [[function]]
 address = 0x00165b70
@@ -137,11 +157,26 @@ status = "compared"
 [[function]]
 address = 0x00166308
 name = "Gang_AddMember"
-page = "ai-code.md#gang-functions"
+page = "gang-records.md#join"
 role = "Moves a human in: out of its old gang (its actions, target and enemies cleared), brain `+0x20c` set, its attack weights loaded, god mode when the gang is invincible, a player of flag `+0x3ac` made leader, type `0xed` gets its own anim substitution; event `0x16`. The cap (16 for kinds 1 and `0x17`, else 10) only calls a no-op (`0x0016d0e0`)"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::addMember"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the attack weights are not loaded again from the class (Brain_LoadAttackWeights)"
+relation = "stand-in"
+question = "gang-records.md#q-attack-weights"
+
+[[function.gaps]]
+what = "any player joining leads: Coney keeps no war chief flag (`+0x3ac`)"
+relation = "stand-in"
+question = "gang-records.md#q-war-chief"
+
+[[function.gaps]]
+what = "event `0x16` does not carry the member count before plus one"
+relation = "stand-in"
+question = "gang-records.md#q-unkept-fields"
 
 [[function]]
 address = 0x00166708
@@ -450,20 +485,40 @@ status = "legacy"
 [[function]]
 address = 0x0016acf0
 name = "Gang_MakeEnemies"
-page = "ai-code.md#gang-functions"
-role = "`GangMakeEnemies(a, b)`: `Gang_SetEnemyBit` both ways; id −1 ignored"
+page = "gang-records.md#relations"
+role = "`GangMakeEnemies(a, b)`: `Gang_SetEnemyBit` both ways, with the bit of the other record's stored id `+0x30`; id −1 ignored"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::makeEnemies"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "an id outside 0 to 31 does nothing; the original reads past its records"
+relation = "stand-in"
+question = "gang-records.md#q-out-of-range"
+
+[[function.gaps]]
+what = "a record made in an earlier level and not in this one has stored id 0 in Coney (its gangs last a level) and its index in the original"
+relation = "stand-in"
+question = "gang-records.md#q-stored-id"
 
 [[function]]
 address = 0x0016ad80
 name = "Gang_MakeFriends"
-page = "ai-code.md#gang-functions"
-role = "`GangMakeFriends(a, b)`: `Gang_SetFriendBit` both ways"
+page = "gang-records.md#relations"
+role = "`GangMakeFriends(a, b)`: `Gang_SetFriendBit` both ways, with the bit of the other record's stored id `+0x30`; id −1 ignored"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::makeFriends"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "an id outside 0 to 31 does nothing; the original reads past its records"
+relation = "stand-in"
+question = "gang-records.md#q-out-of-range"
+
+[[function.gaps]]
+what = "a record made in an earlier level and not in this one has stored id 0 in Coney (its gangs last a level) and its index in the original"
+relation = "stand-in"
+question = "gang-records.md#q-stored-id"
 
 [[function]]
 address = 0x0016ae60
@@ -472,7 +527,7 @@ page = "ai-code.md#gang-functions"
 role = "`GangMakeEnemiesOfType`: `Gang_SetHostileToKind(gang, kind, 1)`"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::makeEnemiesOfType"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0016ae90
@@ -481,7 +536,7 @@ page = "ai-code.md#gang-functions"
 role = "`GangMakeNeutralOfType`: `Gang_MakeNeutralWithType(gang, kind, 0)`"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::makeNeutralOfType"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0016afc8
@@ -652,10 +707,11 @@ status = "legacy"
 [[function]]
 address = 0x0016c3a8
 name = "Gang_SetHostileToKind"
-page = "ai-gangs.md#crimes"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
-coney = "src/ai/gangs.h:Gangs::makeEnemiesOfType"
-status = "legacy"
+page = "gang-records.md#create"
+role = "Every gang in use of a kind treats the gang as an enemy, and with the third argument 1 the gang them"
+level = "confirmed-code"
+coney = "src/ai/gangs.h:Gangs::setHostileToKind"
+status = "compared"
 
 [[function]]
 address = 0x0016c470
@@ -664,7 +720,17 @@ page = "ai-code.md#gang-functions"
 role = "`GangMakeNeutralOfType(gang, kind, calm)`: clears both relation bits with every gang of that kind that is not a friend either way; with `calm`, both sides are calmed, a 3 s truce starts and the crime report is cancelled; kind 0 clears brain byte `+0x290`"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::makeNeutralOfType"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "only mode 0 is ported: the calm mode (both sides calmed, a 3 s truce, the crime report cancelled) comes from Gang_ClearWanted, which Coney's crime reports do not wire"
+relation = "not-ported"
+issue = 81
+
+[[function.gaps]]
+what = "the members' brain byte `+0x290` cleared for kind 0 is not modelled"
+relation = "stand-in"
+question = "gang-records.md#q-unkept-fields"
 
 [[function]]
 address = 0x0016ca50
@@ -678,11 +744,26 @@ status = "compared"
 [[function]]
 address = 0x0016cdf0
 name = "Gang_Create"
-page = "ai-code.md#gang-functions"
+page = "gang-records.md#create"
 role = "`GangCreate(kind, name)`: −1 when the name is taken; else the first free record is reset, put in use, calm, given the kind, name, id, spot-line flag `+0xd2`, the kind's three music track names (`CfgGangMusic`) and no active spawner; kinds 1, `0x17` and `0x18` get their own anim substitutions; a new kind-1 gang makes every wanted gang hostile to the police (unless game `+0x28c` is set)"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::create"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the spawners' reset (their active bytes and the wave counts `+0xb00` to `+0xb04`) is the spawners' work"
+relation = "not-ported"
+issue = 645
+
+[[function.gaps]]
+what = "the music track names, the spot-line flag `+0xd2` and the bytes `+0xd0`, `+0xd1` and `+0xda` are not on Coney's record, and the wanted timers are the crime reports'"
+relation = "stand-in"
+question = "gang-records.md#q-unkept-fields"
+
+[[function.gaps]]
+what = "with every record in use Coney makes no gang; the original goes on with record -1"
+relation = "stand-in"
+question = "gang-records.md#q-out-of-range"
 
 [[function]]
 address = 0x0016d170
