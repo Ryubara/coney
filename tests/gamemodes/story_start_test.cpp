@@ -785,8 +785,7 @@ TEST_CASE("the level table read alone says on one line why config_preload3.lua d
     const auto table = coney::loadLevelTable(sourceOver(files));
     REQUIRE_FALSE(table.has_value());
     CHECK(table.error().message.find("config_preload3.lua") != std::string::npos);
-    CHECK_FALSE(table.error().message.ends_with('
-'));
+    CHECK_FALSE(table.error().message.ends_with('\n'));
 }
 
 TEST_CASE("a level's radar map is its record's world sheet and map floats, and no record has none",
