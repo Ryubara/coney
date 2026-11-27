@@ -181,8 +181,8 @@ int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Aabb& worldBox, c
         t.plane = dot3(t.corners[0], t.normal);
         computeEdges(t, false);
         const TriangleSweep hit = sweepSphereTriangle(sphere, t, sweep.move);
-        // 9. A hit from 0 to 1. (The original's loop counter misses a step after a hit above 1 and reads one index past
-        // the cell's list; Coney does not.)
+        // 9. A hit from 0 to 1. Coney's choice: the original's loop counter misses a step after a hit above 1 and reads
+        // one index past the cell's list (0x00348170); Coney does not.
         if (hit.hit && hit.fraction >= 0.0F && hit.fraction <= 1.0F) {
             scratch.found.push_back(
                 MeshContact{.key = hit.fraction, .triangle = index, .region = hit.mask, .working = t});
