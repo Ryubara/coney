@@ -202,7 +202,11 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
     /// Player 1's statistics as the play mode counts them.
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
-    /// Stub: whether player 1 answers the pad (always no yet).
+    /// Whether player 1 answers the pad now: a step has run (so the level's opening scripts have run and a scene that
+    /// holds the pad has begun), no scene holds him and no script has taken the pad from him
+    /// (`Player::padControlled()`). A level that opens with a scene and a script that hold him (level99 checkpoint 3's
+    /// `l99_c3`, about 750 updates) says no until they let go; `--wait-for-control` starts a run then.
+    /// @coney-only Coney's question for trace scenarios; the original has no such moment
     [[nodiscard]] bool hasControl() const;
     /// The sandbox's targets (none in a level).
     [[nodiscard]] std::span<human::TargetHuman* const> targets() const { return m_targetPointers; }
@@ -259,6 +263,8 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // `--freeze-world` once frozen: the presentation's whole step (the scenery and the world objects round the camera),
     // returning true; false (the default) when the world advances.
     virtual bool stepFrozenWorld(const FrameTime& /*frame*/) { return false; }
+    // At the start of a step, before anything of it runs: `--wait-for-control` makes the run's start here (the mode's).
+    virtual void beginStep() {}
     // After the humans' step and before the scenes': the step's traces (`--trace`, `--trace-humans`) and network
     // play's capture of the humans.
     virtual void traceStep() {}

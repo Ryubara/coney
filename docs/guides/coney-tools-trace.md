@@ -264,7 +264,7 @@ coney-tools trace lights --out OUT --agent AGENT [--copy COPY] [--calls CALLS] [
 
 ### `trace coney` {#trace-coney-usage}
 
-Play a scenario on Coney headless and write its --trace.
+Play a scenario on Coney headless and write its --trace; exit 1 when the player never moves.
 
 ```text
 coney-tools trace coney SCENARIO --out OUT [--coney CONEY] [--disc DISC]

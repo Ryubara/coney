@@ -13,6 +13,9 @@ patches = ["scripted-pad", "right-stick", "state-code"]
 
 [coney]
 level = "level99"
+# Level99 checkpoint 1 opens with a scene that holds the pad: the run starts when he has control
+# (docs/guides/running-play-level.md#wait-for-control).
+wait_for_control = true
 
 [diff]
 columns = ["clip", "gait", "speed", "heading"]

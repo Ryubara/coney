@@ -13,6 +13,9 @@ patches = ["scripted-pad", "right-stick"]
 
 [coney]
 level = "level99"
+# Level99 checkpoint 1 opens with a scene that holds the pad: the run starts when he has control
+# (docs/guides/running-play-level.md#wait-for-control).
+wait_for_control = true
 
 # The look-behind: the follow camera's held reverse pad (+0x458) and its pulled-out band flag (+0x455).
 [[field]]

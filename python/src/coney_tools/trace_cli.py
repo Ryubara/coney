@@ -19,6 +19,7 @@ from coney_tools import build_root, fight_report, light_diff
 from coney_tools.config import ConfigError, disc_for_coney, find_repo_root, load_config
 from coney_tools.scenario import Scenario, ScenarioError, load_scenario
 from coney_tools.trace_diff import TraceError, compare, load_trace, report, to_start_frame
+from coney_tools.trace_guard import standing_player
 from coney_tools.wad import refuse_inside_repo
 
 
@@ -134,7 +135,8 @@ def coney_command(scenario: Scenario, executable: Path, disc: str, out: Path, sc
     """The command line that plays `scenario` on Coney headless and traces it to `out`.
 
     `script` is the input script to play instead of the scenario's (the settled one, when it has a `settle`), and the
-    run lasts the scenario's settle longer than its updates.
+    run lasts the scenario's settle longer than its updates. A scenario with `wait_for_control` adds Coney's option of
+    that name: its frames, script and trace then count from the first update the player has control.
     """
     if not scenario.coney_level:
         raise ConfigError(f"{scenario.path}: has no [coney] level")
@@ -145,6 +147,7 @@ def coney_command(scenario: Scenario, executable: Path, disc: str, out: Path, sc
         "--play-level",
         scenario.coney_level,
         *scenario.coney_args,
+        *(["--wait-for-control"] if scenario.coney_wait else []),
         "--headless",
         "--frames",
         str(scenario.updates + scenario.coney_settle),
@@ -153,6 +156,19 @@ def coney_command(scenario: Scenario, executable: Path, disc: str, out: Path, sc
         "--trace",
         str(out),
     ]
+
+
+def _guard(scenario: Scenario, trace_path: Path) -> int:
+    """1 (with the reason on stderr) when Coney's trace shows a player who never moves during a stick that should move
+    him, else 0: such a trace proves nothing when it is compared (coney_tools.trace_guard)."""
+    try:
+        problem = standing_player(scenario.events, load_trace(trace_path))
+    except TraceError as error:
+        raise ConfigError(str(error)) from error
+    if problem is None:
+        return 0
+    print(f"coney-tools: {scenario.path.stem}: {problem}", file=sys.stderr)
+    return 1
 
 
 def run_coney(scenario_path: Path, out: Path, executable: Path | None, disc: str | None) -> int:
@@ -180,7 +196,7 @@ def run_coney(scenario_path: Path, out: Path, executable: Path | None, disc: str
         if script is not None:
             script.unlink()
     print(f"{out}: {scenario.updates} steps of {scenario.coney_level}")
-    return 0
+    return _guard(scenario, out)
 
 
 def _gang_labels(order: list[int] | None, analysis: fight_report.Analysis) -> dict[int, str]:

@@ -23,6 +23,7 @@ speed = 1.0                          # PCSX2's emulation speed while recording (
 level = "level99"                    # --play-level
 args = []                            # more of Coney's options
 settle = 0                           # updates Coney plays first with no input, dropped from its trace
+wait_for_control = false             # start --start, the script, the trace and --frames when the player has control
 
 [diff]
 start_frame = true                   # compare in the player's frame at the first update of input
@@ -140,7 +141,8 @@ class Scenario:
     #: Updates Coney plays before the script starts, where a level's opening holds the pad (they are dropped from the
     #: trace and the script is shifted by them), so a scenario can start where the original's slot does.
     coney_settle: int = 0
-    #: Stub: the run waits for the player's control (not read from the scenario yet).
+    #: Coney starts the run when the player has control (`--wait-for-control`): a level that opens with a scene or
+    #: script holding the pad (level99 checkpoint 3) gives the script a player who answers it, however long it is.
     coney_wait: bool = False
     #: "updates" (one row per update) or "humans" (one row per human in use per update, `h` the row's human).
     rows: str = "updates"
@@ -159,6 +161,16 @@ def _settle(value: object, where: str) -> int:
     """The `[coney] settle` count: a whole number of updates, not negative."""
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         raise ScenarioError(f"{where}: [coney] settle must be a whole number of updates, 0 or more")
+    return value
+
+
+def _wait_for_control(coney: dict[str, Any], where: str) -> bool:
+    """The `[coney] wait_for_control` switch: true or false, and only for a scenario that names a Coney level."""
+    value = coney.get("wait_for_control", False)
+    if not isinstance(value, bool):
+        raise ScenarioError(f"{where}: [coney] wait_for_control must be true or false")
+    if value and not coney.get("level"):
+        raise ScenarioError(f"{where}: [coney] wait_for_control needs a [coney] level to play")
     return value
 
 
@@ -366,6 +378,7 @@ def load_scenario(path: Path, root: Path) -> Scenario:
         coney_args=tuple(str(a) for a in coney.get("args", [])),
         diff=_diff(data.get("diff", {}), where),
         coney_settle=_settle(coney.get("settle", 0), where),
+        coney_wait=_wait_for_control(coney, where),
         rows=rows,
         goal_types=load_goal_types(root / GOAL_TYPES_FILE),
         speed=float(speed),

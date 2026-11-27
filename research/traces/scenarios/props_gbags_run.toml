@@ -16,3 +16,6 @@ let = { prop = "0x00ef3780" }
 [coney]
 level = "level99"
 args = ["--checkpoint", "2"]
+# Level99 checkpoint 2 opens with a scene that holds the pad: the run starts when he has control
+# (docs/guides/running-play-level.md#wait-for-control).
+wait_for_control = true

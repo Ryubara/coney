@@ -745,7 +745,7 @@ int main(int argc, char** argv) {
     // level is the run's own (`--play-level`) or the host's (`--net-view`).
     const bool waitsForLevel = commandLineLevel.has_value() || options->netView;
     const auto levelInPlay = [&session, &clientGame]() {
-        return (session && session->inPlay()) || (clientGame && clientGame->inPlay());
+        return (session && session->playStarted()) || (clientGame && clientGame->inPlay());
     };
     // Pad input (docs/research/frontend.md#input): a script in test mode, otherwise SDL's gamepads and keyboard when
     // there is a window; a headless run without a script has no pads. Declared after the renderer, so it is destroyed
@@ -819,8 +819,8 @@ int main(int argc, char** argv) {
             [&session](std::string_view name) { return session && session->flow().scripts().call(name); });
         if (commandLineLevel) {
             levelPipe = std::move(pipe);
-            auto deferred =
-                std::make_unique<coney::DeferredInput>(*levelPipe, [&session] { return session && session->inPlay(); });
+            auto deferred = std::make_unique<coney::DeferredInput>(
+                *levelPipe, [&session] { return session && session->playStarted(); });
             input = std::move(deferred);
         } else {
             input = std::move(pipe);
@@ -1011,8 +1011,10 @@ int main(int argc, char** argv) {
                         mode.setWorldEdits(worldEdits);
                     }
                     // `--start`: the player (and the camera) somewhere else from the first step, a trace scenario's
-                    // start.
-                    if (const std::optional<coney::StartPlace> place = options->start; place) {
+                    // start; with `--wait-for-control`, from the first step he has control.
+                    if (options->waitForControl) {
+                        mode.waitForControl(options->start);
+                    } else if (const std::optional<coney::StartPlace> place = options->start; place) {
                         mode.startAt(*place);
                     }
                     // `--camera` and `--freeze-world`: a stable, matched view for comparing with the original's frames.
@@ -1391,7 +1393,7 @@ int main(int argc, char** argv) {
         if (!playFrameLimit) {
             return false;
         }
-        if (!playOrigin && session && session->inPlay()) {
+        if (!playOrigin && session && session->playStarted()) {
             playOrigin = frame;
             if (screenshotPath) {
                 renderer.requestCapture(frame + *playFrameLimit - 1, *screenshotPath);
@@ -1401,7 +1403,8 @@ int main(int argc, char** argv) {
             }
         }
         if (!playOrigin && frame >= playStartFrames) {
-            logError(std::format("{} never started playing", *commandLineLevel));
+            logError(std::format("{} never {}", *commandLineLevel,
+                                 options->waitForControl ? "gave player 1 control" : "started playing"));
             return true;
         }
         // `--bench-measure` ends the run once its frames are measured, before `--frames` when they come first.

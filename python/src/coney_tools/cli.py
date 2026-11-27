@@ -1232,7 +1232,9 @@ def _add_trace_commands(groups: Any) -> None:
     commands = group.add_subparsers(dest="command", required=True)
     _add_trace_original(commands)
     light_trace_cli.add_command(commands)
-    coney = commands.add_parser("coney", help="play a scenario on Coney headless and write its --trace")
+    coney = commands.add_parser(
+        "coney", help="play a scenario on Coney headless and write its --trace; exit 1 when the player never moves"
+    )
     coney.add_argument("scenario", type=Path, help="a scenario TOML (research/traces/scenarios/)")
     coney.add_argument("--out", type=Path, required=True, help="the trace CSV (outside the repository)")
     coney.add_argument("--coney", type=Path, help="Coney's executable; default: build/dev/src/platform/coney")

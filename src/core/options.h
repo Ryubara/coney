@@ -392,7 +392,11 @@ struct Options {
     /// animation, the scripts), so every frame shows the same picture; the scenery still streams round the camera and
     /// the fixed step still runs. Requires playLevel.
     bool freezeWorld = false;
-    /// Stub of `--wait-for-control`: not parsed yet.
+    /// `--wait-for-control`: the run starts when player 1 has control, not when the level begins to play. A level can
+    /// open with a scene or a script that holds the pad (level99 checkpoint 3's `l99_c3`, about 750 updates, which also
+    /// overrides `--start`); the input script's frame 0, the trace's step 1, `--frames`' count and `--start` then wait
+    /// for the first update the pad moves him, however long the opening is. Coney's own test aid, for trace scenarios
+    /// (docs/guides/running-play-level.md#wait-for-control). Requires playLevel.
     bool waitForControl = false;
     /// `--scene-only`: play's 3D is only what the GPU renderer draws of it today, the level's background, world,
     /// objects, cars and humans of the scene passes, with no effects, see-through panes or coronas (the 2D is drawn

@@ -23,6 +23,9 @@ setup = [
 
 [coney]
 level = "level99"
+# Level99 checkpoint 1 opens with a scene that holds the pad: the run starts when he has control
+# (docs/guides/running-play-level.md#wait-for-control).
+wait_for_control = true
 
 # The flashes player 1 carries: Inventory_GetCount(*(0x0051489c) + 0x480, 0, 1) reads +0x24 + item 1 * 0x2c.
 [[field]]

@@ -31,4 +31,6 @@ setup = [
 # Coney's level has the box at its own height: this side shows the walk only, not the kerb.
 level = "level99"
 args = ["--checkpoint", "3", "--start", "49.3,53.16,0.2231,91.909,5.3,89.854"]
-settle = 300
+# Checkpoint 3 opens with the l99_c3 scene, which overrides --start and holds the pad until about update 750: the run
+# starts when he has control (docs/guides/running-play-level.md#wait-for-control).
+wait_for_control = true
