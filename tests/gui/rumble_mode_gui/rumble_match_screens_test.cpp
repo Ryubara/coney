@@ -197,6 +197,7 @@ TEST_CASE("rumble result: each choice maps onto a pause outcome by where the mat
 
 TEST_CASE("rumble intro: the names one at a time, general lines when the gang's cannot play, then the prompt",
           "[rumble]") {
+    // Expected: rumble.md#intro, confirmed (code)
     Intro intro;
     const std::vector<std::string> names{"BASEBALL FURIES", "ORPHANS"};
     intro.intro.open("RumbleGo", names, {3, 7}, intro.driver.nowMs);

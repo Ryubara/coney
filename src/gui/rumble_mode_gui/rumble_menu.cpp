@@ -44,7 +44,8 @@ OptionGridItem playerItem(std::string_view text, int code) {
 
 // The Game Mode confirm's copy of `mode` into `setup`: its id, its gang size, its title after a ':', its three player
 // options and, for a mode with preset fighters, all nine members of each side. A mode has presets when either side's
-// is set: the original tests the 32-bit word that holds both.
+// is set: the original tests the 32-bit word that holds both (frontend.md#rumble-setup).
+// @orig 0x001f8d80 RM_GameMode_OnInput (RM_GameMode.cpp)
 void applyMode(const RumbleModeEntry& mode, RumbleSetup& setup) {
     setup.values.at(RumbleSetup::kGameType) = mode.mode;
     setup.values.at(RumbleSetup::kGangSize) = mode.gangSize;
@@ -594,6 +595,8 @@ void RumbleMenu::launchArena(std::size_t entry) {
     setup().levelNumber = record != nullptr ? static_cast<int>(record->number) : arena.levelNumber;
 }
 
+// The gang screen's names and usage line after an input (frontend.md#rumble-data).
+// @orig 0x001ef7c0 RM_ChooseGangs_OnInput (RM_ChooseGangs.cpp)
 void RumbleMenu::refreshGangs() {
     // Each side's gang name; the side choosing grey, a locked or waiting side dim. Stand-in: the original also selects
     // the side in its option grid of side labels, which Coney does not make; the names' colours show the side.

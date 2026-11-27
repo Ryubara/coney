@@ -100,6 +100,7 @@ TEST_CASE("accepting each Rumble screen's first entry writes the default set-up,
 }
 
 TEST_CASE("the Game Type entries write 3 for one player, 2 for co-op and 1 for versus", "[rumble_menu]") {
+    // Expected: frontend.md#rumble-setup, confirmed (code)
     // SQUAD (the stick most of the way down), then co-op or versus (right along the row) with a second pad: the
     // confirm shows the message, and player 2's START goes on.
     for (const auto& [moves, players] :
@@ -151,6 +152,7 @@ TEST_CASE("WAR PARTY's copy writes mode 14, five a side, its label, all three op
 }
 
 TEST_CASE("a mode with presets fills both sides and skips the gang screen", "[rumble_menu]") {
+    // Expected: frontend.md#rumble-setup and frontend.md#rumble-data, confirmed (code)
     // RACE is the third entry once unlocked (ENDLESS stays locked); the menu starts again to list it.
     Harness h("10 tap down\n16 tap down\n24 tap cross\n34 tap cross\n");
     h.state.unlockables.unlock(coney::UnlockKind::RumbleMode, 24);
@@ -171,6 +173,7 @@ TEST_CASE("a mode with presets fills both sides and skips the gang screen", "[ru
 }
 
 TEST_CASE("left and right rotate the active side's roster to choose the warchief, except in co-op", "[rumble_menu]") {
+    // Expected: frontend.md#rumble-data, confirmed (code)
     // One player: side 1 rotates left once; side 2's right (the stick partly pushed) does nothing with one human, as
     // in the original (0x001ef7c0); then both lock.
     Harness h("10 tap cross\n20 tap cross\n30 tap left\n40 tap cross\n50 stick left 60 0\n52 stick left 0 0\n"
