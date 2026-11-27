@@ -579,9 +579,9 @@ void PlayLevelSimulation::stepGameOver(const Pad& pad) {
         }
         const bool noneAble = noneAbleToHelp(members);
         // Whether one of them has a route to him: the player's feet on the path polygons (none: no), then each member
-        // not cuffed and not down or dead with a route there, with no distance limit. **Coney's reading**: the route
-        // request stands for Nav_CanReach (it fails off the polygons, off the graph or with no route); Coney's links
-        // are never blocked, and a level with no path data finds a route always.
+        // not cuffed and not down or dead with a route there, with no distance limit.
+        // **Coney's stand-in**: the route request stands for Nav_CanReach (it fails off the polygons, off the graph or
+        // with no route); Coney's links are never blocked, and a level with no path data finds a route always.
         // @orig 0x00169ea0 Gang_CanReachToHelp (unknown)
         const auto canReachToHelp = [this, &others, &knockedOut] {
             if (m_planner == nullptr) {
