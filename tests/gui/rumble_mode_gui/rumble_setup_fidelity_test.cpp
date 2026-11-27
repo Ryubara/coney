@@ -59,6 +59,18 @@ std::vector<std::byte> distinctGangChunk() {
     });
 }
 
+// Three created gangs (always listed) in list order.
+std::vector<std::byte> threeGangChunk() {
+    return coney::test::rumbleGangChunk({
+        coney::test::TestGang{-1, "ONES", {1, 2, 3, 4, 5, 6, 7, 8, 9}},
+        coney::test::TestGang{-1, "TENS", {11, 12, 13, 14, 15, 16, 17, 18, 19}},
+        coney::test::TestGang{-1, "TWENTIES", {21, 22, 23, 24, 25, 26, 27, 28, 29}},
+    });
+}
+
+// The front end's cue for a refused move (the end of a list), frontend.md#rumble-screens.
+constexpr int kRefusedCue = 0xe;
+
 } // namespace
 
 TEST_CASE("an arena is listed only when its mode list starts with a mode and holds the chosen one", "[rumble_menu]") {
@@ -153,6 +165,70 @@ TEST_CASE("in versus, back on side 2 with nothing of its own locked does nothing
     CHECK(h.menu->takeCues().empty());
 }
 
+TEST_CASE("up and down stop at the ends of the gang list with the refused cue", "[rumble_menu]") {
+    // Expected: frontend.md#rumble-screens, confirmed (code)
+    // DUEL (one a side), one player: side 1 on RED SIDE, side 2 on BLUE SIDE, the last of the two listed.
+    RumbleMenuHarness h("10 tap cross\n20 tap cross\n30 tap up\n40 tap down\n50 tap down\n");
+    h.to(25);
+    REQUIRE(h.menu->screen() == RumbleScreen::ChooseGangs);
+    REQUIRE(h.setup().values.at(RumbleSetup::kGangSize) == 1);
+    (void)h.menu->takeCues();
+    // Up on the first gang stays, with the refused cue.
+    h.to(35);
+    CHECK(h.menu->gangs().gang(0)->name == "RED SIDE");
+    CHECK(h.menu->takeCues() == std::vector<int>{kRefusedCue});
+    // With one fighter a side, both sides may hold the same gang.
+    h.to(45);
+    CHECK(h.menu->gangs().gang(0)->name == "BLUE SIDE");
+    CHECK(h.menu->takeCues() == std::vector<int>{coney::gui::kRumbleMoveCue});
+    // Down on the last gang stays.
+    h.to(55);
+    CHECK(h.menu->gangs().gang(0)->name == "BLUE SIDE");
+    CHECK(h.menu->takeCues() == std::vector<int>{kRefusedCue});
+}
+
+TEST_CASE("with more than one fighter a side, a side's cursor skips the other side's gang", "[rumble_menu]") {
+    // Expected: frontend.md#rumble-screens, confirmed (code)
+    // SQUAD (five a side), one player: side 1 on ONES, side 2 on TENS.
+    RumbleMenuHarness h("10 tap down\n20 tap cross\n30 tap cross\n40 tap down\n50 tap down\n60 tap up\n");
+    h.files["rumble_gang.lua"] = threeGangChunk();
+    h.to(35);
+    REQUIRE(h.menu->screen() == RumbleScreen::ChooseGangs);
+    REQUIRE(h.setup().values.at(RumbleSetup::kGangSize) == 5);
+    REQUIRE(h.menu->gangs().gang(0)->name == "ONES");
+    REQUIRE(h.menu->gangs().gang(1)->name == "TENS");
+    (void)h.menu->takeCues();
+    h.to(45);
+    CHECK(h.menu->gangs().gang(0)->name == "TWENTIES");
+    CHECK(h.menu->takeCues() == std::vector<int>{coney::gui::kRumbleMoveCue});
+    h.to(55);
+    CHECK(h.menu->gangs().gang(0)->name == "TWENTIES");
+    CHECK(h.menu->takeCues() == std::vector<int>{kRefusedCue});
+    h.to(65);
+    CHECK(h.menu->gangs().gang(0)->name == "ONES");
+    CHECK(h.menu->takeCues() == std::vector<int>{coney::gui::kRumbleMoveCue});
+}
+
+TEST_CASE("a move whose only gang left is the other side's is refused", "[rumble_menu]") {
+    // Expected: frontend.md#rumble-screens, confirmed (code)
+    // SQUAD, one player, two gangs: side 1's down, and side 2's up once side 1 is locked, would land on the other
+    // side's gang.
+    RumbleMenuHarness h("10 tap down\n20 tap cross\n30 tap cross\n40 tap down\n50 tap cross\n60 tap up\n");
+    h.files["rumble_gang.lua"] = distinctGangChunk();
+    h.to(35);
+    REQUIRE(h.menu->screen() == RumbleScreen::ChooseGangs);
+    (void)h.menu->takeCues();
+    h.to(45);
+    CHECK(h.menu->gangs().gang(0)->name == "ONES");
+    CHECK(h.menu->takeCues() == std::vector<int>{kRefusedCue});
+    h.to(55);
+    REQUIRE(h.menu->gangs().activeSide() == 1);
+    (void)h.menu->takeCues();
+    h.to(65);
+    CHECK(h.menu->gangs().gang(1)->name == "TENS");
+    CHECK(h.menu->takeCues() == std::vector<int>{kRefusedCue});
+}
+
 TEST_CASE("co-op and versus go on only on player 2's START; player 1's accept shows the message again",
           "[rumble_menu]") {
     // Expected: frontend.md#rumble-data, confirmed (code)
@@ -217,4 +293,17 @@ TEST_CASE("the Rumble intro shows the names up to the first empty one", "[rumble
     const std::vector<std::string> names{"FIRST", "", "THIRD"};
     intro.open("Go", names, {0, 1}, 0);
     CHECK(intro.names() == std::vector<std::string>{"FIRST"});
+}
+
+TEST_CASE("the Rumble intro with all ten name slots filled counts no names", "[rumble]") {
+    // Expected: rumble.md#intro, confirmed (code)
+    // The original's count is stored only when its loop finds an empty slot, which ten full slots never give.
+    coney::gui::RumbleIntro intro;
+    const std::vector<std::string> names{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"};
+    intro.open("Go", names, {0, 1}, 0);
+    CHECK(intro.names().empty());
+    // Nine names and an empty tenth slot count nine.
+    const std::vector<std::string> nine{"A", "B", "C", "D", "E", "F", "G", "H", "I", ""};
+    intro.open("Go", nine, {0, 1}, 0);
+    CHECK(intro.names().size() == 9);
 }

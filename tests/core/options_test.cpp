@@ -904,6 +904,16 @@ TEST_CASE("the record-from-frame option starts a net-view guest's clip at a fram
     CHECK(own.error().message.find("needs --play-level or --net-view") != std::string::npos);
 }
 
+TEST_CASE("the record-from-frame option on a guest with a level counts that level's frames", "[options]") {
+    // Expected: unverified, #1333 (debug tooling with no counterpart in the original; a guest given --play-level
+    // counts from that level's first frame of play, as before from-boot clips were added)
+    const auto levelled =
+        parse(std::array<std::string_view, 10>{"--disc", "x", "--join", "127.0.0.1:27615", "--play-level", "level99",
+                                               "--record", "s/t/clips/a.mp4", "--record-from-frame", "150"});
+    REQUIRE(levelled.has_value());
+    CHECK(levelled->recordFromFrame == 150);
+}
+
 TEST_CASE("the ai-player option hands player 1 to the AI in a Rumble match, and needs one", "[options]") {
     auto handed = parse(std::array<std::string_view, 9>{"--disc", "x", "--rumble", "1", "--arena", "102", "--gang-size",
                                                         "9", "--ai-player"});
