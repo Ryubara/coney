@@ -186,6 +186,28 @@ void suspendOtherGangs(coney::LevelScripts& scripts, std::set<double>* done = nu
     }
 }
 
+// Holds the brain of every AI human whose gang is an enemy of player 1's, as BrSuspend does (its actions cleared, the
+// brain suspended), so that none closes in on him while the pad is at rest; one already held is left as it is.
+void holdPlayersEnemies(const coney::GameplayMode& gameplay) {
+    auto* play = dynamic_cast<coney::platform::PlayLevelMode*>(gameplay.level());
+    if (play == nullptr) {
+        return;
+    }
+    coney::ai::Brains& brains = play->fighters().brains();
+    const coney::ai::Brain* mine = brains.find(play->player().human());
+    if (mine == nullptr || mine->gang() == nullptr) {
+        return;
+    }
+    for (std::size_t index = 0; index < brains.size(); ++index) {
+        coney::ai::Brain& brain = brains.at(index);
+        if (&brain != mine && !brain.suspended() && brain.gang() != nullptr &&
+            coney::ai::Gangs::enemies(brain.gang(), mine->gang())) {
+            (void)brain.clearActions();
+            brain.setSuspended(true);
+        }
+    }
+}
+
 // The default walk: the stick 70 % forward from 18 s for 2 s, then right, back and left for 2 s each.
 constexpr std::string_view kDefaultWalk = "540 stick left 0 70\n600 stick left 70 0\n660 stick left 0 -70\n"
                                           "720 stick left -70 0\n";
@@ -232,11 +254,19 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
     stack.push(gameplay);
     coney::GameTimer timer;
     timer.setFixedStep(true);
-    // The 18 s in steps of 10 updates, the spawners' count read after each.
-    // #1682: a gang soldier with an enemy listed pushes a fight at his think (GangBrain_Think step 3).
+    // The 18 s in steps of 10 updates, the spawners' count read after each. Before the default walk the brains of the
+    // gangs that are player 1's enemies are held (holdPlayersEnemies()) from the start, not only for the walk: a gang
+    // soldier with an enemy listed pushes a fight at his think (GangBrain_Think step 3,
+    // docs/research/ai-brain-types.md#think-gang), so a crowd that has the idle player in sight closes round him in
+    // those 18 s and, suspended only then, stands in the way of every push (level3 checkpoint 3: seven Hi-Hats within
+    // 3.7 m, three of them within 1.1 m). His crew and the gangs not his enemies run on: level87's crew is a gang of
+    // its own, and with it suspended from the start the player's brain stays off and he walks 0 m.
     constexpr int kStill = 540;
     constexpr int kSample = 10;
     for (int update = 0; update < kStill; update += kSample) {
+        if (script == kDefaultWalk) {
+            holdPlayersEnemies(gameplay);
+        }
         stack.runUntilEmpty(timer, {}, kSample);
         if (const coney::ai::ScriptedBrains* scripted = gameplay.scripted(); scripted != nullptr) {
             run.mostSpawned = std::max(run.mostSpawned, scripted->humanHost().spawners().spawnedCount());
