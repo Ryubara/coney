@@ -414,12 +414,13 @@ Confirmed (code). The builders, confirmed (code):
     - While the global `0x0051031c` is set, a pad player takes the stick-released branch whatever the stick (what sets
       the global is not traced). Confirmed (code).
     - An AI (`+0x1b` 0) takes 436 and the gait blend when its brain's speed `+0x114` is at least its jog speed
-      (`Human_GetJogSpeed`), after a jump or a drop; otherwise 435 after a jump and 429 after a drop. Confirmed (code).
-    - A human hidden in shadow (`Human_IsHiddenInShadow`) gets 429 after a drop whatever the stick. After a jump a
-      hidden pad player with the stick released gets 429 instead of 435 (with the stick above 0.12 he still gets 436).
-      For a hidden pad player the 429 starts after a 1/6 s fade on an idle loop with an end callback of its own, and his
-      player state `+0x54` takes the game time (`*(0x0050b734) + 0x48`); a hidden AI gets the plain 429. Confirmed
-      (code).
+      (`Human_GetJogSpeed`), after a jump or a drop; otherwise 435 after a jump and 429 after a drop. After a drop the
+      hidden-in-shadow test comes first, so a hidden AI gets 429 whatever its speed. Confirmed (code).
+    - A human hidden in shadow (`Human_IsHiddenInShadow`) gets 429 after a drop whatever the stick for a pad player, and
+      whatever the brain's speed for an AI. After a jump a hidden pad player with the stick released gets 429 instead of
+      435 (with the stick above 0.12 he still gets 436). For a hidden pad player the 429 starts after a 1/6 s fade on an
+      idle loop with an end callback of its own, and his player state `+0x54` takes the game time (`*(0x0050b734) +
+      0x48`); a hidden AI gets the plain 429. Confirmed (code).
 
 **Walking off an edge at runtime** (down the sloping front of a car whose roof is 1.48 m up, from z 1.29 m to the
 street at 0.22 m, a drop of 1.07 m; stick 0.5). Confirmed (runtime), run r-20261124-chars-car-roof-walk-off: state 26
