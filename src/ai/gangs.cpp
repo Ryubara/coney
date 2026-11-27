@@ -486,8 +486,8 @@ void Gangs::makeEnemies(int a, int b) {
 }
 
 void Gangs::makeFriends(int a, int b) {
-    // As makeEnemies(): any record, in use or not, by the stored ids. Coney's choice: an id outside the records does
-    // nothing.
+    // As makeEnemies(): any record, in use or not, by the stored ids.
+    // Coney's choice: an id outside the records does nothing.
     Gang* first = record(a);
     Gang* second = record(b);
     if (first == nullptr || second == nullptr) {
