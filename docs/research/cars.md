@@ -708,6 +708,9 @@ Coney's stand-ins, where this page is silent:
   `+0x1200` countdown that also refuses an explosion), the rock, the dent and squeak sounds and the statistic
   ([The fix](#coney-fix)).
 - No part flies off (`+0x11f4` is not kept): a part a hit or a loud blast throws keeps its damaged form in place.
+- Two callers of `Car_AddPartDamage` are not ported ([#1702](issue:1702)): `CarSetPartDamage` (`0x0038dee8` →
+  `Car_BreakPartByIndex` `0x0038a7e8`) has no binding, and `BreakGlassInRadius` breaks the panes only, not a car's
+  glass (`World_BreakGlassInRadius` `0x003963b8` → `Car_DamagePartsByMask` `0x0038b0e8`, [Parts](#parts)).
 - The money pickup's 15 s life is not applied.
 - A name that is not one of the six types still makes a car, which draws nothing.
 - The explosion's pieces flying off (the car shows every part's damaged form where it was), effects, sound, 300

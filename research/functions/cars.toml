@@ -23,6 +23,11 @@ what = "the thrown piece (Car_DetachPart) and the car's rescheduling are not por
 relation = "not-ported"
 issue = 72
 
+[[function.gaps]]
+what = "two callers are not ported: CarSetPartDamage (0x0038dee8, Car_BreakPartByIndex 0x0038a7e8) has no binding, and BreakGlassInRadius does not damage a car's glass (Car_DamagePartsByMask 0x0038b0e8)"
+relation = "not-ported"
+issue = 1702
+
 [[function]]
 address = 0x0038ab18
 name = "Car_TryExplode"
