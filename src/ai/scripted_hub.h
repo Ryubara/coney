@@ -47,9 +47,6 @@ struct HubLookups {
     std::function<void(anim::Vec3 at)> reportBreakIn;
     /// Where the `CrimeScene` flag is.
     std::function<std::optional<anim::Vec3>()> crimeScene;
-    /// Whether a gang is wanted, and whether `ForceCrimeLevel` holds the wanted gangs (a new police gang reads both).
-    std::function<bool(int gang)> gangWanted;
-    std::function<bool()> crimeLevelForced;
 };
 
 /// One human's workout (`HuWorkout`): the state code `0x1b` until it begins, then the working-out flag.
@@ -79,9 +76,7 @@ class ScriptedHub final : public script::HubBindingHost {
     explicit ScriptedHub(ScriptedBrains& scripted);
 
     /// What the host reads from the level; the categories and flee percentages also go to the gangs, whose attack
-    /// tactic's flight reads them (Gangs::setLookups()), and the wanted test and forced crime level, which a new police
-    /// gang reads.
-    /// @coney-only wiring of the level's lookups into the hub and the gangs
+    /// tactic's flight reads them (Gangs::setLookups()).
     void setLookups(HubLookups lookups);
 
     /// After each characters' step at game time `nowMs`: the workouts begin (all five clips loaded, the enter clip
