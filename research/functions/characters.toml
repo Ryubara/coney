@@ -2582,6 +2582,11 @@ level = "confirmed-code"
 coney = "src/physics/mesh_sweep.h:sweepCapsuleMesh"
 status = "compared"
 
+[[function.gaps]]
+what = "a kernel hit above 1 skips the cell list's counter step (0x00348170), so the original reads one index past the list; Coney steps every entry once"
+relation = "stand-in"
+issue = 1692
+
 [[function]]
 address = 0x00356d00
 name = "ScriptSystem_OnPreloadFileDone"

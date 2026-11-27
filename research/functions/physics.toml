@@ -906,6 +906,11 @@ note = "the level is from [physics.md#dispatch](physics.md#dispatch)"
 coney = "src/physics/mesh_sweep.h:overlapSphereMesh"
 status = "compared"
 
+[[function.gaps]]
+what = "the querying shape word (+0x04) of each contact is not written: overlapSphereMesh is given the sphere's values, not its shape; the level's overlap entry, its caller, is to write it"
+relation = "not-ported"
+issue = 379
+
 [[function]]
 address = 0x00348a50
 name = "PhysicsMesh_SweepSphere"

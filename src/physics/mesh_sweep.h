@@ -128,7 +128,8 @@ int sweepSphereMesh(const raycast::CollisionMesh& mesh, const Aabb& worldBox, co
 /// A sphere overlapping `mesh` in `worldBox`'s cells, from either side of every enabled triangle inside the query's
 /// `n.z` range: each closer than the radius is kept with its depth. The `room` shallowest are written to `out`
 /// (appended) deepest first, with the triangles' own normals. Returns **1** when any was found, not the count, so its
-/// one caller sees only the first.
+/// one caller sees only the first. The querying shape word (`+0x04`), which the original writes here, is left to the
+/// caller that will write it, the level's overlap entry (#379).
 /// @orig 0x003473c8 PhysicsMeshOverlap_Sphere (unknown)
 int overlapSphereMesh(const raycast::CollisionMesh& mesh, const Aabb& worldBox, const Sphere& sphere,
                       std::uint32_t options, float minNormalZ, float maxNormalZ, int room, MeshScratch& scratch,

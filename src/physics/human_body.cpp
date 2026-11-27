@@ -428,7 +428,7 @@ void testStrikes(PhysicsWorld& world, BodyId id, HumanBodyOwners& owners) {
     const OwnerId owner = world.body(id).owner;
     const OwnerId held = owners.heldObject(owner);
     const OwnerId handler = held != kNoOwner ? held : owner;
-    // One contact for every try, never cleared: what a sweep does not write stays from the try before.
+    // Coney's choice: one contact for every try, never cleared (the original keeps two, sp+0x990 and sp+0x0).
     Contact contact;
     // 1. The weapon spheres against the level, while an object is held; the first hit ends them.
     if (held != kNoOwner) {

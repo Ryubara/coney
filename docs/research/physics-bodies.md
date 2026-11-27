@@ -1931,8 +1931,7 @@ A fake owner (type mask 0x40 for a human, 8 for an object, scale attribute *s*).
 2. **Scale 1.1** (not in a scene): capsule height 2.2, radius 0.385; spine segment offset (−0.077, 0, 0.055), radius
    0.198, length 0.418; forearms radius 0.077, length 0.22; shins 0.11, 0.44; head offset (0.055, 0, 0.033), radius
    0.165; hands offset (0.088, 0, 0), radius 0.099; feet 0.165 (float32 values to 1e-6). In a scene state a human
-   under 1.1 reads scale 1.0 and one at 1.1 or more keeps his own (`Human_GetScale` `0x0021d020`, confirmed (code);
-   an earlier copy of this idea had the 1.1 human read 1.0).
+   under 1.1 reads scale 1.0 and one at 1.1 or more keeps his own (`Human_GetScale` `0x0021d020`, confirmed (code)).
 3. **Pool limits.** 60 human creates succeed, the 61st returns null; 416 objects, 18 cars, 255 panes likewise.
 4. **Reuse.** Create A, B, C (slots 0, 1, 2); free B; the next create returns slot 1 (lowest free), not slot 3.
 5. **Swap-remove.** Bodies A, B, C in the vector at 0, 1, 2; remove A: C is at index 0 with `+0x20` = 0, size 2, A's
