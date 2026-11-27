@@ -387,6 +387,7 @@ void pushAwayHumans(PhysicsWorld& world, BodyId id, const HumanBodyOwners& owner
     std::vector<Contact> contacts;
     const OverlapQuery query{.body = id,
                              .shape = world.body(id).pushSphere,
+                             .box = {},
                              .options = kPushOptions,
                              .typeMask = kTypeHuman,
                              .max = kPushMaxContacts};
