@@ -334,7 +334,7 @@ status = "legacy"
 address = 0x00169dd8
 name = "Gang_NoneAbleToHelp"
 page = "ai-code.md#gang-functions"
-role = "True when the gang has members and none other than the given human is free (not cuffed, knocked out or wounded)"
+role = "True when the gang has members and none other than the given human is free (not cuffed, knocked out or wounded); the game-over check passes no human, so it counts player 1 too"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gang::noneAbleToHelp"
 status = "compared"
@@ -346,7 +346,12 @@ page = "ai-code.md#gang-functions"
 role = "Whether a member other than the human, not cuffed or down, has a navigation route to the human's nav area"
 level = "confirmed-code"
 coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::stepGameOver"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a route request stands for Nav_CanReach: Coney's links are never blocked, and a level with no path data finds a route always"
+relation = "stand-in"
+issue = 1008
 
 [[function]]
 address = 0x0016a1e8

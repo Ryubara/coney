@@ -2634,10 +2634,15 @@ status = "legacy"
 address = 0x004197a8
 name = "GameState_CheckGameOver"
 page = "characters/index.md#warriors-functions"
-role = "each update, when enabled (`+0x155`), outside Rumble (`+0x158`) and not already over (`+0x14c`): over when a player has state flag `0x100000000`; when every player is knocked out or cuffed, not over while player 1 is cuffed, awake and can uncuff himself (upgrade (6, 15) and item 6); over when no gang member can help (`Gang_NoneAbleToHelp`); over at once when player 1 is out with no flash (item 1) or byte `+0x414 + player` is set; otherwise every 37th update asks `Gang_CanReachToHelp` and is over after 4 failures in a row (`+0x56e6`). The mission-failed reason is GSTRING 21 when cuffed (`+0x118` = 1), else 20"
+role = "each update, when enabled (`+0x155`), with `+0x158` 0 (never set) and not already over (`+0x14c`): over when a player has state flag `0x100000000`, always with reason GSTRING 20; when every player is knocked out or cuffed, not over while player 1 is cuffed, awake and can uncuff himself (upgrade (6, 15) and item 6); over when no gang member, player 1 included, can help (`Gang_NoneAbleToHelp` with no exception); over at once when player 1 is out with no flash (item 1) or byte `+0x414 + player` is set; otherwise, on each update whose counter `+0x230` is a multiple of 37, asks `Gang_CanReachToHelp` and is over after 4 failures in a row (`+0x56e6`). Those failures give GSTRING 21 when cuffed (`+0x118` = 1), else 20"
 level = "confirmed-code"
-coney = "src/gamemodes/play_level_simulation.h:PlayLevelSimulation::stepGameOver"
-status = "legacy"
+coney = "src/warriors/game_over.h:GameOverCheck::update"
+status = "compared"
+
+[[function.gaps]]
+what = "no player is dead (0 health counts as knocked out), none frees himself from cuffs, game state +0x414 never blocks the wait, and a held member stands for state 0x10000"
+relation = "stand-in"
+issue = 1008
 
 [[function]]
 address = 0x0041ce98

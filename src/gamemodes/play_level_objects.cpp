@@ -550,6 +550,8 @@ void PlayLevelSimulation::stepGameOver(const Pad& pad) {
             (void)m_gameOver->update({}, false, nullptr);
             return;
         }
+        // Player 1 as the check sees him. **Coney's stand-ins**: none is dead (0 health counts as knocked out), none
+        // frees himself (Coney has no uncuffing) and `+0x414` never blocks the wait.
         const human::Human& human = m_player->human();
         const GameOverPlayer player{.dead = false,
                                     .knockedOut = human.fighter().health().depleted() || human.script().knockedOut,
@@ -603,11 +605,12 @@ void PlayLevelSimulation::stepGameOver(const Pad& pad) {
     // Failed: the game state still counts the update; nothing more is decided.
     (void)m_gameOver->update({}, false, nullptr);
     // The hand-off: the HUD goes at its first update; the failure's mode opens at the end of the countdown.
-    // **Coney's stand-in**: no fall out of the world (game state `+0x152` bit 2, Human_StateUpdate) is built.
     if (!m_failShown) {
         m_failShown = true;
         m_hud->hud().hideAll();
     }
+    // **Coney's stand-ins**: only player 1's pad's cross cuts it (the original reads every pad), and no player falls
+    // out of the world (game state `+0x152` bit 2, set by Human_StateUpdate), which Coney does not build.
     if (m_gameOver->stepHandOff((pad.pressed() & pad::kCross) != 0, false) && m_missionFailed) {
         const auto id = static_cast<std::uint32_t>(m_gameOver->reason().value_or(GameOverReason::Beaten));
         const hud::HudServices& services = m_hud->hud().services();

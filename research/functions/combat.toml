@@ -42,7 +42,7 @@ relation = "not-ported"
 issue = 1008
 
 [[function.gaps]]
-what = "the death camera's start, fades and restore and the +0x152 bit 2 cut are not ported"
+what = "the death camera's start, fades and restore are not ported"
 relation = "not-ported"
 issue = 703
 

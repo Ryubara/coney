@@ -16,7 +16,12 @@ page = "crimes.md#original-structure"
 role = "the gang's wanted timer"
 level = "confirmed-code"
 coney = "src/warriors/crime_reports.h:CrimeReports::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the third timer (gang +0x5ec, the IssueWarning goal's) and the all-clear callback (SetAllClearCallBack, game state +0x2bc) at the end of player 1's gang's second timer are not ported"
+relation = "not-ported"
+issue = 1008
 
 [[function]]
 address = 0x0022ceb8
@@ -474,7 +479,12 @@ name = "GameState_ReportCrime"
 page = "crimes.md#break-in-police"
 level = "confirmed-code"
 coney = "src/warriors/crime_reports.h:CrimeReports::report"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "a first break-in's store buyers and browsers switched off (Flags_DisableGangActivity) and game state +0x2b4 cleared are not ported"
+relation = "not-ported"
+issue = 1008
 
 [[function]]
 address = 0x0041d8a0
