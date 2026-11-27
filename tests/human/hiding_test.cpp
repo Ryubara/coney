@@ -116,3 +116,27 @@ TEST_CASE("leaving the shadow with no target ends the hidden state at once", "[h
     CHECK_FALSE(human.hidden());
     CHECK_FALSE(human.animator().stealthStyle());
 }
+
+TEST_CASE("a human aiming a throw or holding an object of anim set 4 or 6 does not hide", "[human][hiding]") {
+    // Expected: stealth.md#hidden, confirmed (code). Human_EnterShadow 0x0022ff88 refuses while his control function
+    // is Human_MoveThrowAim and, out of the aim, while the held object's anim set (CfgObj +0x87) is 4 or 6
+    // (Human_HoldsKind4Or6 0x00224000).
+    const TestCharacter character;
+    const auto mesh = halfShadow();
+    Human human(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind());
+    human.spawn(mesh.get(), Vec3{20.0F, 10.0F, 0.0F}, 0.0F);
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    human.setThrowAiming(true);
+    human.enterHiding();
+    CHECK_FALSE(human.hidden());
+    human.setThrowAiming(false);
+    for (const int set : {4, 6}) {
+        human.fighter().setAnimSet(set);
+        human.enterHiding();
+        CHECK_FALSE(human.hidden());
+    }
+    // Set 5, a thrown weapon out of the aim, hides.
+    human.fighter().setAnimSet(5);
+    human.enterHiding();
+    CHECK(human.hidden());
+}

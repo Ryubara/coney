@@ -802,6 +802,38 @@ TEST_CASE("the spray's intro turns the tagger to the tag over its first half, th
     CHECK(fight.human().tagSprayPlaying());
 }
 
+TEST_CASE("the spray's intro fades in over 0.05 s; a restart fades over 0.5 s with 337 holding the busy bit 0x400",
+          "[human][combat]") {
+    // Expected: crimes.md#tag-look, confirmed (code). Tag_StartSprayClips 0x00278018 pushes its fade task over 0.05 s
+    // (0x3d4ccccd); Tag_RestartSprayClips 0x00278210 over 0.5 s (0x3f000000), and its 337 holds 0x400 as 334 does.
+    const FightCharacter character;
+    Fight fight(character, 6.0F);
+    REQUIRE(fight.human().animator().tasks().layerCount() == 1);
+    REQUIRE(fight.human().startTagSpray(Vec3{42.0F, 40.0F, 1.0F}));
+    CHECK(fight.human().animator().tasks().layerCount() == 2);
+    // Two updates (0.067 s) are past 0.05 s: the old pose is gone.
+    fight.run("", 2);
+    CHECK(fight.human().animator().tasks().layerCount() == 1);
+    fight.run("", 40);
+    REQUIRE(fight.human().tagSprayLooping());
+    fight.human().restartTagSpray();
+    REQUIRE(fight.human().animator().animId() == 337);
+    CHECK((fight.human().animator().flags() & 0x400U) != 0);
+    // 14 updates (0.467 s) are inside the 0.5 s fade, 16 (0.533 s) past it.
+    std::vector<std::size_t> layers;
+    bool heldWhile337 = true;
+    fight.run("", 16, [&](std::uint64_t) {
+        layers.push_back(fight.human().animator().tasks().layerCount());
+        if (fight.human().animator().animId() == 337 && (fight.human().animator().flags() & 0x400U) == 0) {
+            heldWhile337 = false;
+        }
+    });
+    REQUIRE(layers.size() == 16);
+    CHECK(layers.at(13) > 1);
+    CHECK(layers.at(15) == 1);
+    CHECK(heldWhile337);
+}
+
 TEST_CASE("a player in the fight stance sprays: 334 then 335 play, the stance's walk and attacks wait for the spray",
           "[human][combat]") {
     // The original runs no stance, command or anim-state choice while a spray runs (`Human_UpdateActions` returns

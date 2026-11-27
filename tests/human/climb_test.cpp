@@ -144,3 +144,17 @@ TEST_CASE("a climb clip's reach is its type-8 event's vector, else its displacem
     clip.events.push_back(reach);
     CHECK(coney::human::clipReach(clip) == Approx(2.3F));
 }
+
+TEST_CASE("a climbable face only the high ray meets is climbed as a tall one", "[human][climb]") {
+    // Expected: characters-traversal.md#climb, confirmed (code). Climb_TryStart 0x002826f0 clears the low hit only when
+    // both rays meet the face within 0.1 m of each other, and tests the high hit first: a face from 1 m up, which the
+    // low ray at 0.69 m passes under, is probed as a tall face (a fence with nothing behind it, under 2.5 m).
+    const auto found = probe(coney::test::wallFacingMinusY(40.0F, 30.0F, 50.0F, 1.0F, 2.4F, 0, 30));
+    REQUIRE(found.has_value());
+    if (found) {
+        CHECK(found->kind == ClimbKind::Fence);
+        CHECK(found->distance == Approx(2.0F));
+    }
+    // Not climbable: the low ray met nothing, so no climb.
+    CHECK_FALSE(probe(coney::test::wallFacingMinusY(40.0F, 30.0F, 50.0F, 1.0F, 2.4F)).has_value());
+}

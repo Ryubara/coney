@@ -1152,3 +1152,31 @@ TEST_CASE("the World page's gravity pulls every human the step moves, and none i
     CHECK(falling.velocity().z == Approx(fallingBefore - (15.68F / 30.0F)));
     CHECK(held.velocity().z == heldBefore);
 }
+
+TEST_CASE("standing, a fidget stops only for the fight or idle fidget's clip, a taunt only for the taunts' clips",
+          "[human]") {
+    // Expected: ai-reimpl.md#fidget-action, confirmed (code). With the gait idle, Human_StopFidget 0x00231b60 rebuilds
+    // the idle only when the record's anim is 603 or 604 (0x25b, 0x25c), so the knife fidget 602 plays on;
+    // Human_StopTaunt 0x00231c58 does the same for 595 to 602 (0x253-0x25a).
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    coney::anim::AnimClip clip;
+    clip.duration = 2.0F;
+    const coney::human::HeldFlags held{.held = 0x80000, .set = 0x80000};
+    // The fidget's stop: 602 plays on, 604 goes.
+    human.playScripted(clip, 602, 1.0F, 0.0F, held);
+    human.stopFidget(held.held);
+    CHECK(human.animator().animId() == 602U);
+    human.playScripted(clip, 604, 1.0F, 0.0F, held);
+    human.stopFidget(held.held);
+    CHECK(human.animator().animId() != 604U);
+    // The taunt's stop: 603 plays on, 600 goes.
+    human.playScripted(clip, 603, 1.0F, 0.0F, held);
+    human.stopTaunt(held.held);
+    CHECK(human.animator().animId() == 603U);
+    human.playScripted(clip, 600, 1.0F, 0.0F, held);
+    human.stopTaunt(held.held);
+    CHECK(human.animator().animId() != 600U);
+}

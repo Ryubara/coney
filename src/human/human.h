@@ -497,6 +497,10 @@ class Human final : public Holdable {
             m_animator.stopToIdle();
         }
     }
+    /// Stub for the test commit: the fidget's stop as stopScripted() does it.
+    void stopFidget(std::uint32_t held) { stopScripted(m_animator.animId(), held); }
+    /// Stub for the test commit: the taunt's stop as stopScripted() does it.
+    void stopTaunt(std::uint32_t held) { stopScripted(m_animator.animId(), held); }
     /// A workout's clips (HumanAnimator::playWorkout()), its loop blend once playing, and its exit
     /// (HumanAnimator::endWorkout()).
     void playWorkout(const anim::AnimClip& enter, const std::array<const anim::AnimClip*, 3>& loops) {
