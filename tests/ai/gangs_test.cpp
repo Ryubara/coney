@@ -494,7 +494,7 @@ TEST_CASE("the gang's update without its spawners starts and runs its tactic onc
     CHECK(emptyUpdates == 0);
 }
 
-TEST_CASE("a player leading the gang stays its leader while arrested or down, and leaves the lead only dead",
+TEST_CASE("a player leading the gang stays its leader while arrested, down or dead, as player 1 picked again",
           "[ai][gangs]") {
     // Expected: gang-records.md#leader, confirmed (code): Gang_GetLeader (0x00165678) picks again only when the stored
     // leader is gone or dead, or is not a player and is cuffed or down.
@@ -669,20 +669,41 @@ TEST_CASE("a gang made in a freed slot starts with no leader and the record's ot
     CHECK(orders.respondPercent == 30);
 }
 
-TEST_CASE("GangMakeEnemies and GangMakeFriends write a slot not in use too, so a gang made there inherits the bit",
+TEST_CASE("GangMakeEnemies and GangMakeFriends on a slot made and deleted leave the bit for the gang made there next",
           "[ai][gangs]") {
-    // Expected: gang-records.md#relations, confirmed (code): GangMakeEnemies (0x0016acf0) and GangMakeFriends
-    // (0x0016ad80) ignore only id -1 and write both records whether in use or not.
+    // Expected: gang-records.md#relations, confirmed (code) and confirmed (runtime), run r-20261127-gang-records:
+    // GangMakeEnemies (0x0016acf0) and GangMakeFriends (0x0016ad80) write a record not in use too, with the bit of
+    // its stored id (+0x30), which Gang_Create set when the record was made and the delete leaves.
     Gangs gangs;
     const int warriors = gangs.create(coney::ai::kWarriorsKind, "Warriors");
-    gangs.makeEnemies(warriors, 1);
-    gangs.makeFriends(warriors, 2);
+    const int gone = gangs.create(19, "Gone");
+    const int left = gangs.create(21, "Left");
+    gangs.remove(gone);
+    gangs.remove(left);
+    gangs.makeEnemies(warriors, gone);
+    gangs.makeFriends(warriors, left);
     const int punks = gangs.create(19, "Punks");
     const int friendly = gangs.create(21, "Friends");
-    REQUIRE(punks == 1);
-    REQUIRE(friendly == 2);
+    REQUIRE(punks == gone);
+    REQUIRE(friendly == left);
     CHECK(Gangs::enemies(gangs.find(warriors), gangs.find(punks)));
     CHECK(Gangs::friends(gangs.find(warriors), gangs.find(friendly)));
+}
+
+TEST_CASE("GangMakeEnemies on a slot never made gives the named gang gang 0's bit, and a gang made there inherits none",
+          "[ai][gangs]") {
+    // Expected: gang-records.md#relations, confirmed (runtime), run r-20261127-gang-records: a record never made holds
+    // stored id 0, so GangMakeEnemies(1, 9) set bit 0 in gang 1's enemy mask and cleared its friend bit 0, not bit 9.
+    Gangs gangs;
+    const int first = gangs.create(19, "First");
+    const int warriors = gangs.create(coney::ai::kWarriorsKind, "Warriors");
+    REQUIRE(first == 0);
+    gangs.makeFriends(warriors, first);
+    REQUIRE((gangs.find(warriors)->friendMask() & 1U) != 0);
+    gangs.makeEnemies(warriors, 9);
+    CHECK(gangs.find(warriors)->enemyMask() == 1U);
+    CHECK((gangs.find(warriors)->friendMask() & 1U) == 0);
+    CHECK((gangs.find(warriors)->enemyMask() & (1U << 9U)) == 0);
 }
 
 TEST_CASE("leaving a gang to join another empties the joiner's enemy list; a human with no gang keeps his",
