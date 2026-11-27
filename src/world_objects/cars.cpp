@@ -15,8 +15,48 @@ namespace coney::world_objects {
 
 namespace {
 
-// The highest part id: parts are 0-25.
+// The highest part id with a part record: parts are 0-25.
 constexpr std::uint32_t kLastPart = kCarParts - 1;
+// The highest hit bit: bits 26-29 are the lamps' glass, which has no part record (docs/research/cars.md#type-tables).
+constexpr std::uint32_t kLastHitBit = 29;
+// The roof's part id: it coming off ends the police car's lights.
+constexpr std::uint32_t kRoofPart = 1;
+
+// The part record's byte +0x01, how a part comes off (docs/research/cars.md#type-tables).
+constexpr std::uint8_t kOffAtFirstDamage = 0x10; // any damage takes it off at once
+constexpr std::uint8_t kThrownByHit = 0x02;      // a knock throws it
+constexpr std::uint8_t kThrownByBlast = 0x04;    // a blast throws it (a quiet one hides it)
+// That byte for parts 0-25, the same in every type's record but the van's (below).
+constexpr std::array<std::uint8_t, kCarParts> kPartComesOff{0x00, 0x18, 0x02, 0x02, 0x07, 0x06, 0x18, 0x18, 0x18,
+                                                            0x18, 0x02, 0x02, 0x02, 0x02, 0x46, 0x18, 0x26, 0x18,
+                                                            0x46, 0x18, 0x26, 0x18, 0x04, 0x04, 0x04, 0x04};
+// The van's boot and side panels 12 and 13 come off at the first damage and never fly.
+constexpr std::uint8_t kVanType = 4;
+constexpr std::uint8_t kVanPanel = 0x18;
+
+// Part `part`'s record byte +0x01 (a car of no type reads the sedan's). @coney-only helper; Car_AddPartDamage reads it
+std::uint8_t comesOff(const Car& car, std::uint32_t part) {
+    if (car.type == kVanType && (part == kBootPart || part == 12 || part == 13)) {
+        return kVanPanel;
+    }
+    return kPartComesOff.at(part);
+}
+
+// The parts message 0x19's all-broken call waits for (docs/research/cars.md#type-tables): 1-21, the coupe's 1-17,
+// the van's 1-21 but 7. @coney-only helper; Car_OnHit picks the mask in place
+CarPartMask allBrokenParts(const Car& car) {
+    constexpr std::uint8_t kCoupe = 1;
+    if (car.type == kCoupe) {
+        return 0x3fffeU;
+    }
+    return car.type == kVanType ? 0x3fff7eU : 0x3ffffeU;
+}
+// The parts whose damage checks it: 1-21.
+constexpr CarPartMask kAllBrokenChecked = 0x3ffffeU;
+
+// The parts a hit or a blast passes over: removed (`+0x11f0`) or off (`+0x11f8`); **Coney's stand-in**: flying parts
+// are not modelled (#72). @coney-only helper; Car_OnHit and Car_DoExplode test the masks in place
+CarPartMask passedOver(const Car& car) { return car.removedParts | car.removedKept; }
 // A part's damaged form is the atomic 25 after it (docs/research/cars.md#hit-effects).
 constexpr std::uint32_t kDamagedAtomicOffset = 25;
 
@@ -104,12 +144,20 @@ void Cars::setColour(double handle, const std::array<float, 4>& components) {
 }
 
 void Cars::repair(double handle) {
-    if (Car* car = find(handle); car != nullptr) {
-        car->removedParts = 0;
-        car->openParts = 0;
-        car->damagedParts = 0;
-        car->dirty = true;
+    Car* car = find(handle);
+    if (car == nullptr) {
+        return;
     }
+    // Car_ResetParts (0x003875e8): every part record back to new (no damage, shut, its form undamaged) and every mask
+    // cleared, the exploded flag too. **Coney's stand-in**: the rock (`+0x12d6`) and the loose pieces a record ends
+    // are not modelled (#72).
+    car->damage.fill(0.0F);
+    car->openParts = 0;
+    car->damagedParts = 0;
+    car->firstHits = 0;
+    car->removedParts = 0;
+    car->removedKept = 0;
+    car->exploded = false;
 }
 
 void Cars::removePart(double handle, std::uint32_t part, bool on) {
@@ -135,84 +183,114 @@ void Cars::placeInTrunk(double handle, double object, std::uint32_t itemKind) {
     if (car == nullptr) {
         return;
     }
-    const auto dollars = static_cast<std::uint8_t>(itemKind & 0xffU);
+    // Dollars (Car_SetTrunkItemKind): only the amount and the loaded flag; an object put in before stays, and the
+    // release prefers it.
     if (itemKind != 0) {
-        car->trunkObject = 0;
-        car->trunkMoney = dollars;
-    } else {
-        // The object is pinned, so streaming never stores it while it waits.
-        if (m_records != nullptr) {
-            m_records->setPinned(object, true);
-        }
-        car->trunkObject = object;
-        car->trunkMoney = 0;
+        car->trunkMoney = static_cast<std::uint8_t>(itemKind & 0xffU);
+        car->trunkLoaded = true;
+        return;
     }
+    // An object goes in only when its handle resolves.
+    if (m_records == nullptr || m_records->resolve(object) == nullptr) {
+        return;
+    }
+    // Car_SetTrunkObject: pinned, so streaming never stores it while it waits; the dollars stay.
+    m_records->setPinned(object, true);
+    car->trunkObject = object;
     car->trunkLoaded = true;
 }
 
-bool Cars::damagePart(double handle, std::uint32_t part, float amount, bool instant) {
+bool Cars::damagePart(double handle, std::uint32_t part, float amount, bool instant, bool quiet) {
     Car* car = find(handle);
-    if (car == nullptr || part >= car->damage.size()) {
+    if (car == nullptr || part > kLastPart) {
         return false;
     }
     const std::uint32_t bit = 1U << part;
-    if ((car->removedKept & bit) != 0) {
+    // The callers' skip (Car_OnHit, Car_DoExplode): a part removed or off takes nothing. **Coney's stand-in**: here
+    // for every caller, so a door's window only removed (`+0x11f0`) is skipped too, which the original damages.
+    if ((passedOver(*car) & bit) != 0) {
         return false;
     }
+    // The damage adds up; an instant call, or a part whose record says so, takes it to 1 at once.
+    const std::uint8_t how = comesOff(*car, part);
     float& damage = car->damage.at(part);
-    damage = instant || (kCarWindowParts & bit) != 0 ? 1.0F : damage + amount;
+    damage = instant || (how & kOffAtFirstDamage) != 0 ? 1.0F : damage + amount;
     if (damage < 1.0F) {
         return false;
     }
+    damage = 1.0F;
     car->removedKept |= bit;
-    car->dirty = true;
-    if (part == kBootPart && !instant && car->trunkLoaded) {
-        car->trunkLoaded = false;
-        releaseTrunk(*car);
+    // A door knocked off (not blown off) takes its window with it, at full damage, unless that is off already.
+    if (const std::optional<std::uint32_t> window = linkedCarPart(part);
+        !instant && window && (car->removedKept & (1U << *window)) == 0) {
+        static_cast<void>(damagePart(handle, *window, 1.0F, false));
     }
     // The window beside the stereo frees it for a theft (a kind-3 context record).
     if (part == kStereoWindowPart && car->stereo == StereoState::InCar) {
         car->stereo = StereoState::Freed;
     }
+    // The roof ends the police car's lights (message 0x15, then the system ends).
+    if (part == kRoofPart && car->lights) {
+        if (m_particles != nullptr) {
+            m_particles->killFollowing(handle);
+        }
+        car->lights = false;
+    }
+    // The boot knocked off releases a loaded boot's item; blown off, the item is lost.
+    if (part == kBootPart && !instant && car->trunkLoaded) {
+        car->trunkLoaded = false;
+        releaseTrunk(*car);
+    }
+    // A part its record throws: a quiet blast hides it instead. **Coney's stand-in**: the thrown piece
+    // (Car_DetachPart and the car's rescheduling) is not ported (#72); the part keeps its damaged form in place.
+    const std::uint8_t thrownBy = instant ? kThrownByBlast : kThrownByHit;
+    if ((how & thrownBy) != 0 && quiet) {
+        car->removedParts |= bit;
+    }
     return true;
 }
 
-bool Cars::explode(double handle) {
+bool Cars::explode(double handle, bool quiet) {
     Car* car = find(handle);
+    // Car_TryExplode: once only. **Coney's stand-in**: the original also refuses while a molotov's countdown
+    // (`+0x1200`) runs, which is not ported (#72).
     if (car == nullptr || car->exploded) {
         return false;
     }
-    for (std::uint32_t part = 0; part < kCarParts; ++part) {
-        static_cast<void>(damagePart(handle, part, 1.0F, true));
-        car->firstHits |= 1U << part;
+    // Every hit bit 1-29 not passed over: a part takes instant damage, a lamp's glass is removed and off; each is
+    // marked hit. **Coney's stand-in**: the loud blast's fireball, shake, sound and lift are not ported (#72).
+    for (std::uint32_t part = 1; part <= kLastHitBit; ++part) {
+        const std::uint32_t bit = 1U << part;
+        if ((passedOver(*car) & bit) != 0) {
+            continue;
+        }
+        if (part <= kLastPart) {
+            static_cast<void>(damagePart(handle, part, 1.0F, true, quiet));
+        } else {
+            car->removedParts |= bit;
+            car->removedKept |= bit;
+        }
+        car->firstHits |= bit;
     }
+    // **Coney's stand-in**: the loud blast's statistic, heat wave, AI alert, 300 damage, broken glass, the wreck's
+    // lower box and the flags switched off near it are not ported (#72); its message 0x19 is the binding's.
     car->exploded = true;
+    // The stereo, in the car or freed, is destroyed with it.
+    if (car->stereo == StereoState::InCar || car->stereo == StereoState::Freed) {
+        car->stereo = StereoState::Destroyed;
+    }
     return true;
 }
 
-CarPartMask Cars::humanHit(double handle, anim::Vec3 standing, anim::Vec3 point, std::vector<CarHitReport>* reports) {
+CarPartMask Cars::humanHit(double handle, anim::Vec3 standing, anim::Vec3 point, std::vector<CarHitReport>* reports,
+                           bool player) {
     Car* car = find(handle);
     if (car == nullptr) {
         return 0;
     }
-    // Parts 1-25: the ones message 0x19 names (the body, part 0, is never reported).
-    constexpr std::uint32_t kReported = ((1U << kCarParts) - 1U) & ~1U;
-    const bool allOffBefore = (car->removedKept & kReported) == kReported;
-    const CarPartMask struck = carHumanHitParts(*car, standing);
-    for (std::uint32_t part = 0; part <= kLastPart; ++part) {
-        if ((struck & (1U << part)) == 0) {
-            continue;
-        }
-        const bool wasOff = (car->removedKept & (1U << part)) != 0;
-        const bool broke = damagePart(handle, part, kHumanCarHitDamage, false);
-        if (reports != nullptr && part >= 1 && !wasOff) {
-            reports->push_back(CarHitReport{.part = static_cast<int>(part), .broke = broke});
-        }
-    }
-    if (reports != nullptr && !allOffBefore && (car->removedKept & kReported) == kReported) {
-        reports->push_back(CarHitReport{.part = kCarHitAllBroken, .broke = true});
-    }
-    // Any part outside the glass: sparks and dust at the hit point.
+    const CarPartMask struck = carHumanHitParts(*car, standing, player);
+    // Any part outside the glass: sparks and dust at the hit point. **Coney's stand-in**: only for a part not off yet,
+    // as carHumanHitParts() leaves the others out; the original sparks for any (#72).
     if (const CarPartMask solid = struck & ~kCarGlassParts; solid != 0) {
         m_effects.push_back(CarHitEffect{.car = handle,
                                          .part = static_cast<std::uint32_t>(std::countr_zero(solid)),
@@ -222,20 +300,41 @@ CarPartMask Cars::humanHit(double handle, anim::Vec3 standing, anim::Vec3 point,
                                          .carPosition = car->position,
                                          .carRotation = car->rotation});
     }
-    // Each part's first hit ever: its own effect.
-    for (std::uint32_t part = 0; part <= kLastPart; ++part) {
+    // Each hit bit 1-29 struck and not passed over (a door's window may have gone with it): a part takes the damage, a
+    // lamp's glass is removed and off; then its first hit ever sends its effect.
+    for (std::uint32_t part = 1; part <= kLastHitBit; ++part) {
         const std::uint32_t bit = 1U << part;
-        if ((struck & bit) != 0 && (car->firstHits & bit) == 0) {
+        if ((struck & bit) == 0 || (passedOver(*car) & bit) != 0) {
+            continue;
+        }
+        if (part <= kLastPart) {
+            // **Coney's stand-in**: the dent sound of a panel or door crossing 0.5 is not ported (#72).
+            const bool broke = damagePart(handle, part, kHumanCarHitDamage, false);
+            // Message 0x19 for the part, then, after a part 1-21, the all-broken call once the type's parts are off.
+            if (reports != nullptr) {
+                reports->push_back(CarHitReport{.part = static_cast<int>(part), .broke = broke});
+                const CarPartMask all = allBrokenParts(*car);
+                if ((kAllBrokenChecked & bit) != 0 && (car->removedKept & all) == all) {
+                    reports->push_back(CarHitReport{.part = kCarHitAllBroken, .broke = true});
+                }
+            }
+        } else {
+            car->removedParts |= bit;
+            car->removedKept |= bit;
+        }
+        if ((car->firstHits & bit) == 0) {
             car->firstHits |= bit;
             m_effects.push_back(carBreakWindowEffect(*car, part, point));
         }
     }
+    // **Coney's stand-in**: every part struck is returned; the original returns those outside the glass, which its
+    // caller sounds (#72).
     return struck;
 }
 
 CarHitEffect carBreakWindowEffect(const Car& car, std::uint32_t part, anim::Vec3 point) {
     // The bonnet's steam point in the car's frame (docs/research/cars.md#hit-effects).
-    constexpr anim::Vec3 kSteamPoint{0.0F, 2.743F, 0.023F};
+    constexpr anim::Vec3 kSteamPoint{0.0F, 2.741F, 0.023F};
     CarHitEffect effect{.car = car.handle,
                         .part = part,
                         .kind = CarHitEffectKind::Sparks,
@@ -290,26 +389,36 @@ CarHitEffect carBreakWindowEffect(const Car& car, std::uint32_t part, anim::Vec3
 anim::Vec3 Cars::bootPosition(const Car& car) { return carBootPosition(car); }
 
 void Cars::releaseTrunk(Car& car) {
+    car.trunkLoaded = false;
     if (m_records == nullptr) {
         return;
     }
     const anim::Vec3 at = bootPosition(car);
     const std::array<float, 3> position{at.x, at.y, at.z};
-    if (car.trunkObject != 0) {
-        if (SpawnRecord* record = m_records->find(car.trunkObject); record != nullptr) {
-            record->position = position;
+    // No object: the dollars become a pickup at the boot, and are spent. **Coney's stand-in**: its 15 s respawn
+    // timer, body wake and update interval are not kept (no object timers or bodies yet, as level_pickups.h says).
+    if (car.trunkObject == 0) {
+        if (car.trunkMoney != 0 && m_nextHandle) {
+            const SpawnRecord* pickup = m_records->add(SpawnRecord{.handle = m_nextHandle(),
+                                                                   .typeName = std::string(kMoneyPickup),
+                                                                   .position = position,
+                                                                   .shownMessage = std::nullopt,
+                                                                   .money = car.trunkMoney,
+                                                                   .model = std::nullopt,
+                                                                   .physicsBody = std::nullopt,
+                                                                   .breakIn = std::nullopt});
+            if (pickup != nullptr) {
+                car.trunkMoney = 0;
+            }
         }
         return;
     }
-    if (car.trunkMoney != 0 && m_nextHandle) {
-        static_cast<void>(m_records->add(SpawnRecord{.handle = m_nextHandle(),
-                                                     .typeName = std::string(kMoneyPickup),
-                                                     .position = position,
-                                                     .shownMessage = std::nullopt,
-                                                     .money = car.trunkMoney,
-                                                     .model = std::nullopt,
-                                                     .physicsBody = std::nullopt,
-                                                     .breakIn = std::nullopt}));
+    // The object moves to the boot; one that no longer resolves is forgotten. **Coney's stand-in**: its body's wake
+    // and update interval are not kept (Coney's objects have no bodies, SpawnRecord::physicsBody).
+    if (SpawnRecord* record = m_records->resolve(car.trunkObject); record != nullptr) {
+        record->position = position;
+    } else {
+        car.trunkObject = 0;
     }
 }
 

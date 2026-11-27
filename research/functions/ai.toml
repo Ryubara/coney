@@ -2114,7 +2114,7 @@ kind = "binding worker"
 role = "`0x00510adf`, at most 100"
 level = "confirmed-code"
 coney = "src/scripting/mission4_bindings.cpp:addMission4Bindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00294ad8

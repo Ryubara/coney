@@ -7,6 +7,7 @@
 #include <expected>
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -21,6 +22,7 @@
 #include "scripting/script_system.h"
 #include "warriors/game_state.h"
 #include "world_objects/cars.h"
+#include "world_objects/spawn_records.h"
 
 using coney::script::LuaVm;
 using coney::script::ScriptSystem;
@@ -124,14 +126,25 @@ TEST_CASE("the car bindings paint, repair and put a stereo in the car they name"
 }
 
 TEST_CASE("CarPlaceInTrunkOnDetach puts an object, or with a kind that many dollars, in the boot", "[car_bindings]") {
+    // Expected: cars.md#parts, confirmed (code): each call keeps the other item; an object goes in when it resolves.
     Harness h;
+    coney::world_objects::SpawnRecords records;
+    h.context.spawnRecords = &records;
+    REQUIRE(records.add(coney::world_objects::SpawnRecord{.handle = 405,
+                                                          .typeName = "dyn_pipe_a",
+                                                          .shownMessage = std::nullopt,
+                                                          .model = std::nullopt,
+                                                          .physicsBody = std::nullopt,
+                                                          .breakIn = std::nullopt}) != nullptr);
     const double car =
         h.first("CarSpawn", {str("car_coupe"), list({0, 0, 0}), list({0, 0, 0, 1})}).number().value_or(0);
-    h.first("CarPlaceInTrunkOnDetach", {Value(car), Value(405.0)});
+    h.first("CarPlaceInTrunkOnDetach", {Value(car), Value(406.0)}); // no such object: nothing goes in
     REQUIRE(h.cars.find(car) != nullptr);
+    CHECK_FALSE(h.cars.find(car)->trunkLoaded);
+    h.first("CarPlaceInTrunkOnDetach", {Value(car), Value(405.0)});
     CHECK(h.cars.find(car)->trunkLoaded);
     CHECK(h.cars.find(car)->trunkObject == 405.0);
     h.first("CarPlaceInTrunkOnDetach", {Value(car), Value(0.0), Value(261.0)}); // the low 8 bits: $5
-    CHECK(h.cars.find(car)->trunkObject == 0.0);
+    CHECK(h.cars.find(car)->trunkObject == 405.0);
     CHECK(h.cars.find(car)->trunkMoney == 5);
 }

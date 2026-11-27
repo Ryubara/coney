@@ -2020,7 +2020,7 @@ name = "Script_SetGeneralCarMsgHandler"
 page = "scripting.md#bindings"
 level = "confirmed-code"
 coney = "src/scripting/mission4_bindings.cpp:addMission4Bindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00386370

@@ -1,0 +1,10 @@
+# The parked sedan at (41.23, 44.76) squared twice at its front-left corner, for the `level99-car-corner` clips pair
+# scenario (tools/clips/level99-car-corner.toml), played from checkpoint 2 (`--play-level level99 --checkpoint 2
+# --skip-movies`): cross skips the checkpoint's scene. Frames are 1/30 s from the level's first frame of play.
+65 tap cross
+# Round the car's west end, then up to its front-left corner (a steer stops 1 m short of its last point).
+160 steer 100 37.0,47.3 37.0,42.0
+260 steer 30 38.38,41.9 38.38,44.2
+# Two squares: the parts 2, 8, 10 and the lamp glass bit 26, then 2 and 10 again (docs/research/cars.md#parts).
+380 tap square
+440 tap square

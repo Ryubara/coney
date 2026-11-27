@@ -1,0 +1,11 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level99's parked sedan at (41.23, 44.76),
+# squared twice at its front-left corner. The input script skips the checkpoint's scene, walks round the car and stops at
+# its front-left corner by frame 330; the clip starts there and shows the two squares: the first knocks the lamp glass off
+# with its shards and takes lamp 8 off, the second only dents the bumper and the panel. For a change to a car's parts,
+# its hit effects or how it is drawn.
+description = "level99 street: two squares at the parked sedan's front-left corner (lamp glass, lamp 8)"
+level = "level99"
+input = "tools/clips/level99-car-corner.txt"
+checkpoint = 2
+start_frame = 340
+seconds = 6

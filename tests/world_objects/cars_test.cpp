@@ -6,6 +6,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string_view>
 
@@ -105,6 +106,7 @@ TEST_CASE("a stereo is put in, freed by a broken window, then taken once", "[car
 }
 
 TEST_CASE("a hit sends sparks off a solid part and each part's first-hit effect once", "[cars]") {
+    // Expected: cars.md#hit-effects, confirmed (code)
     using coney::world_objects::CarHitEffectKind;
     Cars cars;
     REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 4) != nullptr);
@@ -135,7 +137,7 @@ TEST_CASE("a hit sends sparks off a solid part and each part's first-hit effect 
     // The bonnet's first hit is steam at its point in the car's frame, upward.
     const auto steam = coney::world_objects::carBreakWindowEffect(*cars.find(4), 4, point);
     CHECK(steam.kind == CarHitEffectKind::Steam);
-    CHECK(std::fabs(steam.position.y - 2.743F) < 1e-4F);
+    CHECK(std::fabs(steam.position.y - 2.741F) < 1e-4F);
     CHECK(steam.direction.z == 1.0F);
     // The right windows burst along the first row, the front and rear glass along the second.
     CHECK(coney::world_objects::carBreakWindowEffect(*cars.find(4), 17, point).rowSign == 1.0F);
@@ -211,6 +213,7 @@ TEST_CASE("a boot's item is released when the boot is knocked off, not when remo
 }
 
 TEST_CASE("an explosion knocks every part off once and loses a loaded boot's item", "[cars]") {
+    // Expected: cars.md#explode, confirmed (code): parts 1-29, never the body.
     Cars cars;
     coney::world_objects::SpawnRecords records;
     double next = 100;
@@ -220,10 +223,183 @@ TEST_CASE("an explosion knocks every part off once and loses a loaded boot's ite
     CHECK(cars.explode(1));
     const coney::world_objects::Car& car = *cars.find(1);
     CHECK(car.exploded);
-    CHECK(car.removedKept == (1U << coney::world_objects::kCarParts) - 1U);
+    CHECK(car.removedKept == 0x3ffffffeU);
     // Blown off, the boot's money is lost: no pickup is made.
     CHECK(records.all().empty());
     // Once only; an unknown car does nothing.
     CHECK_FALSE(cars.explode(1));
     CHECK_FALSE(cars.explode(9));
+}
+
+namespace {
+
+// A spawn record of a pipe named `handle`: the object a test hides in a boot.
+coney::world_objects::SpawnRecord pipeRecord(double handle) {
+    return coney::world_objects::SpawnRecord{.handle = handle,
+                                             .typeName = "dyn_pipe_a",
+                                             .shownMessage = std::nullopt,
+                                             .model = std::nullopt,
+                                             .physicsBody = std::nullopt,
+                                             .breakIn = std::nullopt};
+}
+
+// The mask of one part.
+constexpr std::uint32_t partBit(std::uint32_t part) { return 1U << part; }
+
+} // namespace
+
+TEST_CASE("the repair clears the damage, the kept and first-hit bits and the exploded flag", "[cars]") {
+    // Expected: cars.md#parts, confirmed (code): Car_ResetParts clears every part record and the masks.
+    Cars cars;
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    static_cast<void>(cars.damagePart(1, 10, 0.4F, false));
+    CHECK(cars.explode(1));
+    cars.repair(1);
+    const Car& car = *cars.find(1);
+    CHECK(car.removedParts == 0);
+    CHECK(car.removedKept == 0);
+    CHECK(car.firstHits == 0);
+    CHECK_FALSE(car.exploded);
+    CHECK(car.damage.at(10) == 0.0F);
+    // Good as new, it can blow up again.
+    CHECK(cars.explode(1));
+}
+
+TEST_CASE("dollars put in a boot after an object leave the object, which the release still moves", "[cars]") {
+    // Expected: cars.md#parts, confirmed (code): Car_SetTrunkItemKind sets only the dollars and the loaded flag.
+    Cars cars;
+    coney::world_objects::SpawnRecords records;
+    double next = 100;
+    cars.setObjects(&records, [&next] { return next++; });
+    REQUIRE(cars.spawn("car_osedan", Vec3{10, 20, 0}, Quat{}, 1) != nullptr);
+    REQUIRE(records.add(pipeRecord(50)) != nullptr);
+    cars.placeInTrunk(1, 50, 0);
+    cars.placeInTrunk(1, 0, 7);
+    CHECK(cars.find(1)->trunkObject == 50);
+    CHECK(cars.find(1)->trunkMoney == 7);
+    CHECK(cars.damagePart(1, coney::world_objects::kBootPart, 1.0F, false));
+    // The object is preferred: it goes to the boot and no money pickup is made.
+    const Vec3 boot = Cars::bootPosition(*cars.find(1));
+    CHECK(records.find(50)->position == std::array<float, 3>{boot.x, boot.y, boot.z});
+    CHECK(records.find(100) == nullptr);
+}
+
+TEST_CASE("an object put in a boot after dollars keeps the dollars", "[cars]") {
+    // Expected: cars.md#parts, confirmed (code): Car_SetTrunkObject pins and stores the object and sets loaded only.
+    Cars cars;
+    coney::world_objects::SpawnRecords records;
+    cars.setObjects(&records, [] { return 100.0; });
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    REQUIRE(records.add(pipeRecord(50)) != nullptr);
+    cars.placeInTrunk(1, 0, 7);
+    cars.placeInTrunk(1, 50, 0);
+    CHECK(cars.find(1)->trunkObject == 50);
+    CHECK(cars.find(1)->trunkMoney == 7);
+    CHECK(records.find(50)->pinned);
+}
+
+TEST_CASE("CarPlaceInTrunkOnDetach with a handle that names no object loads nothing", "[cars]") {
+    // Expected: cars.md#parts, confirmed (code): with item kind 0 the call acts only when the object resolves.
+    Cars cars;
+    coney::world_objects::SpawnRecords records;
+    cars.setObjects(&records, [] { return 100.0; });
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    cars.placeInTrunk(1, 50, 0);
+    CHECK_FALSE(cars.find(1)->trunkLoaded);
+    CHECK(cars.find(1)->trunkObject == 0);
+}
+
+TEST_CASE("the boot's release spends its dollars, and forgets an object that is gone", "[cars]") {
+    // Expected: cars.md#parts, confirmed (code): Car_ReleaseTrunkItem clears the dollars once the pickup is made, and
+    // the object's handle when it no longer names an object.
+    Cars cars;
+    coney::world_objects::SpawnRecords records;
+    double next = 100;
+    cars.setObjects(&records, [&next] { return next++; });
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    REQUIRE(cars.spawn("car_osedan", Vec3{20, 0, 0}, Quat{}, 2) != nullptr);
+    cars.placeInTrunk(1, 0, 7);
+    CHECK(cars.damagePart(1, coney::world_objects::kBootPart, 1.0F, false));
+    REQUIRE(records.find(100) != nullptr);
+    CHECK(cars.find(1)->trunkMoney == 0);
+    // Car 2's object is destroyed before the boot comes off.
+    REQUIRE(records.add(pipeRecord(50)) != nullptr);
+    cars.placeInTrunk(2, 50, 0);
+    CHECK(records.destroy(50));
+    CHECK(cars.damagePart(2, coney::world_objects::kBootPart, 1.0F, false));
+    CHECK(cars.find(2)->trunkObject == 0);
+    CHECK_FALSE(cars.find(2)->trunkLoaded);
+}
+
+TEST_CASE("a door knocked off by damage takes its window off with it; blown off, it does not", "[cars]") {
+    // Expected: cars.md#drawn, confirmed (code): Car_AddPartDamage gives a door's window full damage on a non-instant
+    // call.
+    Cars cars;
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    cars.spawnRadio(1);
+    CHECK(cars.damagePart(1, 14, 1.0F, false));
+    const Car& car = *cars.find(1);
+    CHECK((car.removedKept & partBit(15)) != 0);
+    CHECK(car.damage.at(15) == 1.0F);
+    // Window 15 coming off this way frees the stereo too.
+    CHECK(car.stereo == StereoState::Freed);
+    REQUIRE(cars.spawn("car_osedan", Vec3{10, 0, 0}, Quat{}, 2) != nullptr);
+    CHECK(cars.damagePart(2, 18, 1.0F, true));
+    CHECK((cars.find(2)->removedKept & partBit(19)) == 0);
+}
+
+TEST_CASE("the parts their record marks come off at the first damage: the roof, glass 6 and 7, lamps 8 and 9",
+          "[cars]") {
+    // Expected: cars.md#type-tables, confirmed (code): the part record's byte +0x01 bit 0x10; on the van also the boot
+    // and side panels 12 and 13.
+    Cars cars;
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    for (const std::uint32_t part : {1U, 6U, 7U, 8U, 9U}) {
+        CHECK(cars.damagePart(1, part, 0.115F, false));
+    }
+    // A bumper takes the damage as it comes.
+    CHECK_FALSE(cars.damagePart(1, 2, 0.115F, false));
+    REQUIRE(cars.spawn("car_van", Vec3{}, Quat{}, 2) != nullptr);
+    CHECK(cars.damagePart(2, 5, 0.115F, false));
+    CHECK(cars.damagePart(2, 12, 0.115F, false));
+    CHECK_FALSE(cars.damagePart(2, 10, 0.115F, false));
+}
+
+TEST_CASE("the roof coming off ends the police car's lights", "[cars]") {
+    // Expected: cars.md#hit-volumes, confirmed (code): Car_AddPartDamage ends +0x1210 when part 1 comes off.
+    coney::effects::ParticleSystems particles;
+    Cars cars;
+    cars.setParticles(&particles);
+    REQUIRE(cars.spawn("car_copcar", Vec3{5, 5, 0}, Quat{}, 8) != nullptr);
+    REQUIRE(particles.systems().size() == 1);
+    CHECK(cars.damagePart(8, 1, 0.34F, false));
+    CHECK_FALSE(cars.find(8)->lights);
+    CHECK(particles.systems().empty());
+}
+
+TEST_CASE("an explosion marks as hit only the parts not off yet, removes the lamps and destroys the stereo", "[cars]") {
+    // Expected: cars.md#explode, confirmed (code)
+    Cars cars;
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    cars.spawnRadio(1);
+    cars.removePart(1, coney::world_objects::kBootPart, true);
+    CHECK(cars.explode(1));
+    const Car& car = *cars.find(1);
+    CHECK((car.firstHits & partBit(coney::world_objects::kBootPart)) == 0);
+    CHECK((car.firstHits & partBit(0)) == 0);
+    CHECK((car.firstHits & partBit(29)) != 0);
+    // The lamps' bits 26-29 go straight into the removed parts.
+    CHECK((car.removedParts & 0x3c000000U) == 0x3c000000U);
+    CHECK(car.damage.at(0) == 0.0F);
+    CHECK(car.stereo == StereoState::Destroyed);
+}
+
+TEST_CASE("a quiet explosion hides the parts a blast would throw", "[cars]") {
+    // Expected: cars.md#drawn, confirmed (code): the parts of record flag 0x04 go into +0x11f0 when quiet.
+    Cars cars;
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    CHECK(cars.explode(1, true));
+    constexpr std::uint32_t kThrown =
+        partBit(4) | partBit(5) | partBit(14) | partBit(16) | partBit(18) | partBit(20) | (0xfU << 22U);
+    CHECK(cars.find(1)->removedParts == (kThrown | 0x3c000000U));
 }

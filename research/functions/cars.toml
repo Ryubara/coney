@@ -16,7 +16,17 @@ name = "Car_AddPartDamage"
 page = "cars.md#parts"
 level = "confirmed-code"
 coney = "src/world_objects/cars.h:Cars::damagePart"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the thrown piece (Car_DetachPart) and the car's rescheduling are not ported: a thrown part keeps its damaged form in place"
+relation = "not-ported"
+issue = 72
+
+[[function.gaps]]
+what = "the callers' skip of removed or off parts sits in the port for every caller, so a door's window that is only removed takes no damage"
+relation = "stand-in"
+issue = 72
 
 [[function]]
 address = 0x0038ab18
@@ -24,7 +34,12 @@ name = "Car_TryExplode"
 page = "cars.md#explode"
 level = "confirmed-code"
 coney = "src/world_objects/cars.h:Cars::explode"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the molotov countdown (+0x1200), which also refuses the explosion, is not ported"
+relation = "not-ported"
+issue = 72
 
 [[function]]
 address = 0x0038ab50
@@ -32,7 +47,12 @@ name = "Car_DoExplode"
 page = "cars.md#explode"
 level = "confirmed-code"
 coney = "src/world_objects/cars.h:Cars::explode"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the loud blast's fireball, shake, sound, statistic, heat wave, AI alert, 300 damage, broken glass, the lower box and the flags switched off near the wreck are not ported; thrown parts keep their place"
+relation = "not-ported"
+issue = 72
 
 [[function]]
 address = 0x0038b8d0
@@ -40,7 +60,12 @@ name = "Car_GetHitZone"
 page = "cars.md#windows"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/car_hits.h:carZoneParts"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "every type reads the sedan's zone tables"
+relation = "stand-in"
+issue = 72
 
 [[function]]
 address = 0x0038bb48
@@ -73,7 +98,12 @@ name = "Car_ReleaseTrunkItem"
 page = "cars.md#parts"
 level = "confirmed-code"
 coney = "src/world_objects/cars.h:Cars::releaseTrunk"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the money pickup's 15000 ms respawn timer and the object's body wake are not kept"
+relation = "stand-in"
+issue = 72
 
 [[function]]
 address = 0x0038df38
@@ -90,7 +120,7 @@ name = "Car_PlaceInTrunkOnDetach"
 page = "cars.md#original-structure"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/cars.h:Cars::placeInTrunk"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0038e860

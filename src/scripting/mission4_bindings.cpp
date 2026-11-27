@@ -138,8 +138,8 @@ void addMission4Bindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext&
     // @orig 0x0038dfa0 Car_Explode (unknown)
     vm.registerFunction("CarExplode", [context = &context, scripts = &scripts](std::span<const Value> args) {
         const double car = handleArg(args, 0);
-        if (context->cars != nullptr && context->cars->explode(car) && !boolArg(args, 1) &&
-            context->messages != nullptr) {
+        const bool quiet = boolArg(args, 1);
+        if (context->cars != nullptr && context->cars->explode(car, quiet) && !quiet && context->messages != nullptr) {
             static_cast<void>(context->messages->deliverFromCar(*scripts, car, kCarExploded, 0.0, -1.0, true));
         }
         return binding::none();
