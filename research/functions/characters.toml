@@ -532,7 +532,7 @@ status = "legacy"
 [[function]]
 address = 0x00226a20
 name = "Human_GetHeadPoint"
-page = "characters-ground.md#falling"
+page = "characters/index.md#code-core"
 role = "the upper point of the landing segment: the feet + `+0x4e8` - 0.16 x scale"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::headPointHeight"
