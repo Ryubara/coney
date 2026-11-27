@@ -395,8 +395,8 @@ void Cars::releaseTrunk(Car& car) {
     }
     const anim::Vec3 at = bootPosition(car);
     const std::array<float, 3> position{at.x, at.y, at.z};
-    // No object: the dollars become a pickup at the boot, and are spent. **Coney's stand-in**: the pickup's 15 s
-    // respawn timer is not applied (Coney's world objects keep no timers yet, as level_pickups.h says).
+    // No object: the dollars become a pickup at the boot, and are spent. **Coney's stand-in**: its 15 s respawn
+    // timer, body wake and update interval are not kept (no object timers or bodies yet, as level_pickups.h says).
     if (car.trunkObject == 0) {
         if (car.trunkMoney != 0 && m_nextHandle) {
             const SpawnRecord* pickup = m_records->add(SpawnRecord{.handle = m_nextHandle(),
