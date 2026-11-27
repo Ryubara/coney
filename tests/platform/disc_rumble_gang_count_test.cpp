@@ -49,7 +49,6 @@ constexpr std::uint32_t kAiSeed = 3;
 
 } // namespace
 
-// Guards the counter across the gang leader fix (task 639): it passes before and after it.
 TEST_CASE("the disc's WAR PARTY gang counter shows the standing Orphans, not those with health left",
           "[disc][rumble][hud]") {
     // Expected: hud-functions-lua.md#gang-count-what, confirmed (code) at NumIndicator_Update (0x001b67b8) and
