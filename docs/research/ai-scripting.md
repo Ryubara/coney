@@ -45,10 +45,11 @@ read in the code, which is almost always a call. Confirmed (code) at the address
    `+0x0a`; `GangSuspend(gang, on)` sets gang `+0xd4`. While either holds, `Brain_UpdateGoals` keeps only the time: no
    goal, reaction goal or action runs ([one update](ai/index.md#update-goals); the brain's own flag counts only while the
    human is not held). The think is not frozen outside a scene: `Brain_Think` (`0x0028f6c0`) returns early for a brain
-   with `+0x0a` set only while a scene flag (`0x0051489c` `+0x410` or `+0x411`) is up and the human is in no scene
-   state, and `Brains_Update` (`0x00293b28`) does not test `+0x0a`, so a suspended gang soldier with an enemy listed
-   still pushes the fight goal at his think ([Gang soldiers](ai-brain-types.md#think-gang), step 3), which runs once
-   the suspension ends. Confirmed (code). Coney thinks a suspended brain the same way, and has no scene gate yet.
+   with `+0x0a` set only while commands are locked (game state `0x0051489c` `+0x411`) or a scene plays (`+0x410`), and
+   the human is in no scene state; `Brains_Update` (`0x00293b28`) does not test `+0x0a`. So a suspended gang soldier
+   with an enemy listed still pushes the fight goal at his think ([Gang soldiers](ai-brain-types.md#think-gang), step
+   3), which runs once the suspension ends. Confirmed (code). Coney thinks a suspended brain the same way, and has no
+   scene gate yet.
 6. **Relations and perception.** `GangMakeEnemies` / `GangMakeFriends` (both ways), `GangMakeEnemiesOfType`,
    `GangMakeNeutralOfType`, `GangSetTargetable` (brain `+0x120`), `GangSetAlwaysSeen`, `BrSetFOV`, `GangSetHearRange`
    and `GangSetRespondPercentage` change whom the [enemy scan](ai-fights.md#enemy-scan) lists and who answers violence;

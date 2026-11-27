@@ -118,6 +118,7 @@ struct MissionRun {
     std::size_t humans = 0;
     int mostSpawned = 0;             // the most spawned humans alive at once in the first 18 s (ai::Spawners)
     int spawnMax = 0;                // the level's SetSpawnMax cap then
+    int quieted = 0;                 // the enemies given threat response 0 before the default walk
     std::vector<std::string> errors; // the scripts' error lines
     std::vector<std::string> log;    // every printed line
 };
@@ -186,26 +187,29 @@ void suspendOtherGangs(coney::LevelScripts& scripts, std::set<double>* done = nu
     }
 }
 
-// Holds the brain of every AI human whose gang is an enemy of player 1's, as BrSuspend does (its actions cleared, the
-// brain suspended), so that none closes in on him while the pad is at rest; one already held is left as it is.
-void holdPlayersEnemies(const coney::GameplayMode& gameplay) {
+// Sets threat response 0 (BrSetThreatResponse(h, 0)) on every AI human whose gang is an enemy of player 1's, so that
+// none starts a fight of his own on the idle player; his goals, his gang's tactic and the scripts' goals all run on.
+// Returns how many it set this call; one already at 0 is left as it is.
+int quietPlayersEnemies(const coney::GameplayMode& gameplay) {
     auto* play = dynamic_cast<coney::platform::PlayLevelMode*>(gameplay.level());
     if (play == nullptr) {
-        return;
+        return 0;
     }
     coney::ai::Brains& brains = play->fighters().brains();
     const coney::ai::Brain* mine = brains.find(play->player().human());
     if (mine == nullptr || mine->gang() == nullptr) {
-        return;
+        return 0;
     }
+    int quieted = 0;
     for (std::size_t index = 0; index < brains.size(); ++index) {
         coney::ai::Brain& brain = brains.at(index);
-        if (&brain != mine && !brain.suspended() && brain.gang() != nullptr &&
+        if (&brain != mine && brain.threatResponse() != 0 && brain.gang() != nullptr &&
             coney::ai::Gangs::enemies(brain.gang(), mine->gang())) {
-            (void)brain.clearActions();
-            brain.setSuspended(true);
+            brain.setThreatResponse(0);
+            ++quieted;
         }
     }
+    return quieted;
 }
 
 // The default walk: the stick 70 % forward from 18 s for 2 s, then right, back and left for 2 s each.
@@ -254,18 +258,18 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
     stack.push(gameplay);
     coney::GameTimer timer;
     timer.setFixedStep(true);
-    // The 18 s in steps of 10 updates, the spawners' count read after each. Before the default walk the brains of the
-    // gangs that are player 1's enemies are held (holdPlayersEnemies()) from the start, not only for the walk: a gang
-    // soldier with an enemy listed pushes a fight at his think (GangBrain_Think step 3,
-    // docs/research/ai-brain-types.md#think-gang), so a crowd that has the idle player in sight closes round him in
-    // those 18 s and, suspended only then, stands in the way of every push (level3 checkpoint 3: seven Hi-Hats within
-    // 3.7 m, three of them within 1.1 m). His crew and the gangs not his enemies run on: level87's crew is a gang of
-    // its own, and with it suspended from the start the player's brain stays off and he walks 0 m.
+    // The 18 s in steps of 10 updates, the spawners' count read after each. Before the default walk player 1's enemies
+    // get threat response 0 (quietPlayersEnemies()) from the start, again every 10 updates for the ones made since: a
+    // gang soldier with an enemy listed pushes a fight at his think when his threat response is not 0 (GangBrain_Think
+    // step 3, docs/research/ai-brain-types.md#think-gang), so a crowd that has the idle player in sight closes round
+    // him in those 18 s and stands in the way of every push (level3 checkpoint 3: seven Hi-Hats within 3.7 m, three of
+    // them within 1.1 m). Their goals, tactics and scripted moves still run, and his crew and the other gangs keep
+    // their own threat response.
     constexpr int kStill = 540;
     constexpr int kSample = 10;
     for (int update = 0; update < kStill; update += kSample) {
         if (script == kDefaultWalk) {
-            holdPlayersEnemies(gameplay);
+            run.quieted += quietPlayersEnemies(gameplay);
         }
         stack.runUntilEmpty(timer, {}, kSample);
         if (const coney::ai::ScriptedBrains* scripted = gameplay.scripted(); scripted != nullptr) {
@@ -336,18 +340,14 @@ void playMissionCheckpoint(const MissionCheckpoint& mission) {
         UNSCOPED_INFO(error);
     }
     CHECK(run.scriptErrors == 0);
-    // level3's checkpoint 4 is the rooftop chase: once the pad is his, the Hi-Hat pursuers run him down and
-    // the crew, its Warrior commands off, does not turn back (docs/research/scripting.md#level3), so a player
-    // who stands still for 18 s is beaten down, as the research reads the chapter. The chase's own
-    // playthrough test (disc_story_playthrough_test.cpp) plays that checkpoint through the pad instead.
-    if (level != "level3" || checkpoint != 4) {
-        CHECK(run.standing);
-        CHECK(run.travelled > 1.0F);
-    }
-    std::printf("  %.*s checkpoint %d: %zu humans created, %llu script errors, %zu missing bindings, %.1f m "
-                "walked\n",
+    // Every checkpoint, level3's rooftop chase (checkpoint 4) too: with the Hi-Hat pursuers at threat response 0 in
+    // the 18 s (quietPlayersEnemies()), the idle player is no longer run down before the walk.
+    CHECK(run.standing);
+    CHECK(run.travelled > 1.0F);
+    std::printf("  %.*s checkpoint %d: %zu humans created, %llu script errors, %zu missing bindings, %d enemies "
+                "quieted, %.1f m walked\n",
                 static_cast<int>(level.size()), level.data(), checkpoint, run.humans,
-                static_cast<unsigned long long>(run.scriptErrors), run.missingBindings, run.travelled);
+                static_cast<unsigned long long>(run.scriptErrors), run.missingBindings, run.quieted, run.travelled);
 }
 
 // Missions 2, 3, 5 and 6, a test case per checkpoint so that ctest runs them in parallel
