@@ -6699,7 +6699,13 @@ name = "WarriorCommand_Dispatch"
 page = "ai-gangs.md#warrior-commands"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:dispatchWarriorCommand"
-status = "legacy"
+status = "compared"
+role = "the one dispatcher of the Warrior commands: the tests, the last asked (`+0x41c`), the repeat of the command in force (`+0x41a`) under a live tactic, the range check, then the tactic, the line and the `WCSetCallback` call"
+
+[[function.gaps]]
+what = "the range check (WarChief_CheckCrewInRange) of an unforced command and of a forced defend"
+relation = "not-ported"
+issue = 1520
 
 [[function]]
 address = 0x0041d738
@@ -6758,20 +6764,20 @@ status = "legacy"
 [[function]]
 address = 0x0041db08
 name = "GameState_EnableAllWarriorCommands"
-page = "ai/index.md#warriors-functions"
-role = "the per-player allowed bytes `+0x41e + player × 7 + command`: all seven for every war chief / one for one human; both tell the command display (`WarCommandDisplay_SetAllowed`)"
+page = "ai-gangs.md#warrior-command-switches"
+role = "all seven enabled bytes (`+0x41e + player × 7`) and the command display allowed, for each player whose human is there and is a war chief"
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeWcEnableAllCommands"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0041dbe8
 name = "GameState_EnableWarriorCommand"
-page = "ai/index.md#warriors-functions"
-role = "the per-player allowed bytes `+0x41e + player × 7 + command`: all seven for every war chief / one for one human; both tell the command display (`WarCommandDisplay_SetAllowed`)"
+page = "ai-gangs.md#warrior-command-switches"
+role = "one enabled byte of the player who controls the human; enabling also allows that player's command display (`WarCommandDisplay_SetAllowed`)"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeWcEnableCommand"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0041dc80

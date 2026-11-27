@@ -305,12 +305,23 @@ player). Release is tested before hold:
 
 - **R2 held** (every frame it is down): `WarCommandDisplay_Open` (`0x001a6d28`). When the display is allowed
   (`+0x155c`: `WCEnableCommand`, `HUDShowWarCommand`) and the human is a war chief, it is shown (`+0x1554` = 1), the
-  "issued" flag (`+0x1548`) and the after-issue counter are cleared, the eighteen sprites are shown with any fade
-  cancelled, and **the camera's right stick is switched off** for that pad (`0x0050b1b0[pad]` = 0, which
-  [Camera](camera.md#right-stick) tests). It does **not pause or slow the game**: neither function touches the game
-  timer, a time scale or the game mode, and the handler returns 0, so the rest of the frame's input (the left stick,
-  attacks) still runs. The selection (`+0x1540`) is **not** reset: the menu opens on the last highlighted slot (slot
-  0 the first time). For a human who is not a war chief the display is hidden instead.
+  "issued" flag (`+0x1548`), the after-issue counter (`+0x1568`) and the blink counter (`+0x1578`) are cleared, the
+  eighteen sprites are shown with any fade cancelled, and **the camera's right stick is switched off** for that pad
+  (`0x0050b1b0[pad]` = 0, which [Camera](camera.md#right-stick) tests). It does **not pause or slow the game**: neither
+  function touches the game timer, a time scale or the game mode, and the handler returns 0, so the rest of the
+  frame's input (the left stick, attacks) still runs. The selection (`+0x1540`) is **not** reset: the menu opens on
+  the last highlighted slot (slot 0 the first time), and neither is the lit flag (`+0x1560`, below). The allowed test
+  comes first: a display that is not allowed is left exactly as it is, shown or not; only an allowed display is hidden
+  for a human who is not a war chief (or whose player record is not found).
+- **Who allows it** (`+0x155c`): `WarCommandDisplay_SetAllowed` (`0x001a6c38`) writes it and shuts the name's text
+  down (`MessageHUD_Shutdown`: hidden, its display time left running), from three bindings: `HUDShowWarCommand(on,
+  player)` (`0x001b4948`), `WCEnableCommand(human, command, on)` (`0x0041dbe8`) **only when `on` is set**, and
+  `WCEnableAllCommands(on)` (`0x0041db08`) for each player whose human is there and is a war chief
+  ([the switches](ai-gangs.md#warrior-command-switches)). So enabling one command allows the menu again and
+  `WCEnableAllCommands(false)` disallows it. Confirmed (runtime), run r-20261127-enable-command-allows: after
+  `HUDShowWarCommand(false, 0)` the word read 0, stayed 0 after `WCEnableCommand(player, 2, false)` and read 1 after
+  `WCEnableCommand(player, 2, true)`; run r-20261127-enable-all-gate: `WCEnableAllCommands(false)` left it 0 and
+  `WCEnableAllCommands(true)` set it to 1.
 - **R2 released**: when the display is set up (panel `+0x1efc`), `WarCommandDisplay_Issue` (`0x001a6c58`).
 
 **Picking a slot** (`WarCommandDisplay_ReadStick`, `0x001a7040`, from `WarCommandDisplay_Update` each frame while
@@ -319,7 +330,8 @@ the menu is shown, not yet issued and not locked) reads the right stick's raw by
 
 - **Dead zone:** nothing unless (x − 127)² + (y − 127)² > 12,100, a radius of 110 of 127: **about 87 % deflection**.
   With a stick value v in [-1, 1] and raw ≈ 127.5 + 127.5 v, a push of 0.9 picks and 0.8 does not. Inside it the
-  highlight stays where it was.
+  highlight stays where it was. A read past the dead zone sets the **lit flag** (`+0x1560`), which the colours below
+  need, before any slot is picked.
 - **Angle**, clockwise from up (up 0°, right 90°, down 180°, left 270°): a quadrant base (0°, 90°, 180°, 270°) plus
   asin(|d| / 128) of **one** axis's offset d from 128, not atan2, so it is exact only at full deflection. d is the x
   offset in the up-right and down-left quadrants and the y offset in the down-right and up-left ones; an offset of
@@ -348,19 +360,29 @@ the menu is shown, not yet issued and not locked) reads the right stick's raw by
 **Issuing** (`WarCommandDisplay_Issue`, once per opening, only while shown and not yet issued): the highlighted slot is
 kept (`+0x1544`), its command stored as the player's last (game state `+0x41c` + player) and given through
 **`0x0041c4e0(gameState, chief, command, forced 0, pos 0, arg 0)`** (chief = display `+0x156c`); `0x0051480c` is set
-to `0xff`. A disabled command has its text cleared first and the dispatcher then refuses it
-([AI](ai-gangs.md#warrior-commands), step 1), though the last-command byte has already been written. **Only R2's release
+to `0xff`; the issued flag and the lit flag (`+0x1560`) are set. A disabled command has its text shut down first
+(`MessageHUD_Shutdown`: hidden, its display time left running) and the dispatcher then refuses it
+([AI](ai-gangs.md#warrior-commands), step 1), though the last-command byte has already been written; the display then
+draws nothing ([the colours](#war-command-colours)) and closes when that display time ends. **Only R2's release
 issues**: there is no flick or timeout, and releasing without touching the stick issues the highlighted slot (the
 previous choice). An open menu also issues when the pause menu closes (`PauseMenu_Close`, `0x001dcb20`) and on any
 frame the HUD is not drawn (`HUD_Render`'s hidden branch, `0x001b1688`). The chief's spoken line comes from the
 dispatcher ([Speech](../references/speech.md)).
 
-**After issuing** (`WarCommandDisplay_Update`, `0x001a7e48`): for 10 updates (`0x0050d300`) the menu stays as it is,
-then the camera's right stick is switched back on (`0x0050b1b0[pad]` = 1) and the sprites fade out: the chosen slot's
-plate over 1,500 ms (`0x0050d310`), everything else over 500 ms (`0x0050d30c`); the chosen slot blinks, hidden 2 of
-every 4 updates (`0x0050d24c` = 2, `WarCommandDisplay_BlinkSlot`, `0x001a7d10`). The display closes (`Shutdown`)
-when its text has expired (`MarkupText_IsExpired`: the text's `<DISPLAYTIME>`, inferred). It closes at once if the
-chief goes down (`0x00227dd8`), and a lock that arrives while it is open ends it as if issued, with no command.
+**After issuing** (`WarCommandDisplay_Update`, `0x001a7e48`): the after-issue counter counts the updates to 10
+(`0x0050d300`); on the update it reaches 10 the sprites start to fade, and on the next (the counter no longer below
+10) the camera's right stick is switched back on (`WarCommandDisplay_ReleaseCamera`, `0x001a7000`:
+`0x0050b1b0[pad]` = 1). The chosen (highlighted) slot's **icon** fades over 1,500 ms (`0x0050d310`); its plate and
+backing fade over 500 ms (`0x0050d30c`) like every other sprite (the sprites at `+0x340` are the plates, `+0x940` the
+icons, `+0xf40` the backings, as their colours in Render show). The chosen slot **blinks** from the first update after
+the order, not after the hold (`WarCommandDisplay_BlinkSlot`, `0x001a7d10`, then the blink counter `+0x1578` + 1):
+its three sprites are hidden while the counter is below 2 (`0x0050d24c`) and shown otherwise, and the update that
+finds it at 4 puts it back to 0 before the + 1. So the slot is hidden on the first two updates after the order, then
+on one update in four (the 6th, 10th, 14th, ...). The display closes (`WarCommandDisplay_Shutdown`, `0x001a6b80`,
+which clears the shown flag and releases the sprites but not the camera stick; the lit flag is cleared beside it)
+when its text has expired (`MarkupText_IsExpired`: the text's `<DISPLAYTIME>`, inferred), a test made on every
+update after the order, the hold's included. It closes at once if the chief goes down (`0x00227dd8`), and a lock that
+arrives while it is open ends it as if issued, with no command.
 
 **Seen at runtime** (PCSX2 2.9.129, level 99's street, a war chief with two Warriors; the
 [`crew-command-menu`](../guides/pcsx2-recipes.md#crew-command-menu) recipe): with R2 held (pad command 1) and the right
@@ -391,22 +413,39 @@ of instance 6, size 0.077), a plate (the same rectangle, size 0.07) and the icon
 
 So two rows of three, about 0.07 apart, the top row at y 0.795 and the bottom at 0.93 (`WarCommandDisplay_Place`,
 `0x001a77b0`, from base y 0.99 `0x0050d20c` and the offsets `0x0050d214`-`0x0050d23c`). Between them, at (x, 0.86)
-(`0x0050d2fc`), the **name** of the highlighted slot: a markup text (font slot 3, colour (191, 191, 191), the
-record's `+0x10`) over a box sprite (rectangle `0x4e`, colour (0, 0, 0, 143)) sized to the text plus (0.013, the
-record's `+0x64`). The text is entry *slot* of the command-text table (`0x006007c0`, filled by `CfgWarriorCommand`
-from [`GSTRING.COMMAND`](../references/text-labels.md#text-gstring-command); indexed by display slot, not command
-id); entry 6 (`0x006007d8`), the **out-of-range** text, replaces it while the crew is out of range (game state
-`+0x414` + player, set by the [range check](ai-gangs.md#warrior-range-flag); confirmed (runtime), below) and entry 7
-(`0x006007dc`) while the highlighted command is disabled. Each is read every update while the menu is open and no
-command has been issued yet (`WarCommandDisplay_Update`, `0x001a7e48`, which copies the byte to `+0x154c`); after an
-issue the text is left as it was until it expires. **Runtime check** (PCSX2 2.9.94, a `level80` checkpoint state with
-the `scripted-pad` and `right-stick` patches, R2 held, sticks at rest): with the byte left alone the menu named the
-highlighted command; with the byte rewritten to 1 every few milliseconds the same menu showed the out-of-range text
-in its place. Written once, the byte went back to 0 within a second: the player's update checks the range every 40
-updates and clears it while a member is within 50 m. **Colours** (`WarCommandDisplay_Render`,
-`0x001a8590`, values from `0x001a8b48`): the highlighted slot's icon white, plate gold (255, 183, 0), backing grey;
-the others' icon white, plate dark (35, 35, 35), backing black; a disabled command's icon (30, 30, 30). The 16:9
-and other modes overwrite the offsets and sizes (`0x001a7e48`); they are not listed here.
+(`0x0050d2fc`), the **name** of the highlighted slot: a markup text (font slot 3; the layout record's `+0x10` holds
+(191, 191, 191), but Render draws it in the colours [below](#war-command-colours)) over a box sprite (rectangle `0x4e`,
+colour (0, 0, 0, 143)) sized to the text plus (0.013, the record's `+0x64`). The text is entry *slot* of the
+command-text table (`0x006007c0`, filled by `CfgWarriorCommand` from
+[`GSTRING.COMMAND`](../references/text-labels.md#text-gstring-command); indexed by display slot, not command id); entry
+6 (`0x006007d8`), the **out-of-range** text, replaces it while the crew is out of range (game state `+0x414` + player,
+set by the [range check](ai-gangs.md#warrior-range-flag); confirmed (runtime), below) and entry 7 (`0x006007dc`) while
+the highlighted command is disabled. Each is read every update while the menu is open and no command has been issued yet
+(`WarCommandDisplay_Update`, `0x001a7e48`, which copies the byte to `+0x154c`); after an issue the text is left as it
+was until it expires. **Runtime check** (PCSX2 2.9.94, a `level80` checkpoint state with the `scripted-pad` and
+`right-stick` patches, R2 held, sticks at rest): with the byte left alone the menu named the highlighted command; with
+the byte rewritten to 1 every few milliseconds the same menu showed the out-of-range text in its place. Written once,
+the byte went back to 0 within a second: the player's update checks the range every 40 updates and clears it while a
+member is within 50 m.
+
+<span id="war-command-colours"></span>**Drawing and colours** (`WarCommandDisplay_Render`, `0x001a8590`; the colour
+words are set by `WarCommandLayout_StaticInit`, `0x001a8b48`), confirmed (code). Nothing is drawn while the chief is
+knocked out, the display is not shown (`+0x1554`), not allowed (`+0x155c`) or its sprites not yet resident (`+0x10`,
+`WarCommandDisplay_IsReady`), or once an order has been given whose command is disabled for the player (the enabled
+byte of the highlighted slot's command, read as it draws). Otherwise each slot is drawn backing, plate, icon:
+
+| Slot | Icon | Plate | Backing |
+| --- | --- | --- | --- |
+| Lit: the highlighted slot while the lit flag (`+0x1560`) is set | white | gold (255, 183, 0, 255), `0x006007a0` | (35, 35, 35, 255), `0x006007a8` |
+| Any other, and every slot while the flag is clear | white | (35, 35, 35, 255), `0x006007a8` | black (0, 0, 0, 255) |
+
+A disabled command's icon is (30, 30, 30, 255) (`0x006007b8`) instead. The lit backing and the unlit plate are one
+colour word. The lit flag is set by a stick read past the dead zone or by an order and cleared only when the display
+closes, so a menu opened again shows no lit slot until the stick moves. The name is drawn in (110, 110, 110, 255)
+(`0xff6e6e6e`) while picking an enabled command, (30, 30, 30, 255) while picking a disabled one and gold after the
+order (the colour `MessageHUD_Draw`, `0x001bb038`, hands its layout; that it is the text's colour where its markup
+sets none is inferred from the layout's draw mode). The 16:9 and other modes overwrite the offsets and sizes
+(`0x001a7e48`); they are not listed here.
 
 **No d-pad path:** the player's command handler gives the menu nothing on the d-pad (d-pad right is the flash);
 scripts order the crew with `WCIssueCommand`.
@@ -1060,13 +1099,18 @@ bar's back runs its whole width with the fill over it from the left end and the 
 
 **The Warrior command menu** (`repo:src/hud/war_command_display.h`, stepped by
 `repo:src/gamemodes/gameplay_war_commands.cpp`), as [the menu](#warrior-command-menu) says: each frame of play, before
-the level's step, pad 1's R2 release gives the highlighted slot's command to the dispatcher (unforced, through
-`script::giveWarriorCommand`) and R2 held opens the menu for player 1 unless his menu is locked; the right stick's raw
-bytes pick the slot (the 12,100 dead zone, the one-axis angle, the sectors, 11.25° of hysteresis, cue `0x20`); a lock
-arriving while it is up ends it with no order, and a hidden HUD gives the order at once; the camera's right stick is
-off (`FollowCamera::enablePadStick`) from the opening until 10 updates after the order; then the chosen plate fades
-over 1,500 ms and the rest over 500 ms, the chosen slot blinking, until the name's `<DISPLAYTIME>` closes it. It draws
-the six slots and the highlighted slot's `GSTRING.COMMAND` name (entry 7 for a disabled command) at x 0.5.
+the level's step, pad 1's R2 release gives the highlighted slot's command to the dispatcher (stored as the player's
+last command first, then unforced, through `script::giveWarriorCommand`) and R2 held opens the menu for player 1 unless
+his menu is locked (a menu that is not allowed is left as it is); the right stick's raw bytes pick the slot (the
+12,100 dead zone, which also lights the slot, the one-axis angle, the sectors, 11.25° of hysteresis, cue `0x20`); a
+lock arriving while it is up ends it with no order, and a hidden HUD gives the order at once; the camera's right stick
+is off (`FollowCamera::enablePadStick`) from the opening until the update after the hold of 10; the fade starts on the
+hold's last update, the chosen icon over 1,500 ms and every other sprite over 500 ms, the chosen slot blinking from
+the order on, until the name's `<DISPLAYTIME>` closes it. It draws the six slots in [the
+colours](#war-command-colours) (the lit slot only once lit; nothing when not allowed or after an order of a disabled
+command) and the highlighted slot's `GSTRING.COMMAND` name (entry 7 for a disabled command) at x 0.5, grey, dark or
+gold. `HUDShowWarCommand`, `WCEnableCommand` (enabling) and `WCEnableAllCommands` (only for a player whose human is
+there) set whether the menu is allowed and shut its name down (`script::setWarCommandAllowed`).
 **Coney's readings**: player 1 is the war chief (`+0x3ac` is not kept) and his state flags do not hold the menu back; a
 stick byte of 128 or more is right or down; the backing and plate are flat squares (the sprite word `0xd0100` is not
 mapped); the order is also given when play resumes under a closing pause menu (**Coney's reading**: any mode popped

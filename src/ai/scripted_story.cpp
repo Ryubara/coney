@@ -782,6 +782,12 @@ int ScriptedStory::musicMood() const {
     return 0;
 }
 
+bool ScriptedStory::crewHasTactic(double chief) const {
+    const Brain* lead = m_scripted->brain(chief);
+    const Gang* crew = lead != nullptr ? lead->gang() : nullptr;
+    return crew != nullptr && crew->tactic() != nullptr;
+}
+
 double ScriptedStory::playerOne() const {
     const Brain* player = m_scripted->player();
     return player != nullptr ? player->handle() : 0.0;

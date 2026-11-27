@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "camera/cameras.h"
+#include "hud/hud.h"
 #include "human/human_flags.h"
 #include "human/tag_colour.h"
 #include "scripting/ai_bindings.h"
@@ -216,36 +217,49 @@ std::optional<std::size_t> playerOf(const BindingContext& context, double handle
 // ---- The Warrior commands ----
 
 // The dispatcher every Warrior command goes through (the menu's, `WCIssueCommand`'s and `IssueWarriorCommand`'s):
-// nothing while a scene camera is player 1's, the commands are locked, the player's menu is locked, the command is
-// disabled for the player or the human is no war chief; otherwise the command is the player's last, an unforced repeat
-// of the current one only repeats its line, and any other starts the crew's tactic, then the `WCSetCallback` function
-// is called with (chief, command). **Coney choices**: a command outside 0-6 is refused (the original does not check
-// it), and the chief's line is not said (the speech commands of the lines are not on the page).
+// nothing for no chief, while a scene camera is player 1's, the commands are locked, the human is no war chief, the
+// player's menu is locked or the command is disabled for the player; otherwise the command is the player's last asked
+// for, an unforced repeat of the command in force while the crew has a tactic only repeats, and any other is stored
+// as the one in force and starts the crew's tactic; then the `WCSetCallback` function is called with (chief, command).
+// **Coney choices**: a command outside 0-6 is refused (the original does not check it), and the chief's line is not
+// said (the speech commands of the lines are not on the page).
 // @orig 0x0041c4e0 GameState_DispatchWarriorCommand (unknown)
 void dispatchWarriorCommand(ScriptSystem& scripts, const BindingContext& context, double chief, int command,
                             bool forced) {
     StoryBindingHost* host = storyOf(context);
     CharacterRules& rules = context.state->characters;
     StoryState& story = context.state->story;
-    if (host == nullptr || rules.warriorCommandsLocked || command < 0 || command >= kWarriorCommandCount) {
+    if (host == nullptr || chief == 0.0 || command < 0 || command >= kWarriorCommandCount) {
         return;
     }
+    // Player 1's camera a scene's (kind 4), then the commands' lock.
     if (context.cameras != nullptr && context.cameras->current().kind == camera::CameraKind::Scene) {
         return;
     }
+    if (rules.warriorCommandsLocked) {
+        return;
+    }
+    // **Coney reading** of the war-chief test (human `+0x3ac`, not kept): every human a player controls leads his
+    // crew.
     const std::optional<std::size_t> player = playerOf(context, chief);
     if (!player || story.menuLocked.at(*player) ||
         !rules.warriorCommands.at(*player).at(static_cast<std::size_t>(command))) {
         return;
     }
-    const bool repeat = rules.lastWarriorCommand.at(*player) == command;
     rules.lastWarriorCommand.at(*player) = command;
-    if (repeat && !forced) {
-        return;
+    if (!forced) {
+        // **Stand-in**: the chief is never quiet (none of his lines plays in Coney), so the forced flag the rest
+        // reads stays clear. Not ported: the crew's range check (WarChief_CheckCrewInRange, #1520).
+        // A repeat of the command in force under a tactic: only its line again (not said), and for follow under the
+        // follow tactic WarriorFollowTactic_Repeat. **Stand-ins**: neither is built, and the tactic's `+0x18` byte
+        // (set by the attack, defend and hide tactics in cases Coney's do not model) reads clear.
+        if (host->crewHasTactic(chief) && rules.currentWarriorCommand.at(*player) == command) {
+            return;
+        }
     }
-    if (!host->startWarriorCommand(chief, command, forced)) {
-        return;
-    }
+    // Not ported: a forced defend's range check (WarChief_CheckCrewInRange, #1520).
+    rules.currentWarriorCommand.at(*player) = command;
+    static_cast<void>(host->startWarriorCommand(chief, command, forced));
     if (!story.commandCallback.empty()) {
         const std::array<Value, 2> args{Value(chief), Value(static_cast<double>(command))};
         scripts.call(story.commandCallback, args);
@@ -263,16 +277,20 @@ NativeFunction makeIssueWarriorCommand(ScriptSystem& scripts, const BindingConte
     };
 }
 
-// `WCEnableCommand(player, command, on)`: the command's switch for the player who controls `player`. **Coney
-// choice**: a human no player controls or a command outside 0-6 does nothing (the original writes outside the table).
+// `WCEnableCommand(player, command, on)`: the command's switch for the player who controls `player`; switching one
+// on also allows that player's command display again. **Coney choice**: a human no player controls or a command
+// outside 0-6 does nothing (the original writes outside the table).
 // @orig 0x0041dbe8 GameState_EnableWarriorCommand (unknown)
 NativeFunction makeWcEnableCommand(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         const std::optional<std::size_t> player = playerOf(*context, handleArg(args, 0));
         const int command = intArg(args, 1);
         if (player && command >= 0 && command < kWarriorCommandCount) {
-            context->state->characters.warriorCommands.at(*player).at(static_cast<std::size_t>(command)) =
-                boolArg(args, 2);
+            const bool on = boolArg(args, 2);
+            context->state->characters.warriorCommands.at(*player).at(static_cast<std::size_t>(command)) = on;
+            if (on) {
+                setWarCommandAllowed(*context, *player, true);
+            }
         }
         return binding::none();
     };
@@ -301,12 +319,14 @@ NativeFunction makeWcSetCallback(const BindingContext& context) {
 // `HUDShowWarCommand(on, player)`: whether the command display may open on that player's HUD.
 // @orig 0x001b4948 HUD_ShowWarCommand (unknown)
 NativeFunction makeHudShowWarCommand(const BindingContext& context) {
-    return stateCall(context, [](StoryState& story, std::span<const Value> args) {
+    return [context = &context](std::span<const Value> args) {
         const std::uint32_t player = unsignedArgOr(args, 1, 0);
+        // **Coney choice**: a player past the two does nothing (the original reads past the panel table).
         if (player < kStoryPlayers) {
-            story.commandDisplay.at(player) = boolArgOr(args, 0, true);
+            setWarCommandAllowed(*context, player, boolArgOr(args, 0, true));
         }
-    });
+        return binding::none();
+    };
 }
 
 // ---- Distances, paths and boxes ----
@@ -899,7 +919,35 @@ void addTacticBindings(LuaVm& vm, const BindingContext& context) {
 
 } // namespace
 
+std::optional<double> playerHuman(const BindingContext& context, std::size_t player) {
+    if (context.humans != nullptr) {
+        if (const HumanCreation* made = context.humans->player(static_cast<int>(player) + 1); made != nullptr) {
+            return made->handle;
+        }
+    }
+    if (const StoryBindingHost* host = storyOf(context); host != nullptr && player == 0 && host->playerOne() != 0.0) {
+        return host->playerOne();
+    }
+    return std::nullopt;
+}
+
+void setWarCommandAllowed(const BindingContext& context, std::size_t player, bool on) {
+    if (context.state == nullptr || player >= kStoryPlayers) {
+        return;
+    }
+    context.state->story.commandDisplay.at(player) = on;
+    if (context.hud != nullptr) {
+        context.hud->warCommands(player).shutName();
+    }
+}
+
 void giveWarriorCommand(ScriptSystem& scripts, const BindingContext& context, double chief, int command) {
+    // The menu's issue (WarCommandDisplay_Issue, 0x001a6c58) stores the command as the player's last before the
+    // dispatcher, which may still refuse it.
+    if (const std::optional<std::size_t> player = playerOf(context, chief);
+        player && command >= 0 && command < kWarriorCommandCount) {
+        context.state->characters.lastWarriorCommand.at(*player) = command;
+    }
     dispatchWarriorCommand(scripts, context, chief, command, false);
 }
 

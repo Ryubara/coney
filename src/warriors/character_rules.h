@@ -57,12 +57,14 @@ struct CharacterRules {
     /// ahead; nothing until a script sets the set.
     std::array<std::optional<std::array<std::pair<float, float>, kDefaultFollowSlots>>, kDefaultFollowSets> followSlots;
     std::array<InterrogateOverride, 2> interrogate; ///< The two override sets.
-    /// The Warriors' commands enabled per player (`WCEnableAllCommands`), the last one each player issued (-1 none;
-    /// `WCIssueCommand`) and the commands' lock (game state `+0x411`). **Coney choice**: all enabled at the start (the
-    /// tutorial turns them off until it teaches them).
+    /// The Warriors' commands enabled per player (`WCEnableAllCommands`, game state `+0x41e`), the last one each
+    /// player asked for (-1 none; `+0x41c`), the one in force (`+0x41a`, stored when its tactic starts; `InitLevel`
+    /// sets 0) and the commands' lock (`+0x411`). **Coney choice**: all enabled at the start (the tutorial turns them
+    /// off until it teaches them).
     std::array<std::array<bool, kWarriorCommands>, kWarriorPlayers> warriorCommands{
         {{true, true, true, true, true, true, true}, {true, true, true, true, true, true, true}}};
     std::array<int, kWarriorPlayers> lastWarriorCommand{-1, -1};
+    std::array<int, kWarriorPlayers> currentWarriorCommand{0, 0};
     bool warriorCommandsLocked = false;
     /// The animation files the level asked the resource manager for (`SetDynamicAnimation`), at most
     /// kDynamicAnimations.

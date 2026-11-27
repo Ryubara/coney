@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261127-enable-command-allows"
+date = "2026-11-27"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "1941b39fa6473e7171be3541da51eda4963a01bf2bcd8ffc4cb3649d4631272b"
+
+[who]
+agent = "af0bc54b1cabc83e6"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "lua recipe HUDShowWarCommand(false, 0), then WCEnableCommand(player, 2, false) and WCEnableCommand(player, 2, true); read player 1's command display allowed word after each"
+
+[values]
+allowed_after_hide = 0
+allowed_after_disable = 0
+allowed_after_enable = 1
+
+[addresses]
+allowed = 0x0061cdbc
