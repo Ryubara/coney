@@ -734,7 +734,7 @@ What follows is inferred from the code above.
   outside this step. The physics is the game's own short, fixed sequence of float operations, with no third-party
   solver to make deterministic.
 
-## Reimplementing Physics, RayCast and World {#units}
+### Reimplementing Physics, RayCast and World {#units}
 
 Every function of `Physics/` (`0x0033c288`-`0x0034f740`) and every function of `RayCast/` and `World/` that Coney
 does not cite yet, split into units an implementer can take one at a time, bottom-up. Each unit lists its functions
@@ -743,13 +743,11 @@ specifies it, where it goes in Coney and what its tests check. All 19 units are 
 pages: [geometry kernels](physics-kernels.md) (Units 1, 4, 5, 12 and 13), [shapes, bodies and
 moves](physics-bodies.md) (2, 3 and 6 to 11) and [rays and the world](physics-world.md) (14 to 19), with their
 arguments, record offsets, constants, branches, the original's quirks and worked test numbers, all confirmed (code)
-unless a line says otherwise (read in the disassembly, 2026-10-12). Unit 1's corner contacts and the strike shapes'
-previous positions are also confirmed (runtime) ([Seen at runtime](physics-kernels.md#u1-runtime)). Where a unit
-corrected a section
-of this page, the section was fixed in place; each unit also says what Coney changes.
+unless a line says otherwise (read in the disassembly). Unit 1's corner contacts and the strike shapes'
+previous positions were also seen at runtime ([Seen at runtime](physics-kernels.md#u1-runtime)). Each unit says what
+Coney changes.
 
-When this plan was made (2026-10-12, `main` at `f325e018`), the tracker had 17 of `Physics/`'s 183 functions, 12 of
-`RayCast/`'s 15 and 33 of `World/`'s 61. `RayCast/`'s mesh code (`src/raycast/collision_mesh.*`) is complete apart
+`RayCast/`'s mesh code (`src/raycast/collision_mesh.*`) is complete apart
 from Unit 16, which also changes its ray: it skips excluded triangles before intersecting and returns only a kept
 hit, so it cannot give the see-through material a clear ray crossed
 ([WorldManager_RayCast](physics-world.md#u16-world-ray));
@@ -757,11 +755,11 @@ hit, so it cannot give the see-through material a clear ray crossed
 
 **What Coney has instead** (the stand-ins these units replace):
 
-- Units 1 to 3 are done (`src/physics/`, issue #346): the walking body is the original's swept test and pass loop
-  ([Coney's implementation](#coneys-implementation)). The airborne body's landing still uses Coney's own segment, not
-  `Human_LandingTest`'s contact (#369).
-- Humans meet humans before walls in a pass (a marked Coney choice); Unit 11 sorts both together (#371).
-- Strikes test only the square's aimed object attack against a car (issue #72); Unit 5 and the strike loop
+- Units 1 to 3 are done (`src/physics/`): the walking body is the original's swept test and pass loop
+  ([Coney's implementation](#coneys-implementation)). The airborne body lands by `Human_LandingTest`'s contact in the
+  sweep.
+- Humans meet humans before walls in a pass (a marked Coney choice); Unit 11 sorts both together.
+- Strikes test only the square's aimed object attack against a car; Unit 5 and the strike loop
   ([How Human_TestStrikes builds the sweep](physics-kernels.md#u4b-how-human-teststrikes-builds-the-sweep-0)) let any
   punch or kick
   whose sphere reaches a box hit it.
@@ -775,7 +773,7 @@ hit, so it cannot give the see-through material a clear ray crossed
 | [2](physics-bodies.md#unit-2) A shape against the collision mesh | 1 | the walking sweep's contacts, the corner slide, the airborne push-out |
 | [3](physics-bodies.md#unit-3) Moving a body | 2 | the pass loop, contact codes, slides, bounces, push-outs, the "could not move" counter |
 | [4](physics-kernels.md#unit-4) Static shape-pair overlaps | | pick-ups, the push sphere, objects touched by humans |
-| [5](physics-kernels.md#unit-5) A sphere swept against a box | | strikes on cars (issue #72, step 1) and objects' boxes (issue #300) |
+| [5](physics-kernels.md#unit-5) A sphere swept against a box | | strikes on cars and objects' boxes |
 | [6](physics-bodies.md#unit-6) Shapes | | posed shapes and bounds for 7 to 14 |
 | [7](physics-bodies.md#unit-7) Bodies and the sort-and-sweep world | 6 | the candidate queries every test starts from |
 | [8](physics-bodies.md#unit-8) Ignore lists and shape pools | 7 | |
