@@ -543,11 +543,11 @@ issue = 1011
 [[function]]
 address = 0x00244e78
 name = "Human_MoveAttached"
-page = "combat-grabs.md#grab-turn"
-role = "movement states of the held victim and of a grabbing player"
+page = "combat-grabs.md#grab-posing"
+role = "the held victim's movement: swept to the hold's point, the grabber swept back by what it falls short, three rounds"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::placeAttached"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00245310
