@@ -419,9 +419,10 @@ void Fighter::placeAttached(const FighterInput& input, float heading) {
         move = grabberShort;
     }
     if (rounds == kAttachRounds) {
-        // 5. Unsettled after three rounds: both go back where they stood, the grabber stopped. **Coney stand-in**: the
-        // grabber goes back to where this call found it, where the original restores the transform its body
-        // cached before the update's move, and its stop (Human::place()) also ends its locomotion's turn.
+        // 5. Unsettled after three rounds: both go back where they stood, the grabber stopped.
+        // **Coney stand-in**: the grabber goes back to where this call found it, keeping the heading this update has
+        // given him (`heading`), where the original restores the whole transform (position and rotation) its body
+        // cached before the update's move; and its stop (Human::place()) also ends its locomotion's turn.
         m_held->place(victimStart, victimHeading);
         input.self->place(grabberStart, heading);
         return;
@@ -798,13 +799,18 @@ void Fighter::alignWallThrow(const combat::CombatOutput& out, const FighterInput
         m_pair != PairStage::Attached) {
         return;
     }
-    // The side's axis along the face's inward normal, the victim carried round at the hold's offset.
+    // The heading: the face's inward normal (the hit normal turned round) plus the side's quarter turns, so the
+    // throw's side faces the wall square. **Coney stand-in**: a face with no horizontal part leaves the pair as it is.
     const int index = (animId - id::kThrow2Front) / 2;
     const anim::Vec3 inward{-m_wallThrow->normal.x, -m_wallThrow->normal.y, 0.0F};
     if (std::hypot(inward.x, inward.y) < 1e-4F) {
         return;
     }
+    // **Coney stand-in**: the original also moves the grabber over the same 0.01 s onto the wall point less the side
+    // clip's offset times its reach; Coney's grabber stays where he stands and only turns, at once.
     heading = wrapAngle(headingOf(inward) + (static_cast<float>(index) * kPi / 2.0F));
+    // The victim carried round to the stored offset from the grabber's new transform. **Coney stand-in**: the original
+    // turns and moves it there over 0.01 s from the grabber's goal; Coney sweeps it now from where the grabber stands.
     placeAttached(input, heading);
 }
 

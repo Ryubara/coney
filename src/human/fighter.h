@@ -1145,11 +1145,11 @@ class Fighter {
     // The wall a throw from the hold would hit this update, along the throw's side up to a little past its far range;
     // none without a face steep enough (docs/research/combat-throws.md#throws).
     [[nodiscard]] std::optional<WallThrow> wallThrow(const FighterInput& input) const;
-    // A head-on wall throw turns the pair so the throw's side faces the wall square (`Human_AlignToObject`).
-    // **Coney's reading**: the alignment's target heading is not traced; the side's axis is put along the face's
-    // inward normal.
-    // @coney-only Coney's reading of the head-on wall throw's alignment; the original's (`Human_AlignToObject` from the
-    // throw's start) is not traced
+    // A head-on wall throw turns the pair so the throw's side faces the wall square, as `Player_Throw` (`0x0026dd08`)
+    // aligns it with `Human_AlignToObject` over 0.01 s: the heading from the hit's face normal and the side, the victim
+    // carried round at the hold's offset (docs/research/combat-throws.md#throws). The grabber is not moved onto the
+    // wall point (a stand-in, commented at the code).
+    // @orig 0x002759c0 Human_AlignToObject (unknown)
     void alignWallThrow(const combat::CombatOutput& out, const FighterInput& input, float& heading);
     // Whether a throw now takes the rear hold's path (`Grab_StartPairedMove`): holding from behind without human flag
     // 0x40000000. The spin to the front plays first, and nothing turns.
