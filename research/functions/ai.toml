@@ -5084,6 +5084,11 @@ level = "confirmed-code"
 coney = "src/ai/fidget_action.h:FidgetAction::abort"
 status = "compared"
 
+[[function.gaps]]
+what = "the refusal while cleared for an idle Warrior whose crew follows a free, idle chief with nobody fighting is not built"
+relation = "not-ported"
+issue = 664
+
 [[function]]
 address = 0x002fa1e0
 name = "FidgetAction_Update"
@@ -5226,6 +5231,11 @@ role = "when cleared, stops the taunt (`0x00231c58`) and is refused while a wait
 level = "confirmed-code"
 coney = "src/ai/taunt_action.h:TauntAction::abort"
 status = "compared"
+
+[[function.gaps]]
+what = "the clip's own bits stand for 0x300000, and the count at 0x005112ac, which nothing reads, is not kept"
+relation = "stand-in"
+issue = 664
 
 [[function]]
 address = 0x002fb2f0

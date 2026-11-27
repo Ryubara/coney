@@ -1308,6 +1308,8 @@ void Human::turnOverClip(std::uint32_t clip, anim::Vec3 point, float share) {
 }
 
 void Human::stopOverlay(std::uint32_t held, std::uint32_t firstIdle, std::uint32_t lastIdle) {
+    // Nothing unless the clip still holds its bits. **Coney stand-in**: `held` is the caller's clip bits (the scripted
+    // clip's) in place of the original's 0x100 for a fidget and 0x300000 for a taunt.
     if ((m_animator.flags() & held) == 0) {
         return;
     }
@@ -1411,8 +1413,8 @@ bool Human::startTagSpray(anim::Vec3 point) {
 void Human::restartTagSpray() {
     // 337, then the loop 335 again (Tag_RestartSprayClips); a body playing no spray clip is left alone. Its drop of a
     // set 4 or 6 weapon has nothing to do here: one was dropped as the spray began and nothing is picked up during it.
-    // **Coney stand-in**: its voice stop (Human_StopVoice), the record's +0x18, the top task's stop call and the push
-    // sphere are not built.
+    // **Coney stand-in**: it tests the spray clips still playing in place of the tag's handle resolving; its voice stop
+    // (Human_StopVoice), the record's +0x18, the top task's stop call and the push sphere are not built.
     if (!tagSprayPlaying() || m_animator.clip(clips::kTaggingRestart) == nullptr) {
         return;
     }

@@ -1,0 +1,35 @@
+version = 1
+id = "r-20261127-enter-shadow-grace"
+date = "2026-11-27"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "0fb36edeff191d8afda46f4394a1fe5ce3699a95ca9153e780eee48f7ed9792e"
+
+[who]
+agent = "a666957d7341c73b7"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "call-brains calls: Human_EnterShadow on the player (hides him, state 0x200000 then reads 1), record +0x114 written to 0xabcdef and read back after an update with no call, then Human_EnterShadow again (refused: already hidden), state 0x200000 read again and record +0x114 read"
+
+[values]
+grace_before_call = 11259375
+hidden_after_second_call = 1
+grace_after_second_call = 0
+
+[addresses]
+human = 0x00641a20
+record = 0x0065a840
+Human_EnterShadow = 0x0022ff88
+Human_HasStateFlag = 0x002265f0

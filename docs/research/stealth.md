@@ -86,7 +86,9 @@ player (human `+0x1b0` not −1) it also runs, confirmed (code):
   state `0x20000000` (rebuild the anim state) when his actions are free, and push **move style `0x14`** unless busy
   (state `0x7839e1f7ff0`). The grace time (record `+0x114`) is cleared **on every call**, refused or not, so a
   human who steps back onto the shadow within the grace stays hidden for good; then `Player_UpdateHiddenLoopSound`
-  (`0x002301f0`) runs. Confirmed (code). An earlier reading on this page took the throw aim and the held set as
+  (`0x002301f0`) runs. Confirmed (code). At runtime, with the player hidden and `+0x114` written to a value an update
+  kept, a second call (refused) left him hidden and `+0x114` at 0: confirmed (runtime), run
+  r-20261127-enter-shadow-grace. An earlier reading on this page took the throw aim and the held set as
   one test, and the grace as cleared only on entering.
 - <span id="leaving"></span>**Leaving** (`Human_LeaveShadow`, `0x002300c0`), when hidden: if he is **not running
   and has a target** (an L1 target, [the stealth kill](#stealth-kill)), the hidden state is kept for a
