@@ -686,6 +686,7 @@ status = "compared"
 [[function.gaps]]
 what = "the time of each side's input (`+0x160`), the bump flag (`+0x1e8`) and the side labels' grid are left out; the HUD player's pad drives both sides (no second input object)"
 relation = "stand-in"
+question = "frontend.md#q-rumble-second-pad"
 
 [[function.gaps]]
 what = "the side's 3D fighters are not respawned after a rotation (`RM_ChooseGangs_SpawnFighters`)"
@@ -767,6 +768,7 @@ status = "compared"
 [[function.gaps]]
 what = "back always ends the menu; the mode sets cancelled only from the front end, and in game, where the original pops to RM_Main, the menu closes (Coney has no RM_Main)"
 relation = "stand-in"
+issue = 661
 
 [[function]]
 address = 0x001f9418
@@ -789,6 +791,7 @@ status = "compared"
 [[function.gaps]]
 what = "the layout per video mode, the names' placing (`RM_Intro_LayoutNames`), the separator sprite (a VS text instead), the screen effect and the countdown voice's bank are Coney's stand-ins; the screen is built on each open, not once, with no sprite batch, and reads the frame's pad"
 relation = "stand-in"
+question = "frontend.md#q-rumble-menu-drawing"
 
 [[function]]
 address = 0x001fad40
@@ -811,6 +814,7 @@ status = "compared"
 [[function.gaps]]
 what = "the badges, the sprite between them and the per-video-mode message y are not drawn; the screen is built on each show, not once, and makes no sprite batch; the second HUD pad is not freed"
 relation = "stand-in"
+question = "frontend.md#q-rumble-menu-drawing"
 
 [[function]]
 address = 0x001fd1c8
@@ -824,6 +828,7 @@ status = "compared"
 [[function.gaps]]
 what = "with no second pad Coney stays on the screen and shows the message (the No 2nd Controller screen, result 4, is not made)"
 relation = "stand-in"
+question = "frontend.md#q-rumble-second-pad"
 
 [[function]]
 address = 0x001fd408
@@ -837,6 +842,7 @@ status = "compared"
 [[function.gaps]]
 what = "the badges and the sprite between them are not placed or drawn; no early return for an inactive screen or a frozen Rumble mode (Coney calls it only on the Game Type screen and has no freeze)"
 relation = "stand-in"
+question = "frontend.md#q-rumble-menu-drawing"
 
 [[function]]
 address = 0x001fe048
@@ -859,6 +865,7 @@ status = "compared"
 [[function.gaps]]
 what = "the name is cut at 32 bytes, the field's size; the original copies its whole length"
 relation = "stand-in"
+question = "frontend.md#q-rumble-gang-name"
 
 [[function]]
 address = 0x001fe0c8
@@ -881,6 +888,7 @@ status = "compared"
 [[function.gaps]]
 what = "the name is cut at 32 bytes, the field's size; the original copies its whole length"
 relation = "stand-in"
+question = "frontend.md#q-rumble-gang-name"
 
 [[function]]
 address = 0x00203110

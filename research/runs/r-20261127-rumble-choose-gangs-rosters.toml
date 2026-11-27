@@ -1,0 +1,67 @@
+version = 1
+id = "r-20261127-rumble-choose-gangs-rosters"
+date = "2026-11-27"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "5caaf3fae783f5dc15f4c1444422ac13591efc2a7a4cfb89e929a32f688da86c"
+
+[who]
+agent = "aeb3a44be1d8ebc2c"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "Same boot as r-20261127-rumble-game-type-coop (no save, pad 1 only): WAR PARTY, 1 Player; screens seen in order Game Mode (two entries), Game Type, Choose Gangs, Choose Area (one arena, the Fight Pen). On Choose Gangs read gang 5's record (side 1 roster at +0x08) and gang 3's (side 2 roster at +0x2c) as u32; left held about 34 frames on side 1 (two auto-repeated steps: the values equal two display-order back rotations), cross to lock side 1, left on side 2 (one human): side 2 unchanged; cross, then read the 23 values"
+
+[values]
+game_mode_entries = 2
+arenas_listed = 1
+side1_gang_id = 5
+side2_gang_id = 3
+game_mode_1p = 3
+gang1_pak_minus_1 = 4
+gang2_pak_minus_1 = 2
+side1_start_0 = 91
+side1_start_1 = 94
+side1_start_2 = 91
+side1_start_3 = 92
+side1_start_4 = 93
+side1_start_5 = 94
+side1_start_6 = 91
+side1_start_7 = 92
+side1_start_8 = 93
+side1_after_left_held_0 = 92
+side1_after_left_held_1 = 94
+side1_after_left_held_2 = 94
+side1_after_left_held_3 = 92
+side1_after_left_held_4 = 91
+side1_after_left_held_5 = 93
+side1_after_left_held_6 = 91
+side1_after_left_held_7 = 91
+side1_after_left_held_8 = 93
+side2_start_and_after_left_0 = 225
+side2_start_and_after_left_1 = 226
+side2_start_and_after_left_2 = 224
+side2_start_and_after_left_3 = 225
+side2_start_and_after_left_4 = 226
+side2_start_and_after_left_5 = 227
+side2_start_and_after_left_6 = 228
+side2_start_and_after_left_7 = 225
+side2_start_and_after_left_8 = 226
+
+[addresses]
+gang5_record = 0x00c4e080
+gang3_record = 0x00c4e180
+rumble_values = 0x0063eec0
+choosegangs_oninput = 0x001ef7c0
+rotate_back = 0x001ec130
