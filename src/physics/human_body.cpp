@@ -390,7 +390,8 @@ void pushAwayHumans(PhysicsWorld& world, BodyId id, const HumanBodyOwners& owner
                              .box = {},
                              .options = kPushOptions,
                              .typeMask = kTypeHuman,
-                             .max = kPushMaxContacts};
+                             .max = kPushMaxContacts,
+                             .accepts = {}};
     // From the last contact to the first.
     for (std::size_t n = world.overlapShape(contacts, query); n != 0;) {
         --n;
