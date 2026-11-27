@@ -6,7 +6,8 @@ owns:
 ---
 # Gang records: making a gang, joining it and its leader
 
-Verified against: `SLUS_212.15` (NTSC-U), static reading in Ghidra.
+Verified against: `SLUS_212.15` (NTSC-U), static reading in Ghidra, and a read of the 32 gang records in PCSX2
+(run r-20261127-gang-records, level99 checkpoint 2).
 
 ## Summary
 
@@ -70,6 +71,10 @@ Confirmed (code) at the cited addresses.
    gang as an enemy (`Gang_SetEnemyBit`: the friend bit cleared, the enemy bit set), and with `mutual` the gang treat
    each of them so too.
 
+   Seen running: with record 2 made wanted (`Gang_SetWantedTimer`, `0x00169878`) and the crime level not forced, two
+   police gangs made one after the other (records 6 and 7) each held record 2's enemy bit, and record 2's enemy mask
+   held both of theirs (`0xc0`); confirmed (runtime), run r-20261127-gang-records.
+
 ### Joining a gang {#join}
 
 Confirmed (code) at the cited addresses.
@@ -107,14 +112,33 @@ passes, confirmed (code):
 2. A member neither down nor cuffed.
 3. The first member at all (`HandleArray16_First`); the null handle for an empty gang.
 
+Seen running, in level99's Warriors gang (the player and Ash): the player arrested (state flag `0x20000`) and still
+the leader; Ash made the leader (`GangSetLeader`), then arrested, and the pick gave the lead back to the player, player
+1 in pass 1. Confirmed (runtime), run r-20261127-gang-records.
+
 ### Enemies and friends {#relations}
 
 Confirmed (code) at the cited addresses.
 
 `Gang_MakeEnemies(a, b)` (`0x0016acf0`) sets each gang's enemy bit for the other and clears its friend bit
-(`Gang_SetEnemyBit`), both ways; `Gang_MakeFriends` (`0x0016ad80`) does the reverse (`Gang_SetFriendBit`). Each ignores
-id −1 and checks nothing else: a record not in use is written too. A gang made later in that slot clears its own masks
-in the reset, but the other gang keeps its bit, so the new gang is already its enemy or friend. Confirmed (code).
+(`Gang_SetEnemyBit`, `0x001690c8`), both ways; `Gang_MakeFriends` (`0x0016ad80`) does the reverse
+(`Gang_SetFriendBit`, `0x00169060`). Each ignores id −1 and checks nothing else, so a record not in use is written
+too. Confirmed (code).
+
+The bit written is not the id passed but the other record's **stored id** `+0x30`, which only `Gang_Create` sets
+(`0x0016cdf0`, to the record's index). `Gang_Construct` (`0x00164630`), `Gang_Reset` (`0x00164808`), `Gang_Destroy`
+(`0x00164738`) and `Gangs_ResetAll` (`0x0016c298`) leave it, so it keeps its index from the first `GangCreate` there
+until the game ends, across levels. Confirmed (code). So for a record not in use:
+
+- **made before and deleted since**: the gang named holds its real bit, and a gang made there later is already its
+  enemy or friend (the new gang's own masks are cleared in the reset). Confirmed (code); confirmed (runtime), run
+  r-20261127-gang-records: `GangMakeEnemies(1, 5)` on deleted record 5 set bit 5 in gang 1's enemy mask, and the next
+  `GangCreate` took record 5 and was gang 1's enemy.
+- **never made since boot**: its `+0x30` is 0, the gang named gets bit 0 (gang 0's) instead of the record's, and a
+  gang made there later inherits nothing. The 0 is inferred from the table lying in `.bss` (`0x005e6e30`), which the
+  runtime start clears; confirmed (runtime), run r-20261127-gang-records: the 25 records never made read 0 at `+0x30`,
+  and `GangMakeEnemies(1, 9)` on never-made record 9 set bit 0 in gang 1's enemy mask (and cleared its friend bit 0),
+  not bit 9.
 
 ## In Coney
 
@@ -125,8 +149,8 @@ crime level to the crime reports (`GangLookups::wanted`, `GangLookups::crimeLeve
 
 Deliberate differences and stand-ins:
 
-- The music track names, the spot-line flag `+0xd2`, the bytes `+0xd0`, `+0xd1` and `+0xda` and the spawners' reset
-  are not on Coney's gang record (the spawners are `repo:src/ai/spawners.h`'s, #645).
+- The music track names, the spot-line flag `+0xd2` and the bytes `+0xd0`, `+0xd1` and `+0xda` are not on Coney's gang
+  record ([the open question](#q-unkept-fields)); the spawners' reset is `repo:src/ai/spawners.h`'s work (#645).
 - With every record in use, `Gangs::create` makes no gang and returns −1; the original goes on with record −1.
 - Any player joining becomes the leader, where the original makes only a war chief one (Coney keeps no war chief
   flag).
@@ -134,6 +158,9 @@ Deliberate differences and stand-ins:
   (`Brain_UncountAllEnemies`, `0x0028ef48`) are read from the lists in Coney.
 - The attack weights are not loaded again on joining ([the open question](#q-attack-weights)).
 - Dead is out of health and cuffed the script's arrested state ([the open question](#q-state-flags)).
+- `Gangs::makeEnemies` and `Gangs::makeFriends` write the stored id as the original does (`Gang::m_storedId`, set by
+  `Gangs::create`, 0 until then). Coney's gangs last a level, so a record made in an earlier level and not in this one
+  reads 0 here and its index in the original; a marked stand-in at the code ([the open question](#q-stored-id)).
 - An id outside 0 to 31 does nothing in `Gangs::makeEnemies` and `Gangs::makeFriends`; the original reads past its
   records.
 
@@ -144,6 +171,9 @@ Deliberate differences and stand-ins:
 Coney keeps no human state flags, so its leader pick reads dead as out of health (as `Gang::standing()` does) and
 cuffed as the script's arrested state (as the gang's bounds do). Open: whether a human can be out of health and not
 in the dead state for an update or more during the death chain, which would make Coney's pick run an update early.
+How to answer: in PCSX2, kill a gang's leader that is not a player (`HuKill`, or a fight) and read his health
+(`+0x144`) and his state flags (`*(human+0xd4)`, flag `0x100000000`) every frame until the flag is set; any frame with
+0 health and no flag is an update where the two differ.
 
 ### The attack weights on joining {#q-attack-weights}
 
@@ -157,15 +187,30 @@ before a `GangAddMember` that the original then overwrites, and what human `+0x1
 `Gang_AddMember` makes a joining player the leader only when he is war chief (human `+0x3ac` = 1, set by
 `HuSetWarChief`). Coney keeps no war chief flag and reads player 1 as the war chief, so any player joining leads.
 Open: whether a story joins a player who is not war chief to a gang (a second player in co-op), where the two differ.
+How to answer: search the decompiled scripts for `GangAddMember` calls whose human is a player (`player`, `player2`,
+`HuGetPlayer`) and check whether `HuSetWarChief` is called on that human first; in PCSX2, read human `+0x3ac` of player
+2 after `F.Player2Join` (level99) joins him.
 
 ### Fields Coney does not keep {#q-unkept-fields}
 
-`Gang_Create` clears the record bytes `+0xd0`, `+0xd1` and `+0xda`; `Gang_MakeNeutralWithType` clears the members'
-brain byte `+0x290` when the kind is 0; `Gang_AddMember` sends event `0x16` with the member count before plus one in
-its second word. Coney keeps none of them. Open: who reads each; a reader found means porting the field.
+`Gang_Create` stores the kind's three music track names and sets the spot-line flag `+0xd2`, and clears the record
+bytes `+0xd0`, `+0xd1` and `+0xda`; `Gang_MakeNeutralWithType` clears the members' brain byte `+0x290` when the kind
+is 0; `Gang_AddMember` sends event `0x16` with the member count before plus one in its second word. Coney keeps none of
+them. Open: who reads each; a reader found means porting the field. How to answer: list the references to each offset
+in Ghidra (a search of the instructions for the offset on a gang or brain pointer) and to the music names' reader
+(`CfgGangMusic`'s table), and set a PCSX2 read watch on each field of a gang in use.
 
 ### Ids and records out of range {#q-out-of-range}
 
 `Gang_MakeEnemies` and `Gang_MakeFriends` refuse only id −1 and index any other id, and `Gang_Create` goes on with
 record −1 when every record is in use; past the 32 records both write outside the table. Coney does nothing there
 instead. Open: whether any script passes such an id or makes a 33rd gang (no level seen so far does).
+
+### Stored ids from an earlier level {#q-stored-id}
+
+A record's stored id `+0x30` lasts from its first `GangCreate` until the game ends, so in a later level a record made
+in an earlier one holds its index even before this level makes it; Coney's gangs last a level, so such a record reads
+0 until made. `GangMakeEnemies` or `GangMakeFriends` naming a record not yet made in the level is the only place they
+differ. Open: whether any script names a gang id before that level's `GangCreate` of it. How to answer: search the
+decompiled scripts for `GangMakeEnemies`, `GangMakeFriends` and `GangSetEnemy` whose ids are numbers or variables not
+set by a `GangCreate` earlier in the same level's set-up.

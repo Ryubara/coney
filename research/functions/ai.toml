@@ -486,7 +486,7 @@ status = "legacy"
 address = 0x0016acf0
 name = "Gang_MakeEnemies"
 page = "gang-records.md#relations"
-role = "`GangMakeEnemies(a, b)`: `Gang_SetEnemyBit` both ways; id −1 ignored"
+role = "`GangMakeEnemies(a, b)`: `Gang_SetEnemyBit` both ways, with the bit of the other record's stored id `+0x30`; id −1 ignored"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::makeEnemies"
 status = "compared"
@@ -496,11 +496,16 @@ what = "an id outside 0 to 31 does nothing; the original reads past its records"
 relation = "stand-in"
 question = "gang-records.md#q-out-of-range"
 
+[[function.gaps]]
+what = "a record made in an earlier level and not in this one has stored id 0 in Coney (its gangs last a level) and its index in the original"
+relation = "stand-in"
+question = "gang-records.md#q-stored-id"
+
 [[function]]
 address = 0x0016ad80
 name = "Gang_MakeFriends"
 page = "gang-records.md#relations"
-role = "`GangMakeFriends(a, b)`: `Gang_SetFriendBit` both ways"
+role = "`GangMakeFriends(a, b)`: `Gang_SetFriendBit` both ways, with the bit of the other record's stored id `+0x30`; id −1 ignored"
 level = "confirmed-code"
 coney = "src/ai/gangs.h:Gangs::makeFriends"
 status = "compared"
@@ -509,6 +514,11 @@ status = "compared"
 what = "an id outside 0 to 31 does nothing; the original reads past its records"
 relation = "stand-in"
 question = "gang-records.md#q-out-of-range"
+
+[[function.gaps]]
+what = "a record made in an earlier level and not in this one has stored id 0 in Coney (its gangs last a level) and its index in the original"
+relation = "stand-in"
+question = "gang-records.md#q-stored-id"
 
 [[function]]
 address = 0x0016ae60
@@ -741,12 +751,12 @@ coney = "src/ai/gangs.h:Gangs::create"
 status = "compared"
 
 [[function.gaps]]
-what = "the music track names, the spot-line flag `+0xd2` and the spawners' reset are not on Coney's record"
+what = "the spawners' reset (their active bytes and the wave counts `+0xb00` to `+0xb04`) is the spawners' work"
 relation = "not-ported"
 issue = 645
 
 [[function.gaps]]
-what = "the bytes `+0xd0`, `+0xd1` and `+0xda` are not on Coney's record, and the wanted timers are the crime reports'"
+what = "the music track names, the spot-line flag `+0xd2` and the bytes `+0xd0`, `+0xd1` and `+0xda` are not on Coney's record, and the wanted timers are the crime reports'"
 relation = "stand-in"
 question = "gang-records.md#q-unkept-fields"
 
