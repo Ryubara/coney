@@ -36,6 +36,12 @@ constexpr float kMountSeatSeconds = 0.1F;
 // from `Player_Throw`, docs/research/combat-throws.md#throw-direction): 5 updates.
 constexpr float kThrowTurnSeconds = 1.0F / 6.0F;
 
+// The attached pair's move (`Human_MoveAttached`, docs/research/combat-grabs.md#grab-posing): a body is settled when it
+// falls short of its goal by a squared length under this (0.001 m², about 3 cm), and the victim and the grabber are
+// swept in turn for at most this many rounds.
+constexpr float kAttachSettled = 0.001F;
+constexpr int kAttachRounds = 3;
+
 // The alignment's slide is dropped from this far, or above this speed (m/s).
 constexpr float kAlignMaxSlide = 13.0F;
 constexpr float kAlignMaxSpeed = 50.0F;
@@ -369,11 +375,47 @@ void Fighter::snapAttach(const FighterInput& input, float heading, anim::Vec3 of
     m_held->setAttached(true);
     m_pair = PairStage::Attached;
     m_turnUpdates = 0;
-    placeAttached(input.position, heading);
+    placeAttached(input, heading);
 }
 
-void Fighter::placeAttached(anim::Vec3 position, float heading) const {
-    m_held->place(fromFrame(position, heading, m_holdOffset), heading + m_holdTurn);
+void Fighter::placeAttached(const FighterInput& input, float heading) {
+    // Where the pair stands now, for a pair the rounds cannot settle.
+    const anim::Vec3 victimStart = m_held->position();
+    const float victimHeading = m_held->heading();
+    // 1. The victim's move: from where it stands to the grabber's transform times the stored offset.
+    anim::Vec3 victimAt = victimStart;
+    anim::Vec3 grabberAt = input.position;
+    anim::Vec3 move = anim::subtract(fromFrame(input.position, heading, m_holdOffset), victimStart);
+    int rounds = 0;
+    while (rounds < kAttachRounds) {
+        // 2. The victim swept by the move; settled when it falls short by less than the threshold.
+        const anim::Vec3 victimEnd = m_held->sweepAttached(input.mesh, move);
+        const anim::Vec3 victimShort = anim::subtract(victimEnd, anim::add(victimAt, move));
+        if (anim::dot(victimShort, victimShort) < kAttachSettled || input.self == nullptr) {
+            break;
+        }
+        // 3. The grabber swept by what the victim fell short by (back from the obstacle); settled likewise.
+        victimAt = victimEnd;
+        const anim::Vec3 grabberEnd = input.self->sweepAttached(input.mesh, victimShort);
+        const anim::Vec3 grabberShort = anim::subtract(grabberEnd, anim::add(grabberAt, victimShort));
+        if (anim::dot(grabberShort, grabberShort) < kAttachSettled) {
+            break;
+        }
+        // 4. Another round: the victim takes what the grabber fell short by.
+        ++rounds;
+        grabberAt = grabberEnd;
+        move = grabberShort;
+    }
+    if (rounds == kAttachRounds) {
+        // 5. Unsettled after three rounds: both go back where they stood, the grabber stopped. **Coney stand-in**: the
+        // grabber goes back to where this update's fight found it, where the original restores the transform its body
+        // cached before the update's move, and its stop (Human::place()) also ends its locomotion's turn.
+        m_held->place(victimStart, victimHeading);
+        input.self->place(input.position, heading);
+        return;
+    }
+    // 6. Settled: the victim stands where the sweeps left it, turned to the hold's relative rotation.
+    m_held->place(m_held->position(), heading + m_holdTurn);
 }
 
 bool Fighter::victimInPlace(const FighterInput& input) const {
@@ -749,7 +791,7 @@ void Fighter::alignWallThrow(const combat::CombatOutput& out, const FighterInput
         return;
     }
     heading = wrapAngle(headingOf(inward) + (static_cast<float>(index) * kPi / 2.0F));
-    placeAttached(input.position, heading);
+    placeAttached(input, heading);
 }
 
 bool Fighter::rearThrowPath() const { return m_held != nullptr && m_rear && !hasFlag(flag::kBlockFrontGrab); }

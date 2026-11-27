@@ -12,6 +12,10 @@
 #include "human/combatant.h"
 #include "human/human_animator.h"
 
+namespace coney::raycast {
+class CollisionMesh;
+} // namespace coney::raycast
+
 // A human another human's grab or tackle can hold: the sandbox's passive target (TargetHuman) or a human with a brain
 // or a pad (Human). The grabber plays the victim's side of each paired move on it, aligns it, and while the hold is
 // attached places it every update at the hold's offset in the grabber's frame (the original's `Human_MoveAttached`,
@@ -93,6 +97,15 @@ class Holdable : public Combatant {
     [[nodiscard]] virtual std::optional<TargetState> takeBrokenHold() = 0;
     /// Moves it to `position` facing `headingRadians`.
     virtual void place(anim::Vec3 position, float headingRadians) = 0;
+    /// Sweeps it by `displacement` against the level `mesh`, as one body of an attached pair is moved toward its place
+    /// (`Human_MoveAttached`, docs/research/combat-grabs.md#grab-posing), and returns where it ends; its heading,
+    /// velocity and state are left alone. With no mesh it goes the whole way, and so does a body that meets nothing
+    /// (the default: a passive target).
+    virtual anim::Vec3 sweepAttached(const raycast::CollisionMesh* /*mesh*/, anim::Vec3 displacement) {
+        const anim::Vec3 to = anim::add(position(), displacement);
+        place(to, heading());
+        return to;
+    }
     /// Turns it to face `point`.
     virtual void face(anim::Vec3 point) = 0;
     /// Turns it to `headingRadians` and slides it to `goal` across the ground, each at a constant rate over `seconds`

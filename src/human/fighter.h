@@ -1001,9 +1001,11 @@ class Fighter {
     // Lets go of the victim: the let-go clips (95 / 94) with `letGo`, else straight to the idles (a release, the
     // victim out of health).
     void releaseHold(HumanAnimator& animator, bool letGo);
-    // Puts an attached victim at its stored offset from the grabber at `position` facing `heading`.
+    // Moves an attached victim to its stored offset from the grabber (`input.position` facing `heading`): it is swept
+    // there against the level, and what it falls short by sweeps the grabber back, up to three rounds; a pair still
+    // unsettled then is put back where it stood.
     // @orig 0x00244e78 Human_MoveAttached (unknown)
-    void placeAttached(anim::Vec3 position, float heading) const;
+    void placeAttached(const FighterInput& input, float heading);
     // Held or mounted, but the grabber has stopped driving the hold (removed, out of the update): the human frees
     // itself with the victim's side of a broken pair (docs/research/combat-grabs.md#pair-break) rather than stay in the
     // held loop. **Coney's choice**: in the original every way a grabber leaves breaks the pair; Coney's grabber may
