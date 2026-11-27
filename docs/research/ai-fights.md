@@ -1250,12 +1250,14 @@ at once, beside four runs of the test that plays sequence 2 twice in one process
 hashed the same in all four processes). Until #1668 the test sometimes counted a taunt or two fewer (4 for sequence
 2, 6 for sequence 4, 7 for sequence 6) while the fight itself, its places and the player's health, was the same: it
 told a new taunt by the action's address, and the heap often makes the next taunt where the last was freed.
-Sequence 1 is not checked until #1684: since #369's landing it counts 0, as its fight goes through a grab that carries
-the player off the roof and holds him after he is put back, which the original's recording never had; the other seven
-are still held to the bound. The close-in test still differs: Coney's player counts as facing whichever Warrior his
-fighter holds, so a waiter is sometimes close in, where the original's player brain holds a target only while a pair
-links him (a grab or a mount, `Pair_LinkMount` `0x0022bfd0`, `Grab_Link` `0x0022c730`) and the first slot holder is
-close in otherwise; inferred, not yet ported ([Open questions](#q-close-in-target)).
+Sequence 1 counted 0 for a while on #369's landing: its fight went through a grab that carried the player off the
+roof and held him after he was put back, which the original's recording never had. #1684 (pull request #1697) fixed
+that grab; with it, sequence 1 counts 7 again on the airborne landing of the original's test (measured 2026-11-27), and
+the test holds all eight sequences to the bound.
+The close-in test still differs: Coney's player counts as facing whichever Warrior his fighter holds, so a waiter is
+sometimes close in, where the original's player brain holds a target only while a pair links him (a grab or a
+mount, `Pair_LinkMount` `0x0022bfd0`, `Grab_Link` `0x0022c730`) and the first slot holder is close in otherwise;
+inferred, not yet ported ([Open questions](#q-close-in-target)).
 
 ### Melee ranges {#runtime-melee-range}
 
