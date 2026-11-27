@@ -238,6 +238,30 @@ TEST_CASE("a held human whose hold point lies through a wall is swept against it
     CHECK(local.y == Approx(1.01F).margin(0.03F));
 }
 
+TEST_CASE("a held human the wall stops is left against it, not pushed off it", "[human][combat]") {
+    // Expected: combat-grabs.md#grab-posing, confirmed (runtime)
+    // The same pair as above: the held human (a 0.35 m sphere) stops at the face of the wall at x = 40.5 and stays
+    // there, 0.01 m clear (the sweep's back-off), while the grabber gives way. At runtime the victim stood 0.360 m from
+    // the fence with its 0.35 m sphere (run r-20261127-grab-against-fence). The snap moves the pair and the hold's
+    // update moves it again in the same update, so the second move must start from where the first left the grabber.
+    const FightCharacter character;
+    constexpr float kWallX = 40.5F;
+    constexpr float kHeldRadius = 0.35F;
+    HumanFight fight(character, 1.5F, coney::test::wallFacingMinusX(kWallX, 30.0F, 50.0F, 0.0F, 3.0F));
+    float nearest = 1e9F;
+    bool attached = false;
+    fight.run("5 tap circle\n", 40, [&](std::uint64_t /*frame*/) {
+        if (fight.other().attached()) {
+            attached = true;
+            nearest = std::min(nearest, fight.other().position().x);
+        }
+    });
+    REQUIRE(attached);
+    // Never off the wall while attached, and against it at the end.
+    CHECK(nearest >= kWallX - kHeldRadius - 0.03F);
+    CHECK(fight.other().position().x == Approx(kWallX - kHeldRadius).margin(0.02F));
+}
+
 TEST_CASE("a held human put back after a fall out of the world is let go and stands on the ground", "[human][combat]") {
     // Expected: combat-grabs.md#pair-break, confirmed (code)
     // The put-back is Coney's (teleports.md#out-of-world); it places the human, and every placement breaks the pair
