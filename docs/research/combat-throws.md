@@ -117,7 +117,12 @@ index 29) and the victim's `+0x5c0` gets the ray's direction × the distance. Ot
 25). A face more than 45° off head-on (normal · ray > cos 135°) still gives the wall throw but skips the alignment
 below. From a front hold, before the pair starts (`Attack_StartPaired`), a plain throw turns the player onto the
 stick and carries the victim round with him, and a head-on wall throw aligns the pair instead (`Human_AlignToObject`,
-0.01 s); from a rear hold there is no turn ([Where a throw goes](#throw-direction)). Every throw sets the victim's
+0.01 s); from a rear hold there is no turn ([Where a throw goes](#throw-direction)). The alignment (`0x0026e2bc` calls
+`0x002759c0`) is handed the wall point, the hit's face normal and the side: the thrower turns to the normal's heading
+plus a half turn (front), a quarter turn back (right) or on (left), or none (rear), so the side faces the wall square,
+and moves onto the wall point less the side clip's offset times its reach; an attached victim is carried to the stored
+offset from that goal, all over 0.01 s. Confirmed (code). Coney (`Fighter::alignWallThrow`) turns the pair at once and
+does not move the grabber onto the wall point, a stand-in. Every throw sets the victim's
 `+0x3bd`, which arms its one wall-impact sound ([Moving strikes](combat/index.md#moving-strikes)).
 
 **What the thrown body hits** (confirmed (code) at `0x0021b290`, `0x00264bd8`, `0x00265f70`; the clip events and the

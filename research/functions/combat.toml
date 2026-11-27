@@ -1670,6 +1670,8 @@ name = "Human_AlignToObject"
 page = "combat/index.md#code-reactions"
 role = "Turns and moves the human onto an object's side (front, back or a side) at the attack table's offset and reach for a clip, over a time."
 level = "confirmed-code"
+coney = "src/human/fighter.h:Fighter::alignWallThrow"
+status = "compared"
 
 [[function]]
 address = 0x00276008
