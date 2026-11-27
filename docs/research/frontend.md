@@ -534,7 +534,9 @@ otherwise, `+0x154` the active side:
 - 0 / 1 move the active side's cursor, unless that side is locked (`RM_ChooseGangs_MoveUp` `0x001ef5a8`,
   `RM_ChooseGangs_MoveDown` `0x001ef6d8`): one entry, cue 4, stepping past the other side's gang unless the gang size
   is 1 (flag `+0x1e4`, set by `0x001ecae0` from min(gangSize, 5) = 1); at either end, or when the only entry beyond
-  is the other side's gang, the cursor stays, cue `0xe`, and the bump flag (`+0x1e8`) is set. No wrap.
+  is the other side's gang, the cursor stays, cue `0xe`, and the bump flag (`+0x1e8`) is set. No wrap. In WAR PARTY
+  with one player, up on the first gang played cue `0xe` and set the bump flag, and down went from the first gang to
+  the third, past side 2's (confirmed (runtime), run r-20261127-rumble-choose-gangs-moves).
 - 2 / 3 (left / right) do nothing at all while one human chooses for side 2; otherwise, unless the side is locked or
   the mode is co-op (`gameMode` 2), rotate its roster, which picks the warchief, **mirrored**: left is the back
   rotation (`0x001ec130`) for side 1 and the forward one (`0x001ec028`) for side 2, right the opposite. Both rotate in

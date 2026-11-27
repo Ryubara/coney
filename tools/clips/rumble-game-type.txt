@@ -1,7 +1,7 @@
 # From boot (the title takes START from about frame 500, after the notice and the loading screen): the second pad,
 # START on the title, the stick up most of the way (wrapping to QUICK RUMBLE), cross;
 # on the Rumble menu WAR PARTY (down), cross, co-op (right), cross twice from player 1, then START from player 2;
-# on Choose Gangs (a fresh boot lists two gangs) up once and down twice.
+# on Choose Gangs (Coney's fresh profile lists two gangs) up once and down twice.
 1 p2 connect
 520 tap start
 532 stick left 0 70
