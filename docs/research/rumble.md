@@ -1,9 +1,10 @@
+---
+kind: feature
+owns: {functions: ["0x0041a8c0"]}
+---
 # Rumble mode
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`) and the compiled Lua chunks
-of the retail disc. Runtime observations: the wait before a fight ([Starting a match](#match-start)) and the
-[gang battle trace](#gang-battle-trace); what the intro showed of the world is speculative until recorded
-([q-intro-world](#q-intro-world)).
+Verified against: `SLUS_212.15` (NTSC-U) and the retail disc's compiled Lua chunks; runtime claims say so where made.
 
 ## Purpose
 
@@ -20,6 +21,16 @@ flag chunk for the game type (`level<n>_<type>_init.lua`) and the game type's ru
 [result screen](#result-screen) and [`HuSwitchPlayer`](#switch-player). The Lua claims below are inferred from the
 chunks' disassembly (the method of [Scripts](scripting.md)); the C++ claims are confirmed (code) at the cited
 addresses.
+
+## Rules {#rules}
+
+Each game type's rules (win, lose, timers, scores, revivals) are in [The game types](#game-types).
+
+## Map {#map}
+
+The mode has no source files of its own: its pieces are the arena scripts and their [bindings](#bindings), the
+[intro](#intro), the [win camera](#win-camera), the [result screen](#result-screen) and the set-up menus on
+[Front end: the Rumble set-up](frontend.md#rumble-setup), each with its functions in its section.
 
 ## The arena script {#arena-script}
 

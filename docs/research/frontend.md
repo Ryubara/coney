@@ -1176,7 +1176,9 @@ disassembled (2026-10-04); the script system and `level100.lua`'s `Menu` functio
 | sound bank `menu.msb` / `menu.msd` | WAD entries 9,799 and 9,800 | inferred (names) |
 | `vags/interface/menu/*` | `level100main.lua` only (not the retail menu) | inferred |
 
-## Matching the original {#matching}
+### Matching the original {#matching}
+
+Coney's state against the screens above, whose claims carry their own levels there; inferred from those sections.
 
 What a screenshot-for-screenshot front end needs, one line per screen or feature; "today" is Coney as of this page's
 [implementation section](#coneys-implementation).

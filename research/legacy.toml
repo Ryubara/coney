@@ -426,9 +426,7 @@ history = 1
 stale-wording = 1
 
 ["docs/research/rumble.md"]
-front-matter = 1
 skeleton = 12
-verified = 1
 evidence = 22
 history = 5
 
