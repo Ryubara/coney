@@ -203,9 +203,24 @@ status = "legacy"
 address = 0x0015eca0
 name = "Gm_Mode11_Update"
 page = "frontend.md#rumble-screens"
-note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
+level = "confirmed-code"
 coney = "src/gamemodes/rumble_menu_mode.h:RumbleMenuMode::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the world frame under the menu (tasks, streaming, sectors, instances, lights, cameras, the overlay) and the dummy fighter"
+relation = "not-ported"
+issue = 88
+
+[[function.gaps]]
+what = "the audio listener, the locked preview camera, clearing mode 8's load-front-end flag, the error check and the frame-rate stat"
+relation = "not-ported"
+issue = 669
+
+[[function.gaps]]
+what = "the HUD's pad bindings: port 2 is player 2's pad"
+relation = "stand-in"
+question = "frontend.md#q-rumble-second-pad"
 
 [[function]]
 address = 0x0015fe90
