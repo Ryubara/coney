@@ -6,8 +6,7 @@ owns:
 ---
 # Gang records: making a gang, joining it and its leader
 
-Verified against: `SLUS_212.15` (NTSC-U), static reading in Ghidra, and a read of the 32 gang records in PCSX2
-(run r-20261127-gang-records, level99 checkpoint 2).
+Verified against: `SLUS_212.15` (NTSC-U), static reading in Ghidra and PCSX2 (run r-20261127-gang-records).
 
 ## Summary
 
@@ -210,7 +209,7 @@ instead. Open: whether any script passes such an id or makes a 33rd gang (no lev
 
 A record's stored id `+0x30` lasts from its first `GangCreate` until the game ends, so in a later level a record made
 in an earlier one holds its index even before this level makes it; Coney's gangs last a level, so such a record reads
-0 until made. `GangMakeEnemies` or `GangMakeFriends` naming a record not yet made in the level is the only place they
+0 until made. `GangMakeEnemies` or `GangMakeFriends` naming a record the level has not made is the only place they
 differ. Open: whether any script names a gang id before that level's `GangCreate` of it. How to answer: search the
 decompiled scripts for `GangMakeEnemies`, `GangMakeFriends` and `GangSetEnemy` whose ids are numbers or variables not
 set by a `GangCreate` earlier in the same level's set-up.
