@@ -13,8 +13,9 @@ second (one per fixed step), 720 lines high at the picture's shape (960 x 720 fo
 10, the default, is also the most. With `--play-level`, `--record-from-frame N` starts the clip at the N-th frame of
 play (counted as an input script is, from 0), so a scripted run longer than a clip is recorded at its end; with
 `--join ADDR --net-view` the same, counted from the first frame the guest's client game has the host's level, which is
-also where the guest's `--input-script` starts ([a guest's view](coney-tools-clips.md#clips-pair-guest)). Coney's own
-debug tooling, with no counterpart in the original.
+also where the guest's `--input-script` starts ([a guest's view](coney-tools-clips.md#clips-pair-guest)); with neither,
+the N-th frame of the run from boot, as an input script counts there, so a clip can show a menu reached through the
+front end (a `--join` without `--net-view` is refused). Coney's own debug tooling, with no counterpart in the original.
 
 ```sh
 CLIPS=$(uv run --project python coney-tools clips folder my-task)   # the absolute path of the clips folder
@@ -29,8 +30,8 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 -
   of collision being changed). It never reads the screen or a window. The sound is the mixer's own output, step by
   step.
 - **When.** From the first frame, or with `--play-level` from the level's first frame of play (as `--frames` counts), or
-  from the frame `--record-from-frame N` names (counted the same way, from 0; only with `--play-level` or
-  `--net-view`, at most 1,000,000). The frames before it are played, with the script and the sound's mixing, but not
+  from the frame `--record-from-frame N` names (counted the same way, from 0, or from the run's first frame without a
+  level; at most 1,000,000). The frames before it are played, with the script and the sound's mixing, but not
   recorded, so a run may be as long as it needs and only the clip is capped at 10 seconds.
   Without `--frames` the run ends when the clip is done. `--record` puts Coney in test mode (one step and one render a
   frame, no clock), so the same command and `--input-script` give the same frames: the line it prints ends with a hash

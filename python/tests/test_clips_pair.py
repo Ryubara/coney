@@ -124,6 +124,22 @@ def test_a_scenario_may_start_from_a_story_save(checkout: Path) -> None:
             clips_pair.load_scenario(path, checkout)
 
 
+def test_a_scenario_without_a_level_runs_from_boot(checkout: Path) -> None:
+    # No `--play-level`: the run goes through the front end, and its frames (the script's and `start_frame`) count
+    # from boot, as Coney's `--record-from-frame` counts them without a level.
+    text = 'description = "d"\ninput = "tests/support/walk.txt"\nstart_frame = 400\nseconds = 5\n'
+    run = clips_pair.load_scenario(_scenario(checkout / "tools" / "clips", "menu", text), checkout)
+    assert run.level == ""
+    args = clips_pair.coney_arguments(Path("coney.exe"), "H:/", run, Path("/s/t/clips/after.mp4"))
+    assert "--play-level" not in args
+    assert args[args.index("--record-from-frame") + 1] == "400"
+    # What only a played level has is refused without one.
+    for extra in ("checkpoint = 2\n", "ai_seed = 1\n", "complete_levels = [84]\n"):
+        path = _scenario(checkout / "tools" / "clips", "bad", text + extra)
+        with pytest.raises(clips.ClipError, match="need"):
+            clips_pair.load_scenario(path, checkout)
+
+
 def test_a_scenario_refuses_a_missing_input_script(checkout: Path) -> None:
     path = _scenario(
         checkout / "tools" / "clips", "lost", 'description = "d"\nlevel = "l"\ninput = "nope.txt"\nseconds = 5\n'

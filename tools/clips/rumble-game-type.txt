@@ -1,0 +1,13 @@
+# From boot: the second pad, START on the title, the stick up most of the way (wrapping to QUICK RUMBLE), cross;
+# on the Rumble menu WAR PARTY (down), cross, co-op (right), cross twice from player 1, then START from player 2.
+1 p2 connect
+200 tap start
+212 stick left 0 70
+214 stick left 0 0
+225 tap cross
+280 tap down
+290 tap cross
+300 tap right
+310 tap cross
+340 tap cross
+400 p2 tap start

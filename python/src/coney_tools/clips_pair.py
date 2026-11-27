@@ -83,7 +83,9 @@ SCENARIO_KEYS = frozenset(
         "join_after",
     }
 )
-SCENARIO_REQUIRED = ("description", "level", "input", "seconds")
+SCENARIO_REQUIRED = ("description", "input", "seconds")
+#: The keys that only make sense for a played level (`--play-level`), refused in a scenario without one.
+LEVEL_ONLY_KEYS = ("checkpoint", "ai_seed", "complete_levels", "host_input")
 
 
 # --- the run ---------------------------------------------------------------------------------------------------------
@@ -95,7 +97,8 @@ class PairRun:
 
     #: The scenario's name, or `custom` for a run given on the command line.
     name: str
-    #: The level `--play-level` starts.
+    #: The level `--play-level` starts; empty for a run from boot, through the front end (the input script's and
+    #: `start_frame`'s frames then count from the run's first frame).
     level: str
     #: The input script, an absolute path; the task's copy is played on both sides.
     input_script: Path
@@ -160,6 +163,9 @@ def load_scenario(path: Path, root: Path) -> PairRun:
     missing = [key for key in SCENARIO_REQUIRED if key not in data]
     if missing:
         raise ClipError(f"{path}: missing {', '.join(missing)}")
+    level_only = [key for key in LEVEL_ONLY_KEYS if key in data]
+    if "level" not in data and level_only:
+        raise ClipError(f"{path}: {', '.join(level_only)} need(s) a level; a scenario without one runs from boot")
     script = (root / _scenario_value(data, "input", str, path)).resolve()
     if not script.is_file():
         raise ClipError(f"{path}: input {data['input']} is not a file of the checkout")
@@ -175,7 +181,7 @@ def load_scenario(path: Path, root: Path) -> PairRun:
     }
     return PairRun(
         name=path.stem,
-        level=_scenario_value(data, "level", str, path),
+        level=_scenario_value(data, "level", str, path) if "level" in data else "",
         input_script=script,
         seconds=_scenario_value(data, "seconds", int, path),
         start_frame=optional.get("start_frame", 0),
@@ -242,7 +248,7 @@ def coney_arguments(executable: Path, disc: str, run: PairRun, out: Path, render
             *(["--renderer", renderer] if renderer is not None else []),
             *_record_arguments(run, out),
         ]
-    args = [str(executable), "--disc", disc, "--play-level", run.level]
+    args = [str(executable), "--disc", disc, *(["--play-level", run.level] if run.level else [])]
     if renderer is not None:
         args += ["--renderer", renderer]
     if run.checkpoint is not None:
@@ -1165,5 +1171,5 @@ def run_scenarios(cwd: Path | None = None) -> int:
     rules = load_conventions(root).workspace.clips
     for run in list_scenarios(root, rules.pair):
         start = f" from frame {run.start_frame}" if run.start_frame else ""
-        print(f"{run.name}: {run.level}{start}, {run.seconds} s: {run.description}")
+        print(f"{run.name}: {run.level or 'from boot'}{start}, {run.seconds} s: {run.description}")
     return 0
