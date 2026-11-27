@@ -107,6 +107,7 @@ TEST_CASE("a sprint ends the hidden state and keeps it from starting", "[human][
 }
 
 TEST_CASE("leaving the shadow with no target ends the hidden state at once", "[human][hiding]") {
+    // Expected: stealth.md#hidden, confirmed (code): Human_LeaveShadow 0x002300c0 with no target clears the state.
     const TestCharacter character;
     const auto mesh = halfShadow();
     Human human(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind());

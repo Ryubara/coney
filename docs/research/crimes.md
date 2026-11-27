@@ -603,6 +603,8 @@ records ([AI: crimes](ai-gangs.md#crimes)).
 
 ### Tagging {#tagging}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 A level's tag spots are `part_spray_tag` particle objects (class bit `0x10` marks a particle system; configured by
 `CfgTagSettings`) with flags of activity 12
 ([World flags](flags.md)); `global.lua`'s helper loads a **pattern** (`HuTagPattern`) and calls `HuTag`.
@@ -696,7 +698,7 @@ update), `Tag_RestartSprayClips` (`0x00278210`) stops his voice (`Human_StopVoic
 plays 337 and then the loop 335 again, with the same hooks: 337 **holds `0x400`** as 334 does, the fade is **0.5 s**
 (`0x3f000000`), a set 4 or 6 object is dropped and `0x400` is set on the record. Confirmed (code).
 
-**The end** (issue #407). Confirmed (code) at the addresses unless marked. `Tag_EndSprayClips` (`0x002783b0`) plays
+**The end**. Confirmed (code) at the addresses unless marked. `Tag_EndSprayClips` (`0x002783b0`) plays
 336 `ANIM_TAGGING_END`, whose event `0x31` at frame 7 removes the can that 334's event `0x30` made at frame 10
 ([props of a clip](combat-grabs.md#power-move-props), human `+0x348`). Its callers:
 
@@ -746,7 +748,7 @@ skips the tag (any held flag) and `Human_ApplyPendingDamage` gives a hit no reac
 
 **Ends without 336.** `Tag_End` alone, with no clip: the update with the action no longer `0x17` / `0x18`, not
 tagging, while the tag still exists (`Tag_UpdatePlayer` `0x00273f6c`, `MiniGame_Update` `0x00255fa8`: the cut-short
-intro of issue #330); a **hit** (`Human_ApplyPendingDamage`, `0x002667ac`, while tagging or while the tag exists),
+intro); a **hit** (`Human_ApplyPendingDamage`, `0x002667ac`, while tagging or while the tag exists),
 a death (`Human_PlayLethalReaction`, `0x00268068`), a grab or mount (`Grab_Link` `0x0022c8dc`, `Pair_LinkMount`
 `0x0022c178`, `Grab_BreakOnHit` `0x0022ba5c`), a broken pair (`Human_BreakPair` `0x00258af8`) and a mode reset
 (`Human_ResetForMode` `0x00232740`). `Tag_End` itself never touches the can or the clips. On those paths the can goes
@@ -771,8 +773,9 @@ two readers take the bytes in **opposite orders**:
   `colour & 0xffffff00` as the previous colour, fading in from alpha 0): the mist is (t1, t2, t3) at alpha t4, the
   scripts' `{r, g, b, a}` read as written; the default is **(32, 5, 7) at alpha 80**.
 
-Confirmed (code) at the addresses; the default **confirmed (runtime)** (PCSX2 2.9.94, PINE, a copy of quick-save slot
-6, `level99`): every human in use, the player included, had bytes `50 07 05 20` at `+0x640`. The scripts' values
+Confirmed (code) at the addresses; the default is inferred from a read made in PCSX2 before run records were kept
+(PCSX2 2.9.94, PINE, a copy of quick-save slot 6, `level99`): every human in use, the player included, had bytes
+`50 07 05 20` at `+0x640`. The scripts' values
 (disc check, counts only): level 34's Moon tagger `{0, 0, 40, 200}`, level 93's Destroyer tagger
 `{121, 155, 213, 75}`, a level 2 dancer `{75, 175, 0, 25}`; level 87 colours only `sguy` (`DEST_SPRAY`), never the
 player, so **the player's paint is the default** in mission 3.
@@ -816,12 +819,12 @@ the progress. Confirmed (code) unless marked:
 
 #### Coney status and fixes {#tag-coney-fixes}
 
-The checklist items (2026-10-10): the paint is black, no mist, no paint on the wall, a short near-black smear on the
+The checklist items: the paint is black, no mist, no paint on the wall, a short near-black smear on the
 HUD, a dark charge bar, the Warrior not turned to the wall and still holding a pipe, and the tag ending just before
 the W is complete. Causes and fixes, for the implementer.
 
-**Done** (2026-10-11): 1-5, and 8 but the turn with no intro clip, which Coney makes at once (**Coney's reading**: a
-missing clip plays for 0 s); 9 for player 1 (2026-10-12, `HumanAnimator::playTagEnd`; an AI tagger's end still plays
+**Done**: 1-5, and 8 but the turn with no intro clip, which Coney makes at once (**Coney's reading**: a
+missing clip plays for 0 s); 9 for player 1 (`HumanAnimator::playTagEnd`; an AI tagger's end still plays
 no 336). **Not yet**: 6 (the mist) and 7 (the wall tag).
 
 1. **Ends early** (`TagGame::update`, `repo:src/warriors/tag_game.cpp`): Coney finishes at
@@ -850,7 +853,7 @@ no 336). **Not yet**: 6 (the mist) and 7 (the wall tag).
    none); when 334 is missing Coney skips the clips and so the turn too (`GameplayMode::startTag`), where the
    original still turns. A held pipe staying in the hand is **faithful**; drop only anim sets 4 and 6. Restart the
    clips with 337 when a pause begins.
-9. **The end clip** (issue #407): Coney never plays 336, so the can 334 made stays in the hand. End every spray
+9. **The end clip**: Coney never plays 336, so the can 334 made stays in the hand. End every spray
    that `Tag_EndSprayClips` ends as [The end](#tag-look) says: 336 after a 0.05 s fade, then the idle (or the
    transition and the fight idle), `Tag_End` on the same update; the can goes at 336's event `0x31`. A hit, death,
    grab or reset ends the spray without 336, and the hit or reset releases the can itself.
@@ -859,7 +862,8 @@ no 336). **Not yet**: 6 (the mist) and 7 (the wall tag).
 cursor within 6 cells of point p and of p + 1 leaves p unchanged; a cursor near p − 2 keeps p; five off-track moving
 updates split by on-track ones make the next moving update slip; a charge that ends inside a slip pause starts the
 next charge on time; the ramp restarts after a new charge but not after a slip; `HuTagColor(h, {1, 2, 3, 4})` gives
-HUD rgb (4, 3, 2) and mist `0x01020304`; a human never given a colour draws HUD cells (80, 7, 5, 205); the cursor is
+HUD rgb (4, 3, 2) and the mist's colour word with the bytes 4, 3, 2 and 1; a human never given a colour draws HUD
+cells (80, 7, 5, 205); the cursor is
 white on track and flashes off track and during a slip pause; the wall tag's opacity equals the progress after each
 update and stays 1.0 after a finish; a human holding a set-3 object keeps it at the spray's start, one holding a
 set-4 object drops it.

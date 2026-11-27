@@ -1156,8 +1156,9 @@ shape `OBB` 0.52 × 0.52 × 2, `PHYFLAG.THROWNWEAPONTARGET`), so it can be aimed
 `ShowDistractCopObjective` shows (`ObjShow`). `C3.TargetCheck`, every 200 ms while the player holds a bottle
 (`HuWhatAmIHolding` 4) and his control is `throwControl`, shows `TT_29` ("Press X to throw") once
 `HuIsAimingAt(C3.throwPlayer1, C3.throwObjective)`; `C3.ThrowCheck` goes back to `TT_28` when it stops being true.
-Confirmed (runtime), PCSX2 2.9.94, a contributor's run of `level80` (re-mission-ref, 2026-10-08): `+0x634` stayed 0 while
-the stick pitched the aim down from 0.304 rad and became the marker (`0x00ef97c0`) at pitch 0.139 rad; `TT_29` was set
+Confirmed (runtime), PCSX2 2.9.94, a contributor's run of `level80` (re-mission-ref): `+0x634` stayed 0 while
+the stick pitched the aim down from 0.304 rad and became the marker (its object's address) at pitch 0.139 rad;
+`TT_29` was set
 13 updates later. The bottle then **passes through the marker** and breaks beyond it (inferred: a flying world
 object's sweep meets only bodies with `BLOCKOBJECTS` ([Sweeping a body](physics.md#sweep), confirmed (code)) and the
 marker's body has `THROWNWEAPONTARGET` alone), which is why the script tests for the bottle's break inside the
@@ -1204,7 +1205,7 @@ z up; the detach and the aim turn it into the world):
    **v.z += 7.84 × d / s** (`d` the straight distance: half of 15.68 × the flight time d / s, so the arc comes back
    down to the target's height there). Then, unless the thrower has flag `0x40000` (`+0xe0`), a random spread: with
    `f` = d / 30 clamped to 0.1-1, the velocity turns about world z by `f` × r × 8° and about the horizontal axis
-   across it by `f` × r × 8° (r random in −1 to 1 each, `0x6eb898`; 8° × 0.6 for an AI of brain kind 3). A target
+   across it by `f` × r × 8° (r random in −1 to 1 each, `0x006eb898`; 8° × 0.6 for an AI of brain kind 3). A target
    almost straight above or below (|u.z| ≥ 0.85) falls to the default.
 4. **The default** (no target): (0, 1, 0.1) normalised × 30 / `w`, or × 50 / `w` when the human's stored gait `+0x1a8`
    ([Characters](characters/index.md)) is above 2 (jogging or faster) and he holds a set 4 or 6 object or a throwable

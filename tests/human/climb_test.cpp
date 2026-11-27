@@ -131,6 +131,8 @@ TEST_CASE("a standing climb reaches (r1 + r2) x 0.4, a running one from there to
 }
 
 TEST_CASE("a climb clip's reach is its type-8 event's vector, else its displacement", "[human][climb]") {
+    // Expected: characters-traversal.md#climb, confirmed (code): the reach is the type-8 event's vector (0x00101558);
+    // the displacement is Coney's fallback.
     coney::anim::AnimClip clip;
     clip.displacement = Vec3{0.0F, 1.5F, 0.0F};
     CHECK(coney::human::clipReach(clip) == Approx(1.5F));
