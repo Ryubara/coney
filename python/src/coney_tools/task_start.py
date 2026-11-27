@@ -7,7 +7,10 @@ from the tip of the default branch), the unit record beside the task file, the f
 (`assigned`, `claimed`) of the task's log, and a `/progress claimed` on each issue.
 
 Nothing is made until every check has passed, so a refused start leaves nothing behind. A start that stops half way
-leaves a unit record, and running the command again finishes what is missing instead of making a second unit. A fix
+leaves a unit record, and running the command again finishes what is missing instead of making a second unit: its
+stamps, its `/progress`, and its worktree when that is gone (`workspace clean` once removed the worktree of a unit idle
+before its first commit): on the unit's branch, or from the recorded base when the branch is gone too (a fix, whose
+branch holds the pull request's commits, is refused instead). A fix
 task (`kind: fix`, made by `task create --fix-of`) makes no branch or worktree: it works in the unit of the task it
 fixes, so it gets a record that points there, and its `claimed` stamp joins that task's log. `--adopt` makes a unit of a
 branch that already exists, with its worktree when it has one (a pull request's branch made before `task start`
@@ -291,20 +294,64 @@ def _summary(
     out("next: work in the worktree; the stage commands find this unit from its branch")
 
 
-def _resume(record: UnitRecord, record_path: Path, task: TaskFile, env: StartEnv, line: str, dry_run: bool) -> int:
-    """A task that has a unit record: finish what a stopped start left (stamps, progress), never remake. With a dry
-    run, only say what would be finished."""
+def _remake_worktree(
+    record: UnitRecord, record_path: Path, main: Path, env: StartEnv, dry_run: bool
+) -> tuple[str | None, str]:
+    """Make the worktree of a unit whose folder is gone (`workspace clean` removed it while the unit was idle, or it was
+    deleted by hand) again, at the path the record names: on the unit's branch when that is still there, else (an
+    ordinary task) a new branch at the recorded base commit. Returns why it cannot be made (or None) and the line that
+    says what was done; a dry run says what it would do itself. A fix works on its parent's branch, which holds the
+    pull request's commits, so a fix whose branch is gone is not made again from the base: they would be lost."""
     out = env.out
-    if not record.worktree.is_dir():
-        out(
-            f"refused: the unit's worktree is gone ({record.worktree}); the task cannot be restarted: ask the "
-            f"coordinator (the record is {record_path.as_posix()})"
-        )
-        return 1
+    branch = record.branch
+    kept = _git(main, "show-ref", "--verify", "--quiet", f"refs/heads/{branch}").returncode == 0
+    cannot = (
+        f"the unit's worktree is gone ({record.worktree}) and so is its branch '{branch}', which held the pull "
+        f"request's commits; ask the coordinator (the record is {record_path.as_posix()})"
+    )
+    if not kept and record.parent:
+        return cannot, ""
+    how = (
+        f"on its branch {branch}"
+        if kept
+        else f"from the recorded base {record.base_ref} ({record.base_commit[:12]}) on a new branch {branch} "
+        "(the branch was gone too)"
+    )
+    if dry_run:
+        out(f"dry run: the unit's worktree is gone ({record.worktree}); would make the worktree again {how}")
+        return None, ""
+    # A worktree folder deleted by hand is still registered, and git then refuses its branch as checked out there.
+    _git(main, "worktree", "prune")
+    made = (
+        _git(main, "worktree", "add", str(record.worktree), branch)
+        if kept
+        else _git(main, "worktree", "add", "-b", branch, str(record.worktree), record.base_commit)
+    )
+    if made.returncode != 0:
+        return (
+            f"the unit's worktree is gone ({record.worktree}) and could not be made again "
+            f"({made.stderr.strip() or 'no output'}); ask the coordinator (the record is {record_path.as_posix()})"
+        ), ""
+    return None, f"worktree was gone ({record.worktree}): made again {how}"
+
+
+def _resume(
+    record: UnitRecord, record_path: Path, task: TaskFile, env: StartEnv, line: str, dry_run: bool, main: Path
+) -> int:
+    """A task that has a unit record: finish what a stopped start left (stamps, progress) and make the worktree again
+    when it is gone, never remake the branch of one that has it. With a dry run, only say what would be done."""
+    out = env.out
     report, problem = _log_report(record.log_task, env)
     if problem is not None:
         out(f"refused: {problem}")
         return 1
+    notes: list[str] = []
+    if not record.worktree.is_dir():
+        refusal, note = _remake_worktree(record, record_path, main, env, dry_run)
+        if refusal is not None:
+            out(f"refused: {refusal}")
+            return 1
+        notes = [note] if note else []
     steps = _missing_steps(record, report)
     if dry_run:
         todo = [f"stamp {', '.join(steps)}"] if steps else []
@@ -319,7 +366,7 @@ def _resume(record: UnitRecord, record_path: Path, task: TaskFile, env: StartEnv
         _stamp_start(record, task, who, env, steps, record.base_commit, record.base_commit)
     if not record.progress_posted:
         _post_progress(record, record_path, env)
-    _summary(record, steps, line, env.scratch, "already started", env)
+    _summary(record, steps, line, env.scratch, "already started", env, notes)
     return 0
 
 
@@ -374,7 +421,7 @@ def start_task(request: StartRequest, env: StartEnv) -> int:
             from coney_tools.task_start_restart import restart_unit
 
             return restart_unit(request, env, main, task, read_record(record_path), record_path, slot_line)
-        return _resume(read_record(record_path), record_path, task, env, slot_line, request.dry_run)
+        return _resume(read_record(record_path), record_path, task, env, slot_line, request.dry_run, main)
     if request.restart:
         out(f"refused: no unit to restart: '{request.task}' was never started (task start {request.task})")
         return 1

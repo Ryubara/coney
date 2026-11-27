@@ -338,7 +338,7 @@ free space before and after.
 
 * **Removes a worktree** (`git worktree remove`, then its local branch) when all of these hold: no uncommitted
   changes (untracked files count), no live `.coney-busy` file (below), no build slot held or waited for, not locked
-  by git, not the folder you run it from, untouched
+  by git, not the folder you run it from, no unit in work (below), untouched
   for `--worktree-hours` (default 1, so a branch just created from `main` is not taken for a merged one), and every
   commit is merged. A branch is merged when `origin/main` contains it, or when GitHub's merged pull requests
   (read once for all worktrees: `gh pr list --state merged --limit 1000 --json headRefName,headRefOid`) include one
@@ -352,6 +352,18 @@ free space before and after.
   holds that commit; a commit made in the checkout itself is on no branch and keeps it. One with a change taken out
   (`clips-base-<base>-without-<commit>`, made by `clips pair --without`) holds a single commit of its own, which git
   makes again from its base at any time, so it goes the same way while its parent is in `main` or on a branch.
+* **Keeps the worktree of a unit in work.** A worktree with no commits and no changes is contained in `origin/main`,
+  so it looks merged: a unit paused before its first commit, or waiting on a question or a build slot, would lose it
+  once idle past `--worktree-hours`, and `task start` could not resume it
+  ([Starting a task](issues.md#starting) makes it again, but the engineer's place is lost for nothing). So `clean`
+  reads the unit records (`<scratch>/<task>/unit.json`) and keeps a worktree one of them names while `task slots`
+  counts the unit (no `finished` stamp and no passing Review since its claim: `task_slots.unit_over`), or while its
+  log has no `pr-opened` stamp since the claim and its task still holds the claim on GitHub (a unit that passed Review
+  waits for `pr open`, which needs the worktree). The claim is read only for a worktree that would otherwise go, each
+  once. The line says why: `keep  <task>: unit in work: <task>: task slots counts it` (or `holds its claim and its log
+  has no pr-opened stamp`). What cannot be judged keeps the worktree and says so: a stamp log or a unit record that
+  cannot be read, a GitHub that cannot be asked, conventions that cannot be read. A worktree no record names is judged
+  as before. Its `build/` is still deleted when idle: that is only a rebuild.
 * **Deletes `build/`** (generated, ignored by git), and the worktree's folder in the [build root](#build-root) when
   `build_root` is set, from every worktree that is not busy (no live busy file, no build slot held or waited for, no
   check, fails-first or detached run going on) and has not been touched for

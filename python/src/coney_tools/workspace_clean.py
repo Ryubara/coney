@@ -20,6 +20,9 @@ died, and test runs whose caller is gone (stale_processes.py).
   is merged when `origin/main` contains it, or when GitHub says a pull request from it was merged at that very
   commit or a later one (a squash merge leaves the branch's commits out of `main`, so `git branch --merged` alone
   would keep every one of them);
+* remove the worktree of a unit in work, though it has no commits of its own and so looks merged: a unit record that
+  `task slots` counts, or that passed Review and still holds its claim with no `pr-opened` stamp, keeps its worktree
+  and the line says why (workspace_clean_units.py, issue #1683);
 * delete a local branch that is not merged in the same sense.
 
 A `build/` folder is generated and ignored by git, so it is deleted from any worktree that is not busy and has not
@@ -80,10 +83,11 @@ from coney_tools import (
     task_outputs,
     watched_drives,
     workspace_clean_fixes,
+    workspace_clean_units,
 )
 from coney_tools.clips_pair import WITHOUT
 from coney_tools.config import ConfigError
-from coney_tools.conventions import Workspace, load_conventions
+from coney_tools.conventions import Conventions, Workspace, load_conventions
 from coney_tools.pr_head import HEAD_FIELDS, head_label
 from coney_tools.unit import scratch_folder
 from coney_tools.workspace import find_layout
@@ -400,6 +404,9 @@ class Settings:
     #: The folder-name prefix of a base checkout `clips pair` keeps (`workspace.clips.pair.base_prefix`): a detached
     #: worktree at a commit of `main`, removed once idle for `build_hours` like a build folder, not `worktree_hours`.
     base_prefix: str = ""
+    #: Why a unit in work keeps a worktree that looks merged (it has no commits of its own yet), or "" for none: see
+    #: `workspace_clean_units`. It is asked only of a worktree that would otherwise be removed.
+    in_work: workspace_clean_units.InWork = workspace_clean_units.nobody
 
 
 def marker_pid(marker: Path) -> int | None:
@@ -529,6 +536,11 @@ def assess(tree: GitWorktree, settings: Settings) -> Entry:
         if entry.merged:
             if idle() < (settings.build_hours if cached else settings.worktree_hours):
                 entry.why = f"{entry.why}, but used {idle():.1f} h ago"
+            elif kept := settings.in_work(path):
+                # A worktree with nothing of its own is contained in the base, but a unit that is in work will come back
+                # to it (`task start` cannot resume a unit whose worktree is gone).
+                entry.why = kept
+                entry.merged = False
             else:
                 entry.remove = True
                 entry.delete_build = False
@@ -940,6 +952,11 @@ def default_settings(
     known = _conventions_workspace(checkout)
     if build_hours is None:
         build_hours = float(known.build_idle_hours) if known is not None else DEFAULT_BUILD_HOURS
+    try:
+        conventions: Conventions | None = load_conventions(checkout)
+    except ConfigError:
+        conventions = None
+    remote = workspace_clean_units.github_remote(checkout, conventions)
 
     return Settings(
         build_root=build_root.configured(checkout),
@@ -955,6 +972,7 @@ def default_settings(
         base_prefix=known.clips.pair.base_prefix if known is not None else "",
         live=live_slots(workspace, checkout),
         running=running_checks(workspace, checkout),
+        in_work=workspace_clean_units.units_in_work(_scratch_of(workspace, checkout), conventions, remote),
     )
 
 

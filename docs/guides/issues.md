@@ -619,9 +619,13 @@ scratch folder and proof log) and makes everything the later stages look for, so
 | The **pending work that overlaps** the unit: the open pull requests and the other units in progress that touch the paths and `@orig` addresses the task names ([Pending work that overlaps](pending-work.md)), as a section of the task file and a few lines of the report | `<scratch>/<task>/TASK.md`, section "Pending work that overlaps" |
 
 Running it again is safe. A task with a unit record is not made twice: the command finishes what a stopped start left
-(a missing stamp, a `/progress` that failed) and says `already started`; if the worktree has been removed meanwhile it
-refuses and leaves the record. A `/progress` comment that cannot be posted is a warning, not a failure.
-`--dry-run` prints the branch, worktree and stamps it would make (for a started task: what it would finish) and
+(a missing stamp, a `/progress` that failed) and says `already started`. If the worktree has been removed meanwhile
+(`workspace clean` once did, to a unit idle before its first commit; it [keeps such a unit](workspace.md#cleanup) now)
+the command makes it again, at the path the record names, on the unit's branch, or, when the branch is gone too, on a
+new branch from the base commit the record holds, and says which it did; a dry run says what it would do. A fix works
+on its parent's branch, which holds the pull request's commits, so a fix whose branch is gone is refused (ask the
+coordinator) instead of being made again from the base. A `/progress` comment that cannot be posted is a warning, not
+a failure. `--dry-run` prints the branch, worktree and stamps it would make (for a started task: what it would finish) and
 changes nothing, posts nothing and runs the same checks. If the hook did not vouch for who runs the command, the
 command warns: its stamps then say `unverified`, which `pr open` refuses, and a rerun cannot rewrite them.
 
