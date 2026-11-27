@@ -91,6 +91,8 @@ class GameOverCheck {
     void setArmiesLevel(bool on) { m_armies = on; }
     /// Whether setArmiesLevel() said the level is an Armies level.
     [[nodiscard]] bool armiesLevel() const { return m_armies; }
+    /// Whether the hand-off hides the HUD at its first update.
+    [[nodiscard]] bool handOffHidesHud() const { return true; }
     /// The hand-off's countdown, updates left.
     [[nodiscard]] int handOffLeft() const { return m_handOff; }
 

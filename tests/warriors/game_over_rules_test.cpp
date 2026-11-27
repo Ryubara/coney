@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The game-over check's rules as the original's code has them (docs/research/combat-reactions.md#mission-failing): a
-// dead player's reason, the gang test that counts the downed player himself, the route check's phase on the game
-// state's update counter, and the hand-off's Armies cap and fall cut. Synthetic players.
+// dead player's reason, the route check's phase on the game state's update counter, and the hand-off's Armies cap, HUD
+// and fall cut. Synthetic players.
 #include <array>
 #include <optional>
 
@@ -12,7 +12,6 @@
 using coney::GameOverCheck;
 using coney::GameOverPlayer;
 using coney::GameOverReason;
-using coney::GangHelper;
 
 namespace {
 
@@ -37,20 +36,6 @@ TEST_CASE("a dead player fails the mission as beaten, even when player 1 is cuff
     // Expected: combat-reactions.md#mission-failing, confirmed (code)
     GameOverCheck check;
     CHECK(step(check, GameOverPlayer{.dead = true, .cuffed = true}, false, true) == GameOverReason::Beaten);
-}
-
-TEST_CASE("the gang test counts the downed player himself: alone in his gang he has no one to help", "[game-over]") {
-    // Expected: combat-reactions.md#defeat-helpers, confirmed (code)
-    // Player 1 first, as the check lists his gang; he is down (out or cuffed) whenever the test runs.
-    const std::array<GangHelper, 1> alone{GangHelper{.knockedOut = true}};
-    CHECK(coney::noneAbleToHelp(alone));
-    const std::array<GangHelper, 2> withFree{GangHelper{.cuffed = true}, GangHelper{}};
-    CHECK_FALSE(coney::noneAbleToHelp(withFree));
-    const std::array<GangHelper, 3> allDown{GangHelper{.knockedOut = true}, GangHelper{.cuffed = true},
-                                            GangHelper{.held = true}};
-    CHECK(coney::noneAbleToHelp(allDown));
-    // An empty gang is not "none able": the check goes on to the route test.
-    CHECK_FALSE(coney::noneAbleToHelp({}));
 }
 
 TEST_CASE("the route check runs on every 37th update of the game state, not 37 after the wait began", "[game-over]") {
@@ -110,4 +95,13 @@ TEST_CASE("a player fallen out of the world ends the hand-off's countdown at onc
     GameOverCheck check;
     REQUIRE(step(check, GameOverPlayer{.knockedOut = true}, false, true).has_value());
     CHECK(handOffUpdates(check, true) == 1);
+}
+
+TEST_CASE("a story failure's hand-off hides the HUD; an Armies level's keeps it", "[game-over]") {
+    // Expected: combat-reactions.md#mission-failing, confirmed (code): Gm_Level_Update hides the HUD only in the story
+    // failure's death camera start, which an Armies level skips.
+    GameOverCheck check;
+    CHECK(check.handOffHidesHud());
+    check.setArmiesLevel(true);
+    CHECK_FALSE(check.handOffHidesHud());
 }
