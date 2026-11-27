@@ -144,3 +144,76 @@ TEST_CASE("a hit reports each part it damaged and whether it broke, and the hit 
     static_cast<void>(cars.humanHit(1, standing, standing, &reports));
     CHECK(reports.empty());
 }
+
+TEST_CASE("a player whose feet are above the car takes the cabin table in body bands 1 to 4, whatever his y",
+          "[cars]") {
+    // Expected: cars.md#windows, confirmed (code): Car_GetHitZone's player-above rule.
+    Cars cars;
+    const Car* car = cars.spawn("car_osedan", Vec3{}, Quat{}, 1);
+    REQUIRE(car != nullptr);
+    // Beside the front wing (body band 1), beyond the cabin's half length: the windscreen's cabin band too.
+    const Vec3 above{-1.6F, 2.0F, 1.5F};
+    CHECK(coney::world_objects::carZoneParts(*car, above, true) == (bit(10) | bit(6)));
+    // Not a player, or not above: the body alone.
+    CHECK(coney::world_objects::carZoneParts(*car, above, false) == bit(10));
+    CHECK(coney::world_objects::carZoneParts(*car, Vec3{-1.6F, 2.0F, -0.5F}, true) == bit(10));
+    // Body band 5 (behind the car) keeps the cabin's length test.
+    CHECK(coney::world_objects::carZoneParts(*car, Vec3{-1.6F, -3.0F, 1.5F}, true) == (bit(3) | bit(12) | bit(28)));
+}
+
+TEST_CASE("a window a script removed is not struck, nor the door it no longer shields", "[cars]") {
+    // Expected: cars.md#windows, confirmed (code): Car_OnHit skips the parts in +0x11f0, +0x11f4 and +0x11f8.
+    Cars cars;
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    // CarRemovePart on door 14 removes window 15 too (+0x11f0 only); the door is off (+0x11f8).
+    cars.removePart(1, 14, true);
+    CHECK(coney::world_objects::carHumanHitParts(*cars.find(1), Vec3{-1.6F, 0.5F, 0}) == 0);
+    CHECK(cars.humanHit(1, Vec3{-1.6F, 0.5F, 0}, Vec3{}) == 0);
+}
+
+TEST_CASE("a hit at a front corner knocks the headlight glass off at once and sprays it", "[cars]") {
+    // Expected: cars.md#type-tables, confirmed (code): hit bits 26-29 are marked removed and off, with their glass.
+    using coney::world_objects::CarHitEffectKind;
+    Cars cars;
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    std::vector<coney::world_objects::CarHitReport> reports;
+    const CarPartMask struck = cars.humanHit(1, Vec3{-1.6F, 3.5F, 0}, Vec3{-1.0F, 3.0F, 0.5F}, &reports);
+    CHECK(struck == (bit(2) | bit(8) | bit(10) | bit(26)));
+    const Car& car = *cars.find(1);
+    CHECK((car.removedParts & bit(26)) != 0);
+    CHECK((car.removedKept & bit(26)) != 0);
+    const auto effects = cars.takeHitEffects();
+    REQUIRE_FALSE(effects.empty());
+    CHECK(effects.back().part == 26);
+    CHECK(effects.back().kind == CarHitEffectKind::HeadlightGlass);
+    // The lamps send no message 0x19.
+    for (const coney::world_objects::CarHitReport& report : reports) {
+        CHECK(report.part != 26);
+    }
+}
+
+TEST_CASE("the all-broken message counts the parts of the car's type: the coupe's 1 to 17", "[cars]") {
+    // Expected: cars.md#type-tables, confirmed (code): all broken is 0x3fffe for the coupe, checked after a part 1-21.
+    Cars cars;
+    REQUIRE(cars.spawn("car_coupe", Vec3{}, Quat{}, 1) != nullptr);
+    for (std::uint32_t part = 1; part <= 17; ++part) {
+        if (part != 14 && part != 15) {
+            static_cast<void>(cars.damagePart(1, part, 1.0F, true));
+        }
+    }
+    const Vec3 standing{-1.6F, 0.5F, 0};
+    std::vector<coney::world_objects::CarHitReport> reports;
+    CHECK(cars.humanHit(1, standing, standing, &reports) == bit(15));
+    // Door 14 is the last of the coupe's parts: the hit that takes it off reports the car all broken.
+    constexpr int kMostHits = 20;
+    for (int hit = 0; hit < kMostHits; ++hit) {
+        reports.clear();
+        static_cast<void>(cars.humanHit(1, standing, standing, &reports));
+        if (reports.empty() || reports.front().broke) {
+            break;
+        }
+    }
+    REQUIRE(reports.size() == 2);
+    CHECK(reports[0].part == 14);
+    CHECK(reports[1].part == coney::world_objects::kCarHitAllBroken);
+}

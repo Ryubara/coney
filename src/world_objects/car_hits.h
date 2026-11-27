@@ -30,7 +30,7 @@ inline constexpr float kHumanCarHitDamage = 0.115F;
 /// The parts a hit from a human standing at `standing` reaches, by the type's body and cabin zone tables (bit 1, the
 /// roof, never). Research: docs/research/cars.md#windows.
 /// @orig 0x0038b8d0 Car_HitZoneParts (unknown)
-[[nodiscard]] CarPartMask carZoneParts(const Car& car, anim::Vec3 standing);
+[[nodiscard]] CarPartMask carZoneParts(const Car& car, anim::Vec3 standing, bool player = false);
 
 /// The parts a human at `standing` facing `forward` can hit: none unless he stands outside the car's box and faces its
 /// nearest face (his forward · the face's outward normal ≤ −0.7); then carZoneParts().
@@ -54,7 +54,7 @@ inline constexpr float kHumanCarHitDamage = 0.115F;
 /// The parts a plain human hit from `standing` damages: carZoneParts() less the parts already off, and less each door
 /// whose window is still whole (an intact window shields its door).
 /// @orig 0x0038bea0 Car_OnHit (unknown)
-[[nodiscard]] CarPartMask carHumanHitParts(const Car& car, anim::Vec3 standing);
+[[nodiscard]] CarPartMask carHumanHitParts(const Car& car, anim::Vec3 standing, bool player = false);
 
 /// Where a car's stereo sits: the car's position plus its turn applied to (−0.75, 0.25, 0.1), the same for every type.
 /// @orig 0x0038c868 Car_SpawnStereo (unknown)

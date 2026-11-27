@@ -110,7 +110,7 @@ anim::Vec3 carLocal(const Car& car, anim::Vec3 world) {
     return anim::transformDirection(anim::inverseRigid(turnOf(car)), anim::subtract(world, car.position));
 }
 
-CarPartMask carZoneParts(const Car& car, anim::Vec3 standing) {
+CarPartMask carZoneParts(const Car& car, anim::Vec3 standing, bool /*player*/) {
     const CarZones& zones = zonesOf(car);
     const anim::Vec3 at = carLocal(car, standing);
     // The body table by band and column.
@@ -179,7 +179,7 @@ std::optional<anim::Vec3> carAimPoint(const Car& car, anim::Vec3 feet, anim::Vec
     return anim::Vec3{feet.x + forward.x, feet.y + forward.y, feet.z + up};
 }
 
-CarPartMask carHumanHitParts(const Car& car, anim::Vec3 standing) {
+CarPartMask carHumanHitParts(const Car& car, anim::Vec3 standing, bool /*player*/) {
     CarPartMask mask = carZoneParts(car, standing);
     // An intact window shields its door from this hit.
     for (const std::uint32_t window : {15U, 17U, 19U, 21U}) {

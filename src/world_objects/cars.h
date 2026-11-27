@@ -32,10 +32,11 @@ inline constexpr std::uint8_t kPoliceCarType = 3;
 /// A car's stealable stereo (`CarSpawnRadio`): in the car until a broken window frees it, then taken by a theft
 /// (docs/research/crimes.md#stereo).
 enum class StereoState : std::uint8_t {
-    None,  ///< The car has none.
-    InCar, ///< Put in by `CarSpawnRadio`, behind the window.
-    Freed, ///< Its window broken: a theft (kind-3 record) can take it.
-    Taken, ///< Stolen.
+    None,      ///< The car has none.
+    InCar,     ///< Put in by `CarSpawnRadio`, behind the window.
+    Freed,     ///< Its window broken: a theft (kind-3 record) can take it.
+    Taken,     ///< Stolen.
+    Destroyed, ///< Blown up with its car.
 };
 
 /// One parked car: the fields of the car task Coney keeps (docs/research/cars.md#car-object).
@@ -200,7 +201,7 @@ class Cars {
     /// one exploded already).
     /// @orig 0x0038ab18 Car_TryExplode (unknown)
     /// @orig 0x0038ab50 Car_DoExplode (unknown)
-    bool explode(double handle);
+    bool explode(double handle, bool quiet = false);
     /// A plain human's strike from `standing` reached the car at `point` (the hit record's `+0x90`): each part
     /// carHumanHitParts() names takes kHumanCarHitDamage (a window breaks at once); a hit on any part outside the glass
     /// sends sparks at `point`, and each part's first hit ever its carBreakWindowEffect() (takeHitEffects()). Returns
@@ -209,7 +210,7 @@ class Cars {
     /// (`+0x12d8`), the exploding car and the statistic are not modelled yet.
     /// @orig 0x0038bea0 Car_OnHit (unknown)
     CarPartMask humanHit(double handle, anim::Vec3 standing, anim::Vec3 point,
-                         std::vector<CarHitReport>* reports = nullptr);
+                         std::vector<CarHitReport>* reports = nullptr, bool player = false);
     /// Where a car's boot item is released (game axes): carBootPosition().
     [[nodiscard]] static anim::Vec3 bootPosition(const Car& car);
 

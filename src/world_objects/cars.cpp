@@ -177,7 +177,7 @@ bool Cars::damagePart(double handle, std::uint32_t part, float amount, bool inst
     return true;
 }
 
-bool Cars::explode(double handle) {
+bool Cars::explode(double handle, bool /*quiet*/) {
     Car* car = find(handle);
     if (car == nullptr || car->exploded) {
         return false;
@@ -190,7 +190,8 @@ bool Cars::explode(double handle) {
     return true;
 }
 
-CarPartMask Cars::humanHit(double handle, anim::Vec3 standing, anim::Vec3 point, std::vector<CarHitReport>* reports) {
+CarPartMask Cars::humanHit(double handle, anim::Vec3 standing, anim::Vec3 point, std::vector<CarHitReport>* reports,
+                           bool /*player*/) {
     Car* car = find(handle);
     if (car == nullptr) {
         return 0;
