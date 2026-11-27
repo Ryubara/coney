@@ -47,6 +47,11 @@ relation = "not-ported"
 issue = 1695
 
 [[function.gaps]]
+what = "a story failure hides the HUD at the hand-off's first update, not in the death camera's start (which waits for the failed camera and is skipped after a fall); an Armies level keeps it, as the original"
+relation = "stand-in"
+issue = 1695
+
+[[function.gaps]]
 what = "the mission-complete launch from state 2 is not ported here"
 relation = "not-ported"
 issue = 670

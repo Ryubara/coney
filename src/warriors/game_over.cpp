@@ -5,14 +5,6 @@
 
 namespace coney {
 
-bool noneAbleToHelp(std::span<const GangHelper> members) {
-    // No live member: 0, so the check goes on to the route test. Otherwise any free member, player 1 too, can help.
-    if (members.empty()) {
-        return false;
-    }
-    return std::ranges::none_of(members, [](const GangHelper& m) { return !m.cuffed && !m.knockedOut && !m.held; });
-}
-
 GameOverReason GameOverCheck::fail(const GameOverPlayer& first) {
     m_reason = first.cuffed ? GameOverReason::Busted : GameOverReason::Beaten;
     m_handOff = kHandOffUpdates;

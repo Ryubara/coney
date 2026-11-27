@@ -22,20 +22,6 @@ struct GameOverPlayer {
     bool waitBlocked = false; ///< Game state `+0x414 + player` set: no waiting for help.
 };
 
-/// A member of player 1's gang as the gang test sees him (his state word).
-struct GangHelper {
-    bool cuffed = false;     ///< State `0x20000` (`Human_IsCuffed`).
-    bool knockedOut = false; ///< State `0x40000` (`Human_IsKnockedOut`).
-    bool held = false;       ///< State `0x10000` (`Human_IsWounded`); Coney's stand-in: held by another human.
-};
-
-/// `Gang_NoneAbleToHelp(gang, 0)` as the game-over check calls it, with no exception: true when the gang has members
-/// and none of them, player 1 included, is free (not cuffed, knocked out or held). Player 1 is down whenever the
-/// check asks, so a gang of player 1 alone has no one to help; an empty gang is not "none able".
-/// Research: docs/research/combat-reactions.md#defeat-helpers
-/// @orig 0x00169dd8 Gang_NoneAbleToHelp (unknown)
-[[nodiscard]] bool noneAbleToHelp(std::span<const GangHelper> members);
-
 /// Why the mission failed: the `GSTRING.HUD` id of the mission-failed screen's title (`MissionFailed_SetReason`).
 enum class GameOverReason : std::uint8_t {
     Beaten = 20, ///< Player 1 is not cuffed (`+0x118` = 0).
@@ -67,7 +53,8 @@ class GameOverCheck {
     [[nodiscard]] bool enabled() const { return m_enabled; }
 
     /// One game-state update (`GameState_Tick`, `0x0041a370`: the update counter, then the check), with the players
-    /// (player 1 first), whether no one of player 1's gang is free to help (noneAbleToHelp()) and, asked while waiting
+    /// (player 1 first), whether no one of player 1's gang, player 1 included, is free to help (`Gang_NoneAbleToHelp`
+    /// with no exception: ai::Gang::noneAbleToHelp(nullptr); an empty gang is not "none able") and, asked while waiting
     /// on the updates whose count is a multiple of kRouteCheckUpdates, whether a free member has a route to him
     /// (`Gang_CanReachToHelp`). Returns the reason when the mission fails now; the failure also starts the hand-off
     /// countdown. The counter counts every call; nothing else runs while off, once failed or with no players.
@@ -91,8 +78,9 @@ class GameOverCheck {
     void setArmiesLevel(bool on) { m_armies = on; }
     /// Whether setArmiesLevel() said the level is an Armies level.
     [[nodiscard]] bool armiesLevel() const { return m_armies; }
-    /// Whether the hand-off hides the HUD at its first update.
-    [[nodiscard]] bool handOffHidesHud() const { return true; }
+    /// Whether the hand-off hides the HUD at its first update: a story failure does, in its death camera's start
+    /// (`Gm_Level_Update`, `0x00158728`); an Armies level skips that camera and keeps its HUD.
+    [[nodiscard]] bool handOffHidesHud() const { return !m_armies; }
     /// The hand-off's countdown, updates left.
     [[nodiscard]] int handOffLeft() const { return m_handOff; }
 

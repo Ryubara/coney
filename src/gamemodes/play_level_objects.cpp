@@ -16,6 +16,7 @@
 #include "ai/ai_humans.h"
 #include "ai/brain.h"
 #include "ai/dealer_goal.h"
+#include "ai/gangs.h"
 #include "ai/goal.h"
 #include "ai/swap_prompt.h"
 #include "characters/anim_set.h"
@@ -559,25 +560,22 @@ void PlayLevelSimulation::stepGameOver(const Pad& pad) {
                                     .canFreeSelf = false,
                                     .holdsFlash = m_pickups->carried(0, item::kRevive) > 0,
                                     .waitBlocked = false};
-        // Player 1's gang as the gang test sees it, player 1 too (docs/research/combat-reactions.md#defeat-helpers),
-        // and the others for the route test. **Coney's stand-in**: held (attached to his holder) for state 0x10000.
+        // Whether no one of player 1's gang is free to help: the gang's own test with no exception, so player 1 counts
+        // too (docs/research/combat-reactions.md#defeat-helpers); no gang is not "none able". The others of the gang
+        // for the route test.
         const ai::Gang* gang = m_ai->playerBrain().gang();
+        const bool noneAble = gang != nullptr && gang->noneAbleToHelp(nullptr);
         const auto knockedOut = [](const human::Human& h) {
             return h.fighter().health().depleted() || h.script().knockedOut;
         };
-        std::vector<GangHelper> members;
         std::vector<const human::Human*> others;
         if (gang != nullptr) {
             for (const ai::Brain* member : gang->members()) {
-                const human::Human& h = member->human();
-                members.push_back(
-                    GangHelper{.cuffed = h.script().arrested, .knockedOut = knockedOut(h), .held = h.attached()});
                 if (member != &m_ai->playerBrain()) {
-                    others.push_back(&h);
+                    others.push_back(&member->human());
                 }
             }
         }
-        const bool noneAble = noneAbleToHelp(members);
         // Whether one of them has a route to him: the player's feet on the path polygons (none: no), then each member
         // not cuffed and not down or dead with a route there, with no distance limit.
         // **Coney's stand-in**: the route request stands for Nav_CanReach (it fails off the polygons, off the graph or
@@ -604,10 +602,15 @@ void PlayLevelSimulation::stepGameOver(const Pad& pad) {
     }
     // Failed: the game state still counts the update; nothing more is decided.
     (void)m_gameOver->update({}, false, nullptr);
-    // The hand-off: the HUD goes at its first update; the failure's mode opens at the end of the countdown.
+    // The hand-off: a story failure's HUD goes at its first update (an Armies level keeps it); the failure's mode opens
+    // at the end of the countdown.
+    // **Coney's stand-in**: the original hides it in the death camera's start (#1695), which also waits for the failed
+    // camera to take over and is skipped after a fall out of the world; Coney has neither, so it hides it at once.
     if (!m_failShown) {
         m_failShown = true;
-        m_hud->hud().hideAll();
+        if (m_gameOver->handOffHidesHud()) {
+            m_hud->hud().hideAll();
+        }
     }
     // **Coney's stand-ins**: only player 1's pad's cross cuts it (the original reads every pad), and no player falls
     // out of the world (game state `+0x152` bit 2, set by Human_StateUpdate), which Coney does not build.
