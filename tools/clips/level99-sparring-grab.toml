@@ -1,0 +1,14 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level99's sparring fight
+# (docs/research/ai-fights.md#level99-fight) under AI seed 3, for #1684. The input script is the sparring scenario's
+# (tools/clips/level99-sparring.toml): the lesson's set-up through the developer console's `lua`, then the scene `l99_c5`
+# sends the three Warriors at the player, who stands still. About frame 1140 a Warrior's pick-up from the mount ends
+# with the player in the front hold beside the roof's fence. Before the swept hold
+# (docs/research/combat-grabs.md#grab-posing, step 6) the hold put him 0.67 m on, through the fence, and he fell 8.8 m
+# off the roof; after it he stays against the fence. The clip starts 2 s before the pick-up ends.
+description = "level99 sparring fight, AI seed 3: a Warrior's hold beside the roof's fence"
+level = "level99"
+input = "tools/clips/level99-sparring.txt"
+checkpoint = 1
+ai_seed = 3
+start_frame = 1080
+seconds = 10

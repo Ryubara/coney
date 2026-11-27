@@ -8,6 +8,7 @@
 #include <cmath>
 
 #include "human/human.h"
+#include "raycast/collision_mesh.h"
 
 namespace coney::human {
 
@@ -29,6 +30,18 @@ void Human::place(anim::Vec3 position, float headingRadians) {
     m_heading = wrapAngle(headingRadians);
     m_velocity = anim::Vec3{};
     m_turn = TurnState{};
+}
+
+anim::Vec3 Human::sweepAttached(const raycast::CollisionMesh* mesh, anim::Vec3 displacement) {
+    // No level: nothing is met and the body goes the whole way.
+    if (mesh == nullptr) {
+        m_position = anim::add(m_position, displacement);
+        return m_position;
+    }
+    // The whole move as the sweep's push, with no velocity of its own, so nothing is written back to the human.
+    // **Coney stand-in**: the other humans are not met, where the original's pair skips only each other (flag 0x8000).
+    m_position = sweep(*mesh, anim::Vec3{}, displacement, false).feet;
+    return m_position;
 }
 
 void Human::face(anim::Vec3 point) {

@@ -850,7 +850,7 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     // times the stored offset. Then the target is kept or dropped.
     detachForSpin(animator);
     if (m_pair == PairStage::Attached && m_held != nullptr) {
-        placeAttached(input.position, heading);
+        placeAttached(input, heading);
         // The victim hears the grabber's numbers, for its struggle next update (a grab, not the mugging).
         const bool grabbing = m_combat.mode() == combat::CombatMode::Grabbing;
         if (grabbing) {

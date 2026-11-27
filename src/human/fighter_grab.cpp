@@ -36,6 +36,12 @@ constexpr float kMountSeatSeconds = 0.1F;
 // from `Player_Throw`, docs/research/combat-throws.md#throw-direction): 5 updates.
 constexpr float kThrowTurnSeconds = 1.0F / 6.0F;
 
+// The attached pair's move (`Human_MoveAttached`, docs/research/combat-grabs.md#grab-posing): a body is settled when it
+// falls short of its goal by a squared length under this (0.001 m², about 3 cm), and the victim and the grabber are
+// swept in turn for at most this many rounds.
+constexpr float kAttachSettled = 0.001F;
+constexpr int kAttachRounds = 3;
+
 // The alignment's slide is dropped from this far, or above this speed (m/s).
 constexpr float kAlignMaxSlide = 13.0F;
 constexpr float kAlignMaxSpeed = 50.0F;
@@ -364,16 +370,67 @@ void Fighter::scoreGrapple(const FighterInput& input, std::uint32_t clip, Landed
 }
 
 void Fighter::snapAttach(const FighterInput& input, float heading, anim::Vec3 offset, float turn) {
+    // The hold's offset and turn, stored in the grabber's frame (`Pair_SnapAttach` builds the world place and
+    // `Pair_Attach` turns it back into the same offset and relative rotation; Coney keeps the frame throughout).
     m_holdOffset = offset;
     m_holdTurn = turn;
+    // The victim's own movement is held: the grabber moves it from now on.
     m_held->setAttached(true);
+    // **Coney stand-in**: every grabber takes the grabbing movement once attached (moveGrab(), read from its intent);
+    // the original switches only a grabber with a player's controls to `Human_MoveGrabbing`.
     m_pair = PairStage::Attached;
     m_turnUpdates = 0;
-    placeAttached(input.position, heading);
+    // **Coney stand-in**: the original only installs `Human_MoveAttached` as the victim's movement, which runs on the
+    // victim's next movement update; Coney's grabber makes that move now and on each of its updates.
+    placeAttached(input, heading);
 }
 
-void Fighter::placeAttached(anim::Vec3 position, float heading) const {
-    m_held->place(fromFrame(position, heading, m_holdOffset), heading + m_holdTurn);
+void Fighter::placeAttached(const FighterInput& input, float heading) {
+    // **Coney stand-in**: with its grabber gone the original's victim gets its own movement back and runs it; Coney's
+    // grabber calls this, so it always has one, and a victim whose grabber stops updating frees itself
+    // (freeFromLostGrabber()).
+    // Where the pair stands now, for a pair the rounds cannot settle. The grabber is read from itself, not from the
+    // update's input: a snap earlier in this update may have swept it already.
+    const anim::Vec3 grabberStart = input.self != nullptr ? input.self->position() : input.position;
+    const anim::Vec3 victimStart = m_held->position();
+    const float victimHeading = m_held->heading();
+    // 1. The victim's move: from where it stands to the grabber's transform times the stored offset.
+    anim::Vec3 victimAt = victimStart;
+    anim::Vec3 grabberAt = grabberStart;
+    anim::Vec3 move = anim::subtract(fromFrame(grabberStart, heading, m_holdOffset), victimStart);
+    int rounds = 0;
+    while (rounds < kAttachRounds) {
+        // 2. The victim swept by the move; settled when it falls short by less than the threshold.
+        const anim::Vec3 victimEnd = m_held->sweepAttached(input.mesh, move);
+        const anim::Vec3 victimShort = anim::subtract(victimEnd, anim::add(victimAt, move));
+        if (anim::dot(victimShort, victimShort) < kAttachSettled || input.self == nullptr) {
+            break;
+        }
+        // 3. The grabber swept by what the victim fell short by (back from the obstacle); settled likewise.
+        victimAt = victimEnd;
+        const anim::Vec3 grabberEnd = input.self->sweepAttached(input.mesh, victimShort);
+        const anim::Vec3 grabberShort = anim::subtract(grabberEnd, anim::add(grabberAt, victimShort));
+        if (anim::dot(grabberShort, grabberShort) < kAttachSettled) {
+            break;
+        }
+        // 4. Another round: the victim takes what the grabber fell short by.
+        ++rounds;
+        grabberAt = grabberEnd;
+        move = grabberShort;
+    }
+    if (rounds == kAttachRounds) {
+        // 5. Unsettled after three rounds: both go back where they stood, the grabber stopped.
+        // **Coney stand-in**: the grabber goes back to where this call found it, keeping the heading this update has
+        // given him (`heading`), where the original restores the whole transform (position and rotation) its body
+        // cached before the update's move; and its stop (Human::place()) also ends its locomotion's turn.
+        m_held->place(victimStart, victimHeading);
+        input.self->place(grabberStart, heading);
+        return;
+    }
+    // 6. Settled: the victim stands where the sweeps left it, turned to the hold's relative rotation. **Coney
+    // stand-in**: it is not handed the grabber's velocity, as Coney's held human has its movement held and no velocity
+    // of its own.
+    m_held->place(m_held->position(), heading + m_holdTurn);
 }
 
 bool Fighter::victimInPlace(const FighterInput& input) const {
@@ -742,14 +799,19 @@ void Fighter::alignWallThrow(const combat::CombatOutput& out, const FighterInput
         m_pair != PairStage::Attached) {
         return;
     }
-    // The side's axis along the face's inward normal, the victim carried round at the hold's offset.
+    // The heading: the face's inward normal (the hit normal turned round) plus the side's quarter turns, so the
+    // throw's side faces the wall square. **Coney stand-in**: a face with no horizontal part leaves the pair as it is.
     const int index = (animId - id::kThrow2Front) / 2;
     const anim::Vec3 inward{-m_wallThrow->normal.x, -m_wallThrow->normal.y, 0.0F};
     if (std::hypot(inward.x, inward.y) < 1e-4F) {
         return;
     }
+    // **Coney stand-in**: the original also moves the grabber over the same 0.01 s onto the wall point less the side
+    // clip's offset times its reach; Coney's grabber stays where he stands and only turns, at once.
     heading = wrapAngle(headingOf(inward) + (static_cast<float>(index) * kPi / 2.0F));
-    placeAttached(input.position, heading);
+    // The victim carried round to the stored offset from the grabber's new transform. **Coney stand-in**: the original
+    // turns and moves it there over 0.01 s from the grabber's goal; Coney sweeps it now from where the grabber stands.
+    placeAttached(input, heading);
 }
 
 bool Fighter::rearThrowPath() const { return m_held != nullptr && m_rear && !hasFlag(flag::kBlockFrontGrab); }

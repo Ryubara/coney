@@ -800,18 +800,23 @@ class Human final : public Holdable {
     [[nodiscard]] combat::CommandId mountCommand() const override { return m_record.command; }
     /// Its stick's magnitude, for a mount's clip end (Holdable::mountStick()).
     [[nodiscard]] float mountStick() const override { return m_intent.magnitude; }
-    /// Moves it there and stops it (its velocity goes): the attached hold's placement of the held human at the
-    /// transform the grabber gives (fighter_grab.cpp), not a script's placement (place() above). It ports the placing
-    /// part of `Human_MoveAttached` only. **Coney stand-in**: the original also sweeps the held body toward the point
-    /// against the others (`PhysicsBody_Sweep`, up to three tries) and hands the holder's velocity on; Coney's held
-    /// human has its movement held and moves with no velocity of its own, and what the sweep changes (a grab against a
-    /// wall) is not measured (docs/research/combat-grabs.md#grab-posing). The locked camera's kept-in-view push
-    /// (gameplay_mode.cpp) borrows it to move a human: `LockedCam_KeepHumansInView` (`0x00135ca8`) sets the human's
-    /// transform through its slot `+0x6c`, which for a human is `Human_SetTransform`, with the rotation kept. **Coney
-    /// stand-in** there: the mover does none of that placement's pair break, 0.5 m drop or front-move pop (place()
-    /// above), and the stop of the velocity is Coney's.
+    /// Moves it there and stops it (its velocity goes): the end of the attached hold's move, the held human turned to
+    /// the transform the grabber gives once the sweeps have moved it (Fighter::placeAttached()), and a pair that could
+    /// not be settled put back; not a script's placement (place() above). **Coney stand-in**: the original hands the
+    /// holder's velocity on to the held human; Coney's held human has its movement held and moves with no velocity of
+    /// its own. The locked camera's kept-in-view push (gameplay_mode.cpp) borrows it to move a human:
+    /// `LockedCam_KeepHumansInView` (`0x00135ca8`) sets the human's transform through its slot `+0x6c`, which for a
+    /// human is `Human_SetTransform`, with the rotation kept. **Coney stand-in** there: the mover does none of that
+    /// placement's pair break, 0.5 m drop or front-move pop (place() above), and the stop of the velocity is Coney's.
     /// @orig 0x00244e78 Human_MoveAttached (unknown)
     void place(anim::Vec3 position, float headingRadians) override;
+    /// Sweeps its walking body by `displacement` against the level, as `Human_MoveAttached` moves each body of an
+    /// attached pair (`PhysicsBody_Sweep` with the whole move and no velocity written back), and returns where its feet
+    /// end (Holdable::sweepAttached()). **Coney stand-in**: the other humans are not met (the original's pair skips
+    /// each other's bodies by their flag `0x8000`; Coney meets humans in a pass of its own, which cannot leave the
+    /// partner out).
+    /// @orig 0x00244e78 Human_MoveAttached (unknown)
+    anim::Vec3 sweepAttached(const raycast::CollisionMesh* mesh, anim::Vec3 displacement) override;
     /// Thrown: its fighter's steer carries it (Fighter::carryOver()), applied in each state update as an attack's is.
     void carryOver(anim::Vec3 goal, float headingRadians, float seconds) override {
         m_fighter.carryOver(m_position, m_heading, goal, headingRadians, seconds);

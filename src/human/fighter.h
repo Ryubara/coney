@@ -1001,9 +1001,11 @@ class Fighter {
     // Lets go of the victim: the let-go clips (95 / 94) with `letGo`, else straight to the idles (a release, the
     // victim out of health).
     void releaseHold(HumanAnimator& animator, bool letGo);
-    // Puts an attached victim at its stored offset from the grabber at `position` facing `heading`.
+    // Moves an attached victim to its stored offset from the grabber (`input.position` facing `heading`): it is swept
+    // there against the level, and what it falls short by sweeps the grabber back, up to three rounds; a pair still
+    // unsettled then is put back where it stood.
     // @orig 0x00244e78 Human_MoveAttached (unknown)
-    void placeAttached(anim::Vec3 position, float heading) const;
+    void placeAttached(const FighterInput& input, float heading);
     // Held or mounted, but the grabber has stopped driving the hold (removed, out of the update): the human frees
     // itself with the victim's side of a broken pair (docs/research/combat-grabs.md#pair-break) rather than stay in the
     // held loop. **Coney's choice**: in the original every way a grabber leaves breaks the pair; Coney's grabber may
@@ -1143,9 +1145,11 @@ class Fighter {
     // The wall a throw from the hold would hit this update, along the throw's side up to a little past its far range;
     // none without a face steep enough (docs/research/combat-throws.md#throws).
     [[nodiscard]] std::optional<WallThrow> wallThrow(const FighterInput& input) const;
-    // A head-on wall throw turns the pair so the throw's side faces the wall square (`Human_AlignToObject`).
-    // **Coney's reading**: the alignment's target heading is not traced; the side's axis is put along the face's
-    // inward normal.
+    // A head-on wall throw turns the pair so the throw's side faces the wall square, as `Player_Throw` (`0x0026dd08`)
+    // aligns it with `Human_AlignToObject` over 0.01 s: the heading from the hit's face normal and the side, the victim
+    // carried round at the hold's offset (docs/research/combat-throws.md#throws). The grabber is not moved onto the
+    // wall point (a stand-in, commented at the code).
+    // @orig 0x002759c0 Human_AlignToObject (unknown)
     void alignWallThrow(const combat::CombatOutput& out, const FighterInput& input, float& heading);
     // Whether a throw now takes the rear hold's path (`Grab_StartPairedMove`): holding from behind without human flag
     // 0x40000000. The spin to the front plays first, and nothing turns.

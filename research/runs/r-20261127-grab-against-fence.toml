@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261127-grab-against-fence"
+date = "2026-11-27"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "ceba27eeeb94023d86978059d34af726f4037ef7b286d5e07b97e837c08d6e04"
+
+[who]
+agent = "aa8ebcd78d6ac5367"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "pedestrian-grab"
+patches = []
+
+[run]
+name = ""
+method = "teleport recipe: Rembrandt at (-289.272, 119.018, 0.25) facing -101.5 deg, the pedestrian Civilians2 1 m ahead facing him, both 0.49 m from the level99 roof fence (face through (-288.880, 118.438), normal (0.20, 0.98)), so the front hold's point lies 0.18 m from it; circle held 4 frames; breakpoint at 0x0024505c (grabber sweep after the victim fell short) read the shortfall at sp; positions read with the humans recipe 60 frames later; distances along the fence normal. A first run with PoizoCiv on pcsx2 settled the same (0.359 m, 0.740 m, 1.080 m)."
+
+[values]
+shortfall_x_m = 0.0467
+shortfall_y_m = 0.2311
+shortfall_length_m = 0.236
+victim_to_fence_m = 0.36
+grabber_to_fence_before_m = 0.559
+grabber_to_fence_after_m = 0.739
+hold_distance_m = 1.081
+hold_angle_right_deg = 20.6
+grabber_heading_deg = -101.5
+
+[addresses]
+move_attached = 0x00244e78
+grabber_sweep_branch = 0x0024505c

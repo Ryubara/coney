@@ -295,16 +295,32 @@ grabber's heading.
    1.018 m to 0.22 m. Both end where the hold's offset below says.
 5. **Snap and attach** at the end of 72 (74) (`Grab_ConnectEnd`, `0x0026bad8`): the grab is released (`0x0026c7e0`)
    if the victim is more than the larger of reach(82) + 0.2 and reach(82) × 1.2 away (1.297 m), or 0.2 m up or down
-   (`0x00229a10`); otherwise `Pair_SnapAttach` (`0x00276d98`) puts the victim at **grabber position + the grabber's
-   rotation applied to (direction × reach of the hold id, 0)** (82 from the front, 84 from the rear), with heading
-   grabber + π (front) or the grabber's (rear). `Pair_Attach` (`0x002802a0`) then stores that place as an offset and a
-   relative rotation in the grabber's frame (victim `+0xa0`, `+0xb0`; the grabber's handle at `+0xc0`) and switches
-   the victim's movement to `Human_MoveAttached` (`0x00244e78`), and a grabber with a player's controls
-   (`0x0021d3e8 +0x1b`) to `Human_MoveGrabbing` (`0x00245310`).
-6. **In the hold** the victim's movement each update is the grabber's transform × the stored offset, swept against
-   the world up to three times (`0x0033e278`); its own root motion does not move it (inferred: the state computes the
-   place from the grabber). The grabbing player's movement state turns the grabber from the stick, so the pair turns
-   together (inferred; how the stick drives it is not traced).
+   (`0x00229a10`); otherwise `Pair_SnapAttach` (`0x00276d98`) works out the victim's place, **grabber position + the
+   grabber's rotation applied to (direction × reach of the hold id, 0)** (82 from the front, 84 from the rear), with
+   heading grabber + π (front) or the grabber's (rear). `Pair_Attach` (`0x002802a0`) then stores that place as an
+   offset and a relative rotation in the grabber's frame (victim `+0xa0`, `+0xb0`; the grabber's handle at `+0xc0`) and
+   switches the victim's movement to `Human_MoveAttached` (`0x00244e78`), and a grabber with a player's controls
+   (`0x0021d3e8 +0x1b`) to `Human_MoveGrabbing` (`0x00245310`). Neither moves the victim: the snap is a stored offset,
+   and the move to it is the victim's next movement update (step 6). Confirmed (code) at `0x00276d98` and `0x002802a0`.
+6. **In the hold** each of the victim's movement updates is `Human_MoveAttached` (`0x00244e78`), confirmed (code):
+   - The goal is the grabber's transform × the stored offset. The victim's physics body is **swept** by the whole move
+     from where it stands to the goal (`PhysicsBody_Sweep`, `0x0033e278`, with a time of 1.0, so the vector is a
+     displacement), with its velocity write-back (body flag `0x400`) off; both bodies carry flag `0x8000` while the
+     move runs.
+   - When the victim ends short of the goal by a squared length of 0.001 or more (about 3 cm), **the grabber's body is
+     swept by that shortfall**, so it gives way from what stopped the victim; when the grabber in turn ends short by as
+     much, the victim is swept by the grabber's shortfall, and so on, for at most **three rounds**.
+   - Still unsettled after three rounds: the victim's transform goes back to where it stood before the move, the
+     grabber's to the transform its body cached, and the grabber's velocity is set to the zero vector (`0x005116c0`).
+   - Otherwise the victim takes its swept position with the goal's rotation, and is handed the grabber's velocity.
+   Its own root motion does not move it (inferred: the state computes the place from the grabber). The grabbing
+   player's movement state turns the grabber from the stick, so the pair turns together (inferred; how the stick
+   drives it is not traced).
+   So a hold whose point lies in a wall leaves the victim against the wall and pushes the grabber back. At runtime the
+   player grabbed a pedestrian with the level99 roof fence beside them, the front hold's point 0.18 m from the fence:
+   the victim fell short by 0.236 m along the fence's normal and the grabber's sweep ran (`0x0024505c`); once settled
+   the victim stood 0.360 m from the fence (its sphere is 0.35 m), 1.081 m from the grabber at 20.6° to his right (the
+   hold's offset), and the grabber 0.739 m from the fence. Confirmed (runtime), run r-20261127-grab-against-fence.
 7. **Moves in the hold** (`Attack_StartPaired`, `0x00262ac8`): a strike, power strike or throw is refused unless the
    victim stands within **0.3 m** of grabber position + rotation × (direction × reach of the move's id)
    (`Pair_CheckPlace`, `0x00277958`; 51: (0.348, 0.937) × 1.082 m, the hold's point). The attacker plays the id as a
@@ -707,6 +723,23 @@ mount routes), `repo:src/human/fighter_grab.cpp` (the clips, the pose and the wa
 (the offsets and the alignment) and `repo:src/human/carried_prop.h` (the spray can). [Combat: Coney's
 implementation](combat/index.md#coneys-implementation) says what each file does; the
 offsets in `pair_placement.h` are those of [the table](#grab-posing).
+
+**The attached move** ([Posing a grab](#grab-posing), step 6). `Fighter::placeAttached` ports `Human_MoveAttached`:
+the held human is swept to its point through `Holdable::sweepAttached` (`Human::sweepAttached`, the walking sphere's
+sweep), what it falls short by sweeps the grabber, three rounds at most, and an unsettled pair goes back. Coney runs it
+from the grabber's fight update, at the snap and on each update after, where the original runs it in the victim's next
+movement update. Stand-ins, each marked in the code: the sweeps meet the level and not the other humans; an unsettled
+grabber goes back to where its fight update found it; the held human is not handed the grabber's velocity. Before this
+port (#1684) the hold put the held human straight at its point: in the level99 sparring fight under AI seed 1 a
+Warrior's pick-up from the mount put the player through the roof fence, the spin that followed let go of him over the
+drop, and the spin's end snapped him back up from 5.6 m below. Unit tests in `repo:tests/human/human_grab_test.cpp`:
+"a held human whose hold point lies through a wall is swept against it, and the grabber gives way", and "a held human
+the wall stops is left against it, not pushed off it", which holds the runtime result: the settled victim stays against
+the face (the original's stood 0.360 m from the fence with its 0.35 m sphere; the test's is left 0.01 m clear). The snap
+(`Fighter::snapAttach`, `Pair_SnapAttach` and `Pair_Attach`) is handed the offset and turn in the grabber's frame, where
+the original builds the world place and turns it back into the same offset and relative rotation; a stand-in there gives
+every grabber the grabbing movement once attached, where the original gives `Human_MoveGrabbing` only to a grabber with
+a player's controls.
 
 **Where Coney differs: the hold walk** ([The hold walk](#hold-walk), #86). `Fighter::moveGrab` turns the pair and
 walks it backward along the stick at the fixed `grabWalkFront` / `grabWalkRear` tunables (1.125 and 1.22 m/s). The
