@@ -340,9 +340,9 @@ class Human final : public Holdable {
     [[nodiscard]] std::vector<PosedShape> posedStrikeShapes(bool targets) const;
     /// The capsule a capsule strike (clip flag `0x10000`) is tested against: upright from the feet to the head bone's
     /// height + 0.2, never under 0.2, of radius 0.35, all times the scale
-    /// (docs/research/combat/index.md#capsule-strike).
-    /// **Coney choice**: the standing height in every state.
-    /// @orig 0x00343518 PhysicsCapsule_Pose (unknown)
+    /// (docs/research/combat/index.md#capsule-strike), posed by physics::poseCapsule. **Coney choice**: the standing
+    /// height in every state (no raised, jumping or cuffed capsule yet).
+    /// @coney-only hands this human to physics::poseCapsule, the port of PhysicsCapsule_Pose (0x00343518)
     [[nodiscard]] PosedShape struckCapsule() const;
     /// The body point (`+0x4e0`): the hips' (pose bone 2) position in the body's own frame, z up and facing +y, not
     /// turned by the heading, times the scale; none without a skeleton (docs/research/camera.md#body-point).

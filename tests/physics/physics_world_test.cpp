@@ -32,10 +32,9 @@ namespace {
 constexpr double kEps = 1e-5;
 constexpr std::uint32_t kAnyType = 0xffffffffU;
 
-// Owners as tags: distinct addresses never dereferenced, as the world matches owners by identity only.
+// Owners as tags: distinct owner ids, from 1 (0 is no owner), as the world matches owners by id only.
 struct Tags {
-    std::array<int, 16> storage{};
-    [[nodiscard]] BodyOwner* operator()(std::size_t i) { return reinterpret_cast<BodyOwner*>(&storage.at(i)); }
+    [[nodiscard]] OwnerId operator()(std::size_t i) const { return static_cast<OwnerId>(i + 1); }
 };
 
 // A world of named bodies whose boxes span `[minX, maxX]` in x and [0, 1] in y and z.
@@ -47,7 +46,7 @@ struct Bodies {
     explicit Bodies(EngineLimits limits = EngineLimits::Coney) : world(limits) {}
 
     // Adds a body called `name` owned by `owner`, of type mask 1, and adds it to the world.
-    BodyId add(const std::string& name, float minX, float maxX, BodyOwner* owner) {
+    BodyId add(const std::string& name, float minX, float maxX, OwnerId owner) {
         const BodyId id = world.createBodyForOwner(owner, 1);
         world.body(id).box = Aabb{.min = {minX, 0.0F, 0.0F}, .max = {maxX, 1.0F, 1.0F}};
         names.push_back(name);
@@ -212,7 +211,7 @@ TEST_CASE("a box query returns the backward hits from its start in reverse order
     CHECK(six.b.named(found) == "WR");
 
     found.clear();
-    std::ignore = six.b.world.queryBox(found, boxX(8, 12), six.s, nullptr, kAnyType, 0);
+    std::ignore = six.b.world.queryBox(found, boxX(8, 12), six.s, kNoOwner, kAnyType, 0);
     CHECK(six.b.named(found) == "SWRT");
 }
 
@@ -250,7 +249,7 @@ TEST_CASE("a box query drops bodies by owner, type mask and flag mask, and finds
     b.world.body(flagged).flags = 0x4;
     const BodyId plain = b.add("P", 0, 1, tags(2));
     b.world.body(plain).flags = 0;
-    const BodyId ownerless = b.add("O", 0, 1, nullptr);
+    const BodyId ownerless = b.add("O", 0, 1, kNoOwner);
     b.world.body(ownerless).typeMask = 1;
     const BodyId touching = b.add("T", 0, 1, tags(3));
     b.world.body(touching).flags = 0;
@@ -258,15 +257,15 @@ TEST_CASE("a box query drops bodies by owner, type mask and flag mask, and finds
     b.world.body(touching).box.max.y = 3.0F;
 
     std::vector<BodyId> found;
-    std::ignore = b.world.queryBox(found, boxX(0, 1), kNoBody, nullptr, kAnyType, 0);
+    std::ignore = b.world.queryBox(found, boxX(0, 1), kNoBody, kNoOwner, kAnyType, 0);
     CHECK(b.named(found) == "FP");
 
     found.clear();
-    std::ignore = b.world.queryBox(found, boxX(0, 1), kNoBody, nullptr, 0, 0);
+    std::ignore = b.world.queryBox(found, boxX(0, 1), kNoBody, kNoOwner, 0, 0);
     CHECK(found.empty());
 
     found.clear();
-    std::ignore = b.world.queryBox(found, boxX(0, 1), kNoBody, nullptr, kAnyType, 0x4);
+    std::ignore = b.world.queryBox(found, boxX(0, 1), kNoBody, kNoOwner, kAnyType, 0x4);
     CHECK(b.named(found) == "F");
 
     found.clear();
@@ -277,7 +276,7 @@ TEST_CASE("a box query drops bodies by owner, type mask and flag mask, and finds
     Aabb up = boxX(0, 1);
     up.min.y = 1.0F;
     up.max.y = 2.0F;
-    std::ignore = b.world.queryBox(found, up, kNoBody, nullptr, kAnyType, 0);
+    std::ignore = b.world.queryBox(found, up, kNoBody, kNoOwner, kAnyType, 0);
     CHECK(b.named(found) == "FPT");
 }
 
@@ -288,7 +287,7 @@ TEST_CASE("the filtered query drops by flags, owner state and the keep test, ask
     int stateCalls = 0;
     BodyFilter filter;
     filter.ignored = six.tags(3);
-    filter.stateOf = [&](const BodyOwner* owner) -> std::uint64_t {
+    filter.stateOf = [&](OwnerId owner) -> std::uint64_t {
         ++stateCalls;
         return owner == six.tags(0) ? 0x4000000U : 0U;
     };
@@ -310,9 +309,9 @@ TEST_CASE("the filtered query drops by flags, owner state and the keep test, ask
     CHECK(six.b.named(found) == "R");
 
     filter.excludedState = 0;
-    const BodyOwner* refused = six.tags(0);
-    const BodyOwner* asker = nullptr;
-    filter.keep = [&](const BodyOwner* mine, const BodyOwner* theirs) {
+    const OwnerId refused = six.tags(0);
+    OwnerId asker = kNoOwner;
+    filter.keep = [&](OwnerId mine, OwnerId theirs) {
         asker = mine;
         return theirs != refused;
     };
@@ -381,8 +380,8 @@ TEST_CASE("the overlap query tests every shape of each candidate while its max i
     CHECK(world.overlapShape(out, q) == 2);
     CHECK(calls == 2);
     CHECK(out.size() == 2);
-    CHECK(out[0].halves[0].owner == tags(0));
-    CHECK(out[0].halves[1].owner == tags(1));
+    CHECK(out[0].halves[0].ownerId == tags(0));
+    CHECK(out[0].halves[1].ownerId == tags(1));
     CHECK_FALSE(out[0].triangle.has_value());
 
     out.clear();
@@ -536,8 +535,8 @@ TEST_CASE("a body built for an owner takes its type mask, a null owner leaves it
     CHECK(world.body(owned).typeMask == 0x40);
     CHECK(world.body(owned).flags == 0x80000400U);
     CHECK(world.body(owned).owner == tags(0));
-    world.setOwner(owned, nullptr, 0x8);
-    CHECK(world.body(owned).owner == nullptr);
+    world.setOwner(owned, kNoOwner, 0x8);
+    CHECK(world.body(owned).owner == kNoOwner);
     CHECK(world.body(owned).typeMask == 0x40);
     world.setOwner(owned, tags(1), 0x8);
     CHECK(world.body(owned).typeMask == 0x8);
@@ -549,10 +548,9 @@ TEST_CASE("sixty ignores take the slots in order and the original's sixty-first 
     // Expected: physics-bodies.md#u8-tests, confirmed (code)
     Tags tags;
     PhysicsWorld world(EngineLimits::Original);
-    std::array<int, 61> owners{};
     const BodyId id = world.createBodyForOwner(tags(0), 1);
     for (std::size_t i = 0; i < 60; ++i) {
-        world.ignore(id, reinterpret_cast<BodyOwner*>(&owners.at(i)));
+        world.ignore(id, static_cast<OwnerId>(100 + i));
     }
     std::vector<IgnoreSlotId> chain;
     for (IgnoreSlotId s = world.body(id).ignoreChain; s != kNoIgnoreSlot; s = world.ignoreSlot(s).next) {
@@ -561,17 +559,17 @@ TEST_CASE("sixty ignores take the slots in order and the original's sixty-first 
     REQUIRE(chain.size() == 60);
     CHECK(chain.front() == 59);
     CHECK(chain.back() == 0);
-    world.ignore(id, reinterpret_cast<BodyOwner*>(&owners.at(60)));
+    world.ignore(id, static_cast<OwnerId>(100 + 60));
     CHECK(world.body(id).ignoreChain == 59);
     CHECK(world.ignoreSlotCount() == 60);
     CHECK(world.findFreeIgnoreSlot() == kNoIgnoreSlot);
-    CHECK_FALSE(world.isIgnoring(id, reinterpret_cast<BodyOwner*>(&owners.at(60))));
+    CHECK_FALSE(world.isIgnoring(id, static_cast<OwnerId>(100 + 60)));
 
     // Past the original's sixty Coney adds a slot.
     PhysicsWorld coney(EngineLimits::Coney);
     const BodyId cid = coney.createBodyForOwner(tags(0), 1);
     for (std::size_t i = 0; i < 61; ++i) {
-        coney.ignore(cid, reinterpret_cast<BodyOwner*>(&owners.at(i)));
+        coney.ignore(cid, static_cast<OwnerId>(100 + i));
     }
     CHECK(coney.ignoreSlotCount() == 61);
     CHECK(coney.body(cid).ignoreChain == 60);
@@ -586,7 +584,7 @@ TEST_CASE("a freed ignore slot is the next one taken, at the chain's front") {
         world.ignore(id, tags(i));
     }
     world.stopIgnoring(id, 5);
-    CHECK(world.ignoreSlot(5).owner == nullptr);
+    CHECK(world.ignoreSlot(5).owner == kNoOwner);
     CHECK_FALSE(world.isIgnoring(id, tags(6)));
     world.ignore(id, tags(9));
     CHECK(world.body(id).ignoreChain == 5);
@@ -609,9 +607,9 @@ TEST_CASE("ignoring an owner twice takes two slots and removing that owner's bod
     CHECK_FALSE(b.world.isIgnoring(y, tags(0)));
     CHECK_FALSE(b.world.isIgnoring(z, tags(0)));
     CHECK(b.world.isIgnoring(y, tags(2)));
-    CHECK(b.world.ignoreSlot(0).owner == nullptr);
-    CHECK(b.world.ignoreSlot(1).owner == nullptr);
-    CHECK(b.world.ignoreSlot(2).owner == nullptr);
+    CHECK(b.world.ignoreSlot(0).owner == kNoOwner);
+    CHECK(b.world.ignoreSlot(1).owner == kNoOwner);
+    CHECK(b.world.ignoreSlot(2).owner == kNoOwner);
     CHECK(b.world.ignoreSlot(3).owner == tags(2));
 }
 
@@ -620,22 +618,22 @@ TEST_CASE("a null owner takes no slot on a body, and stands for the level on a h
     Tags tags;
     PhysicsWorld world;
     const BodyId plain = world.createBodyForOwner(tags(0), 1);
-    world.ignore(plain, nullptr);
+    world.ignore(plain, kNoOwner);
     CHECK(world.body(plain).ignoreChain == kNoIgnoreSlot);
-    CHECK_FALSE(world.isIgnoring(plain, nullptr));
+    CHECK_FALSE(world.isIgnoring(plain, kNoOwner));
 
     const BodyId human = world.createBodyForOwner(tags(1), 0x40);
     world.body(human).human = true;
-    world.ignore(human, nullptr);
+    world.ignore(human, kNoOwner);
     CHECK(world.body(human).ignoresLevel);
-    CHECK(world.isIgnoring(human, nullptr));
+    CHECK(world.isIgnoring(human, kNoOwner));
     world.ignore(human, tags(2));
     CHECK(world.isIgnoring(human, tags(2)));
     world.stopIgnoring(human, kNoIgnoreSlot);
     CHECK_FALSE(world.body(human).ignoresLevel);
-    CHECK_FALSE(world.isIgnoring(human, nullptr));
+    CHECK_FALSE(world.isIgnoring(human, kNoOwner));
     CHECK(world.body(human).ignoreChain == kNoIgnoreSlot);
-    CHECK(world.ignoreSlot(0).owner == nullptr);
+    CHECK(world.ignoreSlot(0).owner == kNoOwner);
 }
 
 TEST_CASE("stopping a slot from another body's chain zeroes the slot and leaves this chain alone") {
@@ -649,7 +647,7 @@ TEST_CASE("stopping a slot from another body's chain zeroes the slot and leaves 
     world.stopIgnoring(a, 1);
     CHECK(world.body(a).ignoreChain == 0);
     CHECK(world.ignoreSlot(0).owner == tags(2));
-    CHECK(world.ignoreSlot(1).owner == nullptr);
+    CHECK(world.ignoreSlot(1).owner == kNoOwner);
     CHECK(world.ignoreSlot(1).body == kNoBody);
     CHECK(world.body(b).ignoreChain == 1);
 }
@@ -679,7 +677,7 @@ TEST_CASE("a human body always passes through its owner's grab partner") {
     const BodyId human = world.createBodyForOwner(tags(0), 0x40);
     world.body(human).human = true;
     CHECK(world.isIgnoring(human, tags(1), tags(1)));
-    CHECK_FALSE(world.isIgnoring(human, tags(1), nullptr));
+    CHECK_FALSE(world.isIgnoring(human, tags(1), kNoOwner));
     const BodyId plain = world.createBodyForOwner(tags(2), 1);
     CHECK_FALSE(world.isIgnoring(plain, tags(1), tags(1)));
 }

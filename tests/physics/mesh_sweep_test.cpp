@@ -16,7 +16,7 @@
 
 using Catch::Approx;
 using coney::anim::Vec3;
-using coney::physics::Box;
+using coney::physics::Aabb;
 using coney::physics::CapsuleSweep;
 using coney::physics::Contact;
 using coney::physics::MeshContact;
@@ -52,12 +52,12 @@ std::vector<BuildTriangle> narrowFace(float height) {
 }
 
 // The box a sphere at `centre` of `radius` covers over the move.
-Box sweptBox(Vec3 centre, float radius, Vec3 move) {
+Aabb sweptBox(Vec3 centre, float radius, Vec3 move) {
     const Vec3 lo{std::min(centre.x, centre.x + move.x) - radius, std::min(centre.y, centre.y + move.y) - radius,
                   std::min(centre.z, centre.z + move.z) - radius};
     const Vec3 hi{std::max(centre.x, centre.x + move.x) + radius, std::max(centre.y, centre.y + move.y) + radius,
                   std::max(centre.z, centre.z + move.z) + radius};
-    return Box{lo, hi};
+    return Aabb{lo, hi};
 }
 
 // The walking capsule's contacts for feet at `feet` moving by `move`, sphere radius 0.5.
@@ -160,10 +160,11 @@ TEST_CASE("a disabled triangle is never met", "[physics][mesh_sweep]") {
 }
 
 TEST_CASE("a query box past the grid clamps to its last cells", "[physics][mesh_sweep]") {
+    // Expected: physics-bodies.md#u2-00347170-collisionmesh-beginshapequery, confirmed (code)
     const auto mesh = meshOf(wallFacingMinusX(0.0F));
     MeshScratch scratch;
     const auto cells =
-        coney::physics::beginShapeQuery(*mesh, Box{Vec3{-1000, -1000, -1000}, Vec3{1000, 1000, 1000}}, scratch);
+        coney::physics::beginShapeQuery(*mesh, Aabb{Vec3{-1000, -1000, -1000}, Vec3{1000, 1000, 1000}}, scratch);
     const auto size = mesh->cells();
     for (std::size_t axis = 0; axis < 3; ++axis) {
         CHECK(cells.min.at(axis) == 0);
@@ -277,6 +278,7 @@ TEST_CASE("the sphere sweep's max, options and n.z range", "[physics][mesh_sweep
 }
 
 TEST_CASE("the sphere overlap returns 1 and puts the deepest kept first, from either side", "[physics][mesh_sweep]") {
+    // Expected: physics-bodies.md#u2-003473c8-physicsmeshoverlap-sphere, confirmed (code)
     // The centre 0.3 m from a wall at x = 0 and 0.1 m from one at x = −0.4 facing +x: depths 0.2 and 0.4.
     auto triangles = wallFacingMinusX(0.0F);
     triangles.push_back(BuildTriangle{.corners = {Rv{-0.4F, -5, 0}, Rv{-0.4F, 5, 0}, Rv{-0.4F, 5, 3}}});
@@ -284,7 +286,7 @@ TEST_CASE("the sphere overlap returns 1 and puts the deepest kept first, from ei
     MeshScratch scratch;
     std::vector<Contact> out;
     const Sphere sphere{Vec3{-0.3F, 0, 1}, 0.5F};
-    const Box box{Vec3{-0.8F, -0.5F, 0.5F}, Vec3{0.2F, 0.5F, 1.5F}};
+    const Aabb box{Vec3{-0.8F, -0.5F, 0.5F}, Vec3{0.2F, 0.5F, 1.5F}};
     CHECK(coney::physics::overlapSphereMesh(*mesh, box, sphere, 0, 0, 0, 4, scratch, out) == 1);
     REQUIRE(out.size() == 2);
     CHECK(out[0].fraction == Approx(0.4F).margin(kTolerance)); // the deepest of those kept first

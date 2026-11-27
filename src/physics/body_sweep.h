@@ -9,6 +9,7 @@
 #include "animation/anim_math.h"
 #include "physics/contact.h"
 #include "physics/mesh_sweep.h"
+#include "physics/shapes.h"
 #include "raycast/collision_mesh.h"
 
 // Moving a body: the physics world's sweep of up to three passes over the contacts the world reports, and the owner's
@@ -90,12 +91,6 @@ class BodyOwner {
     virtual void onPushed(const Contact& /*contact*/, anim::Vec3 /*push*/, anim::Vec3 /*move*/) {}
 };
 
-/// The kinds of shape a body sweeps with (shape `+0x30`).
-enum class ShapeType : std::uint8_t {
-    Sphere = 2,  ///< PhysicsMesh_SweepSphere.
-    Capsule = 3, ///< PhysicsMesh_SweepCapsule: the walking body's one sphere.
-};
-
 /// A body's first shape as its sweep uses it.
 struct BodyShape {
     ShapeType type = ShapeType::Capsule;
@@ -142,9 +137,9 @@ class SweepWorld {
     SweepWorld& operator=(SweepWorld&&) = delete;
 
     /// The pass's contacts with the level, inserted into `list` (IPhysics_SweepBodyVsMesh).
-    virtual void sweepMesh(const Box& box, Body& body, anim::Vec3 move, ContactList& list) = 0;
+    virtual void sweepMesh(const Aabb& box, Body& body, anim::Vec3 move, ContactList& list) = 0;
     /// The pass's contacts with the other bodies, for a body with kBodySweepBodies (Unit 11); none by default.
-    virtual void sweepBodies(const Box& /*box*/, Body& /*body*/, anim::Vec3 /*move*/, ContactList& /*list*/) {}
+    virtual void sweepBodies(const Aabb& /*box*/, Body& /*body*/, anim::Vec3 /*move*/, ContactList& /*list*/) {}
     /// Level triangle `index`'s flags now (a contact's triangle may have been disabled since it was found).
     [[nodiscard]] virtual std::uint16_t triangleFlags(std::uint32_t index) const = 0;
 };
@@ -162,7 +157,7 @@ class MeshWorld final : public SweepWorld {
     /// airborne, the owner's landing contact, flagged kContactLanding.
     /// @orig 0x0033d340 IPhysics_SweepBodyVsMesh (unknown)
     /// @orig 0x0033d2d8 IPhysics_SweepShapeVsMesh (unknown)
-    void sweepMesh(const Box& box, Body& body, anim::Vec3 move, ContactList& list) override;
+    void sweepMesh(const Aabb& box, Body& body, anim::Vec3 move, ContactList& list) override;
     [[nodiscard]] std::uint16_t triangleFlags(std::uint32_t index) const override;
 
   private:
@@ -173,7 +168,8 @@ class MeshWorld final : public SweepWorld {
 
 /// The box a body's sweep queries: its shape's bounds at its start position. **Coney stand-in**: a capsule body's box
 /// is its walking sphere's, not the capsule shape's own bounds (Unit 6).
-[[nodiscard]] Box shapeBox(const Body& body, anim::Vec3 position);
+/// @orig 0x0033e278 PhysicsBody_Sweep (unknown)
+[[nodiscard]] Aabb shapeBox(const Body& body, anim::Vec3 position);
 
 /// Moves `body` by its owner's velocity `velocity` over `dt` against `world`: the pending push-out joins the move
 /// (over `dt` and, unless kBodyPushUndivided, the owner's push weight) and is cleared; up to three passes each sweep
@@ -220,11 +216,11 @@ void bounce(anim::Vec3& v, anim::Vec3 n, float e);
 /// Scales `box` about its centre by `s` per axis (nothing when all three are exactly 1); a negative scale still gives a
 /// valid box.
 /// @orig 0x003414c0 AABB_ScaleAboutCentre (unknown)
-void scaleAboutCentre(Box& box, anim::Vec3 s);
+void scaleAboutCentre(Aabb& box, anim::Vec3 s);
 
 /// Grows `box` to cover itself moved by `d`.
 /// @orig 0x00341840 AABB_ExtendByMove (unknown)
-void extendByMove(Box& box, anim::Vec3 d);
+void extendByMove(Aabb& box, anim::Vec3 d);
 
 /// The contact scale of a body: Generic answers 1.0 against a body and 0.98 against the level; Human 0.25 while its
 /// owner is airborne, else 1.0.

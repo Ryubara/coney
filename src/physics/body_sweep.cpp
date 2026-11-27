@@ -62,7 +62,7 @@ void ContactList::clear() {
     sorted.clear();
 }
 
-void MeshWorld::sweepMesh(const Box& box, Body& body, Vec3 move, ContactList& list) {
+void MeshWorld::sweepMesh(const Aabb& box, Body& body, Vec3 move, ContactList& list) {
     BodyOwner& owner = *body.owner;
     // 1. The shape's mesh sweep, one contact asked for; the capsule writes them all regardless.
     m_found.clear();
@@ -101,11 +101,11 @@ void MeshWorld::sweepMesh(const Box& box, Body& body, Vec3 move, ContactList& li
 
 std::uint16_t MeshWorld::triangleFlags(std::uint32_t index) const { return m_mesh.triangles()[index].flags; }
 
-Box shapeBox(const Body& body, Vec3 position) {
+Aabb shapeBox(const Body& body, Vec3 position) {
     const float r = body.shape.radius;
     const Vec3 centre =
         body.shape.type == ShapeType::Capsule ? position + Vec3{0.0F, 0.0F, r + body.shape.footGap} : position;
-    return Box{centre - Vec3{r, r, r}, centre + Vec3{r, r, r}};
+    return Aabb{centre - Vec3{r, r, r}, centre + Vec3{r, r, r}};
 }
 
 std::optional<Vec3> sweepBody(float dt, SweepWorld& world, Body& body, Vec3 velocity) {
@@ -130,7 +130,7 @@ std::optional<Vec3> sweepBody(float dt, SweepWorld& world, Body& body, Vec3 velo
     std::size_t found = 0;
     int last = 0;
     if (body.shape.enabled) {
-        const Box box = shapeBox(body, owner.position());
+        const Aabb box = shapeBox(body, owner.position());
         ContactList list;
         // 5. The passes, each sweeping the whole current move from where the body is. (The original also scales the
         // box by body +0x60 and drops the result; the queries get this one.)
@@ -140,7 +140,7 @@ std::optional<Vec3> sweepBody(float dt, SweepWorld& world, Body& body, Vec3 velo
                 passes = kPasses;
                 break;
             }
-            Box query = box;
+            Aabb query = box;
             extendByMove(query, pass);
             list.clear();
             world.sweepMesh(query, body, pass, list);
@@ -302,7 +302,7 @@ void bounce(Vec3& v, Vec3 n, float e) {
     v = v - (n * (d * e));
 }
 
-void scaleAboutCentre(Box& box, Vec3 s) {
+void scaleAboutCentre(Aabb& box, Vec3 s) {
     if (s.x == 1.0F && s.y == 1.0F && s.z == 1.0F) {
         return;
     }
@@ -318,7 +318,7 @@ void scaleAboutCentre(Box& box, Vec3 s) {
     axis(box.min.z, box.max.z, s.z);
 }
 
-void extendByMove(Box& box, Vec3 d) {
+void extendByMove(Aabb& box, Vec3 d) {
     const Vec3 a = box.min + d;
     const Vec3 b = box.max + d;
     box.min = Vec3{std::min({box.min.x, a.x, b.x}), std::min({box.min.y, a.y, b.y}), std::min({box.min.z, a.z, b.z})};

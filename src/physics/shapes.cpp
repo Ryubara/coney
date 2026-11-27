@@ -290,6 +290,23 @@ void setShapeMatrix(ShapeRecord& shape, const Mat34& m) {
     }
 }
 
+void setShapePosition(ShapeRecord& shape, Vec3 position) {
+    switch (typeOf(shape.posed)) {
+    case ShapeType::Box:
+        std::get<Box>(shape.posed).centre = position;
+        break;
+    case ShapeType::Sphere:
+        std::get<Sphere>(shape.posed).centre = position;
+        break;
+    case ShapeType::Capsule:
+        std::get<Capsule>(shape.posed).base = position;
+        break;
+    case ShapeType::Segment:
+        std::get<Segment>(shape.posed).start = position; // the end stays where it was
+        break;
+    }
+}
+
 Vec3 shapePosition(const ShapeRecord& shape) {
     switch (typeOf(shape.posed)) {
     case ShapeType::Box:

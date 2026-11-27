@@ -112,7 +112,7 @@ Vec3 unitOf(Vec3 move) {
 
 } // namespace
 
-CellRange beginShapeQuery(const raycast::CollisionMesh& mesh, const Box& worldBox, MeshScratch& scratch) {
+CellRange beginShapeQuery(const raycast::CollisionMesh& mesh, const Aabb& worldBox, MeshScratch& scratch) {
     scratch.visited.assign((mesh.triangles().size() + 7) / 8, 0);
     CellRange cells;
     cells.min = mesh.cellOf(raycast::Vec3{worldBox.min.x, worldBox.min.y, worldBox.min.z});
@@ -147,7 +147,7 @@ bool capsuleLowOrThin(const raycast::CollisionMesh& mesh, std::uint32_t index, f
     return lowOrThin(t, minHeight);
 }
 
-int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, const CapsuleSweep& sweep,
+int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Aabb& worldBox, const CapsuleSweep& sweep,
                      MeshScratch& scratch, std::vector<Contact>& out) {
     const Sphere sphere{Vec3{sweep.feet.x, sweep.feet.y, sweep.feet.z + sweep.radius + sweep.footGap}, sweep.radius};
     scratch.found.clear();
@@ -181,8 +181,8 @@ int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, co
         t.plane = dot3(t.corners[0], t.normal);
         computeEdges(t, false);
         const TriangleSweep hit = sweepSphereTriangle(sphere, t, sweep.move);
-        // 9. A hit from 0 to 1. (The original's loop counter misses a step after a hit above 1 and reads one index past
-        // the cell's list; Coney does not.)
+        // 9. A hit from 0 to 1. Coney's choice (#1692): the original's loop counter misses a step after a hit above 1
+        // and reads one index past the cell's list (0x00348170); Coney does not.
         if (hit.hit && hit.fraction >= 0.0F && hit.fraction <= 1.0F) {
             scratch.found.push_back(
                 MeshContact{.key = hit.fraction, .triangle = index, .region = hit.mask, .working = t});
@@ -227,7 +227,7 @@ int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, co
     return static_cast<int>(scratch.order.size());
 }
 
-int sweepSphereMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, const SphereSweep& sweep,
+int sweepSphereMesh(const raycast::CollisionMesh& mesh, const Aabb& worldBox, const SphereSweep& sweep,
                     MeshScratch& scratch, std::vector<Contact>& out) {
     const Sphere& sphere = sweep.sphere;
     const bool keepAll = (sweep.options & kQueryKeepAll) != 0;
@@ -307,7 +307,7 @@ int sweepSphereMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, con
     return static_cast<int>(count);
 }
 
-int overlapSphereMesh(const raycast::CollisionMesh& mesh, const Box& worldBox, const Sphere& sphere,
+int overlapSphereMesh(const raycast::CollisionMesh& mesh, const Aabb& worldBox, const Sphere& sphere,
                       std::uint32_t options, float minNormalZ, float maxNormalZ, int room, MeshScratch& scratch,
                       std::vector<Contact>& out) {
     scratch.found.clear();
@@ -343,7 +343,7 @@ int overlapNothing() { return 0; }
 
 std::optional<Vec3> pushOutOfWalls(const raycast::CollisionMesh& mesh, const Sphere& sphere, MeshScratch& scratch) {
     const Vec3 reach{sphere.radius, sphere.radius, sphere.radius};
-    const CellRange cells = beginShapeQuery(mesh, Box{sphere.centre - reach, sphere.centre + reach}, scratch);
+    const CellRange cells = beginShapeQuery(mesh, Aabb{sphere.centre - reach, sphere.centre + reach}, scratch);
     // The nearest wall by its closest point (sorted by the squared distance; the first of equal ones wins).
     std::optional<Vec3> normal;
     float nearest = 0.0F;

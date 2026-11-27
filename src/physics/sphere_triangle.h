@@ -4,6 +4,7 @@
 #include <array>
 
 #include "animation/anim_math.h"
+#include "physics/shapes.h"
 
 // A moving sphere against one triangle of the level, and the working triangle every mesh test fills: the kernels the
 // physics world's mesh sweeps call for each triangle they keep. Each function follows the original's reading exactly,
@@ -12,12 +13,6 @@
 // Research: docs/research/physics-kernels.md#unit-1
 
 namespace coney::physics {
-
-/// A sphere: its centre and radius (the original's `{centre, radius at +0x10}` record).
-struct Sphere {
-    anim::Vec3 centre;
-    float radius = 0.0F;
-};
 
 /// The working triangle a mesh test fills for the triangle under test
 /// (docs/research/physics-kernels.md#u1-working-triangle). Edge `k` runs from corner `k` to corner `k + 1` (mod 3).

@@ -67,6 +67,8 @@ Ray alongY(float x, float y0, float length) { return Ray{{x, y0, 1.0F}, {0.0F, 1
 
 TEST_CASE("a spawned box joins a level-like mesh: rays stop on it, the walking sweep meets it, and it clears",
           "[collision_builder][debug]") {
+    // Expected: physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule, confirmed (code): the walking sweep's contact;
+    // the rays, the drop and the clear follow from the test's own floor and wall.
     // A floor over the whole 80 m grid, as a level's street.
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
     const std::size_t builtTriangles = mesh->triangles().size();
@@ -106,7 +108,7 @@ TEST_CASE("a spawned box joins a level-like mesh: rays stop on it, the walking s
                                                .ownerAirborne = false,
                                                .footGap = 0.05F,
                                                .minWallHeight = 0.25F};
-    const coney::physics::Box query{coney::anim::Vec3{38.0F, 41.0F, 0.0F}, coney::anim::Vec3{42.0F, 46.0F, 2.0F}};
+    const coney::physics::Aabb query{coney::anim::Vec3{38.0F, 41.0F, 0.0F}, coney::anim::Vec3{42.0F, 46.0F, 2.0F}};
     std::vector<coney::physics::Contact> contacts;
     REQUIRE(coney::physics::sweepCapsuleMesh(*mesh, query, walking, scratch, contacts) > 0);
     REQUIRE_FALSE(contacts.empty());

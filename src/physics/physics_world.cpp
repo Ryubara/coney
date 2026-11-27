@@ -16,6 +16,7 @@
 #include "physics/contact.h"
 #include "physics/overlaps.h"
 #include "physics/shapes.h"
+#include "physics/sphere_box_sweep.h"
 
 namespace coney::physics {
 
@@ -79,6 +80,25 @@ std::array<std::array<PhysicsWorld::PairTest, 5>, 5> defaultOverlaps() {
     return table;
 }
 
+// One entry of the sweep table: the sweep `Sweep` for an own shape `A` moving against a resting shape `B`.
+// @coney-only the sweep table's entries, filled by the world's constructor (Unit 15, #379)
+template <typename A, typename B, bool (*Sweep)(Contact&, const A&, const B&, Vec3)>
+bool sweepEntry(Contact& contact, const Shape& own, const Shape& other, Vec3 move) {
+    return Sweep(contact, std::get<A>(own), std::get<B>(other), move);
+}
+
+// The sweep table's entries Coney has: a sphere against a box and its mirror (docs/research/physics-kernels.md#unit-5);
+// the human pairs are Unit 11's (#377).
+// @coney-only the sweep table as the IPhysics constructor fills it (Unit 15, #379)
+std::array<std::array<PhysicsWorld::SweepTest, 5>, 5> defaultSweeps() {
+    std::array<std::array<PhysicsWorld::SweepTest, 5>, 5> table{};
+    table.at(static_cast<std::size_t>(ShapeType::Sphere)).at(static_cast<std::size_t>(ShapeType::Box)) =
+        sweepEntry<Sphere, Box, sweepSphereBox>;
+    table.at(static_cast<std::size_t>(ShapeType::Box)).at(static_cast<std::size_t>(ShapeType::Sphere)) =
+        sweepEntry<Box, Sphere, sweepBoxSphere>;
+    return table;
+}
+
 // The index of a ShapeType in the tables.
 // @coney-only table indexing
 std::size_t index(ShapeType type) { return static_cast<std::size_t>(type); }
@@ -96,7 +116,8 @@ std::size_t ignoreSlotCap(EngineLimits limits) {
     return limits == EngineLimits::Original ? kOrigIgnoreSlots : std::numeric_limits<std::size_t>::max();
 }
 
-PhysicsWorld::PhysicsWorld(EngineLimits limits) : m_limits(limits), m_overlaps(defaultOverlaps()) {
+PhysicsWorld::PhysicsWorld(EngineLimits limits)
+    : m_limits(limits), m_overlaps(defaultOverlaps()), m_sweeps(defaultSweeps()) {
     // The constructor's tables: every pool shape built once, and the ignore slots zeroed (docs/research/
     // physics-bodies.md#u8-pools).
     for (std::size_t pool = 0; pool < kOrigPoolCounts.size(); ++pool) {
@@ -105,6 +126,17 @@ PhysicsWorld::PhysicsWorld(EngineLimits limits) : m_limits(limits), m_overlaps(d
         }
     }
     m_ignoreSlots.resize(kOrigIgnoreSlots);
+    // The body pools (docs/research/physics-bodies.md#u9-constructed): the human sets with their shapes, the punch
+    // bag's set, then the objects', cars' and panes' bodies.
+    for (std::size_t i = 0; i < kOrigBodyCounts.at(static_cast<std::size_t>(BodyPool::Human)); ++i) {
+        std::ignore = buildHumanSet();
+    }
+    std::ignore = buildPunchBagSet();
+    for (const BodyPool pool : {BodyPool::Object, BodyPool::Car, BodyPool::Pane}) {
+        for (std::size_t i = 0; i < kOrigBodyCounts.at(static_cast<std::size_t>(pool)); ++i) {
+            std::ignore = buildPoolBody(pool);
+        }
+    }
 }
 
 ShapeId PhysicsWorld::addShapeRecord(const ShapeRecord& record) {
@@ -117,21 +149,25 @@ BodyId PhysicsWorld::createBody() {
     return static_cast<BodyId>(m_bodies.size() - 1);
 }
 
-BodyId PhysicsWorld::createBodyForOwner(BodyOwner* owner, std::uint32_t typeMask) {
+BodyOwner* PhysicsWorld::ownerPointer(OwnerId id) const {
+    return (id == kNoOwner || !m_ownerLookup) ? nullptr : m_ownerLookup(id);
+}
+
+BodyId PhysicsWorld::createBodyForOwner(OwnerId owner, std::uint32_t typeMask) {
     // Coney's choice: the scale +0x60 is 1.0 here too, where the original leaves the stack's word (nothing reads it).
     const BodyId id = createBody();
     WorldBody& b = body(id);
     b.owner = owner;
-    if (owner != nullptr) {
+    if (owner != kNoOwner) {
         b.typeMask = typeMask;
     }
     return id;
 }
 
-void PhysicsWorld::setOwner(BodyId id, BodyOwner* owner, std::uint32_t typeMask) {
+void PhysicsWorld::setOwner(BodyId id, OwnerId owner, std::uint32_t typeMask) {
     WorldBody& b = body(id);
     b.owner = owner;
-    if (owner != nullptr) {
+    if (owner != kNoOwner) {
         b.typeMask = typeMask;
     }
 }
@@ -346,7 +382,7 @@ std::size_t PhysicsWorld::walkBox(std::vector<BodyId>& out, const Aabb& box, Bod
     return count;
 }
 
-std::size_t PhysicsWorld::queryBox(std::vector<BodyId>& out, const Aabb& box, BodyId start, const BodyOwner* ignored,
+std::size_t PhysicsWorld::queryBox(std::vector<BodyId>& out, const Aabb& box, BodyId start, OwnerId ignored,
                                    std::uint32_t typeMask, std::uint32_t flagMask) const {
     return walkBox(out, box, start, [&](const WorldBody& b) {
         return b.owner != ignored && (b.typeMask & typeMask) != 0 && (flagMask == 0 || (b.flags & flagMask) != 0);
@@ -355,7 +391,7 @@ std::size_t PhysicsWorld::queryBox(std::vector<BodyId>& out, const Aabb& box, Bo
 
 std::size_t PhysicsWorld::queryBoxFiltered(std::vector<BodyId>& out, BodyId query, const Aabb& box, BodyId start,
                                            const BodyFilter& filter) const {
-    const BodyOwner* asker = body(query).owner;
+    const OwnerId asker = body(query).owner;
     // The state mask is loaded as a 32-bit word and sign-extended, so its bit 31 also tests the high word.
     const auto excludedState =
         static_cast<std::uint64_t>(static_cast<std::int64_t>(static_cast<std::int32_t>(filter.excludedState)));
@@ -371,7 +407,7 @@ std::size_t PhysicsWorld::queryBoxFiltered(std::vector<BodyId>& out, BodyId quer
         }
         // Asked of every candidate this far, whatever the mask. Coney's choice: an ownerless body, or no answer to
         // ask, has state 0 where the original calls through the null owner.
-        const std::uint64_t state = (filter.stateOf && b.owner != nullptr) ? filter.stateOf(b.owner) : 0;
+        const std::uint64_t state = (filter.stateOf && b.owner != kNoOwner) ? filter.stateOf(b.owner) : 0;
         if ((state & excludedState) != 0) {
             return false;
         }
@@ -412,7 +448,8 @@ std::size_t PhysicsWorld::overlapShape(std::vector<Contact>& out, const OverlapQ
             if ((q.options & kOverlapAskOwner) != 0 && q.accepts && !q.accepts(me.owner, other.owner)) {
                 continue;
             }
-            // Stand-in: every body answers its own chain; a human body's capsule chain is Unit 10's (#376).
+            // Every body answers its first shape's chain (GetShapes, 0x00341ae0 and the human body's 0x003420c8):
+            // a human body's is its capsule alone, its bone shapes being chained apart.
             for (ShapeId s = other.firstShape; s != kNoShape; s = shape(s).next) {
                 const ShapeRecord& theirs = shape(s);
                 if ((q.options & kOverlapEnabledOnly) != 0 && (theirs.flags & kShapeEnabled) == 0) {
@@ -428,7 +465,10 @@ std::size_t PhysicsWorld::overlapShape(std::vector<Contact>& out, const OverlapQ
                 Contact& slot = slots.at(sorted.size());
                 if (test(slot, own.posed, theirs.posed)) {
                     slot.triangle.reset();
-                    insertSorted(slot, sorted, me.owner, other.owner, true);
+                    insertSorted(slot, sorted, ownerPointer(me.owner), ownerPointer(other.owner), true);
+                    // The owners as ids beside the pointers, which only a set owner lookup fills.
+                    slot.halves[0].ownerId = me.owner;
+                    slot.halves[1].ownerId = other.owner;
                 }
             }
         }
@@ -464,7 +504,7 @@ void PhysicsWorld::refreshBound() {
 
 IgnoreSlotId PhysicsWorld::findFreeIgnoreSlot() {
     for (std::size_t i = 0; i < m_ignoreSlots.size(); ++i) {
-        if (m_ignoreSlots[i].owner == nullptr) {
+        if (m_ignoreSlots[i].owner == kNoOwner) {
             return static_cast<IgnoreSlotId>(i);
         }
     }
@@ -476,11 +516,11 @@ IgnoreSlotId PhysicsWorld::findFreeIgnoreSlot() {
     return kNoIgnoreSlot;
 }
 
-bool PhysicsWorld::isIgnoring(BodyId id, const BodyOwner* owner, const BodyOwner* grabPartner) const {
+bool PhysicsWorld::isIgnoring(BodyId id, OwnerId owner, OwnerId grabPartner) const {
     return body(id).human ? humanBodyIsIgnoring(id, owner, grabPartner) : bodyIsIgnoring(id, owner);
 }
 
-void PhysicsWorld::ignore(BodyId id, const BodyOwner* owner) {
+void PhysicsWorld::ignore(BodyId id, OwnerId owner) {
     if (body(id).human) {
         humanBodyIgnore(id, owner);
     } else {
@@ -497,7 +537,7 @@ void PhysicsWorld::stopIgnoring(BodyId id, IgnoreSlotId slot) {
 }
 
 void PhysicsWorld::forgetIgnoredOwner(BodyId removed) {
-    const BodyOwner* owner = body(removed).owner;
+    const OwnerId owner = body(removed).owner;
     for (std::size_t i = 0; i < m_ignoreSlots.size(); ++i) {
         const IgnoreSlot& slot = m_ignoreSlots[i];
         // Coney's choice: a free slot (no body) is skipped, where an ownerless body's removal would make the original
@@ -552,8 +592,8 @@ ShapeId PhysicsWorld::takeFromPool(ShapePool pool) {
     return taken;
 }
 
-bool PhysicsWorld::bodyIsIgnoring(BodyId id, const BodyOwner* owner) const {
-    if (owner == nullptr) {
+bool PhysicsWorld::bodyIsIgnoring(BodyId id, OwnerId owner) const {
+    if (owner == kNoOwner) {
         return false;
     }
     for (IgnoreSlotId s = body(id).ignoreChain; s != kNoIgnoreSlot; s = m_ignoreSlots.at(s).next) {
@@ -564,8 +604,8 @@ bool PhysicsWorld::bodyIsIgnoring(BodyId id, const BodyOwner* owner) const {
     return false;
 }
 
-void PhysicsWorld::bodyIgnore(BodyId id, const BodyOwner* owner) {
-    if (owner == nullptr) {
+void PhysicsWorld::bodyIgnore(BodyId id, OwnerId owner) {
+    if (owner == kNoOwner) {
         return;
     }
     const IgnoreSlotId s = findFreeIgnoreSlot();
@@ -605,8 +645,8 @@ void PhysicsWorld::bodyStopIgnoring(BodyId id, IgnoreSlotId slot) {
     freed = IgnoreSlot{};
 }
 
-bool PhysicsWorld::humanBodyIsIgnoring(BodyId id, const BodyOwner* owner, const BodyOwner* grabPartner) const {
-    if (owner == nullptr) {
+bool PhysicsWorld::humanBodyIsIgnoring(BodyId id, OwnerId owner, OwnerId grabPartner) const {
+    if (owner == kNoOwner) {
         return body(id).ignoresLevel;
     }
     if (grabPartner == owner) {
@@ -615,8 +655,8 @@ bool PhysicsWorld::humanBodyIsIgnoring(BodyId id, const BodyOwner* owner, const 
     return bodyIsIgnoring(id, owner);
 }
 
-void PhysicsWorld::humanBodyIgnore(BodyId id, const BodyOwner* owner) {
-    if (owner == nullptr) {
+void PhysicsWorld::humanBodyIgnore(BodyId id, OwnerId owner) {
+    if (owner == kNoOwner) {
         body(id).ignoresLevel = true;
         return;
     }

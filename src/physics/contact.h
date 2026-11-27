@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "animation/anim_math.h"
+#include "physics/shapes.h"
 
 // The contact record the shape-pair tests and sweeps fill (0xc0 bytes in the original): two halves, one per shape,
 // then the fraction, depth, point, slide, flags and triangle. A test writes only the fields its research section
@@ -19,6 +20,11 @@
 namespace coney::physics {
 
 class BodyOwner;
+
+/// An owner's id: the game mode's stable handle for a human, object, car or pane, which a snapshot or another machine
+/// can name where a pointer could not; kNoOwner for none (the original's null owner).
+using OwnerId = std::uint32_t;
+inline constexpr OwnerId kNoOwner = 0;
 
 /// Contact flags (`+0xb0`).
 inline constexpr std::uint32_t kContactAddSlide = 0x1;   ///< The capsule's corner slide: add `slide` to the move.
@@ -61,9 +67,11 @@ struct ContactHalf {
     /// unit move into the own half's (docs/research/physics-bodies.md#u2-mapping-into-the-c0-contact); the other
     /// half's is the surface normal, out of the surface toward the mover.
     Vec4 normal;
-    Vec4 localPoint;      ///< `+0x20`: the point in this half's box frame (sphere-box sweeps only).
-    int featureType = 0;  ///< `+0x30`: the box feature: 0 face, 2 edge, 1 corner, 4 start inside.
-    int featureIndex = 0; ///< `+0x34`: which face, edge or corner (docs/research/physics.md#the-normal-tables).
+    Vec4 localPoint;            ///< `+0x20`: the point in this half's box frame (sphere-box sweeps only).
+    int featureType = 0;        ///< `+0x30`: the box feature: 0 face, 2 edge, 1 corner, 4 start inside.
+    int featureIndex = 0;       ///< `+0x34`: which face, edge or corner (docs/research/physics.md#the-normal-tables).
+    OwnerId ownerId = kNoOwner; ///< `+0x00` as the owner's id, which the physics world's queries and strikes write.
+    ShapeId shapeId = kNoShape; ///< `+0x04` as the physics world's shape id, where a query or strike knows it.
 
     friend bool operator==(const ContactHalf&, const ContactHalf&) = default;
 };

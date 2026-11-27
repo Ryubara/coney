@@ -8,6 +8,7 @@
 #include <numbers>
 #include <optional>
 #include <utility>
+#include <variant>
 
 #include "animation/anim_clip.h"
 #include "animation/anim_task.h"
@@ -25,6 +26,7 @@
 #include "human/step_control.h"
 #include "physics/body_sweep.h"
 #include "physics/mesh_sweep.h"
+#include "physics/shapes.h"
 #include "physics/sphere_triangle.h"
 #include "world_objects/pickups.h"
 
@@ -38,9 +40,6 @@ constexpr std::uint16_t kCoveredGroundFlag = 0x20;
 // A human's capsule (docs/research/physics.md): its radius and height before the body scale.
 constexpr float kStrikeCapsuleRadius = 0.35F;
 constexpr float kStrikeCapsuleHeight = 2.0F;
-// The struck capsule's top above the head bone, and its least height, before the body scale
-// (`PhysicsCapsule_Pose` 0x00343518, docs/research/combat/index.md#capsule-strike).
-constexpr float kCapsuleAboveHead = 0.2F;
 /// The bone the led steer aims at: the head, which human +0x500 holds (docs/research/combat-targets.md#led-steer).
 constexpr int kLedPointBone = 6;
 // **Coney's reading** of a charge stopping dead at a wall (docs/research/combat/index.md#moving-strikes):
@@ -1830,6 +1829,42 @@ void Human::noteStrikeEvents(const anim::AnimTask* before, std::uint32_t beforeI
     }
 }
 
+// What physics::poseCapsule reads of a standing human: its feet, its head bone in its own frame (none without a
+// skeleton) and its scale; every state flag clear.
+// @coney-only hands a human to the physics shapes' capsule pose
+namespace {
+class StandingCapsuleOwner final : public physics::ShapeOwner {
+  public:
+    StandingCapsuleOwner(anim::Vec3 feet, std::optional<anim::Vec3> head, float scale)
+        : m_feet(feet), m_head(head), m_scale(scale) {}
+
+    // The feet, unturned: the capsule stands upright on them.
+    // @coney-only feeds poseCapsule a standing human
+    [[nodiscard]] physics::Transform transformNow() const override {
+        return physics::Transform{.position = m_feet, .rotation = {}};
+    }
+    [[nodiscard]] physics::Transform transformStored() const override { return transformNow(); }
+    // The head bone in the human's own frame, the one bone the capsule pose asks for; none without a skeleton.
+    // @coney-only feeds poseCapsule a standing human
+    [[nodiscard]] std::optional<physics::Transform> boneTransform(int bone) const override {
+        if (bone != kLedPointBone || !m_head.has_value()) {
+            return std::nullopt;
+        }
+        return physics::Transform{.position = *m_head, .rotation = {}};
+    }
+    // The scale alone: a standing human has every state flag clear.
+    // @coney-only feeds poseCapsule a standing human
+    [[nodiscard]] std::optional<physics::HumanCapsuleState> humanCapsule() const override {
+        return physics::HumanCapsuleState{.scale = m_scale};
+    }
+
+  private:
+    anim::Vec3 m_feet;
+    std::optional<anim::Vec3> m_head;
+    float m_scale;
+};
+} // namespace
+
 // @coney-only bundles the feet, heading, lean and scale for Coney's posing helpers
 BodyPlacement Human::placement() const {
     // The strike shapes are collision: sized by the collision scale, which is the mesh's unless an edit keeps it.
@@ -1878,13 +1913,19 @@ std::optional<anim::Vec3> Human::bodyPoint() const {
 }
 
 PosedShape Human::struckCapsule() const {
-    // Upright from the feet to the head bone's height + 0.2 (never under 0.2), its radius 0.35, all times the scale;
-    // the walking sweep's body factor is not applied.
-    const float least = kCapsuleAboveHead * m_scale;
-    const float height = std::max(ledPoint().z - m_position.z + least, least);
-    return PosedShape{.a = m_position,
-                      .b = anim::add(m_position, anim::Vec3{0.0F, 0.0F, height}),
-                      .radius = kStrikeCapsuleRadius * m_scale,
+    // The capsule as the scale step sizes it (radius 0.35 times the scale; the walking sweep's body factor is not
+    // applied), posed by the physics capsule pose from the head bone in the body's frame, which carries the scale.
+    std::optional<anim::Vec3> head;
+    if (m_skeleton != nullptr) {
+        head = anim::scale(anim::boneTransforms(*m_skeleton, pose()).at(kLedPointBone).t, m_scale);
+    }
+    physics::ShapeRecord capsule = physics::makeShape(physics::ShapeType::Capsule);
+    physics::setCapsuleSize(capsule, kStrikeCapsuleHeight * m_scale, kStrikeCapsuleRadius * m_scale);
+    physics::poseCapsule(capsule, StandingCapsuleOwner(m_position, head, m_scale));
+    const auto& posed = std::get<physics::Capsule>(capsule.posed);
+    return PosedShape{.a = posed.base,
+                      .b = anim::add(posed.base, anim::Vec3{0.0F, 0.0F, posed.height}),
+                      .radius = posed.radius,
                       .bone = -1};
 }
 

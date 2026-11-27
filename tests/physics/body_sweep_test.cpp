@@ -16,8 +16,8 @@
 
 using Catch::Approx;
 using coney::anim::Vec3;
+using coney::physics::Aabb;
 using coney::physics::Body;
-using coney::physics::Box;
 using coney::physics::Contact;
 using coney::physics::ContactList;
 
@@ -65,7 +65,7 @@ class FakeWorld final : public coney::physics::SweepWorld {
     std::map<std::uint32_t, std::uint16_t> flags;
     int queries = 0;
 
-    void sweepMesh(const Box& /*box*/, Body& body, Vec3 /*move*/, ContactList& list) override {
+    void sweepMesh(const Aabb& /*box*/, Body& body, Vec3 /*move*/, ContactList& list) override {
         const auto pass = static_cast<std::size_t>(queries++);
         if (pass >= script.size()) {
             return;
@@ -429,14 +429,16 @@ TEST_CASE("the landing segment's fraction is measured beyond 1 m from its top", 
 }
 
 TEST_CASE("the sweep's box helpers", "[physics][body_sweep]") {
-    Box box{Vec3{0, 0, 0}, Vec3{2, 2, 2}};
+    // Expected: physics-bodies.md#u3-scale-box, confirmed (code)
+    // Expected: physics-bodies.md#u3-extend, confirmed (code)
+    Aabb box{Vec3{0, 0, 0}, Vec3{2, 2, 2}};
     coney::physics::scaleAboutCentre(box, Vec3{1.5F, 1, -1});
     checkVec(box.min, Vec3{-0.5F, 0, 0});
     checkVec(box.max, Vec3{2.5F, 2, 2});
-    Box same{Vec3{0, 0, 0}, Vec3{2, 2, 2}};
+    Aabb same{Vec3{0, 0, 0}, Vec3{2, 2, 2}};
     coney::physics::scaleAboutCentre(same, Vec3{1, 1, 1});
     checkVec(same.max, Vec3{2, 2, 2});
-    Box moved{Vec3{0, 0, 0}, Vec3{1, 1, 1}};
+    Aabb moved{Vec3{0, 0, 0}, Vec3{1, 1, 1}};
     coney::physics::extendByMove(moved, Vec3{2, -1, 0});
     checkVec(moved.min, Vec3{0, -1, 0});
     checkVec(moved.max, Vec3{3, 1, 1});
