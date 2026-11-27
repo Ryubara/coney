@@ -183,9 +183,10 @@ hash).
 `--frames` its updates, its input script, `--trace`), and `coney-tools trace diff` compares the two traces. A
 scenario whose level opens with a scene or script that holds the pad sets `wait_for_control = true` in `[coney]`
 (Coney's `--wait-for-control`, [Waiting for control](running-play-level.md#wait-for-control)): level99 checkpoint 3
-opens with the `l99_c3` scene, which overrides `--start` and leaves the pad off until about update 750. Coney then
-starts the run, its `--start`, the input script, the trace's step 1 and the frame count, on the first update player 1
-has control, however long the opening is, so the run starts where the original's saved slot does. It chose waiting over
+opens with the `l99_c3` scene, which overrides `--start` and leaves the pad off until about update 750 (checkpoints
+1 and 2 open with scenes that hold him too, `l99_c1` and `l99_c2`). Coney then starts the run, its `--start`,
+the input script, the trace's step 1 and the frame count, on the first update player 1 has control, however long
+the opening is, so the run starts where the original's saved slot does. It chose waiting over
 a fixed `settle` count because a count breaks when a scene's length changes or another level gains a scene, and over
 skipping the scene in test mode because a skip leaves the pad off too and would change what the level's scripts run
 (the reasons in full are on the Waiting for control page). `settle` stays for a scenario that wants extra updates with no
