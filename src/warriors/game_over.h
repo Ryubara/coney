@@ -12,6 +12,10 @@
 
 namespace coney {
 
+namespace human {
+class Human;
+} // namespace human
+
 /// One player as the check sees him (the human's state word and inventory).
 struct GameOverPlayer {
     bool dead = false;        ///< State `0x100000000`.
@@ -21,6 +25,12 @@ struct GameOverPlayer {
     bool holdsFlash = false;  ///< At least one flash (item 1).
     bool waitBlocked = false; ///< Game state `+0x414 + player` set: no waiting for help.
 };
+
+/// Player 1 as the game-over check reads him from his human (`holdsFlash`: he carries a flash).
+[[nodiscard]] GameOverPlayer gameOverPlayer(const human::Human& human, bool holdsFlash);
+
+/// Whether the route test asks this member of player 1's gang for a route to him.
+[[nodiscard]] bool asksForRoute(const human::Human& member);
 
 /// Why the mission failed: the `GSTRING.HUD` id of the mission-failed screen's title (`MissionFailed_SetReason`).
 enum class GameOverReason : std::uint8_t {

@@ -3,7 +3,20 @@
 
 #include <algorithm>
 
+#include "human/human.h"
+
 namespace coney {
+
+GameOverPlayer gameOverPlayer(const human::Human& human, bool holdsFlash) {
+    return GameOverPlayer{.knockedOut = human.fighter().health().depleted() || human.script().knockedOut,
+                          .cuffed = human.script().arrested,
+                          .holdsFlash = holdsFlash};
+}
+
+bool asksForRoute(const human::Human& member) {
+    const bool out = member.fighter().health().depleted() || member.script().knockedOut;
+    return !member.script().arrested && !out && !member.attached();
+}
 
 GameOverReason GameOverCheck::fail(const GameOverPlayer& first) {
     m_reason = first.cuffed ? GameOverReason::Busted : GameOverReason::Beaten;

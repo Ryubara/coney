@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The game-over check's rules as the original's code has them (docs/research/combat-reactions.md#mission-failing): a
 // dead player's reason, the route check's phase on the game state's update counter, and the hand-off's Armies cap, HUD
-// and fall cut. Synthetic players.
+// and fall cut, and what the check and the route test read of a human. Synthetic players and humans.
 #include <array>
 #include <optional>
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "human/human.h"
+#include "support/ai_fixtures.h"
 #include "warriors/game_over.h"
 
 using coney::GameOverCheck;
@@ -104,4 +106,36 @@ TEST_CASE("a story failure's hand-off hides the HUD; an Armies level's keeps it"
     CHECK(check.handOffHidesHud());
     check.setArmiesLevel(true);
     CHECK_FALSE(check.handOffHidesHud());
+}
+
+TEST_CASE("player 1 counts as knocked out once his knock-out state is set, not when his health runs out",
+          "[game-over]") {
+    // Expected: combat-reactions.md#mission-failing, confirmed (code): GameState_CheckGameOver reads Human_IsKnockedOut
+    // (state 0x40000), which a player gets at his dying clip's end, not at 0 health.
+    coney::test::AiScene scene;
+    coney::human::Human& player = scene.add({40.0F, 40.0F, 0.0F}, 0.0F).human();
+    CHECK_FALSE(coney::gameOverPlayer(player, false).knockedOut);
+    player.fighter().health().set(0);
+    CHECK_FALSE(coney::gameOverPlayer(player, false).knockedOut);
+    player.script().knockedOut = true;
+    CHECK(coney::gameOverPlayer(player, true).knockedOut);
+    CHECK(coney::gameOverPlayer(player, true).holdsFlash);
+    player.setArrested(true);
+    CHECK(coney::gameOverPlayer(player, false).cuffed);
+}
+
+TEST_CASE("the route test asks every member not cuffed and not down or dead, and skips a wounded one", "[game-over]") {
+    // Expected: combat-reactions.md#defeat-helpers, confirmed (code): Gang_CanReachToHelp skips a member Human_IsCuffed
+    // or Human_IsDownOrDead reports (states 0x180050000, wounded 0x10000 among them).
+    coney::test::AiScene scene;
+    coney::human::Human& mate = scene.add({40.0F, 40.0F, 0.0F}, 0.0F).human();
+    CHECK(coney::asksForRoute(mate));
+    mate.setWounded(true);
+    CHECK_FALSE(coney::asksForRoute(mate));
+    mate.setWounded(false);
+    mate.setArrested(true);
+    CHECK_FALSE(coney::asksForRoute(mate));
+    mate.setArrested(false);
+    mate.script().knockedOut = true;
+    CHECK_FALSE(coney::asksForRoute(mate));
 }
