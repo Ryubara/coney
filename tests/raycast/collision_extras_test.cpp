@@ -67,6 +67,8 @@ Ray alongY(float x, float y0, float length) { return Ray{{x, y0, 1.0F}, {0.0F, 1
 
 TEST_CASE("a spawned box joins a level-like mesh: rays stop on it, the walking sweep meets it, and it clears",
           "[collision_builder][debug]") {
+    // Expected: physics-bodies.md#u2-mapping-into-the-c0-contact, confirmed (code)
+    // Expected: unverified, #457 (synthetic debug mesh insertion and removal contract)
     // A floor over the whole 80 m grid, as a level's street.
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
     const std::size_t builtTriangles = mesh->triangles().size();
@@ -104,8 +106,8 @@ TEST_CASE("a spawned box joins a level-like mesh: rays stop on it, the walking s
                                                .radius = radius,
                                                .move = coney::anim::Vec3{0.0F, 1.0F, 0.0F},
                                                .ownerAirborne = false,
-                                               .footGap = 0.05F,
-                                               .minWallHeight = 0.25F};
+                                               .footGap = coney::human::bodyTuning().footGap,
+                                               .minWallHeight = coney::human::bodyTuning().minWallHeight};
     const coney::physics::Box query{coney::anim::Vec3{38.0F, 41.0F, 0.0F}, coney::anim::Vec3{42.0F, 46.0F, 2.0F}};
     std::vector<coney::physics::Contact> contacts;
     REQUIRE(coney::physics::sweepCapsuleMesh(*mesh, query, walking, scratch, contacts) > 0);
@@ -113,7 +115,7 @@ TEST_CASE("a spawned box joins a level-like mesh: rays stop on it, the walking s
     // The sphere's front reaches the face at y = 43.85 after 0.85 m less its radius.
     CHECK(contacts.front().fraction == Approx(0.85F - radius).margin(1e-4));
     CHECK(contacts.front().halves[1].normal.y == Approx(-1.0F));
-    const coney::anim::Vec3 centre{40.0F, 43.85F - 0.2F, coney::human::walkingCentreHeight(1.0F)};
+    const coney::anim::Vec3 centre{40.0F, 43.85F - (walking.minWallHeight - walking.footGap), radius + walking.footGap};
     const auto sphere = mesh->spherePush(radius, Vec3{centre.x, centre.y, centre.z}, {});
     CHECK(sphere.touched);
 
@@ -129,6 +131,7 @@ TEST_CASE("a spawned box joins a level-like mesh: rays stop on it, the walking s
 }
 
 TEST_CASE("spawned triangles leave the file's own hits and their order alone", "[collision_builder][debug]") {
+    // Expected: unverified, #457 (synthetic debug mesh insertion preserves existing triangles and cell lists)
     // A level wall facing -y at y = 50, and a spawned crate in front of it at y = 45.
     const auto mesh =
         coney::test::makeMesh(coney::test::join(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F),
@@ -161,6 +164,7 @@ TEST_CASE("spawned triangles leave the file's own hits and their order alone", "
 
 TEST_CASE("spawned triangles outside the grid's box are still met, through its edge cells",
           "[collision_builder][debug]") {
+    // Expected: unverified, #457 (synthetic debug meshes clamp out-of-grid primitives to edge cells)
     // The fixtures' grid covers [0, 80]²; a crate at x = 90 lies past its edge, where the queries clamp too.
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
     REQUIRE(mesh->addExtraTriangles(spawnedBox({90.0F, 40.0F, 0.0F}, {2.0F, 2.0F, 2.0F})).has_value());
@@ -171,6 +175,7 @@ TEST_CASE("spawned triangles outside the grid's box are still met, through its e
 
 TEST_CASE("adding spawned triangles is refused, the mesh unchanged, for what the format cannot hold",
           "[collision_builder][debug]") {
+    // Expected: unverified, #457 (synthetic debug mesh capacity and finite-coordinate validation)
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
     const std::size_t built = mesh->triangles().size();
     // More triangles than u16 indices can name.
