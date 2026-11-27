@@ -215,6 +215,9 @@ PlayLevelSimulation::StepView PlayLevelSimulation::stepScenery(const FrameTime& 
 
 bool PlayLevelSimulation::sceneHoldsPlayer() const { return sceneHolds(m_playerHandle); }
 
+// Stub: no control is ever reported yet.
+bool PlayLevelSimulation::hasControl() const { return false; }
+
 void PlayLevelSimulation::stepWorldObjects(const StepView& view, std::uint32_t elapsedMs) {
     if (m_records == nullptr || m_objectTypes == nullptr) {
         return;

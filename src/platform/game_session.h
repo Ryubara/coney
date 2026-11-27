@@ -149,6 +149,8 @@ class GameSession {
     [[nodiscard]] GameplayMode& gameplay() { return m_flow->gameplay(); }
     /// Whether the next step is a frame of play: gameplay on top of the stack with a level playing.
     [[nodiscard]] bool inPlay() const;
+    /// Stub: the level plays (inPlay()), whatever player 1 has.
+    [[nodiscard]] bool playStarted();
     /// How many level loads gameplay has started (a level change and a checkpoint restart count alike): what network
     /// play's NetLevels follows (docs/guides/multiplayer.md#levels).
     [[nodiscard]] std::uint64_t levelStarts() const { return m_levelStarts; }

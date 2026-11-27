@@ -392,6 +392,8 @@ struct Options {
     /// animation, the scripts), so every frame shows the same picture; the scenery still streams round the camera and
     /// the fixed step still runs. Requires playLevel.
     bool freezeWorld = false;
+    /// Stub of `--wait-for-control`: not parsed yet.
+    bool waitForControl = false;
     /// `--scene-only`: play's 3D is only what the GPU renderer draws of it today, the level's background, world,
     /// objects, cars and humans of the scene passes, with no effects, see-through panes or coronas (the 2D is drawn
     /// as ever), so that the GL3 and GPU renderers' frames can be compared on their shared part

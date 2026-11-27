@@ -227,6 +227,10 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     /// Starts the player at `place` instead (dropped onto the ground below it, as a start is), and the camera where it
     /// says, if it says: `--start`, Coney's own test aid.
     void startAt(const StartPlace& place);
+    /// Stub of `--wait-for-control`: does nothing yet.
+    void waitForControl(std::optional<StartPlace> /*start*/) {}
+    /// Stub: the run has always started.
+    [[nodiscard]] bool controlReady() const { return true; }
 
     /// Pins player 1's view at `pin` for the rest of the run, whatever camera the game shows (scene cameras too), with
     /// the current camera's near and far clips: `--camera`, Coney's test aid for matching the original's frames. The

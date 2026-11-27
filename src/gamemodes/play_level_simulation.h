@@ -202,6 +202,8 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
     /// Player 1's statistics as the play mode counts them.
     [[nodiscard]] const PlayStats& stats() const { return m_stats; }
+    /// Stub: whether player 1 answers the pad (always no yet).
+    [[nodiscard]] bool hasControl() const;
     /// The sandbox's targets (none in a level).
     [[nodiscard]] std::span<human::TargetHuman* const> targets() const { return m_targetPointers; }
 

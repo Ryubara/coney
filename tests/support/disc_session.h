@@ -11,6 +11,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <expected>
 #include <functional>
 #include <memory>
 #include <numbers>
@@ -29,8 +30,10 @@
 #include "core/deferred_input.h"
 #include "core/display_preset.h"
 #include "core/engine_limits.h"
+#include "core/error.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
+#include "core/options.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gui/global_strings.h"
@@ -99,6 +102,15 @@ class DiscSession {
     /// Runs until the pad script has played `frame` frames (its own frame `frame` is next), at most `limit` more.
     bool runToPlayFrame(std::uint64_t frame, std::uint64_t limit = kPlayLimit) {
         return runUntil([this, frame] { return m_input->framesPlayed() >= frame; }, limit);
+    }
+
+    /// Makes the level the run starts wait for player 1's control, as `--wait-for-control` does: the pad script's frame
+    /// 0 is the first step he has it, and `start` (`--start`, when given) places him then. Call before startAtLevel().
+    void waitForControl(std::optional<StartPlace> start = std::nullopt) {
+        m_session->setFirstLevelSetup([start](platform::PlayLevelMode& mode) -> std::expected<void, Error> {
+            mode.waitForControl(start);
+            return {};
+        });
     }
 
     /// The session.
@@ -182,7 +194,7 @@ class DiscSession {
         InputSource* pad = m_script != nullptr ? m_script.get() : driver;
         CONEY_ASSERT(pad != nullptr);
         // The pad waits for the first frame of play, as `--play-level` plays one.
-        m_input = std::make_unique<DeferredInput>(*pad, [this] { return m_session->inPlay(); });
+        m_input = std::make_unique<DeferredInput>(*pad, [this] { return m_session->playStarted(); });
         m_stack.setInput(m_input.get());
         m_session = std::make_unique<platform::GameSession>(
             *m_engine, m_stack, wad, m_handlers, m_budget, m_strings, m_objectSounds, settings,

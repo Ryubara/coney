@@ -350,6 +350,8 @@ const std::vector<std::string>& GameSession::discMovieNames() {
 
 bool GameSession::inPlay() const { return m_stack.top() == &m_flow->gameplay() && m_flow->gameplay().playing(); }
 
+bool GameSession::playStarted() { return inPlay(); }
+
 PlayLevelMode* GameSession::play() { return dynamic_cast<PlayLevelMode*>(m_flow->gameplay().level()); }
 
 std::expected<graphics::SpriteSheet, Error> GameSession::loadSheet(std::string_view name) const {

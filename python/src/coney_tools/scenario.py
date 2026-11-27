@@ -140,6 +140,8 @@ class Scenario:
     #: Updates Coney plays before the script starts, where a level's opening holds the pad (they are dropped from the
     #: trace and the script is shifted by them), so a scenario can start where the original's slot does.
     coney_settle: int = 0
+    #: Stub: the run waits for the player's control (not read from the scenario yet).
+    coney_wait: bool = False
     #: "updates" (one row per update) or "humans" (one row per human in use per update, `h` the row's human).
     rows: str = "updates"
     #: Goal vtables to type ids, for goal_type() and goal_at() (research/references/goal-types.yaml).
