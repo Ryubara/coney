@@ -179,6 +179,7 @@ TEST_CASE("the sandbox: the Animation player's sets list their clips, a loop pla
     coney::GameModeStack modes;
     coney::GameTimer timer;
     timer.setFixedStep(true);
+    // #1682: the yard's AI fighter pushes a fight on the player at his think (GangBrain_Think step 3).
     modes.push(mode);
     (void)modes.runUntilEmpty(timer, {}, 15);
     const coney::human::Human& human = mode.player().human();

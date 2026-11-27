@@ -30,7 +30,8 @@ target wall at=-10,1.5,0 heading=180 health=1200
 target cross at=10,-6.95,0 heading=180
 
 # An AI fighter (docs/research/ai/index.md) 3 m beyond the brawl spawn, facing it, far from the other spawns: it takes the
-# player on once he comes within its far melee range (5 m), and attacks and reacts.
+# player on once its enemy scan lists him, from any spawn it can see (docs/research/ai-brain-types.md#think-gang), and
+# attacks and reacts.
 fighter brawler at=0,-15,0 heading=0
 
 view start at=2.5,-4,2.2 yaw=25 pitch=-12

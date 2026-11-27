@@ -147,6 +147,7 @@ Run runSprintAttack(const coney::io::Wad& wad, std::uint16_t button) {
     REQUIRE(play->spawnFighter(at, play->playerHeadingDegrees() + 180.0F));
     REQUIRE(play->fighterCount() == before + 1);
     const coney::human::Human& fighter = *play->fighters().humans().back().human;
+    // #1682: the spawned fighter, a gang soldier, pushes a fight on the player at his think (GangBrain_Think step 3).
     driver.runAt(fighter.position());
     Run result;
     const coney::human::Human& human = play->player().human();

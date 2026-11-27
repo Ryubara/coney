@@ -233,6 +233,7 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
     coney::GameTimer timer;
     timer.setFixedStep(true);
     // The 18 s in steps of 10 updates, the spawners' count read after each.
+    // #1682: a gang soldier with an enemy listed pushes a fight at his think (GangBrain_Think step 3).
     constexpr int kStill = 540;
     constexpr int kSample = 10;
     for (int update = 0; update < kStill; update += kSample) {
