@@ -63,13 +63,17 @@ void RumbleIntro::open(std::string_view onDone, std::span<const std::string> nam
     // the frame's pad and play voices when asked, so the screen is built on each open and none of those has a step.
     m_onDone = onDone;
     // The name slots keep their places, an empty one blank, and the screen counts the names up to the first blank:
-    // a name after it is not shown.
+    // a name after it is not shown. The original stores that count only when its loop finds a blank, so with all ten
+    // slots filled it stays 0 and no name is shown (the arena scripts name fewer, so a player is unlikely to see it).
     m_names.clear();
     for (const std::string& name : names.first(std::min(names.size(), kMaxNames))) {
         if (name.empty()) {
             break;
         }
         m_names.push_back(name);
+    }
+    if (m_names.size() == kMaxNames) {
+        m_names.clear();
     }
     m_packs = packs;
     m_voices.clear();

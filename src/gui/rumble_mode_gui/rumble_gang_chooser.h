@@ -29,9 +29,9 @@ void rotateRosterBack(RumbleGangEntry::Roster& roster);
 /// list and its own copy of each gang's roster. The screen's input (RumbleMenu) decides what each command does; this
 /// keeps the cursors, the rosters, the locks and which side chooses.
 ///
-/// **Coney's choices** where the page is silent: side 2's cursor starts on the entry after side 1's (the fresh boot's
-/// default is the list's first gang against its second, the BASEBALL FURIES against the ORPHANS); the cursor wraps
-/// from the last gang to the first and back.
+/// **Coney's choice** where the page is silent: side 2's cursor starts on the entry after side 1's (the fresh boot's
+/// default is the list's first gang against its second, the BASEBALL FURIES against the ORPHANS). The cursor does not
+/// wrap (move()).
 ///
 /// Research: docs/research/frontend.md#rumble-data
 class RumbleGangChooser {
@@ -42,8 +42,12 @@ class RumbleGangChooser {
     /// Starts over `gangs` (which must outlive the chooser's use): side 1 active, neither side locked.
     void start(std::span<RumbleGangEntry> gangs);
 
-    /// Moves the active side's cursor by `step` entries (-1 up, 1 down). Does nothing without gangs.
-    void move(int step);
+    /// Moves the active side's cursor one entry up (`down` false) or down, past the other side's gang unless
+    /// `mayShare` (one fighter a side). Returns false, and stays, when that would leave the list: at either end, or
+    /// when the only entry beyond is the other side's gang; also without gangs.
+    /// @orig 0x001ef5a8 RM_ChooseGangs_MoveUp (RM_ChooseGangs.cpp)
+    /// @orig 0x001ef6d8 RM_ChooseGangs_MoveDown (RM_ChooseGangs.cpp)
+    bool move(bool down, bool mayShare);
 
     /// Rotates the active side's roster of the gang under its cursor one slot forward (rotateRosterForward()) or back.
     /// Does nothing without gangs.

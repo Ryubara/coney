@@ -508,7 +508,8 @@ void RumbleMenu::updatePlayers(const GuiFrame& frame, std::size_t connectedPads,
     m_message.style().colour = colour;
 }
 
-// Up and down move the active side's gang unless it is locked; left and right rotate its roster (side 1's left and
+// Up and down move the active side's gang unless it is locked, past the other side's gang unless one fights a side,
+// and stop at the list's ends with the refused cue; left and right rotate its roster (side 1's left and
 // side 2's right back, the others forward) unless one human chooses for side 2, the side is locked or the mode is
 // co-op; accept locks the side and, with both locked, writes the gangs, else passes to the other side; back unlocks,
 // returns to the Game Type screen, or in versus on side 2 with nothing of its own locked does nothing.
@@ -520,13 +521,16 @@ RumbleMenuResult RumbleMenu::onGangsInput(MenuCommand command, std::uint64_t now
     // One human chooses both sides unless the mode is versus.
     const bool oneHuman = players != kRumbleVersus;
     // Coney's choice: the original also stamps the side's input time (+0x160, which times the fighters' respawn, #88)
-    // and clears its bump flag (+0x1e8, auto-repeat off after a bump at a list end); Coney keeps neither yet.
+    // and keeps a bump flag (+0x1e8: set by a refused up or down, cleared by the other inputs; it turns auto-repeat off
+    // after a bump at a list end); Coney keeps neither yet.
     switch (command) {
     case MenuCommand::Up:
     case MenuCommand::Down:
         if (!m_gangs.locked(side)) {
-            m_gangs.move(command == MenuCommand::Up ? -1 : 1);
-            m_cues.push_back(kRumbleMoveCue);
+            // The screen's gang size flag (+0x1e4) is set from the set-up's gang size when the screen opens.
+            const bool mayShare = setup().values.at(RumbleSetup::kGangSize) == 1;
+            const bool moved = m_gangs.move(command == MenuCommand::Down, mayShare);
+            m_cues.push_back(moved ? kRumbleMoveCue : kRumbleRefusedCue);
         }
         break;
     case MenuCommand::Left:

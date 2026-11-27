@@ -55,13 +55,26 @@ void RumbleGangChooser::start(std::span<RumbleGangEntry> gangs) {
     m_active = 0;
 }
 
-void RumbleGangChooser::move(int step) {
+bool RumbleGangChooser::move(bool down, bool mayShare) {
+    // The original selects the entry past the end when the list is empty; Coney refuses the move.
     if (m_gangs.empty()) {
-        return;
+        return false;
     }
-    const auto count = static_cast<std::ptrdiff_t>(m_gangs.size());
-    const std::ptrdiff_t next = (static_cast<std::ptrdiff_t>(m_cursor.at(m_active)) + step % count + count) % count;
-    m_cursor.at(m_active) = static_cast<std::size_t>(next);
+    const std::size_t cursor = m_cursor.at(m_active);
+    const std::size_t last = m_gangs.size() - 1;
+    if (down ? cursor == last : cursor == 0) {
+        return false;
+    }
+    std::size_t next = down ? cursor + 1 : cursor - 1;
+    // Two sides may not hold one gang unless each fights alone: step past the other side's, or stay at the end.
+    if (!mayShare && next == m_cursor.at(1 - m_active)) {
+        if (down ? next == last : next == 0) {
+            return false;
+        }
+        next = down ? next + 1 : next - 1;
+    }
+    m_cursor.at(m_active) = next;
+    return true;
 }
 
 void RumbleGangChooser::rotate(bool forward) {

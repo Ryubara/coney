@@ -98,9 +98,10 @@ class RumbleIntro : public Widget {
     void setRandom(GameRandom* random) { m_random = random; }
     void setDoneSink(std::function<void(std::string_view onDone)> done) { m_done = std::move(done); }
 
-    /// `ShowRumbleModeIntro(onDone, names)`: keeps `onDone` and the names up to the first empty one (at most
-    /// kMaxNames), with `packs` (set-up values 3 and 4) naming the gang lines, lays out a line per name and a separator
-    /// between each two, and starts the first name at `nowMs`. With no names it goes straight to the prompt.
+    /// `ShowRumbleModeIntro(onDone, names)`: keeps `onDone` and the names up to the first empty one (none when
+    /// all kMaxNames slots are filled, as the original), with `packs` (set-up values 3 and 4) naming the gang lines,
+    /// lays out a line per name and a separator between each two, and starts the first name at `nowMs`. With no names
+    /// it goes straight to the prompt.
     /// @orig 0x001b5f88 ShowRumbleModeIntro (unknown)
     /// @orig 0x001f9418 RM_Intro_Open (unknown)
     /// @orig 0x001f9558 RM_Intro_Init (unknown)

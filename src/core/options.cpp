@@ -568,10 +568,11 @@ std::expected<void, Error> checkRecord(const Options& options) {
     if (options.recordFromFrame.has_value() && !options.recordPath.has_value()) {
         return invalidArgument("--record-from-frame needs --record: it sets the frame the clip starts at");
     }
-    if (options.recordFromFrame.has_value() && options.netJoin.has_value() && !options.netView) {
+    if (options.recordFromFrame.has_value() && options.netJoin.has_value() && !options.playLevel.has_value() &&
+        !options.netView) {
         return invalidArgument("--record-from-frame needs --play-level or --net-view on a guest (--join): its frames "
-                               "count from the first it has the host's level, and a guest that draws its own game has "
-                               "none");
+                               "count from the level's first frame of play or from the first it has the host's level, "
+                               "and a guest that draws its own game with no level has neither");
     }
     if (!options.recordPath.has_value()) {
         return {};

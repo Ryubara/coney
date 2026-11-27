@@ -48,6 +48,7 @@ inline constexpr std::uint16_t kRumbleVersus = 1;    ///< Entry 2: two players a
 
 /// The front-end sound cues the screens ask for (docs/research/frontend.md#rumble-screens).
 inline constexpr int kRumbleMoveCue = 4;
+inline constexpr int kRumbleRefusedCue = 0xe; ///< A move refused at the end of a list.
 inline constexpr int kRumbleConfirmCue = 8;
 inline constexpr int kRumbleBackCue = 0xf;
 
