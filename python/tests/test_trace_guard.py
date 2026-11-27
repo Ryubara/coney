@@ -7,6 +7,7 @@ The traces are synthetic CSVs; the scenario files are the repository's own."""
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -101,7 +102,9 @@ def test_a_trace_without_positions_is_refused(tmp_path: Path) -> None:
 # --- `trace coney` runs the guard ------------------------------------------------------------------------------------
 
 
-def _fake_coney(positions: list[tuple[float, float, float]], seen: list[list[str]]):
+def _fake_coney(
+    positions: list[tuple[float, float, float]], seen: list[list[str]]
+) -> Callable[..., subprocess.CompletedProcess[str]]:
     """A stand-in for `subprocess.run` that records the command and writes the trace Coney would write."""
 
     def run(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
@@ -122,7 +125,7 @@ def test_trace_coney_exits_1_for_a_standing_player(
     scenario = load_scenario(path, REPO)
     seen: list[list[str]] = []
     standing = [(1.0, 2.0, 0.2)] * (scenario.updates + scenario.coney_settle)
-    monkeypatch.setattr(trace_cli.subprocess, "run", _fake_coney(standing, seen))
+    monkeypatch.setattr("coney_tools.trace_cli.subprocess.run", _fake_coney(standing, seen))
     out = tmp_path / "walk60.csv"
     code = trace_cli.run_coney(path, out, Path("coney"), "H:/")
     assert code == 1
@@ -138,7 +141,7 @@ def test_trace_coney_accepts_a_walking_player(tmp_path: Path, monkeypatch: pytes
     scenario = load_scenario(REPO / "research/traces/scenarios/walk60.toml", REPO)
     walking = [(1.0, 2.0 + 0.05 * step, 0.2) for step in range(scenario.updates + scenario.coney_settle)]
     seen: list[list[str]] = []
-    monkeypatch.setattr(trace_cli.subprocess, "run", _fake_coney(walking, seen))
+    monkeypatch.setattr("coney_tools.trace_cli.subprocess.run", _fake_coney(walking, seen))
     out = tmp_path / "walk60.csv"
     assert trace_cli.run_coney(scenario.path, out, Path("coney"), "H:/") == 0
 
