@@ -3,5 +3,5 @@
 # twice, then player 2 presses START. For a change to the Rumble menu's Game Type screen: its message and what goes on.
 description = "Rumble menu: WAR PARTY, co-op, player 1 accepts twice, then player 2's START"
 input = "tools/clips/rumble-game-type.txt"
-start_frame = 285
+start_frame = 605
 seconds = 10
