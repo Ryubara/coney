@@ -104,8 +104,8 @@ TEST_CASE("the stereo and the boot item sit at offsets turned with the car", "[c
 }
 
 TEST_CASE("a hit reports each part it damaged and whether it broke, and the hit that leaves every part off", "[cars]") {
-    // docs/research/cars.md: message 0x19 from Car_OnHit, (car, human, part, 1 if this hit broke it), and -2 once
-    // every part is off.
+    // Expected: cars.md#explode, confirmed (code): message 0x19 from Car_OnHit, (car, human, part, 1 if this hit broke
+    // it), and -2 once the type's parts are off.
     Cars cars;
     REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
     const Vec3 standing{-1.6F, 0.5F, 0};

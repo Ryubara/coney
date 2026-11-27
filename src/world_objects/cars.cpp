@@ -34,7 +34,7 @@ constexpr std::array<std::uint8_t, kCarParts> kPartComesOff{0x00, 0x18, 0x02, 0x
 constexpr std::uint8_t kVanType = 4;
 constexpr std::uint8_t kVanPanel = 0x18;
 
-// How part `part` of `car` comes off: its record's byte +0x01. A car of no known type reads the sedan's.
+// Part `part`'s record byte +0x01 (a car of no type reads the sedan's). @coney-only helper; Car_AddPartDamage reads it
 std::uint8_t comesOff(const Car& car, std::uint32_t part) {
     if (car.type == kVanType && (part == kBootPart || part == 12 || part == 13)) {
         return kVanPanel;
@@ -43,7 +43,7 @@ std::uint8_t comesOff(const Car& car, std::uint32_t part) {
 }
 
 // The parts message 0x19's all-broken call waits for (docs/research/cars.md#type-tables): 1-21, the coupe's 1-17,
-// the van's 1-21 but 7.
+// the van's 1-21 but 7. @coney-only helper; Car_OnHit picks the mask in place
 CarPartMask allBrokenParts(const Car& car) {
     constexpr std::uint8_t kCoupe = 1;
     if (car.type == kCoupe) {
@@ -54,8 +54,8 @@ CarPartMask allBrokenParts(const Car& car) {
 // The parts whose damage checks it: 1-21.
 constexpr CarPartMask kAllBrokenChecked = 0x3ffffeU;
 
-// The parts a hit or a blast passes over: removed (`+0x11f0`) or off (`+0x11f8`). **Coney's stand-in**: the flying
-// parts (`+0x11f4`) are not modelled (#72), so none is skipped for flying.
+// The parts a hit or a blast passes over: removed (`+0x11f0`) or off (`+0x11f8`); **Coney's stand-in**: flying parts
+// are not modelled (#72). @coney-only helper; Car_OnHit and Car_DoExplode test the masks in place
 CarPartMask passedOver(const Car& car) { return car.removedParts | car.removedKept; }
 // A part's damaged form is the atomic 25 after it (docs/research/cars.md#hit-effects).
 constexpr std::uint32_t kDamagedAtomicOffset = 25;

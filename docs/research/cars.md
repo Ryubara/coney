@@ -211,17 +211,18 @@ car is created, `CarTaskManager_Create` `0x0038e430`, handle at manager `+0x14`,
 **message `0x3f`** with a kind, a position and a direction. Its handler (`SubCarDamage_OnMessage` `0x003df730`) makes
 the effect at once. Confirmed (code) at the addresses cited.
 
-**When.** Only `Car_OnHit` (`0x0038bea0`) and `Car_OnLanded` (`0x00389f00`, [Physics](physics.md)) send it:
+**When.** Only `Car_OnHit` (`0x0038bea0`) and `Car_OnLanded` (`0x00389f00`, [Physics](physics.md)) send it, confirmed
+(code):
 
 1. Each hit that touches any part outside the glass mask (`s5 & 0xffd57f3f`) sends **kind 0 at the hit point**
-   (hit record `+0x90`), direction (0, 1, 0).
+   (hit record `+0x90`), direction (0, 1, 0). Confirmed (code).
 2. Then, for each hit part `p` (bits 1-29 of the hit's part mask) not removed, flying or off, after its damage:
-   **the first time that part is ever hit** (bit `p` of `+0x11ec`, set here; what clears it is not traced) the car
+   **the first time that part is ever hit** (bit `p` of `+0x11ec`, set here; cleared only by the repair) the car
    calls `Car_BreakWindow(car, p, hit)` (`0x0038a830`), which picks the kind below and sends it. A part coming off
    later, a window's damage reaching 1, `CarRemovePart` and the explosion send nothing; only the explosion's flying
-   pieces carry an effect (`sub_flaming_debris`, [What is drawn](#drawn)).
+   pieces carry an effect (`sub_flaming_debris`, [What is drawn](#drawn)). Confirmed (code).
 
-**`Car_BreakWindow`**, by part (position and direction as sent):
+**`Car_BreakWindow`**, by part (position and direction as sent), confirmed (code) at `0x0038a830`:
 
 | Part | Kind | Position | Direction |
 | --- | --- | --- | --- |
@@ -233,7 +234,7 @@ the effect at once. Confirmed (code) at the addresses cited.
 | 28, 29 (inferred: the rear lights) | 2 | the hit point | (0, 1, 0) |
 | any other | 0 | the hit point | (0, 1, 0) |
 
-**What each kind makes** (`0x003df730`):
+**What each kind makes** (`0x003df730`, confirmed (code)):
 
 | Kind | Effect |
 | --- | --- |
@@ -688,7 +689,7 @@ Coney's stand-ins, where this page is silent:
 - Only the square's object attack hits a car; these are not ported: the gang lock (`+0x12d8`), the exploding car, the
   charge's, weapons' and thrown objects' contact-point hits, a molotov's fire (its `-1, 0` message and the
   `+0x1200` countdown that also refuses an explosion), the rock, the dent and squeak sounds and the statistic
-  ([The fix](#coney-fix)). A hit sparks only off a part not yet off, and returns the glass it struck too, so the
+  ([The fix](#coney-fix)). A hit sparks only off a part still on, and returns the glass it struck too, so the
   strike sounds for a window alone.
 - No part flies off (`+0x11f4` is not kept): a part a hit or a loud blast throws keeps its damaged form in place.
 - The money pickup's 15 s life is not applied.
