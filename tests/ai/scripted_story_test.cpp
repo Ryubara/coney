@@ -32,6 +32,7 @@
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
+#include "scripting/story_bindings.h"
 #include "support/ai_fixtures.h"
 #include "warriors/game_state.h"
 #include "world_objects/flags.h"
@@ -491,4 +492,81 @@ TEST_CASE("The fifth and sixth missions' goals: a turn, a guard, a lead chase, a
     CHECK(thrower.topGoal()->type() == GoalType::BigLedgeThrower);
     level.scene.run(60);
     CHECK(coney::anim::distance(thrower.human().position(), coney::anim::Vec3{20.0F, 20.0F, 0.0F}) < 0.6F);
+}
+
+TEST_CASE("WCEnableAllCommands switches only the players whose human is there and allows or disallows their menu",
+          "[ai][story]") {
+    // Expected: ai-gangs.md#warrior-command-switches, confirmed (runtime)
+    Level level;
+    // Player 1's human is the scene's player; there is no player 2.
+    level.call("WCEnableAllCommands", {Value(false)});
+    for (std::size_t command = 0; command < 7; ++command) {
+        CHECK_FALSE(level.state.characters.warriorCommands[0][command]);
+        CHECK(level.state.characters.warriorCommands[1][command]);
+    }
+    CHECK_FALSE(level.state.story.commandDisplay[0]);
+    CHECK(level.state.story.commandDisplay[1]);
+    level.call("WCEnableAllCommands", {Value(true)});
+    CHECK(level.state.characters.warriorCommands[0][3]);
+    CHECK(level.state.story.commandDisplay[0]);
+}
+
+TEST_CASE("WCEnableCommand allows the menu again when it enables a command, and leaves it when it disables one",
+          "[ai][story]") {
+    // Expected: ai-gangs.md#warrior-command-switches, confirmed (runtime)
+    Level level;
+    level.call("HUDShowWarCommand", {Value(false), Value(0.0)});
+    REQUIRE_FALSE(level.state.story.commandDisplay[0]);
+    level.call("WCEnableCommand", {Value(1.0), Value(2.0), Value(false)});
+    CHECK_FALSE(level.state.story.commandDisplay[0]);
+    level.call("WCEnableCommand", {Value(1.0), Value(2.0), Value(true)});
+    CHECK(level.state.story.commandDisplay[0]);
+}
+
+TEST_CASE("An unforced Warrior command the crew has no tactic for starts again", "[ai][story]") {
+    // Expected: ai-gangs.md#warrior-commands, confirmed (code)
+    Level level;
+    level.add({44.0F, 40.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(0, "Warriors");
+    level.scripted->gangAddMember(gang, 1.0);
+    level.scripted->gangAddMember(gang, 2.0);
+    level.call("WCSetCallback", {Value("Note")});
+    level.call("IssueWarriorCommand", {Value(0.0), Value(true)});
+    REQUIRE(level.notes.size() == 1);
+    // A script clears the crew's tactic: follow given again from the menu is no repeat and starts the tactic again.
+    level.scene.brains.gangs().setTactic(gang, nullptr);
+    level.call("IssueWarriorCommand", {Value(0.0), Value(false)});
+    CHECK(level.notes.size() == 2);
+    const coney::ai::Gang* warriors = level.scene.brains.gangs().find(gang);
+    REQUIRE(warriors != nullptr);
+    CHECK(warriors->tactic() != nullptr);
+}
+
+TEST_CASE("A Warrior command repeats only the command in force, not the last one asked for", "[ai][story]") {
+    // Expected: ai-gangs.md#warrior-commands, confirmed (code)
+    Level level;
+    level.add({44.0F, 40.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(0, "Warriors");
+    level.scripted->gangAddMember(gang, 1.0);
+    level.scripted->gangAddMember(gang, 2.0);
+    level.call("IssueWarriorCommand", {Value(0.0), Value(true)});
+    REQUIRE(level.scripted->storyHost().warriorCommand() == 0);
+    // Hold was the last asked for (the menu writes it before the dispatcher), but follow is in force: hold starts.
+    level.state.characters.lastWarriorCommand[0] = 3;
+    level.call("IssueWarriorCommand", {Value(3.0), Value(false)});
+    CHECK(level.scripted->storyHost().warriorCommand() == 3);
+}
+
+TEST_CASE("The menu's order of a disabled command becomes the player's last and starts nothing", "[ai][story]") {
+    // Expected: hud.md#warrior-command-menu, confirmed (code)
+    Level level;
+    level.add({44.0F, 40.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(0, "Warriors");
+    level.scripted->gangAddMember(gang, 1.0);
+    level.scripted->gangAddMember(gang, 2.0);
+    level.call("IssueWarriorCommand", {Value(0.0), Value(true)});
+    level.call("WCEnableCommand", {Value(1.0), Value(3.0), Value(false)});
+    coney::script::giveWarriorCommand(*level.scripts, level.context, 1.0, 3);
+    CHECK(level.state.characters.lastWarriorCommand[0] == 3);
+    CHECK(level.scripted->storyHost().warriorCommand() == 0);
 }
