@@ -545,8 +545,9 @@ void PlayLevelSimulation::stepGameOver(const Pad& pad) {
     if (!m_gameOver->failed()) {
         // The check runs over the players; once player 1 is handed to the AI (`--ai-player`) the list is empty and
         // nothing fails the mission (docs/research/combat-reactions.md#defeat,
-        // docs/research/characters-players.md#players).
+        // docs/research/characters-players.md#players), though the game state still counts the update.
         if (m_ai->playerReleased()) {
+            (void)m_gameOver->update({}, false, nullptr);
             return;
         }
         const human::Human& human = m_player->human();
@@ -556,25 +557,25 @@ void PlayLevelSimulation::stepGameOver(const Pad& pad) {
                                     .canFreeSelf = false,
                                     .holdsFlash = m_pickups->carried(0, item::kRevive) > 0,
                                     .waitBlocked = false};
-        // The others of player 1's gang (docs/research/combat-reactions.md#defeat-helpers). Free: not cuffed, not
-        // knocked out and not held (in a grab or tackle, state 0x10000). An empty gang is not "none able": it goes on
-        // to the route test, which then finds no one.
-        // @orig 0x00169dd8 Gang_NoneAbleToHelp (unknown)
+        // Player 1's gang as the gang test sees it, player 1 too (docs/research/combat-reactions.md#defeat-helpers),
+        // and the others for the route test. **Coney's stand-in**: held (attached to his holder) for state 0x10000.
         const ai::Gang* gang = m_ai->playerBrain().gang();
-        std::vector<const human::Human*> others;
-        if (gang != nullptr) {
-            for (const ai::Brain* member : gang->members()) {
-                if (member != &m_ai->playerBrain()) {
-                    others.push_back(&member->human());
-                }
-            }
-        }
         const auto knockedOut = [](const human::Human& h) {
             return h.fighter().health().depleted() || h.script().knockedOut;
         };
-        const bool noneAble = !others.empty() && std::ranges::none_of(others, [&knockedOut](const human::Human* other) {
-            return !other->script().arrested && !knockedOut(*other) && !other->attached();
-        });
+        std::vector<GangHelper> members;
+        std::vector<const human::Human*> others;
+        if (gang != nullptr) {
+            for (const ai::Brain* member : gang->members()) {
+                const human::Human& h = member->human();
+                members.push_back(
+                    GangHelper{.cuffed = h.script().arrested, .knockedOut = knockedOut(h), .held = h.attached()});
+                if (member != &m_ai->playerBrain()) {
+                    others.push_back(&h);
+                }
+            }
+        }
+        const bool noneAble = noneAbleToHelp(members);
         // Whether one of them has a route to him: the player's feet on the path polygons (none: no), then each member
         // not cuffed and not down or dead with a route there, with no distance limit. **Coney's reading**: the route
         // request stands for Nav_CanReach (it fails off the polygons, off the graph or with no route); Coney's links
@@ -599,12 +600,15 @@ void PlayLevelSimulation::stepGameOver(const Pad& pad) {
         }
         return;
     }
-    // The hand-off: the HUD goes at its first update; the mission-failed mode opens at the end of the countdown.
+    // Failed: the game state still counts the update; nothing more is decided.
+    (void)m_gameOver->update({}, false, nullptr);
+    // The hand-off: the HUD goes at its first update; the failure's mode opens at the end of the countdown.
+    // **Coney's stand-in**: no fall out of the world (game state `+0x152` bit 2, Human_StateUpdate) is built.
     if (!m_failShown) {
         m_failShown = true;
         m_hud->hud().hideAll();
     }
-    if (m_gameOver->stepHandOff((pad.pressed() & pad::kCross) != 0) && m_missionFailed) {
+    if (m_gameOver->stepHandOff((pad.pressed() & pad::kCross) != 0, false) && m_missionFailed) {
         const auto id = static_cast<std::uint32_t>(m_gameOver->reason().value_or(GameOverReason::Beaten));
         const hud::HudServices& services = m_hud->hud().services();
         m_missionFailed(services.hudString ? services.hudString(id) : std::string{});

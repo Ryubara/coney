@@ -27,6 +27,7 @@
 #include "animation/anim_math.h"
 #include "camera/camera_view.h"
 #include "camera/cameras.h"
+#include "characters/character_class.h"
 #include "characters/character_types.h"
 #include "core/game_random.h"
 #include "core/game_timer.h"
@@ -715,8 +716,12 @@ void GameplayMode::loadLevel() {
     m_promptHintObject.reset();
     m_promptHint.clear();
 
-    // The level's start turns the game-over check on and clears a failure (`0x00418c68`).
+    // The level's start turns the game-over check on and clears a failure (`0x00418c68`); an Armies level's hand-off
+    // is shorter and ends in the Armies game over (`GameState_IsArmiesLevel` in `Gm_Level_Update`).
     m_state.gameOver.reset();
+    const LevelRecord* startRecord = m_state.levels.at(m_state.currentLevel);
+    m_state.gameOver.setArmiesLevel(startRecord != nullptr &&
+                                    characters::isArmiesLevel(static_cast<int>(startRecord->number)));
     // The level itself, with the player at that start; entering it preloads the world around him.
     std::expected<std::unique_ptr<GameMode>, Error> level = fail(ErrorCode::NotFound, "no level loader");
     if (m_loader) {
@@ -741,7 +746,12 @@ void GameplayMode::loadLevel() {
                                              .difficulty = &m_state.difficulty,
                                              .missionFailed =
                                                  [this](std::string_view title) {
-                                                     if (m_context.host != nullptr) {
+                                                     if (m_context.host == nullptr) {
+                                                         return;
+                                                     }
+                                                     if (m_state.gameOver.armiesLevel()) {
+                                                         m_context.host->launchArmiesGameOver();
+                                                     } else {
                                                          m_context.host->launchMissionFailed(title);
                                                      }
                                                  }});

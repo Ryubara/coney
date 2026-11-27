@@ -13,20 +13,32 @@
 
 namespace coney {
 
+/// The store fronts and the statistics a crime report reaches through the level's objects' services.
+struct CrimeStoreHooks {
+    /// The store front within 10 m of a break-in (CrimeServices::nearestStore()).
+    std::function<std::optional<CrimeStore>(const CrimePosition&)> nearest;
+    /// A first break-in's store (CrimeServices::robStore()).
+    std::function<void(const CrimePosition&)> rob;
+    /// A robbed store's new gang (CrimeServices::claimStore()).
+    std::function<void(const CrimePosition&, int)> claim;
+    /// One crime event for a player human (CrimeServices::scoreCrime()).
+    std::function<void(double, int)> scoreCrime;
+};
+
 /// What a crime report reaches in a level Coney plays: the scripts' crime callback, the `CrimeScene` flag (moved by
-/// `moveScene`, the objects' own mover), which humans are players, a robbed store (`robStore`: its flag and alarm
-/// strobe), and the offender's gang and player 1's through the level's brains (setBrains()), so a report makes the
-/// gang wanted, and player 1's crime messages to the HUD (setHud()). **Coney's stand-in:** the police's hostility and
-/// the police spawners are not wired yet, so hostility and responders do nothing (open item on
-/// docs/research/crimes.md).
+/// `moveScene`, the objects' own mover), which humans are players, the store fronts and the crime statistics
+/// (`stores`), and the offender's gang, its leader, a victim's brain kind and player 1's gang through the level's
+/// brains (setBrains()), so a report makes the gang wanted, and player 1's crime messages to the HUD (setHud()).
+/// **Coney's stand-in:** the police's hostility and the police spawners are not wired yet, so hostility and responders
+/// do nothing (open item on docs/research/crimes.md).
 ///
 /// Research: docs/research/ai-gangs.md#crimes
 class LevelCrimeServices final : public CrimeServices {
   public:
     /// Over `scripts`, which must outlive it; `moveScene` moves the `CrimeScene` flag.
     LevelCrimeServices(script::ScriptSystem& scripts, std::function<void(const CrimePosition&)> moveScene,
-                       std::function<void(const CrimePosition&, int)> robStore = {})
-        : m_scripts(scripts), m_moveScene(std::move(moveScene)), m_robStore(std::move(robStore)) {}
+                       CrimeStoreHooks stores = {})
+        : m_scripts(scripts), m_moveScene(std::move(moveScene)), m_stores(std::move(stores)) {}
 
     /// The humans the level scripts made (null: none is a player); must outlive its use.
     void setHumans(CreatedHumans* humans) { m_humans = humans; }
@@ -40,12 +52,24 @@ class LevelCrimeServices final : public CrimeServices {
     /// Player 1's brain's gang (-1: none).
     [[nodiscard]] int playerOneGang() override;
 
-    [[nodiscard]] bool isPlayer(double handle) override;
+    /// The player index of a human the level made as a player (1 or 2 made: 0 or 1).
+    [[nodiscard]] int playerIndex(double handle) override;
+    /// The brain kind of the human with `handle`, through his brain.
+    [[nodiscard]] int brainType(double handle) override;
+    /// The leader of the offender's gang, through the offender's brain.
+    [[nodiscard]] std::optional<double> gangLeader(double offender) override;
     /// Calls the Lua function `function` with the gang and the type.
     void callCrimeCallback(const std::string& function, int gang, int type) override;
+    /// Hands the move to `moveScene`.
     void moveCrimeScene(const CrimePosition& at) override;
-    /// Hands the break-in to `robStore` (the objects' services: the store's alarm strobe).
-    void markStoreRobbed(const CrimePosition& at, int offenderGang) override;
+    /// The store hooks' answer (none without them).
+    [[nodiscard]] std::optional<CrimeStore> nearestStore(const CrimePosition& at) override;
+    /// Hands the break-in to the store hooks.
+    void robStore(const CrimePosition& at) override;
+    /// Hands the store's new gang to the store hooks.
+    void claimStore(const CrimePosition& at, int gang) override;
+    /// Hands the crime event to the store hooks' statistics.
+    void scoreCrime(double human, int event) override;
     /// Hands the message to setHud()'s receiver.
     void notifyHud(int message) override {
         if (m_notifyHud) {
@@ -56,7 +80,7 @@ class LevelCrimeServices final : public CrimeServices {
   private:
     script::ScriptSystem& m_scripts;
     std::function<void(const CrimePosition&)> m_moveScene;
-    std::function<void(const CrimePosition&, int)> m_robStore;
+    CrimeStoreHooks m_stores;
     CreatedHumans* m_humans = nullptr;
     const ai::ScriptServices* m_brains = nullptr;
     std::function<void(int)> m_notifyHud;

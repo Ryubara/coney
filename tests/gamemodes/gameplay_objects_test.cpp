@@ -261,19 +261,25 @@ TEST_CASE("a break-in lights the alarm strobe nearest the store's flag", "[gamep
     REQUIRE(particles.spawn("part_strobe_red", coney::anim::Vec3{30.0F, 0.0F, 2.0F}) != nullptr);
     services.setParticles(&particles, {});
     // A break-in 20 m from the store finds no store: nothing lights.
-    services.robStore(coney::anim::Vec3{20.0F, 0.0F, 0.0F}, 3);
+    services.robStore(coney::anim::Vec3{20.0F, 0.0F, 0.0F});
     for (const coney::effects::ParticleSystem& system : particles.systems()) {
         CHECK_FALSE(system.emitting);
     }
-    services.robStore(coney::anim::Vec3{2.0F, 2.0F, 0.0F}, 3);
+    services.robStore(coney::anim::Vec3{2.0F, 2.0F, 0.0F});
     for (const coney::effects::ParticleSystem& system : particles.systems()) {
         CHECK(system.emitting == (system.serial == alarmSerial));
     }
-    // The store is robbed by gang 3.
+    // The store is robbed by no gang yet (31); a later break-in names gang 3.
+    // Expected: crimes.md#stores, confirmed (code)
     const coney::world_objects::WorldFlag* store = scripts.flags().find(900.0);
     REQUIRE(store != nullptr);
-    const auto group = static_cast<std::uint32_t>(store->kind2);
+    auto group = static_cast<std::uint32_t>(store->kind2);
     CHECK((group & (1U << 16)) != 0);
+    CHECK(((group >> 18) & 0x1fU) == 31);
+    REQUIRE(services.nearestStore(coney::anim::Vec3{2.0F, 2.0F, 0.0F}).has_value());
+    CHECK(services.nearestStore(coney::anim::Vec3{2.0F, 2.0F, 0.0F})->robbed);
+    services.claimStore(coney::anim::Vec3{2.0F, 2.0F, 0.0F}, 3);
+    group = static_cast<std::uint32_t>(store->kind2);
     CHECK(((group >> 18) & 0x1fU) == 3);
 }
 

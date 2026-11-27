@@ -38,7 +38,13 @@ class LevelObjectServices final : public world_objects::ObjectServices {
         : m_scripts(scripts), m_flags(flags), m_sounds(sounds),
           m_crimes(
               scripts, [this](const CrimePosition& at) { moveCrimeSceneFlag(anim::Vec3{at[0], at[1], at[2]}); },
-              [this](const CrimePosition& at, int gang) { robStore(anim::Vec3{at[0], at[1], at[2]}, gang); }) {}
+              CrimeStoreHooks{
+                  .nearest = [this](const CrimePosition& at) { return nearestStore(anim::Vec3{at[0], at[1], at[2]}); },
+                  .rob = [this](const CrimePosition& at) { robStore(anim::Vec3{at[0], at[1], at[2]}); },
+                  .claim = [this](const CrimePosition& at,
+                                  int gang) { claimStore(anim::Vec3{at[0], at[1], at[2]}, gang); },
+                  .scoreCrime = [this](double human, int event) { scoreEvent(human, kCrimeCategory, event); },
+              }) {}
 
     /// Crimes and statistics go to `state`'s players, whose humans are `humans` (both may be null: none); both must
     /// outlive their use.
@@ -101,11 +107,16 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     void callScript(std::string_view function, double human, double door) override;
     /// Moves the level's `CrimeScene` flag (kCrimeSceneFlag) to `at`.
     void moveCrimeSceneFlag(anim::Vec3 at) override;
-    /// A break-in at `at` by gang `gang` (-1 none; `GameState_ReportCrime`, docs/research/crimes.md#stores): the
-    /// nearest store flag (activity 14) within 10 m is marked robbed (group bit 16, the gang in bits 18-22), and the
-    /// particle system nearest it within 6 m whose type name contains `strobe` (its alarm) gets message `0x12`.
-    /// **Coney's stand-in**: the store's buyers and browsers are not switched off yet.
-    void robStore(anim::Vec3 at, int gang);
+    /// The store flag (activity 14) nearest `at` when it lies within 10 m (squared distance under 100), as its group
+    /// word has it (`GameState_ReportCrime`'s store test, docs/research/crimes.md#break-in-police); nothing otherwise.
+    [[nodiscard]] std::optional<CrimeStore> nearestStore(anim::Vec3 at) const;
+    /// A first break-in at the store nearest `at` (docs/research/crimes.md#stores): its flag is marked robbed (group
+    /// bit 16, bits 8-15 `0xff`, no gang: 31 in bits 18-22), and the particle system nearest it within 6 m whose type
+    /// name contains `strobe` (its alarm) gets message `0x12`. **Not ported (#1008)**: the store's buyers and browsers
+    /// switched off.
+    void robStore(anim::Vec3 at);
+    /// A later break-in at the robbed store nearest `at`: gang `gang` is written to its gang bits (18-22).
+    void claimStore(anim::Vec3 at, int gang);
     /// Reports the crime to the game state's crime reports at the scripts' time, asking for responders.
     void reportCrime(int type, anim::Vec3 at, double offender) override;
     /// Scores statistic `category`-`event` for `human` when he is a player.
@@ -158,6 +169,10 @@ class LevelObjectServices final : public world_objects::ObjectServices {
 
     // The 0-based player whose human is `human`; -1 for none.
     [[nodiscard]] int playerOf(double human) const;
+    // The store flag nearest `at` within 10 m, or null (the store test's flag).
+    [[nodiscard]] const world_objects::WorldFlag* storeNear(anim::Vec3 at) const;
+    // The statistics category of crime events.
+    static constexpr int kCrimeCategory = 4;
     world_objects::Cars* m_cars = nullptr;
     world_objects::SpawnRecords* m_records = nullptr; // setSpawnRecords()
 };

@@ -443,13 +443,13 @@ class PlayLevelSimulation : public GameMode, public ScriptedPlayer {
     // started (`DealerGoal_FinishPair`, docs/research/ai-scripting.md#dealer-buy).
     void stepDealerPairs();
     // The game-over check each update (GameState_CheckGameOver, docs/research/combat-reactions.md#defeat) with player 1
-    // as it sees him, then the failure's hand-off: the HUD hidden at its first update, and after 180 updates (10 once
-    // cross is newly pressed) the mission-failed mode with the reason's `GSTRING.HUD` title. **Coney's stand-ins**: a
-    // player at 0 health counts as knocked out and none as dead; no player frees himself (Coney has no uncuffing);
-    // `+0x414` never blocks the wait; a held member is one attached to his holder; the route check is a route request
-    // (no blocked links in Coney); the failed camera, the tint, the blur and the music's fade are not built.
+    // as it sees him and his gang (noneAbleToHelp()), then the failure's hand-off: the HUD hidden at its first update,
+    // and after 180 updates (90 in an Armies level, 10 once cross is newly pressed) the failure's mode with the
+    // reason's `GSTRING.HUD` title. **Coney's stand-ins**: a player at 0 health counts as knocked out and none as dead;
+    // no player frees himself (Coney has no uncuffing); `+0x414` never blocks the wait; a held member is one attached
+    // to his holder; the route check is a route request (no blocked links in Coney); no player falls out of the world;
+    // the failed camera, the tint, the blur and the music's fade are not built.
     // @orig 0x004197a8 GameState_CheckGameOver (unknown)
-    // @orig 0x00169dd8 Gang_NoneAbleToHelp (unknown)
     // @orig 0x00169ea0 Gang_CanReachToHelp (unknown)
     void stepGameOver(const Pad& pad);
     // Player 1's flash (command 0x28, d-pad right, docs/research/combat-rage.md#flash): with a flash carried and health

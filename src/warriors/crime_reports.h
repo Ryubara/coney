@@ -39,11 +39,12 @@ struct CrimeGang {
     int kind = 0;
 };
 
-/// The store front nearest a break-in (stub).
+/// The store front (a flag of activity `0xe`) nearest a break-in, as its group word (`+0xd8`) has it.
 struct CrimeStore {
+    /// The gang bits' value for no gang.
     static constexpr int kNoGang = 31;
-    bool robbed = false;
-    int gang = kNoGang;
+    bool robbed = false; ///< Bit 16.
+    int gang = kNoGang;  ///< Bits 18-22: the gang that robbed it, once a later break-in names it.
 };
 
 /// A position in metres, game axes.
@@ -63,8 +64,10 @@ class CrimeServices {
 
     /// The gang of the human with `handle`; nothing for no human or a human in no gang.
     [[nodiscard]] virtual std::optional<CrimeGang> gangOf(double /*handle*/) { return std::nullopt; }
-    /// Whether the human with `handle` is a player (statistics are scored for players only).
-    [[nodiscard]] virtual bool isPlayer(double /*handle*/) { return false; }
+    /// The player index (0 or 1) of the human with `handle` (human `+0x1b0`); -1 for no player.
+    [[nodiscard]] virtual int playerIndex(double /*handle*/) { return -1; }
+    /// The brain kind (ai::BrainType, brain `+4`) of the human with `handle`; -1 for none.
+    [[nodiscard]] virtual int brainType(double /*handle*/) { return -1; }
     /// The gang player 1 is in; -1 for none.
     [[nodiscard]] virtual int playerOneGang() { return -1; }
     /// Every police gang turns hostile to gang `gang`, and, when `mutual`, `gang` to them (`0x0016c3a8`).
@@ -79,22 +82,21 @@ class CrimeServices {
     /// gang in state 4 or 6, for crime `type` at `at`, after `delaySeconds` (`0x0016df68`).
     virtual void queueResponders(int /*type*/, int /*kind*/, int /*count*/, const CrimePosition& /*at*/,
                                  double /*delaySeconds*/) {}
-    /// A break-in at `at` by `offenderGang` (-1 none): marks the nearest store flag (kind `0xe`) robbed and sends
-    /// message `0x12` to the `strobe` object nearest it.
-    virtual void markStoreRobbed(const CrimePosition& /*at*/, int /*offenderGang*/) {}
-    /// A player offender's assault statistic against `victim` (crime types 0, 2 and 8; `0x004ed948`).
-    virtual void scoreAssault(double /*offender*/, double /*victim*/) {}
+    /// The store front nearest `at` (`Flag_FindNearestByActivity`) when it lies within 10 m (squared distance under
+    /// 100); nothing otherwise.
+    [[nodiscard]] virtual std::optional<CrimeStore> nearestStore(const CrimePosition& /*at*/) { return std::nullopt; }
+    /// A first break-in at the store front nearest `at`: marked robbed with no gang, and message `0x12` sent to the
+    /// `strobe` nearest it within 6 m.
+    virtual void robStore(const CrimePosition& /*at*/) {}
+    /// A later break-in at the robbed store front nearest `at` that no gang holds yet: `gang` is written to it.
+    virtual void claimStore(const CrimePosition& /*at*/, int /*gang*/) {}
+    /// The leader of the gang of the human with `offender` (`Gang_GetLeader`); nothing for none.
+    [[nodiscard]] virtual std::optional<double> gangLeader(double /*offender*/) { return std::nullopt; }
+    /// One crime event `event` for the player human `human` (`Stats_AddCrime(..., event, 1)`, `0x004ed948`).
+    virtual void scoreCrime(double /*human*/, int /*event*/) {}
     /// Tells the HUD of player 1's crime state (`HUD_SetWanted`, `0x001b2520`): `message` 7 for a new crime (the HUD
     /// shows lastCrime()'s `CfgCrimeMessage`), `0xb` when the wanted time ran out.
     virtual void notifyHud(int /*message*/) {}
-    /// Stubs.
-    [[nodiscard]] virtual int playerIndex(double /*handle*/) { return -1; }
-    [[nodiscard]] virtual int brainType(double /*handle*/) { return -1; }
-    virtual void scoreCrime(double /*human*/, int /*event*/) {}
-    [[nodiscard]] virtual std::optional<CrimeStore> nearestStore(const CrimePosition& /*at*/) { return std::nullopt; }
-    virtual void robStore(const CrimePosition& /*at*/) {}
-    virtual void claimStore(const CrimePosition& /*at*/, int /*gang*/) {}
-    [[nodiscard]] virtual std::optional<double> gangLeader(double /*offender*/) { return std::nullopt; }
 };
 
 /// The game state's crime fields and the crime report (`0x0041b8b0` on the game state `0x0051489c`): reporting on or
@@ -103,10 +105,7 @@ class CrimeServices {
 /// crime type (`+0x290`), and each gang's **wanted** timer (gang `+0x5e8`, kept here by gang id), which a report sets
 /// to 10 s and update() clears when it runs out (`Gang_UpdateWanted`, `0x001698f0`).
 ///
-/// Times are game-timer milliseconds. **Coney's stand-ins:** a break-in (type 1) queues kind-1 responders after the
-/// break-in delay (`CfgBreakAndEnterDelay`; the kind is Coney's reading of crimes.md#stores), and a custom crime
-/// (type 4) kind-1 responders (the page gives its count, not its kind); the "assault" statistic
-/// is scored once per victim through CrimeServices::scoreAssault (which event is the service's choice).
+/// Times are game-timer milliseconds; a timer runs out once the time is past its end.
 ///
 /// Research: docs/research/ai-gangs.md#crimes, docs/research/crimes.md#wanted, docs/references/crime-types.md
 class CrimeReports {
@@ -131,7 +130,8 @@ class CrimeReports {
     [[nodiscard]] bool enabled(int type) const;
     /// `CfgBreakAndEnterDelay`'s delay, seconds (the difficulty's value).
     void setBreakInDelay(double seconds) { m_breakInDelay = seconds; }
-    /// `ForceCrimeLevel(on)` (`+0x28c`): while on, a wanted gang stays wanted.
+    /// `ForceCrimeLevel(on)` (`+0x28c`, which the binding sets to 0 or 1 only): while on, a wanted gang stays wanted
+    /// with both its timers.
     void setForced(bool on) { m_forced = on; }
     /// Whether `ForceCrimeLevel` holds the wanted gangs.
     [[nodiscard]] bool forced() const { return m_forced; }
@@ -142,7 +142,8 @@ class CrimeReports {
     void report(CrimeServices& services, int type, const CrimePosition& at, double offender, double victim,
                 bool sendResponders, int count, std::uint64_t nowMs);
 
-    /// Each frame: clears the wanted state of every gang whose 10 s passed (held while forced).
+    /// Each frame: clears the wanted state of every gang whose 10 s passed, and the second timers that passed; while
+    /// forced, a wanted gang is held at 10 s from now with its second timer.
     /// @orig 0x001698f0 Gang_UpdateWanted (unknown)
     void update(CrimeServices& services, std::uint64_t nowMs);
 
@@ -176,6 +177,14 @@ class CrimeReports {
     void clearLevel();
 
   private:
+    // Type 1's store test (its `case 1`): police only at a store front within 10 m not yet robbed; a robbed one that
+    // no gang holds goes to the offender's gang and scores its leader.
+    void breakIn(CrimeServices& services, const CrimePosition& at, double offender,
+                 const std::optional<CrimeGang>& gang, bool sendResponders);
+    // A player offender's score against `victim` (types 0, 2 and 8): for a cop, civilian or dealer, once per victim
+    // and player.
+    void scoreVictim(CrimeServices& services, double offender, double victim);
+
     bool m_reporting = true;
     bool m_forced = false;
     std::array<int, crime::kTypes> m_responders{};
@@ -189,7 +198,7 @@ class CrimeReports {
     std::map<int, std::uint64_t> m_wantedUntil;
     std::map<int, std::uint64_t> m_secondUntil; // gang -> when its second timer runs out
     std::map<int, std::uint64_t> m_lastAssault;
-    std::set<double> m_scoredVictims;
+    std::set<std::pair<double, int>> m_scoredVictims; // (victim, player): the victim brain's `+0x290` bits
 
     // Every type enabled.
     static constexpr std::array<bool, crime::kTypes> allTrue() {

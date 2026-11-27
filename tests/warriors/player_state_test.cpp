@@ -199,7 +199,9 @@ struct RecordingServices final : coney::CrimeServices {
     std::vector<std::string> calls;
 
     std::optional<CrimeGang> gangOf(double /*handle*/) override { return gang; }
-    bool isPlayer(double handle) override { return handle == 1.0; }
+    std::optional<coney::CrimeStore> store = coney::CrimeStore{};
+    int playerIndex(double handle) override { return handle == 1.0 ? 0 : -1; }
+    int brainType(double handle) override { return handle == 50.0 ? 4 : -1; }
     int playerOneGang() override { return playerGang; }
     void makePoliceHostile(int gangId, bool mutual) override {
         calls.push_back("hostile " + std::to_string(gangId) + (mutual ? " both" : " one"));
@@ -213,10 +215,9 @@ struct RecordingServices final : coney::CrimeServices {
         calls.push_back("respond " + std::to_string(type) + " " + std::to_string(kind) + " " + std::to_string(count) +
                         " " + std::to_string(static_cast<int>(delay)));
     }
-    void markStoreRobbed(const CrimePosition& /*at*/, int gangId) override {
-        calls.push_back("robbed " + std::to_string(gangId));
-    }
-    void scoreAssault(double /*offender*/, double /*victim*/) override { calls.emplace_back("assault"); }
+    std::optional<coney::CrimeStore> nearestStore(const CrimePosition& /*at*/) override { return store; }
+    void robStore(const CrimePosition& /*at*/) override { calls.emplace_back("robbed"); }
+    void scoreCrime(double /*human*/, int /*event*/) override { calls.emplace_back("assault"); }
     void notifyHud(int message) override { calls.push_back("hud " + std::to_string(message)); }
 };
 
@@ -247,7 +248,9 @@ TEST_CASE("a crime report turns the police on the gang, sends responders and sta
     services.calls.clear();
     crimes.update(services, 11999);
     CHECK(crimes.wanted(3));
-    crimes.update(services, 12000);
+    crimes.update(services, 12000); // still wanted at its end
+    CHECK(crimes.wanted(3));
+    crimes.update(services, 12001);
     CHECK_FALSE(crimes.wanted(3));
     CHECK(services.calls == std::vector<std::string>{"calm 3", "hud 11"});
     CHECK(crimes.lastCrime() == crime::kNoCrime);
@@ -282,7 +285,7 @@ TEST_CASE("crime reports: off, police offenders, one-way types, break-ins and cu
     crimes.report(services, crime::kBreakAndEnter, CrimePosition{5, 0, 0}, 1.0, 0.0, true, 0, 0);
     CHECK(services.calls.at(1) == "scene");
     CHECK(services.calls.at(2) == "respond 1 1 2 15");
-    CHECK(services.calls.at(3) == "robbed 3");
+    CHECK(services.calls.at(3) == "robbed");
 
     services.calls.clear();
     crimes.report(services, crime::kCustom, at, 0.0, 0.0, true, 6, 0);
@@ -326,7 +329,7 @@ TEST_CASE("forcing the crime level holds a gang wanted", "[crimes]") {
     crimes.setForced(false);
     crimes.update(services, 59999); // held at 10 s from the last forced update
     CHECK(crimes.wanted(3));
-    crimes.update(services, 60000);
+    crimes.update(services, 60001);
     CHECK_FALSE(crimes.wanted(3));
 }
 
@@ -343,7 +346,7 @@ TEST_CASE("the second wanted timer runs 10 s on its own, forced or not", "[crime
     crimes.setForced(true);
     crimes.update(services, 10999);
     CHECK(crimes.secondWanted(4));
-    crimes.update(services, 11000);
+    crimes.update(services, 11001);
     CHECK_FALSE(crimes.secondWanted(4));
     CHECK(services.calls.empty());
 }
