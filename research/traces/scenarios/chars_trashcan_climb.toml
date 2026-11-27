@@ -15,3 +15,4 @@ patches = ["scripted-pad", "right-stick"]
 [coney]
 level = "level99"
 args = ["--checkpoint", "3"]
+wait_for_control = true          # checkpoint 3 opens with the scene l99_c3, which holds the pad (#1680)

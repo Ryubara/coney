@@ -262,4 +262,4 @@ setup = [
 [coney]
 level = "level99"
 args = ["--checkpoint", "3", "--start", "50.0,58.998,0.213,0.0,5.3,0.0"]
-settle = 300
+wait_for_control = true          # checkpoint 3 opens with the scene l99_c3, which holds the pad (#1680)

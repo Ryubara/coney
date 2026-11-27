@@ -13,6 +13,7 @@ patches = ["scripted-pad", "right-stick", "state-code", "skid-test"]
 
 [coney]
 level = "level99"
+wait_for_control = true          # checkpoint 1 opens with the scene l99_c1, which holds the pad (#1680)
 
 [diff]
 columns = ["clip", "gait", "speed", "heading"]
