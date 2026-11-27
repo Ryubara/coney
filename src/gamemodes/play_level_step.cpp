@@ -54,6 +54,9 @@ world::Vec3 renderWareOf(anim::Vec3 game) { return world::Vec3{game.x, game.z, -
 } // namespace
 
 ModeResult PlayLevelSimulation::update(GameModeStack& stack, const FrameTime& frame) {
+    // The run's start, when it waits for player 1's control (the platform's `--wait-for-control`).
+    beginStep();
+
     // `--freeze-world`, once its first step is done: nothing advances, and the presentation makes the step.
     if (stepFrozenWorld(frame)) {
         return ModeResult::Stay;
@@ -214,6 +217,10 @@ PlayLevelSimulation::StepView PlayLevelSimulation::stepScenery(const FrameTime& 
 }
 
 bool PlayLevelSimulation::sceneHoldsPlayer() const { return sceneHolds(m_playerHandle); }
+
+bool PlayLevelSimulation::hasControl() const {
+    return m_stats.frames > 0 && m_player->padControlled() && !sceneHoldsPlayer();
+}
 
 void PlayLevelSimulation::stepWorldObjects(const StepView& view, std::uint32_t elapsedMs) {
     if (m_records == nullptr || m_objectTypes == nullptr) {

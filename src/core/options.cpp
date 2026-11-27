@@ -168,6 +168,9 @@ constexpr std::string_view kUsage =
     "                     (degrees, default 60); a test aid for matching the original's frames\n"
     "  --freeze-world     with --play-level: after the first step nothing in the world moves\n"
     "                     (people, cars, particles, animation, scripts), so every frame is the same\n"
+    "  --wait-for-control with --play-level: start the run (the input script, --trace, --frames and\n"
+    "                     --start) at the first step player 1 has control, after any opening scene that\n"
+    "                     holds the pad; a test aid for trace scenarios\n"
     "  --scene-only       with --play-level: draw only the sky, world, objects, cars and humans in\n"
     "                     3D (no effects, panes or coronas), to compare the GL3 and GPU renderers\n"
     "  --light-trace FILE with --play-level: load the original's light-selection trace (coney-tools\n"
@@ -433,6 +436,10 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     }
     if (options.cameraPin.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--camera needs --play-level: it pins player 1's view");
+    }
+    if (options.waitForControl && !(options.playLevel && !sandboxOfPlayLevel(*options.playLevel))) {
+        return invalidArgument(
+            "--wait-for-control needs --play-level with a level: a sandbox has no opening to wait out");
     }
     if (options.freezeWorld && !options.playLevel.has_value()) {
         return invalidArgument("--freeze-world needs --play-level: it freezes the level's world");
@@ -1649,6 +1656,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument("--scene-only given twice");
             }
             options.sceneOnly = true;
+        } else if (arg == "--wait-for-control") {
+            if (options.waitForControl) {
+                return invalidArgument("--wait-for-control given twice");
+            }
+            options.waitForControl = true;
         } else if (arg == "--freeze-world") {
             if (options.freezeWorld) {
                 return invalidArgument("--freeze-world given twice");

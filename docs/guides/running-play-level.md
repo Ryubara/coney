@@ -203,7 +203,7 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level34 -
 feet (dropped onto the ground below, standing idle with his health and meters kept) and heading in degrees, and with
 the last two puts the follow camera DISTANCE metres from him with its view facing YAW degrees. It is a test aid: a
 trace scenario starts Coney where the original's save state stands, as `walk60` and `run_circle` do from slot 1's
-first trace row.
+first trace row. A level that opens with a scene overrides it: see [Waiting for control](#wait-for-control).
 
 `--give ITEM,COUNT` (with `--play-level`, repeatable) makes player 1 hold COUNT (0 to 9999) of inventory item ITEM (0
 to 22, [Inventory](../references/inventory.md); 3 is spray paint) from the first step of play, with no pick-up notice.
@@ -247,6 +247,36 @@ order](../research/scripting.md#run-next-mission)), and the level flow loads the
 a script starts with `MenuLoadLevel` (the hub's missions) is played the same way. The unlocks, bank and saved script
 numbers carry from one level to the next, so the story's order holds: 99, 80, 87, the hub (`level95`), 34 and on.
 `--frames` still ends the run.
+
+### Waiting for control {#wait-for-control}
+
+`--wait-for-control` (with `--play-level` and a level, not a sandbox) starts the run when player 1 has control: the first
+step, from the second step of play on, on which no scene holds him and no script has taken the pad from him
+(`PlayLevelSimulation::hasControl()`). From that step the input script's frame 0, the `--trace` file's step 1 (and
+`--trace-humans`), `--frames`' count and `--start`'s placing all begin, so a scenario's script plays into a player who
+answers it. Without the option nothing changes: the run starts on the level's first frame of play, as above, and the
+level's scripts and scenes run as the original runs them.
+
+Why it exists: level99 checkpoint 3 opens with the scene `l99_c3`
+([Scripting](../research/scripting.md#level99-checkpoints)). It holds the pad (and overrides `--start`: the scene
+puts him at its own spot when it ends, at about update 535) and then a script leaves the pad off until about update
+750, where he first answers a full stick. A scenario that played its script after a fixed `settle` of 300 updates
+therefore pushed its stick into a player who never moved, and its compare proved nothing (#1680). The options for it
+were skipping the scene in test mode when `--start` is given, or waiting for control:
+
+- **Skipping the scene** does not by itself give him the pad: the scene's end (which a skip also ends in) leaves it off
+  until the script gives it back (about 215 updates later here), so a skip would still need a wait, and it needs
+  knowledge of each level's scenes and changes what the level's scripts run.
+- **A longer fixed count** (750, as task 369's `run_jump` uses) breaks whenever a scene's length changes and for every
+  level that gains a scene; it also hides the next standing-player scenario until someone reads its trace.
+- **Waiting for control** leaves the original's behaviour and the scripts alone (it is a test option and nothing else),
+  and holds for any level and any length of opening, so a scene a later level gains needs no change to its scenarios:
+  they say `wait_for_control = true` and nothing about how long.
+
+A scenario sets `wait_for_control = true` in its `[coney]` table ([Comparing with
+Coney](research-traces.md#comparing-with-coney)), and `trace coney` refuses a trace of a player who never moves
+during a stick that should move him ([The standing-player check](research-traces.md#standing-player)). If control never
+comes, the run ends after 10 minutes of frames with a message, as a level that never starts playing does.
 
 ### A story save {#complete-levels}
 

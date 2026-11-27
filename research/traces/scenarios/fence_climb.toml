@@ -14,3 +14,6 @@ patches = ["scripted-pad", "right-stick"]
 [coney]
 level = "level99"
 args = ["--checkpoint", "3", "--start", "48.4135,43.9145,0.2232,179.754,4.8,179.744"]
+# Checkpoint 3 opens with the l99_c3 scene, which overrides --start and holds the pad until about update 750: the run
+# starts when he has control (docs/guides/running-play-level.md#wait-for-control).
+wait_for_control = true

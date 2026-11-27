@@ -228,6 +228,15 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     /// says, if it says: `--start`, Coney's own test aid.
     void startAt(const StartPlace& place);
 
+    /// `--wait-for-control`: the run starts at the first step player 1 has control (hasControl()) instead of the first
+    /// step of play. At that step `start` (`--start`, when given) places him and the camera, because a scene or script
+    /// that holds him until then would place him itself; the trace's rows and the run's other counters count from it.
+    /// Coney's own test aid for trace scenarios; see controlReady().
+    void waitForControl(std::optional<StartPlace> start);
+    /// Whether the run has started: always, unless waitForControl() was asked for; then from the step player 1 first
+    /// has control. The input script, `--frames` and the trace's step 1 start on the first step this is true for.
+    [[nodiscard]] bool controlReady() const { return !m_waitsForControl || m_controlReached || hasControl(); }
+
     /// Pins player 1's view at `pin` for the rest of the run, whatever camera the game shows (scene cameras too), with
     /// the current camera's near and far clips: `--camera`, Coney's test aid for matching the original's frames. The
     /// scenery streams and culls round the pinned view.
@@ -430,6 +439,7 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     // round the step's camera, the lights' step and the visibility pass; the HUD's sprites and the spinning icons'
     // poses; the step's end (`--freeze-world` freezes here); and the scenes' three until they move to the core.
     bool stepFrozenWorld(const FrameTime& frame) override;
+    void beginStep() override;
     void traceStep() override;
     StepView stepScenery(const FrameTime& frame) override;
     void hudStepped() override;
@@ -579,6 +589,11 @@ class PlayLevelMode final : public PlayLevelSimulation, public OverlaidLevel {
     std::vector<std::uint32_t> m_scenesPlaying; // the scenes playing at the last stepScenes(), for their events
     std::unique_ptr<scenes::SceneList> m_ownSceneList;
     std::unique_ptr<scenes::SceneSystem> m_ownScenes;
+    // `--wait-for-control`: the run waits for player 1's control, the `--start` it places him at then, and whether the
+    // control has come (the run's step 1, from which the traces write).
+    bool m_waitsForControl = false;
+    bool m_controlReached = false;
+    std::optional<StartPlace> m_pendingStart;
     // The --trace file (closed when unset) and the steps traced.
     std::optional<std::ofstream> m_trace;
     std::uint64_t m_traceSteps = 0;

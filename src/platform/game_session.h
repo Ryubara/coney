@@ -149,6 +149,10 @@ class GameSession {
     [[nodiscard]] GameplayMode& gameplay() { return m_flow->gameplay(); }
     /// Whether the next step is a frame of play: gameplay on top of the stack with a level playing.
     [[nodiscard]] bool inPlay() const;
+    /// Whether a run's own first frame can be the next one: the level is in play (inPlay()) and, when its mode waits
+    /// for player 1's control (`--wait-for-control`, PlayLevelMode::controlReady()), he has it. The pad script, the
+    /// frame count and the traces of a `--play-level` run start on the first frame this says yes for.
+    [[nodiscard]] bool playStarted();
     /// How many level loads gameplay has started (a level change and a checkpoint restart count alike): what network
     /// play's NetLevels follows (docs/guides/multiplayer.md#levels).
     [[nodiscard]] std::uint64_t levelStarts() const { return m_levelStarts; }

@@ -458,11 +458,13 @@ bool PlayLevelMode::stepFrozenWorld(const FrameTime& frame) {
 }
 
 void PlayLevelMode::traceStep() {
-    if (m_trace) {
+    // A run that waits for control writes none of its traces until the step it starts at.
+    const bool tracing = !m_waitsForControl || m_controlReached;
+    if (tracing && m_trace) {
         *m_trace << human::traceLine(++m_traceSteps, *m_player);
     }
     // Every human's row for this step, after all their updates.
-    if (m_humansTrace) {
+    if (tracing && m_humansTrace) {
         m_humansTrace->write(m_ai->brains());
     }
     // Network play's view of the same humans: the host's snapshots and the state digest, each human with the character
@@ -861,6 +863,23 @@ void PlayLevelMode::startAt(const StartPlace& place) {
                                                 .headingDegrees = place.headingDegrees});
     if (place.cameraDistance.has_value() && place.cameraYawDegrees.has_value()) {
         m_player->placeCamera(*place.cameraDistance, *place.cameraYawDegrees * std::numbers::pi_v<float> / 180.0F);
+    }
+}
+
+void PlayLevelMode::waitForControl(std::optional<StartPlace> start) {
+    m_waitsForControl = true;
+    m_pendingStart = start;
+}
+
+void PlayLevelMode::beginStep() {
+    // The first step player 1 has control: the run's step 1. His place is set now, after the scene that held him has
+    // put him where its script wants, so the run starts where `--start` says.
+    if (m_waitsForControl && !m_controlReached && hasControl()) {
+        m_controlReached = true;
+        if (m_pendingStart) {
+            startAt(*m_pendingStart);
+            m_pendingStart.reset();
+        }
     }
 }
 

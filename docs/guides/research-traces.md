@@ -62,6 +62,7 @@ setup = [ { address = "prec(puppet) + 0x1e", type = "u8", value = "0", frame = 0
 [coney]
 level = "level99"                 # --play-level
 args = []                         # more of Coney's options, such as ["--spawn", "start"]
+wait_for_control = false          # start the run when player 1 has control (level99 checkpoint 3: after the l99_c3 scene)
 settle = 0                        # updates Coney plays first with no input, dropped from its trace
 
 [diff]                            # how `coney-tools trace diff --scenario` compares the two traces
@@ -180,9 +181,18 @@ hash).
 
 `coney-tools trace coney` plays the same scenario on Coney headless (`--play-level` from its `[coney]` table,
 `--frames` its updates, its input script, `--trace`), and `coney-tools trace diff` compares the two traces. A
-scenario whose level opens with a script that holds the pad (level99 checkpoint 3: Vermin's fence lesson, about 9 s)
-sets `settle` in `[coney]`: Coney plays that many updates first, the input script is shifted by them, and they are
-dropped from the trace (renumbered from 1), so the run starts where the original's saved slot does:
+scenario whose level opens with a scene or script that holds the pad sets `wait_for_control = true` in `[coney]`
+(Coney's `--wait-for-control`, [Waiting for control](running-play-level.md#wait-for-control)): level99 checkpoint 3
+opens with the `l99_c3` scene, which overrides `--start` and leaves the pad off until about update 750 (checkpoints
+1 and 2 open with scenes that hold him too, `l99_c1` and `l99_c2`). Coney then starts the run, its `--start`,
+the input script, the trace's step 1 and the frame count, on the first update player 1 has control, however long
+the opening is, so the run starts where the original's saved slot does. It chose waiting over
+a fixed `settle` count because a count breaks when a scene's length changes or another level gains a scene, and over
+skipping the scene in test mode because a skip leaves the pad off too and would change what the level's scripts run
+(the reasons in full are on the Waiting for control page). `settle` stays for a scenario that wants extra updates with no
+input after that: Coney plays that many more updates, the input script is shifted by them, and they are dropped from the
+trace (renumbered from 1). It is no longer the way to wait out an opening, and [the standing-player
+check](#standing-player) fails a scenario that tries to.
 
 ```sh
 uv run --project python coney-tools trace coney research/traces/scenarios/walk60.toml --out ../../scratch/walk60-coney.csv
@@ -223,6 +233,19 @@ original's spread ([coney-tools](coney-tools-trace.md#trace)). Give one `--origi
 never in the repository. Match the original's set-up on Coney's side: where the recording hands player 1 to the AI after
 the countdown, run Coney with `--ai-player`, and give each Coney match its own `--ai-seed`
 ([Running: tracing](running-play-level.md#tracing)).
+
+### The standing-player check {#standing-player}
+
+A compare of a player who never moved proves nothing, and the two traces of a scenario that stood still agree. So
+`trace coney` reads the trace it just recorded against the scenario's input script (`coney_tools.trace_guard`): when the
+script holds the left stick of player 1 at 40 % or more on either axis from some step on, his position (x, y or z) must
+leave its first value from that step by more than 5 cm somewhere before the trace ends. If it does not, the command
+exits 1 and names the scenario, the step, how far he went and the likely cause (a scene or script holding the pad: add
+`wait_for_control = true`). The trace is kept so you can read it. A fall or a slide counts as moving, and a script with
+no such stick (a scenario that watches, or only presses buttons) has nothing to check. The check is on the `[coney]`
+side only: the original's side is the saved slot, which stands where the game put him. It also cannot catch a
+scene that keeps moving him after the stick's step (any 5 cm from that step counts as moving, whoever moved him), so a
+scenario that waits for control has still to be read once.
 
 ## Differential playthroughs {#differential-playthroughs}
 

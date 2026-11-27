@@ -268,6 +268,7 @@ add_executable(coney_tests
     platform/disc_input_recording_test.cpp
     platform/disc_play_level_simulation_test.cpp
     platform/disc_world_streaming_test.cpp
+    platform/disc_wait_for_control_test.cpp
     platform/clip_recorder_test.cpp
     platform/draw_calls_test.cpp
     platform/draw_stream_test.cpp

@@ -15,5 +15,6 @@ patches = ["scripted-pad", "right-stick", "strike-contact", "strike-shape", "bar
 [coney]
 level = "level99"
 args = ["--checkpoint", "3"]
-# Checkpoint 3 opens with Vermin's fence lesson, which holds the pad for about 9 s; the slot starts after it.
-settle = 300
+# Checkpoint 3 opens with the l99_c3 scene, which overrides --start and holds the pad until about update 750: the run
+# starts when he has control (docs/guides/running-play-level.md#wait-for-control).
+wait_for_control = true

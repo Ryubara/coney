@@ -588,6 +588,24 @@ TEST_CASE("the freeze option freezes a played level's world", "[options]") {
     CHECK(coney::usageText().find("--freeze-world") != std::string_view::npos);
 }
 
+TEST_CASE("the wait-for-control option starts a played level's run when player 1 has control", "[options]") {
+    // Expected: Coney's own aid, no counterpart in the original (docs/guides/running-play-level.md#wait-for-control).
+    auto waiting =
+        parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "level99", "--wait-for-control"});
+    REQUIRE(waiting.has_value());
+    CHECK(waiting->waitForControl);
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--play-level", "level99"})->waitForControl);
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--wait-for-control",
+                                                      "--wait-for-control"})
+                    .has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 3>{"--disc", "x", "--wait-for-control"}).has_value());
+    // A sandbox layout has no opening scene to wait out.
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "sandbox:yard", "--wait-for-control"})
+            .has_value());
+    CHECK(coney::usageText().find("--wait-for-control") != std::string_view::npos);
+}
+
 TEST_CASE("the light-trace option gives a played level's lighting lab the original's trace", "[options]") {
     // Expected: unverified, #1252 (Coney's own option: docs/guides/realtime-lighting.md#lab-built)
     auto traced =
