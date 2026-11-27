@@ -185,9 +185,6 @@ bool shapeTouchesTriangle(const PosedShape& shape, anim::Vec3 p0, anim::Vec3 p1,
 void StrikeShapes::onEvent(const anim::ClipEvent& event) {
     switch (event.type) {
     case kEventStrikeOn:
-        // **Coney stand-in** (#683): with a held world object and bone 25 the original builds the weapon's strike
-        // spheres instead (0x00247be8, their radius from the object's type); Coney makes no weapon spheres yet and
-        // turns the hand's shape on.
         set(static_cast<int>(event.word), true);
         break;
     case kEventStrikeOff:
