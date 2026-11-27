@@ -1040,7 +1040,7 @@ name = "Car_BreakWindow"
 page = "sound-events.md#cars"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/cars.h:carBreakWindowEffect"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0038bea0
@@ -1049,7 +1049,17 @@ page = "sound-events.md#cars"
 level = "confirmed-code"
 note = "the level is from [cars.md#hit-volumes](cars.md#hit-volumes)"
 coney = "src/world_objects/car_hits.h:carHumanHitParts"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "only the plain human hit (kind 3) is ported: the charge, held weapons, thrown objects, the molotov, the gang lock, the exploding car, the rock and the dent sound are not"
+relation = "not-ported"
+issue = 72
+
+[[function.gaps]]
+what = "the sparks need a part not off yet, and every part struck is returned (the original returns those outside the glass)"
+relation = "stand-in"
+issue = 72
 
 [[function]]
 address = 0x00393538

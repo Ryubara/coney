@@ -122,7 +122,12 @@ page = "tasks.md#code-cars-parts"
 role = "Says whether a hit zone still has parts (height tests +1.5/+1.0)."
 level = "inferred"
 coney = "src/world_objects/car_hits.h:carAimPoint"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the flying parts (+0x11f4) are not modelled, so none is left out for flying"
+relation = "stand-in"
+issue = 72
 
 [[function]]
 address = 0x0038d528
@@ -131,7 +136,7 @@ page = "tasks.md#code-cars-car-object"
 role = "Sets the kind of trunk item."
 level = "confirmed-code"
 coney = "src/world_objects/cars.h:Cars::placeInTrunk"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0038d538
@@ -140,7 +145,7 @@ page = "tasks.md#code-cars-car-object"
 role = "Sets the object in the trunk."
 level = "confirmed-code"
 coney = "src/world_objects/cars.h:Cars::placeInTrunk"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0038d690
@@ -176,7 +181,7 @@ page = "tasks.md#code-cars-explode"
 role = "Explodes a car."
 level = "confirmed-code"
 coney = "src/scripting/mission4_bindings.cpp:addMission4Bindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0038dfe0
@@ -194,7 +199,12 @@ page = "tasks.md#code-cars-parts"
 role = "Repairs a car."
 level = "confirmed-code"
 coney = "src/world_objects/cars.h:Cars::repair"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the rock flag and the loose pieces a part record ends are not modelled"
+relation = "stand-in"
+issue = 72
 
 [[function]]
 address = 0x0038e538

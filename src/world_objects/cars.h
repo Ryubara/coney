@@ -36,7 +36,7 @@ enum class StereoState : std::uint8_t {
     InCar,     ///< Put in by `CarSpawnRadio`, behind the window.
     Freed,     ///< Its window broken: a theft (kind-3 record) can take it.
     Taken,     ///< Stolen.
-    Destroyed, ///< Blown up with its car.
+    Destroyed, ///< Destroyed when its car exploded.
 };
 
 /// One parked car: the fields of the car task Coney keeps (docs/research/cars.md#car-object).
@@ -164,8 +164,8 @@ class Cars {
     /// @orig 0x0038df38 Car_SetColour (unknown)
     void setColour(double handle, const std::array<float, 4>& components);
 
-    /// `CarMakeGoodAsNew`: every part reset (none removed, open or damaged) and the car marked dirty. A handle that is
-    /// not a car does nothing.
+    /// `CarMakeGoodAsNew`: every part as new (no damage, none removed, off, open or ever hit) and the car no longer
+    /// exploded. A handle that is not a car does nothing.
     /// @orig 0x0038e068 Car_Repair (unknown)
     void repair(double handle);
 
@@ -183,31 +183,36 @@ class Cars {
         m_nextHandle = std::move(nextHandle);
     }
 
-    /// `CarPlaceInTrunkOnDetach(car, object, itemKind)`: with `itemKind` 0 the object is pinned and put in the boot,
-    /// otherwise the low 8 bits of `itemKind` are dollars for a `dyn_money` pickup; the boot is marked loaded. A later
-    /// call replaces the earlier item; an unknown car does nothing.
+    /// `CarPlaceInTrunkOnDetach(car, object, itemKind)`: with `itemKind` 0 the object, when its handle resolves, is
+    /// pinned and put in the boot; otherwise the low 8 bits of `itemKind` are dollars for a `dyn_money` pickup. Either
+    /// marks the boot loaded and leaves the other item as it was (the release prefers an object); an unknown car does
+    /// nothing.
     /// @orig 0x0038e0f0 Car_PlaceInTrunkOnDetach (unknown)
     /// @orig 0x0038d538 Car_SetTrunkObject (unknown)
     /// @orig 0x0038d528 Car_SetTrunkItemKind (unknown)
     void placeInTrunk(double handle, double object, std::uint32_t itemKind);
-    /// A part takes `amount` of damage (`instant`, or a window: set to 1 at once); at 1 it comes off (its bit in the
-    /// kept removed parts, `+0x11f8`). The boot (part 5) coming off a non-instant call releases a loaded boot's item;
-    /// an instant one (the car exploding) loses it; window 15 coming off frees the stereo. A part already off takes
-    /// nothing. Returns whether the part came off now.
-    /// @orig 0x0038a4d8 Car_DamagePart (unknown)
-    bool damagePart(double handle, std::uint32_t part, float amount, bool instant);
-    /// `CarExplode`'s wreck: a car not yet exploded has every part not already off knocked off (instant damage, so a
-    /// loaded boot's item is lost) and is marked exploded. Returns whether it exploded now (false for an unknown car or
-    /// one exploded already).
+    /// A part takes `amount` of damage (set to 1 at once when `instant`, or when its record marks it to come off at
+    /// the first damage: the roof, glass 6 and 7, lamps 8 and 9, the windows); at 1 it comes off (its bit in the kept
+    /// removed parts, `+0x11f8`). Coming off a non-instant call, a door takes its window too and the boot (part 5)
+    /// releases a loaded boot's item; an instant one (the car exploding) loses it; window 15 frees the stereo and the
+    /// roof ends the police lights. With `quiet` (a quiet explosion) a part its record throws is hidden instead. A part
+    /// removed or off takes nothing. Returns whether the part came off now (docs/research/cars.md#parts).
+    /// @orig 0x0038a4d8 Car_AddPartDamage (unknown)
+    bool damagePart(double handle, std::uint32_t part, float amount, bool instant, bool quiet = false);
+    /// `CarExplode(car, quiet)`'s wreck: a car not yet exploded has each hit bit 1-29 not off yet knocked off (parts
+    /// 1-25 by instant damage, so a loaded boot's item is lost; the lamps' 26-29 removed) and marked hit, its stereo
+    /// destroyed, and is marked exploded. Returns whether it exploded now (false for an unknown car or one exploded
+    /// already). Research: docs/research/cars.md#explode.
     /// @orig 0x0038ab18 Car_TryExplode (unknown)
     /// @orig 0x0038ab50 Car_DoExplode (unknown)
     bool explode(double handle, bool quiet = false);
-    /// A plain human's strike from `standing` reached the car at `point` (the hit record's `+0x90`): each part
-    /// carHumanHitParts() names takes kHumanCarHitDamage (a window breaks at once); a hit on any part outside the glass
-    /// sends sparks at `point`, and each part's first hit ever its carBreakWindowEffect() (takeHitEffects()). Returns
-    /// the parts struck; `reports` (when given) gets what message 0x19 says of the hit: each part 1-25 not already off
-    /// that it damaged, then kCarHitAllBroken if it left every part 1-25 off. **Coney's reading**: the gang lock
-    /// (`+0x12d8`), the exploding car and the statistic are not modelled yet.
+    /// A plain human's strike from `standing` (a player's when `player`) reached the car at `point` (the hit record's
+    /// `+0x90`): a hit on any part outside the glass sends sparks at `point`; each part carHumanHitParts() names takes
+    /// kHumanCarHitDamage (some break at once), each lamp's glass (26-29) is knocked off, and each one's first hit ever
+    /// sends its carBreakWindowEffect() (takeHitEffects()). Returns the parts struck; `reports` (when given) gets what
+    /// message 0x19 says of the hit: each part 1-25 it damaged, and after a part 1-21 kCarHitAllBroken when the type's
+    /// breakable parts are all off. **Coney's reading**: the gang lock (`+0x12d8`), the exploding car, the rock and
+    /// the strikes of other kinds are not modelled yet (#72).
     /// @orig 0x0038bea0 Car_OnHit (unknown)
     CarPartMask humanHit(double handle, anim::Vec3 standing, anim::Vec3 point,
                          std::vector<CarHitReport>* reports = nullptr, bool player = false);

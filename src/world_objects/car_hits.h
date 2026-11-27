@@ -28,8 +28,9 @@ inline constexpr float kHumanCarHitDamage = 0.115F;
 [[nodiscard]] anim::Vec3 carLocal(const Car& car, anim::Vec3 world);
 
 /// The parts a hit from a human standing at `standing` reaches, by the type's body and cabin zone tables (bit 1, the
-/// roof, never). Research: docs/research/cars.md#windows.
-/// @orig 0x0038b8d0 Car_HitZoneParts (unknown)
+/// roof, never). The cabin table counts beside the cabin, or, for a `player` whose feet are above the car's position,
+/// in body bands 1-4 wherever he stands along it. Research: docs/research/cars.md#windows.
+/// @orig 0x0038b8d0 Car_GetHitZone (unknown)
 [[nodiscard]] CarPartMask carZoneParts(const Car& car, anim::Vec3 standing, bool player = false);
 
 /// The parts a human at `standing` facing `forward` can hit: none unless he stands outside the car's box and faces its
@@ -47,12 +48,12 @@ inline constexpr float kHumanCarHitDamage = 0.115F;
 /// The point square aims at on a car, for a human at `feet` facing `forward`: below the feet when the car's position
 /// is lower than them; else, when he can hit parts not yet off, 1 m ahead of him, at his feet + 1.5 m for a window
 /// (or the windscreen or rear window), + 1.0 m for the bonnet or boot, else at his feet. Nothing when no part is left
-/// to hit.
-/// @orig 0x0038c990 Car_AimPoint (unknown)
+/// to hit. The below-the-feet case is the car pass's own (`CarManager_FindTarget`, 0x0038e860), kept here.
+/// @orig 0x0038c990 Car_HitZoneHasParts (unknown)
 [[nodiscard]] std::optional<anim::Vec3> carAimPoint(const Car& car, anim::Vec3 feet, anim::Vec3 forward);
 
-/// The parts a plain human hit from `standing` damages: carZoneParts() less the parts already off, and less each door
-/// whose window is still whole (an intact window shields its door).
+/// The parts a plain human hit from `standing` (a player's when `player`) damages: carZoneParts() less each door whose
+/// window is still whole (an intact window shields its door), and less the parts removed or off.
 /// @orig 0x0038bea0 Car_OnHit (unknown)
 [[nodiscard]] CarPartMask carHumanHitParts(const Car& car, anim::Vec3 standing, bool player = false);
 

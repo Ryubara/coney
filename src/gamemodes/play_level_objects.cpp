@@ -1331,7 +1331,7 @@ void PlayLevelSimulation::stepObjects() {
             const anim::Vec3 point = world_objects::carAimPoint(*car, feet, ahead)
                                          .value_or(anim::Vec3{feet.x + ahead.x, feet.y + ahead.y, feet.z});
             std::vector<world_objects::CarHitReport> reports;
-            const world_objects::CarPartMask struck = m_cars->humanHit(*attacked, feet, point, &reports);
+            const world_objects::CarPartMask struck = m_cars->humanHit(*attacked, feet, point, &reports, true);
             reportNoise();
             m_print(std::format("objects: car {:.0f} hit, parts {:#x}\n", *attacked, struck));
             // A strike that reached a part sounds on the hood.

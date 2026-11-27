@@ -110,14 +110,16 @@ anim::Vec3 carLocal(const Car& car, anim::Vec3 world) {
     return anim::transformDirection(anim::inverseRigid(turnOf(car)), anim::subtract(world, car.position));
 }
 
-CarPartMask carZoneParts(const Car& car, anim::Vec3 standing, bool /*player*/) {
+CarPartMask carZoneParts(const Car& car, anim::Vec3 standing, bool player) {
     const CarZones& zones = zonesOf(car);
     const anim::Vec3 at = carLocal(car, standing);
     // The body table by band and column.
     const std::size_t column = at.x <= kBodyLeft ? 0 : (at.x <= kBodyRight ? 1 : 2);
-    CarPartMask mask = zones.body.at(bandOf(zones.bodyBands, at.y)).at(column);
-    // The cabin table, ORed in beside the cabin.
-    if (std::fabs(at.y) < zones.cabinHalfLength) {
+    const std::size_t band = bandOf(zones.bodyBands, at.y);
+    CarPartMask mask = zones.body.at(band).at(column);
+    // The cabin table, ORed in beside the cabin, or in body bands 1-4 for a player standing above the car.
+    const bool onTop = player && car.position.z < standing.z && band >= 1 && band <= 4;
+    if (onTop || std::fabs(at.y) < zones.cabinHalfLength) {
         mask |= zones.cabin.at(bandOf(zones.cabinBands, at.y)).at(at.x <= kCabinSplit ? 0 : 1);
     }
     return mask & ~kRoof;
@@ -168,9 +170,12 @@ bool carTargetable(const Car& car, anim::Vec3 feet, float heading) {
 }
 
 std::optional<anim::Vec3> carAimPoint(const Car& car, anim::Vec3 feet, anim::Vec3 forward) {
+    // The car pass's case (CarManager_FindTarget): a car lower than the feet is aimed below them.
     if (car.position.z < feet.z) {
         return anim::Vec3{feet.x, feet.y, feet.z - kBelowAim};
     }
+    // The facing zone (both target searches ask for it, 0x0027a808 and 0x0027b458), less the parts removed or off.
+    // **Coney's stand-in**: the flying parts (`+0x11f4`) are not modelled (#72), so none is left out for flying.
     const CarPartMask hittable = carFacingParts(car, feet, forward) & ~(car.removedParts | car.removedKept);
     if (hittable == 0) {
         return std::nullopt;
@@ -179,8 +184,8 @@ std::optional<anim::Vec3> carAimPoint(const Car& car, anim::Vec3 feet, anim::Vec
     return anim::Vec3{feet.x + forward.x, feet.y + forward.y, feet.z + up};
 }
 
-CarPartMask carHumanHitParts(const Car& car, anim::Vec3 standing, bool /*player*/) {
-    CarPartMask mask = carZoneParts(car, standing);
+CarPartMask carHumanHitParts(const Car& car, anim::Vec3 standing, bool player) {
+    CarPartMask mask = carZoneParts(car, standing, player);
     // An intact window shields its door from this hit.
     for (const std::uint32_t window : {15U, 17U, 19U, 21U}) {
         const CarPartMask bit = 1U << window;
@@ -188,7 +193,9 @@ CarPartMask carHumanHitParts(const Car& car, anim::Vec3 standing, bool /*player*
             mask &= ~(1U << (window - 1U));
         }
     }
-    return mask & ~car.removedKept;
+    // Car_OnHit passes over the parts removed (`+0x11f0`) or off (`+0x11f8`). **Coney's stand-in**: the flying parts
+    // (`+0x11f4`) are not modelled (#72).
+    return mask & ~(car.removedParts | car.removedKept);
 }
 
 anim::Vec3 carStereoPosition(const Car& car) { return fromLocal(car, anim::Vec3{-0.75F, 0.25F, 0.1F}); }
