@@ -868,18 +868,26 @@ TEST_CASE("the record-from-frame option refuses what cannot work", "[options]") 
         const auto result = parse(args);
         return result.has_value() ? std::string{} : result.error().message;
     };
-    // The frame counts from the level's first frame of play, so it needs a level and a clip.
+    // It sets where the clip starts, so it needs a clip.
     CHECK(
         refusal(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--record-from-frame", "30"})
             .find("needs --record") != std::string::npos);
-    CHECK(refusal(std::array<std::string_view, 4>{"--record", "s/t/clips/a.mp4", "--record-from-frame", "30"})
-              .find("needs --play-level") != std::string::npos);
     // A whole number of frames, and not past a sensible run (a million frames is over nine hours).
     for (const std::string_view bad : {"-1", "abc", "1x", "", "1000001"}) {
         CHECK(refusal(std::array<std::string_view, 8>{"--disc", "x", "--play-level", "level99", "--record",
                                                       "s/t/clips/a.mp4", "--record-from-frame", bad})
                   .find("record-from-frame needs") != std::string::npos);
     }
+}
+
+TEST_CASE("the record-from-frame option without a level counts the run's frames from boot", "[options]") {
+    // Expected: unverified, #1533 (debug tooling with no counterpart in the original; the bounds are Coney's own)
+    // A clip of a menu reached through the front end starts at a frame of the run.
+    auto options = parse(
+        std::array<std::string_view, 6>{"--disc", "x", "--record", "s/t/clips/a.mp4", "--record-from-frame", "420"});
+    REQUIRE(options.has_value());
+    CHECK(options->recordFromFrame == 420);
+    CHECK_FALSE(options->playLevel.has_value());
 }
 
 TEST_CASE("the record-from-frame option starts a net-view guest's clip at a frame of the host's level", "[options]") {
