@@ -387,6 +387,7 @@ target_sources(coney_core PRIVATE
     human/way_clear.cpp
     human/human_flight.cpp
     human/human_hiding.cpp
+    human/human_stops.cpp
     human/human_debug.cpp
     human/human_script.cpp
     human/face.cpp

@@ -13,8 +13,6 @@
 #include <utility>
 #include <vector>
 
-#include "ai/fidget_action.h"
-#include "ai/taunt_action.h"
 #include "animation/anim_math.h"
 #include "animation/anim_pose.h"
 #include "animation/skeleton.h"
@@ -497,18 +495,12 @@ class Human final : public Holdable {
     /// fidget plays on. **Coney stand-in**: `held` is the scripted clip's held bits (ai::kScriptedClipHeld) in place
     /// of the original's `0x100`; the fight and idle fidget anims are the AI's own constants (ai/fidget_action.h).
     /// @coney-only the entry the fidget action calls; the stop itself, with Human_StopFidget's tag, is stopOverlay()
-    void stopFidget(std::uint32_t held) {
-        stopOverlay(held, static_cast<std::uint32_t>(ai::kFightFidgetAnim),
-                    static_cast<std::uint32_t>(ai::kIdleFidgetAnim));
-    }
+    void stopFidget(std::uint32_t held);
     /// An AI's taunt cut short (docs/research/ai-reimpl.md#taunt-action): as stopFidget(), with the taunts' clips
     /// (595 to 602, ai::kTauntFirstAnim to the last kind's). **Coney stand-in**: `held` stands for the original's
     /// `0x300000`, as for stopFidget().
     /// @coney-only the entry the taunt action calls; the stop itself, with Human_StopTaunt's tag, is stopOverlay()
-    void stopTaunt(std::uint32_t held) {
-        stopOverlay(held, static_cast<std::uint32_t>(ai::kTauntFirstAnim),
-                    static_cast<std::uint32_t>(ai::tauntAnim(ai::kNoClipTaunt - 1)));
-    }
+    void stopTaunt(std::uint32_t held);
     /// A workout's clips (HumanAnimator::playWorkout()), its loop blend once playing, and its exit
     /// (HumanAnimator::endWorkout()).
     void playWorkout(const anim::AnimClip& enter, const std::array<const anim::AnimClip*, 3>& loops) {
