@@ -379,6 +379,9 @@ void Fighter::snapAttach(const FighterInput& input, float heading, anim::Vec3 of
 }
 
 void Fighter::placeAttached(const FighterInput& input, float heading) {
+    // **Coney stand-in**: with its grabber gone the original's victim gets its own movement back and runs it; Coney's
+    // grabber calls this, so it always has one, and a victim whose grabber stops updating frees itself
+    // (freeFromLostGrabber()).
     // Where the pair stands now, for a pair the rounds cannot settle.
     const anim::Vec3 victimStart = m_held->position();
     const float victimHeading = m_held->heading();
@@ -414,7 +417,9 @@ void Fighter::placeAttached(const FighterInput& input, float heading) {
         input.self->place(input.position, heading);
         return;
     }
-    // 6. Settled: the victim stands where the sweeps left it, turned to the hold's relative rotation.
+    // 6. Settled: the victim stands where the sweeps left it, turned to the hold's relative rotation. **Coney
+    // stand-in**: it is not handed the grabber's velocity, as Coney's held human has its movement held and no velocity
+    // of its own.
     m_held->place(m_held->position(), heading + m_holdTurn);
 }
 

@@ -39,6 +39,7 @@ anim::Vec3 Human::sweepAttached(const raycast::CollisionMesh* mesh, anim::Vec3 d
         return m_position;
     }
     // The whole move as the sweep's push, with no velocity of its own, so nothing is written back to the human.
+    // **Coney stand-in**: the other humans are not met, where the original's pair skips only each other (flag 0x8000).
     m_position = sweep(*mesh, anim::Vec3{}, displacement, false).feet;
     return m_position;
 }
