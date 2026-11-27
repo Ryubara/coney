@@ -1148,6 +1148,8 @@ class Fighter {
     // A head-on wall throw turns the pair so the throw's side faces the wall square (`Human_AlignToObject`).
     // **Coney's reading**: the alignment's target heading is not traced; the side's axis is put along the face's
     // inward normal.
+    // @coney-only Coney's reading of the head-on wall throw's alignment; the original's (`Human_AlignToObject` from the
+    // throw's start) is not traced
     void alignWallThrow(const combat::CombatOutput& out, const FighterInput& input, float& heading);
     // Whether a throw now takes the rear hold's path (`Grab_StartPairedMove`): holding from behind without human flag
     // 0x40000000. The spin to the front plays first, and nothing turns.

@@ -101,6 +101,7 @@ class Holdable : public Combatant {
     /// (`Human_MoveAttached`, docs/research/combat-grabs.md#grab-posing), and returns where it ends; its heading,
     /// velocity and state are left alone. With no mesh it goes the whole way, and so does a body that meets nothing
     /// (the default: a passive target).
+    /// @coney-only the sandbox's test dummy, which the original does not have; Human overrides it with the port
     virtual anim::Vec3 sweepAttached(const raycast::CollisionMesh* /*mesh*/, anim::Vec3 displacement) {
         const anim::Vec3 to = anim::add(position(), displacement);
         place(to, heading());

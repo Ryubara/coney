@@ -370,11 +370,18 @@ void Fighter::scoreGrapple(const FighterInput& input, std::uint32_t clip, Landed
 }
 
 void Fighter::snapAttach(const FighterInput& input, float heading, anim::Vec3 offset, float turn) {
+    // The hold's offset and turn, stored in the grabber's frame (`Pair_SnapAttach` builds the world place and
+    // `Pair_Attach` turns it back into the same offset and relative rotation; Coney keeps the frame throughout).
     m_holdOffset = offset;
     m_holdTurn = turn;
+    // The victim's own movement is held: the grabber moves it from now on.
     m_held->setAttached(true);
+    // **Coney stand-in**: every grabber takes the grabbing movement once attached (moveGrab(), read from its intent);
+    // the original switches only a grabber with a player's controls to `Human_MoveGrabbing`.
     m_pair = PairStage::Attached;
     m_turnUpdates = 0;
+    // **Coney stand-in**: the original only installs `Human_MoveAttached` as the victim's movement, which runs on the
+    // victim's next movement update; Coney's grabber makes that move now and on each of its updates.
     placeAttached(input, heading);
 }
 
