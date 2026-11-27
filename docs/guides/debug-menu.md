@@ -265,7 +265,8 @@ the scripts set on it; the Follow camera tunables for the leash, pitch and look-
 camera made (a level start). The free camera flies with pad 1 as the world viewer's
 does, while the player stands still and the scenery streams round the free camera. *AI fighters* spawns fighters
 ([Sandbox](sandbox.md#ai-fighters)) the chosen distance in front of the player, facing him, in a sandbox or a level
-(allies behind him, as *Side* says below); *Engaging* off keeps idle enemy fighters from taking him on.
+(allies behind him, as *Side* says below); *Engaging* off stops Coney's stand-in that sends an idle enemy fighter at
+him within 5 m, and a fighter whose scan lists him still comes for him ([Sandbox](sandbox.md#ai-fighters)).
 
 *Spawn fighters* makes *Amount* of them (1 to 50) in one click, in rows of five centred in front of the player, each
 row 1.2 m further out. *Model* picks what they look and move as: any human model the scene's character types name (the

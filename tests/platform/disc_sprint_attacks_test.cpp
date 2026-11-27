@@ -22,6 +22,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "ai/ai_humans.h"
+#include "ai/brain.h"
 #include "animation/anim_math.h"
 #include "core/input_script.h"
 #include "core/pad.h"
@@ -147,6 +149,13 @@ Run runSprintAttack(const coney::io::Wad& wad, std::uint16_t button) {
     REQUIRE(play->spawnFighter(at, play->playerHeadingDegrees() + 180.0F));
     REQUIRE(play->fighterCount() == before + 1);
     const coney::human::Human& fighter = *play->fighters().humans().back().human;
+    // The original's charge and dive were measured into PoizoCiv, a civilian who took no fight of his own
+    // (docs/research/combat-reactions.md#charge-dive-runtime): the spawned fighter, a gang soldier, gets threat
+    // response 0, else his think would push a fight on the player he has listed (GangBrain_Think step 3,
+    // docs/research/ai-brain-types.md#think-gang) and run in to meet him: the charge then never started (#1682).
+    coney::ai::Brain* victim = play->fighters().brainOf(fighter);
+    REQUIRE(victim != nullptr);
+    victim->setThreatResponse(0);
     driver.runAt(fighter.position());
     Run result;
     const coney::human::Human& human = play->player().human();

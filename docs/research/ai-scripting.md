@@ -20,7 +20,7 @@ read in the code, which is almost always a call. Confirmed (code) at the address
    resumes when the new one ends), and the human's queued actions are cleared. No `Goal*` binding flushes first, so a
    script that wants the goal to be the only one calls `BrFlush` (or `BrFlushGoals`) just before, as the scripts usually
    do ([Goals](ai/index.md#goals), [one update](ai/index.md#update-goals)). `GoalJoinCinematic` with its last argument 1
-   also runs the goal's first update at once. `GoalMelee` pushes two goals (FindEnemy, then Melee).
+   also runs the goal's first update at once. `GoalMelee` pushes two goals (FindEnemy, then Melee). Confirmed (code).
 2. **Actions.** `ActLookAt`, `ActTurnTo` and `ActTurnToDir` queue one action behind any queued ones; the goal on top
    keeps running ([ActLookAt](#look-at)).
 3. **The gang's tactic.** A `Tactic*` binding finds the gang, builds the tactic and sets it (`0x00165640`), which ends
@@ -30,6 +30,7 @@ read in the code, which is almost always a call. Confirmed (code) at the address
    member's own fights come from the tactic. `TacticClear` ends and frees it (`Gang_StopTactic`). The tactic's Lua
    callback receives (gang id, code) for each non-zero Process result and event code (`TacFinished` ... `TacAnimStart`,
    [Scripted tactics](ai-gangs.md#tactic-kinds)); the strategy library [below](#script-strategies) is built on it.
+   Confirmed (code).
 4. **The brain's own handlers.** Between script calls, a brain's think and event handlers ([Brain
    types](ai-brain-types.md)) keep pushing goals of their own: a fight (`Brain_Fight`, which needs threat response
    `+0x21c` ≠ 0, and pushes nothing under a tactic), a reaction to violence (`+0x267`), an investigation (`+0x224`) and
@@ -43,7 +44,12 @@ read in the code, which is almost always a call. Confirmed (code) at the address
 5. **Freezing.** `BrSuspend(h, on)` (`Brain_SetSuspended` `0x002923a0`) clears the human's actions and sets brain
    `+0x0a`; `GangSuspend(gang, on)` sets gang `+0xd4`. While either holds, `Brain_UpdateGoals` keeps only the time: no
    goal, reaction goal or action runs ([one update](ai/index.md#update-goals); the brain's own flag counts only while the
-   human is not held).
+   human is not held). The think is not frozen outside a scene: `Brain_Think` (`0x0028f6c0`) returns early for a brain
+   with `+0x0a` set only while commands are locked (game state `0x0051489c` `+0x411`) or a scene plays (`+0x410`), and
+   the human is in no scene state; `Brains_Update` (`0x00293b28`) does not test `+0x0a`. So a suspended gang soldier
+   with an enemy listed still pushes the fight goal at his think ([Gang soldiers](ai-brain-types.md#think-gang), step
+   3), which runs once the suspension ends. Confirmed (code). Coney thinks a suspended brain the same way, and has no
+   scene gate yet.
 6. **Relations and perception.** `GangMakeEnemies` / `GangMakeFriends` (both ways), `GangMakeEnemiesOfType`,
    `GangMakeNeutralOfType`, `GangSetTargetable` (brain `+0x120`), `GangSetAlwaysSeen`, `BrSetFOV`, `GangSetHearRange`
    and `GangSetRespondPercentage` change whom the [enemy scan](ai-fights.md#enemy-scan) lists and who answers violence;
@@ -53,7 +59,7 @@ read in the code, which is almost always a call. Confirmed (code) at the address
 flush) walks the gang's **current** members only (`0x0016b3d0`, `0x0016b4f0`, `0x0016bac0`, `0x0016be30`, `0x0016aa98`,
 `0x0016ba18`). A human added afterwards (`GangAddMember`, or a spawner) keeps his own values (threat response 2 from
 `Brain_Init`). Spawned members are configured by the spawner's Lua callback instead (`GangCallback`
-[below](#script-strategies)).
+[below](#script-strategies)). Confirmed (code).
 
 **Order matters.** Because a tactic's Start flushes its members, a goal pushed before `Tactic*` is lost, and a goal
 pushed after it is replaced the next time the tactic re-gives goals (types `0x12` and above). Scripts that script a gang

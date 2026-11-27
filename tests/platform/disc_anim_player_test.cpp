@@ -23,6 +23,9 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/ai_config.h"
+#include "ai/ai_humans.h"
+#include "ai/brain.h"
+#include "ai/brains.h"
 #include "characters/character_types.h"
 #include "core/game_timer.h"
 #include "debug/anim_catalog.h"
@@ -153,6 +156,7 @@ TEST_CASE("the disc's level99: a clip chosen on the Animation player plays its f
 TEST_CASE("the sandbox: the Animation player's sets list their clips, a loop plays until stopped, and other sets' "
           "clips play on the player",
           "[disc][debug][anim]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     const char* discPath = SDL_getenv("CONEY_DISC");
     if (discPath == nullptr || *discPath == '\0') {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -179,6 +183,18 @@ TEST_CASE("the sandbox: the Animation player's sets list their clips, a loop pla
     coney::GameModeStack modes;
     coney::GameTimer timer;
     timer.setFixedStep(true);
+    // The yard's AI fighter, 15 m from the start, would list the player and push a fight at his think
+    // (GangBrain_Think step 3, docs/research/ai-brain-types.md#think-gang), walk in and break off the clips with his
+    // hits (#1682); this test is about the clips, so before the first update he gets threat response 0.
+    coney::ai::Brains& brains = mode.fighters().brains();
+    int quieted = 0;
+    for (std::size_t index = 0; index < brains.size(); ++index) {
+        if (brains.at(index).type() != coney::ai::BrainType::Player) {
+            brains.at(index).setThreatResponse(0);
+            ++quieted;
+        }
+    }
+    REQUIRE(quieted > 0);
     modes.push(mode);
     (void)modes.runUntilEmpty(timer, {}, 15);
     const coney::human::Human& human = mode.player().human();
