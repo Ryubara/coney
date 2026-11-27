@@ -74,6 +74,7 @@ BodyId boxBody(PhysicsWorld& world, FakeOwners& owners, OwnerId owner, Vec3 at, 
 
 // Every strike recorded so far, by the struck owner.
 std::vector<OwnerId> struckOwners(const FakeOwners& owners) {
+    out.reserve(owners.strikeLog.size());
     std::vector<OwnerId> out;
     for (const auto& hit : owners.strikeLog) {
         out.push_back(hit.contact.halves[1].ownerId);
