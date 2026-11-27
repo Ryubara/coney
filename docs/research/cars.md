@@ -438,17 +438,17 @@ damages comes from the zone tables, never from the part's own box. Confirmed (co
 | 0 | a world object nobody holds (thrown, rolling) | 0.34 | none | the contact point, as kind 1; the body table drops the windows (`0xffd57fff`), the cabin table the doors (`0xffeabfff`) | an intact window shields its door |
 
 - **A human's strike** reaches the car through the [strike test](combat/index.md#moving-strikes): `Human_TestStrikes`
-  (`0x0033f110`) tests the clip's enabled strike shapes against every body near the human, the car's body included
-  (an object's body is tested against its own shapes, here the two boxes), and the first overlap calls
-  `Strike_Contact` (`0x0021b290`), which sees a car (`Car_FromObject`, type word `0x100000`) and calls `Car_OnHit`.
-  So **any punch or kick whose hand, forearm, foot or shin overlaps either box hits the car**, whether the car is
-  the square's target or not; the square's object attack (661 / 662, [Breakables](combat-targets.md#breakables)) is only
-  the way the player aims at it. Once struck, the body goes on the striking body's contact list and is not struck again
-  until the shapes go off. **Confirmed (runtime)** (`car_glance`): the player 0.14 m beside the sedan's right side,
-  facing 55° away from it (so the car fails the target's facing test), pressed square: the plain `S1` (clip 12)
-  broke window 21 five updates after it started, and a second `S1` reached door 20 (its first-hit bit); the car
-  rocked both times. Standing at the car's y = −0.08 m, just behind the −0.034 threshold, both hits took the rear
-  door's zone (20, 21), not the front door beside his hand.
+  (`0x0033f110`) tests the clip's enabled strike shapes against every body near the human, the car's body included (an
+  object's body is tested against its own shapes, here the two boxes), and the first overlap calls `Strike_Contact`
+  (`0x0021b290`), which sees a car (`Car_FromObject`, type word `0x100000`) and calls `Car_OnHit`. So **any punch or
+  kick whose hand, forearm, foot or shin overlaps either box hits the car**, whether the car is the square's target or
+  not; the square's object attack (661 / 662, [Breakables](combat-targets.md#breakables)) is only the way the player
+  aims at it. Once struck, the body goes on the striking body's contact list and is not struck again until the shapes go
+  off. **Confirmed (runtime), run r-20261127-car-glance** (`car_glance`): the player 0.14 m beside the sedan's right
+  side, facing 55° away from it (so the car fails the target's facing test), pressed square: the plain `S1` (clip 12)
+  broke window 21 five updates after it started, and a second `S1` reached door 20 (its first-hit bit); the car rocked
+  both times. Standing at the car's y = −0.08 m, just behind the −0.034 threshold, both hits took the rear door's zone
+  (20, 21), not the front door beside his hand.
 - **The parts come from the striker's feet, not from the hand.** For kind 3 the contact point is not used: standing
   beside the front door, every hit reaches the front door's zone wherever the fist lands. The square's aim point
   ([Targeting a car](#windows)) only decides the clip (661 at the feet, 662 at 1.5 m for glass).
@@ -463,10 +463,12 @@ damages comes from the zone tables, never from the part's own box. Confirmed (co
   system at the car (direction (0, 0, 1)), sets `+0x1200` = 120, prepares `vags/fire/car_explodes<n>` (`n` 1-3) at
   the car into `+0x12fc`, sends message `0x19` `(car, thrower, -1, 0)`, and for a player thrower keeps his handle in
   `+0x1208` and counts crime 11 (`Stats_AddCrime(…, 0xb, 1)`); then the 30 m noise and message 6. The car's update
-  counts `+0x1200` down once per update and calls `Car_DoExplode` at 0 ([Explosion](#explode)).
-- **The gang lock**: a car whose `+0x12d8` is not `0x19` ignores a striker (or holder, or thrower) whose gang
-  (brain `+0x20c` → `+0x2c`) differs. `CarCanBeDamagedBy(car, gang)` (`lua_CarCanBeDamagedBy` `0x00378790` →
-  `0x0038e030`) sets it.
+  counts `+0x1200` down once per update and calls `Car_DoExplode` at 0 ([Explosion](#explode)). Confirmed (code) at
+  `0x0038bea0`; the countdown is inferred from the 120 set there and `Car_TryExplode` (`0x0038ab18`) refusing while
+  it runs.
+- **The gang lock**: a car whose `+0x12d8` is not `0x19` ignores a striker (or holder, or thrower) whose gang (brain
+  `+0x20c` → `+0x2c`) differs. `CarCanBeDamagedBy(car, gang)` (`lua_CarCanBeDamagedBy` `0x00378790` → `0x0038e030`,
+  `Car_SetDamageFilter`) sets it. Confirmed (code) at `0x0038bea0` and `0x0038e030`.
 - **The contact point** (hit record `+0x60`, x and y) is read against the type's thresholds without any transform. It is
   the point in the **struck box's own frame**, along the box's axes from the **box's centre** (not the car's origin),
   and `+0x90` holds the same point in the world, which the rock, the dent sound and the window-break effect use.
@@ -496,9 +498,9 @@ damages comes from the zone tables, never from the part's own box. Confirmed (co
   alarm sound (`vags/ambient/alarms/alarmbell_loop`, `alarm_emitter`) belongs to scripts' sound emitters
   (`Sound_AddScriptEmitter`), and no car code plays it. Confirmed (code).
 
-**Runtime: squares at a door** (`car_punch`, confirmed (runtime)). The player held 0.44 m outside the sedan's right
-side beside its front door (the car's x = +1.64, y = +0.03), facing it, square every 30 to 60 updates (an attack
-and its recovery take 60):
+**Runtime: squares at a door** (`car_punch`, confirmed (runtime), run r-20261127-car-punch). The player held 0.44 m
+outside the sedan's right side beside its front door (the car's x = +1.64, y = +0.03), facing it, square every 30 to 60
+updates (an attack and its recovery take 60):
 
 | Square | Clip | Lands (updates after the press) | Result |
 | --- | --- | --- | --- |

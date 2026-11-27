@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261127-car-glance"
+date = "2026-11-27"
+kind = "trace"
+tool = "trace original"
+digest = "0352c3f3456735261147766383716ff79ca4e2f3fb0f431043be6a65a72ad567"
+
+[who]
+agent = "a7f5517c0ab71483d"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "car_glance"
+method = ""
+
+[values]
+updates = 201
+missed_updates = 0
+columns = 21
+
+[hashes]
+trace_csv = "6ff6a4bfb1d688422b6ce915bd9e52c933c289b82f93d6787d049c9958b137e3"

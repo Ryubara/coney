@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261127-car-punch"
+date = "2026-11-27"
+kind = "trace"
+tool = "trace original"
+digest = "beaee8a39abd2fef60e23392c0f9997062ea8a9f87ad78daabba49827e048560"
+
+[who]
+agent = "a7f5517c0ab71483d"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "car_punch"
+method = ""
+
+[values]
+updates = 681
+missed_updates = 0
+columns = 22
+
+[hashes]
+trace_csv = "f86132aadbfb191e6003a911e20853e2477e1a612415c0fb2a24d5da6bfb9c81"

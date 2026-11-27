@@ -170,6 +170,8 @@ TEST_CASE("a stereo is drawn in its car until a theft takes it", "[cars]") {
 }
 
 TEST_CASE("a boot's item is released when the boot is knocked off, not when removed or blown off", "[cars]") {
+    // Expected: cars.md#parts, confirmed (code): Car_AddPartDamage releases the item when part 5 comes off a
+    // non-instant call, and skips no part itself.
     Cars cars;
     coney::world_objects::SpawnRecords records;
     double next = 100;

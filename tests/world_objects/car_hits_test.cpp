@@ -70,6 +70,8 @@ TEST_CASE("the car pass takes a car within 1 m of its box and aims at a window 1
 }
 
 TEST_CASE("the first hit breaks the window, which shielded its door, and window 15 frees the stereo", "[cars]") {
+    // Expected: cars.md#hit-volumes, confirmed (runtime), run r-20261127-car-door: the window alone first (the handler
+    // returns 0), then the door; cars.md#windows for the stereo.
     Cars cars;
     REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
     cars.spawnRadio(1);
