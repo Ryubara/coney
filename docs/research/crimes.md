@@ -973,7 +973,7 @@ at `0x0041b8b0`:
 - **The victim's score**, on types 0, 2 and 8 in any mode: a player offender (human `+0x1b0` not -1) scores crime
   event 3 (`Stats_AddCrime`, `0x004ed948`) against a victim of brain kind 1 (a cop), or event 0 against kind 4 or 5
   (a civilian or a dealer); other kinds score nothing. It is **once per victim and player**: bit (player index) of
-  the victim's brain byte `+0x290` marks it.
+  the victim's brain byte `+0x290` marks it. Confirmed (code).
 
 ### Stores {#stores}
 

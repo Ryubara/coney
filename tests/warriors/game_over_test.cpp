@@ -54,6 +54,7 @@ TEST_CASE("a knocked-out player without a flash fails at once; with no one to he
 }
 
 TEST_CASE("with a flash and help near the failure waits; the 4th failed route check in a row fails it", "[game-over]") {
+    // Expected: combat-reactions.md#mission-failing, confirmed (code)
     GameOverCheck check;
     const GameOverPlayer out{.knockedOut = true, .holdsFlash = true};
     // A member who can reach him: waits for good.
@@ -77,6 +78,7 @@ TEST_CASE("with a flash and help near the failure waits; the 4th failed route ch
 }
 
 TEST_CASE("the mission-failed screen comes 180 updates after the failure, 10 once cross is pressed", "[game-over]") {
+    // Expected: combat-reactions.md#mission-failing, confirmed (code)
     GameOverCheck check;
     CHECK_FALSE(check.stepHandOff(false, false)); // nothing before a failure
     REQUIRE(once(check, GameOverPlayer{.knockedOut = true}, false).has_value());
