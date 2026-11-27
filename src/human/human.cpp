@@ -1309,12 +1309,14 @@ void Human::turnOverClip(std::uint32_t clip, anim::Vec3 point, float share) {
     m_clipTurn = ClipTurn{.clip = clip, .updatesLeft = updates, .turnStep = turn / static_cast<float>(updates)};
 }
 
+// @coney-only the entry the fidget action calls; the stop itself, with Human_StopFidget's tag, is stopOverlay()
 void Human::stopFidget(std::uint32_t held) {
     // The clips a standing stop ends are the fight and idle fidgets (0x25b, 0x25c), the AI's own constants.
     stopOverlay(held, static_cast<std::uint32_t>(ai::kFightFidgetAnim),
                 static_cast<std::uint32_t>(ai::kIdleFidgetAnim));
 }
 
+// @coney-only the entry the taunt action calls; the stop itself, with Human_StopTaunt's tag, is stopOverlay()
 void Human::stopTaunt(std::uint32_t held) {
     // The taunts' clips are 0x253 to 0x25a (the knife fidget's, the last kind's, among them).
     stopOverlay(held, static_cast<std::uint32_t>(ai::kTauntFirstAnim),
