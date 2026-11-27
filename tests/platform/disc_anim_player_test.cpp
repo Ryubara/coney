@@ -156,6 +156,7 @@ TEST_CASE("the disc's level99: a clip chosen on the Animation player plays its f
 TEST_CASE("the sandbox: the Animation player's sets list their clips, a loop plays until stopped, and other sets' "
           "clips play on the player",
           "[disc][debug][anim]") {
+    // Expected: unverified, #210 (Coney's own debug menu: the original has no such page, docs/guides/debug-menu.md)
     const char* discPath = SDL_getenv("CONEY_DISC");
     if (discPath == nullptr || *discPath == '\0') {
         SKIP("CONEY_DISC is not set: no disc to check");
