@@ -131,8 +131,10 @@ Slots 16-24 and 28-33 are named from the ids' `ANIM_*` constants in `royal.lua` 
 what each slot is used for has not been traced, only its default id). The full table, with every id's clips, is the
 [anim id reference](../references/anim-ids.md).
 
-Other locomotion ids seen at runtime outside the slots: 414 run start, 418 run 180° turn, 421-426 fall front / back
-begin, cycle and land.
+Other locomotion ids outside the slots: 414 run start (it plays as a run starts, confirmed (runtime), run
+r-20261124-chars-run-jump), 422 and 425 the long-fall cycles that anim state 26 plays
+([Falling](characters-ground.md#falling), confirmed (code)); 418 run 180° turn and 421, 423, 424 and 426 (fall front /
+back begin and land) are named from their `ANIM_*` constants (inferred), and what plays them is not traced.
 
 ## Behaviour
 

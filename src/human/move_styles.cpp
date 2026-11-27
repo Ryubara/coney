@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The move style stack and each style's anim slots (docs/research/objects.md#two-handed,
-// docs/research/characters.md#anim-slots).
+// docs/research/characters-animation.md#anim-slots).
 #include "human/move_styles.h"
 
 #include <cstddef>

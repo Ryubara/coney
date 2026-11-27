@@ -556,8 +556,8 @@ circling behind the camera released, as `run_circle`), with hooks on the state-c
 the gait, both stick buffers, the run speed and the speed register `f28` as raw words:
 
 - The run speed is `0x40f9a3ad` (7.8012300). The speed the locomotion measures at a steady run (the length of the
-  velocity, `0x0023fea8`'s vtable `+0x94`) jitters between `0x40f9a3aa` and `0x40f9a3ae`: of 93 updates at the run
-  in one recording, 10 were at or above the run speed and 83 one to three units below it.
+  velocity, `0x0023fea8`'s vtable `+0x94`) jitters between `0x40f9a3aa` and `0x40f9a3ae`: of 98 updates at the run
+  in the recording, 8 were at or above the run speed and 90 one to three units below it.
 - On every release seen the gait was 4, the previous stick 1.0 and the stick 0. Where the speed on the release update
   was below (`0x40f9a3ab`, `0x40f9a3ac`, straight and circling alike, three recordings) no code 9 was set and the idle
   388 began on the release update itself at 0 m/s (the skid test's call re-labelled one update later after the recorder

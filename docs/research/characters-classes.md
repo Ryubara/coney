@@ -102,7 +102,9 @@ levels 60-64), the speed class byte at `+0x11c`, and four strings (32 bytes each
 40 (Ash) uses `warr_ty_cv`. Confirmed (code) for the layout; the arguments inferred from the disassembly.
 
 `Human_Init` remaps the type: 32 becomes behaviour class 30 (`0x1e`) with a variant flag (confirmed (code) at
-`0x00218008`, runtime `+0xcc` = `0x1e`, `+0xd0` = `0x20`).
+`0x00218008`). In the `level99` street at checkpoint 2 Rembrandt's `+0xcc` is `0x1e` and his `+0xd0` is `0x1e` too
+(confirmed (runtime), run r-20261127-chars-human-fields), so the player there was not created from type 32 (what creates
+him at that checkpoint is not traced).
 
 **The fields with a known reader** besides the tables above, confirmed (code) at the addresses given:
 
@@ -144,9 +146,9 @@ levels 60-64), the speed class byte at `+0x11c`, and four strings (32 bytes each
      2) whose brain `+0x20c` record's `+0x2c` is below 23, else 0.98; otherwise (31-54 with a hat, or 55-89) → 1.01
      when `r` < 90, else 1.0.
 2. **The type's fixed size** (`Human_ApplyTypeScale`, `0x00219638`, also run by `Human_AttachInstance`; confirmed
-   (code)) replaces it for these types (`+0xcc`): 5 → 1.02; 18, 30 → 0.97 (so Rembrandt's 0.97, as seen at runtime); 21,
-   23, 24 → 0.98; 33 → 1.03; 89 → 1.16; 119, 120, 135 → 1.2; 128 → 1.175; 161 → 1.11. With game state `+0x158` set
-   (co-op), 89, 119, 120, 128 and 161 take 1.1 and 135 takes 1.03.
+   (code)) replaces it for these types (`+0xcc`): 5 → 1.02; 18, 30 → 0.97 (so Rembrandt's 0.97, confirmed (runtime), run
+   r-20261127-chars-human-fields); 21, 23, 24 → 0.98; 33 → 1.03; 89 → 1.16; 119, 120, 135 → 1.2; 128 → 1.175; 161 →
+   1.11. With game state `+0x158` set (co-op), 89, 119, 120, 128 and 161 take 1.1 and 135 takes 1.03.
 
 `Human_GetScale` (`0x0021d020`) returns it, except 1.0 in a scene for a scale under 1.1. Confirmed (code).
 
@@ -229,9 +231,10 @@ unlockable is unlocked ([Unlockables](player-state.md#unlockables)): punch damag
 | 3 | 3 | 0.8 | 1.6 | 4.1 | 7.5 | 7.5 |
 | 4 | 3 | 0.964 | 0.964 | 0.965 | 2.723 | 2.723 |
 
-**But these are not used in play.** When `0x005101e0` is set (it is 1 at runtime), each getter returns the human's
-own value from its 0x180-byte record times `+0x3a4` instead (confirmed (code) at `0x00221710`, `0x002215d0`): `+0x164`
-for the base, `+0x170` for walk, `+0x174`, `+0x178`, `+0x17c` for jog, run and sprint.
+**But these are not used in play.** When `0x005101e0` is set (it is 1 in the `level99` street, confirmed (runtime), run
+r-20261127-chars-human-fields), each getter returns the human's own value from its 0x180-byte record times `+0x3a4`
+instead (confirmed (code) at `0x00221710`, `0x002215d0`): `+0x164` for the base, `+0x170` for walk, `+0x174`, `+0x178`,
+`+0x17c` for jog, run and sprint.
 
 **The speeds come from the clips.** `0x00254078` (called when the character is attached, `Human_AttachInstance`
 `0x00217a98`, and after a movement-style change, `0x00243848`, `0x00253688`) computes each one from the clip in an

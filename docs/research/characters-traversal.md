@@ -27,7 +27,7 @@ The functions of the sprint, the jump and the climb:
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
 | `0x0027c120` | `Player_UpdateActions` | the player's commands each update: climb, jump, block, sprint | confirmed (code) for the parts cited |
-| `0x0027ce90` | `Player_UpdateSprint` | clears the sprint flag and sets it again while L2 is held | confirmed (code), runtime |
+| `0x0027ce90` | `Player_UpdateSprint` | clears the sprint flag and sets it again while L2 is held | confirmed (code); confirmed (runtime), run r-20261124-chars-sprint |
 | `0x00223188` | `Human_StaminaMax` | stamina maximum from the power class | confirmed (code) |
 | `0x002562d0` | `Human_DrainMeters` | stamina drain while sprinting (and a second meter) | confirmed (code) |
 | `0x00256a60` | `Human_RefillMeters` | stamina refill (and the second meter) | confirmed (code) |
@@ -120,10 +120,10 @@ confirmed (runtime), run r-20261124-chars-sprint:
 
 In an input script: `stick left 0 100` and `press l2` to sprint, `release l2` to refill.
 
-**Measured** (the stick held fully forward from a standstill by the W key, magnitude 1.0, positions
-read over PINE): 4.10 m after a
-0.75 s hold, 10.08 m after 1.5 s: 5.98 m in the second 0.75 s, **8.0 m/s**, close to Rembrandt's run speed of
-7.80 m/s (confirmed (runtime), run r-20261124-chars-run-stop; the hold times are those of the key presses, so about ±1 frame).
+**Measured** (the stick pushed fully forward from a standstill by the scripted pad, magnitude 1.0, the position
+traced every update): 4.10 m after 23 updates, 10.08 m after 46: 5.98 m in the second 23 updates (0.77 s),
+**7.80 m/s**, Rembrandt's run speed (confirmed (runtime), run r-20261124-chars-run-stop, the straight run from the
+update the stick is pushed).
 
 ### Jumping {#jump}
 
@@ -182,14 +182,15 @@ r-20261124-chars-sprint-jump-turn and r-20261124-chars-runstart-jump):
 | per update (the feel pass, slot 1) | **24 updates** in the air from a run: the last airborne update leaves the feet 0.19 m below the ground and the next one lands them ([the landing rule](characters-ground.md#falling)); that landing update still moves at the full 7.80 m/s, then 436 holds 4.23 m/s for 10 more updates (11 in all) and the gait blend gains 0.8 m/s per update from there; take-off to landing **6.24 m** |
 | triangle during the run start (414), at 3.35 m/s | a jump at once: the run start does not block it, only the 3.3 m/s and gait tests do (slot 7) |
 
-Clips 427 (slot 25) and 430-433 (jump from idle, walk or either foot) did not play in the player's jump, nor in
-Vermin's route jump in `level99` (clip 434 at take-off, 435 on landing; runtime): what plays them is not traced.
+Clips 427 (slot 25) and 430-433 (jump from idle, walk or either foot) did not play in the player's jumps (434 in the
+air and 436 on landing; confirmed (runtime), run r-20261124-chars-run-jump; confirmed (runtime), run
+r-20261124-chars-sprint-jump; confirmed (runtime), run r-20261124-chars-runstart-jump): what plays them is not traced.
 
 **An AI's jump.** `Human_BeginJump`'s gait and speed tests apply only to the player's brain (type 0): an AI may jump
 from any gait, standing too, and its `+0x3c0` is not written. `Human_LaunchJump` gives a human whose per-player record
 `+0x1b` is 0 the velocity of the route follower's arc instead (`0x0029ade0`): the lowest of the vertical speeds 0.5,
-1.25, 2.0, ... m/s whose arc lands on the route's landing point at no more than 10 m/s in plan. Confirmed (code), and
-at runtime for Vermin (3.5 m/s up, 9.55 m/s across a 4.1 m gap); the rest is in
+1.25, 2.0, ... m/s whose arc lands on the route's landing point at no more than 10 m/s in plan. Confirmed (code); no
+recorded run covers an AI's jump yet. The rest is in
 [AI: Jump legs](ai-moving.md#route-jump).
 
 **In an input script**: `stick left 0 100`, wait until the run start is over and the speed is above 3.3 m/s, then
@@ -302,9 +303,9 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
   (`0x003422d0`), and `Human_GetPosition` returns `+0x2c0` while `0x40` is set. So a climbed face of any material (a
   parapet of material 107 with triangle flag `0x80`, say) stops the body only during P1; the skip of materials 30, 31
   and 122 in `Human_OnContact` covers only contacts that still reach it. Confirmed (code): the branch is
-  `Human_HasHeld40` (`0x0023d8c8`, the test before `Vec4_Add(..., +0x2f0)` and `Object_SetPosition`); the sweep and
-  `Human_SnapToGround` sit only on the other branch. Confirmed (runtime), run r-20261124-chars-railing-vault, on a
-  railing of material 7, below.
+  `Human_HasHeld40` (`0x00223c10`) in `Human_Move` (`0x0023d8c8`), the test before `Vec4_Add(..., +0x2f0)` and
+  `Object_SetPosition`; the sweep and `Human_SnapToGround` sit only on the other branch. Confirmed (runtime), run
+  r-20261124-chars-railing-vault, on a railing of material 7, below.
 - **Over a drop there is no third clip.** When P2 ends with nothing under the feet (a railing above a lower floor), the
   next update's ground snap misses and the human falls: the fall clip **428** (record `+0x08` `0x400000`) in place of
   P3, gravity from the third update, the landing (436) on the floor below. Confirmed (runtime), run
@@ -318,8 +319,9 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
   falling to 0.36 m/s), with no fade-in. The first update of 441 and of 442 moved the body 0 m. Confirmed (runtime), run
   r-20261124-chars-fence-climb.
 
-**What gets climbed**, from the rules above (heights above the feet; inferred from the code, the three rows marked
-runtime were seen):
+**What gets climbed**, from the rules above (heights above the feet; inferred from the code; the three rows marked
+runtime were seen: confirmed (runtime), run r-20261124-chars-trashcan-climb; confirmed (runtime), run
+r-20261124-chars-car-climb; confirmed (runtime), run r-20261124-chars-fence-climb):
 
 | The obstacle | Just behind it (0.4 m past the face) | Climb |
 | --- | --- | --- |

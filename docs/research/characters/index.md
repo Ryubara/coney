@@ -482,51 +482,52 @@ statistics, flags, configuration workers) that the human code owns, by address.
 Confirmed (code) at the cited addresses unless a line says otherwise.
 
 Sixty humans live in one static array at `0x00640c80` (human `i` at `0x00640c80 + i × 0x6d0`), built at start-up by
-`0x00228730` with the constructor `0x0021cb78`. A human in use has an entry in the handle table
-(`0x006ebd38`, 0xb00 entries of `{pointer, u16 serial}`; a handle is `serial | index << 16`, resolved by
-`0x00390180` / `0x00390268`). Vtables: `0x0053f088` at `+0x00`, `0x0053f020` at `+0x70`, `0x00544b98` at `+0xe8`.
-Confirmed (code); offsets with "runtime" were checked on Rembrandt.
+`0x00228730` with the constructor `0x0021cb78`. A human in use has an entry in the handle table (`0x006ebd38`, 0xb00
+entries of `{pointer, u16 serial}`; a handle is `serial | index << 16`, resolved by `0x00390180` / `0x00390268`).
+Vtables: `0x0053f088` at `+0x00`, `0x0053f020` at `+0x70`, `0x00544b98` at `+0xe8`. Confirmed (code); the values given
+for Rembrandt were read in the `level99` street at checkpoint 2 (confirmed (runtime), run
+r-20261127-chars-human-fields).
 
 | Offset | Type | Meaning | Evidence |
 | --- | --- | --- | --- |
-| `+0x10` | vec4 | position, game axes (`z` up), metres | confirmed (code), runtime |
-| `+0x20` | quat | rotation `(x, y, z, w)`; a heading is a rotation about `z` | confirmed (code), runtime |
-| `+0x80` | char[16] | name (`Rembrandt`) | confirmed (code), runtime |
+| `+0x10` | vec4 | position, game axes (`z` up), metres | confirmed (code); confirmed (runtime), run r-20261127-chars-human-fields |
+| `+0x20` | quat | rotation `(x, y, z, w)`; a heading is a rotation about `z` | confirmed (code) |
+| `+0x80` | char[16] | name (`Rembrandt`) | confirmed (code); confirmed (runtime), run r-20261127-chars-human-fields |
 | `+0x90` / `+0x92` | u16 | own handle's serial / index | confirmed (code) |
-| `+0xcc` | int | behaviour class (`0x1e` for Rembrandt): selects the class record for speeds | confirmed (code), runtime |
-| `+0xd0` | int | the type passed to `HuCreate` (`0x20`) | confirmed (code), runtime |
+| `+0xcc` | int | behaviour class (`0x1e` for Rembrandt): selects the class record for speeds | confirmed (code); confirmed (runtime), run r-20261127-chars-human-fields |
+| `+0xd0` | int | the type passed to `HuCreate` (`0x1e` for Rembrandt, [Character classes](../characters-classes.md#classes)) | confirmed (code); confirmed (runtime), run r-20261127-chars-human-fields |
 | `+0x54` | u32 | object flags: `0x4000000` airborne, `0x2000000` on the ground ([Ground](../characters-ground.md#ground)) | confirmed (code) |
-| `+0xd4` | pointer | the human's 0x180-byte record (`0x0065a540 + i × 0x180`, [below](#the-record)) | confirmed (code), runtime |
-| `+0xe0` | u64 | human flags. `Human_Init` starts them by brain type ([Combat: human flags](../combat/index.md#human-flags): a Warrior gets `0x2` and the revivable `0x4`). `Human_MakePlayer` sets `0x2` (may start a climb from a run), `0x4` and `0x2000000` and clears `0x8`; `0x4000000` keeps stamina full; `0x10000000` forbids a jump; `0x20000000` forces the anim state and forbids a climb. Rembrandt: `0x24004440407` | confirmed (code), runtime |
+| `+0xd4` | pointer | the human's 0x180-byte record (`0x0065a540 + i × 0x180`, [below](#the-record)) | confirmed (code) |
+| `+0xe0` | u64 | human flags. `Human_Init` starts them by brain type ([Combat: human flags](../combat/index.md#human-flags): a Warrior gets `0x2` and the revivable `0x4`). `Human_MakePlayer` sets `0x2` (may start a climb from a run), `0x4` and `0x2000000` and clears `0x8`; `0x4000000` keeps stamina full; `0x10000000` forbids a jump; `0x20000000` forces the anim state and forbids a climb. Rembrandt: `0x20002440407` | confirmed (code); confirmed (runtime), run r-20261127-chars-human-fields |
 | `+0xd8` | pointer | the `CharacterInstance` (model, skeleton, animation) | confirmed (code) |
 | `+0x1a0` | pointer | the physics body (0 for none) | confirmed (code) |
 | `+0x1a8` | int | the gait for the current speed (0, 1-5; `0x0022aeb0`), used by the lean | confirmed (code) |
 | `+0x1ac` | float | current speed (length of the velocity, written with it) | confirmed (code) |
 | `+0x1b0` | s8 | **player slot**: the human's place in the game state's player list (0 or 1), -1 for a human that is not a player; set only by the list ([Players](../characters-players.md#players)) | confirmed (code) |
 | `+0x1b1` | s8 | **hand-over priority**: `HuCreate`'s player argument, stored as given (1 Rembrandt, 2 Ash); the lowest non-zero value is the member a hand-over picks ([Players](../characters-players.md#players)) | confirmed (code) |
-| `+0x1b8` / `+0x1b9` | u8 | [power class](../characters-classes.md#power-classes) of a non-player / of a player (64 for Rembrandt) | confirmed (code), runtime |
+| `+0x1b8` / `+0x1b9` | u8 | [power class](../characters-classes.md#power-classes) of a non-player / of a player (64 for Rembrandt) | confirmed (code); confirmed (runtime), run r-20261127-chars-human-fields |
 | `+0x1d8` | int | material of the ground under the feet (5 when none) | confirmed (code) |
 | `+0x230` | vec4 | ground normal from the last snap (`+0x238` its `z`) | confirmed (code) |
 | `+0x280` | int | an attachment: −1 normally; otherwise the human moves without the physics sweep | confirmed (code) for the tests |
 | `+0x298` / `+0x29c` | float | turn this update / smoothed lean (radians) | confirmed (code) |
 | `+0x2c0` | vec4 | where a fall will end (`Human_StartFall`); a climb's start point (`Climb_Start`) | confirmed (code) |
 | `+0x2f0` | vec4 | external push velocity, added to the velocity when moving | confirmed (code) |
-| `+0x338` | handle | the object **in the hand** (Nil when none); pose bone 25 is the right hand (runtime), 19 the left (inferred from the left-hand pick-up clips) ([World objects: objects in a human's hand](../objects.md#held)) | confirmed (code), runtime |
-| `+0x33c` | handle | the object being picked up, from the pick-up's message `0x14` until its clip event attaches it | confirmed (code), runtime |
-| `+0x348` / `+0x34c` | handle | the **carried prop** a clip makes (event `0x30`) and removes (event `0x31`), attached at point `0x13` and moved by event `0x37`: both hold the same handle once attached; Rembrandt's power move 59 uses it ([Combat: props of a power move](../combat-grabs.md#power-move-props)) | confirmed (code), runtime |
+| `+0x338` | handle | the object **in the hand** (Nil when none); pose bone 25 is the right hand ([World objects](../objects.md#held)), 19 the left (inferred from the left-hand pick-up clips) ([World objects: objects in a human's hand](../objects.md#held)) | confirmed (code) |
+| `+0x33c` | handle | the object being picked up, from the pick-up's message `0x14` until its clip event attaches it | confirmed (code) |
+| `+0x348` / `+0x34c` | handle | the **carried prop** a clip makes (event `0x30`) and removes (event `0x31`), attached at point `0x13` and moved by event `0x37`: both hold the same handle once attached; Rembrandt's power move 59 uses it ([Combat: props of a power move](../combat-grabs.md#power-move-props)) | confirmed (code) |
 | `+0x37c` (`+0xdf` as a word index) | int | model index in the Character List | confirmed (code) |
 | `+0x380` | int | HUD player panel (0 or 1), -1 for none ([Players](../characters-players.md#players)) | confirmed (code) |
 | `+0x384` | int | airborne updates so far | confirmed (code) |
 | `+0x390` | vec4 | last ground position | confirmed (code) |
 | `+0x3a0` | float | vertical velocity, kept by the locomotion, integrated by gravity while airborne, 0 on landing | confirmed (code) |
-| `+0x3a4` | float | speed multiplier, set to 1.0 by `Human_Init` (`0x002180c8`); Rembrandt's speeds match his clips exactly, so 1.0 at runtime | confirmed (code); runtime inferred |
+| `+0x3a4` | float | speed multiplier, set to 1.0 by `Human_Init` (`0x002180c8`); 1.0 for Rembrandt | confirmed (code); confirmed (runtime), run r-20261127-chars-human-fields |
 | `+0x3c0` | int | the gait at a jump's take-off (picks the launch speed) | confirmed (code) |
 | `+0x3c8` | 7 × 0x28 | dynamic animation slots | confirmed (code) |
 | `+0x560` | float | the height (`z`) at a jump's take-off | confirmed (code) |
 | `+0x5b9` | u8 | 1 while a climb clip (437-460) plays, set by `Human_StateUpdate` | confirmed (code) |
 | `+0x5d8` / `+0x5dc` | float | last stick angle / magnitude | confirmed (code) |
 | `+0x5e0` / `+0x5e4` | float | last turn step / last heading error (turn smoothing) | confirmed (code) |
-| `+0x65c` | float | body scale: 1.0, then a random size and a per-type override ([Body scale](../characters-classes.md#body-scale)); read by `Human_GetScale` (`0x0021d020`). 0.97 for Rembrandt | confirmed (code), runtime |
+| `+0x65c` | float | body scale: 1.0, then a random size and a per-type override ([Body scale](../characters-classes.md#body-scale)); read by `Human_GetScale` (`0x0021d020`). 0.97 for Rembrandt | confirmed (code); confirmed (runtime), run r-20261127-chars-human-fields |
 
 **Per-player record** (`0x00660f50 + i × 0x2c`, 60 of them, one per human index), confirmed (code) at `0x00146078`:
 
@@ -537,7 +538,7 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x08`, `+0x0c` | stick angle, two buffers (radians, `atan2` of the camera-turned stick) |
 | `+0x10`, `+0x14` | stick magnitude, two buffers, clamped to 1 |
 | `+0x18` | which buffer is current (toggles 0/1 each update; the other is the previous update's) |
-| `+0x19` | pad index, -1 for none (0 for the player at runtime) |
+| `+0x19` | pad index, -1 for none (0 for the player: confirmed (runtime), run r-20261127-chars-human-fields) |
 | `+0x1b` | 1 while the human is pad-controlled; 0 hands it to the AI |
 | `+0x1e` | when not 0, `Player_UpdateActions` is skipped (`0x00254e78` via `0x001480e0`); 0 for every human in the street (confirmed (runtime), run r-20261124-chars-input-skip), so AI humans act on `+0x20` too (inferred from that read and the skip at `0x00254e78`) |
 | `+0x1f` | input locked: angle π/2, magnitude 0 |
@@ -549,13 +550,13 @@ A second per-human record of 0x2f0 bytes at `0x006d53f0 + i × 0x2f0` is the hum
 
 ### The 0x180 record {#the-record}
 
-Each human's record (`+0xd4`), as far as this page uses it. Confirmed (code) at the accessors named; runtime values
-are Rembrandt's.
+Each human's record (`+0xd4`), as far as this page uses it. Confirmed (code) at the accessors named; values seen at
+runtime are Rembrandt's, from the runs each cites.
 
 | Offset | Type | Meaning |
 | --- | --- | --- |
 | `+0x00` | u64 | **state flags**: test `0x002265f0`, set `0x002265d0`, clear `0x00226620`; bits below |
-| `+0x08` | u32 | more flags: test `0x00226660`, set `0x00226640`, clear `0x00226688`. `0x10` forbids a sprint, `0x40` is set while climbing over, `0x400000` slows a body in the air (velocity × 0.95 per update); any of `0x84240` refuses a climb and any of `0x41a420` stops the stamina refill. Seen at runtime: `0x10000000` while a start clip plays, `0x80000` during a run stop and the first and last clips of a climb, `0x1000000` while landing from a jump |
+| `+0x08` | u32 | more flags: test `0x00226660`, set `0x00226640`, clear `0x00226688`. `0x10` forbids a sprint, `0x40` is set while climbing over, `0x400000` slows a body in the air (velocity × 0.95 per update); any of `0x84240` refuses a climb and any of `0x41a420` stops the stamina refill. Seen at runtime: `0x10000000` while a start clip plays and `0x1000000` while landing from a jump (confirmed (runtime), run r-20261124-chars-run-jump), `0x80000` during a run stop (run r-20261124-chars-circle-stops) and the first and last clips of a climb (run r-20261124-chars-fence-climb) |
 | `+0x14` | int | state code (setter `0x002266a8`) |
 | `+0x18` | int | anim state ([Clip selection](../characters-animation.md#clip-selection)) |
 | `+0x20` | int | anim id playing (getter `0x002266b8`) |

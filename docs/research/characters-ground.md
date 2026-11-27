@@ -153,10 +153,10 @@ human](characters/index.md#destroy) step 9); inferred from the code, not run. Co
 
 #### Walls and steps {#walls}
 
-The physics body of a human holds a capsule shape (type 3, shape `+0x30`; radius 0.35
-at shape `+0x40`, 1.886 at `+0x44`; read at runtime), and the physics world handles a shape through a table of
-functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 3 that is
-`PhysicsMesh_SweepCapsule` (`0x00347c08`), which treats the body as **one sphere** for walls. Confirmed (code):
+The physics body of a human holds a capsule shape (type 3, shape `+0x30`; its radius at shape `+0x40`, 0.35 for a human
+of scale 1.0, confirmed (runtime), run r-20261124-chars-ai-sphere-radius, and a second size at `+0x44`), and the physics
+world handles a shape through a table of functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 3
+that is `PhysicsMesh_SweepCapsule` (`0x00347c08`), which treats the body as **one sphere** for walls. Confirmed (code):
 
 1. **The sphere**: radius `r` = shape `+0x40` × body `+0x60` × the human's scale (`Human_GetScale` `0x0021d020`:
    `+0x65c`, or 1.0 in a scene state when it is under 1.1), centre **`r + 0.05` above the feet**
@@ -221,10 +221,11 @@ stops to a 0.485 m sphere without clearance, but that missed the full wall by 0.
 after sliding is the human's velocity, so the next update's current speed is its length and the 0.8 m/s gain starts from
 there: each update's speed is `k × (last speed + 0.8)`, `k` the sine of the angle off the normal. Running into a wall
 19.8° off its normal, the speed went 7.80, 2.64, 1.17, 0.67, 0.50, 0.44, 0.42 m/s, one value per update, and settled at
-0.415, against `0.8 k / (1 − k)` = 0.416 at 20°. At 18.3° it fell under the idle threshold (a quarter of the sneak-walk
-speed, 0.396 m/s) and the idle played with the stick still pushed; at 19.8° it stayed just above. A walk does the same
-(inferred from the rule, which does not depend on the gait). So the player brakes against a wall met at a steep angle
-instead of sliding along it at speed.
+0.415, against `0.8 k / (1 − k)` = 0.416 at 20°, just above the idle threshold (a quarter of the sneak-walk speed, 0.396
+m/s), so the run went on with the stick pushed. By the same rule a wall met less than about 19.3° off its normal settles
+under the threshold and the idle plays with the stick still pushed (inferred from the rule and the threshold; no
+recorded run covers it). A walk does the same (inferred from the rule, which does not depend on the gait). So the player
+brakes against a wall met at a steep angle instead of sliding along it at speed.
 
 #### Slopes between floor and wall {#slopes}
 
@@ -390,8 +391,8 @@ fraction and handler code to free memory) would settle it.
 **A fall at runtime** (`level99`, no stick input; Rembrandt raised 10 m by writing the transform table's `z`).
 Confirmed (runtime), run r-20261124-chars-fall:
 
-- `vz` changes by −0.5227 m/s per update from the second airborne update, and `z(n+1) = z(n) + vz(n+1) × dt`: the
-  velocity is updated before the move.
+- `vz` changes by −0.5227 m/s per update from the third airborne update (the first two keep it 0), and `z(n+1) = z(n) +
+  vz(n+1) × dt`: the velocity is updated before the move.
 - Clip 428 (drop cycle) plays while falling.
 - Landing after 34 updates at `vz` = −17.25 m/s, inside the damage band; then 429 (drop land), 294 (a hit reaction)
   and 198 (a ground roll).
@@ -403,18 +404,30 @@ Confirmed (code). The builders, confirmed (code):
 - 25 (`0x0025fba0` → `0x0025cf30`): the **jump loop** (434) after a 0.1 s fade, then the launch
   ([Jumping](characters-traversal.md#jump)); confirmed (code).
 - 26 (`0x0025d020`, confirmed (code)): the **drop cycle** (428), or the long-fall cycles 422 / 425 in a long fall
-  (`0x400000`, `0x00223b48`, `0x00227e60`). After a jump the jump loop keeps playing (runtime).
+  (`0x400000`, `0x00223b48`, `0x00227e60`). After a jump the jump loop keeps playing (confirmed (runtime), run
+  r-20261124-chars-run-jump: 434 in anim state 26 for the whole flight).
 - 27 (`0x0025d390`): after a jump, **436** (jump end running) handing over to a gait blend when the stick is above
   0.12, else **435** (jump end) and then the idle; after a drop the same 436 and gait blend with the stick above 0.12,
   else **429** (drop land) at a rate of `1 − 0.5 ×` a random unit, then the idle; after a long fall
-  (`0x1000000000`), the clip after the current one, or 198 (ground roll). Confirmed (code).
+  (`0x1000000000`), the clip after the current one, or 198 (ground roll). Confirmed (code). The stick test is a pad
+  player's (per-player record `+0x1b` set); the function also has these branches, confirmed (code) at the same address:
+    - While the global `0x0051031c` is set, a pad player takes the stick-released branch whatever the stick (what sets
+      the global is not traced). Confirmed (code).
+    - An AI (`+0x1b` 0) takes 436 and the gait blend when its brain's speed `+0x114` is at least its jog speed
+      (`Human_GetJogSpeed`), after a jump or a drop; otherwise 435 after a jump and 429 after a drop. Confirmed (code).
+    - A human hidden in shadow (`Human_IsHiddenInShadow`) gets 429 after a drop whatever the stick. After a jump a
+      hidden pad player with the stick released gets 429 instead of 435 (with the stick above 0.12 he still gets 436).
+      For a hidden pad player the 429 starts after a 1/6 s fade on an idle loop with an end callback of its own, and his
+      player state `+0x54` takes the game time (`*(0x0050b734) + 0x48`); a hidden AI gets the plain 429. Confirmed
+      (code).
 
-**Walking off an edge at runtime** (down the sloping front of a car whose roof is 1.48 m up, a drop of 1.29 m; stick
-0.5). Confirmed (runtime), run r-20261124-chars-car-roof-walk-off: state 26 with 428 and record `+0x08` `0x400000`
-for the first four updates, gravity from the third as above, then, the stick still held, state 27 with **436** and
-`+0x08` `0x1000000` for 11 updates and the gait blend. With the stick released in the air (confirmed (runtime), run
-r-20261124-chars-car-roof-walk-off-release) the landing is **429** and the idle; 429 lasted 13 updates in one run
-and 18 in another, as its rate is random.
+**Walking off an edge at runtime** (down the sloping front of a car whose roof is 1.48 m up, from z 1.29 m to the
+street at 0.22 m, a drop of 1.07 m; stick 0.5). Confirmed (runtime), run r-20261124-chars-car-roof-walk-off: state 26
+with 428 for 12 updates, record `+0x08` `0x400000` for the first four of them, gravity from the third as above; then,
+the stick still held, **436** for 11 updates, the first 5 in state 27 with `+0x08` `0x1000000`, the rest in the
+locomotion state 4, and then the gait blend. With the stick released in the air (confirmed (runtime), run
+r-20261124-chars-car-roof-walk-off-release) the landing is **429** and the idle; 429 lasted 13 updates in that run.
+Its rate is random (confirmed (code), above), so its length varies from one landing to the next.
 
 ## In Coney {#coneys-implementation}
 
