@@ -684,6 +684,8 @@ Tagging is crime type 10, which sends no responders ([Crime types](../references
 
 #### What the player sees: body, paint, mist and the wall {#tag-look}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 **The body.** `Tag_StartSprayClips` (`0x00278018`, from `Tag_UpdatePlayer` on the first update in action `0x17`)
 drops the held object only when its type's anim set (`+0x87`) is 4 (`OVERHEAD_WEAPON_SET`) or 6 (`GHETTO_SET`)
 (`Human_HoldsKind4Or6`). A pipe (`dyn_pipe_a`), a bat or a crowbar is set 3 (`CLUB_WEAPON_SET`, disc check of
@@ -819,6 +821,8 @@ the progress. Confirmed (code) unless marked:
 
 #### Coney status and fixes {#tag-coney-fixes}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 The checklist items: the paint is black, no mist, no paint on the wall, a short near-black smear on the
 HUD, a dark charge bar, the Warrior not turned to the wall and still holding a pipe, and the tag ending just before
 the W is complete. Causes and fixes, for the implementer.
@@ -869,6 +873,8 @@ update and stays 1.0 after a finish; a human holding a set-3 object keeps it at 
 set-4 object drops it.
 
 #### The script callbacks {#tag-callbacks}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 The engine calls a script at two points of a tag, and nowhere else (no progress, layer or cancel callback: the only
 reader of the start callback's name `0x006b6870` is `0x00238f50`, and `Tag_UpdatePlayer`, `TagGame_*` and `Tag_End`
