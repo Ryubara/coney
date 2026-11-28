@@ -95,12 +95,12 @@ void PlayLevelSimulation::makeCast(const ScriptedCast& cast, const ai::AiConfig&
     // A script's placement of a human drops it onto the level's collision, unless a scene holds it.
     cast.scripted->setPlaceGround([this](double human) { return placeGround(human); });
     // An AI's object HuDropWeapon let go of falls from his hand into the world (Human_DropHeld), as a player's does
-    // when the play mode sees his hand empty.
-    cast.scripted->humanHost().setHeldDrop([this](ai::Brain& brain, double held) {
-        if (m_pickups != nullptr) {
-            dropHeld(brain.human(), held);
-        }
-    });
+    // when the play mode sees his hand empty. With no pick-ups (bound before the cast) there is no drop, so
+    // ScriptedHumans::dropWeapon() takes the held style off itself (Human::letGoOfHeld()).
+    if (m_pickups != nullptr) {
+        cast.scripted->humanHost().setHeldDrop(
+            [this](ai::Brain& brain, double held) { dropHeld(brain.human(), held); });
+    }
     // HuDropWeapon drops only an object whose type has a kind (+0x86), read from the object database by type name.
     // With no database there is no query, so every held object counts as having a kind (ScriptedHumans::dropWeapon()).
     if (const world_objects::ObjectTypes* types = cast.types; types != nullptr) {
