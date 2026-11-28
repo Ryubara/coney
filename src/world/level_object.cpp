@@ -113,8 +113,7 @@ std::expected<LevelModel, Error> popLinkedModel(chunk::ChunkStacks& stacks, Link
 LevelObject::~LevelObject() {
     // The collision mesh, then the occluders.
     collision.reset();
-    occluders.clear();
-    occluders.shrink_to_fit();
+    std::vector<Occluder>().swap(occluders);
     // The level world, then the glow dictionary.
     levelWorld.reset();
     glowDictionary.reset();
