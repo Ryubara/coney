@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261128-rumble-fresh-gangs"
+date = "2026-11-28"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "d625e4b2aa8d714869ca8f25f143f682db13202fbd8668f40d9d04bef5244436"
+
+[who]
+agent = "ad5e821f6f702288c"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "Fresh boot, no save, pad 1 only. After the title (global.lua's CfgUnlockables has run) the locked bits at 0x006fe8f8 had records 170, 182, 188 and 190 (type 3, gangs 5, 3, 4 and 1, level 0 group 0 item 0) clear, i.e. unlocked. Then QUICK RUMBLE, 1 ON 1, 1 Player Vs, Choose Gangs: the gang vector at 0x0063ee4c held four records, ids 5, 3, 4, 1 at indices 0-3 (BASEBALL FURIES, ORPHANS, TURNBULL ACS, WARRIORS). Two downs on side 1 showed WARRIORS with no down arrow (list end). Written after relaunching the copy, as the MCP server held PINE."
+
+[values]
+gang_count = 4
+gang0_id = 5
+gang1_id = 3
+gang2_id = 4
+gang3_id = 1
+gang4_type0_resolved = 101
+gang4_type1_resolved = 102
+
+[addresses]
+gang_list = 0x0063ee4c
+locked_bits = 0x006fe8f8
+add_gang = 0x001ec980
+is_data_unlocked = 0x00424130

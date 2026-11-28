@@ -161,6 +161,7 @@ add_executable(coney_tests
     gui/pause_menu_test.cpp
     gui/pause_stats_test.cpp
     gui/profile_management_gui/pm_controller_test.cpp
+    gui/rumble_mode_gui/rumble_fresh_profile_test.cpp
     gui/rumble_mode_gui/rumble_menu_test.cpp
     gui/rumble_mode_gui/rumble_match_screens_test.cpp
     gui/rumble_mode_gui/rumble_setup_fidelity_test.cpp

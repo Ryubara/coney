@@ -73,8 +73,8 @@ struct TestGang {
 };
 
 /// The synthetic gangs, in list order: gang 5 with the roster whose first two types the stand-in table replaces
-/// (89 and 90 become 91 and 94), a locked gang 13, and gang 3 (220 and 223 become 225 and 226). A fresh profile shows
-/// gangs 5 and 3.
+/// (89 and 90 become 91 and 94), a locked gang 13, and gang 3 (220 and 223 become 225 and 226). Of these a fresh
+/// profile shows gangs 5 and 3.
 inline std::vector<TestGang> testGangs() {
     return {
         TestGang{5, "RED SIDE", {89, 90, 91, 92, 93, 94, 91, 92, 93}},

@@ -494,7 +494,20 @@ versus (confirmed (code) at `0x001fc5b0` with the mode's flags). For ids 1 and 2
 
 When the mode has presets (`0x0063ef78`) the screen writes 255 to both packs and moves to screen 3.
 
-**A gang** (`0x001ec980`) is added when its id is negative or the unlockables manager says it is unlocked (kind 3).
+**A gang** (`0x001ec980`) is added when its id is negative or the unlockables manager says it is unlocked (kind 3):
+`Unlocks_IsDataUnlocked` (`0x00424130`) answers from the first record of that kind and id (confirmed (code)). On every
+boot `global.lua`'s `CfgUnlockables` loads the records and then calls `UM_Unlock(0, 0, 0)` and `UM_Unlock(8, 0, 0)`,
+which unlock each record whose level is 0 or 8 with group 0 and item 0 (inferred from the script and [the
+records](../references/unlockables.md)). Of the kinds this menu asks, those are modes 12 and 14, arena 102, **gangs 5, 3,
+4 and 1** (records 170, 182, 188 and 190) and the character types 2, 6, 12, 16, 19, 22, 27, 31 and 34 (level 0) and
+91-94, 101-105 and 224-228 (level 8). On a fresh boot the gang part shows (confirmed (runtime), run
+r-20261128-rumble-fresh-gangs): after the title the locked bits at `0x006fe8f8` had records 170, 182, 188 and 190
+clear, and Choose Gangs' list (`0x0063ee4c`) held gangs 5, 3, 4 and 1 at indices 0-3, in `rumble_gang.lua`'s order
+(BASEBALL FURIES, ORPHANS, TURNBULL ACS, WARRIORS), and gang 4's first two members resolved to 101 and 102. That the
+modes, the arena and the character types of those records are unlocked too is inferred from the same two calls and the
+records, not measured. None of those types is a key of the stand-in table, so the four gangs' types 89, 90, 99, 100,
+220 and 223 stay replaced (gang 4's 100 and 99 by 101 and 102, as measured; the rest inferred from the table).
+
 Its record:
 
 | Offset | Meaning |
@@ -2420,15 +2433,10 @@ strings do not hold falls back to the screen's name. Screenshots on the disc mat
 positions.
 
 **The unlocks** (`src/warriors/unlockables.h`, `Unlockables`, kept in the game state): Coney has no unlockables manager
-or saves yet, so the check answers from a set that a fresh profile fills with what a fresh boot shows: modes 12 and 14,
-arena 102, gangs 5 and 3, and no character type (so every type in the stand-in table is replaced, as the runtime
-defaults show). Which records the story unlocks: [Unlockables](../references/unlockables.md); every mode, arena, gang
-and character: [Rumble roster](../references/rumble.md).
-
-**Known gap:** a fresh boot of the original lists a third gang, TURNBULL ACS, in Choose Gangs besides gangs 5 and 3
-(confirmed (runtime), run `r-20261127-rumble-choose-gangs-moves`), so the set above is incomplete: what unlocks that
-gang on a fresh profile is not found yet. Tracked in issue #1704 (function database gap on `0x001ec980`). Until then
-side 1's cursor in Coney stays on BASEBALL FURIES where the original would move down onto it.
+or saves yet, so the check answers from a set that a fresh profile fills with what the original unlocks on every boot
+([the boot unlocks](#rumble-data)): modes 12 and 14, arena 102, gangs 5, 3, 4 and 1, and the 23 character types of
+those records. Which records the story unlocks: [Unlockables](../references/unlockables.md); every mode, arena, gang and
+character: [Rumble roster](../references/rumble.md).
 
 Coney's choices: an arena's label is its level record's fifth `CfgLevelName` argument (`level102`'s is "Fight Pen"),
 since the page does not say where the Choose Area screen's text comes from; side 2's cursor starts on the gang list's
@@ -2699,6 +2707,15 @@ measured positions ([The Rumble menu's screens](#rumble-screens), each marked "m
 `level102` after the Fight Pen, and the level number 102 written on its confirm ([The Rumble set-up](#rumble-setup)).
 They stay speculative until a run records them. How to answer: in a claimed copy, take the QUICK RUMBLE path to the
 arena, read the level number the confirm writes and capture each screen, then `pcsx2 record-run` with the values.
+
+### Two downs in 1 ON 1 reached the fourth gang {#q-rumble-one-on-one-cursor}
+
+In run r-20261128-rumble-fresh-gangs (1 ON 1, 1 Player, a fresh boot) two downs on side 1 from the first gang showed
+WARRIORS, the fourth entry, with no down arrow. By `RM_ChooseGangs_MoveDown` (`0x001ef6d8`) with the gang-size-1 flag
+that `0x001ecae0` sets for 1 ON 1, a cursor may land on side 2's gang, so two downs should reach TURNBULL ACS, the
+third, as Coney's does ([the input](#rumble-data), confirmed (code)). Open: whether a held press repeated (each press
+was held about 30 frames) or the original skips side 2's gang in 1 ON 1 too. How to answer: in a claimed copy on
+Choose Gangs in 1 ON 1, tap down once with a short press and read side 1's cursor (`+0x158`) and the flag (`+0x1e4`).
 
 ### What Coney's `PM_Controller` leaves out {#q-pm-controller}
 
