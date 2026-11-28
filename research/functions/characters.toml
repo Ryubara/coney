@@ -769,8 +769,8 @@ name = "Human_SetNoAutoLock"
 page = "characters-script.md#code-script"
 role = "Human flag 0x8000000000 on or off: no automatic lock-on."
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeSetNoAutoLock"
+status = "compared"
 
 [[function]]
 address = 0x00234118
@@ -786,8 +786,8 @@ address = 0x00234188
 name = "Human_SetWheelchairControl"
 page = "characters-locomotion.md#wheelchair"
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeSetWheelchairControl"
+status = "compared"
 
 [[function]]
 address = 0x00234530
@@ -813,8 +813,8 @@ name = "Human_SetLockMovement"
 page = "characters-script.md#code-script"
 role = "`HuLockMovement`: human flag 0x200000000 on or off; the rumble menus use it on preview fighters."
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeLockMovement"
+status = "compared"
 
 [[function]]
 address = 0x002350c8
@@ -948,8 +948,8 @@ name = "Human_GetCharType"
 page = "characters-script.md#code-script"
 role = "`HuGetCharType`: the character type `+0xcc`."
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeGetCharType"
+status = "compared"
 
 [[function]]
 address = 0x002359a0
@@ -1092,8 +1092,8 @@ name = "Human_ForceEnableReticule"
 page = "characters-script.md#code-script"
 role = "`HuForceEnableReticule`: sets 0x005104f8."
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeForceEnableReticule"
+status = "compared"
 
 [[function]]
 address = 0x002369b8
@@ -1371,8 +1371,8 @@ name = "Human_RemoveItemInPocket"
 page = "characters-script.md#code-script"
 role = "`HuRemoveItemInPocket`: clears the pocket item (`+0x250`, `+0x254`)."
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeRemoveItemInPocket"
+status = "compared"
 
 [[function]]
 address = 0x00238230
@@ -1574,8 +1574,8 @@ name = "Human_EnableSoundCommands"
 page = "characters-script.md#code-script"
 role = "`HuEnableSoundCommands`: switch `+0x199`, which every speech path checks."
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeEnableSoundCommands"
+status = "compared"
 
 [[function]]
 address = 0x002392c0

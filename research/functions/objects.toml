@@ -357,8 +357,8 @@ name = "Obj_SetColour"
 page = "objects.md#original-structure"
 role = "`ObjColor`: packs `{r, g, b, a}` into the tint word"
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeObjColor"
+status = "compared"
 
 [[function]]
 address = 0x00396e28

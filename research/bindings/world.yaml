@@ -689,7 +689,7 @@
     - {addr: 0x00396bd0, name: Obj_SetColour}
   args:
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of the game object."}
-    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Colour `{r, g, b, a}` as whole numbers 0-255. The binding and the packer each multiply by 255 and keep the low 8 bits, so a whole 0-255 component comes out as itself and a 0-1 one does not (1.0 gives 1). Written back unchanged."}
+    - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Colour `{r, g, b, a}` as whole numbers 0-255. The binding and the packer each multiply by 255 and keep the low 8 bits, so a whole 0-255 component comes out as itself and a 0-1 one does not (1.0 gives 1); a negative one gives 0. Each component is written back as the float it was read as, a missing one as 0, whether or not the handle names an object (confirmed (code) at 0x00378088)."}
   description: >-
     Sets a tint colour on a game object (stored twice in the object, +0xc8 and +0xcc).
   evidence: confirmed-code

@@ -6,8 +6,8 @@ address = 0x00238190
 name = "Human_SetPocketItem"
 page = "player-state.md#inventory"
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makePutItemInPocket"
+status = "compared"
 
 [[function]]
 address = 0x0041d618

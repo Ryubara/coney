@@ -150,8 +150,12 @@ A world object's tint is a colour word at `+0xc8`, copied at `+0xcc`: `0xRRGGBBA
   `0xFF`.
 - `ObjColor(object, {r, g, b, a})` multiplies each component by 255, and the packer (`0x0017aca8`) multiplies by 255
   again; the soft-float conversion (`0x0042c718`) keeps the low 8 bits. Since 65,025 is 1 modulo 256, a whole
-  component 0-255 comes out as itself and a 0-1 component does not (1.0 gives 1). The one script that calls it passes
-  0-255 values.
+  component 0-255 comes out as itself and a 0-1 component does not (1.0 gives 1); a negative product gives 0 and one of
+  2^32 or more all ones. The binding (`0x00378088`) then writes the four components back into the table as the floats
+  it read (a missing one becomes 0), whether or not the handle names an object. The one script that calls it passes
+  0-255 values. **In Coney** (`makeObjColor` in `repo:src/scripting/arena_bindings.cpp`) the same arithmetic in single
+  precision (round to nearest, where the PS2's unit rounds toward zero; whole components are exact either way); only a
+  spawned object keeps the word (**stand-in**: a human's `+0xc8` and `+0xcc` are not kept).
 - `HuSetSpinningIconColor(human, steps, colour)` sends message `0x34` to the human's spinning icon (`0x00238b18`),
   which fades its tint word to the colour over the steps ([Characters: the spinning
   icon](characters-appearance.md#spinning-icon)); no script calls it.
