@@ -34,4 +34,14 @@ inline constexpr int kCrowdScanTokenCap = 20;
 /// human, so no list is cut in table order
 [[nodiscard]] std::size_t humanListCap(std::size_t humans, EngineLimits limits);
 
+/// The most humans the list round the other human of a teleport holds in the original: Human_TeleportNear
+/// (`0x0023b138`) gives Humans_FindAhead a buffer of 32, filled in table order.
+inline constexpr std::size_t kOrigTeleportList = 32;
+
+/// The most humans the list round the other human of `HuTeleportNearHuman` holds, among `humans` humans; always
+/// kOrigTeleportList under the engine limits preset (`limits` EngineLimits::Original).
+/// @coney-only limit: the original's teleport tests at most 32 humans near the other, cut in table order; past 60
+/// humans Coney's tests every human in reach, so the point never lands on one the list left out
+[[nodiscard]] std::size_t teleportListCap(std::size_t humans, EngineLimits limits);
+
 } // namespace coney::crowd

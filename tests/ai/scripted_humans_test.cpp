@@ -30,6 +30,7 @@
 #include "animation/anim_clip.h"
 #include "combat/combat_tuning.h"
 #include "combat/meters.h"
+#include "core/engine_limits.h"
 #include "core/error.h"
 #include "gui/global_strings.h"
 #include "human/human.h"
@@ -225,6 +226,25 @@ void carryTwoHanded(Brain& brain, double object) {
 }
 
 } // namespace
+
+TEST_CASE("HuDropWeapon leaves an AI's held style to the play mode's drop, which takes it off once",
+          "[ai][scripted][move_styles]") {
+    // Expected: objects.md#two-handed, confirmed (code): Human_DropWeapon (0x002994b8) drops through Human_DropHeld
+    // (0x00257f38), which removes the held set's style once; the play mode's drop is Coney's Human_DropHeld
+    Level level;
+    Brain& dropper = level.add({44.0F, 40.0F, 0.0F});
+    carryTwoHanded(dropper, 50.0);
+    int styleAtDrop = -1;
+    level.scripted->humanHost().setHeldDrop([&](Brain& brain, double /*held*/) {
+        styleAtDrop = brain.human().animator().moveStyle();
+        brain.human().releaseHeldStyle(brain.human().fighter().animSet(), false);
+    });
+    level.call("HuDropWeapon", {Value(dropper.handle())});
+    // Still on at the drop, so nothing took it off before; off after the drop's one removal.
+    CHECK(styleAtDrop == coney::human::kStyleCarry);
+    CHECK(dropper.human().animator().moveStyle() == coney::human::kStyleNone);
+    CHECK(dropper.human().fighter().animSet() == 0);
+}
 
 TEST_CASE("an AI human who lets go of a two-handed object by script goes back to the plain move style",
           "[ai][scripted][move_styles]") {
@@ -835,6 +855,23 @@ TEST_CASE("HuSetConscious(false) on a wounded human sets his knocked-out mark bu
     CHECK(thug.target() == &level.scene.player());
 }
 
+TEST_CASE("HuSetConscious(false) on a human knocked out by his health does nothing, so his health back wakes him",
+          "[ai][scripted]") {
+    // Expected: characters-script.md#set-conscious, confirmed (code): Human_KnockOut (0x00230328) does nothing for a
+    // human holding state 0x40000 already, which a health-out knock-out sets (Human::knockedOut())
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    thug.human().fighter().health().set(0);
+    level.scene.run(1);
+    REQUIRE(thug.human().knockedOut());
+    level.call("HuSetConscious", {Value(thug.handle()), Value(0.0)});
+    CHECK_FALSE(thug.human().script().knockedOut);
+    thug.human().fighter().health().set(500);
+    level.scene.run(1);
+    CHECK_FALSE(thug.human().knockedOut());
+    CHECK_FALSE(thug.knockedOut());
+}
+
 TEST_CASE("HuTeleportNearHuman leaves a human already within 3.6 m of the other where he is", "[ai][scripted]") {
     // Expected: characters-script.md#teleport-near, confirmed (code): Human_TeleportNear (0x0023b138) returns when the
     // two humans' squared distance in plan is below 12.96
@@ -880,6 +917,59 @@ TEST_CASE("HuTeleportNearHuman stops short of a human standing on the point it t
     const float reach = 3.6F - stander.human().capsuleRadius() - thug.human().capsuleRadius();
     CHECK(thug.human().position().x == Catch::Approx(40.0F).margin(1e-4));
     CHECK(thug.human().position().y == Catch::Approx(40.0F + reach).margin(1e-4));
+}
+
+namespace {
+
+// A teleport's crowd: `fillers` unbound humans just south of player 1 (handle 1, at (40, 40)), within the list's reach
+// but off the north point, then a stander on the north point (40, 43.6), last in the brains' order; a thug far east
+// teleports near player 1 and lands where the list lets him. Returns the thug's y.
+float teleportPastFillers(Level& level, std::size_t fillers) {
+    Brain& thug = level.add({50.0F, 40.0F, 0.0F});
+    for (std::size_t k = 0; k < fillers; ++k) {
+        static_cast<void>(level.scene.add({40.0F, 39.0F, 0.0F}, 0.0F));
+    }
+    static_cast<void>(level.add({40.0F, 43.6F, 0.0F}));
+    REQUIRE(level.scene.brains.nowMs() % 32 == 0);
+    level.call("HuTeleportNearHuman", {Value(thug.handle()), Value(1.0)});
+    CHECK(thug.human().position().x == Catch::Approx(40.0F).margin(1e-4));
+    return thug.human().position().y;
+}
+
+} // namespace
+
+TEST_CASE("past 60 humans HuTeleportNearHuman tests every human near the other, the last one too",
+          "[ai][scripted][crowd]") {
+    // Expected: unverified, Coney's own rule past the original's 60 humans (docs/engine/crowd-rules.md#lists): the
+    // list Humans_FindAhead fills for the teleport is not cut at 32, so the stander last in order shortens the point
+    Level level;
+    const float y = teleportPastFillers(level, 60);
+    CHECK(y < 43.6F - 0.1F);
+}
+
+TEST_CASE("under the engine limits preset HuTeleportNearHuman tests the first 32 humans near the other",
+          "[ai][scripted][crowd][engine-limits]") {
+    // Expected: characters-script.md#teleport-near, confirmed (code): Human_TeleportNear (0x0023b138) gives
+    // Humans_FindAhead (0x002274a8) a list of 32 filled in table order, so a stander past them is never tested; the
+    // preset pins the lift at it (docs/guides/running-options.md#engine-limits)
+    Level level;
+    level.scene.brains.setEngineLimits(coney::EngineLimits::Original);
+    const float y = teleportPastFillers(level, 60);
+    CHECK(y == Catch::Approx(43.6F).margin(1e-4));
+}
+
+TEST_CASE("up to 60 humans HuTeleportNearHuman's list is cut at 32 with the lift as under the preset",
+          "[ai][scripted][crowd]") {
+    // Expected: characters-script.md#teleport-near, confirmed (code): a list of 32 (Human_TeleportNear 0x0023b138);
+    // inside the original's 60 humans Coney's rule gives the same (docs/guides/conventions.md#original-limits)
+    Level lifted;
+    Level pinned;
+    pinned.scene.brains.setEngineLimits(coney::EngineLimits::Original);
+    // Player 1, the thug, 40 fillers and the stander: 43 humans.
+    const float liftedY = teleportPastFillers(lifted, 40);
+    const float pinnedY = teleportPastFillers(pinned, 40);
+    CHECK(liftedY == pinnedY);
+    CHECK(liftedY == Catch::Approx(43.6F).margin(1e-4));
 }
 
 TEST_CASE("HuDropWeapon drops only an object whose type has a kind, and an AI's falls into the world",

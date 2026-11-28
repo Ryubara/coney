@@ -23,4 +23,7 @@ std::size_t humanListCap(std::size_t humans, EngineLimits limits) {
     return limits == EngineLimits::Original ? kOrigMaxHumans : std::max(humans, kOrigMaxHumans);
 }
 
+// Stub for the tests' commit: the original's 32 whatever the crowd.
+std::size_t teleportListCap(std::size_t /*humans*/, EngineLimits /*limits*/) { return kOrigTeleportList; }
+
 } // namespace coney::crowd

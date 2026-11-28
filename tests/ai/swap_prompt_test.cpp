@@ -151,8 +151,23 @@ TEST_CASE("a knocked-out Warrior offers no swap, so no Give Weapon prompt beside
     }
 }
 
+TEST_CASE("a knocked-out Warrior clears his swap prompt on his next think", "[ai][swap]") {
+    // Expected: ai-brain-types.md#think-warrior, confirmed (code): the Warrior still thinks while knocked out, and step
+    // 7 needs him free to act, so the prompt it had offered goes (a script's knock-out stops the brain, never kills it:
+    // characters-script.md#set-conscious)
+    SwapScene s;
+    s.scene.player().human().script().heldObject = 7.0;
+    s.scene.run(5);
+    REQUIRE(s.warrior->human().script().talkable);
+    s.warrior->human().script().knockedOut = true;
+    static_cast<void>(s.warrior->knockOut());
+    s.scene.run(5);
+    CHECK_FALSE(s.warrior->dead());
+    CHECK_FALSE(s.warrior->human().script().talkable);
+}
+
 TEST_CASE("a Warrior whose brain is off clears his swap prompt on his next think", "[ai][swap]") {
-    // A script's knock-out turns the brain off (BrDead); his think must still drop the prompt it had offered.
+    // A script may make a knocked-out Warrior's brain dead too (BrDead); his think must still drop the prompt.
     SwapScene s;
     s.scene.player().human().script().heldObject = 7.0;
     s.scene.run(5);
