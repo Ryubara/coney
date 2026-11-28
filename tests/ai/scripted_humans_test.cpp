@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/brain.h"
@@ -107,9 +108,9 @@ struct Level {
         scripted->setScripts(scripts.get());
     }
 
-    // An AI human at `feet`, bound to the next handle.
-    Brain& add(coney::anim::Vec3 feet) {
-        Brain& brain = scene.add(feet, 0.0F);
+    // An AI human at `feet` facing `headingDegrees`, bound to the next handle.
+    Brain& add(coney::anim::Vec3 feet, float headingDegrees = 0.0F) {
+        Brain& brain = scene.add(feet, headingDegrees);
         scripted->bind(brain.handle(), brain);
         return brain;
     }
@@ -794,4 +795,119 @@ TEST_CASE("the throw goal throws only on a brain update that is a multiple of 30
     }
     REQUIRE(thrownAt != 0);
     CHECK(thrownAt % 30 == 0);
+}
+
+TEST_CASE("HuSetConscious(false) knocks the brain out without making it dead, through a step; true wakes it",
+          "[ai][scripted]") {
+    // Expected: characters-script.md#set-conscious, confirmed (code): Human_SetConscious (0x00237778) calls
+    // Human_KnockOut (0x00230328), whose brain part is Brain_OnKnockedOut (0x0028c3b0: goals, target and enemies
+    // dropped, the brain stopped), not Brain_SetDead; Human_WakeUp (0x00230598) resumes the brain
+    // (Brain_EnableAndResume)
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    thug.setTarget(&level.scene.player());
+    level.call("HuSetConscious", {Value(thug.handle()), Value(0.0)});
+    CHECK(thug.human().script().knockedOut);
+    CHECK(thug.knockedOut());
+    CHECK_FALSE(thug.dead());
+    CHECK(thug.target() == nullptr);
+    CHECK_FALSE(thug.human().blocksHumans());
+    // His health is untouched, so nothing but the script wakes him: he is still out a step later.
+    level.scene.run(1);
+    CHECK(thug.knockedOut());
+    CHECK(thug.human().script().knockedOut);
+    level.call("HuSetConscious", {Value(thug.handle()), Value(1.0)});
+    CHECK_FALSE(thug.human().script().knockedOut);
+    CHECK_FALSE(thug.knockedOut());
+    CHECK_FALSE(thug.dead());
+}
+
+TEST_CASE("HuSetConscious(false) on a wounded human sets his knocked-out mark but leaves his brain", "[ai][scripted]") {
+    // Expected: characters-script.md#set-conscious, confirmed (code): Human_KnockOut (0x00230328) calls the brain only
+    // for a human neither dead nor wounded (0x100050000), and sets state 0x40000 at its end whatever the state
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    thug.human().script().wounded = true;
+    thug.setTarget(&level.scene.player());
+    level.call("HuSetConscious", {Value(thug.handle()), Value(0.0)});
+    CHECK(thug.human().script().knockedOut);
+    CHECK_FALSE(thug.knockedOut());
+    CHECK(thug.target() == &level.scene.player());
+}
+
+TEST_CASE("HuTeleportNearHuman leaves a human already within 3.6 m of the other where he is", "[ai][scripted]") {
+    // Expected: characters-script.md#teleport-near, confirmed (code): Human_TeleportNear (0x0023b138) returns when the
+    // two humans' squared distance in plan is below 12.96
+    Level level;
+    Brain& thug = level.add({42.0F, 40.0F, 0.0F});
+    level.call("HuTeleportNearHuman", {Value(thug.handle()), Value(1.0)});
+    CHECK(thug.human().position().x == 42.0F);
+    CHECK(thug.human().position().y == 40.0F);
+}
+
+TEST_CASE("HuTeleportNearHuman puts a far human 3.6 m from the other on the heading of the game time, keeping his "
+          "facing; a player is moved too",
+          "[ai][scripted]") {
+    // Expected: characters-script.md#teleport-near, confirmed (code): the first heading tried is (game time & 31) x
+    // 11.25 degrees (Vec_FromHeading 0x00335e40: (sin h, cos h)), the point 3.6 m from the other human; the human's
+    // own rotation is kept (vtable +0xac then +0x6c); no brain type is left out
+    Level level;
+    Brain& thug = level.add({50.0F, 40.0F, 0.0F}, 90.0F);
+    REQUIRE(level.scene.brains.nowMs() % 32 == 0);
+    const float heading = thug.human().heading();
+    level.call("HuTeleportNearHuman", {Value(thug.handle()), Value(1.0)});
+    CHECK(thug.human().position().x == Catch::Approx(40.0F).margin(1e-4));
+    CHECK(thug.human().position().y == Catch::Approx(43.6F).margin(1e-4));
+    CHECK(thug.human().heading() == Catch::Approx(heading).margin(1e-5));
+    // Player 1 (handle 1) near the thug, now at (40, 43.6): too close, so he stays; from afar he goes beside him.
+    level.call("HuTeleportNearHuman", {Value(1.0), Value(thug.handle())});
+    CHECK(level.scene.player().human().position().y == Catch::Approx(40.0F).margin(1e-4));
+    thug.human().place(nullptr, {40.0F, 50.0F, 0.0F}, 0.0F);
+    level.call("HuTeleportNearHuman", {Value(1.0), Value(thug.handle())});
+    CHECK(level.scene.player().human().position().x == Catch::Approx(40.0F).margin(1e-4));
+    CHECK(level.scene.player().human().position().y == Catch::Approx(53.6F).margin(1e-4));
+}
+
+TEST_CASE("HuTeleportNearHuman stops short of a human standing on the point it tries", "[ai][scripted]") {
+    // Expected: characters-script.md#teleport-near, confirmed (code): a human of the list (Humans_FindAhead 0x002274a8,
+    // squared distance to the other human as its key) whose squared distance in plan to the point is below the two
+    // capsule radii (0x00219860) summed, and whose key is not below (the other's radius + twice the mover's + his
+    // radius) squared, moves the point to the key's root less his radius and the mover's
+    Level level;
+    Brain& thug = level.add({50.0F, 40.0F, 0.0F});
+    Brain& stander = level.add({40.0F, 43.6F, 0.0F});
+    level.call("HuTeleportNearHuman", {Value(thug.handle()), Value(1.0)});
+    const float reach = 3.6F - stander.human().capsuleRadius() - thug.human().capsuleRadius();
+    CHECK(thug.human().position().x == Catch::Approx(40.0F).margin(1e-4));
+    CHECK(thug.human().position().y == Catch::Approx(40.0F + reach).margin(1e-4));
+}
+
+TEST_CASE("HuDropWeapon drops only an object whose type has a kind, and an AI's falls into the world",
+          "[ai][scripted]") {
+    // Expected: objects.md#drop-weapon, confirmed (code): Human_DropWeapon (0x002994b8) calls Human_DropHeld
+    // (0x00257f38) only when Human_GetHeldObjectKind (the held type's +0x86) is not 0
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    std::vector<double> dropped;
+    level.scripted->humanHost().setHeldKind([](std::string_view type) { return type == "dyn_bat" ? 3 : 0; });
+    level.scripted->humanHost().setHeldDrop([&](Brain& /*brain*/, double held) { dropped.push_back(held); });
+    thug.human().script().heldObject = 70.0;
+    thug.human().script().heldObjectName = "dyn_prop";
+    level.call("HuDropWeapon", {Value(thug.handle())});
+    CHECK(thug.human().script().heldObject == 70.0);
+    CHECK(dropped.empty());
+    thug.human().script().heldObjectName = "dyn_bat";
+    level.call("HuDropWeapon", {Value(thug.handle())});
+    CHECK(thug.human().script().heldObject == 0.0);
+    CHECK(dropped == std::vector<double>{70.0});
+}
+
+TEST_CASE("HuPlaceItemInHand refuses a human in the middle of a pick-up", "[ai][scripted]") {
+    // Expected: objects.md#held, confirmed (code): Human_PlaceItemInHand (0x00238540) returns NilHandle for a human
+    // with held flag 0x4000 (Human_HasHeld4000 0x00228408, a pick-up playing)
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    REQUIRE(thug.human().startPickUp(7.0, {44.0F, 40.8F, 0.0F}, 503));
+    CHECK(level.call("HuPlaceItemInHand", {Value(thug.handle()), Value("dyn_bat")}).number() == 0.0);
+    CHECK(thug.human().script().heldObject == 0.0);
 }

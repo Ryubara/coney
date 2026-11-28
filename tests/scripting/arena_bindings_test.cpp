@@ -414,3 +414,26 @@ TEST_CASE("Wheelchair's control, auto-lock flag, reverse button, colour and a te
     CHECK(std::abs(records.find(300.0)->rotation[2] + std::sqrt(0.5F)) < 1e-5F);
     CHECK(std::abs(records.find(300.0)->rotation[3] - std::sqrt(0.5F)) < 1e-5F);
 }
+
+TEST_CASE("HuSetWheelchairControl does nothing for a handle that names no human, and off re-enables no command of a "
+          "human not in the chair",
+          "[scripting][rumble]") {
+    // Expected: characters-locomotion.md#wheelchair, confirmed (code): Human_SetWheelchairControl (0x00234188) acts
+    // only when the handle names a human; off clears the flag and sets switch 11 to 1, and restores the control and
+    // every command only when the human runs the wheelchair control
+    Level level;
+    coney::camera::Cameras cameras;
+    level.context.cameras = &cameras;
+    Brain& racer = level.scene.player();
+    cameras.enable(coney::camera::Cameras::kSwitchLookBehind, true);
+    level.call("HuSetWheelchairControl", {Value(99.0), Value(1.0)});
+    CHECK(cameras.enabled(coney::camera::Cameras::kSwitchLookBehind));
+    // Player 1 (handle 1), not in the chair, with a command off: off sets the switch and leaves the command off.
+    level.call("EnableCommand", {Value(1.0), Value(5.0), Value(0.0)});
+    const std::uint64_t disabled = racer.human().script().disabledCommands;
+    REQUIRE(disabled != 0);
+    cameras.enable(coney::camera::Cameras::kSwitchLookBehind, false);
+    level.call("HuSetWheelchairControl", {Value(1.0), Value(0.0)});
+    CHECK(cameras.enabled(coney::camera::Cameras::kSwitchLookBehind));
+    CHECK(racer.human().script().disabledCommands == disabled);
+}

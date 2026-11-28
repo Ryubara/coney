@@ -101,6 +101,14 @@ class ScriptedHumans final : public script::HumanBindingHost {
     /// class yet, so whatever it holds is let go.
     /// @orig 0x002994b8 Human_DropWeapon (unknown)
     void dropWeapon(double human) override;
+    /// The kind (`+0x86`) of the object type named `type`: 0 for none or an unknown type.
+    using HeldKind = std::function<int(std::string_view type)>;
+    /// Sets the held kind query.
+    void setHeldKind(HeldKind kind) { m_heldKind = std::move(kind); }
+    /// What drops an AI's object `held` into the world after dropWeapon() let go of it.
+    using HeldDrop = std::function<void(Brain& brain, double held)>;
+    /// Sets the held drop.
+    void setHeldDrop(HeldDrop drop) { m_heldDrop = std::move(drop); }
     /// Whoever holds `object` lets go of it, as at dropWeapon(), for `ObjDestroy`.
     /// @coney-only stand-in for Obj_Destroy's release of a held object by its class (objects.md#q-objdestroy-held)
     void releaseObject(double object) override;
@@ -192,6 +200,8 @@ class ScriptedHumans final : public script::HumanBindingHost {
     ArrestHook m_arrestHook;
     TagStart m_tagStart;
     TagBlank m_tagBlank;
+    HeldKind m_heldKind; // setHeldKind()
+    HeldDrop m_heldDrop; // setHeldDrop()
 };
 
 } // namespace coney::ai
