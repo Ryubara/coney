@@ -441,7 +441,9 @@ held kind-`0x27` / `0x10` objects, the airborne bits, a climb's body, a picked o
 Coney, so those steps are left out, and an AI human's fight stance stays his fight goal's; and the binding does not
 read `GoalJoin*`'s fifth argument (processNow), so the join always acts at once, as every call in the game's scripts
 asks (`true`; with `false` the original pushes the goal without processing it, confirmed (code) at `0x002e5300`, and
-the brain's update runs it later, inferred). Rudy then joins role 6
+the brain's update runs it later, inferred; the animation form's `Goal_JoinAnimation` `0x002e5650` ignores it,
+confirmed (code)). The fixed-scene and animation forms bind as the cinematic one does, their own walks to the role's
+start left to the host (a stand-in). Rudy then joins role 6
 and is moved by his role clip. Disc tests: through lesson 6 into `l99_c7` Rudy is in role 6 and moves 11.2 m
 (`tests/platform/disc_level99_power_lesson_test.cpp`); the player still holds Rudy on the update before the play and no
 human is in a pair as it starts (`tests/platform/disc_level99_scene_grab_test.cpp`). Known difference: Coney starts
