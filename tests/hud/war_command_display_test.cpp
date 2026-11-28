@@ -107,10 +107,9 @@ TEST_CASE("the menu reads the right stick only past its dead zone, with a one-ax
     CHECK_FALSE(warCommandStickAngle(raw(0.0F), raw(0.0F)).has_value());
     CHECK_FALSE(warCommandStickAngle(raw(0.0F), raw(-0.8F)).has_value());
     REQUIRE(warCommandStickAngle(raw(0.0F), raw(-0.9F)).has_value());
-    // value_or(-1): a missing angle fails the check instead of being read unchecked.
-    CHECK(warCommandStickAngle(128, 0).value_or(-1.0F) == Catch::Approx(0.0F).margin(0.5F));
-    // Right (y on 128), down (x on 127) and left (y on 128) read 90°, 180° and 270° (an offset of 128 counts as 90°).
-    CHECK(warCommandStickAngle(255, 128).value_or(-1.0F) == Catch::Approx(90.0F).margin(0.5F));
+    // value_or(-1): a missing angle fails the check instead of being read unchecked. Right (y on 129), down (x on
+    // 127) and left (y on 128) read 90°, 180° and 270° (an offset of 128 counts as 90°).
+    CHECK(warCommandStickAngle(255, 129).value_or(-1.0F) == Catch::Approx(90.0F).margin(0.5F));
     CHECK(warCommandStickAngle(127, 255).value_or(-1.0F) == Catch::Approx(180.0F).margin(0.5F));
     CHECK(warCommandStickAngle(0, 128).value_or(-1.0F) == Catch::Approx(270.0F).margin(0.5F));
     // Only one axis is read: full right with the y byte at 127 is in the up-right quadrant and reads asin(127/128).
@@ -119,6 +118,21 @@ TEST_CASE("the menu reads the right stick only past its dead zone, with a one-ax
     CHECK(warCommandStickAngle(127, 0).value_or(-1.0F) == Catch::Approx(0.0F).margin(0.5F));
     // A 45° push of 0.9 up-right reads about 39°: asin of the x offset only.
     CHECK(warCommandStickAngle(raw(0.636F), raw(-0.636F)).value_or(-1.0F) == Catch::Approx(39.0F).margin(1.0F));
+}
+
+// docs/research/hud.md#warrior-command-menu: a byte of exactly 128 counts as up for the quadrant and on both sides for
+// the axis read (WarCommandDisplay_ReadStick, 0x001a7040), which is why a stick exactly up at x 128 leaves the
+// highlight where it was (seen at runtime).
+TEST_CASE("a stick byte of exactly 128 counts as up for the quadrant and on both sides for the axis read",
+          "[hud][war-commands]") {
+    // Exactly up at x 128: the up-right quadrant, read on the y axis: 90°, between slots, so nothing new is picked.
+    CHECK(warCommandStickAngle(128, 0).value_or(-1.0F) == Catch::Approx(90.0F).margin(0.5F));
+    CHECK(warCommandSlotAt(warCommandStickAngle(128, 0).value_or(-1.0F), 3) == 3);
+    // Full right with y on 128: the up-right quadrant read on the y axis, an offset of 0: 0°, the up slot.
+    CHECK(warCommandStickAngle(255, 128).value_or(-1.0F) == Catch::Approx(0.0F).margin(0.5F));
+    CHECK(warCommandSlotAt(warCommandStickAngle(255, 128).value_or(-1.0F), 2) == 0);
+    // Exactly down at x 128: the down-right quadrant read on the y axis, about 173°, the down slot.
+    CHECK(warCommandStickAngle(128, 255).value_or(-1.0F) == Catch::Approx(172.9F).margin(0.5F));
 }
 
 TEST_CASE("the highlighted sector reaches 11.25 degrees into its neighbours", "[hud][war-commands]") {
