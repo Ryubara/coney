@@ -1114,9 +1114,10 @@ before its loop (confirmed (code)); Coney loads no pack between the two, so it c
 front end's scene, which preloads again for each new camera, kept the parts an earlier camera saw. Kept differences:
 the visibility latch is not kept (nothing in Coney reads it); `WorldManager::resetVisibility` itself waits for its
 other caller, `ResourceMgr_LoadAllBlocking` (`0x001889d0`), and nothing reads the load priority until the resource
-manager streams. The rumble menu's enter (`0x0015e8b0`) does not set the priority to 10.0 yet, noted at the code. The
-pool sizes still use 64-bit arithmetic where the original truncates to 32 bits; they differ only for a file over about
-41 MB (inferred: no level file or `warriors.glr` is near that size).
+manager streams. The rumble menu's enter (`RumbleMenuMode::enter`, `0x0015e8b0`) does not set the priority to 10.0
+yet: it holds no world manager, and nothing would read the value. The pool sizes still use 64-bit arithmetic where
+the original truncates to 32 bits; they differ only for a file over about 41 MB (inferred: no level file or
+`warriors.glr` is near that size).
 
 ### Test ideas {#u18-tests}
 

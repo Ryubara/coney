@@ -105,8 +105,6 @@ void RumbleMenuMode::enter() {
     }
     m_lastScreen = {};
     m_startPending = true;
-    // Not ported yet: the original also sets the world manager's load priority to 10.0 here (0x0015e9d0). Nothing in
-    // Coney reads the priority until the resource manager streams (#380), and this mode holds no world manager.
 }
 
 ModeResult RumbleMenuMode::update(GameModeStack& stack, const FrameTime& frame) {

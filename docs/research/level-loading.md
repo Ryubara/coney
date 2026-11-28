@@ -594,6 +594,8 @@ So the worlds' textures and layout are loaded **before** the level file, and bot
 
 ### Preload {#preload}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 `WorldManager_Preload` (`0x0040e2d8(radius, worldManager, budgetMs, value, packName)`), confirmed (code):
 
 1. Refuse to run twice at once (`+0x2c`).
@@ -615,8 +617,8 @@ So the worlds' textures and layout are loaded **before** the level file, and bot
 
 **In Coney:** `world::preloadWorlds` clears the worlds' visible marks (step 5; once, as no pack loads between) and
 runs the streaming loop of step 8. It stops on a pass with no work, or once the pending sector lies beyond the
-radius, where the original only counts such a pass toward the 200 and goes on (a stand-in until #710, as are the
-missing deadline and the camera radius of step 3). Steps 1, 2, 4, 6, 9 and 10 wait for the resource manager (#380).
+radius, where the original only counts such a pass toward the 200 and goes on (a stand-in marked at the code, as are
+the missing deadline and the camera radius of step 3). Steps 1, 2, 4, 6, 9 and 10 wait for the resource manager.
 
 ### A frame of play {#a-frame-of-play}
 
