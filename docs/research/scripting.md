@@ -2935,11 +2935,22 @@ at `e5d58e85`).
   update 30, the first HelpRespond at update 21 (none before 13), none on the idle player, and after the attack
   order the checks of item 5 of the list What Coney must do ([the timeline](#level80-fight-timeline)). The release
   test fails below update 5 for the last fight and on any HelpRespond before update 13.
-- **The ring.** Sixty updates after the scene's end 10 of the original's twelve Destroyers stand more than 0.5 m
-  from their flags (run r-20261123-level80-block-breaks), Coney's 11 now that its fight goal queues the band-keeping
-  move ([MoveMelee](ai-moving.md#move-melee)): its waiting attackers back off to the ring and circle as the
-  original's do. Before that move, Coney's waiters stood inside the ring and only 5 left their flags. The disc test
-  prints the count and does not check it (#1663).
+- **The ring.** The original's block breaks into a ring round Cochise and Swan within 40 to 60 updates of the
+  scene's end. Sixty updates after it, 10 and 9 of its twelve Destroyers stand more than 0.5 m from their flags, the
+  farthest 2.68 m and 3.44 m off (runs r-20261123-level80-block-breaks and r-20261128-level80-ring-shape). In the
+  second run 3 stand within 1.5 m of Cochise or Swan and the other 9 from 2.65 m to 5.42 m: the fighters close in and
+  the waiters keep the fight goal's band ([MoveMelee](ai-moving.md#move-melee)). Its counts off the flags at updates
+  20, 30 and 40 are 5, 7 and 6. Confirmed (runtime), run r-20261128-level80-ring-shape.
+- **The ring in Coney** (checked 2026-11-28 on `main` at `65939f909`, the disc test's prints and a one-off print of
+  the same measures). Coney's ring has the same shape at update 60: 9 of 12 off their flags, 3 within 1.5 m of Cochise
+  or Swan and the other 9 from 3.30 m to 4.76 m. It forms a little sooner (10 off their flags at update 40, the
+  original 6) and its farthest Destroyer is 5.13 m off his flag (one who ran in from the far side under EngageEnemy).
+  The disc test (`repo:tests/platform/disc_level80_brawl_test.cpp`) checks at least 8 of 12 off their flags at update
+  60 and every Destroyer within 6 m of Cochise or Swan.
+- **Past 60 updates** the two differ more. At update 100 one of Coney's pair stands 5.8 m from her flag, where the
+  original's Swan is 3.0 m and Cochise 0.3 m from theirs (the same run), and over 450 updates Coney's Destroyers
+  reach x −240.7 and y 160.7, beyond the original's x −244 and y 158 over 3,000 updates
+  ([above](#level80-fight-start)): Coney's fight drifts north-east. Why is an open question below.
 
 ## Open questions
 
@@ -3006,3 +3017,7 @@ at `e5d58e85`).
   and, on foot, up the stairs to the roof, then plays the lesson. The box is empty when the bottle breaks, `TT_7` is
   the next hint and no lesson text comes back. The original was not traced for this; the order is the one in
   [the order at runtime](#level80-hints).)
+- **The level80 fight's drift.** Why Coney's fight at checkpoint 4 moves north-east after about 60 updates, where the
+  original's stays near the flags: one of Coney's pair is 5.8 m from her flag at update 100, the original's Swan
+  3.0 m and Cochise 0.3 m ([the ring in Coney](#level80-think-fight)). To trace: Cochise's and Swan's goals and the
+  hits that move them over updates 60 to 100 on both games.
