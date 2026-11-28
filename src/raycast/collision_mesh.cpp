@@ -234,6 +234,16 @@ std::span<const std::uint16_t> CollisionMesh::cellTriangles(std::uint32_t x, std
     return std::span<const std::uint16_t>(m_lists).subspan(offset + 1, m_lists[offset]);
 }
 
+std::span<const std::uint16_t> CollisionMesh::cellListOnward(std::uint32_t x, std::uint32_t y, std::uint32_t z) const {
+    CONEY_ASSERT(x < m_nx && y < m_ny && z < m_nz);
+    const std::uint32_t offset = m_grid[(std::size_t{z} * m_ny + y) * m_nx + x];
+    if (offset == 0) {
+        return {};
+    }
+    // build() checked that the list fits in the buffer, so offset + 1 is at most its size.
+    return std::span<const std::uint16_t>(m_lists).subspan(offset + 1);
+}
+
 Vec3 CollisionMesh::faceNormal(std::uint32_t index) const {
     const CollisionTriangle& triangle = m_triangles.at(index);
     const Vec3 a = m_vertices[triangle.vertices[0]];

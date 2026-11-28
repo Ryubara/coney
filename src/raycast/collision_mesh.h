@@ -160,6 +160,13 @@ class CollisionMesh final : public chunk::LoadedObject {
     [[nodiscard]] std::array<std::uint32_t, 3> cellOf(Vec3 point) const;
     /// The triangle indices listed in cell (x, y, z), which must be inside the grid (checked by CONEY_ASSERT).
     [[nodiscard]] std::span<const std::uint16_t> cellTriangles(std::uint32_t x, std::uint32_t y, std::uint32_t z) const;
+    /// The index buffer from cell (x, y, z)'s first listed triangle to the buffer's end: the cell's list, as
+    /// cellTriangles() gives it, then every value stored after it (the other cells' counts and lists). Empty for a cell
+    /// with no list; the cell must be inside the grid (checked by CONEY_ASSERT). The walking capsule's sweep reads past
+    /// a list's end with it (docs/research/physics-bodies.md#u2-capsule-walk-overrun).
+    /// @coney-only the original's walk reads the buffer through its pointer; Coney hands out a bounded view of it
+    [[nodiscard]] std::span<const std::uint16_t> cellListOnward(std::uint32_t x, std::uint32_t y,
+                                                                std::uint32_t z) const;
 
     /// The unit face normal of triangle `index`: (v1 - v0) × (v2 - v0), normalised (zero for a degenerate triangle).
     [[nodiscard]] Vec3 faceNormal(std::uint32_t index) const;

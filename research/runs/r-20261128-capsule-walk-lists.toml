@@ -1,0 +1,52 @@
+version = 1
+id = "r-20261128-capsule-walk-lists"
+date = "2026-11-28"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "920571131040f9f7a60b1c6744ec2d473aee28c0110fd1b15e2e9d56df816655"
+
+[who]
+agent = "a7a5ba5e348646940"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = []
+
+[run]
+name = ""
+method = "Walked the player into the street's walls with the pad; at a break in PhysicsMesh_SweepCapsule at 0x00348170 read the mesh pointer the walk keeps at sp+0x4780, its header (+0x70 cells, +0x78 grid, +0x7c list count, +0x80 lists, +0x84 triangle count, +0x88 triangles, +0x8c vertices, +0x94 checked set), the first and last bytes of the u16 index buffer and the bytes after its end; a conditional break at 0x00348170 on f1 above 1.0 (raw bits above 0x3f800000) watched for kernel hits beyond the move while walking along walls and past corners"
+
+[values]
+cells_x = 88
+cells_y = 37
+cells_z = 2
+list_count = 4933
+triangle_count = 1718
+first_u16 = 0
+first_list_count = 6
+last_list_count = 2
+bytes_from_list_end_to_header = 6
+u16_after_end_0 = 0
+u16_after_end_1 = 3785
+u16_after_end_2 = 0
+header_first_u16 = 18608
+walk_frames_watched = 3300
+hits_above_1_seen = 0
+
+[addresses]
+sweep_capsule = 0x00347c08
+branch_likely = 0x00348170
+mesh = 0x012bd7c0
+grid = 0x012b4b70
+lists = 0x012bb130
+lists_end = 0x012bd7ba
+triangles = 0x012b0850
+vertices = 0x012ac050
+checked = 0x012abf70
