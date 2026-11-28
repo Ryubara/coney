@@ -27,6 +27,7 @@ TEST_CASE("PS2 arithmetic rounds every result toward zero", "[core][ps2_float]")
 }
 
 TEST_CASE("a velocity's PS2 length never exceeds the exact length", "[core][ps2_float]") {
+    // Expected: characters-locomotion.md#run-stop, confirmed (runtime)
     // Rembrandt's run speed along headings round the circle: the length rounded toward zero is at most the exact
     // length, and a steady run's measured speed comes out at most a few units in the last place from the run speed.
     const float run = std::bit_cast<float>(0x40f9a3adU);
