@@ -666,7 +666,7 @@ status = "legacy"
 [[function]]
 address = 0x0022fa78
 name = "Human_StartWounded"
-page = "characters-script.md#hu-wounded"
+page = "characters/index.md#code-core"
 role = "Clears the fight states, drops what is held, pushes the wounded style, sets the health to a quarter of the maximum and state 0x10000, and tells the brain the human is knocked out."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::startWounded"
@@ -685,7 +685,7 @@ issue = 685
 [[function]]
 address = 0x0022fc00
 name = "Human_EndWounded"
-page = "characters-script.md#hu-wounded"
+page = "characters/index.md#code-core"
 role = "Clears state 0x10000, restores push weight and pops the wounded style (0xd)."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::endWounded"
