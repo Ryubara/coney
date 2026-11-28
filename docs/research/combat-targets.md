@@ -1190,8 +1190,8 @@ target's own turn is not dropped there, a `Combatant` offering none.
   on the same list the original builds (its order and its 32-entry cap), so that of equal distances in a list of 7 or
   more the one it puts first is taken: from 7 entries its partition may put a later equal first (confirmed (runtime),
   run r-20261128-sort-equal-keys; [Equal distances](#searches-coney)), where Coney keeps the earlier. A tie in such a
-  crowd needs two of seven or more candidates at one distance. Left for #1597: the enemy scan (`Brain_ScanEnemies`
-  `0x0028b358`) sorts with the same `SortByKeyAscending` past 16 entries, so one port of the `qsort` serves both.
+  crowd needs two of seven or more candidates at one distance. The enemy scan (`Brain_ScanEnemies` `0x0028b358`)
+  sorts with the same `SortByKeyAscending` past 16 entries, so one port of the `qsort` serves both.
 - **L1's action delay**{#q-l1-delay}: who sets the per-player action delay (player state `+0x4d` / `+0x50`, read by
   `PlayerRec_GetActionDelayLeft`) that refuses L1 held ([The fight stance](#fight-stance)).
 
