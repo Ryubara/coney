@@ -1093,7 +1093,8 @@ order, and sort each list with `SortByKeyAscending` `0x003868d0`, the library's 
 `0x00433fd8`) with the comparator `Cmp_KeyAscending` `0x00386860`, which answers 0 for equal keys; every search of this
 page sorts so (`Player_PickTarget` `0x0027a6c0`, `Player_FindAttackTarget` `0x0027a4b0`, `Attack_FindNearestInReach`
 `0x0027b058`, `Player_PickThrowTarget` `0x0027ad80`, `Player_FindSnapTarget` `0x0027aa38`, `Player_FindCounterTarget`
-`0x0027ac30` and `Player_FindNearestEnemy` `0x0027b1a0`, the object passes of the first four too): confirmed (code) at
+`0x0027ac30` and `Player_FindNearestEnemy` `0x0027b1a0`, the object passes of the first four too, and the pick's car
+pass with `SortRecordsByKey` `0x00386920`, the same `qsort` and comparator over larger records): confirmed (code) at
 those addresses. Below 7 entries that `qsort` sorts by insertion and moves an entry back only past a greater key, so of
 two candidates at the same distance the earlier in the list stays first and is taken: confirmed (code) at `0x00433fd8`,
 and confirmed (runtime), run r-20261128-sort-equal-keys (three entries keyed 2, 1, 1 came back with the two equal keys
