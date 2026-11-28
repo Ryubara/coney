@@ -286,7 +286,7 @@ void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float 
         range != nullptr && range->reach > 0.0F ? range->reach : (m_rear ? kConnectReachRear : kConnectReachFront);
     const float listed = m_ranges != nullptr ? m_ranges->farRange(clip) : 0.0F;
     // `Pair_AlignStart` scales the far range by 1.25 for a player's grab only (brain kind 0); an AI's stops at it.
-    const float far = (listed > 0.0F ? listed : kConnectFarRange) * (m_player ? kPlayerFarScale : 1.0F);
+    const float far = (listed > 0.0F ? listed : kConnectFarRange) * kPlayerFarScale; // stub: the old scale
     const PairAlignment align = alignPair(input.position, m_held->position(), reach, far, m_rear);
     // The grab-block flag of the grab's side on either human (`Grab_IntroEnd`): the grab does not go on.
     const std::uint64_t block = m_rear ? flag::kBlockRearGrab : flag::kBlockFrontGrab;

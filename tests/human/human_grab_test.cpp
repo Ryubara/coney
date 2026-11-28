@@ -361,7 +361,7 @@ TEST_CASE("a human with flag 0x40 cannot be grabbed: the grab misses", "[human][
     CHECK(fight.player().fighter().held() == nullptr);
 }
 
-TEST_CASE("only a player's grab connects out to 1.25 x the connecting clip's far range; an AI's stops at the far range",
+TEST_CASE("a player's grab connects within 1.25 x the connecting clip's far range; an AI's grab there misses",
           "[human][combat]") {
     // Expected: combat-grabs.md#grab-posing, confirmed (code) (`Pair_AlignStart` 0x00276998 scales the far range by
     // 1.25 only for a grabber whose brain kind is 0)
@@ -386,7 +386,7 @@ TEST_CASE("only a player's grab connects out to 1.25 x the connecting clip's far
         bool missed = false;
         fight.run("", 40, [&](std::uint64_t /*frame*/) {
             const std::uint32_t clip = fight.other().animator().animId();
-            started = started || clip == combat::anim_id::kGrabIntro;
+            started = started || clip == combat::anim_id::kGrabPlayerIntro;
             attached = attached || fight.player().attached();
             missed = missed || clip == combat::anim_id::kGrabMiss;
         });
