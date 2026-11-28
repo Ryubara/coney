@@ -1281,7 +1281,9 @@ Confirmed (code) for what the cited original functions do (the sections above); 
 - **The visibility quirk.** `StreamedWorld::markVisible` marks the world's own sector. To match the original's
   streaming order, the pass over the `d` world must mark the **`s` world's** bit with the `d` sector's index, and the
   `d` world's marks stay clear: an "Original quirk, kept" in `findVisibleSectors` (a pass needs the `s` world as the
-  mark target), with a test. Single-world levels are unaffected.
+  mark target), with a test. Single-world levels are unaffected. The drawing does not stand in the way:
+  `StreamedWorld::collectSectors` picks the sectors to draw by the camera's own frustum and never reads the marks, as
+  the original's draw list never reads the bits ([Visibility](world.md#visibility)).
 - **Order inside the callback.** When Coney adds occluders, the test comes after the index check and before the
   count; when it adds PVS, the PVS answer only decides marking and collecting. Until then the frustum test stands for
   both (already marked in `streamed_world.h`).

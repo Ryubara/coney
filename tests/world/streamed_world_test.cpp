@@ -118,7 +118,8 @@ TEST_CASE("a part with a visible sector is not unloaded", "[streamed_world]") {
     CHECK(candidate.part == 1); // part 2 is seen and part 3 is the last
 }
 
-TEST_CASE("only visible, loaded sectors are collected, in the BSP's front-to-back order", "[streamed_world]") {
+TEST_CASE("loaded sectors in the frustum are collected, in the BSP's front-to-back order", "[streamed_world]") {
+    // Expected: world.md#visibility, confirmed (code)
     auto world =
         StreamedWorld::create("test", rowOfSectors({{0, 1}, {1, 1}, {2, 2}, {3, 3}}, 3), rowManifest({1, 1, 1}));
     REQUIRE(world.has_value());
@@ -129,15 +130,54 @@ TEST_CASE("only visible, loaded sectors are collected, in the BSP's front-to-bac
     pose.position = Vec3{100.0F, 5.0F, 5.0F};
     pose.forward = Vec3{-1.0F, 0.0F, 0.0F};
     pose.right = Vec3{0.0F, 0.0F, -1.0F};
-    world->findVisibleSectors(coney::world::ViewFrustum(pose, 1.0F, 1.0F, 0.5F, 500.0F), true);
+    const coney::world::ViewFrustum frustum(pose, 1.0F, 1.0F, 0.5F, 500.0F);
     // Collected back to front by the BSP (0, 1, 3 from x = 100), drawn last collected first; sector 2's part is not
     // loaded.
-    CHECK(world->collectSectors(pose.position) == std::vector<std::uint32_t>{3, 1, 0});
+    CHECK(world->collectSectors(pose.position, frustum) == std::vector<std::uint32_t>{3, 1, 0});
     // From the other end of the row the walk turns round at every plane.
-    CHECK(world->collectSectors(Vec3{-50.0F, 5.0F, 5.0F}) == std::vector<std::uint32_t>{0, 1, 3});
+    CHECK(world->collectSectors(Vec3{-50.0F, 5.0F, 5.0F}, frustum) == std::vector<std::uint32_t>{0, 1, 3});
     // From inside sector 1: sector 0 (beyond x 10) is walked first, then the far end (beyond x 20), sector 1 last, so
     // it is drawn first. The BSP's order, not the distance's: sector 3 comes before the nearer sector 0.
-    CHECK(world->collectSectors(Vec3{15.0F, 5.0F, 5.0F}) == std::vector<std::uint32_t>{1, 3, 0});
+    CHECK(world->collectSectors(Vec3{15.0F, 5.0F, 5.0F}, frustum) == std::vector<std::uint32_t>{1, 3, 0});
+}
+
+// World_CollectSector (0x00411b20) is called from the visibility walk's sector callback (0x00411b98) for each indexed
+// sector the walk keeps, and WorldManager_Render (0x0040e8d8) draws the list it fills; the visible bits the callback
+// sets are only read by the streaming searches. So what is drawn follows the walk alone
+// (docs/research/world.md#visibility).
+TEST_CASE("the sectors drawn follow the view's own walk and never the visibility marks", "[streamed_world]") {
+    // Expected: world.md#visibility, confirmed (code)
+    auto world =
+        StreamedWorld::create("test", rowOfSectors({{0, 1}, {1, 1}, {2, 2}, {3, 3}}, 3), rowManifest({1, 1, 1}));
+    REQUIRE(world.has_value());
+    for (std::uint32_t part = 1; part <= 3; ++part) {
+        world->markPartLoaded(part, 0);
+    }
+    // From inside sector 1 looking along -x: sectors 0 and 1 are in view, 2 and 3 behind the camera.
+    coney::world::CameraPose pose;
+    pose.position = Vec3{15.0F, 5.0F, 5.0F};
+    pose.forward = Vec3{-1.0F, 0.0F, 0.0F};
+    pose.right = Vec3{0.0F, 0.0F, -1.0F};
+    const coney::world::ViewFrustum frustum(pose, 1.0F, 1.0F, 0.5F, 500.0F);
+    const std::vector<std::uint32_t> inView{1, 0}; // the BSP's order from x = 15, behind the camera left out
+
+    SECTION("no sector marked") {
+        world->resetVisibility();
+        CHECK(world->collectSectors(pose.position, frustum) == inView);
+    }
+    SECTION("every sector marked, as the d world's pass may mark the s world's (physics-world.md#u19-visibility)") {
+        for (std::uint32_t sector = 0; sector < 4; ++sector) {
+            world->markVisible(sector);
+        }
+        CHECK(world->collectSectors(pose.position, frustum) == inView);
+    }
+    SECTION("marked by a pass looking the other way") {
+        coney::world::CameraPose back = pose;
+        back.forward = Vec3{1.0F, 0.0F, 0.0F};
+        back.right = Vec3{0.0F, 0.0F, 1.0F};
+        world->findVisibleSectors(coney::world::ViewFrustum(back, 1.0F, 1.0F, 0.5F, 500.0F), true);
+        CHECK(world->collectSectors(pose.position, frustum) == inView);
+    }
 }
 
 TEST_CASE("a new atomic fades in over one second", "[streamed_world]") {

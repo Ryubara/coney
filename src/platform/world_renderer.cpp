@@ -315,8 +315,9 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
             draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
         }
         const std::vector<world::StreamedSector>& sectors = worlds[w]->sectors();
-        for (const std::uint32_t sector : worlds[w]->collectSectorsIn(view.pose.position, frustum)) {
-
+        // Stand-in: the original's visibility pass here also sets the world's visible marks; Coney's simulation sets
+        // them (findVisibleSectors on the newest view), so the render only selects by its own frustum.
+        for (const std::uint32_t sector : worlds[w]->collectSectors(view.pose.position, frustum)) {
             if (rw::Atomic* atomic = set.atomic(w, sector); atomic != nullptr) {
                 states.alphaTest = sceneAlphaTest(draw::getRenderState(rw::ALPHATESTFUNC));
                 renderSectorAtomic(engine, atomic, set.sectorMesh(w, sector), states, sectors[sector].fadeEndMs, nowMs);

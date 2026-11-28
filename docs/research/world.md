@@ -525,6 +525,8 @@ second**.
 
 ### Visibility {#visibility}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 `World_FindVisibleSectors` (`0x00411d10`), confirmed (code):
 
 1. For the first viewport, reset: clear the visible bits and the 32 bytes at `+0x18`, and, if the world has PVS data,
@@ -540,6 +542,14 @@ second**.
    when its atomic is loaded, and mark it visible in the **`s` world's** `+0x08f8` (`GetSolidWorld`), whichever world
    is being walked, so the `d` world's own bits stay clear. A sector without an index is neither counted, collected
    nor marked. The full callback: [Physics, Unit 19](physics-world.md#u19-visibility).
+
+**What is drawn never reads the visible bits.** The draw list is the world manager's vector at `+0x50`
+(begin) to `+0x58` (capacity end): `World_CollectSector` (`0x00411b20`) appends a sector to it when its plugin state
+is 2 (atomic loaded), and `WorldManager_Render` (`0x0040e8d8`) right after each world's `World_FindVisibleSectors`
+call draws it from the end, popping each entry, so the list is empty again before the `d` world's walk fills it.
+Neither function reads `+0x08f8`; the streaming searches `World_FindPartToLoad` and `World_FindPartToUnload` do
+([Choosing what to stream](#streaming)). So the `s` world's bits gaining the `d` world's indices changes what streams,
+never what is drawn. Confirmed (code) at the cited addresses.
 
 Because the world's render order is back-to-front and the list is drawn from its end, sectors are drawn roughly
 front to back (inferred).
@@ -652,9 +662,12 @@ registered from Coney's code; librw needs no patch.
   `0x004123e8`, `0x00411d10` and `0x00411b20`. The two quirks are kept and marked in the code: the squared distance
   compared with the plain draw distance, and part `n` never unloaded. A consequence of the metric shows in the tests:
   a camera inside a sector is as near to the neighbour across the closest face, and the lower index wins the tie.
-  `pendingDistance` is `FLT_MAX` when the last search found nothing. `collectSectors` walks the world's BSP back to
-  front from the viewport camera (the far side of each plane first) and returns the sectors last collected first, as
-  the original draws its list; the reader keeps the BSP's planes for it (`world_streams.h`, `BspPlane`).
+  `pendingDistance` is `FLT_MAX` when the last search found nothing. `collectSectors` is the draw selection: it walks
+  the world's BSP back to front from the camera (the far side of each plane first), keeps the indexed, loaded sectors
+  whose box the camera's frustum may contain, and returns them last collected first, as the original draws its list;
+  the reader keeps the BSP's planes for it (`world_streams.h`, `BspPlane`). It never reads the visible marks, which
+  only the streaming searches read, as in the original ([Visibility](#visibility)); the renderer passes its own
+  frustum, so a view blended between two steps draws what it sees without redoing the simulation's pass.
 - `world_streamer.h`: `updateStreaming` (`WorldManager_Update`) makes one decision a frame across the `s` and `d`
   worlds through a `PartStore`; `requestPart` (`0x00412310`); `preloadWorlds` (`WorldManager_Preload`, radius = the
   draw distance); `adjustDrawDistance` (step 3 of [A frame](#a-frame)). The 5.0 unload margin is added to the wanted

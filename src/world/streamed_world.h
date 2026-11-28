@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
-#include <functional>
 #include <limits>
 #include <optional>
 #include <span>
@@ -35,7 +34,8 @@ struct StreamedSector {
     Vec3 origin;                 ///< Where its atomic's frame goes (sector plugin +0x14).
     std::uint32_t part = 0;      ///< The part file holding its atomic.
     bool loaded = false;         ///< Its atomic is in place (sector plugin state 2).
-    bool visible = false;        ///< Marked by the last visibility pass (the world's visible bits, +0x08f8).
+    bool visible = false;        ///< Marked by the last visibility pass (the world's visible bits, +0x08f8); only
+                                 ///< the streaming searches read it, never the drawing.
     std::uint64_t fadeEndMs = 0; ///< Game time in milliseconds when its fade-in ends (sector plugin +0x10).
 };
 
@@ -132,20 +132,20 @@ class StreamedWorld {
     /// Marks sector `sector` visible, as the visibility pass's sector callback does for a sector it keeps.
     void markVisible(std::uint32_t sector);
 
-    /// The sectors to draw for this viewport, in drawing order: those marked visible whose atomic is loaded, collected
-    /// in a back-to-front walk of the world's BSP from `viewpoint` (the viewport camera's position, RenderWare axes)
-    /// and returned last collected first, as the original draws its list from the end: so front to back by the BSP. At
-    /// each plane the side `viewpoint` is not on is walked first. A layout without planes and with several sectors
-    /// (only synthetic ones) is collected in stream order (a Coney choice).
+    /// The sectors to draw through `frustum`, in drawing order: the indexed sectors whose box `frustum` may contain and
+    /// whose atomic is loaded, collected in a back-to-front walk of the world's BSP from `viewpoint` (the camera's
+    /// position, RenderWare axes) and returned last collected first, as the original draws its list from the end: so
+    /// front to back by the BSP. At each plane the side `viewpoint` is not on is walked first. A layout without planes
+    /// and with several sectors (only synthetic ones) is collected in stream order (a Coney choice).
+    ///
+    /// The visible marks are never read: in the original the draw list is filled by the visibility walk itself (its
+    /// sector callback, 0x00411b98, calls World_CollectSector for each sector it keeps) and emptied by the draw, while
+    /// the marks are read only by the streaming searches (docs/research/world.md#visibility). Coney's render takes its
+    /// own frustum, so a view blended between two steps (docs/guides/conventions.md#update-and-render) draws what it
+    /// sees without redoing the simulation's pass. Stand-in: the frustum test stands for RenderWare's walk; occluders
+    /// and the PVS are not consulted (they only save work).
     /// @orig 0x00411b20 World_CollectSector (WorldPS2.cpp)
-    [[nodiscard]] std::vector<std::uint32_t> collectSectors(Vec3 viewpoint) const;
-
-    /// As collectSectors(), but choosing the loaded sectors whose box `frustum` may contain instead of those the last
-    /// visibility pass marked. For a render that blends between two steps
-    /// (docs/guides/conventions.md#update-and-render): its camera is not the one the visibility pass used, and the
-    /// marks belong to the simulation (streaming reads them), so the render must not redo the pass. With the pass's own
-    /// frustum it gives exactly collectSectors().
-    [[nodiscard]] std::vector<std::uint32_t> collectSectorsIn(Vec3 viewpoint, const ViewFrustum& frustum) const;
+    [[nodiscard]] std::vector<std::uint32_t> collectSectors(Vec3 viewpoint, const ViewFrustum& frustum) const;
 
     /// Records that part `number`'s atomics are in place, their fade-in ending kFadeInMs after `nowMs`.
     void markPartLoaded(std::uint32_t number, std::uint64_t nowMs);
@@ -156,10 +156,6 @@ class StreamedWorld {
 
   private:
     StreamedWorld() = default;
-
-    /// The BSP walk both collectSectors() share: the loaded sectors `chosen` keeps, in drawing order.
-    [[nodiscard]] std::vector<std::uint32_t>
-    collectSectorsWhere(Vec3 viewpoint, const std::function<bool(const StreamedSector&)>& chosen) const;
 
     // The nearest sector with a missing atomic among those `include` accepts, and its squared distance.
     template <typename Predicate>
