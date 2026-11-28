@@ -77,6 +77,42 @@ TEST_CASE("a help call reaches no one beyond its range or the hearer's help hear
     CHECK(far.target() == nullptr);
 }
 
+TEST_CASE("a help call's range and hearing reach in 3D, missing friends on ledges above who are within them across "
+          "the ground",
+          "[ai][events]") {
+    // Expected: ai-brain-types.md#help-calls, confirmed (code): Brain_IsInHearRange 0x002935d8 compares the 3D squared
+    // distance Humans_FindAhead 0x002274a8 stored (x, y and z squared, 0x00227518-0x00227530) with the hearer's +0x138
+    // squared, through AI_AlertNearby 0x00293768
+    AiScene scene;
+    // An 8 m ledge east of the caller and a 10 m one south of him.
+    scene.mesh = coney::test::makeMesh(
+        coney::test::join(coney::test::join(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F),
+                                            coney::test::floorAt(8.0F, 50.0F, 54.0F, 38.0F, 42.0F)),
+                          coney::test::floorAt(10.0F, 42.0F, 46.0F, 20.0F, 24.0F)));
+    Brain& victim = member(scene, 19, "Punks", {44.0F, 40.0F, 0.0F});
+    // 8 m off across the ground on the same floor: within his 10 m hearing.
+    Brain& level = scene.add({44.0F, 48.0F, 0.0F}, 0.0F);
+    scene.brains.gangs().addMember(victim.gang()->id(), level);
+    level.senses().helpHearRange = 10.0F;
+    // 8 m off across the ground and 8 m up: 11.3 m in 3D, beyond his 10 m hearing.
+    Brain& above = scene.add({52.0F, 40.0F, 8.0F}, 0.0F);
+    scene.brains.gangs().addMember(victim.gang()->id(), above);
+    above.senses().helpHearRange = 10.0F;
+    REQUIRE(above.human().position().z > 7.9F);
+    // 18 m off across the ground and 10 m up: 20.6 m in 3D, beyond the call's 20 m though he hears 30 m.
+    Brain& farAbove = scene.add({44.0F, 22.0F, 10.0F}, 0.0F);
+    scene.brains.gangs().addMember(victim.gang()->id(), farAbove);
+    farAbove.senses().helpHearRange = 30.0F;
+    REQUIRE(farAbove.human().position().z > 9.9F);
+    Brain& aggressor = member(scene, 21, "Others", {45.0F, 40.0F, 0.0F});
+    scene.run(1);
+
+    coney::ai::broadcastHelpCall(victim, coney::ai::kHelpCallShared, &aggressor);
+    CHECK(level.target() == &aggressor);
+    CHECK(above.target() == nullptr);
+    CHECK(farAbove.target() == nullptr);
+}
+
 TEST_CASE("a gang soldier hit by a stranger fights him and calls for help", "[ai][events]") {
     AiScene scene;
     Brain& soldier = member(scene, 19, "Punks", {44.0F, 40.0F, 0.0F});
