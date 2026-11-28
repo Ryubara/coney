@@ -404,9 +404,9 @@ NativeFunction makeSetWheelchairControl(const BindingContext& context) {
     };
 }
 
-// One byte of `ObjColor`'s tint: the component times 255 (Obj_SetColour), times 255 again (Colour_PackFloat), turned
-// into an unsigned integer as Float_ToUInt does (0 for a negative value or NaN, all ones from 2^32) and kept to its
-// low 8 bits (Float_ToUInt, 0x0042c718). Since 65,025 is 1 modulo 256, a whole component 0-255 comes out as itself.
+// One byte of `ObjColor`'s tint: the component times 255 twice (Obj_SetColour, Colour_PackFloat), to an unsigned
+// integer as Float_ToUInt 0x0042c718 does (0 below zero or NaN, all ones from 2^32), low 8 bits: 0-255 whole is exact.
+// Stand-in: host floats round to nearest, the EE's toward zero, so a fraction's byte may differ.
 // @orig 0x0017aca8 Colour_PackFloat (unknown)
 std::uint32_t colourByte(float component) {
     constexpr float kScale = 255.0F;
