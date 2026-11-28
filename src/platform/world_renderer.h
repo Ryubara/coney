@@ -84,7 +84,7 @@ class WorldRenderer {
     /// drawn into the whole window and presented. With `level`, its background comes first and its light glows open the
     /// world pass; `pendingDistance` (the nearest missing scenery, world::nearestPendingDistance()) brings the
     /// skyline's near clip closer. Draws the loaded sectors that `view`'s own frustum may contain
-    /// (StreamedWorld::collectSectorsIn), so a view blended between two steps draws what it sees without redoing the
+    /// (StreamedWorld::collectSectors), so a view blended between two steps draws what it sees without redoing the
     /// simulation's visibility pass. `nowMs` is game time for the fade-in and the clouds. `drawObjects`, when given,
     /// draws the objects between the `s` and the `d` world (step 7, where the original draws the resource manager's
     /// queued objects); it may change the current lights and render states, which are put back after it. `overlay`,
