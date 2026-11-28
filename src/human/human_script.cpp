@@ -106,8 +106,8 @@ void Human::arrest() {
     if (m_fighter.victim().stunned() && !m_fighter.victim().grounded()) {
         m_fighter.endStun(nowMs());
     }
-    // Cuffed: push weight 1e9 (pushWeight()); block 0x8000 cleared with it. Style 0x11 loops 320 and the action is 0,
-    // which stops the human where he stands.
+    // Cuffed: push weight 1e9 (pushWeight()). Coney stand-in: block 0x8000 is not kept apart, the cuffed idle ending
+    // any block. Style 0x11 loops 320 and the action is 0, which stops the human where he stands.
     m_script.arrested = true;
     m_velocity.x = 0.0F;
     m_velocity.y = 0.0F;
@@ -154,8 +154,8 @@ void Human::aimThrow(float heading, bool turning) {
 }
 
 void Human::setWounded(bool wounded) {
-    // Coney stand-in: the wounded clips (style 0xd) are not played, so choosing the anim state again (0x20000000)
-    // changes nothing.
+    // Coney stand-in: the binding reads `on` as a boolean, where the original starts the wound only for exactly 1; and
+    // the wounded clips (style 0xd) are not played, so choosing the anim state again (0x20000000) changes nothing.
     if (wounded) {
         startWounded();
     } else {
@@ -181,7 +181,7 @@ void Human::startWounded() {
         health.set(health.maximum() / 4);
         loseBlockHumans();
     }
-    // Wounded: push weight 1e9 (pushWeight()). The brain's knocked-out event is the caller's flush.
+    // Wounded: push weight 1e9 (pushWeight()). Coney stand-in: the brain's knocked-out event is the caller's flush.
     m_script.wounded = true;
 }
 
