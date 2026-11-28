@@ -220,3 +220,30 @@ def test_every_level99_scenario_that_moves_the_player_waits_for_control() -> Non
         )
         assert scenario.coney_settle != 300, f"{path.name}: a settle of 300 is the old stand-in for waiting for control"
     assert checked >= 28
+
+
+#: Updates after player 1 gets control before a stick past the dead zone turns him as the original's saved slots do:
+#: the slots were saved long after their checkpoint's scene, Coney's run starts on its first update of control (#1696).
+SETTLED_UPDATES = 40
+
+
+@pytest.mark.reads("docs_only")
+def test_every_level99_chars_scenario_starts_where_its_slot_stands_and_after_the_camera_settles() -> None:
+    # Coney's checkpoint starts are not the original's save slots (the roof at checkpoint 1, the street's far end at
+    # checkpoint 3), so a chars_* scenario that moves the player places him on the slot's spot with --start; and a
+    # stick within SETTLED_UPDATES of control turns him 17-46 degrees off the slot's run, so the scenario settles first.
+    checked = 0
+    for path in sorted((REPO / "research/traces/scenarios").glob("chars_*.toml")):
+        scenario = load_scenario(path, REPO)
+        args = list(scenario.coney_args)
+        checkpoint = args[args.index("--checkpoint") + 1] if "--checkpoint" in args else "1"
+        first = first_moving_step(scenario.events)
+        if scenario.coney_level != "level99" or checkpoint not in ("1", "2", "3") or first is None:
+            continue
+        checked += 1
+        assert "--start" in args, f"{path.name}: give Coney the slot's spot with --start (#1696)"
+        assert scenario.coney_settle + first > SETTLED_UPDATES, (
+            f"{path.name}: the stick comes {first} updates after control; settle so it comes after "
+            f"{SETTLED_UPDATES} (#1696)"
+        )
+    assert checked >= 25
