@@ -1,0 +1,35 @@
+version = 1
+id = "r-20261128-grab-far-ai-305"
+date = "2026-11-28"
+kind = "trace"
+tool = "trace original"
+digest = "c506af8b8433de508f9eecbb1da0a744af228e5d9f6262676b2fbbaa5891163a"
+
+[who]
+agent = "a96e99362a22b94aa"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["puppet", "right-stick", "scripted-pad"]
+
+[run]
+name = "grab_far_range_ai"
+method = ""
+
+[run.args]
+dist = "3.05"
+
+[values]
+updates = 61
+missed_updates = 0
+columns = 40
+
+[hashes]
+trace_csv = "6fba6feb491b982152a77ce2c24db886d97437cf452581cfc9f6b8bb5fac1460"

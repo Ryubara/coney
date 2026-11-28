@@ -1,0 +1,25 @@
+# The hold walk's speed from the front and from behind (Human_MoveGrabbing, 0x00245310: record +0x170, the walk speed
+# of the grab movement style's walk clip, 86 from the front and 88 from behind). The player grabs a still puppet 1 m
+# ahead (circle at 10), walks the pair with the stick full right from 45 to 104, spins to the rear with R1 at 115
+# and walks again from 170 to 229. Started from the state library's pedestrian-grab (slot 6). Research:
+# docs/research/combat-grabs.md#hold-walk.
+description = "slot 6: the player's front hold walked with full stick, then the rear hold after an R1 spin"
+research = "docs/research/combat-grabs.md#hold-walk"
+input = "grab_hold_walk.txt"
+updates = 240
+fields = ["player", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.0 * sin(heading(player))", until = 11 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.0 * cos(heading(player))", until = 11 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 11 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 11 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 11 },
+]
+
+[coney]
+level = "sandbox:combat"

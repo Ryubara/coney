@@ -1,0 +1,34 @@
+version = 1
+id = "r-20261128-grab-brain-kinds"
+date = "2026-11-28"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "5faec264126af1836ca696127514acfc1d7469af9e3fc21c945ba721774f1ea3"
+
+[who]
+agent = "a96e99362a22b94aa"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = []
+
+[run]
+name = ""
+method = "brain recipe (brain + 0x04, the kind Pair_AlignStart tests) read for every human of the level99 street state: Rembrandt the player, PoizoCiv a pedestrian, Ash and Vermin Warriors"
+
+[values]
+rembrandt_player_kind = 0
+poizociv_kind = 4
+ash_kind = 3
+vermin_kind = 3
+
+[addresses]
+pair_align_start = 0x00276998
+human_get_brain = 0x0021d408

@@ -1,0 +1,2 @@
+# Circle tapped once at update 10 at a puppet dist metres ahead. Frames are character updates of 1/30 s.
+10 tap circle

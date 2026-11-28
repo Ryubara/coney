@@ -403,7 +403,9 @@ void Fighter::updateGrabbed(const FighterInput& input, HumanAnimator& animator) 
     const combat::GrabbedOutcome outcome = combat::updateGrabbed(in, m_grabbedRandom);
     m_report.action = outcome.action;
     m_report.grabberPowerCost = outcome.grabberPowerCost;
-    // Until the grabber reports again, its meter is taken to have paid.
+    // Until the grabber reports again, its meter is taken to have paid. **Coney stand-in**: a struggle that empties it
+    // still plays 96 / 97 for an update before the power-out lets go; the original lets go (94 / 95) on the press's
+    // own update (combat-grabs.md#struggle-gate-runtime, #q-struggle-empties).
     grab.grabber.power = std::max(0, grab.grabber.power - outcome.grabberPowerCost);
     if (outcome.action == combat::GrabbedAction::None) {
         return;
@@ -462,6 +464,7 @@ void Fighter::struggleInHold(const FighterInput& input, const HumanAnimator& ani
         outcome = combat::GrabbedOutcome{};
     }
     // The cost adds up until the grabber takes the report; a move is kept until then (one at a time plays).
+    // **Coney stand-in**: as in updateGrabbed, a struggle that empties the grabber still plays before the let-go.
     m_heldReport.grabberPowerCost += outcome.grabberPowerCost;
     if (outcome.action == combat::GrabbedAction::None || m_heldReport.action != combat::GrabbedAction::None) {
         return;

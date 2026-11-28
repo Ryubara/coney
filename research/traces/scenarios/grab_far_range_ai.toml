@@ -1,0 +1,30 @@
+# An AI's grab of the still player from `dist` metres (2.8 by default, `--let dist=...` for others): slot 6's
+# PoizoCiv (a pedestrian, brain kind 4) as a puppet, aimed at the player and given the circle tap's release (13) at
+# update 10, as moves_grab_front_strike starts its grab. Pair_AlignStart (0x00276998) widens the far range (2.5 m)
+# by 1.25 only for a brain of kind 0, so beyond 2.5 m its clip 72 should not come (69 plays on). Started from the
+# state library's pedestrian-grab (slot 6). Research: docs/research/combat-grabs.md#grab-posing.
+description = "slot 6: the puppet PoizoCiv grabs the still player from dist metres; does its grab connect"
+research = "docs/research/combat-grabs.md#grab-posing"
+input = "grab_far_range_ai.txt"
+updates = 60
+fields = ["player", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet"]
+let = { enemy = 'human("PoizoCiv")', dist = '2.8' }
+setup = [
+  { address = "prec(enemy) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - dist * sin(heading(player))", until = 9 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + dist * cos(heading(player))", until = 9 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 9 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 9 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 9 },
+  { address = "enemy + 0xc8", type = "u32", value = "u32(player + 0x90)", frame = 0, until = 12 },
+  { address = "brain(enemy) + 0x124", type = "u32", value = "u32(player + 0x90)", frame = 0, until = 12 },
+  { address = "prec(enemy) + 0x20", type = "u32", value = "13", frame = 10, until = 10 },
+  { address = "prec(enemy) + 0x20", type = "u32", value = "0", frame = 11, until = 11 },
+]
+
+[coney]
+level = "sandbox:combat"

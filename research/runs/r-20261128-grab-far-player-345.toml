@@ -1,0 +1,35 @@
+version = 1
+id = "r-20261128-grab-far-player-345"
+date = "2026-11-28"
+kind = "trace"
+tool = "trace original"
+digest = "37ec41d9d651d25dfe3797eb2a053f749ff426a42122759dcc3abc07a19b6f38"
+
+[who]
+agent = "a96e99362a22b94aa"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["puppet", "right-stick", "scripted-pad"]
+
+[run]
+name = "grab_far_range_player"
+method = ""
+
+[run.args]
+dist = "3.45"
+
+[values]
+updates = 61
+missed_updates = 0
+columns = 40
+
+[hashes]
+trace_csv = "b051b4a24c8b7e5001db17633e29d8d2267500f2394e138f1bb34adfaeb5f14d"
