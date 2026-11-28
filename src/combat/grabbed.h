@@ -75,6 +75,7 @@ struct GrabbedOutcome {
 
 /// Whether square struggles: canStruggle(), and the player's own power fraction (`Human_PowerFraction`: 1.0 while it
 /// rages) above 1 / the grabber's struggle divisor.
+/// @orig 0x0027fd68 Player_UpdateGrabbed (unknown)
 [[nodiscard]] bool struggleAllowed(const GrabbedInput& input);
 
 /// Whether a break-free roll succeeds (`0x00225830`): never against a raging grabber; with `t` a quarter of the

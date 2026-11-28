@@ -1125,6 +1125,7 @@ class Fighter {
     // A grab caught the player this update: a counter, or the held player's clips.
     void startGrabbed(const FighterInput& input, HumanAnimator& animator);
     // One update held in a grab: the struggle, the strike back, the escape, the reversal, or the grabber out of power.
+    // @orig 0x0027fd68 Player_UpdateGrabbed (unknown)
     void updateGrabbed(const FighterInput& input, HumanAnimator& animator);
     // The player breaks out of the grab with `clip` (an escape: knocked-down grabber), taking the clip's damage.
     void escapeGrab(int clip, HumanAnimator& animator);

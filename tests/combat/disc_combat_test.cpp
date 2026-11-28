@@ -29,6 +29,7 @@ using Catch::Approx;
 using namespace coney::combat;
 
 TEST_CASE("Rembrandt's Anim Range List gives every attack a damage and the researched grab ranges", "[disc][combat]") {
+    // Expected: combat-grabs.md#grab, confirmed (code) (the grab's and the tackle's search ranges, read from the disc)
     const char* discPath = SDL_getenv("CONEY_DISC");
     if (discPath == nullptr || *discPath == '\0') {
         SKIP("CONEY_DISC is not set: no disc to check");
