@@ -670,6 +670,8 @@ each call site, 2026-10-12:
 
 ### What Coney changes {#u16-coney}
 
+Confirmed (code) for what the cited original functions do (the sections above); the rest is Coney's design.
+
 - **Material names.** A constexpr table of the 191 names above (`collision_mesh.h` or a `materials.h` beside it) and
   a `materialName(int id)` that returns `unknown` for any id outside 0 to 190, negative ones included.
   `@orig 0x0034fc08 CollisionMaterial_GetName (unknown)`; the file is inferred to be in `RayCast/`, not read.
@@ -687,7 +689,7 @@ each call site, 2026-10-12:
 - **Freeing the mesh.** Nothing to add: the mesh owns its chunks, and the order of the five frees is not observable
   ([Unit 17](#u17-destroy) gives the level object's order, which is).
 
-**Ported** (#380, 2026-11-27): `materialName` (`src/raycast/materials.*`), and `RayResult` with `worldRayCast`
+**In Coney now:** `materialName` (`src/raycast/materials.*`), and `RayResult` with `worldRayCast`
 in `src/raycast/collision_mesh.*`. `CollisionMesh::rayCast(ray, result, exclude, mask)` is the walk and the cell
 test fills the result as above; the optional form `rayCast(ray, exclude, mask)` goes through `worldRayCast` and
 returns only a kept hit, so every existing caller keeps its answers (a kept triangle's nearest-first result is the
@@ -840,6 +842,8 @@ tables" is step 3 and the empty calls.
 
 ### What Coney changes {#u17-coney}
 
+Confirmed (code) for what the cited original functions do (the sections above); the rest is Coney's design.
+
 - **WAD lookups.** `io::Wad::lookup` already covers `Wad_FindEntry` and `Wad_HasEntry` (any case, no in-place
   lowercasing, a `NotFound` error for a miss). Add `entrySize(name)` returning `std::expected<std::uint32_t, Error>`
   for `Wad_GetEntrySize`, where the original crashes on a miss (a marked Coney choice). Tags:
@@ -863,13 +867,13 @@ tables" is step 3 and the empty calls.
   and `addLevelFileHandlers` already do; tag them there. `LevelObject_SetOccluders` is the occluders' assignment in
   the `0x17` handler (`readOccluders` does the conversion).
 
-**Ported** (#380, 2026-11-27): `Wad::entrySize`, the tags on `Wad::open` and `Wad::lookup` (which stands for
+**In Coney now:** `Wad::entrySize`, the tags on `Wad::open` and `Wad::lookup` (which stands for
 both `Wad_FindEntry` and `Wad_HasEntry`), `platform::loadLevel` for `WorldLevel_Load` (the file name, the open and
 the load; `world::loadLevelFile` is the container load and the pop), `LevelObject::~LevelObject` in the order of the
 table above, and the tags of the construct, the occluder setter and the registration on `makeLevelHeaderHandler`
 and `addLevelFileHandlers`. Kept differences: no pools are pushed, a missing file or entry fails, and the WAD is not
 held open. **Not yet:** `WorldLevel_Release` as one function. Its third step is `LevelScenery`'s level object going
-(the destructor above); its glow and caption releases wait with Unit 19 on #380.
+(the destructor above); its glow and caption releases wait with Unit 19.
 
 ### Test ideas {#u17-tests}
 
@@ -1089,14 +1093,16 @@ evictions, so it must come back exactly on unload.
 - **`queuePack(name)`**: the queue is already the game state's `precacheQueue`, which the `QueueFileToPrecache`
   binding appends to and `PrecacheWorld` empties (`src/scripting/arena_bindings.cpp`); the manager keeps no second
   copy, so the function has no tag of its own.
-- **`resetVisibility()`** clears the latch and calls `StreamedWorld::resetVisibility` on each world. Coney's
-  `StreamedWorld` cannot be null, so the original's missing null check has nothing to copy. `@orig 0x0040e0b8`.
+- **`resetVisibility(solid, detail)`** calls `StreamedWorld::resetVisibility` on the solid world and on the detail
+  world when there is one. The latch is not kept: nothing in Coney reads it. Coney's solid world cannot be null, so
+  the original's missing null check has nothing to copy. `@orig 0x0040e0b8`.
 - **`sectorPool(&largestFree)`**: the budget, with `freeBytes()` standing for the largest free block (the
   approximation [Memory](memory.md#what-a-reimplementation-must-keep) recommends). `@orig 0x0040f850`.
-- **`CreatePools`**: `kSectorPoolSize` (the retail runtime value) already stands for it; tag the constant
-  `@orig 0x0040d688 WorldManager_CreatePools (WorldManagerPS2.cpp)`. `Sector Pool 2` has nothing to stand for.
+- **`CreatePools`**: `world::sectorPoolSizes(largestFree, largestFreeAfter)` gives both sizes
+  (`@orig 0x0040d688`); the budget starts at `kSectorPoolSize`, the size it gives on a retail boot. `Sector Pool 2`
+  has nothing else to stand for.
 
-**Ported** (#380, 2026-11-27): `WorldManager::setLoadPriority` and `loadPriority` (0.001 after `loadLevel`),
+**In Coney now:** `WorldManager::setLoadPriority` and `loadPriority` (0.001 after `loadLevel`),
 `resetVisibility(solid, detail)`, `sectorPool(&largestFree)` and `world::sectorPoolSizes` for `CreatePools`.
 `loadLevel` now sets the load priority last. Kept differences: the visibility latch is not kept (nothing in Coney
 reads it), and nothing calls `resetVisibility` or reads the load priority until the resource manager streams. The
@@ -1259,6 +1265,8 @@ null for both an occluded and a PVS-hidden sector.
 
 ### What Coney changes {#u19-coney}
 
+Confirmed (code) for what the cited original functions do (the sections above); the rest is Coney's design.
+
 - **The visibility quirk.** `StreamedWorld::markVisible` marks the world's own sector. To match the original's
   streaming order, the pass over the `d` world must mark the **`s` world's** bit with the `d` sector's index, and the
   `d` world's marks stay clear: an "Original quirk, kept" in `findVisibleSectors` (a pass needs the `s` world as the
@@ -1281,7 +1289,7 @@ null for both an occluded and a PVS-hidden sector.
   Atomic_SetModulateMaterialColour (WorldPS2.cpp)`); the renderer's fade sets the alpha of every material and must
   leave R, G and B alone (tag `@orig 0x00411958 Material_SetAlphaCallback (WorldPS2.cpp)`).
 
-**Not yet ported** (#380 stays open for it): marking the `s` world's bit from the `d` world's pass changes what
+**Not yet ported:** marking the `s` world's bit from the `d` world's pass changes what
 Coney draws, because `StreamedWorld::collectSectors` draws the sectors the last pass marked, where the original
 collects them in the callback itself. The quirk needs the collection taken off the marks first.
 

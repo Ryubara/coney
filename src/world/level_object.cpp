@@ -235,6 +235,8 @@ chunk::OnLoaded makeLevelHeaderHandler(LinkLevelModel link) {
             return std::unexpected(std::move(glows.error()));
         }
         level->glowDictionary = std::move(*glows);
+        // Coney's choice: each pair is linked as it is popped (cloud box, sky box, skyline), where the original links
+        // them after the occluders, sky box, skyline, cloud box; each link touches only its own pair.
         for (auto [slot, what] : {std::pair{&level->cloudBox, "cloud box"}, std::pair{&level->skyBox, "sky box"},
                                   std::pair{&level->skyline, "skyline"}}) {
             auto pair = popLinkedModel(stacks, link, what);

@@ -386,6 +386,7 @@ TEST_CASE("a world of one sector becomes a standalone atomic with no pipeline", 
 }
 
 TEST_CASE("a level file builds the level object from all its chunks, models linked in pairs", "[level_object]") {
+    // Expected: level-loading.md#the-level-file, confirmed (code)
     coney::chunk::ChunkHandlerTable table = coney::chunk::ChunkHandlerTable::withDefaults();
     table.setHandlers(0x2A, coney::chunk::ChunkHandlers{{}, readFakeDictionary});
     table.setHandlers(0x47, coney::chunk::ChunkHandlers{{}, readFakeModel});
