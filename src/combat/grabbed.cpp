@@ -25,12 +25,7 @@ bool struggleAllowed(const GrabbedInput& input) {
     const float ownFraction =
         input.ownPowerFull ? 1.0F
                            : static_cast<float>(input.ownPower) / static_cast<float>(std::max(1, input.ownPowerMax));
-    // Stub for the test commit: the gate as it was before #684, on the grabber's fraction.
-    const float grabberFraction =
-        static_cast<float>(input.grabber.power) / static_cast<float>(std::max(1, input.grabber.powerMax));
-    return canStruggle(input) &&
-           (ownFraction > 2.0F ||
-            grabberFraction > 1.0F / static_cast<float>(std::max(1, input.grabber.struggleDivisor)));
+    return canStruggle(input) && ownFraction > 1.0F / static_cast<float>(std::max(1, input.grabber.struggleDivisor));
 }
 
 bool breakFreeRoll(const GrabberState& grabber, CombatRandom& random) {
@@ -53,12 +48,12 @@ GrabbedOutcome updateGrabbed(const GrabbedInput& input, CombatRandom& random) {
     switch (input.command) {
     case command::kSquarePressed:
     case command::kSquareChain:
-        // The cost is the grabber's maximum over the player's divisor, spent even when no clip can start.
+        // The cost: the grabber's maximum over the player's divisor, truncated (Human_SpendPower), even with no clip.
         if (!struggleAllowed(input)) {
             break;
         }
-        outcome.grabberPowerCost = static_cast<int>(std::lround(
-            static_cast<float>(input.grabber.powerMax) / static_cast<float>(std::max(1, input.ownStruggleDivisor))));
+        outcome.grabberPowerCost = static_cast<int>(1.0F / static_cast<float>(std::max(1, input.ownStruggleDivisor)) *
+                                                    static_cast<float>(input.grabber.powerMax));
         if (!input.movePlaying) {
             outcome.action = GrabbedAction::Struggle;
             outcome.animId = rear ? kGrabStruggleRear : kGrabStruggleFront;

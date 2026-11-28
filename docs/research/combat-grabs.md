@@ -854,8 +854,10 @@ fight stance, speech command 8, the victim's brain target and tutorial hint 0xe.
 raging, own power above a sixth of its maximum in whole numbers) and on the held human's own power fraction (1.0 while
 it rages or has unlimited power) above 1 / the grabber's class divisor, where it read the grabber's fraction before;
 cross needs `Grab_CanStruggle` too, circle is refused with flag `0x2000000000`, and each button takes every press kind
-(square `0xf` and `0x11`). Unit tests: `repo:tests/combat/grabbed_test.cpp` and "a player's grab connects within 1.25 x
-the connecting clip's far range; an AI's grab there misses" in `repo:tests/human/human_grab_test.cpp`. One difference
+(square `0xf` and `0x11`). The struggle's cost is truncated to whole power as `Human_SpendPower` truncates it (66 of
+200 for the divisor 3; Coney rounded it to 67 before). Unit tests: `repo:tests/combat/grabbed_test.cpp` and "a
+player's grab connects within 1.25 x the connecting clip's far range; an AI's grab there misses" in
+`repo:tests/human/human_grab_test.cpp`. One difference
 is left, marked as a stand-in in `Fighter::updateGrabbed` and `Fighter::struggleInHold`: a struggle whose cost empties
 the grabber's meter plays 96 / 97 for an update before the grabber's power-out lets go (inferred from Coney's code),
 where the original goes to 94 / 95 on the press's own update ([at runtime](#struggle-gate-runtime)).
