@@ -942,9 +942,9 @@ What differs, each marked in the code:
 
 ## Open questions
 
-- **Not yet seen at runtime** from [the units](#units): the late and missed corner contacts, looked for at a post, a
-  planter, a kerb and a ledge and not seen ([Seen at runtime](physics-kernels.md#u1-runtime)). The capsule sweep's
-  cell-list overrun once listed here does not exist: its counter steps on every path
+- **Unseen at runtime** from [the units](#units): the late and missed corner contacts, looked for at a post, a
+  planter, a kerb and a ledge and not seen ([Seen at runtime](physics-kernels.md#u1-runtime)). The capsule sweep has
+  no cell-list overrun: its counter steps on every path
   ([The cell loop's counter](physics-bodies.md#u2-capsule-walk-counter)).
 - **Bits and flags the units read but cannot name:** triangle flag bit 3 (`0x8`), which a sphere sweep skips for a
   body with flag `0x100` or a query with option `0x8000` (every world object's body starts with `0x100` in
@@ -964,7 +964,7 @@ What differs, each marked in the code:
   normalises the edges; `Ray_InfiniteCylinder` (`0x0034d938`) is a capsule; `SphereBox_SweepCorner` (`0x0034b040`) is
   the face-region step, `SphereBox_SweepFaceEdges` (`0x0034b7b0`) the corner-region step and `SphereBox_ToBoxSpace`
   (`0x0034baf0`) goes from the box to the world. The plate comments say what each does.
-- **From the implementation of Units 1 to 3** (issue #346): [Unit 3](physics-bodies.md#u3-tests)'s test 13 gives
+- **From the implementation of Units 1 to 3:** [Unit 3](physics-bodies.md#u3-tests)'s test 13 gives
   `PhysicsVec_Bounce((0, 0, −2), (0, 0, 1), 0.1)` as `(0, 0, 2.2)`, but the formula above it (`v −= n d (1 + e)`) and
   test 12 (−5 to 0.5) give `(0, 0, 0.2)`; Coney follows the formula. Which velocity `PhysicsBody_Sweep` writes back to
   a walking human on a slope: the slope-scaled one `Human_Move` (`0x0023d8c8`) hands it, or the unscaled one (Coney

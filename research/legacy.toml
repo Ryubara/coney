@@ -398,7 +398,6 @@ verified = 1
 evidence = 32
 address-resolve = 2
 history = 12
-stale-wording = 3
 
 ["docs/research/player-state.md"]
 front-matter = 1
