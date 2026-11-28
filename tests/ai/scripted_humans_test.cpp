@@ -856,6 +856,23 @@ TEST_CASE("HuSetConscious(false) knocks the brain out without making it dead, th
     CHECK_FALSE(thug.dead());
 }
 
+TEST_CASE("HuRevive wakes the brain of a human a script knocked out, so it thinks again", "[ai][scripted]") {
+    // Expected: characters-script.md#hu-revive, confirmed (code): Human_Heal (0x0022eb40) wakes a knocked-out human
+    // through Human_WakeUp(h, 0) (0x00230598), which resumes his brain (Brain_EnableAndResume); a script's knock-out
+    // (Human_KnockOut, 0x00230328) stops the brain (Brain_OnKnockedOut), it does not make it dead
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    level.call("HuSetConscious", {Value(thug.handle()), Value(0.0)});
+    REQUIRE(thug.knockedOut());
+    level.call("HuRevive", {Value(thug.handle())});
+    CHECK_FALSE(thug.human().script().knockedOut);
+    CHECK_FALSE(thug.knockedOut());
+    CHECK_FALSE(thug.dead());
+    // A step later he is still up: his health is full, so nothing knocks him out again.
+    level.scene.run(1);
+    CHECK_FALSE(thug.knockedOut());
+}
+
 TEST_CASE("HuSetConscious(false) on a wounded human sets his knocked-out mark but leaves his brain", "[ai][scripted]") {
     // Expected: characters-script.md#set-conscious, confirmed (code): Human_KnockOut (0x00230328) calls the brain only
     // for a human neither dead nor wounded (0x100050000), and sets state 0x40000 at its end whatever the state
