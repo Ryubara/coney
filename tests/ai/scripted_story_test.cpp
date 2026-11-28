@@ -18,6 +18,7 @@
 
 #include "ai/brain.h"
 #include "ai/chase_goals.h"
+#include "ai/crew.h"
 #include "ai/gangs.h"
 #include "ai/goal.h"
 #include "ai/riot_goals.h"
@@ -556,6 +557,39 @@ TEST_CASE("A Warrior command repeats only the command in force, not the last one
     level.state.characters.lastWarriorCommand[0] = 3;
     level.call("IssueWarriorCommand", {Value(3.0), Value(false)});
     CHECK(level.scripted->storyHost().warriorCommand() == 3);
+}
+
+TEST_CASE("An attack given again starts again once the crew's attack began on a valid enemy", "[ai][story]") {
+    // Expected: ai-gangs.md#warrior-commands, confirmed (code): WarriorAttackTactic_Start (0x003208e8) sets the
+    // tactic's +0x18 when the gang's target is a valid enemy of the chief, and the dispatcher repeats only while it
+    // is clear.
+    Level level;
+    level.add({44.0F, 40.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(0, "Warriors");
+    level.scripted->gangAddMember(gang, 1.0);
+    level.scripted->gangAddMember(gang, 2.0);
+    level.call("WCSetCallback", {Value("Note")});
+    level.call("IssueWarriorCommand", {Value(0.0), Value(true)});
+    REQUIRE(level.notes.size() == 1);
+    // The crew attacks with no target: attack again is a repeat and starts nothing.
+    coney::ai::Gangs& gangs = level.scene.brains.gangs();
+    const auto attack = [&level, &gangs, gang] {
+        gangs.setTactic(gang, std::make_unique<coney::ai::WarriorAttackTactic>(
+                                  level.scene.player().handle(), *level.scripted, level.scene.brains.formations()));
+        level.state.characters.currentWarriorCommand[0] = 1;
+    };
+    attack();
+    level.scene.run(1);
+    level.call("IssueWarriorCommand", {Value(1.0), Value(false)});
+    CHECK(level.notes.size() == 1);
+    // The crew's attack began on a valid enemy: attack again starts it again.
+    Brain& enemy = level.scene.add({50.0F, 40.0F, 0.0F}, 0.0F);
+    attack();
+    REQUIRE(gangs.find(gang) != nullptr);
+    gangs.find(gang)->setSharedTarget(&enemy);
+    level.scene.run(1);
+    level.call("IssueWarriorCommand", {Value(1.0), Value(false)});
+    CHECK(level.notes.size() == 2);
 }
 
 TEST_CASE("The menu's order of a disabled command becomes the player's last and starts nothing", "[ai][story]") {
