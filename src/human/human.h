@@ -946,7 +946,7 @@ class Human final : public Holdable {
     /// @orig 0x0024ce40 Human_ReleaseCarriedProps (unknown)
     void releaseCarriedProps() { m_carriedProp.reset(); }
     /// What binding the human to a scene role does to it first, `HuSetNormalMode(human, true)`
-    /// (docs/research/scenes.md#join-reset); every other raging human's rage is the caller's (endAllRage()).
+    /// (docs/research/scenes.md#join-reset); every other raging player's rage is the caller's (endAllRage()).
     void resetForJoin() { setNormalMode(true); }
     /// `HuSetArrested`: arrest() or unarrest(), then the anim state chosen again (docs/research/crimes.md#arrest).
     /// @orig 0x00237700 Human_SetArrested (unknown)
@@ -1506,10 +1506,10 @@ class Human final : public Holdable {
     anim::Vec3 m_pendingPush{};                     // addPush(): others' pushes, for the next move
 };
 
-/// Ends the rage of every human in `humans` that rages, at once (Human::setRageMode() off, the meters left where they
-/// are), as a scene's bind does whoever it binds (docs/research/scenes.md#join-reset). **Coney's reading**: the
-/// research calls them every player (scenes.md) and every human in rage (characters/index.md); either way a raging
-/// human stops, so the caller passes every human it has.
+/// Ends the rage of every player in `humans` that rages, at once (Human::setRageMode() off, the meters left where they
+/// are), as a scene's bind does whoever it binds (docs/research/scenes.md#join-reset); an AI human's rage is left as
+/// it is. The original walks the players' list (game state `+0x224` / `+0x228`); **Coney's reading**: a player there
+/// is a human that fights as one (Fighter::player(), human `+0x1b0` not -1), so the caller may pass every human.
 /// @orig 0x00232538 Humans_EndAllRage (unknown)
 void endAllRage(std::span<Human* const> humans);
 
