@@ -417,7 +417,7 @@ only). In the original the 59 pair is **gone by the time the scene starts**, so 
 | 2057 | 59 starts (Rembrandt state `0x1005`, Rudy `0x2001`, held `0x400000`, Rudy's clip 60); `P1.PowerMovesDone` scheduled |
 | 2131 | `P1.PowerMovesDone`: `ScenePreload("l99_c7")` |
 | 2141 | 59's event `0x31` removes the spray can ([Combat](combat-grabs.md#power-move-props)) |
-| 2142 | `ScenePlayCinematic`; in the same update `Human_ResetForMode` (`0x002325e0`) runs on the humans being bound (confirmed (runtime)): `Human_ReleaseCarriedProps` for each, and **`Human_BreakPair(Rudy)`** (return `0x00232690`), which clears the throw link (`Throw_ClearLink(Rembrandt, —)` from `0x00258db4`): the pair ends there, 85 updates into the 94-update 59 |
+| 2142 | `ScenePlayCinematic`; in the same update `Human_ResetForMode` (`0x002325e0`) runs (confirmed (runtime)), on the humans being bound (Scene_BindHuman's call at `0x003541d8`, confirmed (code)): `Human_ReleaseCarriedProps` for each, and **`Human_BreakPair(Rudy)`** (return `0x00232690`), which clears the throw link (`Throw_ClearLink(Rembrandt, —)` from `0x00258db4`): the pair ends there, 85 updates into the 94-update 59 |
 | 2143 on | both in the scene: state `0x800000`, scene id 2630 at `+0x280`, clip 388; Rudy stands on role 6's start mark (−282.58, 127.29) |
 | about 2540-2730 | Rudy's role clip moves him (−282.6, 127.3) → (−276.6, 122.2): the Warriors drag him off |
 
@@ -438,7 +438,10 @@ damage becomes 1 (the pending damage 0) and the human stands in his idle. An arr
 stand-in's, every raging player's rage ends (`human::endAllRage()` for `Humans_EndAllRage`, play mode's join
 reset); an AI human in rage keeps it. A human never bound is not reset. Stand-ins: fire, mini-games, overlay tasks,
 held kind-`0x27` / `0x10` objects, the airborne bits, a climb's body, a picked object and the glow colour are not in
-Coney, so those steps are left out, and an AI human's fight stance stays his fight goal's. Rudy then joins role 6
+Coney, so those steps are left out, and an AI human's fight stance stays his fight goal's; and the binding does not
+read `GoalJoin*`'s fifth argument (processNow), so the join always acts at once, as every call in the game's scripts
+asks (`true`; with `false` the original pushes the goal without processing it, confirmed (code) at `0x002e5300`, and
+the brain's update runs it later, inferred). Rudy then joins role 6
 and is moved by his role clip. Disc tests: through lesson 6 into `l99_c7` Rudy is in role 6 and moves 11.2 m
 (`tests/platform/disc_level99_power_lesson_test.cpp`); the player still holds Rudy on the update before the play and no
 human is in a pair as it starts (`tests/platform/disc_level99_scene_grab_test.cpp`). Known difference: Coney starts

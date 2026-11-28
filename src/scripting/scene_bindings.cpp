@@ -250,6 +250,8 @@ NativeFunction makeSceneAddObject(const BindingContext& context) {
 // @orig 0x003615d8 GoalJoinAnimation (unknown)
 NativeFunction makeGoalJoin(const BindingContext& context) {
     return withScenes(context, [](scenes::SceneSystem& scenes, std::span<const Value> args) {
+        // stand-in: processNow (the fifth argument) is not read, so the join always acts at once; with false the
+        // original leaves the goal to the brain's next update. Every call in the game's scripts passes true.
         scenes.joinHuman(handleArg(args, 0), unsignedArg(args, 1), unsignedArg(args, 2),
                          static_cast<int>(std::trunc(binding::number(args, 3))));
         return binding::none();
