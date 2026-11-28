@@ -367,11 +367,15 @@ void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
         // control pointer +0x1c0), as Coney picks that control from the flag.
         const bool inChair = (status->flags & human::flag::kWheelchair) != 0;
         if (on && !inChair) {
+            // Stand-in: the flag stands for the control saved and the wheelchair's set (Human_SaveControl,
+            // Human_SetWheelchairMoveControl); commands 46 and 47 are not added, as the control reads L1 and R1 itself.
             host->setFlags(human, human::flag::kWheelchair, true);
             host->enableCommand(human, kAllCommands, false);
         } else if (!on) {
             host->setFlags(human, human::flag::kWheelchair, false);
             if (inChair) {
+                // Stand-in: the flag cleared stands for the saved control's return (Human_RestoreControl); there are
+                // no commands 46 and 47 to remove.
                 host->enableCommand(human, kAllCommands, true);
             }
         }

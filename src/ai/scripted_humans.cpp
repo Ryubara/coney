@@ -348,6 +348,7 @@ void ScriptedHumans::teleportNear(double human, double near) {
             const raycast::Ray ray{.origin = raycast::Vec3{at.x, at.y, top},
                                    .direction = raycast::kDown,
                                    .length = top - centre.z + kNearRayAbove};
+            // Stand-in: the ray meets the collision mesh only, not the world's objects (WorldManager_RayCast).
             if (const std::optional<raycast::RayHit> hit = world->rayCast(ray, {}, 0); hit) {
                 at.z = top - (hit->t - kNearRayGap);
             }
@@ -454,10 +455,13 @@ double ScriptedHumans::placeItemInHand(double human, std::string_view object,
         onBrain(human, [place, handle](Brain& brain) { static_cast<void>(place(brain, handle)); });
         return handle;
     }
+    // Stand-in: the pick-up run for held flag 0x4000, as above.
     Brain* brain = m_scripted->brain(human);
     if (brain == nullptr || brain->human().script().heldObject != kNilHandle || brain->human().pickingUp()) {
         return kNilHandle;
     }
+    // Stand-in: the handle is given now and the object itself made by the play mode's next step
+    // (PlayLevelSimulation::placeItemInHand(), docs/research/objects.md#held).
     const double handle = nextHandle();
     return place(*brain, handle) ? handle : kNilHandle;
 }
