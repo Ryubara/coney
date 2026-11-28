@@ -104,7 +104,6 @@ struct HumanStatus {
     bool soundCommands = true;  ///< May say speech commands (`HuEnableSoundCommands`).
     bool hidden = false;        ///< `HuIsHidden`: hidden in a shadow.
     bool inCombat = false;      ///< `HuInCombat`: an attacker holds a slot on it, or its brain has a target.
-    std::uint64_t flags = 0;    ///< Its flag word `+0xe0` (human::flag).
 };
 
 /// `HuSetLookTarget(human, target, ms, weight, flagA, flagB)` as the binding reads it.

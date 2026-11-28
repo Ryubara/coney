@@ -147,8 +147,7 @@ std::optional<script::HumanStatus> ScriptedHumans::status(double handle) const {
                                        .hat = 0.0,
                                        .soundCommands = true,
                                        .hidden = false,
-                                       .inCombat = false,
-                                       .flags = 0};
+                                       .inCombat = false};
         }
         return std::nullopt;
     }
@@ -162,8 +161,7 @@ std::optional<script::HumanStatus> ScriptedHumans::status(double handle) const {
                                .hat = human.script().hat,
                                .soundCommands = human.script().soundCommands,
                                .hidden = human.hidden(),
-                               .inCombat = !brain->attackSlots().empty() || brain->target() != nullptr,
-                               .flags = human.flags()};
+                               .inCombat = !brain->attackSlots().empty() || brain->target() != nullptr};
 }
 
 void ScriptedHumans::setHearRange(double human, bool help, float range) {

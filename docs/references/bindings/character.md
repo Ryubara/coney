@@ -4247,9 +4247,7 @@ the speed decays by 0.04, cross brakes (−0.5), and the sticks do nothing ([Cha
 control](../../research/characters-locomotion.md#wheelchair)).
 
 **Notes.** A human that is not pad-driven (per-player record `+0x1b` 0, inferred) runs its normal control even with the
-flag, so the Rumble CPU follows its path as usual. A handle that names no human does nothing, the switch included; on
-does nothing more for a human already running the wheelchair control, and off gives the control and the commands back
-only to one running it (confirmed (code) at 0x00234188).
+flag, so the Rumble CPU follows its path as usual.
 
 - **Evidence:** confirmed (code) at `0x00234188`; detail: traced
 - **Wrapper** `0x003588d0` (registered by `RegisterBindings`); **calls** `0x00234188` `Human_SetWheelchairControl`
