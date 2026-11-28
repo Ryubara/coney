@@ -175,6 +175,8 @@ std::expected<std::unique_ptr<world::LevelObject>, Error> loadLevel(const io::Wa
                                                                     bool forDrawing, SceneAssets* assets) {
     installGlobalTextureLookup();
     const std::string file = std::string(level) + ".lev";
+    // Coney's choice: no heap pool is pushed around the open (Coney allocates normally), and a missing file fails
+    // here, where the original checks nothing.
     auto entry = wad.lookup(file);
     if (!entry) {
         return fail(ErrorCode::NotFound, std::format("{}: not in the WAD", file));
@@ -185,6 +187,8 @@ std::expected<std::unique_ptr<world::LevelObject>, Error> loadLevel(const io::Wa
     }
     chunk::ChunkHandlerTable table = chunk::ChunkHandlerTable::withDefaults();
     addLevelFileReaders(table);
+    // The container load and the pop of the level object. Coney's choice: the stream is closed when it goes, with no
+    // pool pushed around the close.
     auto loaded = world::loadLevelFile(*stream, table);
     if (!loaded) {
         return std::unexpected(Error{loaded.error().code, file + ": " + loaded.error().message});

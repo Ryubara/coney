@@ -48,6 +48,8 @@ std::expected<Wad, Error> Wad::open(Disc disc) {
     if (!dirData) {
         return std::unexpected(std::move(dirData.error()));
     }
+    // Coney's choice: WARRIORS.WAD is not held open (each entry is opened from the disc when read); its size checks
+    // the index instead.
     auto wadSize = disc.fileSize(kWadFile);
     if (!wadSize) {
         return std::unexpected(std::move(wadSize.error()));
@@ -79,7 +81,8 @@ std::expected<const WadEntry*, Error> Wad::lookup(std::string_view nameOrHash) c
         }
         return fail(ErrorCode::NotFound, std::format("no WAD entry has the hash {:#010x}", hash));
     }
-    // Anything else is a file name.
+    // Anything else is a file name. Coney's choice: the name is matched in any case without lowercasing the caller's
+    // buffer in place, as the original's lookup does.
     if (const WadEntry* entry = m_index.find(nameOrHash)) {
         return entry;
     }
