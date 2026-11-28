@@ -164,6 +164,17 @@ inline std::vector<LocomotionClip> combatClips() {
                      .rangeFlags = 0,
                      .reach = 0.0F,
                      .knockdown = false});
+    // The grabber's hold walks, front 86 and rear 88, looping at the root speeds measured in play (1.125 and about
+    // 1.22 m/s, combat-grabs.md#hold-walk): the grab's movement styles put them in the walk slot.
+    for (const auto& [id, speed] : {std::pair{86U, 1.125F}, std::pair{88U, 1.22F}}) {
+        clips.push_back({.id = id,
+                         .speed = speed,
+                         .duration = 1.0F,
+                         .rootVelocity = 0.0F,
+                         .rangeFlags = 0x1000,
+                         .reach = 0.0F,
+                         .knockdown = false});
+    }
     // The stun's enter clip, which a clip ending while stunned returns to before the stun's loop.
     still(355, 0.1F);
     for (const std::uint32_t id : {82U, 83U, 84U, 85U, 196U, 207U, 356U, 358U, 606U, 607U}) {

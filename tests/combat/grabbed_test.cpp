@@ -12,11 +12,12 @@ using namespace coney::combat;
 
 namespace {
 
-// The puppet civilian of the runtime as a grabber: 200 power of 200, class 2 (divisor 4).
+// The puppet civilian of the runtime as a grabber: 200 power of 200, class 2 (divisor 4); the victim at 200 of 200.
 GrabbedInput heldBy(CommandId command, int grabberPower) {
     GrabbedInput input;
     input.command = command;
-    input.ownPowerFraction = 1.0F;
+    input.ownPower = 200;
+    input.ownPowerMax = 200;
     input.ownStruggleDivisor = 3;
     input.grabber.power = grabberPower;
     input.grabber.powerMax = 200;
@@ -40,19 +41,60 @@ TEST_CASE("square struggles: 96, costing a third of the grabber's maximum even w
     CHECK(spent.grabberPowerCost == 67);
 }
 
-TEST_CASE("no struggle while hurt, against rage, low on power or with the grabber at a quarter", "[combat]") {
+TEST_CASE("the struggle needs Grab_CanStruggle and the victim's own power fraction above 1 / the grabber's divisor",
+          "[combat]") {
+    // Expected: combat-grabs.md#grabbed, confirmed (code) (`Player_UpdateGrabbed` 0x0027fd68 compares
+    // `Human_PowerFraction` of the victim, 1.0 while it rages, with 1 / the grabber's class divisor; `Grab_CanStruggle`
+    // 0x002258f0: not hurt, the grabber not raging, own power above max / 6)
     GrabbedInput input = heldBy(command::kSquarePressed, 200);
+    CHECK(canStruggle(input));
     CHECK(struggleAllowed(input));
     input.hurt = true;
+    CHECK_FALSE(canStruggle(input));
     CHECK_FALSE(struggleAllowed(input));
+    // A sixth of 200 is 33: 33 of power is not above it, 34 is (and 34 / 200 is under a quarter, so the gate refuses).
     input = heldBy(command::kSquarePressed, 200);
-    input.ownPowerFraction = 0.15F;
+    input.ownPower = 33;
+    CHECK_FALSE(canStruggle(input));
+    input.ownPower = 34;
+    CHECK(canStruggle(input));
     CHECK_FALSE(struggleAllowed(input));
+    // Raging, the victim's fraction reads 1.0 whatever its meter.
+    input.ownPowerFull = true;
+    CHECK(struggleAllowed(input));
+    // The grabber's own meter is not the gate: at a quarter of its maximum the victim still struggles.
     input = heldBy(command::kSquarePressed, 50);
-    CHECK_FALSE(struggleAllowed(input));
+    CHECK(struggleAllowed(input));
     input = heldBy(command::kSquarePressed, 200);
     input.grabber.raging = true;
+    CHECK_FALSE(canStruggle(input));
     CHECK_FALSE(struggleAllowed(input));
+}
+
+TEST_CASE("square of either kind struggles; cross strikes back only when Grab_CanStruggle allows it", "[combat]") {
+    // Expected: combat-grabs.md#grabbed, confirmed (code) (`PlayerCmd_IsSquareAny` takes 0xf and 0x11,
+    // `PlayerCmd_IsCrossAny` 0x10 and 0x12; cross runs `Grab_CanStruggle` 0x002258f0)
+    CombatRandom random;
+    CHECK(updateGrabbed(heldBy(command::kSquareChain, 200), random).action == GrabbedAction::Struggle);
+    GrabbedInput hurt = heldBy(command::kCrossPressed, 200);
+    hurt.hurt = true;
+    CHECK(updateGrabbed(hurt, random).action == GrabbedAction::None);
+    GrabbedInput raging = heldBy(command::kCrossLongHold, 200);
+    raging.grabber.raging = true;
+    CHECK(updateGrabbed(raging, random).action == GrabbedAction::None);
+    GrabbedInput tired = heldBy(command::kCrossPressed, 200);
+    tired.ownPower = 30;
+    CHECK(updateGrabbed(tired, random).action == GrabbedAction::None);
+}
+
+TEST_CASE("a victim with flag 0x2000000000 cannot escape with circle", "[combat]") {
+    // Expected: combat-grabs.md#grabbed, confirmed (code) (`Player_UpdateGrabbed` 0x0027fd68 skips the escape when the
+    // victim's flags hold 0x2000000000)
+    CombatRandom random;
+    GrabbedInput input = heldBy(command::kCircleTapped, 40);
+    CHECK(updateGrabbed(input, random).action == GrabbedAction::Escape);
+    input.noEscape = true;
+    CHECK(updateGrabbed(input, random).action == GrabbedAction::None);
 }
 
 TEST_CASE("cross strikes back with 104, and 116 from the rear", "[combat]") {

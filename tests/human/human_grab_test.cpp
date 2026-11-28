@@ -209,6 +209,27 @@ TEST_CASE("the full stick drags a held human with the grabber, at the hold's off
     CHECK(local.y == Approx(1.01F).margin(0.01F));
 }
 
+TEST_CASE("the hold walk's speed is the root speed of the grabber's walk clip, 86 from the front", "[human][combat]") {
+    // Expected: combat-grabs.md#hold-walk, confirmed (code) (`Human_MoveGrabbing` 0x00245310 walks at record +0x170,
+    // the walk speed the grab's movement style gives from its walk clip, 86 for a front grabber)
+    std::vector<coney::test::LocomotionClip> clips = coney::test::fightClips();
+    for (coney::test::LocomotionClip& clip : clips) {
+        if (clip.id == 86U) {
+            clip.speed = 0.8F;
+        }
+    }
+    const FightCharacter character(clips);
+    HumanFight fight(character, 1.5F);
+    fight.run("5 tap circle\n", 40);
+    REQUIRE(fight.player().fighter().pairStage() == coney::human::PairStage::Attached);
+    // Full right for 30 updates turns the grabber's back to +x; the last 10 walk straight at 0.8 m/s, 1/30 s each.
+    fight.run("0 stick left 100 0\n", 30);
+    const Vec3 before = fight.player().position();
+    fight.run("0 stick left 100 0\n", 10);
+    const Vec3 after = fight.player().position();
+    CHECK(std::hypot(after.x - before.x, after.y - before.y) == Approx(0.8F * 10.0F / 30.0F).margin(0.01F));
+}
+
 TEST_CASE("a held human whose hold point lies through a wall is swept against it, and the grabber gives way",
           "[human][combat]") {
     // Expected: combat-grabs.md#grab-posing, confirmed (code)
@@ -338,6 +359,42 @@ TEST_CASE("a human with flag 0x40 cannot be grabbed: the grab misses", "[human][
     });
     CHECK(missed);
     CHECK(fight.player().fighter().held() == nullptr);
+}
+
+TEST_CASE("only a player's grab connects out to 1.25 x the connecting clip's far range; an AI's stops at the far range",
+          "[human][combat]") {
+    // Expected: combat-grabs.md#grab-posing, confirmed (code) (`Pair_AlignStart` 0x00276998 scales the far range by
+    // 1.25 only for a grabber whose brain kind is 0)
+    FightCharacter character;
+    // 72's far range 1.3 m, the two 1.5 m apart: within a player's 1.625 m, beyond an AI's 1.3 m.
+    character.ranges = coney::test::fightRanges({}, {}, {{72, 1300}});
+    SECTION("the player's grab connects") {
+        HumanFight fight(character, 1.5F);
+        bool attached = false;
+        fight.run("5 tap circle\n", 40,
+                  [&](std::uint64_t /*frame*/) { attached = attached || fight.other().attached(); });
+        CHECK(attached);
+    }
+    SECTION("an AI's grab misses") {
+        HumanFight fight(character, 1.5F);
+        fight.otherFightsPlayer = true;
+        fight.otherCommand = [](std::uint64_t frame) {
+            return frame == 2 ? combat::command::kCircleTapped : combat::command::kNone;
+        };
+        bool started = false;
+        bool attached = false;
+        bool missed = false;
+        fight.run("", 40, [&](std::uint64_t /*frame*/) {
+            const std::uint32_t clip = fight.other().animator().animId();
+            started = started || clip == combat::anim_id::kGrabIntro;
+            attached = attached || fight.player().attached();
+            missed = missed || clip == combat::anim_id::kGrabMiss;
+        });
+        CHECK(started);
+        CHECK_FALSE(attached);
+        CHECK(missed);
+        CHECK(fight.other().fighter().held() == nullptr);
+    }
 }
 
 TEST_CASE("a held human taken out of the level, or freed by a script, ends the hold", "[human][combat]") {

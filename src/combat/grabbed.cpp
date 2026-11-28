@@ -23,6 +23,8 @@ bool struggleAllowed(const GrabbedInput& input) {
            grabberFraction > 1.0F / static_cast<float>(std::max(1, grabber.struggleDivisor));
 }
 
+bool canStruggle(const GrabbedInput& input) { return struggleAllowed(input); }
+
 bool breakFreeRoll(const GrabberState& grabber, CombatRandom& random) {
     if (grabber.raging) {
         return false;

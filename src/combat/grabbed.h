@@ -53,6 +53,10 @@ struct GrabbedInput {
     bool fromRear = false;      ///< Held from behind.
     bool hurt = false;          ///< The player is hurt.
     float ownPowerFraction = 1; ///< The player's power over its maximum.
+    int ownPower = 1;           ///< The player's power meter.
+    int ownPowerMax = 1;        ///< Its maximum (at least 1).
+    bool ownPowerFull = false;  ///< Raging or on unlimited power: its fraction reads 1.0.
+    bool noEscape = false;      ///< Human flag `0x2000000000`: circle cannot escape.
     int ownStruggleDivisor = 3; ///< The player's power class byte `+0x36`.
     bool movePlaying = false;   ///< One of the player's grabbed moves is still playing: no new one starts.
     GrabberState grabber;
@@ -64,6 +68,9 @@ struct GrabbedOutcome {
     int animId = anim_id::kNone; ///< The player's clip (the grabber plays animId + 1).
     int grabberPowerCost = 0;    ///< Power the grabber loses (the struggle's, spent even with no clip).
 };
+
+/// Stub.
+[[nodiscard]] bool canStruggle(const GrabbedInput& input);
 
 /// Whether the player may struggle (`0x002258f0`): not hurt, the grabber not raging, its own power above a sixth of
 /// its maximum, and the grabber's power fraction above 1 / the grabber's struggle divisor.
