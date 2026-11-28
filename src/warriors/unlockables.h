@@ -23,9 +23,9 @@ enum class UnlockKind : std::uint8_t {
 ///
 /// **Coney's choice** for a fresh profile (freshProfile()), until Coney runs the records: what `global.lua`'s
 /// `CfgUnlockables` unlocks on every boot with `UM_Unlock(0, 0, 0)` and `UM_Unlock(8, 0, 0)`, of the four kinds above
-/// (docs/research/frontend.md#rumble-data, confirmed at runtime): the modes 1 ON 1 (12) and WAR PARTY (14), the Fight
-/// Pen (102), the gangs BASEBALL FURIES (5), ORPHANS (3), TURNBULL ACS (4) and WARRIORS (1), and 23 character types,
-/// none of which the stand-in table replaces. Everything the story unlocks stays locked until Coney has saves.
+/// (docs/research/frontend.md#rumble-data; the gangs confirmed at runtime): the modes 1 ON 1 (12) and WAR PARTY (14),
+/// the Fight Pen (102), the gangs BASEBALL FURIES (5), ORPHANS (3), TURNBULL ACS (4) and WARRIORS (1), and 23 character
+/// types, none of which the stand-in table replaces. Everything the story unlocks stays locked until Coney has saves.
 ///
 /// Research: docs/research/frontend.md#rumble-data
 class Unlockables {
