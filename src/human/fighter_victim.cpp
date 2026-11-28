@@ -94,7 +94,7 @@ void Fighter::takeNotice(const FighterInput& input, HumanAnimator& animator) {
     }
     const AttackNotice notice = *m_notice;
     m_notice.reset();
-    // Only a blocking player answers a warning.
+    // Only a blocking player answers (**Coney's stand-in** for Human_IsFreeToReact: neither grabbed nor helpless).
     if (!m_combat.blocking() || grabbed() || helpless(animator)) {
         return;
     }
