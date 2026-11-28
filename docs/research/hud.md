@@ -335,7 +335,11 @@ the menu is shown, not yet issued and not locked) reads the right stick's raw by
 - **Angle**, clockwise from up (up 0°, right 90°, down 180°, left 270°): a quadrant base (0°, 90°, 180°, 270°) plus
   asin(|d| / 128) of **one** axis's offset d from 128, not atan2, so it is exact only at full deflection. d is the x
   offset in the up-right and down-left quadrants and the y offset in the down-right and up-left ones; an offset of
-  128 or more counts as 90°. A 45° push of magnitude 0.9 (offsets about 81 and 81) reads 39° up-right.
+  128 or more counts as 90°. A 45° push of magnitude 0.9 (offsets about 81 and 81) reads 39° up-right. A byte of
+  exactly 128 falls on both sides: the base counts x ≥ 128 as right and y ≤ 128 as up, and the y offset is read
+  when both bytes are ≥ 128 or both ≤ 128. So straight up at x 128 (128, 0) is the up-right base read on the y axis,
+  90°, between slots; full right with y on 128 (255, 128) reads 0°, the up slot; straight down at x 128 (128, 255)
+  reads about 173°, the down slot. Confirmed (code): the `c.le.s` tests at `0x001a715c`-`0x001a71f8`.
 - **Sectors** (without hysteresis):
 
 | Slot | Stick | Angle | Command |
@@ -393,8 +397,8 @@ commands 1 and 2 for the player (a disabled command is matched into the record's
 sees it): with only `WCEnableCommand` and `HUDShowWarCommand` run, R2 and the stick left the display hidden and the
 tactic unchanged, and after `EnableCommand(player, 1, true)` and `(player, 2, true)` the same input gave the command.
 A stick exactly up (raw 128, 0) left the highlight on slot 3 (down) in three runs of three; a raw x of 133 or 123 with
-y 0 selected up (two runs each). Exactly down (128, 255) moved it from slot 1 to slot 3 in three runs of three. Why up
-fails at x 128 and down does not is not traced.
+y 0 selected up (two runs each). Exactly down (128, 255) moved it from slot 1 to slot 3 in three runs of three. Up
+fails at x 128 because the angle reads 90° there (the byte of 128 above), between slots, so the highlight stays.
 
 **Layout** (default video mode, GUI coordinates). The centre x is the layout record's (`0x006006a0` + player ×
 `0x80`): 0.5, set by `Open`; in a level numbered 100 or more with two players (`0x001fe198` = 1), 0.23 for player 1
@@ -1111,8 +1115,8 @@ colours](#war-command-colours) (the lit slot only once lit; nothing when not all
 command) and the highlighted slot's `GSTRING.COMMAND` name (entry 7 for a disabled command) at x 0.5, grey, dark or
 gold. `HUDShowWarCommand`, `WCEnableCommand` (enabling) and `WCEnableAllCommands` (only for a player whose human is
 there) set whether the menu is allowed and shut its name down (`script::setWarCommandAllowed`).
-**Coney's readings**: player 1 is the war chief (`+0x3ac` is not kept) and his state flags do not hold the menu back; a
-stick byte of 128 or more is right or down; the backing and plate are flat squares (the sprite word `0xd0100` is not
+**Coney's readings**: player 1 is the war chief (`+0x3ac` is not kept) and his state flags do not hold the menu back; the
+stick reads a byte of 128 as the original does; the backing and plate are flat squares (the sprite word `0xd0100` is not
 mapped); the order is also given when play resumes under a closing pause menu (**Coney's reading**: any mode popped
 over play) and the menu closes when the chief is knocked out; not built: the two-player and 16:9 layouts. A script
 drives it as a player does: `press r2`, `stick right -70 70` (up-left, attack), `release r2`

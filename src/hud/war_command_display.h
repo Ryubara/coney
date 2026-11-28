@@ -33,8 +33,8 @@ inline constexpr std::uint32_t kWarCommandFadeMs = 500;
 /// The right stick's angle as the menu reads it from its raw bytes (`x`, `y`: 0-255, y down), degrees clockwise from
 /// up: nothing inside the dead zone ((x − 127)² + (y − 127)² ≤ 12,100, about 87 % of the travel); otherwise the
 /// quadrant's base (0, 90, 180, 270) plus asin(|d| / 128) of one axis's offset d from 128 (x in the up-right and
-/// down-left quadrants, y in the other two; 128 or more counts as 90°). **Coney's reading**: a byte of 128 or more is
-/// right (x) or down (y).
+/// down-left quadrants, y in the other two; 128 or more counts as 90°). A byte of exactly 128 counts as up (y) for the
+/// quadrant and on both sides for the axis read, as WarCommandDisplay_ReadStick (0x001a7040) tests them.
 [[nodiscard]] std::optional<float> warCommandStickAngle(std::uint8_t x, std::uint8_t y);
 
 /// The slot the menu highlights for a stick at `angle` (warCommandStickAngle()) with `current` highlighted: the

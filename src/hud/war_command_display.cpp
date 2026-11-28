@@ -95,20 +95,20 @@ std::optional<float> warCommandStickAngle(std::uint8_t x, std::uint8_t y) {
     }
     const float dx = static_cast<float>(x) - kAxisCentre;
     const float dy = static_cast<float>(y) - kAxisCentre;
-    // Coney's choice: a byte of 128 or more is right (x) or down (y); the original's quadrant tests overlap at 128.
+    // The quadrant's base: x of 128 or more is right, y of 128 or less is up.
     const bool right = x >= 128;
-    const bool down = y >= 128;
-    if (right && !down) {
-        return axisAngle(dx);
+    const bool up = y <= 128;
+    float base = 180.0F;
+    if (right) {
+        base = up ? 0.0F : 90.0F;
+    } else if (up) {
+        base = 270.0F;
     }
-    if (right && down) {
-        return 90.0F + axisAngle(dy);
-    }
-    if (!right && down) {
-        return 180.0F + axisAngle(dx);
-    }
+    // The axis read: y where both bytes are 128 or more or both 128 or less, else x. The two tests overlap at 128,
+    // so straight up at x 128 reads 90° (between slots) and full right with y on 128 reads 0°, as in the original.
+    const bool readY = (x >= 128 && y >= 128) || (x <= 128 && y <= 128);
+    const float angle = base + axisAngle(readY ? dy : dx);
     // 270 + 90 is straight up again.
-    const float angle = 270.0F + axisAngle(dy);
     return angle >= 360.0F ? angle - 360.0F : angle;
 }
 
@@ -166,7 +166,7 @@ void WarCommandDisplay::update(std::uint8_t stickX, std::uint8_t stickY, const C
                                const HudSound& audio) {
     // Stand-ins: the chief's knock-out closes the menu from GameplayMode (close()); the sprites are always resident
     // (+0x10); the out-of-range byte (+0x414) is not kept (#1520), so render() picks entry 6 from Look::allLocked;
-    // the name's text, the slots' places and sizes and the name's box are render()'s, from fixed values.
+    // the name's text, places, sizes and box are render()'s, from fixed values; +0x1558 (render's flag) is not kept.
     m_allowed = chief.allowed;
     if (!m_shown) {
         return;
