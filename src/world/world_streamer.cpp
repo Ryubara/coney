@@ -108,13 +108,16 @@ PreloadResult preloadWorlds(std::span<StreamedWorld* const> worlds, std::span<co
                             SectorBudget& budget, PartStore& store, std::uint64_t nowMs) {
     constexpr std::uint32_t kOtherPasses = 200;
     // Clear the visible marks first (WorldManager_ResetVisibility, 0x0040e0b8, on the solid and detail worlds), so
-    // that what an earlier camera saw holds no part against unloading. The original clears them again after its pack
-    // load; Coney loads no pack in between, so once is the same.
+    // that what an earlier camera saw holds no part against unloading. Coney's choice: the original clears them again
+    // after its pack load and flushes the render queue before the first; Coney loads no pack and draws nothing here,
+    // so one reset does both.
     for (StreamedWorld* world : worlds) {
         world->resetVisibility();
     }
     PreloadResult result;
     std::uint32_t otherPasses = 0;
+    // Stand-in until #710: no real-time deadline (reads are synchronous, so the passes alone bound the loop), and a
+    // pass that did no work ends it, where the original counts the pass and calls the update again.
     while (otherPasses < kOtherPasses) {
         const StreamStep step = updateStreaming(worlds, cameras, radius, budget, store, nowMs);
         switch (step.result) {
@@ -134,12 +137,14 @@ PreloadResult preloadWorlds(std::span<StreamedWorld* const> worlds, std::span<co
             return result; // no more work
         }
         // Keep going while the nearest missing sector of the last searches lies within the radius, or none was found.
-        // No new search: 0x0040e100 reads the last one, which found what this pass just loaded.
+        // No new search: 0x0040e100 reads the last one, which found what this pass just loaded. Stand-in until #710:
+        // the original does not stop here; it counts the pass toward the 200 and goes on.
         const float pending = nearestPendingDistance(worlds, cameras);
         if (pending != kNoPendingDistance && pending > radius) {
             return result;
         }
     }
+    // Coney's choice: what was loaded, unloaded and failed, where the original returns the time taken.
     return result;
 }
 

@@ -313,7 +313,7 @@ relation = "stand-in"
 issue = 380
 
 [[function.gaps]]
-what = "nothing calls it yet: the preload that does is the resource manager's"
+what = "not called itself: world::preloadWorlds clears each world's marks for WorldManager_Preload; the other caller, ResourceMgr_LoadAllBlocking, waits for the resource manager"
 relation = "not-ported"
 issue = 380
 

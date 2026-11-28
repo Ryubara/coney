@@ -693,7 +693,10 @@ Confirmed (code) for what the cited original functions do (the sections above); 
 in `src/raycast/collision_mesh.*`. `CollisionMesh::castRay(ray, result, exclude, mask)` is the walk and the cell
 test fills the result as above; the optional form `rayCast(ray, exclude, mask)` goes through `worldRayCast` and
 returns only a kept hit, so every existing caller keeps its answers (a kept triangle's nearest-first result is the
-same either way). Compared side by side with `0x0034fc08`, `0x0040db88`, `0x00350778` and `0x00350cd8`; the only
+same either way). The column walk keeps the original's one-sided clamps: each column's upper end is only lowered to
+the cell box and its lower end only raised, so a column whose line lies wholly above or below the box tests no cell
+(`0x00350cd8`, confirmed (code)). That matters because the walk order decides which excluded triangle fills the
+result. Compared side by side with `0x0034fc08`, `0x0040db88`, `0x00350778` and `0x00350cd8`; the only
 differences are the null level above and the word at `+0x18`, which no caller reads and `RayResult` does not hold.
 The callers still use the optional form: none of them reads an excluded fill yet.
 
@@ -887,8 +890,9 @@ held open. **Not yet:** `WorldLevel_Release` as one function. Its third step is 
 - **Destruction order:** with recording stand-ins for the platform objects, destroying a `LevelObject` records
   collision, occluders, level world, glow dictionary, skyline model, skyline dictionary, sky model, sky dictionary,
   cloud model, cloud dictionary.
-- **No leak:** a level object built over a synthetic collision mesh and destroyed leaves nothing allocated (the
-  `asan` preset, or an allocation counter in the test).
+- **No leak:** a level object built from a synthetic level file and destroyed leaves none of its platform objects
+  alive (a live counter in the test); the collision mesh and occluders are held by `unique_ptr` and value, which the
+  `asan` preset checks.
 
 ## Unit 18: World manager lifecycle {#unit-18}
 
@@ -1104,8 +1108,13 @@ evictions, so it must come back exactly on unload.
 
 **In Coney now:** `WorldManager::setLoadPriority` and `loadPriority` (0.001 after `loadLevel`),
 `resetVisibility(solid, detail)`, `sectorPool(&largestFree)` and `world::sectorPoolSizes` for `CreatePools`.
-`loadLevel` now sets the load priority last. Kept differences: the visibility latch is not kept (nothing in Coney
-reads it), and nothing calls `resetVisibility` or reads the load priority until the resource manager streams. The
+`loadLevel` now sets the load priority last. `world::preloadWorlds` clears every streamed world's visible marks
+before it streams, as `WorldManager_Preload` (`0x0040e2d8`) does through `WorldManager_ResetVisibility` twice
+before its loop (confirmed (code)); Coney loads no pack between the two, so it clears them once. Without it the
+front end's scene, which preloads again for each new camera, kept the parts an earlier camera saw. Kept differences:
+the visibility latch is not kept (nothing in Coney reads it); `WorldManager::resetVisibility` itself waits for its
+other caller, `ResourceMgr_LoadAllBlocking` (`0x001889d0`), and nothing reads the load priority until the resource
+manager streams. The rumble menu's enter (`0x0015e8b0`) does not set the priority to 10.0 yet, noted at the code. The
 pool sizes still use 64-bit arithmetic where the original truncates to 32 bits; they differ only for a file over about
 41 MB (inferred: no level file or `warriors.glr` is near that size).
 
@@ -1124,7 +1133,8 @@ With a `SectorBudget` of 17,217,536 bytes and synthetic file sizes:
 - **ResetVisibility:** with marks set in both worlds and the latch set, all marks and the latch are clear afterwards.
 - **Load priority:** `setLoadPriority(10.0)` then reading gives 10.0; `-3.0` gives -3.0 and `1e9` gives 1e9 (no
   clamp); `loadLevel` sets 0.001.
-- **Pack queue:** three `queuePack` calls with the same name give three entries, in order.
+- **Pack queue:** the same name queued three times gives three entries, in order. Coney's queue is the game state's
+  `precacheQueue`, so the test calls the `QueueFileToPrecache` binding.
 
 ## Unit 19: Streamed world object lifecycle and sector callbacks {#unit-19}
 
