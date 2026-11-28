@@ -140,6 +140,12 @@ class StreamedWorld {
     /// @orig 0x00411b20 World_CollectSector (WorldPS2.cpp)
     [[nodiscard]] std::vector<std::uint32_t> collectSectors(Vec3 viewpoint) const;
 
+    /// Stub for the test commit (#1716): the old selection, by the visibility marks.
+    [[nodiscard]] std::vector<std::uint32_t> collectSectors(Vec3 viewpoint, const ViewFrustum& frustum) const {
+        static_cast<void>(frustum);
+        return collectSectors(viewpoint);
+    }
+
     /// As collectSectors(), but choosing the loaded sectors whose box `frustum` may contain instead of those the last
     /// visibility pass marked. For a render that blends between two steps
     /// (docs/guides/conventions.md#update-and-render): its camera is not the one the visibility pass used, and the
