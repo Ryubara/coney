@@ -10,6 +10,7 @@
 #include <functional>
 #include <memory>
 #include <numbers>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <vector>
@@ -22,6 +23,7 @@
 #include "combat/player_combat.h"
 #include "combat/power_class.h"
 #include "combat/tandem.h"
+#include "human/holdable.h"
 #include "human/human.h"
 #include "human/human_animator.h"
 #include "support/collision_fixtures.h"
@@ -217,6 +219,50 @@ int introUpdates(int base) {
         return 68;
     }
 }
+
+// A victim held from his rear, facing +y rotated by `heading`, that records each tandem asked of it and refuses it, so
+// a test sees which of several the attacker's search took.
+class HeldVictim final : public coney::human::Holdable {
+  public:
+    HeldVictim(const coney::characters::AnimSet& anims, Vec3 at, float heading)
+        : m_anims(anims), m_at(at), m_heading(heading) {}
+
+    [[nodiscard]] Vec3 position() const override { return m_at; }
+    [[nodiscard]] float heading() const override { return m_heading; }
+    [[nodiscard]] TargetState state() const override { return TargetState::Held; }
+    [[nodiscard]] const combat::Health& health() const override { return m_health; }
+    void hit(const coney::human::IncomingHit& /*hit*/) override {}
+    void warn(const coney::human::AttackNotice& /*notice*/) override {}
+    [[nodiscard]] coney::human::Holdable* holdable() override { return this; }
+    [[nodiscard]] bool heldFromRear() const override { return true; }
+    void play(std::span<const std::uint32_t> /*clips*/, std::uint32_t /*loop*/, coney::human::AnimState /*state*/,
+              TargetState /*targetState*/) override {}
+    void playPaired(std::span<const std::uint32_t> /*clips*/, const coney::characters::AnimSet& /*attacker*/,
+                    std::uint32_t /*loop*/, coney::human::AnimState /*state*/, TargetState /*targetState*/) override {}
+    void setAttached(bool /*attached*/) override {}
+    [[nodiscard]] bool attached() const override { return true; }
+    void keepHold() override {}
+    [[nodiscard]] std::optional<TargetState> takeBrokenHold() override { return std::nullopt; }
+    void place(Vec3 position, float headingRadians) override {
+        m_at = position;
+        m_heading = headingRadians;
+    }
+    void face(Vec3 /*point*/) override {}
+    void carryOver(Vec3 /*goal*/, float /*headingRadians*/, float /*seconds*/) override {}
+    [[nodiscard]] const coney::characters::AnimSet& anims() const override { return m_anims; }
+    bool startTandem(const coney::human::TandemStart& /*start*/) override {
+        ++asked;
+        return false;
+    }
+
+    int asked = 0; // the tandems asked of it
+
+  private:
+    const coney::characters::AnimSet& m_anims;
+    Vec3 m_at;
+    float m_heading;
+    combat::Health m_health{600};
+};
 
 } // namespace
 
@@ -448,5 +494,43 @@ TEST_CASE("the player's tandem from square or cross puts him in the fight stance
         });
         REQUIRE(start >= 0);
         CHECK(stanceAtStart);
+    }
+}
+
+TEST_CASE("of two victims held from behind the same distance away, the tandem starts at the one in the earlier slot",
+          "[human][tandem][targeting]") {
+    // Expected: combat-targets.md#searches-coney, confirmed (code). The tandem's search stands in for the pick and grab
+    // searches (Player_PickTarget 0x0027a6c0, Player_FindCounterTarget 0x0027ac30), which sort their lists with
+    // SortByKeyAscending 0x003868d0 and so keep the earlier of equals first. The player faces two held victims 1.5 m
+    // ahead and half a metre to either side, both facing him, and presses square.
+    const FightCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    for (const bool leftFirst : {true, false}) {
+        INFO("left first: " << leftFirst);
+        Human player(character.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F,
+                     &character.ranges);
+        player.spawn(mesh.get(), Vec3{40.0F, 40.0F, 0.0F}, 0.0F);
+        HeldVictim left(character.anims, Vec3{39.5F, 41.5F, 0.0F}, std::numbers::pi_v<float>);
+        HeldVictim right(character.anims, Vec3{40.5F, 41.5F, 0.0F}, std::numbers::pi_v<float>);
+        HeldVictim& first = leftFirst ? left : right;
+        HeldVictim& second = leftFirst ? right : left;
+        const std::array<coney::human::Combatant*, 2> targets{&first, &second};
+        const combat::CommandTables tables = combat::CommandTables::street();
+        combat::CommandMatcher matcher;
+        for (const coney::test::PadFrame& frame : coney::test::playScript("2 tap square\n", 8)) {
+            const combat::CommandId command =
+                matcher.update(frame.buttons, tables, combat::combatTuning().historyHoldSamples);
+            player.step(coney::human::HumanInput{.stickX = frame.leftX,
+                                                 .stickY = frame.leftY,
+                                                 .cameraForward = Vec3{0.0F, 1.0F, 0.0F},
+                                                 .sprintHeld = false,
+                                                 .actionPressed = false,
+                                                 .command = command,
+                                                 .buttons = frame.buttons,
+                                                 .targets = targets},
+                        mesh.get());
+        }
+        CHECK(first.asked >= 1);
+        CHECK(second.asked == 0);
     }
 }
