@@ -617,8 +617,9 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
 
 **In Coney:** `world::preloadWorlds` clears the worlds' visible marks (step 5; once, as no pack loads between) and
 runs the streaming loop of step 8. It stops on a pass with no work, or once the pending sector lies beyond the
-radius, where the original only counts such a pass toward the 200 and goes on (a stand-in marked at the code, as are
-the missing deadline and the camera radius of step 3). Steps 1, 2, 4, 6, 9 and 10 wait for the resource manager.
+radius, where the original only counts such a pass toward the 200 and goes on (a stand-in marked at the code, as is
+the missing deadline). Not ported: the camera's draw distance as the radius (step 3; the caller's radius is used),
+the busy flag of step 1 and the player records of step 2; steps 4, 6, 9 and 10 wait for the resource manager.
 
 ### A frame of play {#a-frame-of-play}
 

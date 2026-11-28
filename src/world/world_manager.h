@@ -64,7 +64,9 @@ class WorldManager {
 
     /// Clears the visible marks of the level's `solid` world (`<world>s`, or the only one) and, when the level has one,
     /// of its `detail` world (`<world>d`). The worlds are the platform's (WorldSet); Coney's solid world always exists,
-    /// so the original's missing null check of it has nothing to copy.
+    /// so the original's missing null check of it has nothing to copy. No caller yet: world::preloadWorlds clears each
+    /// world's marks itself for WorldManager_Preload (0x0040e2d8), as it holds the worlds and not the manager, and the
+    /// other caller, ResourceMgr_LoadAllBlocking (0x001889d0), waits for the resource manager. Keep it for that one.
     /// @orig 0x0040e0b8 WorldManager_ResetVisibility (WorldManagerPS2.cpp)
     void resetVisibility(StreamedWorld& solid, StreamedWorld* detail);
 
