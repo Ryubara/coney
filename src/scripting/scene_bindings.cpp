@@ -255,7 +255,7 @@ NativeFunction makeGoalJoin(const BindingContext& context) {
         // Every call in the game's scripts passes true.
         // stand-in: the three forms bind alike (Scene_BindHuman) and each goal's walk to the role's start is the
         // host's, but the play mode's join handler switches player 1's brain (the pad) off and on for all three, where
-        // only the cinematic goal holds it; the fixed-scene and animation goals leave the pad as it is.
+        // only the cinematic goal holds it; the fixed-scene and animation goals leave the pad as it is (#1719).
         scenes.joinHuman(handleArg(args, 0), unsignedArg(args, 1), unsignedArg(args, 2),
                          static_cast<int>(std::trunc(binding::number(args, 3))));
         return binding::none();

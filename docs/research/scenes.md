@@ -1091,7 +1091,8 @@ commands off, hold written as his last command and his menu locked: in the updat
 unlocked, follow is his last command and his crew has one new tactic, the follow, already started.
 
 The reset at the join ([Humans](#humans)) came with #225 and #281, and the bind's rage end for players only with #685;
-an AI human's fight stance at the join is left to #959.
+an AI human's fight stance at the join is left to #959, and the pad switch of the fixed-scene and animation joins
+to #1719.
 
 **Coney choices** where the page is silent:
 
