@@ -247,11 +247,15 @@ TEST_CASE("the disc's level80: R2 and the right stick up give the follow order t
     level.pad.buttons = coney::pad::kR2;
     level.run(2);
     CHECK(display.shown());
+    // Up a little left of centre: exactly up with x on 128 reads 90 degrees and picks nothing, as in the original
+    // (docs/research/hud.md#warrior-command-menu).
+    level.pad.rightX = -0.01F;
     level.pad.rightY = 0.95F;
     level.run(6);
     CHECK(display.highlight() == 0);
     level.pad.buttons = 0;
     level.run(1);
+    level.pad.rightX = 0.0F;
     level.pad.rightY = 0.0F;
     level.run(5);
 
@@ -1183,10 +1187,14 @@ FollowingCrew giveFollowOrder(Level80& level, const std::function<void(const Fol
     }
     level.pad.buttons = coney::pad::kR2;
     level.run(2);
+    // Up a little left of centre: exactly up with x on 128 reads 90 degrees and picks nothing, as in the original
+    // (docs/research/hud.md#warrior-command-menu).
+    level.pad.rightX = -0.01F;
     level.pad.rightY = 0.95F;
     level.run(6);
     level.pad.buttons = 0;
     level.run(1);
+    level.pad.rightX = 0.0F;
     level.pad.rightY = 0.0F;
     // The run-in and the script's staging of the street.
     constexpr int kStaging = 15 * 30;

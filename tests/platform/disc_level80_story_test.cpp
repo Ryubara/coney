@@ -425,7 +425,9 @@ TEST_CASE("the disc's level80 from the story: the hints at each checkpoint, walk
     // Checkpoint 1: TT_1, then TT_4, ask for the follow order (R2, the right stick up); the order clears the text.
     const std::size_t at1 = jumpTo(1);
     REQUIRE(run.until([&] { return run.readable("TT_4"); }));
-    run.order(0.0F, 0.95F);
+    // Up a little left of centre: exactly up with x on 128 reads 90 degrees and picks nothing, as in the original
+    // (docs/research/hud.md#warrior-command-menu).
+    run.order(-0.01F, 0.95F);
     CHECK(run.flow().state().characters.lastWarriorCommand.at(0) == 0);
     CHECK(run.flow().state().story.commandCallback.empty());
     REQUIRE(run.until([&] { return !run.hud().hints().showing().has_value(); }, 60));
