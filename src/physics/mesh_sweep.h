@@ -100,8 +100,7 @@ struct CapsuleSweep {
 /// nearest first, each with the corner slide built from all of them: for each hit beyond the edge its triangle names
 /// in bits 14-15, while the owner is on the ground, a horizontal unit direction along the wall past that edge, the sum
 /// made `max(radius, |move|)` long and flagged kContactAddSlide. Returns how many were written (all of them: the
-/// original ignores its `max`). The original's walk reads one index past a cell's list after a hit above 1; Coney
-/// does not.
+/// original ignores its `max`). Each cell's list is walked once per entry, as in the original.
 /// @orig 0x00347c08 PhysicsMesh_SweepCapsule (unknown)
 int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Aabb& worldBox, const CapsuleSweep& sweep,
                      MeshScratch& scratch, std::vector<Contact>& out);

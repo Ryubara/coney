@@ -181,8 +181,8 @@ int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Aabb& worldBox, c
         t.plane = dot3(t.corners[0], t.normal);
         computeEdges(t, false);
         const TriangleSweep hit = sweepSphereTriangle(sphere, t, sweep.move);
-        // 9. A hit from 0 to 1. Coney's choice (#1692): the original's loop counter misses a step after a hit above 1
-        // and reads one index past the cell's list (0x00348170); Coney does not.
+        // 9. A hit from 0 to 1. A stand-in for a NaN fraction: the original keeps a hit unless t < 0 or 1 < t
+        // (0x0034814c, 0x00348168), so it would keep a NaN, which this test drops; no kernel NaN is known.
         if (hit.hit && hit.fraction >= 0.0F && hit.fraction <= 1.0F) {
             scratch.found.push_back(
                 MeshContact{.key = hit.fraction, .triangle = index, .region = hit.mask, .working = t});

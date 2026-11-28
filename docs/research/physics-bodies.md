@@ -225,8 +225,9 @@ steps confirmed (code) at the cited addresses.
 9. Keep the hit when the kernel returns non-zero and `0 ≤ t ≤ 1` (`t` = result `+4`): append a mesh contact
    (`t`, triangle pointer, `+0x10` = 0, `+0x14` = region, the copy of `T`).
 
-**Bug:** a hit with `t > 1` skips the cell loop's counter step (`0x00348170`), so the walk takes one more turn and
-reads the next `u16` of the index buffer: [The walk's extra turns](#u2-capsule-walk-overrun). Confirmed (code).
+**Each entry once:** the cell loop steps its counter on every path, a hit with `t > 1` included, so each listed
+entry is one turn and nothing past the list is read: [The cell loop's counter](#u2-capsule-walk-counter).
+Confirmed (code).
 
 **After the walk** (none kept → return 0):
 
@@ -276,54 +277,43 @@ fraction of the move where the sphere first touches), the side is decided **befo
 move goes into count. A body moving fast enough to cross a wall within one update still meets it at the fraction
 where it touches, so there is no tunnelling; a body that starts behind a one-sided wall passes through it.
 
-#### The walk's extra turns after a hit above 1 {#u2-capsule-walk-overrun}
+#### The cell loop's counter {#u2-capsule-walk-counter}
 
 Confirmed (code) at the cited addresses unless a line says otherwise.
 
-**The cell loop.** Each cell's list is walked with a counter and a pointer (`0x00347d58`-`0x00347d8c`): the counter
-`s2` starts at 0, the count `s8` is the list's first `u16`, the pointer `s0` its second, and each turn reads the
-`u16` at `s0` and keeps `s0 + 2` in `s7`. Every way out of a turn (visited, disabled, not a wall, behind, not moving
-in, low, thin, no kernel hit, a hit below 0, a hit kept) sets `s2 = s2 + 1` first (`move s2, s6` in the delay slot of
-the branches at `0x00347dec`, `0x00347e68`, `0x00347edc`, `0x00347f34`, `0x00347fcc`, `0x003480dc`, `0x00348154`, or
-at `0x003481dc`), then loops while `s2 < s8`, moving `s0` on in the delay slot at `0x003481e8`.
+**The loop.** Each cell's list is walked with a counter and a pointer (`0x00347d58`-`0x00347d8c`): the counter `s2`
+starts at 0, the count `s8` is the list's first `u16`, the pointer `s0` points at its first index, and each turn reads
+the `u16` at `s0` and keeps `s0 + 2` in `s7`. `s6` holds the counter plus 1 (`0x00347db4`, again at `0x00347ef8`). The
+loop runs while `s2 < s8`, moving `s0` on in the delay slot at `0x003481e8`.
 
-**The skip.** A kernel hit with `t > 1` leaves through `bc1tl 0x003481e4` at `0x00348170`, a branch-likely whose delay
-slot is `sltu v0, s2, s8`: it jumps past `move s2, s6`, so the counter stays where it was while the pointer still
-moves on. That turn did not count, so the loop takes one more, which reads the next `u16` of the index buffer. That
-`u16` is treated as a triangle index like any other: the visited bit, the tests and the kernel apply, and a hit
-from 0 to 1 is kept as a contact. An extra turn that hits above 1 again gives one more. After the cell's list come
-the lists of other cells (their counts and indices), so a hit above 1 can add a contact of a triangle the cell does
-not list. The decompile shows the counter stepping on every path; the skip is in the delay slot, which only the
-disassembly shows.
+**The counter steps on every path.** The copy `s2 = s6` sits in the delay slot of the move-into test's branch at
+`0x00347f34`, a plain `bc1t` (word `0x450100aa`, likely bit clear), whose delay slot runs whether the branch is taken
+or not; every path that reaches the kernel passes it. The low, thin and `t < 0` exits (`0x00347fcc`, `0x003480dc`,
+`0x00348154`) are plain `bc1t` with the same copy, and the visited exit's `bne` at `0x00347db0` jumps to the copy at
+`0x003481dc`. So when the `bc1tl` at `0x00348170` (a hit with `t > 1`) jumps past the copy at `0x003481dc`, the
+counter has already been stepped: each listed entry is one turn, and the walk never reads past its list. The decompile
+shows the same, one step at the foot of the loop. An earlier reading of this page took the plain branches' delay slots
+for taken-only and reported a skip there; there is none.
 
 **The index buffer in memory.** In level99's mesh (state `street-end-run`), the lists are one `u16` buffer: a leading
-0, then each list as a count followed by its indices, back to back (4933 values for 1718 triangles), and the buffer
-is the last of the mesh's chunks in memory before the mesh object itself: checked set, vertices, triangles, grid,
-lists, header in rising order. Six bytes lie between the buffer's end and the header, reading as the `u16`s 0, 3785,
-0; then the header's own words. So an extra turn after the last list reads triangle 0, then 3785, past the 1718
-triangles and past the checked set's bits, where the original reads whatever memory follows. Confirmed (runtime), run
-r-20261128-capsule-walk-lists. Those six bytes are the allocator's padding, so what follows the last list is the
-level's memory layout, not the format. **Coney's bound (a stand-in):** the extra turns stop at the end of the buffer,
-and an index at or past the triangle count is passed over as one turn, as a visited one is.
+0, then each list as a count followed by its indices, back to back (4933 values for 1718 triangles), as Coney's
+`CollisionMesh` holds them. The buffer is the last of the mesh's chunks in memory before the mesh object itself
+(checked set, vertices, triangles, grid, lists, header in rising order), 6 bytes before it. Confirmed (runtime), run
+r-20261128-capsule-walk-lists.
 
-Open question:
-
-- **What a walk past the last list meets in play**{#q-capsule-walk-past-buffer}: whether any level has a wall in its
-  last list that a walker can hit above 1, and what the padding after each level's buffer holds. Test it with the
-  conditional break above in each level, reading the mesh's `+0x7c` and `+0x80` and the bytes after the buffer.
-
-**How often.** The kernel's face path refuses `t > 1`, but its edge steps can return a fraction above 1
-([Unit 1](physics-kernels.md#u1-edge-cylinder)), so the extra turn happens at a triangle's edges and corners
-(inferred from [Unit 1](physics-kernels.md#u1-tests) cases 12 and 13, which return 1 with a fraction above 1). A
-conditional break at `0x00348170` on a fraction above 1 caught none in about 3,300 frames of walking into level99's
-walls and past their corners, while hits from 0 to 1 broke there within ten frames of walking into a wall:
-confirmed (runtime), run r-20261128-capsule-walk-lists. It is rare.
-
-**Not the sphere sweep.** `PhysicsMesh_SweepSphere` (`0x00348a50`) steps its counter on every path
-([below](#u2-00348a50-physicsmesh-sweepsphere)).
+**No hit above 1 was seen in play.** In the same run a conditional break at `0x00348170` on a fraction above 1 caught
+no hit in about 3,300 frames of walking into level99's walls and past their corners, while hits from 0 to 1 broke there
+within ten frames of walking into a wall: confirmed (runtime), run r-20261128-capsule-walk-lists. The condition
+compared the fraction's raw bits with `0x3f800000` as an unsigned number, which a negative fraction would also pass;
+none reaches the break, as a negative fraction leaves at `0x00348154` first.
 
 **A detail of step 9.** The keep test is `!(t < 0)` and `!(1 < t)` (`c.lt.S` at `0x0034814c` and `0x00348168`), so a
-NaN fraction would be kept; Coney's `0 ≤ t ≤ 1` drops it. The kernel is not known to return a NaN.
+NaN fraction would be kept; Coney's `0 ≤ t ≤ 1` drops it, a marked stand-in in `sweepCapsuleMesh`. Open question:
+
+- **Whether the kernel can return a NaN fraction**{#q-capsule-nan-fraction}: no case of `Sweep_SphereTriangle`
+  (`0x0034ee60`) is known to. Test it by searching its arithmetic for a division that a degenerate wall the capsule
+  rules let through (`|n.z| ≤ 0.65`, not low or thin) could make 0 / 0, and if one exists, by sweeping such a wall in
+  PCSX2 with a break at `0x0034814c`.
 
 ### `0x00348a50` PhysicsMesh_SweepSphere {#u2-00348a50-physicsmesh-sweepsphere}
 
