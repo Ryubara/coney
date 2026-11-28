@@ -452,8 +452,9 @@ NativeFunction makeObjColor(const BindingContext& context) {
             record->tint = word;
         }
         for (std::size_t k = 0; k < kComponents; ++k) {
-            static_cast<void>(
-                table.set(Value(static_cast<double>(k + 1)), Value(static_cast<double>(components.at(k)))));
+            if (!table.set(Value(static_cast<double>(k + 1)), Value(static_cast<double>(components.at(k))))) {
+                break; // a whole-number key is always set
+            }
         }
         return binding::none();
     };
