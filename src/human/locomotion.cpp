@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "human/locomotion.h"
 
+#include "core/ps2_float.h"
+#include "core/ps2_trig.h"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -11,6 +14,24 @@ namespace {
 
 constexpr float kPi = std::numbers::pi_v<float>;
 constexpr float kDegrees = kPi / 180.0F;
+
+// A rotation's forward axis (its rotated +y): the products in VU0 (the rotation times its z, then times its x), the
+// sums and differences in the FPU, each rounded as the PS2 rounds
+// (docs/research/characters-locomotion.md#run-velocity).
+// @orig 0x003363b0 Quat_AxisY (unknown)
+anim::Vec3 quatAxisY(float x, float y, float z, float w) {
+    const float yz = ps2::mul(y, z);
+    const float zz = ps2::mul(z, z);
+    const float wz = ps2::mul(w, z);
+    const float xx = ps2::mul(x, x);
+    const float yx = ps2::mul(y, x);
+    const float wx = ps2::mul(w, x);
+    // (2(xy - zw), 1 - 2(x² + z²), 2(yz + xw)): each pair summed, then doubled by adding it to itself.
+    const float across = ps2::sub(yx, wz);
+    const float sides = ps2::add(xx, zz);
+    const float up = ps2::add(yz, wx);
+    return anim::Vec3{ps2::add(across, across), ps2::sub(1.0F, ps2::add(sides, sides)), ps2::add(up, up)};
+}
 
 } // namespace
 
@@ -204,6 +225,20 @@ float turnToward(float heading, float target, float limit, TurnState& state) {
     }
     state.lastStep = step;
     return wrapAngle(heading + (error > 0.0F ? step : -step));
+}
+
+anim::Vec3 runVelocity(float heading, float speed, float vertical) {
+    // The rotation about z by the heading: (0, 0, sin h/2, cos h/2), from the game's sine and cosine
+    // (0x00241864-0x0024189c).
+    const float half = ps2::mul(heading, 0.5F);
+    const anim::Vec3 direction = quatAxisY(0.0F, 0.0F, ps2::sinf(half), ps2::cosf(half));
+    // Its forward axis times the speed in VU0, then the vertical velocity as the third part (0x00241b14, 0x00241b34).
+    return anim::Vec3{ps2::mul(direction.x, speed), ps2::mul(direction.y, speed), vertical};
+}
+
+float measuredSpeed(anim::Vec3 velocity) {
+    // The length over all three parts in VU0: vmul.xyz, vaddy.x, vaddz.x, vsqrt (0x00240f38-0x00240f50).
+    return ps2::length(velocity.x, velocity.y, velocity.z);
 }
 
 float approachSpeed(float current, float target, float seconds) {

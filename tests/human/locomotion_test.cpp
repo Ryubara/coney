@@ -4,6 +4,7 @@
 #include <array>
 #include <bit>
 #include <cmath>
+#include <cstdint>
 #include <numbers>
 
 #include <catch2/catch_approx.hpp>
@@ -196,6 +197,49 @@ TEST_CASE("a run's release skids only when the measured speed is at least the ru
     CHECK(coney::human::skids(Gait::Run, above, speeds, 1.0F, 0.0F, forward, forward));
     // A sprint's release is far above it.
     CHECK(coney::human::skids(Gait::Sprint, 10.245F, speeds, 1.0F, 0.0F, forward, forward));
+}
+
+TEST_CASE("a steady run's velocity is built and measured in the original's floats", "[locomotion]") {
+    // Expected: characters-locomotion.md#run-velocity, confirmed (runtime)
+    // chars_run_stop_hit's straight run at Rembrandt's run speed: each heading (twice the logged half heading) gives
+    // the velocity the next update measured, word for word, and the speed its skid test saw. Update 97's lands on the
+    // run speed exactly, so a release seen on update 98 skids; update 95's lands a rounding short and would not.
+    Speeds speeds = testSpeeds();
+    speeds.run = std::bit_cast<float>(0x40f9a3adU);
+    struct Sample {
+        std::uint32_t half;
+        std::uint32_t x;
+        std::uint32_t y;
+        std::uint32_t measured;
+    };
+    constexpr std::array<Sample, 4> kSamples{{
+        {0x3f4b4daaU, 0xc0f999e1U, 0xbe0be1d6U, 0x40f9a3acU}, // update 90: below
+        {0x3f4b4bfbU, 0xc0f999f1U, 0xbe0b78c4U, 0x40f9a3aeU}, // update 94: above
+        {0x3f4b4baaU, 0xc0f999f2U, 0xbe0b6505U, 0x40f9a3acU}, // update 95: below
+        {0x3f4b4b15U, 0xc0f999f8U, 0xbe0b4073U, 0x40f9a3adU}, // update 97: the run speed
+    }};
+    const Vec3 forward{0.0F, 1.0F, 0.0F};
+    for (const Sample& sample : kSamples) {
+        const float heading = 2.0F * std::bit_cast<float>(sample.half);
+        const Vec3 velocity = coney::human::runVelocity(heading, speeds.run, 0.0F);
+        CHECK(std::bit_cast<std::uint32_t>(velocity.x) == sample.x);
+        CHECK(std::bit_cast<std::uint32_t>(velocity.y) == sample.y);
+        CHECK(velocity.z == 0.0F);
+        const float measured = coney::human::measuredSpeed(velocity);
+        CHECK(std::bit_cast<std::uint32_t>(measured) == sample.measured);
+        CHECK(coney::human::skids(Gait::Run, measured, speeds, 1.0F, 0.0F, forward, forward) ==
+              (measured >= speeds.run));
+    }
+    CHECK(coney::human::skids(Gait::Run,
+                              coney::human::measuredSpeed(coney::human::runVelocity(
+                                  2.0F * std::bit_cast<float>(0x3f4b4b15U), speeds.run, 0.0F)),
+                              speeds, 1.0F, 0.0F, forward, forward));
+    // The vertical velocity is the third part, and the measure takes it.
+    const Vec3 rising = coney::human::runVelocity(0.0F, 3.0F, 4.0F);
+    CHECK(rising.x == 0.0F);
+    CHECK(rising.y == 3.0F);
+    CHECK(rising.z == 4.0F);
+    CHECK(coney::human::measuredSpeed(rising) == 5.0F);
 }
 
 TEST_CASE("the stick above 0.95 asks for the sprint speed only while sprinting", "[locomotion]") {

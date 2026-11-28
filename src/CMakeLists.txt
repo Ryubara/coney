@@ -34,6 +34,7 @@ add_library(coney_core STATIC
     core/json.cpp
     core/name_hash.cpp
     core/parse_number.cpp
+    core/ps2_trig.cpp
     core/clip_recording.cpp
     core/crowd_limits.cpp
     core/engine_limits.cpp

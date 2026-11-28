@@ -563,12 +563,11 @@ void Human::locomote(bool gated) {
         return;
     }
     const Speeds& speeds = m_animator.speeds();
-    // The current speed is the velocity's length as the original measures it (vtable `+0x94`), in single precision
-    // rounded toward zero as the PS2's unit rounds: at a steady run it comes out a few units in the last place either
-    // side of the run speed the velocity was set to, mostly below, which decides whether a release skids.
-    // **Coney's choice**: the velocity itself (facing × speed) is IEEE's; with the length rounded the PS2's way a
-    // steady run reads at or above the run speed in about 6 % of headings, the original's ~1 release in 10.
-    const float current = ps2::length(m_velocity.x, m_velocity.y);
+    // The current speed is the velocity's length over its three parts as the original measures it (vtable `+0x94`), in
+    // the PS2's floats: at a steady run it comes out a few units in the last place either side of the run speed the
+    // velocity was built with, mostly below, which decides whether a release skids
+    // (docs/research/characters-locomotion.md#run-velocity).
+    const float current = measuredSpeed(m_velocity);
     const float target = m_moveSpeed.has_value()
                              ? *m_moveSpeed
                              : targetSpeed(m_intent.magnitude, speeds, m_sprinting && m_stamina.value() != 0);
@@ -605,11 +604,10 @@ void Human::locomote(bool gated) {
     // The locomotion gate: while a clip moves the body (a start, a landing, a recovery: the record's 0x110c0880) or
     // the state code is 5 or 6, the clip alone moves it. Standing (no gait blend yet), the update the start clip
     // begins does not move the body either: at runtime the first update with the stick pushed began the start clip at
-    // speed 0. Otherwise the velocity follows the facing.
-    const anim::Vec3 direction = facing(m_heading);
+    // speed 0. Otherwise the velocity follows the facing, built in the original's floats from the heading.
     const bool clipMoves = gated || !m_animator.gaitBlendPlaying();
     const float horizontal = clipMoves ? 0.0F : newSpeed;
-    m_velocity = anim::Vec3{direction.x * horizontal, direction.y * horizontal, m_velocity.z};
+    m_velocity = runVelocity(m_heading, horizontal, m_velocity.z);
 }
 
 void Human::aiLocomote(bool gated) {

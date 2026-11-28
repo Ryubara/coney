@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261128-chars-run-velocity"
+date = "2026-11-28"
+kind = "trace"
+tool = "trace original"
+digest = "2ddcdcb4975cdc6f334843090ee6846234f1ae9ccecd24307b445b28ffb0d648"
+
+[who]
+agent = "a2183d07d1ab7f351"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "run-measure", "run-rotation", "run-velocity", "scripted-pad", "skid-test", "state-code"]
+
+[run]
+name = "chars_run_stop_hit"
+method = ""
+
+[values]
+updates = 141
+missed_updates = 0
+columns = 34
+
+[hashes]
+trace_csv = "b2b941a48e1c47a1c25a38b6ef0b420f6f8c1890e183f4d1e0086b1698309aed"

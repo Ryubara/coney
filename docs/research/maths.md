@@ -72,6 +72,22 @@ Two integer forms differ at the top: `Random_Int(n)` returns 0 to n **inclusive*
 | `0x003356a0` | `Math_AtanApprox` | atan(x) by a rational approximation: x folded to [0, 1] (1/x, then π/2 - result), above tan(π/12) shifted by π/6 with tan(π/6) (`0x006eb908`, `0x006eb904`), then x(0.99999905 + 0.25797766 x²) / (1 + 0.5912045 x²). | confirmed (code) |
 | `0x003357a8` | `Math_Atan2` | atan2(y, x) in (−π, π] from the same approximation as Math_AtanApprox; π/2 when x is within 5e-7 of 0 or either argument is the all-ones NaN at `0x005116b0`. | confirmed (code) |
 
+### Sine and cosine {#trig}
+
+The game's `sinf` and `cosf` are fdlibm's single-precision ones, run on the EE's floating-point unit, which rounds
+toward zero and lines up a sum's smaller operand keeping one guard bit ([The run's velocity in
+floats](characters-locomotion.md#run-velocity)). Their results can differ from a correctly rounded sine by a unit or two
+in the last place, and the locomotion's measured speed turns on those units. Confirmed (code) at each address;
+the sines and cosines of 57 half headings confirmed (runtime), run r-20261128-chars-run-velocity.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x004b8c40` | `Math_Sinf` | Below π/4 the kernel sine directly; otherwise the angle reduced by `Math_ReduceByHalfPif` and, by its quadrant n mod 4, the kernel sine of the head and tail (0), the kernel cosine (1), or their negatives (2, 3); x − x for an infinity or NaN. | confirmed (code) |
+| `0x004b8a70` | `Math_Cosf` | The same with the quadrant one on: kernel cosine (0), minus the kernel sine (1), minus the kernel cosine (2), the kernel sine (3). | confirmed (code) |
+| `0x004bdf20` | `Math_KernelSinf` | fdlibm's `__kernel_sinf` on [−π/4, π/4]: x + x³(−1/6 + x² r(x²)), or with the tail y, x − ((x²(y/2 − x³ r) − y) − x³ × −1/6); the argument itself below 2^-27. | confirmed (code) |
+| `0x004bd478` | `Math_KernelCosf` | fdlibm's `__kernel_cosf`: 1 − (x²/2 − (x² r − x y)), and above 0.3 with a quarter of x (0.28125 from 0.78125) taken off both sides first; 1 below 2^-27. | confirmed (code) |
+| `0x004bcf60` | `Math_ReduceByHalfPif` | fdlibm's `__ieee754_rem_pio2f`: below 3π/4 one subtraction of π/2 in two parts (three near π/2 itself), quadrant ±1; up to `0x43490f80` the medium reduction with the table at `0x00591838`; beyond, the long reduction at `0x004bd5d0`. | confirmed (code) |
+
 ### Angles, quaternions, transforms and matrices {#rotations}
 
 A transform is `{position, quaternion at +0x10}` (16 bytes each, w = 1 for points); quaternions are `(x, y, z, w)`;
@@ -93,7 +109,7 @@ clockwise from +y (the [Camera](camera.md) convention).
 | `0x00335f70` | `Quat_AngleFromX` | Angle of a quaternion's rotated y axis from +x, counter-clockwise: atan2(y.y, y.x) in (−π, π]. | confirmed (code) |
 | `0x00335fa0` | `Mat_Invert` | General 4x4 inverse of a transform matrix (rows at 0, 0x10, 0x20, 0x30): transposed into a scratch array, Gauss-Jordan elimination with partial pivoting against the identity (`0x005117a0`), transposed back. | confirmed (code) |
 | `0x00336308` | `Quat_AxisX` | A quaternion's rotated × axis: (1 - 2(y² + z²), 2(xy + zw), 2(xz - yw), 1). | confirmed (code) |
-| `0x003363b0` | `Quat_AxisY` | A quaternion's rotated y axis (its forward): (2(xy - zw), 1 - 2(x² + z²), 2(yz + xw), 1). | confirmed (code) |
+| `0x003363b0` | `Quat_AxisY` | A quaternion's rotated y axis (its forward): (2(xy - zw), 1 - 2(x² + z²), 2(yz + xw), 1); the products in VU0 (the quaternion times its z, then times its x), the sums in the FPU, which the locomotion's velocity depends on to the bit ([The run's velocity in floats](characters-locomotion.md#run-velocity)). | confirmed (code) |
 | `0x00336458` | `Quat_AxisZ` | A quaternion's rotated z axis (its up): (2(xz + yw), 2(yz - xw), 1 - 2(x² + y²), 1). | confirmed (code) |
 | `0x00336500` | `Quat_ToMatrix` | A quaternion to a 4x4 rotation matrix (rows are the rotated axes), translation zero and w = 1. | confirmed (code) |
 | `0x003365c8` | `Mat_ToQuat` | A rotation matrix to a quaternion: from the trace when it is positive, else from the largest diagonal element (the usual branch order 1, 2, 0). | confirmed (code) |
@@ -177,4 +193,8 @@ A box is `{min, max at +0x10}`.
 
 ## Open questions
 
+- **Sine and cosine past 3π/4 in Coney**{#q-trig-reduction}: Coney's `ps2::sinf` and `ps2::cosf` port the original's
+  kernels and its first reduction only, so past 3π/4 (the medium reduction with the table at `0x00591838` and the long
+  one at `0x004bd5d0`) they take IEEE's value rounded toward zero. No caller ported so far passes such an angle (the
+  locomotion's half heading stays under 1.75); a port that does needs those reductions first.
 - Whether `Mat_SwapYZ` converts to RenderWare's frame or to the vector unit's (its callers are all render paths).

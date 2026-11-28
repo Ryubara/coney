@@ -202,6 +202,17 @@ void setTurnEase(float easeError, float carry);
 [[nodiscard]] bool skids(Gait gait, float speed, const Speeds& speeds, float lastMagnitude, float magnitude,
                          anim::Vec3 velocityDirection, anim::Vec3 stickDirection);
 
+/// A pad-driven human's velocity at `speed` along `heading`, with `vertical` as its third part, built in the original's
+/// floats: the forward axis of the rotation made from the game's sine and cosine of half the heading, times the speed
+/// (docs/research/characters-locomotion.md#run-velocity). Along heading 0 it is (0, speed, vertical) exactly.
+/// @orig 0x00240e38 Human_PlayerLocomotion (unknown)
+[[nodiscard]] anim::Vec3 runVelocity(float heading, float speed, float vertical);
+
+/// The speed the locomotion measures from a velocity, the length of its three parts in the original's floats
+/// (docs/research/characters-locomotion.md#run-velocity).
+/// @orig 0x00240e38 Human_PlayerLocomotion (unknown)
+[[nodiscard]] float measuredSpeed(anim::Vec3 velocity);
+
 /// The factor a slope scales a grounded human's velocity by: 1 on ground whose normal's z is 0.95 or more,
 /// otherwise clamp(0.6 + 0.3 (n.z - 0.5), 0.5, 1).
 [[nodiscard]] float slopeFactor(float normalZ);

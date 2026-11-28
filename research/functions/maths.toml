@@ -43,6 +43,15 @@ coney = "src/camera/camera_shake.cpp:randomShare"
 status = "compared"
 
 [[function]]
+address = 0x003363b0
+name = "Quat_AxisY"
+page = "maths.md#rotations"
+role = "A quaternion's rotated y axis (its forward), products in VU0 and sums in the FPU."
+level = "confirmed-code"
+coney = "src/human/locomotion.cpp:quatAxisY"
+status = "compared"
+
+[[function]]
 address = 0x00336500
 name = "Quat_ToMatrix"
 page = "maths.md#rotations"
@@ -122,3 +131,39 @@ role = "Ray-triangle test (Moller-Trumbore) for either face (determinant at leas
 level = "confirmed-code"
 coney = "src/raycast/collision_mesh.cpp:rayTriangle"
 status = "legacy"
+
+[[function]]
+address = 0x004b8a70
+name = "Math_Cosf"
+page = "maths.md#trig"
+role = "The game's cosine (fdlibm's float version): the kernel below π/4, else by the quadrant of the reduction by π/2."
+level = "confirmed-code"
+
+[[function]]
+address = 0x004b8c40
+name = "Math_Sinf"
+page = "maths.md#trig"
+role = "The game's sine (fdlibm's float version): the kernel below π/4, else by the quadrant of the reduction by π/2."
+level = "confirmed-code"
+note = "C runtime (middleware); Coney ports it in core/ps2_trig.cpp for the run's velocity, see maths.md#q-trig-reduction"
+
+[[function]]
+address = 0x004bcf60
+name = "Math_ReduceByHalfPif"
+page = "maths.md#trig"
+role = "fdlibm's float reduction of an angle by π/2 into a head and a tail, returning the quadrant."
+level = "confirmed-code"
+
+[[function]]
+address = 0x004bd478
+name = "Math_KernelCosf"
+page = "maths.md#trig"
+role = "fdlibm's float cosine kernel on [-π/4, π/4], with the tail of a reduced angle."
+level = "confirmed-code"
+
+[[function]]
+address = 0x004bdf20
+name = "Math_KernelSinf"
+page = "maths.md#trig"
+role = "fdlibm's float sine kernel on [-π/4, π/4], with or without the tail of a reduced angle."
+level = "confirmed-code"
