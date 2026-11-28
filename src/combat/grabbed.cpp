@@ -75,6 +75,8 @@ GrabbedOutcome updateGrabbed(const GrabbedInput& input, CombatRandom& random) {
         }
         break;
     case command::kR1Pressed:
+        // **Coney stand-in**: the reversal reads R1 pressed only (not command 0x19) and not the player's flag
+        // 0x80000000; Fighter::struggleInHold() offers none.
         if (!input.movePlaying && !input.grabber.flag40 && breakFreeRoll(input.grabber, random)) {
             outcome.action = GrabbedAction::Reversal;
             outcome.animId = rear ? kGrabReversalRear : kGrabReversalFront;
