@@ -487,7 +487,8 @@ runtime in the update of the play call (`l99_c7`). The reset is exactly `HuSetNo
    (`0x80000`) and stunned (`0x100000`) ended. Only the pair's break waits for `full`; the rest of this step runs
    with `full` false too, so `HuSetNormalMode(h, false)` gets a downed human up (`Human_GetUp` `0x0022f3c8`, which
    refuses one dead, dying or knocked out) and ends his stun. No step clears cuffed (`0x20000`): an arrest outlasts
-   the normal mode.
+   the normal mode (`HuIsArrested` still answered 1 after `HuSetNormalMode(h, false)`: confirmed (runtime), run
+   r-20261128-script-heal-states).
 3. Always: a held object of kind `0x27` or `0x10` dropped, the carried props released (`Human_ReleaseCarriedProps`),
    the fight stance left, and the slow motion a player caused turned off.
 4. Then (the join always passes 1): state bit `0x80000000` cleared; **health** (record `+0x144`) at or below the pending

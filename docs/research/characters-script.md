@@ -274,6 +274,8 @@ that `Human_IsUp` (`0x0029ce40`) does. Down or dead is any record state of the m
 (`0x100000000`), dying (`0x80000000`), knocked out (`0x40000`) and wounded or tackled (`0x10000`), or no record at
 `+0xd4`. Not up is state `0x100000000`. Cuffed (`0x20000`) is in neither mask, so **an arrested human is alive** to the
 scripts, and a wounded one is not. A handle that names no human answers nil. Confirmed (code) at the three addresses.
+On player 1 in `level99`, `HuIsAlive` answered 1 while he was arrested and nil while wounded, and 1 again once the
+wound ended; the wound left 25 % health (confirmed (runtime), run r-20261128-script-heal-states).
 
 ### HuRevive and Human_Heal {#hu-revive}
 

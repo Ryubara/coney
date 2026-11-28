@@ -1,0 +1,36 @@
+version = 1
+id = "r-20261128-script-heal-states"
+date = "2026-11-28"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "86dfb58c71dd5b664c61a4e9f8fd6c9dc625ec17d70ae80ad454e261d347f33f"
+
+[who]
+agent = "a09dead762af42ff1"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "the lua recipe ran on player 1: HuSetArrested(p,1) then HuIsAlive into a global, HuSetNormalMode(p,0) then HuIsArrested, release, HuSetWounded(p,1) then HuIsAlive and HuGetHealthPercent, HuSetWounded(p,0) then HuIsAlive; lua-globals read the globals (nil reads as 0)"
+
+[values]
+alive_arrested = 1
+arrested_after_normal_mode = 1
+alive_wounded = 0
+health_percent_wounded = 25
+alive_after_wound = 1
+
+[addresses]
+Human_IsAlive = 0x00235628
+Human_ResetForMode = 0x002325e0
+Human_StartWounded = 0x0022fa78
