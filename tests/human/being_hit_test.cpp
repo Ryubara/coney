@@ -429,7 +429,7 @@ TEST_CASE("caught in a grab: square struggles, cross strikes back, circle escape
         coney::human::GrabCatch{.grabberAnims = &character.anims, .fromRear = false, .grabber = grabber(200)});
     fight.run("", 2);
     REQUIRE(fight.human().fighter().grabbed());
-    // Square: 96 and a third of the grabber's 200 (the player's divisor 3).
+    // Square: 96 and a third of the grabber's 200, truncated (the player's divisor 3).
     GrabbedReport struggle;
     fight.run("10 tap square\n", 30, [&](std::uint64_t) {
         if (fight.human().fighter().grabbedReport().action != combat::GrabbedAction::None) {
@@ -437,7 +437,7 @@ TEST_CASE("caught in a grab: square struggles, cross strikes back, circle escape
         }
     });
     CHECK(struggle.action == combat::GrabbedAction::Struggle);
-    CHECK(struggle.grabberPowerCost == 67);
+    CHECK(struggle.grabberPowerCost == 66);
     CHECK(struggle.grabberClip == 97);
     // Cross: 104, 20 damage to the grabber and 1 rage.
     fight.human().updateGrabber(grabber(200));

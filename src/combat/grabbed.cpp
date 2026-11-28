@@ -25,7 +25,12 @@ bool struggleAllowed(const GrabbedInput& input) {
     const float ownFraction =
         input.ownPowerFull ? 1.0F
                            : static_cast<float>(input.ownPower) / static_cast<float>(std::max(1, input.ownPowerMax));
-    return canStruggle(input) && ownFraction > 1.0F / static_cast<float>(std::max(1, input.grabber.struggleDivisor));
+    // Stub for the test commit: the gate as it was before #684, on the grabber's fraction.
+    const float grabberFraction =
+        static_cast<float>(input.grabber.power) / static_cast<float>(std::max(1, input.grabber.powerMax));
+    return canStruggle(input) &&
+           (ownFraction > 2.0F ||
+            grabberFraction > 1.0F / static_cast<float>(std::max(1, input.grabber.struggleDivisor)));
 }
 
 bool breakFreeRoll(const GrabberState& grabber, CombatRandom& random) {

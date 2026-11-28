@@ -28,17 +28,18 @@ GrabbedInput heldBy(CommandId command, int grabberPower) {
 } // namespace
 
 TEST_CASE("square struggles: 96, costing a third of the grabber's maximum even with a move playing", "[combat]") {
+    // Expected: combat-grabs.md#grabbed, confirmed (code) (Human_SpendPower 0x00226448 truncates 200 / 3 to 66)
     CombatRandom random;
     const GrabbedOutcome outcome = updateGrabbed(heldBy(command::kSquarePressed, 200), random);
     CHECK(outcome.action == GrabbedAction::Struggle);
     CHECK(outcome.animId == kGrabStruggleFront);
-    CHECK(outcome.grabberPowerCost == 67);
+    CHECK(outcome.grabberPowerCost == 66);
     GrabbedInput busy = heldBy(command::kSquarePressed, 200);
     busy.movePlaying = true;
     busy.fromRear = true;
     const GrabbedOutcome spent = updateGrabbed(busy, random);
     CHECK(spent.action == GrabbedAction::None);
-    CHECK(spent.grabberPowerCost == 67);
+    CHECK(spent.grabberPowerCost == 66);
 }
 
 TEST_CASE("the struggle needs Grab_CanStruggle and the victim's own power fraction above 1 / the grabber's divisor",
@@ -69,6 +70,42 @@ TEST_CASE("the struggle needs Grab_CanStruggle and the victim's own power fracti
     input.grabber.raging = true;
     CHECK_FALSE(canStruggle(input));
     CHECK_FALSE(struggleAllowed(input));
+}
+
+TEST_CASE("the struggle gate gives the original's results for Rembrandt held by the street civilian", "[combat]") {
+    // Expected: combat-grabs.md#struggle-gate-runtime, confirmed (runtime), runs r-20261128-grab-struggle-own150,
+    // -own80, -own80-rage, -own0-rage and -grabber40 (Rembrandt at 400 power at most, the civilian 200, divisor 4);
+    // the cost from combat-grabs.md#grabbed, confirmed (code) (Human_SpendPower 0x00226448 truncates)
+    GrabbedInput input = heldBy(command::kSquarePressed, 200);
+    input.ownPowerMax = 400;
+    input.ownPower = 150;
+    CHECK(struggleAllowed(input));
+    input.ownPower = 80;
+    CHECK_FALSE(struggleAllowed(input));
+    input.ownPowerFull = true;
+    CHECK(struggleAllowed(input));
+    input.ownPower = 0;
+    CHECK_FALSE(struggleAllowed(input));
+    // The grabber at 40 of 200: the press is allowed, and its cost of 66 empties the grabber.
+    input = heldBy(command::kSquarePressed, 40);
+    input.ownPowerMax = 400;
+    input.ownPower = 400;
+    CombatRandom random;
+    CHECK(updateGrabbed(input, random).grabberPowerCost == 66);
+}
+
+TEST_CASE("the struggle's cost is the share of the grabber's maximum in whole power, truncated", "[combat]") {
+    // Expected: combat-grabs.md#grabbed, confirmed (code) (Human_SpendPower 0x00226448 converts the share times the
+    // maximum to a whole number with cvt.w.s at 0x002264d8, which truncates: 200 / 3 is 66, 200 / 6 is 33)
+    CombatRandom random;
+    GrabbedInput input = heldBy(command::kSquarePressed, 200);
+    CHECK(updateGrabbed(input, random).grabberPowerCost == 66);
+    input.ownStruggleDivisor = 6;
+    CHECK(updateGrabbed(input, random).grabberPowerCost == 33);
+    input.ownStruggleDivisor = 3;
+    input.grabber.powerMax = 250;
+    input.grabber.power = 250;
+    CHECK(updateGrabbed(input, random).grabberPowerCost == 83);
 }
 
 TEST_CASE("square of either kind struggles; cross strikes back only when Grab_CanStruggle allows it", "[combat]") {
