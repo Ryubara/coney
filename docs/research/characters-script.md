@@ -267,6 +267,8 @@ what it does. The four below have no other page.
 
 ### HuIsAlive {#hu-is-alive}
 
+Read in Ghidra: confirmed (code) where no other level is given.
+
 `Human_IsAlive` (`0x00235628`) answers true for a human that `Human_IsDownOrDead` (`0x00227e60`) does not count and
 that `Human_IsUp` (`0x0029ce40`) does. Down or dead is any record state of the mask `0x180050000`: dead
 (`0x100000000`), dying (`0x80000000`), knocked out (`0x40000`) and wounded or tackled (`0x10000`), or no record at
@@ -274,6 +276,8 @@ that `Human_IsUp` (`0x0029ce40`) does. Down or dead is any record state of the m
 scripts, and a wounded one is not. A handle that names no human answers nil. Confirmed (code) at the three addresses.
 
 ### HuRevive and Human_Heal {#hu-revive}
+
+Read in Ghidra: confirmed (code) where no other level is given.
 
 `Human_Revive` (`0x002377f8`) is `Human_Heal(human, 1)` and then state `0x20000000` (the anim state chosen again);
 nothing else. It calls no part of the normal mode ([The reset at the join](scenes.md#join-reset)), so a grab, a stun,
@@ -296,6 +300,8 @@ rage or a knockdown the human is in stay as they are. Confirmed (code) at `0x002
    `0x0024ca40`) and `+0x644` (the glow colour, [Lighting](lighting.md#humans)) = 0.
 
 ### HuSetWounded {#hu-wounded}
+
+Read in Ghidra: confirmed (code) where no other level is given.
 
 `Human_SetWounded(human, on)` (`0x00237628`) starts the wound for `on` = 1 exactly and ends it for anything else, then
 sets state `0x20000000`. Confirmed (code).

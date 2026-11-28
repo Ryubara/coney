@@ -152,6 +152,8 @@ prompt sits 0.04 above its place in the default video mode (0.02 in the others) 
 
 ### Arrest {#arrest}
 
+Read in Ghidra: confirmed (code) where no other level is given.
+
 `HuSetArrested(h, on)` (`Human_SetArrested`) runs `Human_Arrest` (`0x0022ec18`) or `Human_Unarrest` (`0x0022ef58`),
 then sets state `0x20000000`. Confirmed (code) at the cited addresses.
 
@@ -185,7 +187,7 @@ then sets state `0x20000000`. Confirmed (code) at the cited addresses.
 list](hud-functions-parts.md#crew-status) for as long as state `0x20000` holds: his portrait with a pulsing blue badge,
 and for 2.5 s a caption with his name and the arrested text (`GSTRING.HUD` 226). No interface sound plays. The list
 tests the state, not the arrest call, so a scripted `HuSetArrested` shows the same. Confirmed (code) at `0x001a0420`;
-confirmed (runtime) by setting the state over PINE. He keeps his mark in the [gang
+setting the state over PINE showed the same (no run record was kept). He keeps his mark in the [gang
 tally](hud-functions-lua.md#gang-count-what), which counts only members not down.
 
 A human with no AI brain component (vtable `+0xf4` null) gets only state `0x20000`, the style and action 0.

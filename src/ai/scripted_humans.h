@@ -36,6 +36,7 @@ class ScriptedHumans final : public script::HumanBindingHost {
     // ---- script::HumanBindingHost: each does nothing for a handle with no human or an id with no gang ----
 
     /// Its human's flags, health, arrest; a player's brain is player 1's; its gang's kind; the object in its hands.
+    /// `HuIsAlive`'s answer is Human::aliveAndUp().
     /// @coney-only the getters' shared read of a human; each getter's @orig is at its binding
     [[nodiscard]] std::optional<script::HumanStatus> status(double handle) const override;
     void setFlags(double human, std::uint64_t bits, bool on) override;
@@ -43,7 +44,13 @@ class ScriptedHumans final : public script::HumanBindingHost {
     void fillRage(double human, int holdMs) override;
     void setRageFraction(double human, float fraction) override;
     void setHealthPercent(double human, float percent) override;
+    /// `HuRevive` on the handle's human (Human::revive()); a human a script knocked out gets his brain back, as
+    /// `Human_WakeUp` enables and resumes it.
+    /// @orig 0x002377f8 Human_Revive (unknown)
     void revive(double human) override;
+    /// `HuSetNormalMode` on the handle's human (Human::setNormalMode()), every player's rage ended first
+    /// (`Humans_EndAllRage`, docs/research/scenes.md#join-reset).
+    /// @orig 0x002325e0 Human_ResetForMode (unknown)
     void setNormalMode(double human, bool full) override;
     void setRageMode(double human, bool on) override;
     /// The brain's reachable mark (BrainSenses::reachable).

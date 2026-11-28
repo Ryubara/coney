@@ -458,6 +458,8 @@ saved after it began); when it pops, `Generic2` stands at (−282.55, 128.97), r
 
 ### The reset at the join {#join-reset}
 
+Read in Ghidra: confirmed (code) where no other level is given.
+
 **Every human bound to a role is reset first, at the join, not at the scene's start.** `Scene_BindHuman`
 (`0x003541a0`) begins with `Human_ResetForMode(human, 1)` (the call at `0x003541d8`), before it loads the scene,
 checks the role or checks that the human is in no scene, so the reset happens even when the bind is then refused.
@@ -472,7 +474,7 @@ So the rule is: **every scene of every kind** (cinematic, fixed scene, animation
 when the script binds it; a role left to `NilHandle` resets nobody, and humans that are not bound are not reset
 (except for rage, below). For a `SuperRunScene` cinematic, `gPlayCutScene` binds every role and then calls
 `ScenePlayCinematic` in the same Lua call ([`SuperRunScene`](#superrunscene)), which is why the reset showed at
-runtime in the update of the play call (`l99_c7`, issue #225). The reset is exactly `HuSetNormalMode(human, true)`
+runtime in the update of the play call (`l99_c7`). The reset is exactly `HuSetNormalMode(human, true)`
 ([binding](../references/bindings/character.md#husetnormalmode)); confirmed (code) at `0x002325e0`:
 
 1. A human with any hold flag drops its overlay task; **every player in rage** (`+0xe0` bit `0x80000`) leaves it
