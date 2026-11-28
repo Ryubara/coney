@@ -942,10 +942,10 @@ What differs, each marked in the code:
 
 ## Open questions
 
-- **Not yet seen at runtime** from [the units](#units): the capsule sweep's cell-list overrun after a fraction above
-  1 ([Unit 2](physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule)). (The late and missed corner contacts were looked
-  for at a post,
-  a planter, a kerb and a ledge and not seen: [Seen at runtime](physics-kernels.md#u1-runtime).)
+- **Not yet seen at runtime** from [the units](#units): the late and missed corner contacts, looked for at a post, a
+  planter, a kerb and a ledge and not seen ([Seen at runtime](physics-kernels.md#u1-runtime)). The capsule sweep's
+  cell-list overrun once listed here does not exist: its counter steps on every path
+  ([The cell loop's counter](physics-bodies.md#u2-capsule-walk-counter)).
 - **Bits and flags the units read but cannot name:** triangle flag bit 3 (`0x8`), which a sphere sweep skips for a
   body with flag `0x100` or a query with option `0x8000` (every world object's body starts with `0x100` in
   `0x80000500`, so a flying object's sphere passes those triangles; inferred); how many triangles carry each corner

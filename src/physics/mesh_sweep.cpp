@@ -181,8 +181,7 @@ int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Aabb& worldBox, c
         t.plane = dot3(t.corners[0], t.normal);
         computeEdges(t, false);
         const TriangleSweep hit = sweepSphereTriangle(sphere, t, sweep.move);
-        // 9. A hit from 0 to 1. A stand-in for a NaN fraction: the original keeps a hit unless t < 0 or 1 < t
-        // (0x0034814c, 0x00348168), so it would keep a NaN, which this test drops; no kernel NaN is known.
+        // 9. A hit from 0 to 1 (the original's "not t < 0, not 1 < t" keeps the same: the EE has no NaN).
         if (hit.hit && hit.fraction >= 0.0F && hit.fraction <= 1.0F) {
             scratch.found.push_back(
                 MeshContact{.key = hit.fraction, .triangle = index, .region = hit.mask, .working = t});

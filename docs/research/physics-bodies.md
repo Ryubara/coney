@@ -302,18 +302,14 @@ for taken-only and reported a skip there; there is none.
 r-20261128-capsule-walk-lists.
 
 **No hit above 1 was seen in play.** In the same run a conditional break at `0x00348170` on a fraction above 1 caught
-no hit in about 3,300 frames of walking into level99's walls and past their corners, while hits from 0 to 1 broke there
-within ten frames of walking into a wall: confirmed (runtime), run r-20261128-capsule-walk-lists. The condition
+no hit in about 3,300 frames of walking into level99's walls and past their corners: confirmed (runtime), run
+r-20261128-capsule-walk-lists. The condition
 compared the fraction's raw bits with `0x3f800000` as an unsigned number, which a negative fraction would also pass;
 none reaches the break, as a negative fraction leaves at `0x00348154` first.
 
-**A detail of step 9.** The keep test is `!(t < 0)` and `!(1 < t)` (`c.lt.S` at `0x0034814c` and `0x00348168`), so a
-NaN fraction would be kept; Coney's `0 ≤ t ≤ 1` drops it, a marked stand-in in `sweepCapsuleMesh`. Open question:
-
-- **Whether the kernel can return a NaN fraction**{#q-capsule-nan-fraction}: no case of `Sweep_SphereTriangle`
-  (`0x0034ee60`) is known to. Test it by searching its arithmetic for a division that a degenerate wall the capsule
-  rules let through (`|n.z| ≤ 0.65`, not low or thin) could make 0 / 0, and if one exists, by sweeping such a wall in
-  PCSX2 with a break at `0x0034814c`.
+**Step 9 keeps the same fractions as Coney's test.** Its keep test is `!(t < 0)` and `!(1 < t)` (`c.lt.S` at
+`0x0034814c` and `0x00348168`), which differs from `0 ≤ t ≤ 1` only for a NaN, and the EE's FPU has no NaN
+([Floating point](physics.md#units)).
 
 ### `0x00348a50` PhysicsMesh_SweepSphere {#u2-00348a50-physicsmesh-sweepsphere}
 
