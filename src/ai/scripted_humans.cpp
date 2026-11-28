@@ -1,22 +1,30 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/scripted_humans.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <numbers>
+#include <optional>
 #include <span>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "ai/gangs.h"
+#include "ai/route_planner.h"
 #include "ai/scripted_brains.h"
 #include "ai/scripted_goals.h"
-#include "human/body.h"
+#include "animation/anim_math.h"
+#include "core/crowd_limits.h"
 #include "human/human.h"
 #include "human/human_flags.h"
+#include "raycast/collision_mesh.h"
 
 namespace coney::ai {
 
@@ -30,10 +38,86 @@ constexpr int kCarriedChance = 100;
 // The gangs a spawner makes to respond to a crime are named this and a number.
 constexpr std::string_view kResponderName = "Responder";
 
-// The body radius of `human` (its walking sphere: a player's is larger).
-float bodyRadius(const human::Human& human) {
-    return human.fighterProfile().player ? human::playerWalkingRadius(human.scale())
-                                         : human::walkingRadius(human.scale());
+// `HuTeleportNearHuman`'s search (docs/research/characters-script.md#teleport-near): the point's distance from the
+// other human, which is also the least gap between the two (12.96 squared); the headings tried, π/16 apart; the drop's
+// ray starts this far above the other's capsule top and leaves the point this far above what it hits; and
+// Human_GetCapsuleHeight (0x00219890), 2 m per unit of scale. The list's size is a lifted limit
+// (crowd::teleportListCap()).
+constexpr float kNearReach = 3.6F;
+constexpr std::uint32_t kNearHeadings = 32;
+constexpr float kNearRayAbove = 3.0F;
+constexpr float kNearRayGap = 0.01F;
+constexpr float kCapsuleHeightPerScale = 2.0F;
+
+// A human near the other one, with his squared distance to him (Humans_FindAhead's key).
+struct NearHuman {
+    const human::Human* human = nullptr;
+    float key = 0.0F;
+};
+
+// The humans within `reach` of `near` in 3D, `near` left out, cut in the brains' order at the list's size, largest key
+// first (Humans_FindAhead 0x002274a8, SortByKeyDescending 0x003868f8). Stand-in: the brains' order stands for the
+// original's table order. Stand-in (limit): the original's list of 32; past 60 humans it holds every human in reach
+// (crowd::teleportListCap(), docs/engine/crowd-rules.md#lists).
+// @coney-only helper of ScriptedHumans::teleportNear(), which carries Human_TeleportNear's @orig
+std::vector<NearHuman> humansNear(const Brains& brains, const Brain& near, float reach) {
+    std::vector<NearHuman> list;
+    const anim::Vec3 centre = near.human().position();
+    const std::size_t cap = crowd::teleportListCap(brains.size(), brains.engineLimits());
+    for (std::size_t k = 0; k < brains.size() && list.size() < cap; ++k) {
+        const Brain& brain = brains.at(k);
+        if (&brain == &near) {
+            continue;
+        }
+        const anim::Vec3 offset = anim::subtract(brain.human().position(), centre);
+        if (const float key = anim::dot(offset, offset); key <= reach * reach) {
+            list.push_back(NearHuman{.human = &brain.human(), .key = key});
+        }
+    }
+    std::ranges::stable_sort(list, [](const NearHuman& a, const NearHuman& b) { return a.key > b.key; });
+    return list;
+}
+
+// The first of the 32 headings round `centre` (from the game time's low five bits) whose point 3.6 m out no nav edge
+// and no human of `around` refuses, moved in by the humans standing near it; nothing when every one is refused.
+// `clearance` is the other's capsule radius plus twice the mover's (`moverRadius`).
+// @coney-only helper of ScriptedHumans::teleportNear(), which carries Human_TeleportNear's @orig
+std::optional<anim::Vec3> freePointNear(const Brains& brains, anim::Vec3 centre, float clearance, float moverRadius,
+                                        std::span<const NearHuman> around) {
+    const std::uint32_t first = static_cast<std::uint32_t>(brains.nowMs()) & (kNearHeadings - 1);
+    for (std::uint32_t tried = 0; tried < kNearHeadings; ++tried) {
+        const std::uint32_t k = (first + tried) & (kNearHeadings - 1);
+        // Vec_FromHeading: (sin h, cos h), clockwise from +y.
+        const float heading = static_cast<float>(k) * std::numbers::pi_v<float> / static_cast<float>(kNearHeadings);
+        const anim::Vec3 direction{std::sin(heading), std::cos(heading), 0.0F};
+        anim::Vec3 point = anim::add(centre, anim::scale(direction, kNearReach));
+        // A nav edge on the way refuses the heading. Stand-in: lineClear() gives no fraction along the line, so the
+        // refusal stands for the original's test of that fraction (at most 1) less the mover's radius against the
+        // squared clearance, which refuses for every human of scale 0.85 or more.
+        if (const RoutePlanner* planner = brains.planner(); planner != nullptr && !planner->lineClear(centre, point)) {
+            continue;
+        }
+        bool refused = false;
+        for (const NearHuman& other : around) {
+            const float otherRadius = other.human->capsuleRadius();
+            const float dx = other.human->position().x - point.x;
+            const float dy = other.human->position().y - point.y;
+            // A squared distance against a plain sum of the radii, as the original compares them.
+            if ((dx * dx) + (dy * dy) >= otherRadius + moverRadius) {
+                continue;
+            }
+            const float limit = clearance + otherRadius;
+            if (other.key < limit * limit) {
+                refused = true;
+                break;
+            }
+            point = anim::add(centre, anim::scale(direction, std::sqrt(other.key) - otherRadius - moverRadius));
+        }
+        if (!refused) {
+            return point;
+        }
+    }
+    return std::nullopt;
 }
 
 } // namespace
@@ -185,18 +269,33 @@ void ScriptedHumans::setMugCallback(double human, std::string_view callback) {
 
 void ScriptedHumans::setConscious(double human, bool conscious) {
     onBrain(human, [conscious](Brain& brain) {
-        bool& out = brain.human().script().knockedOut;
-        if (out == !conscious) {
-            return;
+        human::Human& body = brain.human();
+        human::ScriptState& script = body.script();
+        if (conscious) {
+            // Human_WakeUp(h, 0): the knocked-out state cleared and the brain resumed (Brain_EnableAndResume); it
+            // does not give BLOCKHUMANS back. Stand-in: its cross icon and move style 0x12 are not kept by Coney.
+            script.knockedOut = false;
+            brain.wakeUp();
+        } else if (!body.knockedOut()) {
+            // Human_KnockOut(h, 0), for a human not knocked out already (state 0x40000: by a script or by his health,
+            // Human::knockedOut()). Stand-in: of Human_ReleaseAll only the pair is broken, the speech is not stopped,
+            // the 14 s wake time is #1584's, and the cross icon and harmony statistic of a player's gang member are not
+            // shown (docs/research/characters-script.md#set-conscious).
+            body.fighter().breakPair();
+            body.loseBlockHumans();
+            body.endSlowMotion();
+            // The brain stops (Brain_OnKnockedOut) and hears event 18 with his foe, unless he is down or dead already
+            // (0x100050000); the mark is set whatever the state. Stand-in: down or dead (Human::downOrDead()) for the
+            // dead and wounded states, as Brains::destroy() reads them.
+            const bool brainToo = !body.downOrDead();
+            script.knockedOut = true;
+            if (brainToo) {
+                Brain* foe = brain.knockOut();
+                static_cast<void>(deliverEvent(brain, BrainEvent{.id = kEventDown, .other = foe}));
+            }
         }
-        out = !conscious;
-        // `Human_KnockOut` takes BLOCKHUMANS away and turns a player's slow motion off; waking (`Human_WakeUp`) does
-        // not give it back.
-        if (!conscious) {
-            brain.human().loseBlockHumans();
-            brain.human().endSlowMotion();
-        }
-        brain.setDead(!conscious);
+        // Player_SetStanceTimer after the knock-out writes nothing while its setting (0x00510994) is -1. Stand-in:
+        // state 0x20000000 (build the anim state again) has no counterpart, as Coney picks the anim state every update.
     });
 }
 
@@ -226,17 +325,41 @@ void ScriptedHumans::setLookTarget(const script::LookTargetCall& call) {
 void ScriptedHumans::teleportNear(double human, double near) {
     onBrain(human, [this, near](Brain& brain) {
         const Brain* other = m_scripted->brain(near);
-        if (other == nullptr || other == &brain || brain.type() == BrainType::Player) {
+        if (other == nullptr || other == &brain) {
             return;
         }
-        // Beside the other human, on its right, the two bodies just apart.
+        human::Human& mover = brain.human();
         const human::Human& beside = other->human();
-        const float gap = bodyRadius(brain.human()) + bodyRadius(beside);
-        const float right = beside.heading() - (std::numbers::pi_v<float> / 2.0F);
-        const anim::Vec3 at{beside.position().x - (std::sin(right) * gap),
-                            beside.position().y + (std::cos(right) * gap), beside.position().z};
-        brain.human().place(m_scripted->placeGround(brain.handle()), at,
-                            brain.human().heading() * 180.0F / std::numbers::pi_v<float>);
+        const anim::Vec3 centre = beside.position();
+        const float moverRadius = mover.capsuleRadius();
+        const float clearance = beside.capsuleRadius() + (2.0F * moverRadius);
+        // Nothing when the two are already less than 3.6 m apart in plan.
+        const float apartX = centre.x - mover.position().x;
+        const float apartY = centre.y - mover.position().y;
+        if ((apartX * apartX) + (apartY * apartY) < kNearReach * kNearReach) {
+            return;
+        }
+        const Brains& brains = m_scripted->owner();
+        // Stand-in (limit): the humans near the other, listed up to crowd::teleportListCap() (the original's 32).
+        const std::vector<NearHuman> around = humansNear(brains, *other, moverRadius + kNearReach);
+        const std::optional<anim::Vec3> point = freePointNear(brains, centre, clearance, moverRadius, around);
+        if (!point) {
+            return;
+        }
+        // The drop: a ray straight down from above the other human's capsule leaves the point just above what it hits.
+        anim::Vec3 at = *point;
+        if (const raycast::CollisionMesh* world = brains.collision(); world != nullptr) {
+            const float top = centre.z + (kCapsuleHeightPerScale * beside.collisionScale()) + kNearRayAbove;
+            const raycast::Ray ray{.origin = raycast::Vec3{at.x, at.y, top},
+                                   .direction = raycast::kDown,
+                                   .length = top - centre.z + kNearRayAbove};
+            // Stand-in: the ray meets the collision mesh only, not the world's objects (WorldManager_RayCast).
+            if (const std::optional<raycast::RayHit> hit = world->rayCast(ray, {}, 0); hit) {
+                at.z = top - (hit->t - kNearRayGap);
+            }
+        }
+        // His own facing kept: only the transform's position is replaced (Human_SetTransform).
+        mover.place(m_scripted->placeGround(brain.handle()), at, mover.heading() * 180.0F / std::numbers::pi_v<float>);
         brain.placed();
     });
 }
@@ -279,17 +402,27 @@ void ScriptedHumans::setIcon(double human, std::string_view object, int param) {
 }
 
 void ScriptedHumans::dropWeapon(double human) {
-    onBrain(human, [](Brain& brain) {
+    onBrain(human, [this](Brain& brain) {
         human::ScriptState& script = brain.human().script();
-        if (script.heldObject == kNilHandle) {
+        // Only an object whose type has a kind (+0x86, Human_GetHeldObjectKind) is dropped: an empty hand reads 0.
+        // Coney's choice: with no kind query (no object database) every held object counts as having one.
+        if (script.heldObject == kNilHandle || (m_heldKind && m_heldKind(script.heldObjectName) == 0)) {
             return;
         }
-        // Human_DropHeld. **Coney stand-in**: the hand is emptied and an AI's held object's move style comes off
-        // here, as Coney's objects have no weapon class yet; a player's hand is followed by the play mode, whose
-        // dropHeld() drops the object when it sees the hand empty.
-        script.heldObject = kNilHandle;
+        // Human_DropHeld: the hand emptied; a player's hand is followed by the play mode, whose dropHeld() drops the
+        // object when it sees the hand empty.
+        const double held = std::exchange(script.heldObject, kNilHandle);
         script.heldObjectName.clear();
-        if (brain.type() != BrainType::Player) {
+        if (brain.type() == BrainType::Player) {
+            return;
+        }
+        // An AI's object: the play mode's drop (the held drop) puts it into the world and takes its move style off,
+        // once, as Human_DropHeld removes it once; he then holds nothing. With no drop, letGoOfHeld() does both.
+        if (m_heldDrop) {
+            m_heldDrop(brain, held);
+            brain.human().fighter().setAnimSet(0);
+            brain.human().fighter().setHoldingObject(false);
+        } else {
             brain.human().letGoOfHeld(false);
         }
     });
@@ -315,10 +448,11 @@ void ScriptedHumans::releaseObject(double object) {
 
 double ScriptedHumans::placeItemInHand(double human, std::string_view object,
                                        const std::function<double()>& nextHandle) {
-    // Put the object in a free hand; a human that holds something already takes nothing.
+    // Put the object in a free hand; a human that holds something already, or is in the middle of a pick-up (held flag
+    // 0x4000, Human_HasHeld4000), takes nothing. Stand-in: the pick-up run (Human::pickingUp()) for the flag.
     const auto place = [item = std::string(object)](Brain& brain, double handle) {
         human::ScriptState& script = brain.human().script();
-        if (script.heldObject != kNilHandle) {
+        if (script.heldObject != kNilHandle || brain.human().pickingUp()) {
             return false;
         }
         script.heldObject = handle;
@@ -331,10 +465,13 @@ double ScriptedHumans::placeItemInHand(double human, std::string_view object,
         onBrain(human, [place, handle](Brain& brain) { static_cast<void>(place(brain, handle)); });
         return handle;
     }
+    // Stand-in: the pick-up run for held flag 0x4000, as above.
     Brain* brain = m_scripted->brain(human);
-    if (brain == nullptr || brain->human().script().heldObject != kNilHandle) {
+    if (brain == nullptr || brain->human().script().heldObject != kNilHandle || brain->human().pickingUp()) {
         return kNilHandle;
     }
+    // Stand-in: the handle is given now and the object itself made by the play mode's next step
+    // (PlayLevelSimulation::placeItemInHand(), docs/research/objects.md#held).
     const double handle = nextHandle();
     return place(*brain, handle) ? handle : kNilHandle;
 }

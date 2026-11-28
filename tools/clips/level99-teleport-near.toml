@@ -1,0 +1,12 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level99's sparring fight
+# (tools/clips/level99-sparring.toml) with the developer console's `lua` sending FenceWarrior201 to player 1 by
+# `HuTeleportNearHuman` while the sparring Warriors run in, just after the scene. For a change to where that binding puts
+# a human (docs/research/characters-script.md#teleport-near): 3.6 m out on a heading picked by the game time, his own
+# facing kept.
+description = "level99 sparring fight: the console's HuTeleportNearHuman sends FenceWarrior201 to player 1"
+level = "level99"
+input = "tools/clips/level99-teleport-near.txt"
+checkpoint = 1
+ai_seed = 4
+start_frame = 820
+seconds = 5

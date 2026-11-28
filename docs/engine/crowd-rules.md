@@ -16,6 +16,7 @@ tests play every crowd under the original's 5 scans and lists of 60, whatever it
 | --- | --- | --- | --- | --- |
 | Enemy scans an update | 5 tokens, a refused brain asks again the next update ([The enemy scan](../research/ai-fights.md#enemy-scan)) | 5 | 5 per 60 scanning brains, rounded up, at most 20; a refused brain asks again the next update | `crowd::scanTokens()`, read by `Gangs::update()` |
 | Humans round a walker (steering) | at most 60, the table's size ([Help calls](../research/ai-brain-types.md#help-calls), `Humans_FindAhead` `0x002274a8`) | 60, which cannot bind | every human in reach, in table order | `crowd::humanListCap()`, read by `ai::humansAround()` |
+| Humans near the other of a teleport (`HuTeleportNearHuman`) | at most 32, cut in table order ([Teleport near](../research/characters-script.md#teleport-near), `Human_TeleportNear` `0x0023b138`) | 32 | every human in reach | `crowd::teleportListCap()`, read by `ScriptedHumans::teleportNear()` |
 | Hearers of a help call | at most 60 ([Help calls](../research/ai-brain-types.md#help-calls)) | 60, which cannot bind | every human in reach | `crowd::humanListCap()`, read by `ai::broadcastHelpCall()` |
 | A trigger box's or sphere's occupants, and the humans a sphere finds | 60 handles; 60 found in slot order ([Who is found](../research/trigger-updates.md#found)) | 60 | as many as there are humans | `crowd::humanListCap()`, read by `VolumeBoxes` and `TriggerSpheres` |
 | Enemies on a brain's list | 16, the nearest ([The enemy scan](../research/ai-fights.md#enemy-scan)) | 16 | 16 | kept: `ai::kScanMaxEnemies` |
@@ -68,6 +69,12 @@ into him, a help call reaches the first 60 by slot rather than all in reach, and
 next human inside, so he "enters" again on every update of the box and its script hears message 3 over and over.
 Coney's rule: **a list holds 60 up to 60 humans, and as many as there are humans past them**
 (`crowd::humanListCap()`): no list is cut. The order stays the table's and the subjects', as the messages go out in it.
+
+The teleport near a human (`HuTeleportNearHuman`) gives `Humans_FindAhead` a buffer of only 32, so its list can fill
+inside the range, but only when 33 humans stand within about 4 m of one human, which no normal level shows. A human
+past the 32nd is never tested, and the teleport can put the mover on top of him. Coney's rule:
+**32 up to 60 humans, every human in reach past them** (`crowd::teleportListCap()`), so the range keeps the original's
+cut exactly and a crowd's teleport never lands on a human it did not look at.
 
 ## Kept inside the range {#kept}
 

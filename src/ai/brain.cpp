@@ -207,8 +207,9 @@ void Brain::think(std::uint64_t nowMs) {
         thinkTackle(*this);
     }
     // A Warrior's step 7: the swap prompt beside a player. The original's Warrior still thinks while knocked out and
-    // clears it then; Coney turns a script-downed brain off (BrDead), so such a brain clears it here. Coney's choice:
-    // another dead brain (a script's BrDead) keeps whatever the script set.
+    // clears it then, as here: a knocked-out brain is not dead, so thinkSwapPrompt() runs and finds him blocked. A
+    // brain a script made dead (BrDead) and also knocked out clears it here. Coney's choice: another dead brain keeps
+    // whatever the script set.
     if (m_type == BrainType::Warrior) {
         if (m_dead) {
             if (m_human->script().knockedOut) {

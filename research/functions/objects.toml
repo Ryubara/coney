@@ -30,8 +30,8 @@ address = 0x00238540
 name = "Human_PlaceItemInHand"
 page = "objects.md#held"
 level = "confirmed-code"
-coney = "src/scripting/human_bindings.cpp:makePlaceItemInHand"
-status = "legacy"
+coney = "src/ai/scripted_humans.h:ScriptedHumans::placeItemInHand"
+status = "compared"
 
 [[function]]
 address = 0x00244770

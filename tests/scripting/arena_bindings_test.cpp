@@ -299,19 +299,22 @@ TEST_CASE("King of the hill's crown, reticules and split mode", "[scripting][rum
 }
 
 TEST_CASE("Battle royal's knock-out and Warrior commands switch", "[scripting][rumble]") {
+    // Expected: characters-script.md#set-conscious, confirmed (code): HuSetConscious knocks out through
+    // Human_KnockOut's Brain_OnKnockedOut and wakes through Human_WakeUp; GameState_TurnWarriorCommands (0x0041c2b0)
+    // sets every Warrior command
     Level level;
     Brain& thug = level.add({44.0F, 40.0F, 0.0F});
     level.call("HuSetConscious", {Value(thug.handle()), Value(0.0)});
     CHECK(thug.human().script().knockedOut);
     CHECK_FALSE(thug.human().alive());
-    CHECK(thug.dead());
+    CHECK(thug.knockedOut());
     // The knock-out ends a player's slow motion (`Human_KnockOut`, docs/research/slow-motion.md#off).
     CHECK(thug.human().takeSlowMotionEnd());
     level.call("HuSetConscious", {Value(thug.handle()), Value(1.0)});
     CHECK_FALSE(thug.human().takeSlowMotionEnd());
     CHECK_FALSE(thug.human().script().knockedOut);
     CHECK(thug.human().alive());
-    CHECK_FALSE(thug.dead());
+    CHECK_FALSE(thug.knockedOut());
 
     level.call("TurnWarriorCommands", {Value(0.0)});
     CHECK_FALSE(level.state.characters.warriorCommands[0][1]);

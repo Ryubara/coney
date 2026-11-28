@@ -306,7 +306,8 @@ NativeFunction makeSetLookTarget(const BindingContext& context) {
     });
 }
 
-// `HuTeleportNearHuman(human, near)`: nothing when both are the same.
+// `HuTeleportNearHuman(human, near)`: nothing when both are the same; the search is
+// ai::ScriptedHumans::teleportNear()'s.
 // @orig 0x0023b138 Human_TeleportNear (unknown)
 NativeFunction makeTeleportNear(const BindingContext& context) {
     return hostCall(context, [](HumanBindingHost& host, std::span<const Value> args) {
@@ -380,8 +381,8 @@ NativeFunction makeDropWeapon(const BindingContext& context) {
                     [](HumanBindingHost& host, std::span<const Value> args) { host.dropWeapon(handleArg(args, 0)); });
 }
 
-// `HuPlaceItemInHand(human, object)`: the new object's handle, or NilHandle when the human is missing or already holds
-// something.
+// `HuPlaceItemInHand(human, object)`: the new object's handle, or NilHandle when the human is missing, already holds
+// something or is in the middle of a pick-up (ai::ScriptedHumans::placeItemInHand()).
 // @orig 0x00238540 Human_PlaceItemInHand (unknown)
 NativeFunction makePlaceItemInHand(const BindingContext& context, std::function<double()> nextHandle) {
     return [context = &context, nextHandle = std::move(nextHandle)](std::span<const Value> args) {

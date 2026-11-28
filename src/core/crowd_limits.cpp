@@ -23,4 +23,13 @@ std::size_t humanListCap(std::size_t humans, EngineLimits limits) {
     return limits == EngineLimits::Original ? kOrigMaxHumans : std::max(humans, kOrigMaxHumans);
 }
 
+std::size_t teleportListCap(std::size_t humans, EngineLimits limits) {
+    // The original's 32 up to its 60 humans (a normal level never has 33 within the teleport's reach, so the cut can
+    // only show in a crowd), every human past them; the engine limits preset keeps 32 however many there are.
+    if (limits == EngineLimits::Original || humans <= kOrigMaxHumans) {
+        return kOrigTeleportList;
+    }
+    return humans;
+}
+
 } // namespace coney::crowd

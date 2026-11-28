@@ -12,7 +12,9 @@ using coney::crowd::humanListCap;
 using coney::crowd::kCrowdScanTokenCap;
 using coney::crowd::kOrigMaxHumans;
 using coney::crowd::kOrigScanTokens;
+using coney::crowd::kOrigTeleportList;
 using coney::crowd::scanTokens;
+using coney::crowd::teleportListCap;
 
 namespace {
 // Coney's own rule and the engine limits preset (core/engine_limits.h).
@@ -55,6 +57,16 @@ TEST_CASE("a list of humans holds 60 up to 60 humans and every human past them",
     CHECK(humanListCap(1000, kConey) == 1000);
 }
 
+TEST_CASE("the list a teleport near a human tests holds 32 up to 60 humans and every human past them", "[crowd]") {
+    // Expected: characters-script.md#teleport-near, confirmed (code): Human_TeleportNear (0x0023b138) gives
+    // Humans_FindAhead (0x002274a8) a list of 32; past 60 humans Coney's own rule (docs/engine/crowd-rules.md#lists)
+    CHECK(teleportListCap(0, kConey) == kOrigTeleportList);
+    CHECK(teleportListCap(33, kConey) == kOrigTeleportList);
+    CHECK(teleportListCap(60, kConey) == kOrigTeleportList);
+    CHECK(teleportListCap(61, kConey) == 61);
+    CHECK(teleportListCap(1000, kConey) == 1000);
+}
+
 TEST_CASE("under the engine limits preset every crowd rule gives the original's number however many humans",
           "[crowd][engine-limits]") {
     // Expected: ai-fights.md#enemy-scan, confirmed (code): AI_TakeScanToken 0x00293cd0 refuses past 5; and
@@ -64,5 +76,6 @@ TEST_CASE("under the engine limits preset every crowd rule gives the original's 
         INFO(humans << " humans");
         CHECK(scanTokens(humans, kOriginal) == kOrigScanTokens);
         CHECK(humanListCap(humans, kOriginal) == kOrigMaxHumans);
+        CHECK(teleportListCap(humans, kOriginal) == kOrigTeleportList);
     }
 }

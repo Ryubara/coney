@@ -249,8 +249,11 @@ void Brains::reportDowns() {
             Brain* foe = brain->knockOut();
             deliverEvent(*brain, BrainEvent{.id = kEventDown, .other = foe});
         } else if (!down) {
+            // Health back: up again, unless a script knocked him out (HuSetConscious), which only its wake ends.
             brain->setDownReported(false);
-            brain->wakeUp();
+            if (!brain->human().script().knockedOut) {
+                brain->wakeUp();
+            }
         }
     }
 }

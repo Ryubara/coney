@@ -10,6 +10,7 @@
 #include <numbers>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -19,6 +20,7 @@
 #include "ai/brains.h"
 #include "ai/route_planner.h"
 #include "ai/scripted_brains.h"
+#include "ai/scripted_humans.h"
 #include "characters/character_choice.h"
 #include "characters/character_types.h"
 #include "core/engine_limits.h"
@@ -28,6 +30,7 @@
 #include "human/tag_colour.h"
 #include "raycast/collision_mesh.h"
 #include "scripting/sound_bindings.h"
+#include "world_objects/object_types.h"
 
 namespace coney {
 
@@ -91,6 +94,21 @@ void PlayLevelSimulation::makeCast(const ScriptedCast& cast, const ai::AiConfig&
     cast.scripted->setHandOver([this](const ai::Brain& to) { takePlace(to); });
     // A script's placement of a human drops it onto the level's collision, unless a scene holds it.
     cast.scripted->setPlaceGround([this](double human) { return placeGround(human); });
+    // An AI's object HuDropWeapon let go of falls from his hand into the world (Human_DropHeld), as a player's does
+    // when the play mode sees his hand empty. With no pick-ups (bound before the cast) there is no drop, so
+    // ScriptedHumans::dropWeapon() takes the held style off itself (Human::letGoOfHeld()).
+    if (m_pickups != nullptr) {
+        cast.scripted->humanHost().setHeldDrop(
+            [this](ai::Brain& brain, double held) { dropHeld(brain.human(), held); });
+    }
+    // HuDropWeapon drops only an object whose type has a kind (+0x86), read from the object database by type name.
+    // With no database there is no query, so every held object counts as having a kind (ScriptedHumans::dropWeapon()).
+    if (const world_objects::ObjectTypes* types = cast.types; types != nullptr) {
+        cast.scripted->humanHost().setHeldKind([types](std::string_view type) {
+            const world_objects::ObjectType* found = types->find(type);
+            return found != nullptr ? found->objectKind : 0;
+        });
+    }
     // GoalPlayDynAnimation's clips are the level's dynamic clips, loaded from the disc when first named.
     cast.scripted->setClipSource([this](std::string_view name) { return m_dynamicClips.find(name); });
     // The AI goals' lines (a boss's taunts and shouts, the dealer's lines) go to the game's sound, when there is one.

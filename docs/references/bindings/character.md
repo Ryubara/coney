@@ -2187,6 +2187,10 @@ take an item.
 
 Spawns a weapon or item and puts it in the human's hand, which is how levels arm enemies and the Warriors.
 
+**Notes.** Returns NilHandle and makes nothing for a handle that names no human, a human already holding something, or
+one in the middle of a pick-up (held flag 0x4000, 0x00228408); confirmed (code) at 0x00238540 ([Objects:
+held](../../research/objects.md#held)).
+
 - **Evidence:** confirmed (code) at `0x00238540`; detail: traced
 - **Wrapper** `0x0035cf60` (registered by `RegisterBindings`); **calls** `0x00238540` `Human_PlaceItemInHand`
 - **Used by** 62 of 467 script chunks (265 references); boot to menu: yes; mission 1: yes; result used: yes
@@ -2696,9 +2700,11 @@ HuSetConscious(human, conscious)
 
 false knocks the human unconscious (0x00230328): it drops into the knocked-out state (record state flag 0x40000,
 blocking 0x8000 cleared), its brain is switched off (0x0028c3b0), its wake-up time (record `+0xf0`) is set 14 s ahead
-(0x00510794 = 14000 ms), and a player human also ends slow motion (0x0041ab60). A knock-out of a player's gang member
-counts a statistic and may show a hint. true wakes it (0x00230598): the knocked-out flags (0x1c8007) are cleared, it
-plays its get-up mode (anim mode 0x12) and its brain resumes. Both set state flag 0x20000000.
+(0x00510794 = 14000 ms), it lets go of everything and stops talking, and a player human also ends slow motion
+(0x0041ab60). A knock-out of a player's gang member counts a harmony statistic (brain type 3) and, outside Armies and
+Rumble levels, shows the `dyn_cross` icon over it. true wakes it (0x00230598): the cross icon goes, move style 0x12
+comes off, the knocked-out flags (0x1c8007) are cleared and its brain resumes. Both set state flag 0x20000000, which
+builds the anim state again ([Characters: HuSetConscious](../../research/characters-script.md#set-conscious)).
 
 **Notes.** Knocking out does nothing to a human that is already knocked out (state 0x40000) or has no record. What wakes
 it after the 14 s (the reader of `+0xf0`) is not traced; inferred: it gets up by itself. The optional `+0xfc` timer
@@ -4724,11 +4730,14 @@ HuTeleportNearHuman(human, near)
 
 **Returns** nothing.
 
-Moves `human` to a free spot beside `near`, using both humans' collision radii to keep them apart. The tutorial uses it
-to bring Ash to Rembrandt. Nothing happens if either is missing or both are the same.
+Moves `human` to a free spot 3.6 m from `near`, keeping his own facing: 32 headings 11.25 degrees apart are tried from
+one picked by the game time, each refused by a nav edge on the way or shortened or refused by another human near the
+point, and the point is dropped onto the ground. The tutorial uses it to bring Ash to Rembrandt. Nothing happens if
+either is missing, both are the same, they are already less than 3.6 m apart in plan, or no heading is free. A player is
+moved too.
 
-**Notes.** The checks and the radii (0x00219860) are confirmed (code) at 0x0023b138; how the free spot is searched is
-not traced.
+**Notes.** The search, its radii (0x00219860) and its tests are confirmed (code) at 0x0023b138 ([Characters:
+HuTeleportNearHuman](../../research/characters-script.md#teleport-near)).
 
 - **Evidence:** confirmed (code) at `0x0023b138`; detail: traced
 - **Wrapper** `0x0035b480` (registered by `RegisterBindings`); **calls** `0x0023b138` `Human_TeleportNear`

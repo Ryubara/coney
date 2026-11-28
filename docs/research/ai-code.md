@@ -677,7 +677,7 @@ Boot and level resets of the AI pools, global clocks, and a few one-line game-st
 | `0x00299238` | `Human_SetLookAtTarget` | helper | an empty stub | confirmed (code) |
 | `0x00299248` | `Goal_StartParlay` | helper | starts a parlay cut-scene: preloads its scenes, saves the threat response, pushes the parlay goal | confirmed (code) |
 | `0x00299470` | `Human_SetPendingWeapon` | helper | for `HuGiveWeapon`: stores the weapon id with bit `0x80` at human `+0x3a8` | confirmed (code) |
-| `0x002994b8` | `Human_DropWeapon` | helper | drops what a human holds | confirmed (code) |
+| `0x002994b8` | `Human_DropWeapon` | helper | drops what a human holds when its type's kind (`+0x86`) is not 0 ([Objects](objects.md#drop-weapon)) | confirmed (code) |
 | `0x00299510` | `GameState_SetSpawnMax` | helper | sets the spawn maximum (game state `+0x434`) | confirmed (code) |
 | `0x00299520` | `GameState_SetCopSpawnMax` | helper | sets the police spawn maximum (game state `+0x326`) | confirmed (code) |
 

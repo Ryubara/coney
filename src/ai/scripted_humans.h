@@ -36,6 +36,7 @@ class ScriptedHumans final : public script::HumanBindingHost {
     // ---- script::HumanBindingHost: each does nothing for a handle with no human or an id with no gang ----
 
     /// Its human's flags, health, arrest; a player's brain is player 1's; its gang's kind; the object in its hands.
+    /// @coney-only the getters' shared read of a human; each getter's @orig is at its binding
     [[nodiscard]] std::optional<script::HumanStatus> status(double handle) const override;
     void setFlags(double human, std::uint64_t bits, bool on) override;
     void setLockedRage(double human, bool on) override;
@@ -74,7 +75,14 @@ class ScriptedHumans final : public script::HumanBindingHost {
     /// Kept with a 100 % chance (`+0x278` = 100).
     void setCarriedItem(double human, std::string_view object) override;
     void setMugCallback(double human, std::string_view callback) override;
-    /// The human's knocked-out mark (human::ScriptState::knockedOut) and its brain off, or both back.
+    /// `HuSetConscious`. The knock-out (`Human_KnockOut`, nothing for a human knocked out already): a pair broken,
+    /// BLOCKHUMANS and a player's slow motion gone, and for a human not down or dead his brain stopped
+    /// (Brain::knockOut(), `Brain_OnKnockedOut`) with event 18 about his foe; the knocked-out mark
+    /// (human::ScriptState::knockedOut) is set whatever the state. The wake (`Human_WakeUp`): the mark cleared and the
+    /// brain resumed (Brain::wakeUp()). **Stand-ins**: the rest of `Human_ReleaseAll`, the speech stop, the 14 s wake
+    /// time (#1584), the cross icon and harmony statistic, and state `0x20000000`. Research:
+    /// docs/research/characters-script.md#set-conscious
+    /// @orig 0x00237778 Human_SetConscious (unknown)
     void setConscious(double human, bool conscious) override;
     void setSoundCommands(double human, bool on) override;
     void setPocket(double human, int item, int count) override;
@@ -82,9 +90,13 @@ class ScriptedHumans final : public script::HumanBindingHost {
     void setLookTarget(const script::LookTargetCall& call) override;
     /// The brain's noise range (`+0x134`) or help-call range (`+0x138`), as given (BrainSenses).
     void setHearRange(double human, bool help, float range) override;
-    /// Puts an AI human beside `near`: on its right, the two bodies' radii apart, at its height, keeping its heading.
-    /// **Coney choice**: the original's search for a free spot is not traced; player 1 is not moved (his teleports
-    /// are the level's, gamemodes/gameplay_mode.h).
+    /// `HuTeleportNearHuman`: a human at least 3.6 m from `near` in plan goes to the first free point 3.6 m from him of
+    /// 32 headings π/16 apart, from the one the game time's low five bits name: a heading a nav edge crosses is
+    /// refused, and one a human of the list stands near is refused or moved in before him; the point is dropped onto
+    /// the collision mesh and the human placed there keeping his facing. Any brain, a player's too. **Stand-ins**: the
+    /// nav test's fraction (ai::RoutePlanner::lineClear() gives none) and the ray meeting the mesh only. Research:
+    /// docs/research/characters-script.md#teleport-near
+    /// @orig 0x0023b138 Human_TeleportNear (unknown)
     void teleportNear(double human, double near) override;
     void lockPad(double human, bool locked) override;
     /// `HuEnableController`: the human's per-player record `+0x1b` set to `enable`, through what his brain calls to
@@ -96,15 +108,29 @@ class ScriptedHumans final : public script::HumanBindingHost {
     /// Only for a human a pad drives (player 1's brain, not dead): a command's bit, or every one with `command` 0.
     void enableCommand(double human, int command, bool enabled) override;
     void setIcon(double human, std::string_view object, int param) override;
-    /// Drops what the human holds, when he holds anything (Human_DropHeld): the hand is emptied and an AI's held
-    /// object's move style comes off (human::Human::letGoOfHeld()). **Coney stand-in**: Coney's objects have no weapon
-    /// class yet, so whatever it holds is let go.
+    /// Drops what the human holds when its type has a kind (`+0x86`, the held kind query; Human_DropHeld): the hand is
+    /// emptied, and an AI's held object's move style comes off (human::Human::letGoOfHeld()) and the object falls into
+    /// the world (the held drop). **Coney's choice**: with no held kind query every object counts as having a kind.
+    /// Research: docs/research/objects.md#drop-weapon
     /// @orig 0x002994b8 Human_DropWeapon (unknown)
     void dropWeapon(double human) override;
+    /// The kind (`+0x86`) of the object type named `type` (world_objects::ObjectType::objectKind): 0 for an unknown
+    /// type.
+    using HeldKind = std::function<int(std::string_view type)>;
+    /// Sets the held kind query. With none set (no object database), dropWeapon() takes every held object as having a
+    /// kind.
+    void setHeldKind(HeldKind kind) { m_heldKind = std::move(kind); }
+    /// What drops an AI's object `held` into the world after dropWeapon() let go of it (the play mode's drop).
+    using HeldDrop = std::function<void(Brain& brain, double held)>;
+    /// Sets the held drop.
+    void setHeldDrop(HeldDrop drop) { m_heldDrop = std::move(drop); }
     /// Whoever holds `object` lets go of it, as at dropWeapon(), for `ObjDestroy`.
     /// @coney-only stand-in for Obj_Destroy's release of a held object by its class (objects.md#q-objdestroy-held)
     void releaseObject(double object) override;
-    /// While calls are held the handle is given at once and the object put in the hand when the human is made.
+    /// NilHandle for a human with something in hand or in the middle of a pick-up (Human::pickingUp(), the stand-in for
+    /// held flag `0x4000`). While calls are held the handle is given at once and the object put in the hand when the
+    /// human is made. Research: docs/research/objects.md#held
+    /// @orig 0x00238540 Human_PlaceItemInHand (unknown)
     double placeItemInHand(double human, std::string_view object, const std::function<double()>& nextHandle) override;
     void placeHatOnHead(double human, std::string_view hat, const std::function<double()>& nextHandle) override;
     /// Keeps the clip in the slot when `loaded`; slot 0 makes the human unpushable while it is set. While calls are
@@ -192,6 +218,8 @@ class ScriptedHumans final : public script::HumanBindingHost {
     ArrestHook m_arrestHook;
     TagStart m_tagStart;
     TagBlank m_tagBlank;
+    HeldKind m_heldKind; // setHeldKind()
+    HeldDrop m_heldDrop; // setHeldDrop()
 };
 
 } // namespace coney::ai
