@@ -34,6 +34,7 @@ add_executable(coney_tests
     core/name_hash_test.cpp
     core/parse_number_test.cpp
     core/ps2_float_test.cpp
+    core/ps2_trig_test.cpp
     core/script_patch_apply_test.cpp
     core/script_patch_merge_test.cpp
     core/script_patch_test.cpp

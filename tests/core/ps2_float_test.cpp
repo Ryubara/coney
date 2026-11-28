@@ -46,3 +46,27 @@ TEST_CASE("a velocity's PS2 length never exceeds the exact length", "[core][ps2_
     // Mostly below, as at runtime (10 of 93 steady-run updates at or above).
     CHECK(atOrAbove < 90);
 }
+
+TEST_CASE("PS2 addition keeps one guard bit of the smaller operand before it rounds", "[core][ps2_float]") {
+    // Expected: characters-locomotion.md#run-velocity, confirmed (runtime)
+    // The FPU lines the smaller operand up with the larger one and keeps a single bit below the larger one's last
+    // place, so 1 - 1.5 × 2^-25 loses the whole subtrahend (0.75 of a unit below 1, under the guard bit) and stays 1,
+    // where the exact difference rounded toward zero would be the float just below 1.
+    const float small = std::bit_cast<float>(0x33400000U); // 1.5 × 2^-25
+    CHECK(coney::ps2::sub(1.0F, small) == 1.0F);
+    CHECK(coney::ps2::add(-1.0F, small) == -1.0F);
+    // 1 - 2^-24 is the guard bit itself and is kept: the float just below 1.
+    const float guard = std::bit_cast<float>(0x33800000U); // 2^-24
+    CHECK(coney::ps2::sub(1.0F, guard) == std::nextafter(1.0F, 0.0F));
+    // Like signs add as before: the bits lost below the guard could not have reached the result's last place.
+    CHECK(coney::ps2::add(1.0F, small) == 1.0F);
+    CHECK(coney::ps2::add(0.25F, 0.5F) == 0.75F);
+}
+
+TEST_CASE("a velocity's PS2 length takes its third part", "[core][ps2_float]") {
+    // Expected: characters-locomotion.md#run-velocity, confirmed (code)
+    // The skid test's length is sqrt((x × x + y × y) + z × z) in VU0 (0x00240f38-0x00240f50).
+    CHECK(coney::ps2::length(0.0F, 3.0F, 4.0F) == 5.0F);
+    CHECK(coney::ps2::length(2.0F, 3.0F, 6.0F) == 7.0F);
+    CHECK(coney::ps2::length(3.0F, 4.0F, 0.0F) == 5.0F);
+}

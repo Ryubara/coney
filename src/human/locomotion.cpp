@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "human/locomotion.h"
 
+#include "core/ps2_float.h"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -205,6 +207,13 @@ float turnToward(float heading, float target, float limit, TurnState& state) {
     state.lastStep = step;
     return wrapAngle(heading + (error > 0.0F ? step : -step));
 }
+
+anim::Vec3 runVelocity(float heading, float speed, float vertical) {
+    const anim::Vec3 direction = facing(heading);
+    return anim::Vec3{direction.x * speed, direction.y * speed, vertical};
+}
+
+float measuredSpeed(anim::Vec3 velocity) { return ps2::length(velocity.x, velocity.y); }
 
 float approachSpeed(float current, float target, float seconds) {
     if (current >= target) {

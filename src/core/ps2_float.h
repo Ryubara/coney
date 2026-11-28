@@ -26,7 +26,13 @@ namespace coney::ps2 {
 [[nodiscard]] inline float add(float a, float b) { return towardZero(static_cast<double>(a) + static_cast<double>(b)); }
 [[nodiscard]] inline float sqrt(float a) { return towardZero(std::sqrt(static_cast<double>(a))); }
 
+/// `a - b`, rounded toward zero.
+[[nodiscard]] inline float sub(float a, float b) { return add(a, -b); }
+
 /// The length of the horizontal vector (`x`, `y`): sqrt(x × x + y × y), each step rounded toward zero.
 [[nodiscard]] inline float length(float x, float y) { return ps2::sqrt(add(mul(x, x), mul(y, y))); }
+
+/// The length of the vector (`x`, `y`, `z`): sqrt((x × x + y × y) + z × z), each step rounded toward zero.
+[[nodiscard]] inline float length(float x, float y, float /*z*/) { return length(x, y); }
 
 } // namespace coney::ps2
