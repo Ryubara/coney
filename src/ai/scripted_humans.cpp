@@ -199,12 +199,13 @@ void ScriptedHumans::setHealthPercent(double human, float percent) {
 
 void ScriptedHumans::revive(double human) {
     onBrain(human, [](Brain& brain) {
-        // Human_WakeUp enables and resumes the brain of a human a script knocked out (HuSetConscious); one knocked out
-        // by his health wakes as the brains see his health back.
+        // Human_WakeUp enables and resumes the brain of a human a script knocked out (HuSetConscious stops it, as
+        // Brain_OnKnockedOut does, and his health back does not wake it); one knocked out by his health wakes as the
+        // brains see his health back.
         const bool scriptedOut = brain.human().script().knockedOut;
         brain.human().revive();
         if (scriptedOut) {
-            brain.setDead(false);
+            brain.wakeUp();
         }
     });
 }

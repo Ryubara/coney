@@ -335,7 +335,7 @@ uncuffing and the Armies game-over toggle.
 2. A wounded human (`Human_IsWounded`, state `0x10000`) has the wound ended (`Human_EndWounded`,
    [HuSetWounded](characters-script.md#hu-wounded)).
 3. A knocked-out human (`Human_IsKnockedOut`, state `0x40000`) wakes (`Human_WakeUp(human, 0)` `0x00230598`: body
-   shape 2 back on, the cuffs icon removed, style `0x12` off, states `0x1c8007` cleared, push weight 1, the brain
+   shape 2 back on, the `dyn_cross` icon removed, style `0x12` off, states `0x1c8007` cleared, push weight 1, the brain
    enabled and resumed) and enters the fight stance (`Human_EnterFightStance` `0x0022fe48`: state `0x1` and the
    stance timer), confirmed (code).
 4. State `0x4000000000` cleared.

@@ -354,7 +354,7 @@ task pose table at `0x00714b00`, `0x20` bytes each. A human flag is a bit of `+0
 | `0x002300c0` | `Human_LeaveShadow` | When hidden (0x200000), not running and with a target, clears the hidden state. | confirmed (code) |
 | `0x002301f0` | `Player_UpdateHiddenLoopSound` | For a player: prepares the hidden-in-shadow loop line when hidden, stops it when not. | confirmed (code) |
 | `0x002302a8` | `Human_ResetToOneHealth` | Unless dead: knocks off the hat, clears flag 0x10, sets the counters `+0x118` and `+0x5d2` to 100, clears the foe and sets health to 1. | confirmed (code) |
-| `0x00230598` | `Human_WakeUp` | Wakes a knocked-out human: body back on, state cleared, styles popped, the cuffs icon removed, brain resumed. | confirmed (code) |
+| `0x00230598` | `Human_WakeUp` | Wakes a knocked-out human: body back on, state cleared, styles popped, the `dyn_cross` icon removed, brain resumed. | confirmed (code) |
 | `0x002306e8` | `Human_ReleaseBody` | Stops speech, clears the brain's enemies, clears the pose-slot entry at 0x00715390 and frees the physics body. | confirmed (code) |
 | `0x00230740` | `Human_CreditDefeat` | When a human is beaten: credits the foe player (combat statistic 7 for a gang brain, crime statistics for others), tears down the brain, removes it from the radar and its overhead icon. | confirmed (code) |
 | `0x00231ac8` | `Human_PlayHeldIdle` | Plays a held-object idle clip (0x25a for a knife, 0x25c when asked) when no held flags are set. | confirmed (code) |

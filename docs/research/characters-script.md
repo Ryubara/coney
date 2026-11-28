@@ -402,6 +402,8 @@ and under the engine limits preset, every human in reach past 60.
   (`Human::downOrDead()`), so a cuffed human answers alive and a wounded one not; the AI's and the HUD's own test,
   which also leaves out the cuffed, stays `Human::alive()`. `HuRevive` is `Human::heal(true)` and then, for a human
   who was knocked out or out of health, the stand into his idle; a stun, rage, a grab or a knockdown are left alone.
+  A human a script knocked out also gets his brain back (`Brain::wakeUp()`, as `Human_WakeUp` resumes it), which his
+  health back alone would not give him ([HuSetConscious](#set-conscious)).
   `Human::heal(bool)` ends a wound, wakes a knocked-out human into the fight stance (a player's: an AI human's stance
   is its fight goal's), fills the health or adds half the maximum, capped, and makes the body again; the flash keeps
   its own health and wound steps and calls only the body (`Human::heal()`). `HuSetNormalMode` ends the player's
