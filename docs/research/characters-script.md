@@ -289,7 +289,9 @@ and clearing `0x8000` ([Who sets the bit](combat-reactions.md#knocked-out-bit)).
 icon when he has it, pops move style `0x12` (or removes it when it is not on top), clears `0x1c8007`, puts the push
 weight back to 1 and resumes the brain (`Brain_EnableAndResume`). It does not give `BLOCKHUMANS` back.
 
-**In Coney** (`ai::ScriptedHumans::setConscious`, `repo:src/ai/scripted_humans.cpp`): the knock-out sets the script's
+**In Coney** (`ai::ScriptedHumans::setConscious`, `repo:src/ai/scripted_humans.cpp`): the knock-out does nothing for
+a human knocked out already (`Human::knockedOut()`: a script's mark or a health-out knock-out, Coney's `0x40000`);
+otherwise it sets the script's
 knocked-out mark (whatever the state, as the original's last step), takes `BLOCKHUMANS` away, ends a player's slow
 motion, breaks a pair, and for a human not down or dead stops his brain as `Brain_OnKnockedOut` does
 (`Brain::knockOut()`) and sends him event 18 with the target he had, as `Brains::destroy()` does for the same call;
@@ -311,7 +313,9 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
 2. When the squared distance between them **in plan** is below 12.96 (3.6 m), nothing happens.
 3. The humans within *rA* + 3.6 m of `near` (in 3D) are listed by `Humans_FindAhead` (`0x002274a8`, at most 32,
    `near` left out, each with its squared 3D distance to `near` as its key) and sorted by key, largest first
-   (`SortByKeyDescending`, `0x003868f8`).
+   (`SortByKeyDescending`, `0x003868f8`). The 32 is the list buffer's size, filled in table order, so a human past
+   the 32nd is never tested. Coney lifts it past 60 humans (rule: every human in reach is listed,
+   [Crowd rules](../engine/crowd-rules.md#lists)); up to 60 it keeps 32, and so does the engine limits preset.
 4. 32 headings are tried, 11.25° apart (π/16), starting at (game time & 31) and counting up modulo 32. Heading *k*
    gives the direction (sin, cos, 0) of *k* π/16 (`Vec_FromHeading`, `0x00335e40`) and the point `near` + 3.6 m along
    it.
@@ -334,6 +338,8 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
 (`ai::Brains`) in its own order for the original's table order, the nav line through `ai::RoutePlanner::lineClear()`
 and the ray through the level's collision mesh. **Stand-ins**: `lineClear()` gives no fraction, so a line not clear
 refuses the heading whatever the scale (step 5); the ray meets the collision mesh only, not the world's objects.
+**Limit**: the list of 32 (step 3) is `crowd::teleportListCap()`, marked `@coney-only limit:`: 32 up to 60 humans
+and under the engine limits preset, every human in reach past 60.
 
 ## In Coney {#coneys-implementation}
 

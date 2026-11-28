@@ -102,10 +102,13 @@ void PlayLevelSimulation::makeCast(const ScriptedCast& cast, const ai::AiConfig&
         }
     });
     // HuDropWeapon drops only an object whose type has a kind (+0x86), read from the object database by type name.
-    cast.scripted->humanHost().setHeldKind([types = cast.types](std::string_view type) {
-        const world_objects::ObjectType* found = types != nullptr ? types->find(type) : nullptr;
-        return found != nullptr ? found->objectKind : 0;
-    });
+    // With no database there is no query, so every held object counts as having a kind (ScriptedHumans::dropWeapon()).
+    if (const world_objects::ObjectTypes* types = cast.types; types != nullptr) {
+        cast.scripted->humanHost().setHeldKind([types](std::string_view type) {
+            const world_objects::ObjectType* found = types->find(type);
+            return found != nullptr ? found->objectKind : 0;
+        });
+    }
     // GoalPlayDynAnimation's clips are the level's dynamic clips, loaded from the disc when first named.
     cast.scripted->setClipSource([this](std::string_view name) { return m_dynamicClips.find(name); });
     // The AI goals' lines (a boss's taunts and shouts, the dealer's lines) go to the game's sound, when there is one.

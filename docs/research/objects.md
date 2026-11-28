@@ -820,8 +820,8 @@ drop above runs only when `Human_GetHeldObjectKind` (`0x00231a38`, the held obje
 all stay as they are. **In Coney** (`ai::ScriptedHumans::dropWeapon`, `repo:src/ai/scripted_humans.cpp`): the kind is
 read from the object database by the held object's type name (`ObjectType::objectKind`); an AI's object then falls from
 his hand into the world through the play mode's drop (`PlayLevelSimulation::dropHeld`), and a player's as his hand is
-seen empty. **Coney's choice**: with no object database to ask (a test scene with none) every held object counts as
-having a kind.
+seen empty. **Coney's choice**: with no object database to ask (a scene with none, in a test or in the play mode,
+which then installs no kind query) every held object counts as having a kind.
 
 #### A weapon given to a Warrior {#given-weapon}
 
@@ -1066,9 +1066,11 @@ So the register is not special: anything Coney lifts with 503 / 504 needs the sa
   and every drop and throw of the play mode goes through `PlayLevelSimulation::dropHeld()`, which calls
   `Human::releaseHeldStyle()`: the drop removes the set, the throw pops a top style 1-6
   (`HumanAnimator::releaseStyle()`).
-  An AI's scripted drop (`HuDropWeapon`, and `ObjDestroy` on the held object) and `GoalThrowObject`'s throw, which do
-  not go through the play mode, call `Human::letGoOfHeld()` with the drop's or the throw's rule (`ai::ScriptedHumans`,
-  `ai::ThrowObjectGoal`); a player's hand emptied by a script is dropped by the play mode's `dropHeld()`.
+  An AI's `HuDropWeapon` in the play mode goes through the play mode's `dropHeld()` too (the held drop), which removes
+  the style once, as `Human_DropHeld` does. Where no play mode drops it (`ObjDestroy` on the held object, a scene with
+  no held drop) and at `GoalThrowObject`'s throw, `Human::letGoOfHeld()` applies the drop's or the throw's rule
+  (`ai::ScriptedHumans`, `ai::ThrowObjectGoal`); a player's hand emptied by a script is dropped by the play mode's
+  `dropHeld()`.
 - `world_objects::takeAttachment()` (`repo:src/world_objects/object_tasks.h`) gives `overhead_weapon` and
   `dyn_cashreg` their type's `holdPos` / `holdRot` at the event's bone. **Stand-in**: the take is taken as out of a
   scene (Coney does not keep `Human_IsInSceneState` at the take), so these objects always have their type's pose.

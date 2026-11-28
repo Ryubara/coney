@@ -117,7 +117,8 @@ class ScriptedHumans final : public script::HumanBindingHost {
     /// The kind (`+0x86`) of the object type named `type` (world_objects::ObjectType::objectKind): 0 for an unknown
     /// type.
     using HeldKind = std::function<int(std::string_view type)>;
-    /// Sets the held kind query.
+    /// Sets the held kind query. With none set (no object database), dropWeapon() takes every held object as having a
+    /// kind.
     void setHeldKind(HeldKind kind) { m_heldKind = std::move(kind); }
     /// What drops an AI's object `held` into the world after dropWeapon() let go of it (the play mode's drop).
     using HeldDrop = std::function<void(Brain& brain, double held)>;

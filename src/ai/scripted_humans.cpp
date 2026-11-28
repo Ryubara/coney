@@ -21,6 +21,7 @@
 #include "ai/scripted_brains.h"
 #include "ai/scripted_goals.h"
 #include "animation/anim_math.h"
+#include "core/crowd_limits.h"
 #include "human/human.h"
 #include "human/human_flags.h"
 #include "raycast/collision_mesh.h"
@@ -38,12 +39,12 @@ constexpr int kCarriedChance = 100;
 constexpr std::string_view kResponderName = "Responder";
 
 // `HuTeleportNearHuman`'s search (docs/research/characters-script.md#teleport-near): the point's distance from the
-// other human, which is also the least gap between the two (12.96 squared); the headings tried, π/16 apart; the most
-// humans Humans_FindAhead lists for it; the drop's ray starts this far above the other's capsule top and leaves the
-// point this far above what it hits; and Human_GetCapsuleHeight (0x00219890), 2 m per unit of scale.
+// other human, which is also the least gap between the two (12.96 squared); the headings tried, π/16 apart; the drop's
+// ray starts this far above the other's capsule top and leaves the point this far above what it hits; and
+// Human_GetCapsuleHeight (0x00219890), 2 m per unit of scale. The list's size is a lifted limit
+// (crowd::teleportListCap()).
 constexpr float kNearReach = 3.6F;
 constexpr std::uint32_t kNearHeadings = 32;
-constexpr std::size_t kNearListMost = 32;
 constexpr float kNearRayAbove = 3.0F;
 constexpr float kNearRayGap = 0.01F;
 constexpr float kCapsuleHeightPerScale = 2.0F;
@@ -54,14 +55,16 @@ struct NearHuman {
     float key = 0.0F;
 };
 
-// The humans within `reach` of `near` in 3D, `near` left out, at most kNearListMost in the brains' order, largest key
+// The humans within `reach` of `near` in 3D, `near` left out, cut in the brains' order at the list's size, largest key
 // first (Humans_FindAhead 0x002274a8, SortByKeyDescending 0x003868f8). Stand-in: the brains' order stands for the
-// original's table order.
+// original's table order. Stand-in (limit): the original's list of 32; past 60 humans it holds every human in reach
+// (crowd::teleportListCap(), docs/engine/crowd-rules.md#lists).
 // @coney-only helper of ScriptedHumans::teleportNear(), which carries Human_TeleportNear's @orig
 std::vector<NearHuman> humansNear(const Brains& brains, const Brain& near, float reach) {
     std::vector<NearHuman> list;
     const anim::Vec3 centre = near.human().position();
-    for (std::size_t k = 0; k < brains.size() && list.size() < kNearListMost; ++k) {
+    const std::size_t cap = crowd::teleportListCap(brains.size(), brains.engineLimits());
+    for (std::size_t k = 0; k < brains.size() && list.size() < cap; ++k) {
         const Brain& brain = brains.at(k);
         if (&brain == &near) {
             continue;
@@ -273,10 +276,11 @@ void ScriptedHumans::setConscious(double human, bool conscious) {
             // does not give BLOCKHUMANS back. Stand-in: its cross icon and move style 0x12 are not kept by Coney.
             script.knockedOut = false;
             brain.wakeUp();
-        } else if (!script.knockedOut) {
-            // Human_KnockOut(h, 0), for a human not knocked out already. Stand-in: of Human_ReleaseAll only the pair
-            // is broken, the speech is not stopped, the 14 s wake time is #1584's, and the cross icon and harmony
-            // statistic of a player's gang member are not shown (docs/research/characters-script.md#set-conscious).
+        } else if (!body.knockedOut()) {
+            // Human_KnockOut(h, 0), for a human not knocked out already (state 0x40000: by a script or by his health,
+            // Human::knockedOut()). Stand-in: of Human_ReleaseAll only the pair is broken, the speech is not stopped,
+            // the 14 s wake time is #1584's, and the cross icon and harmony statistic of a player's gang member are not
+            // shown (docs/research/characters-script.md#set-conscious).
             body.fighter().breakPair();
             body.loseBlockHumans();
             body.endSlowMotion();
@@ -336,6 +340,7 @@ void ScriptedHumans::teleportNear(double human, double near) {
             return;
         }
         const Brains& brains = m_scripted->owner();
+        // Stand-in (limit): the humans near the other, listed up to crowd::teleportListCap() (the original's 32).
         const std::vector<NearHuman> around = humansNear(brains, *other, moverRadius + kNearReach);
         const std::optional<anim::Vec3> point = freePointNear(brains, centre, clearance, moverRadius, around);
         if (!point) {
@@ -404,16 +409,21 @@ void ScriptedHumans::dropWeapon(double human) {
         if (script.heldObject == kNilHandle || (m_heldKind && m_heldKind(script.heldObjectName) == 0)) {
             return;
         }
-        // Human_DropHeld: the hand emptied; an AI's held object's move style comes off here and the play mode drops
-        // the object into the world (the held drop); a player's hand is followed by the play mode, whose dropHeld()
-        // drops the object when it sees the hand empty.
+        // Human_DropHeld: the hand emptied; a player's hand is followed by the play mode, whose dropHeld() drops the
+        // object when it sees the hand empty.
         const double held = std::exchange(script.heldObject, kNilHandle);
         script.heldObjectName.clear();
-        if (brain.type() != BrainType::Player) {
+        if (brain.type() == BrainType::Player) {
+            return;
+        }
+        // An AI's object: the play mode's drop (the held drop) puts it into the world and takes its move style off,
+        // once, as Human_DropHeld removes it once; he then holds nothing. With no drop, letGoOfHeld() does both.
+        if (m_heldDrop) {
+            m_heldDrop(brain, held);
+            brain.human().fighter().setAnimSet(0);
+            brain.human().fighter().setHoldingObject(false);
+        } else {
             brain.human().letGoOfHeld(false);
-            if (m_heldDrop) {
-                m_heldDrop(brain, held);
-            }
         }
     });
 }
