@@ -48,9 +48,18 @@ struct TargetCandidate {
 /// "No target found".
 inline constexpr std::size_t kNoTarget = std::numeric_limits<std::size_t>::max();
 
-/// The index of the nearest available candidate within `range` of `from`, or kNoTarget.
-/// **Coney choice**: the nearest by straight-line distance, with no facing cone; the original's search routine
-/// (`0x0027ac30`) is not researched beyond its range.
+/// Whether a candidate `distance` metres away takes the place of the one a nearest-wins search keeps (`kept` metres
+/// away, and `any` true), or is the first found (`any` false, `kept` then the search's range): within the range for the
+/// first, strictly nearer after it. Of equal distances the first in list order stays, as the original's sort leaves it:
+/// a BSD `qsort` that below 7 entries moves an entry back only past a greater key
+/// (docs/research/combat-targets.md#searches-coney).
+/// **Coney stand-in** for its lists of 7 or more, which that `qsort` partitions unstably.
+/// @orig 0x003868d0 SortByKeyAscending (unknown)
+[[nodiscard]] bool replacesKept(float distance, float kept, bool any);
+
+/// The index of the nearest available candidate within `range` of `from`, or kNoTarget; of equal distances the earlier
+/// (replacesKept()). **Coney choice**: the nearest by straight-line distance, with no facing cone; the original's
+/// search routine (`0x0027ac30`) is not researched beyond its range.
 [[nodiscard]] std::size_t nearestTarget(const anim::Vec3& from, std::span<const TargetCandidate> candidates,
                                         float range);
 
@@ -66,8 +75,8 @@ inline constexpr float kGrabbableHeight = 0.25F;
 
 /// The index of the nearest available candidate within `range` of `from` in plan, within `halfAngle` of the direction
 /// `aim` and `maxHeight` above or below, or kNoTarget: the strong grapple's search (`0x0027a4b0`,
-/// docs/research/combat-grabs.md#strong-grapple). **Coney choice**: nearest in plan distance (`0x003868d0` is not
-/// traced).
+/// docs/research/combat-grabs.md#strong-grapple); of equal distances the earlier (replacesKept()). **Coney choice**:
+/// nearest in plan distance.
 [[nodiscard]] std::size_t nearestInCone(const anim::Vec3& from, const anim::Vec3& aim,
                                         std::span<const TargetCandidate> candidates, float range, float halfAngle,
                                         float maxHeight);

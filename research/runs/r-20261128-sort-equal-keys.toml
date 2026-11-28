@@ -1,0 +1,38 @@
+version = 1
+id = "r-20261128-sort-equal-keys"
+date = "2026-11-28"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "8ee73f3e7a0994993f8825438b8e3436f9c65edeac07a6dafd0b0a47e086fc48"
+
+[who]
+agent = "ad520664827645c37"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "SortByKeyAscending called through the call-brains hook's call block on lists of 8-byte item and key pairs written to free memory, each list read back after the call. Three entries keyed 2, 1, 1 (items 0x111, 0x222, 0x333) came back 0x222, 0x333, 0x111, and keyed 2, 1, 1 as 0x111, 0x333, 0x222 they came back 0x333, 0x222, 0x111: below 7 entries the earlier of equal keys stays first. Eight entries, item 1 keyed 2 and items 2 to 8 keyed 1, came back 8, 2, 3, 4, 5, 6, 7, 1: from 7 entries the last of the equals came first."
+
+[values]
+three_first = 546
+three_first_swapped = 819
+eight_first = 8
+eight_second = 2
+eight_last = 1
+
+[addresses]
+sort = 0x003868d0
+qsort = 0x00433fd8
+compare = 0x00386860
+call_block = 0x000af000
+list = 0x000af400
