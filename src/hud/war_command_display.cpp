@@ -179,12 +179,14 @@ void WarCommandDisplay::update(std::uint8_t stickX, std::uint8_t stickY, const C
             return;
         }
         m_nameShut = false;
+        // The name's text is set again on every picking update (MarkupText_SetText clears its end time), so its
+        // display time counts from the last one before the order.
+        m_textSince = nowMs;
         if (const std::optional<float> angle = warCommandStickAngle(stickX, stickY); angle) {
             m_lit = true;
             const std::size_t slot = warCommandSlotAt(*angle, m_highlight);
             if (slot != m_highlight) {
                 m_highlight = slot;
-                m_textSince = nowMs;
                 audio.playCue(kWarCommandCue);
             }
         }
@@ -290,14 +292,14 @@ void WarCommandDisplay::render(const HudCanvas& canvas, const Look& look, std::u
     } else {
         style.colour = chosenEnabled ? kNameGrey : kDark;
     }
-    // Stand-in: the original sets the text's +0x18c to 255 on every draw (its meaning not traced); the name fades
-    // with the other sprites.
-    style.fade = others;
+    // The text's +0x18c is set to 255 on every draw: the name stays whole while the slots fade (seen in PCSX2).
     style.timeMs = static_cast<std::uint32_t>(nowMs - std::min(m_textSince, nowMs));
     const gui::TextLayout text = gui::layoutText(name, style, canvas.text.fonts);
     if (text.expired) {
         return;
     }
+    // Stand-in: the name's box (the widget at +0x90, never faded by Update) is drawn and fades with the slots; in
+    // PCSX2 at level80 checkpoint 2 no box shows behind the name, and who draws +0x90 is not traced.
     addRect(canvas.parts, kNameBoxRect, look.centreX, kNameY, text.width + kNameBoxMargin, text.height + kNameBoxMargin,
             faded(kNameBox, others));
     gui::addTextSprites(text, canvas.text.textBatch);

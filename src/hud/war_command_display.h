@@ -49,9 +49,9 @@ inline constexpr std::uint32_t kWarCommandFadeMs = 500;
 /// passes the order to the dispatcher (0x0041c4e0) and switches the camera's stick as cameraStickOn() says.
 ///
 /// **Coney's choices**: the slots' backing and plate are plain squares (the original's sprite word `0xd0100` of
-/// sprite instance 6 is not mapped to a sheet rectangle); the name's time counts from the last time the menu changed
-/// its text (opening or a new highlight), and the display closes when that time passes the name's `<DISPLAYTIME>`
-/// after an order (inferred on the page); the 16:9 layouts are not built.
+/// sprite instance 6 is not mapped to a sheet rectangle); the 16:9 layouts are not built. The name's time counts from
+/// the last picking update (the original sets the text on each), and the display closes when that time passes the
+/// name's `<DISPLAYTIME>` after an order.
 class WarCommandDisplay {
   public:
     /// What the menu needs to know about its chief each update.
@@ -130,7 +130,7 @@ class WarCommandDisplay {
     bool m_cameraStickOn = true;
     int m_afterIssue = 0;                     // updates since the order, up to the hold (+0x1568)
     std::optional<std::uint64_t> m_fadeStart; // when the fade began
-    std::uint64_t m_textSince = 0;            // when the text was last set
+    std::uint64_t m_textSince = 0;            // when the text was last set (every picking update)
     int m_blink = 0;                          // the blink counter (+0x1578)
     bool m_blinkHidden = false;               // the chosen slot hidden by the blink this update
 };

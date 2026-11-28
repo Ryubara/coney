@@ -314,7 +314,7 @@ TEST_CASE("after an order the chosen icon fades over 1500 ms and its backing and
 TEST_CASE("the name's display time counts from the last update before the order", "[hud][war-commands]") {
     // Expected: hud.md#warrior-command-menu, confirmed (code): WarCommandDisplay_Update (0x001a7e48) sets the name's
     // text on every update while picking, and MarkupText_SetText (0x001bb250) clears its end time; seen in PCSX2 at
-    // level80 checkpoint 2 (the gold name still shown 2.4 s after the order).
+    // level80 checkpoint 2 (the gold name still shown 1.6 s after the order, 3.7 s after the highlight was set).
     WarCommandDisplay display;
     Sounds sounds;
     const coney::hud::HudSound sound = sounds.sound();
