@@ -38,6 +38,15 @@ coney = "src/scripting/world_bindings.cpp:makeChangeCollision"
 status = "legacy"
 
 [[function]]
+address = 0x0034fc08
+name = "CollisionMaterial_GetName"
+page = "physics-world.md#u16-material-name"
+role = "the name of a material id: one of 191 names, `unknown` past them"
+level = "confirmed-code"
+coney = "src/raycast/materials.h:materialName"
+status = "compared"
+
+[[function]]
 address = 0x00350538
 name = "CollisionTri_PassesMaterialFilter"
 page = "collision.md#original-structure"
@@ -56,13 +65,26 @@ coney = "src/raycast/collision_mesh.h:onCollisionMeshLoaded"
 status = "legacy"
 
 [[function]]
+address = 0x00350688
+name = "CollisionMesh_FreeChunks"
+page = "physics-world.md#u16-free-chunks"
+role = "frees the collision mesh's five chunks in a fixed order, from its destructor"
+level = "not-needed"
+note = "Coney's mesh owns its chunks, and the order of the frees is not observable"
+
+[[function]]
 address = 0x00350778
 name = "CollisionMesh_RayTestCell"
-page = "collision.md#original-structure"
-role = "ray against one cell's triangles"
+page = "physics-world.md#u16-world-ray"
+role = "ray against one cell's triangles: an excluded triangle fills the result until a kept one is hit"
 level = "confirmed-code"
 coney = "src/raycast/collision_mesh.h:CollisionMesh::rayTestCell"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the word at +0x18, which nothing reads, is not kept"
+relation = "stand-in"
+issue = 380
 
 [[function]]
 address = 0x00350aa0
@@ -75,11 +97,19 @@ status = "legacy"
 [[function]]
 address = 0x00350cd8
 name = "CollisionMesh_RayCast"
-page = "collision.md#original-structure"
+page = "physics-world.md#u16-world-ray"
 role = "ray against the mesh: the grid walk"
 level = "confirmed-code"
-coney = "src/raycast/collision_mesh.h:CollisionMesh::rayCast"
-status = "legacy"
+coney = "src/raycast/collision_mesh.h:CollisionMesh::castRay"
+status = "compared"
+
+[[function]]
+address = 0x00351158
+name = "CollisionMesh_UpdateEmpty"
+page = "physics-world.md#u16-update-empty"
+role = "an empty per-frame update eleven game modes call"
+level = "not-needed"
+note = "it does nothing, so Coney needs nothing for it"
 
 [[function]]
 address = 0x00351160

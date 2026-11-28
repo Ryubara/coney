@@ -241,7 +241,12 @@ name = "LevelHeader_OnLoaded"
 page = "level-loading.md#original-structure"
 level = "confirmed-code"
 coney = "src/world/level_object.h:makeLevelHeaderHandler"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "each model is linked to its dictionary as it is popped, not after the occluders in the order sky box, skyline, cloud box"
+relation = "stand-in"
+issue = 380
 
 [[function]]
 address = 0x0040d0a8
@@ -257,7 +262,17 @@ name = "WorldManager_Preload"
 page = "level-loading.md#original-structure"
 level = "confirmed-code"
 coney = "src/world/world_streamer.h:preloadWorlds"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the loop stops on a pass with no work or one beyond the radius, where the original counts it and goes on; no real-time deadline; the radius is not the camera's draw distance"
+relation = "stand-in"
+issue = 710
+
+[[function.gaps]]
+what = "the busy flag, the player records, the timer and loading indicator, the section's pack, the resource manager's pumping and the pack queue"
+relation = "not-ported"
+issue = 380
 
 [[function]]
 address = 0x0041d6f0

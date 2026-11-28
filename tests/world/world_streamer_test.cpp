@@ -172,6 +172,27 @@ TEST_CASE("the preload streams until what is missing lies beyond its radius", "[
     CHECK(coney::world::nearestPendingDistance(worlds, camera) == Approx(std::sqrt(25.0F * 25.0F + 50.0F)));
 }
 
+TEST_CASE("the preload clears the visible marks an earlier camera left before it streams",
+          "[world_streamer][physics-unit-18]") {
+    // Expected: physics-world.md#u18-small, confirmed (code)
+    StreamedWorld world = fiveParts();
+    std::array<StreamedWorld*, 1> worlds{&world};
+    SectorBudget budget(300); // three parts
+    RecordingStore store;
+    const std::array<Vec3, 1> start{Vec3{5.0F, 5.0F, 5.0F}};
+    for (int i = 0; i < 3; ++i) {
+        (void)coney::world::updateStreaming(worlds, start, 300.0F, budget, store, 0);
+    }
+    // The front end's earlier camera saw sector 0 (part 1). The preload for the far end clears that mark first, so
+    // part 1, the farthest, is the first to go, as with no marks at all.
+    world.markVisible(0);
+    const std::array<Vec3, 1> end{Vec3{45.0F, 5.0F, 5.0F}};
+    (void)coney::world::preloadWorlds(worlds, end, 300.0F, budget, store, 0);
+    REQUIRE_FALSE(store.unloads.empty());
+    CHECK(store.unloads.front() == std::pair<std::size_t, std::uint32_t>{0, 1});
+    CHECK_FALSE(world.sectors()[0].visible);
+}
+
 TEST_CASE("the unload margin is added to the squared distance", "[world_streamer]") {
     // Three sectors around a camera at the origin (y and z from -1 to 1, so each adds 1 + 1 to a squared distance):
     // A (part 1) at x 21..22, B (part 2) at x 20..30, C (part 3, never unloaded) far away. A is loaded and the

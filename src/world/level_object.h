@@ -101,6 +101,18 @@ struct LevelModel {
 /// Research: docs/research/level-loading.md#the-level-object
 class LevelObject final : public chunk::LoadedObject {
   public:
+    /// An empty level object, for the level header's handler to fill.
+    LevelObject() = default;
+    LevelObject(const LevelObject&) = delete;
+    LevelObject& operator=(const LevelObject&) = delete;
+    LevelObject(LevelObject&&) = delete;
+    LevelObject& operator=(LevelObject&&) = delete;
+    /// Releases the parts in the original's order: the collision mesh, the occluders, the level world, the glow
+    /// dictionary, then each model before its own dictionary, skyline, sky box, cloud box; the path data and the
+    /// subtitles after them.
+    /// @orig 0x0040cf80 LevelObject_Destroy (WorldLevelPS2.cpp)
+    ~LevelObject() override;
+
     [[nodiscard]] std::string_view describe() const override { return "level object"; }
 
     std::unique_ptr<raycast::CollisionMesh> collision;   ///< +0x04.
@@ -122,20 +134,25 @@ using LinkLevelModel = std::expected<void, Error> (*)(chunk::LoadedObject& model
 /// The chunk 0x17 handler: pops the 48-byte level header, takes the collision mesh and the path data from the object
 /// stack, then pops the level world (0x42) and its dictionary (0x0B), the cloud box, sky box and skyline each as a
 /// model (0x41) and dictionary (0x0B), linking each pair with `link`, and the occluders (0x53); pushes the
-/// LevelObject. Fails when anything is missing or out of order, or as `link` and readOccluders() do.
-/// @orig 0x0040ce30 LevelObject_OnLoaded (unknown)
+/// LevelObject. Fails when anything is missing or out of order, or as `link` and readOccluders() do. The level object
+/// starts empty (the original's constructor on the header's own bytes) and takes the occluders last.
+/// @orig 0x0040ce30 LevelHeader_OnLoaded (World/unknown)
+/// @orig 0x0040cf40 LevelObject_Construct (World/unknown)
+/// @orig 0x0040d088 LevelObject_SetOccluders (World/unknown)
 [[nodiscard]] chunk::OnLoaded makeLevelHeaderHandler(LinkLevelModel link);
 
 /// Registers the level file's platform-neutral handlers in `table`: the collision mesh (0x03), the path data (0x40)
 /// and the level header (0x17, linking with `link`). The platform adds the texture dictionaries (0x2A), the models
-/// (0x47) and the level world (0x15).
+/// (0x47) and the level world (0x15). The original registers the level header's handler alone at boot; the collision
+/// mesh's and the path data's are registered by their own systems.
+/// @orig 0x0040cf18 LevelHeader_RegisterChunkHandler (World/unknown)
 void addLevelFileHandlers(chunk::ChunkHandlerTable& table, LinkLevelModel link);
 
 /// Loads a level file from `stream` with `table` (which needs the handlers of addLevelFileHandlers() and the
 /// platform's) and returns the level object, with the subtitles chunk attached. Everything the file pushed must have
 /// gone into the level: anything left on either stack fails with ErrorCode::Invalid, as do the load's own failures.
-/// It stands for the original's `WorldLevel_Load` (`0x0040c688`), which the source map places in the tolua
-/// middleware's range, so it carries no tag (docs/research/level-loading.md#open-questions).
+/// The container load and the pop of the original's `WorldLevel_Load`; platform::loadLevel() names and opens the file
+/// (docs/research/physics-world.md#u17-load).
 [[nodiscard]] std::expected<std::unique_ptr<LevelObject>, Error> loadLevelFile(io::Stream& stream,
                                                                                const chunk::ChunkHandlerTable& table);
 

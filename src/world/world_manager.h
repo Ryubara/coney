@@ -5,6 +5,7 @@
 #include <optional>
 
 #include "world/sector_budget.h"
+#include "world/streamed_world.h"
 
 namespace coney::world {
 
@@ -19,6 +20,9 @@ namespace coney::world {
 /// Research: docs/research/physics-world.md#unit-18, docs/research/physics-world.md#u18-coney
 class WorldManager {
   public:
+    /// The load priority a level load sets: 0.001.
+    static constexpr float kLevelLoadPriority = 0.001F;
+
     /// A manager charging `budget` (which must outlive it), reserving the `Global Data Pool` for a `warriors.glr` of
     /// `globalDataSize` bytes (globalDataPoolBytes()); none when the disc has no such file. A reservation that does not
     /// fit is not made.
@@ -51,6 +55,25 @@ class WorldManager {
     /// @orig 0x0040f5b8 WorldManager_Unload (WorldManagerPS2.cpp)
     void unload(bool keepLevelFile);
 
+    /// Sets the scale the streaming multiplies the resource manager's distances by, as given: no clamp, no check. A
+    /// level load sets it to kLevelLoadPriority. Stand-in: nothing reads it until the resource manager streams.
+    /// @orig 0x0040c938 WorldManager_SetLoadPriority (World/unknown)
+    void setLoadPriority(float scale);
+    /// The load priority setLoadPriority() or the last level load set; kLevelLoadPriority before either.
+    [[nodiscard]] float loadPriority() const { return m_loadPriority; }
+
+    /// Clears the visible marks of the level's `solid` world (`<world>s`, or the only one) and, when the level has one,
+    /// of its `detail` world (`<world>d`). The worlds are the platform's (WorldSet); Coney's solid world always exists,
+    /// so the original's missing null check of it has nothing to copy. No caller yet: world::preloadWorlds clears each
+    /// world's marks itself for WorldManager_Preload (0x0040e2d8), as it holds the worlds and not the manager, and the
+    /// other caller, ResourceMgr_LoadAllBlocking (0x001889d0), waits for the resource manager. Keep it for that one.
+    /// @orig 0x0040e0b8 WorldManager_ResetVisibility (WorldManagerPS2.cpp)
+    void resetVisibility(StreamedWorld& solid, StreamedWorld* detail);
+
+    /// The `Sector Pool`: the budget both pools are reserved in. When `largestFree` is not null it receives the
+    /// budget's free bytes, which stand for the pool's largest free block (SectorBudget).
+    /// @orig 0x0040f850 WorldManager_GetSectorPool (WorldManagerPS2.cpp)
+    [[nodiscard]] SectorBudget& sectorPool(std::uint64_t* largestFree) const;
     /// Bytes reserved for the `Global Data Pool`; 0 for none.
     [[nodiscard]] std::uint64_t globalDataBytes() const { return m_globalData.bytes(); }
     /// Bytes reserved for the `World Level Pool`; 0 while no level is loaded.
@@ -87,6 +110,7 @@ class WorldManager {
     SectorBudget* m_budget;   // the budget both pools are reserved in
     Reservation m_globalData; // the `Global Data Pool` (WorldManager `+0x3c`); declared first, so given back last
     Reservation m_levelPool;  // the `World Level Pool` (`+0x38`)
+    float m_loadPriority = kLevelLoadPriority; // the global `0x005147cc`
 };
 
 } // namespace coney::world

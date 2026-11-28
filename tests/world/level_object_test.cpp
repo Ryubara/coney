@@ -386,6 +386,7 @@ TEST_CASE("a world of one sector becomes a standalone atomic with no pipeline", 
 }
 
 TEST_CASE("a level file builds the level object from all its chunks, models linked in pairs", "[level_object]") {
+    // Expected: level-loading.md#the-level-file, confirmed (code)
     coney::chunk::ChunkHandlerTable table = coney::chunk::ChunkHandlerTable::withDefaults();
     table.setHandlers(0x2A, coney::chunk::ChunkHandlers{{}, readFakeDictionary});
     table.setHandlers(0x47, coney::chunk::ChunkHandlers{{}, readFakeModel});
@@ -419,4 +420,96 @@ TEST_CASE("a level file builds the level object from all its chunks, models link
         });
     coney::io::MemoryStream again(file.span());
     CHECK(!coney::world::loadLevelFile(again, table).has_value());
+}
+
+namespace {
+
+// A stand-in for one of the level object's platform objects that writes its name to `log` when it is destroyed.
+class DestroyRecorder final : public coney::chunk::LoadedObject {
+  public:
+    DestroyRecorder(std::string name, std::vector<std::string>& log) : m_name(std::move(name)), m_log(&log) {}
+    DestroyRecorder(const DestroyRecorder&) = delete;
+    DestroyRecorder& operator=(const DestroyRecorder&) = delete;
+    // NOLINTNEXTLINE(bugprone-exception-escape): a full log in a test may end the test run; nothing to recover
+    ~DestroyRecorder() override { m_log->push_back(m_name); }
+    [[nodiscard]] std::string_view describe() const override { return m_name; }
+
+  private:
+    std::string m_name;
+    std::vector<std::string>* m_log;
+};
+
+} // namespace
+
+TEST_CASE("destroying the level object releases each model before its dictionary, skyline first",
+          "[level_object][physics-unit-17]") {
+    // Expected: physics-world.md#u17-destroy, confirmed (code)
+    std::vector<std::string> log;
+    auto level = std::make_unique<coney::world::LevelObject>();
+    const auto recorder = [&log](const char* name) { return std::make_unique<DestroyRecorder>(name, log); };
+    level->glowDictionary = recorder("glow dictionary");
+    level->levelWorld = recorder("level world");
+    level->skyline = {.dictionary = recorder("skyline dictionary"), .model = recorder("skyline model")};
+    level->skyBox = {.dictionary = recorder("sky dictionary"), .model = recorder("sky model")};
+    level->cloudBox = {.dictionary = recorder("cloud dictionary"), .model = recorder("cloud model")};
+    level.reset();
+    CHECK(log == std::vector<std::string>{"level world", "glow dictionary", "skyline model", "skyline dictionary",
+                                          "sky model", "sky dictionary", "cloud model", "cloud dictionary"});
+}
+
+namespace {
+
+// A stand-in for the platform's objects that counts how many are alive, so a test can see that none is left over.
+class CountedObject final : public coney::chunk::LoadedObject {
+  public:
+    CountedObject() { ++live(); }
+    CountedObject(const CountedObject&) = delete;
+    CountedObject& operator=(const CountedObject&) = delete;
+    ~CountedObject() override { --live(); }
+    [[nodiscard]] std::string_view describe() const override { return "counted"; }
+
+    // How many CountedObjects exist now.
+    static int& live() {
+        static int count = 0;
+        return count;
+    }
+};
+
+// A reader that pushes a CountedObject under `result`, standing for the platform's 0x2A, 0x47 and 0x15 readers.
+template <std::uint32_t Result>
+std::expected<void, coney::Error> readCounted(coney::io::Stream& chunk, const coney::chunk::ChunkHeader& header,
+                                              coney::chunk::ChunkStacks& stacks) {
+    std::vector<std::byte> first(1);
+    if (auto read = chunk.read(first); !read) {
+        return std::unexpected(read.error());
+    }
+    stacks.pushChunk(coney::chunk::ChunkData{
+        .type = Result, .id = header.id, .bytes = {}, .object = std::make_unique<CountedObject>()});
+    return {};
+}
+
+} // namespace
+
+TEST_CASE("a level object built from a level file and destroyed leaves none of its objects behind",
+          "[level_object][physics-unit-17]") {
+    // Expected: physics-world.md#u17-destroy, confirmed (code). The collision mesh and the occluders are owned by
+    // value or unique_ptr, which the asan preset checks; the platform objects are counted here.
+    coney::chunk::ChunkHandlerTable table = coney::chunk::ChunkHandlerTable::withDefaults();
+    table.setHandlers(0x2A, coney::chunk::ChunkHandlers{{}, readCounted<0x0B>});
+    table.setHandlers(0x47, coney::chunk::ChunkHandlers{{}, readCounted<0x41>});
+    table.setHandlers(0x15, coney::chunk::ChunkHandlers{{}, readCounted<0x42>});
+    coney::world::addLevelFileHandlers(
+        table, [](coney::chunk::LoadedObject&, coney::chunk::LoadedObject&) -> std::expected<void, coney::Error> {
+            return {};
+        });
+    REQUIRE(CountedObject::live() == 0);
+    const Bytes file = levelFile();
+    coney::io::MemoryStream stream(file.span());
+    auto level = coney::world::loadLevelFile(stream, table);
+    REQUIRE(level.has_value());
+    // Four dictionaries, three models and the level world, all held by the level object and nothing else.
+    CHECK(CountedObject::live() == 8);
+    REQUIRE((*level)->collision != nullptr);
+    level->reset();
+    CHECK(CountedObject::live() == 0);
 }

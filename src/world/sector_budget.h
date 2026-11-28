@@ -47,6 +47,18 @@ class SectorBudget {
 /// is what that block was on the retail disc, not a constant of the code.
 inline constexpr std::uint64_t kSectorPoolSize = 17'217'536;
 
+/// The two pools the world manager makes at boot (docs/research/physics-world.md#u18-create-pools).
+struct SectorPoolSizes {
+    std::uint64_t sectorPool = 0;  ///< The `Sector Pool`: what kSectorPoolSize stands for.
+    std::uint64_t sectorPool2 = 0; ///< `Sector Pool 2`, which nothing in Coney stands for.
+};
+
+/// The sizes WorldManager_CreatePools gives its two pools: the `Sector Pool` is the global heap's largest free block
+/// `largestFree` less 128 KB, with no minimum (a block under 128 KB never happens; Coney gives 0); `Sector Pool 2` is
+/// the largest free block left after it, `largestFreeAfter`, less 128 KB, at least 4 KB. Coney starts its budget at
+/// kSectorPoolSize, the size this gives on a retail boot.
+/// @orig 0x0040d688 WorldManager_CreatePools (WorldManagerPS2.cpp)
+[[nodiscard]] SectorPoolSizes sectorPoolSizes(std::uint64_t largestFree, std::uint64_t largestFreeAfter);
 /// The `Global Data Pool` clump made at start-up for `warriors.glr`: 101 % of its size
 /// (docs/research/level-loading.md#memory).
 [[nodiscard]] std::uint64_t globalDataPoolBytes(std::uint64_t glrSize);

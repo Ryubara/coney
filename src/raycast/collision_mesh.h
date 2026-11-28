@@ -77,6 +77,21 @@ struct RayHit {
     std::uint32_t triangle = 0; ///< Its index.
 };
 
+/// The world ray's result record, as the original's ray cast fills it (docs/research/physics-world.md#u16-world-ray).
+/// A cast presets only `material` and `hit`; the other fields keep what the caller left until a triangle fills them.
+/// After a cast: `hit` true holds the nearest kept triangle; `hit` false with `material` kMaterialNone means nothing
+/// was crossed; `hit` false with any other material means only excluded triangles were crossed, and the result holds
+/// the last one tested, its normal not written.
+struct RayResult {
+    Vec3 normal;                           ///< +0x00: the kept triangle's unit normal, facing the ray if two-sided.
+    bool hit = false;                      ///< +0x10: a kept triangle was hit.
+    float t = 0.0F;                        ///< +0x14: distance along the ray.
+    std::uint8_t material = kMaterialNone; ///< +0x28: the triangle's material id.
+    std::uint16_t flags = 0;               ///< +0x2c: the triangle's flags & 0xfff.
+    std::uint8_t area = 0;                 ///< +0x2e: the triangle's area byte.
+    std::uint32_t triangle = 0;            ///< +0x30: the triangle's index (a pointer in the original).
+};
+
 /// What a sphere push did.
 struct SpherePushResult {
     bool touched = false; ///< Some wall overlapped the sphere; the centre was moved.
@@ -104,11 +119,18 @@ class CollisionMesh final : public chunk::LoadedObject {
 
     [[nodiscard]] std::string_view describe() const override { return "collision mesh"; }
 
-    /// The nearest triangle `ray` hits within its length, skipping triangles whose material is in
-    /// `excludeMaterials`, whose type bits meet `mask` (`flags & 0xfff & mask & ~0x801`), or that are disabled
-    /// (unless `mask` has bit 0, or bit 11 and the triangle flag 0x800). Walks the grid's columns as the original
-    /// does, half a cell off its cell centres, so it finds the same hits.
+    /// Casts `ray` into `result` as the original does: skips triangles whose type bits meet `mask` (`flags & 0xfff &
+    /// mask & ~0x801`) or that are disabled (unless `mask` has bit 0, or bit 11 and the triangle flag 0x800), and fills
+    /// `result` from the triangles crossed within the ray's length, those whose material is in `excludeMaterials`
+    /// included until a kept one is hit (RayResult). Presets nothing: worldRayCast() does. Walks the grid's columns as
+    /// the original does, half a cell off its cell centres, so it meets the same triangles in the same order.
     /// @orig 0x00350cd8 CollisionMesh_RayCast (CollisionMesh.cpp)
+    void castRay(const Ray& ray, RayResult& result, std::span<const std::uint8_t> excludeMaterials,
+                 std::uint32_t mask) const;
+
+    /// The nearest triangle `ray` hits within its length whose material is not in `excludeMaterials`, as
+    /// worldRayCast() finds it; nothing when it reports no hit.
+    /// @coney-only the convenience form of the world ray for callers that read only a kept hit
     [[nodiscard]] std::optional<RayHit> rayCast(const Ray& ray, std::span<const std::uint8_t> excludeMaterials,
                                                 std::uint32_t mask) const;
 
@@ -170,11 +192,10 @@ class CollisionMesh final : public chunk::LoadedObject {
     void clearChecked() const;
     // Marks triangle `index` checked; returns false when it already was.
     bool checkOnce(std::uint32_t index) const;
-    // Tests the triangles of one cell against `ray`, keeping the nearest hit in `best`.
+    // Tests the triangles of one cell against `ray`, filling `result` as RayResult says.
     // @orig 0x00350778 CollisionMesh_RayTestCell (CollisionMesh.cpp)
     void rayTestCell(std::uint32_t x, std::uint32_t y, std::uint32_t z, const Ray& ray,
-                     std::span<const std::uint8_t> excludeMaterials, std::uint32_t mask,
-                     std::optional<RayHit>& best) const;
+                     std::span<const std::uint8_t> excludeMaterials, std::uint32_t mask, RayResult& result) const;
 
     std::array<std::array<float, 4>, 4> m_matrix{};
     std::array<float, 3> m_clampMin{};
@@ -205,6 +226,14 @@ class CollisionMesh final : public chunk::LoadedObject {
 /// for the level header's handler to take. Fails when a chunk is missing or out of order, or as CollisionMesh::build.
 /// @orig 0x00350580 CollisionMesh_OnLoaded (CollisionMesh.cpp)
 [[nodiscard]] std::expected<void, Error> onCollisionMeshLoaded(chunk::ChunkStacks& stacks, std::uint32_t type);
+
+/// The world manager's ray: sets `result`'s material to kMaterialNone and its hit to false, leaves the rest as the
+/// caller had it, then casts `ray` into the level's collision `mesh` (CollisionMesh::castRay()). Callers read
+/// `result.hit`. Coney's choice: with no mesh (no level loaded) it reports nothing crossed, where the original reads a
+/// null level.
+/// @orig 0x0040db88 WorldManager_RayCast (WorldManagerPS2.cpp)
+void worldRayCast(const CollisionMesh* mesh, const Ray& ray, RayResult& result,
+                  std::span<const std::uint8_t> excludeMaterials, std::uint32_t mask);
 
 /// The ray's straight-down direction, (0, 0, -1) in the game's axes.
 inline constexpr Vec3 kDown{0.0F, 0.0F, -1.0F};

@@ -124,6 +124,7 @@ void holdLevelMeshes(world::LevelObject& level, SceneAssets& assets);
 /// for the OpenGL renderer afterwards. With `assets` (the RenderEngine's, RenderEngine::sceneAssets()), its background
 /// and level world are held there first (holdLevelMeshes()). Needs a running RenderEngine started with the world
 /// plugins. Fails with ErrorCode::NotFound when the WAD has no such file, and as world::loadLevelFile() does.
+/// @orig 0x0040c688 WorldLevel_Load (World/unknown)
 [[nodiscard]] std::expected<std::unique_ptr<world::LevelObject>, Error>
 loadLevel(const io::Wad& wad, std::string_view level, bool forDrawing, SceneAssets* assets = nullptr);
 

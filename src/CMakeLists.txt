@@ -161,6 +161,7 @@ add_library(coney_core STATIC
     physics/body_pools.cpp
     physics/human_body.cpp
     raycast/collision_mesh.cpp
+    raycast/materials.cpp
     physics/body_sweep.cpp
     physics/contact.cpp
     physics/mesh_sweep.cpp
