@@ -156,8 +156,9 @@ Combatant* Fighter::inFront(const FighterInput& input, float range, bool grounde
         }
         const anim::Vec3 to = anim::subtract(target->position(), input.position);
         const float distance = std::hypot(to.x, to.y);
-        if (distance <= bestDistance && (to.x * ahead.x) + (to.y * ahead.y) >= 0.0F) {
-            best = target; // stand-in (#1590): a tie goes to the later slot, the original's to the earlier
+        if (combat::replacesKept(distance, bestDistance, best != nullptr) &&
+            (to.x * ahead.x) + (to.y * ahead.y) >= 0.0F) {
+            best = target;
             bestDistance = distance;
         }
     }
@@ -194,8 +195,8 @@ Combatant* nearestFightable(const FighterInput& input, float along, float reach,
         const anim::Vec3 to = anim::subtract(target->position(), input.position);
         const float distance = std::hypot(to.x, to.y);
         const float off = std::fabs(wrapAngle(headingOf(to) - along));
-        if (distance <= bestDistance && (cone <= 0.0F || off <= cone * kDegrees)) {
-            best = target; // stand-in (#1590): a tie goes to the later slot, the original's to the earlier
+        if (combat::replacesKept(distance, bestDistance, best != nullptr) && (cone <= 0.0F || off <= cone * kDegrees)) {
+            best = target;
             bestDistance = distance;
         }
     }
@@ -221,7 +222,7 @@ const ObjectTarget* nearestObject(const FighterInput& input, ObjectKind kind, fl
         // object-distance-3d), until the object attack's approach is built (combat-targets.md#searches-coney).
         const anim::Vec3 to = anim::subtract(object.point, input.position);
         const float distance = std::hypot(to.x, to.y);
-        if (distance >= nearest && distance <= bestDistance) {
+        if (distance >= nearest && combat::replacesKept(distance, bestDistance, best != nullptr)) {
             best = &object;
             bestDistance = distance;
         }
@@ -410,8 +411,9 @@ TargetPick Fighter::reachSearch(const FighterInput& input, float nearest, float 
         const anim::Vec3 to = anim::subtract(target->position(), input.position);
         const float distance = std::hypot(to.x, to.y); // **Coney stand-in** (#1396): the original's list is in 3D
         const float off = std::fabs(wrapAngle(headingOf(to) - along));
-        if (distance >= nearest && distance <= bestDistance && off <= kPickConeDegrees * kDegrees) {
-            found = target; // stand-in (#1590): a tie goes to the later slot, the original's to the earlier
+        if (distance >= nearest && combat::replacesKept(distance, bestDistance, found != nullptr) &&
+            off <= kPickConeDegrees * kDegrees) {
+            found = target;
             bestDistance = distance;
         }
     }
@@ -459,8 +461,9 @@ TargetPick Fighter::pickThrowTarget(const FighterInput& input, float nearest, fl
             const anim::Vec3 to = anim::subtract(target->position(), input.position);
             const float distance = std::hypot(to.x, to.y);
             const float off = std::fabs(wrapAngle(headingOf(to) - along));
-            if (distance >= nearest && distance <= bestDistance && off <= cone * kDegrees) {
-                found = target; // stand-in (#1590): a tie goes to the later slot, the original's to the earlier
+            if (distance >= nearest && combat::replacesKept(distance, bestDistance, found != nullptr) &&
+                off <= cone * kDegrees) {
+                found = target;
                 bestDistance = distance;
             }
         }
@@ -971,6 +974,7 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
                 target->position(), target->holdable() != nullptr && target->state() == TargetState::Standing &&
                                         !target->health().depleted() && !lyingToMount(*target)});
         }
+        // Of equal distances the earlier slot, as Player_FindCounterTarget's sort (SortByKeyAscending) leaves it.
         std::size_t found = combat::nearestTarget(input.position, candidates, range);
         if (found == combat::kNoTarget) {
             for (std::size_t i = 0; i < candidates.size(); ++i) {
@@ -1025,7 +1029,6 @@ Holdable* Fighter::strongGrappleTarget(const FighterInput& input) {
     }
     const float along =
         input.stick.magnitude() > kPickStick ? input.heading - (input.stick.angleDegrees() * kDegrees) : input.heading;
-    // stand-in (#1590): nearestInCone() gives a tie to the later slot, the original's sort to the earlier.
     const std::size_t found = combat::nearestInCone(input.position, facing(along), candidates, range,
                                                     combat::kStrongGrappleCone, combat::kStrongGrappleHeight);
     if (found == combat::kNoTarget) {
@@ -1075,7 +1078,6 @@ Combatant* Fighter::snapTarget(const FighterInput& input, float along) {
                                                                              target->state() == TargetState::Standing &&
                                                                              !target->health().depleted()});
     }
-    // stand-in (#1590): nearestInCone() gives a tie to the later slot, the original's sort to the earlier.
     const std::size_t found = combat::nearestInCone(input.position, facing(along), candidates, combat::kSnapSearchRange,
                                                     combat::kSnapSearchCone, combat::kSnapSearchHeight);
     return found != combat::kNoTarget ? near[found] : nullptr;
@@ -1738,8 +1740,8 @@ Combatant* Fighter::nearestStanceEnemy(const FighterInput& input, float range) c
             continue;
         }
         const float distance = flatDistance(input.position, target->position());
-        if (distance <= bestDistance) {
-            best = target; // stand-in (#1590): a tie goes to the later slot, the original's to the earlier
+        if (combat::replacesKept(distance, bestDistance, best != nullptr)) {
+            best = target;
             bestDistance = distance;
         }
     }

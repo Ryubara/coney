@@ -7,6 +7,7 @@
 #include <optional>
 
 #include "combat/anim_ids.h"
+#include "combat/grab.h"
 #include "combat/reactions.h"
 #include "combat/tandem.h"
 #include "human/fighter.h"
@@ -50,7 +51,8 @@ Holdable* Fighter::tandemTarget(const FighterInput& input, float range) const {
                                         .victimHeld = target.heldFlags()};
         return combat::tandemCanStart(check) ? target.holdable() : nullptr;
     };
-    // The current target first, then the nearest.
+    // The current target first, then the nearest; of equal distances the earlier slot (combat::replacesKept()), as the
+    // pick and grab searches this stands in for leave their sorted lists.
     Holdable* best = nullptr;
     float bestDistance = range;
     for (Combatant* target : targetsWithin(input, range)) {
@@ -62,7 +64,7 @@ Holdable* Fighter::tandemTarget(const FighterInput& input, float range) const {
             return victim;
         }
         const float distance = flatDistance(input.position, target->position());
-        if (distance <= bestDistance) {
+        if (combat::replacesKept(distance, bestDistance, best != nullptr)) {
             best = victim;
             bestDistance = distance;
         }

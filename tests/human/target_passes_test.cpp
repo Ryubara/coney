@@ -280,3 +280,36 @@ TEST_CASE("square strikes a pane 1.8 m ahead, within square's 2 m pick", "[human
     CHECK(std::ranges::find(played, static_cast<std::uint32_t>(id::kBreakObjectMid)) != played.end());
     CHECK(hits == std::vector<double>{92});
 }
+
+TEST_CASE("of two humans or objects at the same distance and angle every search takes the earlier one",
+          "[human][combat][targeting]") {
+    // The original sorts each pass's list with SortByKeyAscending 0x003868d0, a BSD qsort that below 7 entries moves an
+    // entry back only past a greater key, so the earlier of two equal keys stays first and is taken
+    // (Player_PickTarget 0x0027a6c0, Player_FindAttackTarget 0x0027a4b0, Attack_FindNearestInReach 0x0027b058,
+    // Player_PickThrowTarget 0x0027ad80, Player_FindSnapTarget 0x0027aa38).
+    // Expected: combat-targets.md#searches-coney, confirmed (code)
+    Dummy left(Vec3{-0.3F, 1.0F, 0.0F});
+    Dummy right(Vec3{0.3F, 1.0F, 0.0F});
+    const std::vector<ObjectTarget> none;
+    for (const bool leftFirst : {true, false}) {
+        Dummy* first = leftFirst ? &left : &right;
+        Dummy* second = leftFirst ? &right : &left;
+        const std::vector<Combatant*> targets{first, second};
+        const FighterInput input = searchInput(targets, none);
+        CHECK(Fighter::pickTargetOrObject(input, 2.0F).human == first);
+        CHECK(Fighter::attackSearch(input, 2.0F, 0.0F, nullptr).human == first);
+        CHECK(Fighter::reachSearch(input, 0.0F, 2.0F).human == first);
+        CHECK(Fighter::pickThrowTarget(input, 0.0F, 3.0F, false, 0U, nullptr).human == first);
+        CHECK(Fighter::snapTarget(input, 0.0F) == first);
+    }
+    // The object lists the same way: of two world objects, or two panes, the first listed.
+    const std::vector<Combatant*> nobody;
+    for (const ObjectKind kind : {ObjectKind::WorldObject, ObjectKind::Glass}) {
+        const std::vector<ObjectTarget> objects{object(1, Vec3{0.3F, 1.0F, 0.5F}, kind),
+                                                object(2, Vec3{-0.3F, 1.0F, 0.5F}, kind)};
+        const FighterInput input = searchInput(nobody, objects);
+        CHECK(handleOf(Fighter::pickTargetOrObject(input, 2.0F)) == 1.0);
+        CHECK(handleOf(Fighter::attackSearch(input, 2.0F, 0.0F, nullptr)) == 1.0);
+        CHECK(handleOf(Fighter::reachSearch(input, 0.0F, 2.0F)) == 1.0);
+    }
+}

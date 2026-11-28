@@ -25,6 +25,14 @@ float grabSearchRange(const AnimRangeList& ranges, GrabKind kind, float scale) {
     return ranges.farRange(static_cast<std::size_t>(id)) * scale;
 }
 
+bool replacesKept(float distance, float kept, bool any) {
+    // SortByKeyAscending sorts the pairs by their key with Libc_QsortBsd and Cmp_KeyAscending (0 for equal keys): below
+    // 7 entries an insertion sort that swaps only past a greater key, so the earliest of the smallest keys comes first.
+    // Coney's stand-in: the same rule from 7 entries, where the qsort's partition may put a later equal first (left for
+    // #1597, which needs that qsort for the enemy scan).
+    return any ? distance < kept : distance <= kept;
+}
+
 std::size_t nearestTarget(const anim::Vec3& from, std::span<const TargetCandidate> candidates, float range) {
     std::size_t best = kNoTarget;
     float bestDistance = range;
@@ -33,7 +41,7 @@ std::size_t nearestTarget(const anim::Vec3& from, std::span<const TargetCandidat
             continue;
         }
         const float distance = distanceBetween(from, candidates[i].position);
-        if (distance <= bestDistance) {
+        if (replacesKept(distance, bestDistance, best != kNoTarget)) {
             best = i;
             bestDistance = distance;
         }
@@ -59,7 +67,8 @@ std::size_t nearestInCone(const anim::Vec3& from, const anim::Vec3& aim, std::sp
         const float dx = at.x - from.x;
         const float dy = at.y - from.y;
         const float distance = std::hypot(dx, dy);
-        if (!candidates[i].available || std::fabs(at.z - from.z) > maxHeight || distance > bestDistance) {
+        if (!candidates[i].available || std::fabs(at.z - from.z) > maxHeight ||
+            !replacesKept(distance, bestDistance, best != kNoTarget)) {
             continue;
         }
         // Within the cone: the cosine of the angle between the aim and the way to it (one standing on the player's

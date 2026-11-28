@@ -2916,6 +2916,21 @@ coney = "src/ai/attack_places.h:attackableGapMs"
 status = "legacy"
 
 [[function]]
+address = 0x003868d0
+name = "SortByKeyAscending"
+page = "combat-targets.md#searches-coney"
+role = "Sorts a list of item and key pairs by the key, smallest first, with the library's BSD `qsort`: the target searches' nearest-first order, the earlier of equal keys first below 7 entries."
+level = "confirmed-code"
+coney = "src/combat/grab.h:replacesKept"
+status = "compared"
+
+[[function.gaps]]
+what = "the earlier of equal distances is kept in lists of 7 or more too, where the qsort's partition may put a later one first"
+relation = "stand-in"
+issue = 1597
+question = "combat-targets.md#q-tie-long-lists"
+
+[[function]]
 address = 0x004182e8
 name = "HitBalance_Construct"
 page = "combat/index.md#warriors-functions"

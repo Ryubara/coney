@@ -6,7 +6,7 @@ owns:
     "0x0021c570", "0x00226c30", "0x00227b98", "0x00228340", "0x0023a1b0", "0x0023cf88", "0x0023d2b8", "0x0023f5e0",
     "0x00241b90", "0x00254418", "0x00264178", "0x00264a80", "0x00275678", "0x00276008", "0x002761c8", "0x00279f50",
     "0x0027a070", "0x0027a120", "0x0027a4b0", "0x0027a6c0", "0x0027aa38", "0x0027b1a0", "0x0027d5a0", "0x0027dc00",
-    "0x0027e6d8", "0x00280068", "0x002801e8", "0x00290e78",
+    "0x0027e6d8", "0x00280068", "0x002801e8", "0x00290e78", "0x003868d0",
   ]
 ---
 # Combat: targets, AI attacks and breakables
@@ -1049,8 +1049,6 @@ read from the scripts).
 
 Where Coney still differs (stand-ins, each marked at the code):
 
-- Of two humans at the same distance Coney's searches take the later slot, the original's sort the earlier
-  ([Equal distances](#searches-coney), issue #1590).
 - L1 picks as square does within 2.5 m; the original's `Player_FindLockTarget` (`0x0027b2a8`) searches to 6 m
   ([L1's own search](#open-questions)).
 - The clear-line test of the nearest enemy (`0x0021c240`) is not made, so the nearest is always taken, and a target in
@@ -1090,17 +1088,33 @@ nearest-wins tie falls as it did before the grid: Coney's choice for crowds abov
 results as Coney's old per-human lists. The all-humans trace, the event log and the lockstep digest of a brawl of 300
 and an engaged crowd of 300 hash the same before and after.
 
-**Equal distances** (issue #1590). The original's searches list the humans in slot order and sort the list with
-`SortByKeyAscending` `0x003868d0`, the library's BSD `qsort` (`Libc_QsortBsd` `0x00433fd8`) with the comparator
-`Cmp_KeyAscending` `0x00386860`, which answers 0 for equal keys. Below 7 entries that `qsort` sorts by insertion and
-moves an entry back only past a greater key, so of two humans at the same distance the one in the earlier slot stays
-first and is taken: confirmed (code) at those addresses. From 7 entries it partitions around a median and is not stable,
-so which of equals comes first depends on the rest of the list: inferred from the same code. Coney's nearest-wins loops
-(`distance <= best`) keep the last of equals, so a tie goes to the later slot: a marked stand-in at each loop, until
-issue #1590 keeps the first (the grid changes neither rule; exact ties of two distances need two humans placed alike).
+**Equal distances** (issue #1590). The original's searches list the humans in slot order and the objects in their list's
+order, and sort each list with `SortByKeyAscending` `0x003868d0`, the library's BSD `qsort` (`Libc_QsortBsd`
+`0x00433fd8`) with the comparator `Cmp_KeyAscending` `0x00386860`, which answers 0 for equal keys; every search of this
+page sorts so (`Player_PickTarget` `0x0027a6c0`, `Player_FindAttackTarget` `0x0027a4b0`, `Attack_FindNearestInReach`
+`0x0027b058`, `Player_PickThrowTarget` `0x0027ad80`, `Player_FindSnapTarget` `0x0027aa38`, `Player_FindCounterTarget`
+`0x0027ac30` and `Player_FindNearestEnemy` `0x0027b1a0`, the object passes of the first four too, and the pick's car
+pass with `SortRecordsByKey` `0x00386920`, the same `qsort` and comparator over larger records): confirmed (code) at
+those addresses. Below 7 entries that `qsort` sorts by insertion and moves an entry back only past a greater key, so of
+two candidates at the same distance the earlier in the list stays first and is taken: confirmed (code) at `0x00433fd8`,
+and confirmed (runtime), run r-20261128-sort-equal-keys (three entries keyed 2, 1, 1 came back with the two equal keys
+in their order, whichever came first). From 7 entries it partitions around a median and is not stable, so which of
+equals comes first depends on the rest of the list: inferred from the same code, and confirmed (runtime) in the same
+run, where of eight entries with seven equal keys the last of them came first. Coney's nearest-wins loops keep the first
+of equals the same way (`combat::replacesKept()`, `repo:src/combat/grab.h`: the first candidate within the range, then
+only a strictly nearer one), in every search above, the strong grapple's and the circle's grab search, and in Coney's
+own stand-ins for searches it has not ported: the tandem's (`Fighter::tandemTarget()`, standing in for the pick and grab
+searches, which sort so) and the forward check `Fighter::inFront()`. The grid visits the candidates in the same order,
+so a tie falls to the earlier slot as in the original. For lists of 7 or more Coney keeps the earlier too, a marked
+stand-in left for #1597, whose enemy scan needs the same sort past 16 entries ([Ties in long
+lists](#open-questions)). Tests: the tie cases of `repo:tests/human/target_passes_test.cpp`,
+`repo:tests/combat/grab_test.cpp`, `repo:tests/human/human_tandem_test.cpp` and, through the characters' step with the
+grid, `repo:tests/human/humans_test.cpp`.
 
 Where Coney still differs (stand-ins, each marked at the code):
 
+- Of equal distances in a list of 7 or more Coney keeps the earlier, where the original's `qsort` may put a later one
+  first ([Ties in long lists](#open-questions)).
 - An object is the target only from square's pick until its object attack lands (`Fighter`'s object target), not as
   human `+0xc8` (`Human_SetTargetObject`), so the pick's first step and the kept rule meet an object only in that time
   ([The object as the target](#open-questions)).
@@ -1172,6 +1186,12 @@ target's own turn is not dropped there, a `Combatant` offering none.
   keep its object target past the hit and run the pick's first step and kept rule on it ([The target
   searches](#searches-coney)). Found by reading who writes `+0xc8` with an object, and by watching it in PCSX2 across
   two squares at a cabinet.
+- **Ties in long lists**{#q-tie-long-lists}: porting the original's sort itself (`Libc_QsortBsd` `0x00433fd8`), run
+  on the same list the original builds (its order and its 32-entry cap), so that of equal distances in a list of 7 or
+  more the one it puts first is taken: from 7 entries its partition may put a later equal first (confirmed (runtime),
+  run r-20261128-sort-equal-keys; [Equal distances](#searches-coney)), where Coney keeps the earlier. A tie in such a
+  crowd needs two of seven or more candidates at one distance. The enemy scan (`Brain_ScanEnemies` `0x0028b358`)
+  sorts with the same `SortByKeyAscending` past 16 entries, so one port of the `qsort` serves both.
 - **L1's action delay**{#q-l1-delay}: who sets the per-player action delay (player state `+0x4d` / `+0x50`, read by
   `PlayerRec_GetActionDelayLeft`) that refuses L1 held ([The fight stance](#fight-stance)).
 
