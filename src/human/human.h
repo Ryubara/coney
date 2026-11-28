@@ -921,7 +921,8 @@ class Human final : public Holdable {
     /// The new physics body `Human_Heal` ends with (`Human_CreatePhysicsBody`), whose flags hold `BLOCKHUMANS`, so
     /// other humans' walks meet it again (docs/research/physics.md#human-contacts). The flash calls it alone, having
     /// set the health and ended the wound itself; heal(bool) is the whole heal. Waking up or a wound ending alone do
-    /// not. Only the body's flag is kept: Coney makes no new body (`Human_CreatePhysicsBody` `0x0021ce08`).
+    /// not. Only the body's flag is kept: Coney makes no new body.
+    /// @orig 0x0021ce08 Human_CreatePhysicsBody (unknown)
     void heal() { m_blockHumansFlag = true; }
     /// `Human_Heal`: a wound ends, a knocked-out human wakes into the fight stance, the health becomes the maximum
     /// (`full`) or gains half the maximum, capped, and the body is made again (heal())
