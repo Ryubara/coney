@@ -393,7 +393,10 @@ void Fighter::updateGrabbed(const FighterInput& input, HumanAnimator& animator) 
     in.command = input.command;
     in.fromRear = grab.fromRear;
     in.hurt = hurt();
-    in.ownPowerFraction = m_combat.power().fraction();
+    in.ownPower = m_combat.power().value();
+    in.ownPowerMax = std::max(1, m_combat.power().maximum());
+    in.ownPowerFull = m_combat.rage().raging() || m_combat.power().unlimited();
+    in.noEscape = hasFlag(flag::kNoEscape);
     in.ownStruggleDivisor = m_victim.powerClass().struggleDivisor;
     in.movePlaying = animator.drivingClipPlaying();
     in.grabber = grab.grabber;
@@ -447,7 +450,10 @@ void Fighter::struggleInHold(const FighterInput& input, const HumanAnimator& ani
     in.command = input.command;
     in.fromRear = held->fromRear;
     in.hurt = hurt();
-    in.ownPowerFraction = m_combat.power().fraction();
+    in.ownPower = m_combat.power().value();
+    in.ownPowerMax = std::max(1, m_combat.power().maximum());
+    in.ownPowerFull = m_combat.rage().raging() || m_combat.power().unlimited();
+    in.noEscape = hasFlag(flag::kNoEscape);
     in.ownStruggleDivisor = m_victim.powerClass().struggleDivisor;
     in.movePlaying = animator.drivingClipPlaying();
     in.grabber = held->grabber;

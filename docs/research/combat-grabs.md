@@ -742,8 +742,9 @@ every grabber the grabbing movement once attached, where the original gives `Hum
 a player's controls.
 
 **Where Coney differs: the hold walk** ([The hold walk](#hold-walk), #86). `Fighter::moveGrab` turns the pair and
-walks it backward along the stick at the fixed `grabWalkFront` / `grabWalkRear` tunables (1.125 and 1.22 m/s). The
-original does more, none of which Coney has:
+walks it backward along the stick at the root speed of the grabber's walk clip, 86 from the front and 88 from behind
+(#684: the speed the original's style puts in record `+0x170`, read from the clip since Coney pushes no grab movement
+style; it was the fixed tunables 1.125 and 1.22 m/s before). The original does more, which Coney does not have:
 
 1. The hold's movement styles: 7 (front) or 9 (rear) on the grabber and 8 or 10 on the victim for the whole hold,
    switched on every spin (78 / 79 to 9 / 10, 80 / 81 to 7 / 8).
@@ -751,9 +752,8 @@ original does more, none of which Coney has:
    behind), weighted by speed over walk speed clamped to 0-1, started on both bodies on the same update when the pair
    starts or stops walking, with no root motion from the clips; the victim is fed the grabber's velocity, so its blend
    follows the grabber's.
-3. The walk speed from the style's walk clip (86 from the front, 88 from behind), not a fixed tunable.
-4. No walk while mugging, and the pair stops when the victim's sweep against the world fails.
-5. The turn's carried rate ([Moving a grab](#grab-turn)): Coney's `combat::grabTurnStep` carries the last step, cut to
+3. No walk while mugging, and the pair stops when the victim's sweep against the world fails.
+4. The turn's carried rate ([Moving a grab](#grab-turn)): Coney's `combat::grabTurnStep` carries the last step, cut to
    the angle left and 0 once the heading is reached, and reads a reverse from its sign; the original carries the rate
    before the cut (`+0x5e0`) and reads the last angle left (`+0x5e4`), so Coney's turn starts slower again after the
    pair has reached the stick's direction (#1011).
@@ -798,6 +798,16 @@ would refuse every move in the hold. The pick-up also skips parts of `Tackle_End
 move styles (0xc, 0xb, 7, 8), the cleared states 0x400 / 0x800, `Human_GoDown` for either human in state 0x80000, the
 fight stance, speech command 8, the victim's brain target and tutorial hint 0xe. The get-off's 0.2 s blends from 244 and
 199 into the idles are cuts in Coney.
+
+**The connect's far range and the struggle** ([Posing a grab](#grab-posing), [Grabbed](#grabbed), #684).
+`Fighter::connect` scales the connecting clip's far range by 1.25 for a player's grab only, as `Pair_AlignStart`
+(`0x00276998`) does for brain kind 0; until #684 every grabber, an AI's too, had the larger range. `combat::updateGrabbed`
+(`repo:src/combat/grabbed.h`) gates square on `Grab_CanStruggle` (`combat::canStruggle`: not hurt, the grabber not
+raging, own power above a sixth of its maximum in whole numbers) and on the held human's own power fraction (1.0 while
+it rages or has unlimited power) above 1 / the grabber's class divisor, where it read the grabber's fraction before;
+cross needs `Grab_CanStruggle` too, circle is refused with flag `0x2000000000`, and each button takes every press kind
+(square `0xf` and `0x11`). Unit tests: `repo:tests/combat/grabbed_test.cpp` and "only a player's grab connects out to
+1.25 x the connecting clip's far range; an AI's stops at the far range" in `repo:tests/human/human_grab_test.cpp`.
 
 The spray can of [Rembrandt's power move](#power-move-props) (#223): `Human` acts on its clip events for any human
 (`repo:src/human/carried_prop.h`, `Human::carriedProp()`): `0x30` notes the named prop, `0x37` its place (the word's

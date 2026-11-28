@@ -85,13 +85,11 @@ struct CombatTuning {
 
     /// Turning a grab: the stick length it needs (`0x005102e8`), the largest turn an update for a player (radians,
     /// table `0x005101b0`), the share of the last turn carried on (`0x00510314`) and the one when the turn reverses
-    /// within 45°; and the pair's backward walk in the front and the rear hold, m/s.
+    /// within 45°. The pair's backward walk is the walk clip's root speed (Fighter::moveGrab()).
     float grabTurnStick = 0.95F;
     float grabTurnMax = 0.192F;
     float grabTurnCarry = 0.8F;
     float grabTurnReverseCarry = -0.5F;
-    float grabWalkFront = 1.125F;
-    float grabWalkRear = 1.22F;
 
     /// Being hit: the counter at a grab's catch (`0x00510254`, 1) and the health floor of a player (`0x0051024c`, a
     /// share of its maximum one hit cannot go below).

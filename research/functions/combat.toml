@@ -119,6 +119,15 @@ coney = "src/ai/attack_choice.h:canStartAttack"
 status = "legacy"
 
 [[function]]
+address = 0x002258f0
+name = "Grab_CanStruggle"
+page = "combat-grabs.md#grabbed"
+role = "whether a held human may struggle or strike back: not hurt, the grabber not raging, own power above max / 6"
+level = "confirmed-code"
+coney = "src/combat/grabbed.h:canStruggle"
+status = "compared"
+
+[[function]]
 address = 0x00226448
 name = "Human_SpendPower"
 page = "combat-rage.md#power-meter"
@@ -567,6 +576,11 @@ status = "compared"
 what = "an AI grabber's movement callback in a grab is not built"
 relation = "not-ported"
 issue = 1011
+
+[[function.gaps]]
+what = "the walk speed is read from the walk clip (86 front, 88 rear) where the original reads record +0x170, which the grab's movement styles fill from that clip; Coney pushes no grab movement style"
+relation = "stand-in"
+issue = 86
 
 [[function.gaps]]
 what = "the carried turn is the last step, cut to the angle left (0 once the heading is reached), and the reverse test reads its sign; the original carries the rate before the cut (+0x5e0) and reads the last angle left (+0x5e4)"
