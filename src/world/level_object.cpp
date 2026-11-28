@@ -110,6 +110,21 @@ std::expected<LevelModel, Error> popLinkedModel(chunk::ChunkStacks& stacks, Link
 
 } // namespace
 
+LevelObject::~LevelObject() {
+    // The collision mesh, then the occluders.
+    collision.reset();
+    occluders.clear();
+    occluders.shrink_to_fit();
+    // The level world, then the glow dictionary.
+    levelWorld.reset();
+    glowDictionary.reset();
+    // Each model before its own dictionary, in the order skyline, sky box, cloud box (not the order they were linked).
+    for (LevelModel* pair : {&skyline, &skyBox, &cloudBox}) {
+        pair->model.reset();
+        pair->dictionary.reset();
+    }
+}
+
 std::expected<std::vector<Occluder>, Error> readOccluders(std::span<const std::byte> chunk) {
     if (chunk.size() < kOccluderHeaderBytes) {
         return fail(ErrorCode::Truncated, "the occluders chunk is shorter than its header");
@@ -193,6 +208,7 @@ chunk::OnLoaded makeLevelHeaderHandler(LinkLevelModel link) {
             return fail(ErrorCode::Invalid,
                         std::format("level header of {} bytes, expected {}", header->bytes.size(), kLevelHeaderBytes));
         }
+        // The level object, every part empty.
         auto level = std::make_unique<LevelObject>();
 
         // The objects: the collision mesh (pushed last), then the path data.

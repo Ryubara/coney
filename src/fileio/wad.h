@@ -40,6 +40,7 @@ class Wad {
   public:
     /// Reads and validates the index of `disc`. Fails with ErrorCode::NotFound when the disc lacks WARRIORS.DIR or
     /// WARRIORS.WAD, and as WadIndex::parse() does when the index is damaged.
+    /// @orig 0x0040c5e0 Wad_Open (World/unknown)
     [[nodiscard]] static std::expected<Wad, Error> open(Disc disc);
 
     /// The parsed WARRIORS.DIR.
@@ -49,10 +50,15 @@ class Wad {
 
     /// Finds an entry by a file name (`level1.lev`, any case) or by its name hash written `0x` and 1 to 8 hex
     /// digits (`0x7e23a6f2`). Fails with ErrorCode::NotFound when no entry matches and ErrorCode::InvalidArgument for
-    /// an empty name or a malformed hash.
+    /// an empty name or a malformed hash. Whether it finds one is the original's Wad_HasEntry. Unlike the original's
+    /// lookup it does not lowercase the caller's name in place.
+    /// @orig 0x0040c628 Wad_FindEntry (World/unknown)
+    /// @orig 0x0040c668 Wad_HasEntry (World/unknown)
     [[nodiscard]] std::expected<const WadEntry*, Error> lookup(std::string_view nameOrHash) const;
 
-    /// The size of the entry called `name` (stub).
+    /// The size in bytes of the entry `name` names, as lookup() finds it. Fails as lookup() does; ErrorCode::NotFound
+    /// for a name the index lacks, where the original reads the size through a null entry (a Coney choice).
+    /// @orig 0x0040c648 Wad_GetEntrySize (World/unknown)
     [[nodiscard]] std::expected<std::uint32_t, Error> entrySize(std::string_view name) const;
 
     /// Opens one entry's bytes as a stream. Fails as Disc::openFile() does.

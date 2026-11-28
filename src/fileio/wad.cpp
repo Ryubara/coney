@@ -86,7 +86,14 @@ std::expected<const WadEntry*, Error> Wad::lookup(std::string_view nameOrHash) c
     return fail(ErrorCode::NotFound, std::format("no WAD entry is called \"{}\"", nameOrHash));
 }
 
-std::expected<std::uint32_t, Error> Wad::entrySize(std::string_view /*name*/) const { return 0U; }
+std::expected<std::uint32_t, Error> Wad::entrySize(std::string_view name) const {
+    // Coney's choice: a missing name fails, where the original reads the size of a null entry.
+    auto entry = lookup(name);
+    if (!entry) {
+        return std::unexpected(std::move(entry.error()));
+    }
+    return (*entry)->size;
+}
 
 // Coney's choice: a FileStream is a value, so any number of entries are open at once. The original's stream file
 // system hands out streams from a pool and opens one at a time (docs/research/file-io.md#original-structure).
