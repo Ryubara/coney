@@ -233,10 +233,13 @@ bool GlassPanes::thrownHit(double handle, double thrower, ObjectWorld& world) {
 std::size_t GlassPanes::breakInRadius(anim::Vec3 centre, float radius, ObjectWorld& world) {
     std::size_t broken = 0;
     for (const GlassPane& pane : m_panes) {
+        // Coney's choice: the distance against the radius, where the original compares their squares; the two agree
+        // for every radius that is not negative, and every script's is positive.
         if (anim::distance(pane.centre, centre) <= radius && hit(pane.handle, world)) {
             ++broken;
         }
     }
+    // Then the `TYPE_GLASS` objects; no service implements it yet (#708).
     if (world.services != nullptr) {
         world.services->breakGlassObjects(centre, radius);
     }
