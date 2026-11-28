@@ -696,8 +696,27 @@ name = "Human_StopFidget"
 page = "characters/index.md#code-core"
 role = "With a fidget playing (held 0x100): drops the overlay while moving, else rebuilds the idle tasks."
 level = "confirmed-code"
-coney = "src/human/human.h:Human::stopScripted"
-status = "legacy"
+coney = "src/human/human.h:Human::stopOverlay"
+status = "compared"
+
+[[function.gaps]]
+what = "the fidget's clip holds Coney's scripted-clip bits in place of 0x100, and moving, the clip gives way to the idle (Coney plays no overlay over the gait)"
+relation = "stand-in"
+issue = 664
+
+[[function]]
+address = 0x00231c58
+name = "Human_StopTaunt"
+page = "characters/index.md#code-core"
+role = "With held flags 0x300000: drops the overlay while moving, else rebuilds the idle tasks for the taunts' clips (0x253-0x25a)."
+level = "confirmed-code"
+coney = "src/human/human.h:Human::stopOverlay"
+status = "compared"
+
+[[function.gaps]]
+what = "the taunt's clip holds Coney's scripted-clip bits in place of 0x300000, and moving, the clip gives way to the idle (Coney plays no overlay over the gait)"
+relation = "stand-in"
+issue = 664
 
 [[function]]
 address = 0x00232538
@@ -2550,7 +2569,7 @@ page = "characters-traversal.md#original-structure"
 role = "finds the obstacle's top and picks fence or wall"
 level = "confirmed-code"
 coney = "src/human/climb.h:probeClimb"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x002826f0
@@ -2562,7 +2581,7 @@ coney = "src/human/climb.h:probeClimb"
 status = "compared"
 
 [[function.gaps]]
-what = "held flags 0x84240 do not refuse the climb, and a face only the high ray meets is not climbed as a tall one"
+what = "held flags 0x84240 do not refuse the climb"
 relation = "not-ported"
 issue = 664
 

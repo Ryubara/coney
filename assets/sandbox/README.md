@@ -11,6 +11,7 @@ not part of the original game; how to run it and the layout format are in
 | `default.layout` | The general movement course: slopes, stairs, ledges, gaps, a room and corridors |
 | `combat.layout` | The fight yard: passive targets to fight (`target` lines), one in front of a wall |
 | `parkour.layout` | The traversal course: fences, low walls, climb blocks, jump gaps, drops and a run-up lane |
+| `raised.layout` | One panel hanging from 1 m up, of material 30: a face only the climb's high forward ray meets |
 
 ## Textures
 

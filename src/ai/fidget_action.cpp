@@ -74,8 +74,10 @@ ActionStatus FidgetAction::update(Brain& brain) {
 }
 
 bool FidgetAction::abort(Brain& brain) {
+    // The fidget stops and the clear is accepted. **Coney stand-in** (#664): the refusal while cleared for an idle
+    // Warrior whose crew follows a free, idle chief with nobody fighting is not built.
     if (m_heldFlags != 0) {
-        brain.human().stopScripted(static_cast<std::uint32_t>(m_playing), m_heldFlags);
+        brain.human().stopFidget(m_heldFlags);
     }
     m_heldFlags = 0;
     return true;

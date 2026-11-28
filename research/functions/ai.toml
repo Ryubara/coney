@@ -5082,7 +5082,12 @@ kind = "`PlayFidget` Abort"
 role = "when cleared, refused for an idle Warrior whose crew is following a free chief who has no enemies around (command neither 0, 4 nor 5); else stops the fidget (`0x00231b60`); [AI plan](ai-reimpl.md#fidget-action)"
 level = "confirmed-code"
 coney = "src/ai/fidget_action.h:FidgetAction::abort"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the refusal while cleared for an idle Warrior whose crew follows a free, idle chief with nobody fighting is not built"
+relation = "not-ported"
+issue = 664
 
 [[function]]
 address = 0x002fa1e0
@@ -5225,7 +5230,12 @@ kind = "`Taunt` Abort"
 role = "when cleared, stops the taunt (`0x00231c58`) and is refused while a waiting taunt's flags remain (`0x00223c30`); an accepted abort decrements `0x005112ac`, which nothing raises; [AI plan](ai-reimpl.md#taunt-action)"
 level = "confirmed-code"
 coney = "src/ai/taunt_action.h:TauntAction::abort"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the clip's own bits stand for 0x300000, and the count at 0x005112ac, which nothing reads, is not kept"
+relation = "stand-in"
+issue = 664
 
 [[function]]
 address = 0x002fb2f0

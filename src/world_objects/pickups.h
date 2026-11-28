@@ -46,8 +46,6 @@ inline constexpr int kPickupHighClip = 464;
 inline constexpr int kPickupGroundClip = 461;
 /// The pick-up animation (`CfgObj` argument 14) of the left-handed pair.
 inline constexpr int kPickupOneHanded = 5;
-/// The pick-up's blend into its clip, seconds.
-inline constexpr float kPickupBlend = 0.2F;
 
 /// One loose object the search may consider.
 struct PickupCandidate {

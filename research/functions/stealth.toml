@@ -8,7 +8,12 @@ page = "stealth.md#original-structure"
 role = "state `0x200000`, out of the fight stance, move style `0x14`"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::enterHiding"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the L1 target bit (state 0x8), the anim state's rebuild (0x20000000), the busy test before the style and the hidden loop line are not built"
+relation = "stand-in"
+issue = 664
 
 [[function]]
 address = 0x00230140

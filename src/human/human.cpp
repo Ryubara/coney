@@ -28,7 +28,6 @@
 #include "physics/mesh_sweep.h"
 #include "physics/shapes.h"
 #include "physics/sphere_triangle.h"
-#include "world_objects/pickups.h"
 
 namespace coney::human {
 
@@ -50,6 +49,14 @@ constexpr float kChargeStopShare = 0.5F;
 // The blend into the uncuff's clips, the freer's 325 and the cuffed human's 326 (AnimTaskBlendOut 0.01 s in
 // Uncuff_Start, 0x00260ca8).
 constexpr float kUncuffFade = 0.01F;
+// The spray's fades: the intro's (0.05 s, Tag_StartSprayClips 0x00278018) and a restart's (0.5 s,
+// Tag_RestartSprayClips 0x00278210); and the busy bit 334 and 337 hold.
+constexpr float kSprayIntroFade = 0.05F;
+constexpr float kSprayRestartFade = 0.5F;
+constexpr std::uint32_t kSprayBusy = 0x400;
+// The pick-up's fade-out of the old pose (0.15 s) and the bit its clip holds (Human_PlayPickupClip 0x0025e5a8).
+constexpr float kPickupFade = 0.15F;
+constexpr std::uint32_t kPickupHeld = 0x4000;
 // The sweep slides along what it hits up to this many times.
 constexpr int kSweepPasses = 3;
 // A push smaller than this means the body is clear of the wall.
@@ -1260,11 +1267,13 @@ bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip, int
     const anim::Vec3 to = anim::subtract(point, m_position);
     const float turn = std::hypot(to.x, to.y) > 1e-4F ? wrapAngle(headingOf(to) - m_heading) : 0.0F;
     // The loop after the clip is read under the object's style (509 for a two-handed object, in the stance its fight
-    // idle).
+    // idle). The clip holds 0x4000 after the old pose fades out over 0.15 s. **Coney stand-in**: the clip's 0.2 s
+    // blend into the loop at its end (Coney's clip tasks hand over at once), the record's +0x18 and the action (0 out
+    // of the stance, 0xb and 1 in it), the top task's stop call and the push sphere are not built.
     const std::array<std::uint32_t, 1> clips{clip};
     const std::uint32_t loop = m_animator.pickUpLoop(heldSet, m_hidden, m_fighter.inFightStance());
-    m_animator.playCombat(clips, loop, AnimState::Attack, world_objects::kPickupBlend,
-                          HeldFlags{.held = combat::kPhaseGrabStart, .set = combat::kPhaseGrabStart});
+    m_animator.playCombat(clips, loop, AnimState::Attack, kPickupFade,
+                          HeldFlags{.held = kPickupHeld, .set = kPickupHeld});
     m_velocity = anim::Vec3{};
     m_pickUp = PickUpRun{
         .handle = handle, .clip = clip, .updatesLeft = updates, .turnStep = turn / static_cast<float>(updates)};
@@ -1296,6 +1305,25 @@ void Human::turnOverClip(std::uint32_t clip, anim::Vec3 point, float share) {
     const anim::Vec3 to = anim::subtract(point, m_position);
     const float turn = std::hypot(to.x, to.y) > 1e-4F ? wrapAngle(headingOf(to) - m_heading) : 0.0F;
     m_clipTurn = ClipTurn{.clip = clip, .updatesLeft = updates, .turnStep = turn / static_cast<float>(updates)};
+}
+
+void Human::stopOverlay(std::uint32_t held, std::uint32_t firstIdle, std::uint32_t lastIdle) {
+    // Nothing unless the clip still holds its bits. **Coney stand-in**: `held` is the caller's clip bits (the scripted
+    // clip's) in place of the original's 0x100 for a fidget and 0x300000 for a taunt.
+    if ((m_animator.flags() & held) == 0) {
+        return;
+    }
+    // Moving, the overlay is dropped and the gait under it plays on. **Coney stand-in**: Coney plays the clip in place
+    // of the stack, not over it, so the clip gives way to the idle and the controller takes up the gait next update.
+    if (gait() != Gait::Standing) {
+        m_animator.stopToIdle();
+        return;
+    }
+    // Standing, the idle is built again only for the stop's own clips.
+    const std::uint32_t id = m_animator.animId();
+    if (id >= firstIdle && id <= lastIdle) {
+        m_animator.stopToIdle();
+    }
 }
 
 void Human::turnToFace(anim::Vec3 point, float seconds) {
@@ -1374,20 +1402,25 @@ bool Human::startTagSpray(anim::Vec3 point) {
         return false;
     }
     turnOverClip(clips::kTaggingIntro, point, kHalf);
-    // 334 holds the busy bit 0x400 (Tag_StartSprayClips), so the stance's movement sets no velocity while it plays.
-    constexpr std::uint32_t kSprayIntroBusy = 0x400;
-    m_animator.playCombat(clips::one(clips::kTaggingIntro), clips::kTaggingLoop, AnimState::Hold, kCombatFade,
-                          HeldFlags{.held = kSprayIntroBusy, .set = kSprayIntroBusy});
+    // 334 holds the busy bit 0x400 (Tag_StartSprayClips), so the stance's movement sets no velocity while it plays;
+    // the old pose fades out over 0.05 s. **Coney stand-in**: the record's +0x18, the action and +0x3ba set to 0, the
+    // top task's stop call and the push sphere switched off are not built.
+    m_animator.playCombat(clips::one(clips::kTaggingIntro), clips::kTaggingLoop, AnimState::Hold, kSprayIntroFade,
+                          HeldFlags{.held = kSprayBusy, .set = kSprayBusy});
     return true;
 }
 
 void Human::restartTagSpray() {
     // 337, then the loop 335 again (Tag_RestartSprayClips); a body playing no spray clip is left alone. Its drop of a
     // set 4 or 6 weapon has nothing to do here: one was dropped as the spray began and nothing is picked up during it.
+    // **Coney stand-in**: it tests the spray clips still playing in place of the tag's handle resolving; its voice stop
+    // (Human_StopVoice), the record's +0x18, the top task's stop call and the push sphere are not built.
     if (!tagSprayPlaying() || m_animator.clip(clips::kTaggingRestart) == nullptr) {
         return;
     }
-    m_animator.playCombat(clips::one(clips::kTaggingRestart), clips::kTaggingLoop, AnimState::Hold, kCombatFade);
+    // 337 holds the busy bit 0x400 as 334 does, after the old pose fades out over 0.5 s.
+    m_animator.playCombat(clips::one(clips::kTaggingRestart), clips::kTaggingLoop, AnimState::Hold, kSprayRestartFade,
+                          HeldFlags{.held = kSprayBusy, .set = kSprayBusy});
 }
 
 void Human::startUncuff(Human& cuffed, float mashFactor) {

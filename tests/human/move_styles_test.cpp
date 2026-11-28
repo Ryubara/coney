@@ -195,3 +195,29 @@ TEST_CASE("a two-handed pick-up ends in the barrel idle, walks with the barrel c
     CHECK(human.animator().animId() == 388);
     CHECK(human.speeds().walk == Catch::Approx(1.5F));
 }
+
+TEST_CASE("a pick-up's clip holds 0x4000, not the grab bit, after the old pose fades out over 0.15 s",
+          "[human][move_styles]") {
+    // Expected: combat-throws.md#bat, confirmed (code). Human_PlayPickupClip 0x0025e5a8 builds the clip's task holding
+    // 0x4000 (and sets it on the record) and pushes its fade task over 0.15 s (0x3e19999a); the 0.2 s it passes to
+    // AnimTaskChained_Construct is the clip's blend into the idle after it.
+    const CarryCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human(character.anims, AnimSlots::player(), coney::test::identityBind());
+    human.spawn(mesh.get(), Vec3{20.0F, 20.0F, 0.0F}, 0.0F);
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    REQUIRE(human.animator().tasks().layerCount() == 1);
+    REQUIRE(human.startPickUp(7.0, Vec3{20.0F, 20.8F, 0.0F}, 503, coney::human::kStyleCarry));
+    CHECK((human.animator().flags() & 0x4000U) != 0);
+    CHECK((human.animator().flags() & 0x10U) == 0);
+    // 4 updates (0.133 s) are inside the fade, 5 (0.167 s) past it.
+    std::vector<std::size_t> layers;
+    for (int k = 0; k < 5; ++k) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+        layers.push_back(human.animator().tasks().layerCount());
+        CHECK(human.animator().animId() == 503);
+        CHECK((human.animator().flags() & 0x4000U) != 0);
+    }
+    CHECK(layers.at(3) > 1);
+    CHECK(layers.at(4) == 1);
+}

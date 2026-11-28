@@ -1,0 +1,34 @@
+# Coney sandbox: the raised panels, for a climb over a face only the high forward ray meets (docs/guides/sandbox.md).
+# Game axes and units: metres, z up; spawns face +y. One texture tile is 1 m (bright lines every 50 cm).
+#
+# Climb_TryStart (docs/research/characters-traversal.md#climb) casts two forward rays at 0.69 m and 1.7 m above the
+# feet. A panel hanging from 1.0 m up, of material 30 (LOW_FENCE: climbable), is met by the high ray alone; the player's
+# walking sphere (0.4704 m, its bottom 0.05 m above the feet) passes under it. The original climbs it as a tall fence
+# (nothing stands behind it, and it is lower than 2.5 m); a panel from 0.5 m up, which the low ray meets as well, is a
+# fence of the same kind, and one only the low ray meets (0.6 m) is not a climb. The sizes are Coney's.
+
+title Raised panels
+
+texture floor dark_grid.png
+texture wall light_grid.png
+texture marker red_grid.png
+
+sky colour=0.62,0.72,0.84
+sun direction=-0.5,0.45,-0.74 colour=0.62,0.58,0.50
+ambient sky=0.36,0.40,0.48 ground=0.20,0.19,0.18
+fog start=60 end=160
+occlusion radius=1.5 strength=0.65
+shadows on
+tessellate edge=1
+
+spawn start at=0,-7,0 heading=0
+view start at=0,-12,3 yaw=0 pitch=-10
+
+# The ground: 100 m square, its top at z = 0.
+box at=0,0,-0.5 size=100,100,0.5 texture=floor
+
+# The panel in front of the spawn: 4 m wide and 8 cm thick, from 1.0 to 2.4 m, its face at y = 0 (the high ray alone).
+# Two posts hold it, 2.2 m to each side of the middle, outside the walking body's way.
+box at=0,0,1.0 size=4,0.08,1.4 texture=marker material=30
+box at=-2.2,0,0 size=0.2,0.2,2.4 texture=wall
+box at=2.2,0,0 size=0.2,0.2,2.4 texture=wall

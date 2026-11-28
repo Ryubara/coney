@@ -203,3 +203,21 @@ TEST_CASE("leaving the shadow with a target, the hidden state lasts until the 4 
     CHECK(lastHidden == end);
     CHECK(firstOut > end);
 }
+
+TEST_CASE("back on the shadow within the grace, the grace is cleared and the hidden state lasts past its end",
+          "[human][targeting][stealth]") {
+    // Expected: stealth.md#hidden, confirmed (code). Human_EnterShadow 0x0022ff88 zeroes the grace's end (record
+    // +0x114) on every call, already hidden or not, so stepping back on the shadow before the 4 s are up keeps him
+    // hidden for good, where a kept deadline would end the state while he stands in the shadow.
+    Fight fight(character(), 1.5F);
+    fight.run("", 5);
+    REQUIRE(fight.human().fighter().target() != nullptr);
+    fight.human().enterHiding();
+    fight.human().leaveHiding();
+    REQUIRE(fight.human().hidden());
+    fight.run("", 30);
+    fight.human().enterHiding();
+    bool stayedHidden = true;
+    fight.run("", 150, [&](std::uint64_t) { stayedHidden = stayedHidden && fight.human().hidden(); });
+    CHECK(stayedHidden);
+}

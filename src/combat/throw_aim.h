@@ -79,7 +79,10 @@ class ThrowAimState {
     /// @orig 0x002446b0 Human_SetThrowAimState (unknown)
     void enter(anim::Vec3 origin, float heading);
     /// Leaves the aim (L1 again, a throw, the object lost); the pitch goes back to kAimStartPitch. The last object
-    /// aimed at is kept, as `+0x634` is.
+    /// aimed at is kept, as `+0x634` is. **Coney's choice**: the original also stamps record `+0xf8` = now + 264 ms,
+    /// which only Player_OnL1Pressed reads, to send a quick L1 press inside the release window through the lock-on
+    /// test before the aim (docs/research/objects.md#aim-relock); Coney's entry takes no release-window path (it aims
+    /// only with no target locked), so the stamp has no reader here and is not kept.
     /// @orig 0x00227a90 Human_ExitThrowAim (unknown)
     void leave();
     [[nodiscard]] bool active() const { return m_active; }

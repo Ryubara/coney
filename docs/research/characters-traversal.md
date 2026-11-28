@@ -258,8 +258,11 @@ Confirmed (code) at the cited addresses unless a line says otherwise.
    `0x0021d228`; confirmed (code)).
 3. Two horizontal rays along `d` from **1.7 m** and **0.69 m** above the feet, **1.5 m** long, or **4.5 m** when human
    flag `0x2` is set (players) and the gait (`+0x1a8`) is 4 or 5.
-4. If both hit and their distances differ by less than 0.1, the obstacle is **tall** (the high hit is used);
-   otherwise it is **short** (the low hit is used; a hit by the high ray alone is not a climb).
+4. If both hit and their distances differ by less than 0.1 (`Float_NearlyEqual`), the low hit is dropped; if both hit
+   further apart, the high one is. Then a remaining high hit is tested first: when it is climbable the obstacle is
+   **tall** (step 6). So a face only the high ray meets (one from above 0.69 m, the low ray passing under it) is a
+   tall one too; an earlier reading on this page called it no climb. Otherwise the low hit, when there is one, is
+   **short**; a tall face both rays meet whose high hit is not climbable is no climb (its low hit was dropped).
 5. The hit must be **climbable**: material 30 (`MATERIAL_LOW_FENCE`), or triangle flag `0x4` for a player, or
    triangle flag `0x80` ([Collision](collision.md#triangles)).
    Both probes are `WorldManager_RayCast`, the level's static mesh only, so a parked car is climbed through its

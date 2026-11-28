@@ -71,7 +71,8 @@ struct ClimbProbe {
 
 /// The climb `Climb_TryStart` finds from the feet at `feet` along the unit horizontal direction `direction`: two
 /// forward rays `length` long from 1.7 m and 0.69 m above the feet (a tall face when both hit within 0.1 m of each
-/// other, a short one when only the low one does, or both further apart); a climbable hit; then `Climb_ProbeTop`
+/// other or only the high one does, a short one when only the low one does, or both further apart; the high hit is
+/// tested first); a climbable hit; then `Climb_ProbeTop`
 /// (the face must look at the climber; a downward probe 0.4 m behind it finds the top: inside the window a wall, else
 /// below 0.25 m a fence, and a tall fence must be lower than 2.5 m). Nothing when there is no climb.
 /// @orig 0x002826f0 Climb_TryStart (unknown)

@@ -1,0 +1,11 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): the sandbox's raised panel
+# (assets/sandbox/raised.layout, docs/guides/sandbox.md), a climbable face from 1.0 m up that only the climb's high
+# forward ray (1.7 m above the feet) meets. The input script walks the player up to it and presses triangle: Climb_TryStart
+# climbs it as a tall fence (docs/research/characters-traversal.md#climb); a build that needs the low ray (0.69 m) as
+# well walks him under it. No disc level has such a face, so the sandbox stands in. The layout is Coney's own file, so a
+# before from a merge base older than it is given as `--before` a commit of the merge base with the layout added.
+description = "sandbox raised panel: a face only the high climb ray meets is climbed as a tall fence"
+level = "sandbox:raised"
+input = "tools/clips/sandbox-raised-climb.txt"
+start_frame = 70
+seconds = 6
