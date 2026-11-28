@@ -287,13 +287,13 @@ the `u16` at `s0` and keeps `s0 + 2` in `s7`. `s6` holds the counter plus 1 (`0x
 loop runs while `s2 < s8`, moving `s0` on in the delay slot at `0x003481e8`.
 
 **The counter steps on every path.** The copy `s2 = s6` sits in the delay slot of the move-into test's branch at
-`0x00347f34`, a plain `bc1t` (word `0x450100aa`, likely bit clear), whose delay slot runs whether the branch is taken
-or not; every path that reaches the kernel passes it. The low, thin and `t < 0` exits (`0x00347fcc`, `0x003480dc`,
-`0x00348154`) are plain `bc1t` with the same copy, and the visited exit's `bne` at `0x00347db0` jumps to the copy at
-`0x003481dc`. So when the `bc1tl` at `0x00348170` (a hit with `t > 1`) jumps past the copy at `0x003481dc`, the
-counter has already been stepped: each listed entry is one turn, and the walk never reads past its list. The decompile
-shows the same, one step at the foot of the loop. An earlier reading of this page took the plain branches' delay slots
-for taken-only and reported a skip there; there is none.
+`0x00347f34`, a plain `bc1t` (word `0x450100aa`, the branch-likely bit is 0), whose delay slot runs whether the branch
+is taken or not; every path that reaches the kernel passes it. The low, thin and `t < 0` exits (`0x00347fcc`,
+`0x003480dc`, `0x00348154`) are plain `bc1t` with the same copy, and the visited exit's `bne` at `0x00347db0` jumps to
+the copy at `0x003481dc`. So when the `bc1tl` at `0x00348170` (a hit with `t > 1`) jumps past the copy at `0x003481dc`,
+the counter has already been stepped: each listed entry is one turn, and the walk never reads past its list. The
+decompile shows the same, one step at the foot of the loop. An earlier reading of this page took the plain branches'
+delay slots for taken-only and reported a skip there; there is none.
 
 **The index buffer in memory.** In level99's mesh (state `street-end-run`), the lists are one `u16` buffer: a leading
 0, then each list as a count followed by its indices, back to back (4933 values for 1718 triangles), as Coney's
@@ -319,7 +319,7 @@ written. Confirmed (code) at the cited addresses.
 
 **The sphere:** centre = shape `+0x50` exactly (no raise), radius = shape `+0x40` (no body or human scale).
 
-**Per triangle** (same walk and visited bits; the loop counter is correct here):
+**Per triangle** (same walk and visited bits, each listed entry once):
 
 1. **Bit 3** (`0x0008`, within the low 12 bits): if set, skip when the body's flags `+0x40` have `0x100` or the
    options have `0x8000` (`0x00348c34`-`0x00348c54`). Meaning of bit 3 and of body flag `0x100`: not traced.

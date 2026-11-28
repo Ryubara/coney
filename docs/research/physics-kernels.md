@@ -1888,12 +1888,12 @@ start of the move). `P` = shape `+0x80`.
    (`0x00348894`-`0x003488e0`). `+0x0c`, `+0x10`, `+0x14` are not written.
 
 **Each entry once, confirmed (code):** the cell loop's counter `s3` steps on every path. `s4 = s3 + 1` is set at
-`0x003487fc` (and in the delay slots at `0x003486b4` and `0x00348714`), and the copy `s3 = s4` sits in the delay slot
-of the `t < 0` test's plain `bc1t` at `0x00348870` (word `0x4501001d`, likely bit clear), which runs whether the
+`0x003487fc` (and in the delay slots at `0x003486b4` and `0x00348714`), and the copy `s3 = s4` sits in the delay slot of
+the `t < 0` test's plain `bc1t` at `0x00348870` (word `0x4501001d`, the branch-likely bit is 0), which runs whether the
 branch is taken or not. Every path to the `t > 1` exit, the `bc1tl` at `0x0034888c`, passes it, so when that exit jumps
-past the copy at `0x003488e4`, the entry is already counted. That holds for the kernel's "no contact" value 1e28
-too: a missed triangle is one turn, and the walk never reads past the cell's list. As in the capsule's walk
-([The cell loop's counter](physics-bodies.md#u2-capsule-walk-counter)).
+past the copy at `0x003488e4`, the entry is already counted. That holds for the kernel's "no contact" value 1e28 too: a
+missed triangle is one turn, and the walk never reads past the cell's list. As in the capsule's walk ([The cell loop's
+counter](physics-bodies.md#u2-capsule-walk-counter)).
 
 **After the walk** (`0x00348930`-`0x00348a1c`): none kept → return 0. Sort (`MeshContacts_SortByFraction`, with its
 smear); `count = min(count, max)`. For each sorted entry `i`, into `out[i]`:
@@ -1916,7 +1916,7 @@ a box, and through `IPhysics_CollideShape` with a box shape.
 
 **Differences from the sphere sweep, in one list:** no options (no `n.z` range, no `0x40` back faces, no `0x8000`, no
 one-contact-per-plane `0x20000`); the side is taken at the box centre; the point is the box centre; the flags word is
-always 0; the counter bug on every kernel miss.
+always 0.
 
 ### Sweep_BoxBox (0x0034c430) {#u13-box-box}
 
