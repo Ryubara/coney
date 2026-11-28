@@ -1144,13 +1144,15 @@ order of a disabled command) and the highlighted slot's `GSTRING.COMMAND` name (
 on x 0.5, grey, dark or gold. `HUDShowWarCommand`, `WCEnableCommand` (enabling) and `WCEnableAllCommands` (only for a
 player whose human is there) set whether the menu is allowed and shut its name down (`script::setWarCommandAllowed`).
 **Coney's readings**: player 1 is the war chief (`+0x3ac` is not kept) and his state flags do not hold the menu back;
-the stick reads a byte of 128 as the original does; the backing and plate are `big_font` rectangle 256 drawn in the
-big font's batch (`hud::warCommandSlotSprites`), as wide as the rectangle's texels make them at their height, like the
-icons; the name is centred by a first layout's width (`gui::layoutText` centres inside a box from its x, where the
-original's `<CENTER>` starts half the line left of the anchor); the order is also given when play resumes under a
-closing pause menu (**Coney's reading**: any mode popped over play) and the menu closes when the chief is knocked out;
-not built: the two-player and 16:9 layouts. A script drives it as a player does: `press r2`, `stick right -70 70`
-(up-left, attack), `release r2` (`repo:tests/hud/war_command_display_test.cpp`).
+the stick reads a byte of 128 as the original does; the backing and plate are `big_font` rectangle 256 drawn in the big
+font's batch (`hud::warCommandSlotSprites`), as wide as the rectangle's texels make them at their height, like the
+icons, and skipped when the HUD has no `big_font` batch (its layer then hands `part_page0`, whose rectangle 256 is
+another picture; the original always has `big_font` resident); the name is centred by a first layout's width
+(`gui::layoutText` centres inside a box from its x, where the original's `<CENTER>` starts half the line left of the
+anchor); the order is also given when play resumes under a closing pause menu (**Coney's reading**: any mode popped over
+play) and the menu closes when the chief is knocked out; not built: the two-player and 16:9 layouts. A script drives it
+as a player does: `press r2`, `stick right -70 70` (up-left, attack), `release r2`
+(`repo:tests/hud/war_command_display_test.cpp`).
 
 **The health rings** (`repo:src/hud/health_rings.h`, drawn by `repo:src/platform/play_level_world.cpp`), as
 [the health rings](hud-radar.md#the-health-rings) say: each step after the HUD's, `hud::HealthRings` takes player 1 and

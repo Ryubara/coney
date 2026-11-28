@@ -84,8 +84,9 @@ float axisAngle(float offset) {
 // @coney-only glue: the original's resource instances are Coney's HUD batches
 graphics::SpriteBatch* batchOf(const HudCanvas& canvas, int instance) {
     if (instance == kBigFontInstance) {
-        // Stub for the test commit: the batch font slot 6 hands, whatever it is.
-        return canvas.text.textBatch ? canvas.text.textBatch(gui::kBigFontSlot) : nullptr;
+        // A canvas without big_font hands part_page0 for slot 6, whose rectangle 256 is something else.
+        graphics::SpriteBatch* big = canvas.text.textBatch ? canvas.text.textBatch(gui::kBigFontSlot) : nullptr;
+        return big == canvas.parts ? nullptr : big;
     }
     return instance == kPartsInstance ? canvas.parts : nullptr;
 }
