@@ -476,18 +476,24 @@ runtime in the update of the play call (`l99_c7`, issue #225). The reset is exac
 ([binding](../references/bindings/character.md#husetnormalmode)); confirmed (code) at `0x002325e0`:
 
 1. A human with any hold flag drops its overlay task; **every player in rage** (`+0xe0` bit `0x80000`) leaves it
-   (`Humans_EndAllRage`, all players, not only this human); fire put out; a mini-game ended; a throw's aim
-   cancelled; `+0x644` = 0.
+   (`Humans_EndAllRage` `0x00232538` walks the players' list, game state `+0x224` / `+0x228`, not every human: an AI
+   human's own rage is left as it is); fire put out; a mini-game ended; a throw's aim cancelled; `+0x644` = 0.
 2. When the human is in any paired or special state (mask `0x7001e193ff0`): **the pair is broken**
    (`Human_BreakPair`, [Combat](combat-grabs.md#pair-break)), then a mini-game aborted, a special state and a workout
    ended, a mug (`0x100` / `0x200`), a tag (`0x2000000`), a tackle hold (`0x8000000000` / `0x10000000000`), a tackle
    (`0x800` / `0x400`) or a grab (`0xc0` / `0x30`, both sides) ended with its partner, and wounded (`0x10000`), down
-   (`0x80000`) and stunned (`0x100000`) ended.
+   (`0x80000`) and stunned (`0x100000`) ended. Only the pair's break waits for `full`; the rest of this step runs
+   with `full` false too, so `HuSetNormalMode(h, false)` gets a downed human up (`Human_GetUp` `0x0022f3c8`, which
+   refuses one dead, dying or knocked out) and ends his stun. No step clears cuffed (`0x20000`): an arrest outlasts
+   the normal mode.
 3. Always: a held object of kind `0x27` or `0x10` dropped, the carried props released (`Human_ReleaseCarriedProps`),
    the fight stance left, and the slow motion a player caused turned off.
-4. Then (the join always passes 1): state bit `0x80000000` and bits `0x3c00000000` cleared (ungrounding first when
-   set), the body restored after a climb, an object it was picking (hold flag `0x4000`) unpinned and let go, its idle
-   clip rebuilt with action 0, and the motion reset (vtable `+0x14c`). Last, state bit `0x20000000` is set.
+4. Then (the join always passes 1): state bit `0x80000000` cleared; **health** (record `+0x144`) at or below the pending
+   damage (record `+0x118`, [the damage](combat-reactions.md#damage)) becomes 1 and the pending damage 0, so a hit
+   waiting to kill does not, and health above it is left as it is (a human out of health with nothing pending gets 1);
+   bits `0x3c00000000` cleared (ungrounding first when set), the body restored after a climb, an object it was picking
+   (hold flag `0x4000`) unpinned and let go, its idle clip rebuilt with action 0, and the motion reset (vtable
+   `+0x14c`). Last, state bit `0x20000000` is set.
 
 What this means for [Humans](#humans): a human that is in a grab, a mount or a tackle when the script binds it is
 let go there and then, its partner too (the partner need not be bound), so it is normally free by the time the

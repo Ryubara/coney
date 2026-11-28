@@ -157,8 +157,9 @@ then sets state `0x20000000`. Confirmed (code) at the cited addresses.
 
 **Arrest**, for a human not already cuffed:
 
-1. The human leaves its fight stance and drops a held weapon of kind 4 or 6, or anything held without human flag
-   `0x2000`. A stun ends.
+1. Body flag `BLOCKHUMANS` comes off, a throw's aim is cancelled (`Human_CancelThrowAim`), and the human drops a
+   held weapon of kind 4 or 6, or anything held without human flag `0x2000`. A stun ends, only a standing one
+   (`Human_IsStunnedStanding`, then `Human_EndStun`). Nothing here ends a grab, a pair or rage.
 2. Its push weight (attribute 7, vtable `+0xe4`) becomes 1e9, so nothing shoves it. State `0x8000` (block) is
    cleared and `0x20000` (cuffed) set.
 3. Movement style `0x11` is pushed (`Human_PushMoveStyle`, `0x00253ed0`), which puts 320 `ANIM_ARRESTED_IDLE` in
@@ -192,8 +193,9 @@ A human with no AI brain component (vtable `+0xf4` null) gets only state `0x2000
 **Unarrest** (`Human_Unarrest`), for a cuffed human:
 
 1. Brain `+0x40` gets `0x80000004`, and the kind-0 record is removed (slot `+0x12c`).
-2. `0x0024ce40` is called and the icon removed (message `0x15`, `Human_RemoveOverheadIcon`, `0x00227388`). Style
-   `0x11` is removed (`0x00253f78`), state `0x20000` is cleared, and the push weight returns to 1.
+2. Its carried props are released (`Human_ReleaseCarriedProps` `0x0024ce40`) and the icon removed (message `0x15`,
+   `Human_RemoveOverheadIcon`, `0x00227388`). Style `0x11` is removed (`0x00253f78`), state `0x20000` is cleared, and
+   the push weight returns to 1.
 3. A member of a leaderless gang (gang `+0x40` = 0) with a leader other than itself and a type-3 brain clears its
    actions and goals and follows the leader (`Goal_FollowPlayer`, 2.0, mode 3).
 4. **Event 17** goes out as above with `+0x04` = 0: `SetMsgHandler(h, 17, "SnowUnarrested")` gets `(self, other, 0)`,

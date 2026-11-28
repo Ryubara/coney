@@ -666,20 +666,35 @@ status = "legacy"
 [[function]]
 address = 0x0022fa78
 name = "Human_StartWounded"
-page = "characters/index.md#code-core"
+page = "characters-script.md#hu-wounded"
 role = "Clears the fight states, drops what is held, pushes the wounded style, sets the health to a quarter of the maximum and state 0x10000, and tells the brain the human is knocked out."
 level = "confirmed-code"
-coney = "src/human/human.h:Human::blocksHumans"
-status = "legacy"
+coney = "src/human/human.h:Human::startWounded"
+status = "compared"
+
+[[function.gaps]]
+what = "the held object's drop, the move styles popped and the wounded style 0xd pushed are not ported"
+relation = "not-ported"
+issue = 685
+
+[[function.gaps]]
+what = "the brain's knocked-out event is the caller's flush (Brain::flush), not Brain_OnKnockedOut"
+relation = "stand-in"
+issue = 685
 
 [[function]]
 address = 0x0022fc00
 name = "Human_EndWounded"
-page = "characters/index.md#code-core"
+page = "characters-script.md#hu-wounded"
 role = "Clears state 0x10000, restores push weight and pops the wounded style (0xd)."
 level = "confirmed-code"
-coney = "src/human/human.h:Human::setWounded"
-status = "legacy"
+coney = "src/human/human.h:Human::endWounded"
+status = "compared"
+
+[[function.gaps]]
+what = "style 0xd's removal and body shape 2's enabling are not ported"
+relation = "not-ported"
+issue = 685
 
 [[function]]
 address = 0x002300c0
@@ -891,11 +906,16 @@ status = "legacy"
 [[function]]
 address = 0x00235628
 name = "Human_IsAlive"
-page = "characters-script.md#code-script"
+page = "characters-script.md#hu-is-alive"
 role = "`HuIsAlive`: not down or dead and up."
 level = "confirmed-code"
-coney = "src/human/human.h:Human::alive"
-status = "legacy"
+coney = "src/human/human.h:Human::aliveAndUp"
+status = "compared"
+
+[[function.gaps]]
+what = "dead (0x100000000) is not kept apart from the health run out, so Human_IsUp's test adds nothing (a stand-in)"
+relation = "stand-in"
+issue = 685
 
 [[function]]
 address = 0x00235688
@@ -1188,11 +1208,16 @@ status = "legacy"
 [[function]]
 address = 0x00237628
 name = "Human_SetWounded"
-page = "characters-script.md#code-script"
+page = "characters-script.md#hu-wounded"
 role = "`HuSetWounded`: starts or ends the wounded state."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::setWounded"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the anim state chosen again changes nothing, as the wounded clips are not played (a stand-in)"
+relation = "stand-in"
+issue = 685
 
 [[function]]
 address = 0x002376a0
@@ -1210,7 +1235,7 @@ page = "characters-script.md#code-script"
 role = "`HuSetArrested`: arrests or frees the human ([Crimes](crimes.md#arrest)); the bum goal uses it too."
 level = "confirmed-code"
 coney = "src/human/human.h:Human::setArrested"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00237778
@@ -1224,11 +1249,16 @@ status = "compared"
 [[function]]
 address = 0x002377f8
 name = "Human_Revive"
-page = "characters-script.md#code-script"
+page = "characters-script.md#hu-revive"
 role = "`HuRevive`: revives the human."
 level = "confirmed-code"
-coney = "src/human/fighter.h:Fighter::revive"
-status = "legacy"
+coney = "src/human/human.h:Human::revive"
+status = "compared"
+
+[[function.gaps]]
+what = "a human still in his death chain is stood up, where the original keeps the chain and knocks him out at its end (a stand-in)"
+relation = "stand-in"
+issue = 685
 
 [[function]]
 address = 0x00237848
@@ -1696,7 +1726,7 @@ name = "Human_SetNormalMode"
 page = "characters-script.md#code-script"
 role = "`HuSetNormalMode`: clears the special modes; AI goals use it."
 level = "confirmed-code"
-coney = "src/human/fighter.h:Fighter::setNormal"
+coney = "src/scripting/human_bindings.cpp:makeSetNormalMode"
 status = "legacy"
 
 [[function]]

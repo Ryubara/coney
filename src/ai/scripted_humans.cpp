@@ -155,7 +155,7 @@ std::optional<script::HumanStatus> ScriptedHumans::status(double handle) const {
         return std::nullopt;
     }
     const human::Human& human = brain->human();
-    return script::HumanStatus{.alive = human.alive(),
+    return script::HumanStatus{.alive = human.aliveAndUp(),
                                .player = brain->type() == BrainType::Player,
                                .arrested = human.script().arrested,
                                .healthPercent = human.healthPercent(),
@@ -198,11 +198,26 @@ void ScriptedHumans::setHealthPercent(double human, float percent) {
 }
 
 void ScriptedHumans::revive(double human) {
-    onBrain(human, [](Brain& brain) { brain.human().revive(); });
+    onBrain(human, [](Brain& brain) {
+        // Human_WakeUp enables and resumes the brain of a human a script knocked out (HuSetConscious); one knocked out
+        // by his health wakes as the brains see his health back.
+        const bool scriptedOut = brain.human().script().knockedOut;
+        brain.human().revive();
+        if (scriptedOut) {
+            brain.setDead(false);
+        }
+    });
 }
 
 void ScriptedHumans::setNormalMode(double human, bool full) {
-    onBrain(human, [full](Brain& brain) { brain.human().setNormalMode(full); });
+    onBrain(human, [this, full](Brain& brain) {
+        // Humans_EndAllRage first: every player's rage ends, whoever the human is (docs/research/scenes.md#join-reset).
+        // Coney has one player.
+        if (Brain* player = m_scripted->player(); player != nullptr && player != &brain) {
+            player->human().setRageMode(false);
+        }
+        brain.human().setNormalMode(full);
+    });
 }
 
 void ScriptedHumans::setRageMode(double human, bool on) {

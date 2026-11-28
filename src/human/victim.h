@@ -123,6 +123,10 @@ class Victim {
     void hit(const IncomingHit& hit);
     /// Whether a hit waits this update.
     [[nodiscard]] bool pending() const { return m_hasPending; }
+    /// The waiting hit's damage (record `+0x118`), 0 when none waits.
+    [[nodiscard]] int pendingDamage() const { return m_hasPending ? m_pending.damage : 0; }
+    /// The waiting hit's damage becomes 0 (the normal mode's `+0x118` = 0); its reaction still plays.
+    void zeroPendingDamage() { m_pending.damage = 0; }
     /// Takes the waiting hit (the caller applies it).
     IncomingHit takePending();
 

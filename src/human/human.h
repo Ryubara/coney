@@ -884,14 +884,22 @@ class Human final : public Holdable {
     [[nodiscard]] const ScriptState& script() const { return m_script; }
     /// The game time its updates have reached, whole ms (combat's clock).
     [[nodiscard]] std::uint64_t nowMs() const { return m_updates * 1000 / 30; }
-    /// Alive and up (`HuIsAlive`): health left and not arrested. **Coney's reading** of the down states
-    /// (`0x180050000`, not all researched): a knockdown that it gets up from still counts as alive.
-    /// @orig 0x00235628 Human_IsAlive (unknown)
+    /// Health left, not knocked out and not cuffed: what the AI and the HUD ask before acting on a human (a tag goal, a
+    /// boss's orders, the fidgets, the rings and the icons). The scripts' `HuIsAlive` is aliveAndUp(), which counts a
+    /// cuffed human alive and a wounded one not.
+    /// @coney-only the AI's and the HUD's test of a human still in play
     [[nodiscard]] bool alive() const {
         return !m_fighter.health().depleted() && !m_script.arrested && !m_script.knockedOut;
     }
-    /// Stub for the test commit (task 685): HuIsAlive's answer, still alive()'s.
-    [[nodiscard]] bool aliveAndUp() const { return alive(); }
+    /// `HuIsAlive`: none of the down and dead states `0x180050000` (downOrDead(): dying or dead, knocked out,
+    /// wounded) and up (not state `0x100000000`). Cuffed is not among them, so an arrested human is alive
+    /// (docs/research/characters-script.md#hu-is-alive).
+    /// @orig 0x00235628 Human_IsAlive (unknown)
+    [[nodiscard]] bool aliveAndUp() const {
+        // Coney stand-in: dead (0x100000000) is not kept apart from downOrDead()'s health run out, which Human_IsUp's
+        // test therefore adds nothing to.
+        return !downOrDead();
+    }
     /// Health as a percentage of its maximum, 0-100 (`HuGetHealthPercent`).
     /// @orig 0x00237c38 Human_GetHealthPercent (unknown)
     [[nodiscard]] float healthPercent() const { return m_fighter.health().fraction() * 100.0F; }
@@ -905,22 +913,28 @@ class Human final : public Holdable {
     /// Research: docs/references/bindings/character.md#husethealthpercent
     /// @orig 0x002378a8 Human_SetHealthPercent (unknown)
     void setHealthPercent(float percent);
-    /// `HuRevive` (Fighter::revive()), which ends in the heal: the body is made again, so it blocks other humans'
-    /// walks once more (heal()).
+    /// `HuRevive`: the heal in full (heal(bool)), then the anim state chosen again (state `0x20000000`): a knocked-out
+    /// human wakes into the fight stance and stands with full health. Nothing of the normal mode runs, so a grab, a
+    /// stun, rage or a knockdown stay as they are (docs/research/characters-script.md#hu-revive).
     /// @orig 0x002377f8 Human_Revive (unknown)
-    void revive() {
-        m_fighter.revive(m_animator);
-        heal();
-    }
-    /// What `Human_Heal` gives back beyond health: a fresh physics body (`Human_CreatePhysicsBody`), whose flags hold
-    /// `BLOCKHUMANS`, so other humans' walks meet it again (docs/research/physics.md#human-contacts). The revive, a
-    /// flash and a freed cuffed human's revive call it; waking up or a wound ending alone do not.
-    /// @orig 0x0022eb40 Human_Heal (unknown)
+    void revive();
+    /// The new physics body `Human_Heal` ends with (`Human_CreatePhysicsBody`), whose flags hold `BLOCKHUMANS`, so
+    /// other humans' walks meet it again (docs/research/physics.md#human-contacts). The flash calls it alone, having
+    /// set the health and ended the wound itself; heal(bool) is the whole heal. Waking up or a wound ending alone do
+    /// not.
     /// @orig 0x0021ce08 Human_CreatePhysicsBody (unknown)
     void heal() { m_blockHumansFlag = true; }
-    /// Stub for the test commit (task 685): the heal's body only.
-    void heal(bool /*full*/) { heal(); }
-    /// `HuSetNormalMode` (Fighter::setNormal()); an arrest ends too.
+    /// `Human_Heal`: a wound ends, a knocked-out human wakes into the fight stance, the health becomes the maximum
+    /// (`full`) or gains half the maximum, capped, and the body is made again (heal())
+    /// (docs/research/characters-script.md#hu-revive). The caller wakes a script-knocked-out human's brain.
+    /// @orig 0x0022eb40 Human_Heal (unknown)
+    void heal(bool full);
+    /// `HuSetNormalMode`, the normal mode (`Human_ResetForMode`, docs/research/scenes.md#join-reset): a throw's aim is
+    /// cancelled, a pair broken (only with `full`), a grab ended, a wound, the ground and a stun ended, the carried
+    /// props released, the fight stance left and the players' slow motion ended; with `full` also a health at or below
+    /// the pending damage becomes 1 and the human stands in its idle. Of `Humans_EndAllRage` a player ends its own rage
+    /// here; the other players' are the caller's (endAllRage()). An arrest is left as it is.
+    /// @orig 0x002325e0 Human_ResetForMode (unknown)
     void setNormalMode(bool full);
     /// Breaks any pair it is in from outside (Fighter::breakPair()), as a placement does.
     void breakPair() { m_fighter.breakPair(); }
@@ -931,17 +945,10 @@ class Human final : public Holdable {
     /// stand-in**: the original also drops a held object of kind `0x27`, which no Coney human holds yet.
     /// @orig 0x0024ce40 Human_ReleaseCarriedProps (unknown)
     void releaseCarriedProps() { m_carriedProp.reset(); }
-    /// What binding the human to a scene role does to it first, `HuSetNormalMode(human, true)`'s reset
-    /// (docs/research/scenes.md#join-reset): a throw's aim is cancelled, any pair it is in is broken (breakPair()) so
-    /// that a grab or a paired move does not keep it out of the scene, a wound ends, then setNormalMode(true) ends a
-    /// grab, a stun, its rage and a fall and stands it in its idle with at least 1 health, and last its carried prop
-    /// goes; the players' slow motion ends with setNormalMode() (takeSlowMotionReset()). Every other human's rage ends
-    /// too, which is the caller's (endAllRage()). **Coney stand-in**: the steps for what Coney does not model (fire, a
-    /// mini-game, an overlay task, a held kind-`0x27` or `0x10` object, a climb's body, a picked object) are left out.
-    /// @orig 0x002325e0 Human_ResetForMode (unknown)
-    void resetForJoin();
-    /// `HuSetArrested`: arrested, the human stops where it is, its fighting ends and it loops 320
-    /// `ANIM_ARRESTED_IDLE`; released, it stands again with the idle (docs/research/crimes.md#arrest).
+    /// What binding the human to a scene role does to it first, `HuSetNormalMode(human, true)`
+    /// (docs/research/scenes.md#join-reset); every other raging human's rage is the caller's (endAllRage()).
+    void resetForJoin() { setNormalMode(true); }
+    /// `HuSetArrested`: arrest() or unarrest(), then the anim state chosen again (docs/research/crimes.md#arrest).
     /// @orig 0x00237700 Human_SetArrested (unknown)
     void setArrested(bool arrested);
     /// Into or out of a throw's aiming state (docs/research/objects.md#throws): in, it stands (the stick no longer
@@ -953,11 +960,9 @@ class Human final : public Holdable {
     /// One aiming frame's outcome: the aim's `heading` (the move function writes his facing) and whether the stick
     /// turned him, which plays 470 `gen_1hand_throw_turn` instead of 469.
     void aimThrow(float heading, bool turning);
-    /// `HuSetWounded`: wounding (when not wounded already) ends its fighting, grab or throw, cuts its health to a
-    /// quarter of the maximum and stamps the time 14 s on; healing only clears the mark. The caller flushes the brain.
+    /// `HuSetWounded`: startWounded() or endWounded() (docs/research/characters-script.md#hu-wounded). The caller
+    /// flushes the brain on a new wound.
     /// @orig 0x00237628 Human_SetWounded (unknown)
-    /// @orig 0x0022fa78 Human_StartWounded (unknown)
-    /// @orig 0x0022fc00 Human_EndWounded (unknown)
     void setWounded(bool wounded);
     /// `HuSetFullRage`: the rage meter full, held for `holdMs` before it decays.
     void fillRage(int holdMs) { m_fighter.combat().rage().fill(nowMs(), holdMs); }
@@ -1032,8 +1037,8 @@ class Human final : public Holdable {
     /// the other from his cuffs (`Uncuff_BeginMash`). **Coney stand-in**: the scenes' shared group is not set.
     /// @orig 0x0022c730 Grab_Link (unknown)
     [[nodiscard]] bool linkedWith(const Human& other) const;
-    /// Its push weight (attribute 7, `+0x27c`): 1e9 while it must not move (linked in a pair, arrested, freeing a
-    /// cuffed human, or out of health: dying, then knocked out), else 1.
+    /// Its push weight (attribute 7, `+0x27c`): 1e9 while it must not move (linked in a pair, arrested, wounded,
+    /// freeing a cuffed human, or out of health: dying, then knocked out), else 1.
     /// Research: docs/research/combat-reactions.md#knockout-timing (its definition carries `Human_GetAttribute`'s tag)
     [[nodiscard]] float pushWeight() const;
     /// Whether another human's walk pushes it: not when a script made it unpushable (`HuSetPushable(false)`, body flag
@@ -1184,6 +1189,24 @@ class Human final : public Holdable {
     [[nodiscard]] bool takeThrowRelease() { return std::exchange(m_throwRelease, false); }
 
   private:
+    // The cuffs (`Human_Arrest`, docs/research/crimes.md#arrest), for a human not cuffed already: BLOCKHUMANS off, a
+    // throw's aim cancelled, a standing stun ended, cuffed (push weight 1e9) and the cuffed idle 320 looped. A grab and
+    // rage are left as they are. The brain's part and the kind-0 record are the scripted humans' and the play mode's.
+    // @orig 0x0022ec18 Human_Arrest (unknown)
+    void arrest();
+    // The release (`Human_Unarrest`), for a cuffed human: BLOCKHUMANS back, the carried props released, the cuffed
+    // style gone, no longer cuffed (push weight 1) and standing in the idle.
+    // @orig 0x0022ef58 Human_Unarrest (unknown)
+    void unarrest();
+    // The wound's start (`Human_StartWounded`, docs/research/characters-script.md#hu-wounded): the stance, the stun
+    // and a knock-out end; the first time also everything held is let go, the time stamped 14 s on, the health cut to
+    // a quarter and BLOCKHUMANS taken away; then wounded (push weight 1e9).
+    // @orig 0x0022fa78 Human_StartWounded (unknown)
+    void startWounded();
+    // The wound's end (`Human_EndWounded`): no longer wounded (push weight 1); BLOCKHUMANS is not given back.
+    // @orig 0x0022fc00 Human_EndWounded (unknown)
+    void endWounded();
+
     // A climb under way: what it climbs, which clip of its chain plays, and the move to its start point.
     struct ClimbRun {
         std::uint32_t firstId = 0;
