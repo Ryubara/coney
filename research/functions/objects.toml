@@ -322,7 +322,7 @@ name = "World_BreakGlassInRadius"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/world_objects/glass.h:GlassPanes::breakInRadius"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003966c8
@@ -330,7 +330,7 @@ name = "World_BreakGlassInRadius"
 page = "objects.md#original-structure"
 level = "confirmed-code"
 coney = "src/scripting/object_bindings.cpp:makeBreakGlassInRadius"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00396858

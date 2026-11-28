@@ -1331,6 +1331,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("CarSetColor"),
     real("CarMakeGoodAsNew"),
     real("CarSpawnRadio"),
+    real("CarSetPartDamage"),
     real("CarPlaceInTrunkOnDetach"),
     // The dynamic objects' show, hide, destroy and zones, the trigger spheres, the flag network, the subtitle switch
     // and two empty ones (world_bindings.h).

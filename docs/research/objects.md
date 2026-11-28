@@ -77,7 +77,7 @@ each index read from the table's name pointer.
 | `0x0038fa50` → `0x0038ef60` | `GlassManager_QueueDraws` → `GlassPane_QueueDraw` | per frame: each pane into its sprite batch or the near list | confirmed (code) |
 | `0x0038f090` → `0x001831c0` | `GlassPane_DrawNear` → `Instance_DrawOneSpriteIm3D` | a pane near a camera, drawn on its own | confirmed (code) |
 | `0x00185b38` | `ResourceMgr_Render3DSprites` | the 3D sprite pass ([Drawing a pane](#pane-draw)) | confirmed (code) |
-| `0x003966c8` → `0x003963b8` | `World_BreakGlassInRadius` | `BreakGlassInRadius` | confirmed (code) |
+| `0x003966c8` → `0x003963b8` | `World_BreakGlassInRadius` | `BreakGlassInRadius`: the panes, the glass objects, then the cars' glass ([Cars](cars.md#parts)) | confirmed (code) |
 | `0x00396390` → `0x003961d0` | `World_BreakObjectsInRadius` | `BreakObjectsInRadius` | confirmed (code) |
 | `0x00397230` | `Door_Spawn` | pushes the door's arguments, creates it by type name | confirmed (code) |
 | `0x003fb5f8` / `0x003fbba0` / `0x003fb8d0` | `dyn_door_swinging` init / update / message | the swinging door | confirmed (code) |
@@ -2302,8 +2302,9 @@ Coney's stand-ins for the world objects, where this page is silent:
   `thrownHit`, finding the object by the struck triangle (`objectOfTriangle`); `humanHitKind` / `thrownHitKind` give
   the hit's kind.
 - **Panes** (`glass.h`): the type table, the spawn (geometry, `GLASS` two-sided triangles, sprites, types 14, 15, 17,
-  18, alarm bits, window link), message 1 and 0, `Glass_Break` and `BreakGlassInRadius`; the shatter's count, sound
-  pair and shards drawn from the game's random numbers.
+  18, alarm bits, window link), message 1 and 0, `Glass_Break` and `BreakGlassInRadius` (whose binding then knocks
+  off the glass of the cars in the radius, [Cars](cars.md#parts)); the shatter's count, sound pair and shards drawn
+  from the game's random numbers.
 - **Doors** (`doors.h`): the per-type set-up, leaves, triangle flags, the state machine and its timing in ticks, the
   state commands, `DoorOpen` away from the human, `DoorOpenDegree`, pickable doors, message `0x15`, the breakable
   types' hits and the barriers. `ObjDestroy(door)` removes a door (`Doors::remove()`, named by `takeRemoved()`), and its

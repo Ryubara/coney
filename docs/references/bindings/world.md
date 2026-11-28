@@ -22,7 +22,7 @@ and how to read an entry are on the [masterlist](index.md).
 | [`CarPlaceInTrunkOnDetach`](#carplaceintrunkondetach) | - | 12 | no | no | confirmed (code) |
 | [`CarRemovePart`](#carremovepart) | - | 3 | no | no | confirmed (code) |
 | [`CarSetColor`](#carsetcolor) | - | 15 | no | yes | confirmed (code) |
-| [`CarSetPartDamage`](#carsetpartdamage) | - | 0 | no | no | inferred |
+| [`CarSetPartDamage`](#carsetpartdamage) | - | 0 | no | no | confirmed (code) |
 | [`CarSetPartOpen`](#carsetpartopen) | - | 1 | no | no | confirmed (code) |
 | [`CarSpawn`](#carspawn) | number | 26 | no | yes | confirmed (code) |
 | [`CarSpawnRadio`](#carspawnradio) | - | 15 | no | yes | confirmed (code) |
@@ -194,8 +194,9 @@ BreakGlassInRadius(centre, radius)
 **Returns** nothing.
 
 Breaks every breakable pane of glass within the radius of a flag or object, for scripted smashes: each pane whose centre
-is within the radius gets the hit message (kind 100), and so does every object of type `TYPE_GLASS` (kind 101); cars'
-parts in range are hit as well (0x0038b0e8). No alarm, crime or statistic follows.
+is within the radius gets the hit message (kind 100), and so does every object of type `TYPE_GLASS` (kind 101); then
+each car within the radius but the centre itself has its glass parts not removed or off knocked off (0x0038e738,
+0x0038b0e8). No alarm, crime or statistic follows.
 
 **Notes.** Implementation 0x003963b8; [World objects: a pane's life](../../research/objects.md#pane).
 
@@ -453,16 +454,20 @@ CarSetPartDamage(car, part, damage)
 | --- | --- | --- | --- |
 | 1 | `car` | number, truncated to an unsigned integer | Handle of the car. |
 | 2 | `part` | number, truncated to an unsigned integer | Car part id (see `CarRemovePart`). |
-| 3 | `damage` | number (single precision) | Damage amount for the part; the scale is not traced. |
+| 3 | `damage` | number (single precision) | Damage added to the part; at 1 in all the part comes off. |
 
 **Returns** nothing.
 
-Applies damage to one part of a car (0x0038a7e8). No script calls it.
+Adds damage to one part of a car as a hit does (Car_BreakPartByIndex 0x0038a7e8, then Car_AddPartDamage 0x0038a4d8, not
+instant): the damage adds up and at 1 the part comes off, a door takes its window, window 15 frees the stereo and the
+boot releases its item. No part is passed over, not even one removed or off already. No script calls it.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** The car's handle must resolve (0x0038dee8); the part number is not checked (Coney ignores one past 25).
+
+- **Evidence:** confirmed (code) at `0x0038dee8`; detail: brief
 - **Wrapper** `0x00378528` (registered by `RegisterBindings`); **calls** `0x0038dee8` `Car_SetPartDamage`
 - **Used by** no script on the disc
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CarSetPartOpen {#carsetpartopen}
 

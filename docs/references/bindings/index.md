@@ -131,9 +131,9 @@ have no wrapper address or usage counts. There are none yet.
 
 | | Bindings |
 | --- | --- |
-| confirmed (code) | 861 |
+| confirmed (code) | 862 |
 | confirmed (runtime) | 2 |
-| inferred | 68 |
+| inferred | 67 |
 | speculative | 25 |
 | detail: traced | 769 |
 | detail: brief | 187 |

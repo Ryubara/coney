@@ -76,6 +76,18 @@ NativeFunction makeCarMakeGoodAsNew(const BindingContext& context) {
     };
 }
 
+// `CarSetPartDamage(car, part, amount)`: the car and the part read as unsigned numbers, the amount as a float.
+// @orig 0x00378528 lua_CarSetPartDamage (unknown)
+NativeFunction makeCarSetPartDamage(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (world_objects::Cars* cars = context->cars; cars != nullptr) {
+            const auto part = static_cast<std::uint32_t>(handleArg(args, 1));
+            cars->setPartDamage(handleArg(args, 0), part, static_cast<float>(binding::number(args, 2)));
+        }
+        return binding::none();
+    };
+}
+
 // `CarSpawnRadio(car)`.
 // @orig 0x0036de50 CarSpawnRadio (unknown)
 NativeFunction makeCarSpawnRadio(const BindingContext& context) {
@@ -107,6 +119,7 @@ NativeFunction makeCarPlaceInTrunkOnDetach(const BindingContext& context, std::f
 void addCarBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
     vm.registerFunction("CarMakeGoodAsNew", makeCarMakeGoodAsNew(context));
     vm.registerFunction("CarSetColor", makeCarSetColor(context));
+    vm.registerFunction("CarSetPartDamage", makeCarSetPartDamage(context));
     vm.registerFunction("CarPlaceInTrunkOnDetach", makeCarPlaceInTrunkOnDetach(context, nextHandle));
     vm.registerFunction("CarSpawn", makeCarSpawn(context, std::move(nextHandle)));
     vm.registerFunction("CarSpawnRadio", makeCarSpawnRadio(context));
