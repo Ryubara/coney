@@ -179,6 +179,15 @@ coney = "src/world/level_object.h:readOccluders"
 status = "legacy"
 
 [[function]]
+address = 0x0017aca8
+name = "Colour_PackFloat"
+page = "graphics.md#code-misc"
+role = "four floats times 255 to the bytes of a colour word, each kept to its low 8 bits ([the tint](objects.md#tint))"
+level = "confirmed-code"
+coney = "src/scripting/arena_bindings.cpp:colourByte"
+status = "compared"
+
+[[function]]
 address = 0x0017ae38
 name = "ColourTable_Init"
 page = "graphics.md#code-misc"
