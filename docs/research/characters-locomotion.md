@@ -122,7 +122,9 @@ Confirmed (code) for the steps; the state predicates are named by what they test
    an earlier reading of this page gave, are what the scripts replace.
 5. **Accelerate.** Speeding up adds 0.8 m/s per update (24 m/s²) until the target; slowing down either drops to the
    target at once or, in some states (`0x00223db8`), at the same rate.
-6. **Velocity** = facing × speed, with `z` = `+0x3a0` (the vertical velocity is kept); some states zero it.
+6. **Velocity** = facing × speed, with `z` = `+0x3a0` (the vertical velocity is kept); some states zero it. The facing
+   is the new rotation's forward axis, and every step is in the PS2's floats ([The run's velocity in
+   floats](#run-velocity)).
 7. **Lean** (`0x00248df0`): the heading change times a factor (0.4 × `+0x1ac`, or 8 × `+0x1ac` when walking) is
    clamped to 2°, 3°, 5° or 7° by gait and stored at `+0x298`; the lean at `+0x29c` follows it by 0.625 of the
    difference per update, at most 1°, 1.2°, 1.3° or 1.8° per update. What `+0x1ac` holds is not traced.
@@ -178,6 +180,39 @@ update, 0 m/s). The gaits matter to the camera, whose auto-follow runs only at g
 Whether a run released plays the run stop is decided by the skid's speed test ([Locomotion](#locomotion) step 3),
 and at a steady run that test compares two floats that are equal to within a few units in the last place.
 The scenario that showed it, with its figures, is under [How this was checked](#runtime-run-stop).
+
+#### The run's velocity in floats {#run-velocity}
+
+A steady run's velocity and the speed measured from it come out the same to the last bit on both games only when each
+step is done as the original does it, in its order and with the PS2's rounding. Confirmed (code) at the cited
+addresses, and confirmed (runtime), run r-20261128-chars-run-velocity (`chars_run_stop_hit` with hooks on the rotation,
+the velocity build and the measure, logging raw words): followed from the half heading, the steps below give the
+original's sine, cosine, direction, velocity and measured speed on every one of its 44 run updates.
+
+1. **The rotation.** Half the new heading (`mul.S` by 0.5, `0x00241874`) goes through `Math_Sinf` (`0x004b8c40`) and
+   `Math_Cosf` (`0x004b8a70`), fdlibm's float sine and cosine run on the EE's FPU ([Sine and cosine](maths.md#trig)).
+   The rotation is the axis (0, 0, 1) at `0x00511740` times the sine (`vmulx.xyz`, `0x002418a8`), with the cosine as
+   its w (`0x0024189c`).
+2. **The direction** is that rotation's forward axis, `Quat_AxisY` (`0x003363b0`, called at `0x002418d4`): products
+   in VU0 (`vmulx.xyzw` by the rotation's z, then by its x), sums and differences in the FPU. With x = y = 0 it is
+   (2 × (0 − w·z), 1 − 2 × (0 + z·z)).
+3. **The velocity** is the direction times the speed in VU0 (`vmulx.xyz`, `0x00241b14`), then its third part is
+   replaced by the vertical velocity `+0x3a0` (`0x00241b34`). On the street's ground it is 0.
+4. **The measure.** The next update's locomotion takes that vector back (vtable `+0x94`) and measures its length over
+   all three parts in VU0: `vmul.xyz`, `vaddy.x`, `vaddz.x`, `vsqrt` (`0x00240f38`-`0x00240f50`), so
+   sqrt((x² + y²) + z²). The measured vector was the built velocity, word for word, on every update.
+
+The rounding: VU0's products, sums and square root are the exact result rounded toward zero. The FPU rounds toward zero
+too, but its adder first lines the smaller operand up with the larger one keeping **one bit** below the larger one's
+last place and drops the rest, then adds and rounds: computed as exact-then-rounded the sine and cosine match on 7 of
+the 57 logged half headings, with the one guard bit on all 57 (the 50 others came out one or two units low). For two
+operands of one sign the dropped bits cannot reach the result's last place, so only a difference shows it.
+
+At the run speed `0x40f9a3ad` (7.8012300) the headings of this run (about 91°) measure `0x40f9a3aa` to `0x40f9a3ae`,
+as [The run stop at a run](#run-stop) saw: update 97's heading measures exactly the run speed, so the release seen on
+update 98 skids, where update 95's measures `0x40f9a3ac` and would not. Which side a heading lands on changes from one
+update to the next as the heading drifts by about 0.001°, so a release skids on both games alike only when their
+headings are the same float.
 
 ### An AI's locomotion {#ai-locomotion}
 
@@ -503,11 +538,10 @@ top edge.
   it fades from has no root velocity, so the body moves at the clip's 2.244, 4.996, 5.101, … m/s from its first
   update, as at runtime. The skid's own update still turns one step and the run stop then holds the facing. The skid
   needs the run speed ≤ the speed, compared exactly ([The run stop at a run](#run-stop)): a sprint always skids, a
-  steady run only when its speed lands on or above the run speed. **Coney's reading** of the speed: the velocity's
-  length with each multiply, add and the square root rounded toward zero, as the PS2's floating-point unit rounds
-  (`core/ps2_float.h`); the velocity itself is Coney's, so a steady run reaches the run speed on about 6 % of updates
-  against the original's 10 of 93, so a release can skid on one game and not the other (#1714 ports the
-  original's construction, [Open questions](#open-questions)). What builds the run stop is not traced. It holds
+  steady run only when its speed lands on or above the run speed. The velocity is built from the heading and
+  measured over its three parts in the original's floats, the game's own sine and cosine included
+  (`human::runVelocity`, `human::measuredSpeed`, `core/ps2_trig.h`; [The run's velocity in floats](#run-velocity)), so
+  the same heading gives the same measured speed to the bit. What builds the run stop is not traced. It holds
   `0x80000`, which the locomotion gate reads (busy and no stick velocity). The skid sets no state code (the
   original's 9): the run stop's own bits gate the same updates.
 - **The idle's fade** (0.15 s, 5 updates) holds `0x10000000`, so after a stop, a release or a block the stick turns
@@ -537,18 +571,9 @@ top edge.
 
 - **Jog**: when a pad-controlled human jogs other than when carrying (a movement style, a script).
 - **The idle threshold's getter** (answered): the sneak-walk speed ([Coney's implementation](#coneys-implementation)).
-- **A steady run's velocity in floats**: the original's run measures at or above the run speed on 10 of 93 updates,
-  Coney's on about 6 %. How the velocity is built, confirmed (code) at `0x00240e38`: the direction is the new
-  rotation's axis (`Quat_AxisY`, `0x003363b0`, called at `0x002418d4`, of the quaternion made from the half heading's
-  sine and cosine), multiplied by the speed in VU0 (`0x00241b0c`), then the vertical velocity is stored in its third
-  part; the speed the skid tests is the length of the velocity's three parts in VU0 (`vmul.xyz`, the adds and `vsqrt`,
-  `0x00240f38` to `0x00240f50`). Coney builds facing × speed in IEEE floats and takes the length of x and y only. In
-  `chars_run_stop_hit` the original's skid test measured exactly the run speed (`0x40f9a3ad`) on the release's update
-  and the run stop 417 played, where Coney's run, alike to the release, idled (confirmed (runtime), run
-  r-20261124-chars-run-stop-hit, the original's side). That the different construction decides it is inferred from the
-  code difference: what the VU0's rounding gives at a steady run is not traced. To settle it, log the
-  velocity's three parts and the measured length as raw words at a steady run with a hook at `0x00241b0c` and the
-  skid-test hook, and compare them with Coney's built the original's way.
+- **A steady run's velocity in floats** (answered): built and measured as [The run's velocity in
+  floats](#run-velocity) says, which gives the original's measured speed to the bit; Coney does the same. Whether a
+  release skids on both games alike now turns on their headings being the same float.
 - **The run start's speed on its 7th and 11th updates** in `run_circle` (3.35 and 5.40 m/s against Coney's 3.25 and
   5.54): which key the original samples there.
 - **The trace's clip id in the gait blend** (record `+0x20`): 410 where Coney reports the blend's leading clip (411,

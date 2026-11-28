@@ -9,12 +9,13 @@ fields = ["player", "held", "stop"]
 
 [original]
 slot = 1
-patches = ["scripted-pad", "right-stick", "state-code", "skid-test"]
+patches = ["scripted-pad", "right-stick", "state-code", "skid-test", "run-velocity", "run-rotation", "run-measure"]
 
 [coney]
-# On Coney (2026-11-28) the run matches the original's to the release, but the release plays the idle (388) where the
-# original's skid test sees the run speed exactly and plays the run stop (417): Coney's velocity is not built in the
-# original's floats (#1714; docs/research/characters-locomotion.md#open-questions says how to settle it).
+# On Coney (2026-11-28, #1714) the velocity and its measured speed are built as the original builds them, to the bit
+# for the same heading, but the release still plays the idle (388) where the original plays the run stop (417): Coney's
+# heading at the release is 91.068° against the original's 90.999°, and which side of the run speed the measured speed
+# lands on changes with every heading float (docs/research/characters-locomotion.md#run-velocity).
 level = "level99"
 # Slot 1's spot and camera (the first row of the original's walk60 trace): Coney's checkpoint start is not the
 # slot's (#1696).

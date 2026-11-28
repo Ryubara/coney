@@ -139,6 +139,38 @@ log = [
     { value = "f28", name = "speed" },
 ]
 
+[hook.run-velocity]
+description = "The locomotion's velocity build (Human_PlayerLocomotion, at 0x00241b0c, before the VU0 multiply): the direction's three parts and the speed it is scaled by, the new rotation's z and w, and the vertical velocity stored in the third part, as raw words."
+research = "docs/research/characters-locomotion.md#run-velocity"
+address = 0x00241b0c
+# qmtc2 v0,vf1; qmtc2 a2,vf2
+original = [0x48a20800, 0x48a61000]
+log = [
+    { value = "[s5 + 0x0]", name = "dir_x" },
+    { value = "[s5 + 0x4]", name = "dir_y" },
+    { value = "[s5 + 0x8]", name = "dir_z" },
+    { value = "f26", name = "speed" },
+    { value = "[s6 + 0x8]", name = "rot_z" },
+    { value = "[s6 + 0xc]", name = "rot_w" },
+    { value = "[s1 + 0x3a0]", name = "vz" },
+]
+
+[hook.run-rotation]
+description = "The locomotion's new rotation (Human_PlayerLocomotion, at 0x00241894, after Math_Sinf and Math_Cosf of the half heading): the half heading, its sine and its cosine, as raw words."
+research = "docs/research/characters-locomotion.md#run-velocity"
+address = 0x00241894
+# lq v0,0x10(sp); mfc1 v1,f21
+original = [0x7ba20010, 0x4403a800]
+log = [{ value = "f20", name = "half" }, { value = "f21", name = "sin" }, { value = "f0", name = "cos" }]
+
+[hook.run-measure]
+description = "The velocity the locomotion measures (Human_PlayerLocomotion, at 0x00240f2c, vtable +0x94's vector before the VU0 length): its three parts as raw words."
+research = "docs/research/characters-locomotion.md#run-velocity"
+address = 0x00240f2c
+# lq v1,0x0(v0); move a0,s1
+original = [0x78430000, 0x0220202d]
+log = [{ value = "[v0 + 0x0]", name = "vx" }, { value = "[v0 + 0x4]", name = "vy" }, { value = "[v0 + 0x8]", name = "vz" }]
+
 [hook.inventory-add]
 description = "Each call of Inventory_AddItem (0x0041e5b0): the caller, the inventory, the player, the item, the amount and the notify flag (1 calls the CfgInventoryCallback function)."
 research = "docs/research/player-state.md#inventory"
