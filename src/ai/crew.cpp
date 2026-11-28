@@ -449,6 +449,7 @@ WarriorAttackTactic::WarriorAttackTactic(double chief, ScriptServices& services,
     : Tactic(kCrewAttack, {}), m_chief(chief), m_services(&services), m_formations(&formations) {}
 
 void WarriorAttackTactic::start(Gang& gang) {
+    // Stand-in: the tactic's chief stands for the gang's leader (Gang_GetLeader), who is the chief for a crew.
     Brain* chief = m_services->brain(m_chief);
     if (chief == nullptr) {
         return;
@@ -460,6 +461,8 @@ void WarriorAttackTactic::start(Gang& gang) {
         member->flush();
         member->pushGoal(std::make_unique<FollowAndAttackGoal>(*m_services, *m_formations, m_chief));
     }
+    // Stand-in: the gang's idle fidget clips and the note of whether the chief's line still plays (+0x20) are not
+    // kept.
     // An attack begun on a valid enemy is started again by the same order, so the crew takes a new target.
     if (const Brain* target = gang.chosenTarget(); target != nullptr && validEnemy(*chief, *target)) {
         setRestartsOnRepeat(true);
