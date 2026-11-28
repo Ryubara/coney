@@ -33,9 +33,16 @@ constexpr std::array<Sector, kWarCommandSlots> kSectors{
 // The slots' centres relative to (centre x, 0), default video mode (WarCommandDisplay_Place).
 constexpr std::array<std::array<float, 2>, kWarCommandSlots> kSlotPlaces{
     {{0.0F, 0.795F}, {0.069F, 0.795F}, {0.071F, 0.93F}, {0.0F, 0.93F}, {-0.071F, 0.93F}, {-0.069F, 0.795F}}};
-// The slots' icons in `part_page0`.
-constexpr std::array<std::size_t, kWarCommandSlots> kSlotIcons{0x56, 0x5a, 0x58, 0x55, 0x59, 0x5b};
-// The three sprites' sizes: the backing, the plate and the icon.
+// The slots' icons: their `part_page0` rectangles, as WarCommandDisplay_Init's sprite words name them.
+constexpr std::array<std::uint32_t, kWarCommandSlots> kSlotIcons{0x56, 0x5a, 0x58, 0x55, 0x59, 0x5b};
+// The plates' and backings' sprite word: big_font's rectangle 256, a white disc
+// (docs/research/hud.md#war-command-disc).
+constexpr std::uint32_t kDiscWord = 0xd0100;
+// The resource instances the sprites are set up over: big_font (6, also font slot 6) and part_page0 (3).
+constexpr int kBigFontInstance = 6;
+constexpr int kPartsInstance = 3;
+// The three sprites' sizes (WarCommandDisplay_Update): the backing 0.07 x 1.1 (`0x0050d304` x `0x0050d314`), the plate
+// 0.07, the icon 0.08 (`0x0050d210`); each as wide as its rectangle's texels make it at that height.
 constexpr float kBackingSize = 0.077F;
 constexpr float kPlateSize = 0.07F;
 constexpr float kIconSize = 0.08F;
@@ -54,8 +61,6 @@ constexpr graphics::Rgba kGrey{35, 35, 35, 255};
 constexpr graphics::Rgba kDark{30, 30, 30, 255};
 constexpr graphics::Rgba kBlack{0, 0, 0, 255};
 constexpr graphics::Rgba kNameGrey{110, 110, 110, 255};
-// A GUI width that draws as square as a GUI height (a GUI width is stretched by 640 / 448).
-constexpr float kSquareWidth = 448.0F / 640.0F;
 
 // Whether `angle` lies in `sector`, `reach` degrees wider at each end.
 bool inSector(float angle, const Sector& sector, float reach) {
@@ -74,6 +79,33 @@ float axisAngle(float offset) {
     return ratio >= 1.0F ? 90.0F : std::asin(ratio) * 180.0F / std::numbers::pi_v<float>;
 }
 
+// A sprite word's rectangle: `Page_Rect` keeps its low 16 bits.
+std::size_t rectOf(std::uint32_t word) { return word & 0xffffU; }
+
+// The batch over resource instance `instance`'s sheet: big_font's (font slot 6) or part_page0's; null for any other,
+// or when the canvas has none.
+graphics::SpriteBatch* batchOf(const HudCanvas& canvas, int instance) {
+    if (instance == kBigFontInstance) {
+        // A canvas without big_font hands part_page0 for slot 6, whose rectangle 256 is something else.
+        graphics::SpriteBatch* big = canvas.text.textBatch ? canvas.text.textBatch(gui::kBigFontSlot) : nullptr;
+        return big == canvas.parts ? nullptr : big;
+    }
+    return instance == kPartsInstance ? canvas.parts : nullptr;
+}
+
+// Adds `sprite` centred at GUI (`x`, `y`), `height` tall and as wide as its rectangle's texels make it at that height
+// (BaseWidget_UpdateSize, no aspect fix). Nothing when its batch or rectangle is missing.
+void addSlotSprite(const HudCanvas& canvas, const WarCommandSprite& sprite, float x, float y, float height,
+                   graphics::Rgba colour) {
+    graphics::SpriteBatch* batch = batchOf(canvas, sprite.instance);
+    const std::size_t rect = rectOf(sprite.word);
+    if (batch == nullptr || rect >= batch->sheet().page.rects.size()) {
+        return;
+    }
+    const float width = squareTexelWidth(batch->sheet(), batch->sheet().page.rect(rect), height);
+    addRect(batch, rect, x, y, width, height, colour);
+}
+
 } // namespace
 
 std::optional<int> warCommandOfSlot(std::size_t slot) {
@@ -84,9 +116,18 @@ std::optional<int> warCommandOfSlot(std::size_t slot) {
     return kCommands.at(slot);
 }
 
-WarCommandSlotSprites warCommandSlotSprites(std::size_t /*slot*/) {
-    // Stub for the test commit: nothing mapped yet.
-    return {};
+WarCommandSlotSprites warCommandSlotSprites(std::size_t slot) {
+    // Stand-in: the display's player (+0x40) is the caller's (Look::centreX); the name's text (MessageHUD_Setup) is
+    // laid out by render() from fixed values, and its box widget (+0x240), which Render never draws, is not kept.
+    // Coney's choice: the setup's places, colours, size 0.08 and depths are not kept: Update places and sizes every
+    // sprite each frame (kSlotPlaces and the sizes above), Render colours each as it draws, and the depths are unused
+    // with an instance given.
+    const std::size_t index = slot < kWarCommandSlots ? slot : 0;
+    WarCommandSlotSprites sprites;
+    sprites.icon = {.word = kSlotIcons.at(index), .instance = kPartsInstance};
+    sprites.plate = {.word = kDiscWord, .instance = kBigFontInstance};
+    sprites.backing = {.word = kDiscWord, .instance = kBigFontInstance};
+    return sprites;
 }
 
 std::optional<float> warCommandStickAngle(std::uint8_t x, std::uint8_t y) {
@@ -260,18 +301,11 @@ void WarCommandDisplay::render(const HudCanvas& canvas, const Look& look, std::u
         const float y = kSlotPlaces.at(slot)[1];
         const std::optional<int> command = warCommandOfSlot(slot);
         const bool enabled = !look.enabled || (command && look.enabled(*command));
-        if (canvas.flat != nullptr) {
-            canvas.flat->addSprite(guiSprite(x, y, kBackingSize * kSquareWidth, kBackingSize, graphics::UvRect{},
-                                             faded(lit ? kGrey : kBlack, others)));
-            canvas.flat->addSprite(guiSprite(x, y, kPlateSize * kSquareWidth, kPlateSize, graphics::UvRect{},
-                                             faded(lit ? kGold : kGrey, others)));
-        }
-        if (canvas.parts != nullptr && kSlotIcons.at(slot) < canvas.parts->sheet().page.rects.size()) {
-            const float width = squareTexelWidth(canvas.parts->sheet(),
-                                                 canvas.parts->sheet().page.rect(kSlotIcons.at(slot)), kIconSize);
-            addRect(canvas.parts, kSlotIcons.at(slot), x, y, width, kIconSize,
-                    faded(enabled ? kWhite : kDark, iconFade));
-        }
+        // The backing and plate are big_font's disc, under the part_page0 icon (the big font's batch draws first).
+        const WarCommandSlotSprites sprites = warCommandSlotSprites(slot);
+        addSlotSprite(canvas, sprites.backing, x, y, kBackingSize, faded(lit ? kGrey : kBlack, others));
+        addSlotSprite(canvas, sprites.plate, x, y, kPlateSize, faded(lit ? kGold : kGrey, others));
+        addSlotSprite(canvas, sprites.icon, x, y, kIconSize, faded(enabled ? kWhite : kDark, iconFade));
     }
     // The highlighted slot's name, until its time runs out or its text is shut down. Its box widget (+0x240) is laid
     // out by Update but never drawn: Render draws only the text (+0x50) and the slots.

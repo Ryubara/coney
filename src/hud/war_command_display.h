@@ -67,8 +67,7 @@ struct WarCommandSlotSprites {
 /// the six slots and the highlighted slot's name; whoever owns the pad and the game state reads the stick into it,
 /// passes the order to the dispatcher (0x0041c4e0) and switches the camera's stick as cameraStickOn() says.
 ///
-/// **Coney's choices**: the slots' backing and plate are plain squares (the original's sprite word `0xd0100` of
-/// sprite instance 6 is not mapped to a sheet rectangle); the 16:9 layouts are not built. The name's time counts from
+/// **Coney's choices**: the 16:9 layouts are not built. The name's time counts from
 /// the last picking update (the original sets the text on each), and the display closes when that time passes the
 /// name's `<DISPLAYTIME>` after an order.
 class WarCommandDisplay {

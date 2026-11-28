@@ -1,0 +1,45 @@
+version = 1
+id = "r-20261128-level80-c2-menu-disc"
+date = "2026-11-28"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "3122486f74ebb17734982c0211570ad8c9b7f94aab5e27d9c23bcd1eb3c4c4b6"
+
+[who]
+agent = "ae8ac803b45a1bc3f"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains", "right-stick", "scripted-pad"]
+
+[run]
+name = ""
+method = "load-checkpoint recipe level80 checkpoint 2, the intro skipped with cross; pad recipe R2 held 600 updates with the right stick up 1 % left of centre (follow lit); the window captured by handle while held (six round slots); read player 1's display (0x00600848[0] + 0x1ef0 = 0x0061b860) slot 0 plate (+0x340) and backing (+0xf40) BaseWidget fields: width +0x90, height +0x94, texture rectangle +0xa4, instance +0xc4, sprite word +0xc8; an earlier run's read once caught widths 0.1 and 0.11 (the size before the update's aspect pass)"
+
+[values]
+plate_instance = 6
+plate_word = 852224
+plate_height = 0.07
+plate_width = 0.06889
+backing_instance = 6
+backing_word = 852224
+backing_height = 0.077
+backing_width = 0.07578
+rect_u0 = 0.95752
+rect_v0 = 0.72314
+rect_u1 = 0.98779
+rect_v1 = 0.78467
+round_slots_in_picture = 6
+
+[addresses]
+WarCommandDisplay_Init = 0x001a62c0
+WarCommandDisplay_Update = 0x001a7e48
+BaseWidget_UpdateSize = 0x001a21e8
+player_panels = 0x00600848
