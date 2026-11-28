@@ -241,7 +241,12 @@ name = "LevelHeader_OnLoaded"
 page = "level-loading.md#original-structure"
 level = "confirmed-code"
 coney = "src/world/level_object.h:makeLevelHeaderHandler"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "each model is linked to its dictionary as it is popped, not after the occluders in the order sky box, skyline, cloud box"
+relation = "stand-in"
+issue = 380
 
 [[function]]
 address = 0x0040d0a8

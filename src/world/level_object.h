@@ -136,7 +136,7 @@ using LinkLevelModel = std::expected<void, Error> (*)(chunk::LoadedObject& model
 /// model (0x41) and dictionary (0x0B), linking each pair with `link`, and the occluders (0x53); pushes the
 /// LevelObject. Fails when anything is missing or out of order, or as `link` and readOccluders() do. The level object
 /// starts empty (the original's constructor on the header's own bytes) and takes the occluders last.
-/// @orig 0x0040ce30 LevelObject_OnLoaded (unknown)
+/// @orig 0x0040ce30 LevelHeader_OnLoaded (World/unknown)
 /// @orig 0x0040cf40 LevelObject_Construct (World/unknown)
 /// @orig 0x0040d088 LevelObject_SetOccluders (World/unknown)
 [[nodiscard]] chunk::OnLoaded makeLevelHeaderHandler(LinkLevelModel link);
