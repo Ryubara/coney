@@ -1807,10 +1807,10 @@ void Human::noteCarriedPropEvents(const anim::AnimTask* before, std::uint32_t be
     }
 }
 
-// Only the players' rage: the original walks the players' list (scenes.md#join-reset), here the humans that fight as a
-// player (Fighter::player()).
+// Only the players' rage (scenes.md#join-reset).
 void endAllRage(std::span<Human* const> humans) {
     for (Human* human : humans) {
+        // Coney stand-in: the original walks the players' list; here a player is a human that fights as one.
         if (human != nullptr && human->fighter().player()) {
             human->setRageMode(false);
         }
