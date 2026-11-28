@@ -273,6 +273,125 @@ TEST_CASE("wounding cuts a human's health to a quarter once and stamps 14 s; hea
     CHECK(fight.human().fighter().health().value() == maximum);
 }
 
+TEST_CASE("HuIsAlive counts an arrested human alive and a wounded one not", "[human][script]") {
+    // Expected: characters-script.md#hu-is-alive, confirmed (code): no state of 0x180050000 (wounded
+    // 0x10000 among them, cuffed 0x20000 not) and not 0x100000000.
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    REQUIRE(fight.human().aliveAndUp());
+    fight.human().setArrested(true);
+    CHECK(fight.human().aliveAndUp());
+    fight.human().setArrested(false);
+    fight.human().setWounded(true);
+    CHECK_FALSE(fight.human().aliveAndUp());
+    fight.human().setWounded(false);
+    CHECK(fight.human().aliveAndUp());
+}
+
+TEST_CASE("HuRevive wakes a knocked-out human into the fight stance with full health and leaves stun and rage",
+          "[human][script]") {
+    // Expected: characters-script.md#hu-revive, confirmed (code): Human_Heal in full and the anim state rebuilt,
+    // nothing of Human_ResetForMode.
+    const FightCharacter character;
+    SECTION("knocked out by a script") {
+        Fight fight(character, 30.0F);
+        fight.human().fighter().health().set(100);
+        fight.human().script().knockedOut = true;
+        fight.human().revive();
+        CHECK_FALSE(fight.human().script().knockedOut);
+        CHECK(fight.human().fighter().health().value() == fight.human().fighter().health().maximum());
+        CHECK(fight.human().fighter().inFightStance());
+    }
+    SECTION("stunned and raging") {
+        Fight fight(character, 30.0F);
+        fight.human().takeHit(hitOf(15, 37, 0x1a, 0xc00));
+        fight.run("", 2);
+        REQUIRE(fight.human().fighter().victim().stunned());
+        fight.human().setRageMode(true);
+        fight.human().revive();
+        CHECK(fight.human().fighter().victim().stunned());
+        CHECK(fight.human().fighter().combat().rage().raging());
+    }
+}
+
+TEST_CASE("Human_Heal not in full adds half the maximum, capped, and ends a wound", "[human][script]") {
+    // Expected: characters-script.md#hu-revive, confirmed (code)
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    combat::Health& health = fight.human().fighter().health();
+    const int maximum = health.maximum();
+    health.set(100);
+    fight.human().heal(false);
+    CHECK(health.value() == 100 + (maximum >> 1));
+    fight.human().heal(false);
+    CHECK(health.value() == maximum);
+    fight.human().setWounded(true);
+    fight.human().heal(false);
+    CHECK_FALSE(fight.human().script().wounded);
+}
+
+TEST_CASE("HuSetNormalMode without full gets a downed human up and leaves an arrest", "[human][script]") {
+    // Expected: scenes.md#join-reset, confirmed (code): Human_GetUp for 0x80000 whatever `full` says; no step clears
+    // 0x20000.
+    const FightCharacter character;
+    SECTION("knocked down") {
+        Fight fight(character, 30.0F);
+        fight.human().takeHit(hitOf(13, 46, 0x26));
+        fight.run("", 10);
+        REQUIRE(fight.human().fighter().victim().grounded());
+        fight.human().setNormalMode(false);
+        CHECK_FALSE(fight.human().fighter().victim().grounded());
+    }
+    SECTION("arrested") {
+        Fight fight(character, 30.0F);
+        fight.human().setArrested(true);
+        fight.human().setNormalMode(false);
+        CHECK(fight.human().script().arrested);
+    }
+}
+
+TEST_CASE("HuSetNormalMode in full leaves 1 health only when the pending damage reaches the health",
+          "[human][script]") {
+    // Expected: scenes.md#join-reset, confirmed (code): health at or below +0x118 becomes 1 and +0x118 0.
+    const FightCharacter character;
+    SECTION("a pending hit that would take it all") {
+        Fight fight(character, 30.0F);
+        fight.human().setFlag(flag::kDemiGod, false);
+        fight.human().fighter().health().set(500);
+        fight.human().takeHit(hitOf(12, 600, 0x0a));
+        fight.human().setNormalMode(true);
+        CHECK(fight.human().fighter().health().value() == 1);
+        fight.run("", 3);
+        CHECK(fight.human().fighter().health().value() == 1);
+    }
+    SECTION("no pending hit") {
+        Fight fight(character, 30.0F);
+        fight.human().fighter().health().set(500);
+        fight.human().setNormalMode(true);
+        CHECK(fight.human().fighter().health().value() == 500);
+    }
+}
+
+TEST_CASE("an arrest leaves rage as it is", "[human][script]") {
+    // Expected: crimes.md#arrest, confirmed (code): Human_Arrest ends a standing stun but no grab or rage.
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    fight.human().setRageMode(true);
+    fight.human().setArrested(true);
+    CHECK(fight.human().fighter().combat().rage().raging());
+}
+
+TEST_CASE("a wounded human weighs 1e9 until the wound ends", "[human][script]") {
+    // Expected: characters-script.md#hu-wounded, confirmed (code): attribute 7 is 1e9 at the start,
+    // 1.0 at the end.
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    fight.human().setWounded(true);
+    CHECK(fight.human().pushWeight() == 1e9F);
+    fight.human().setWounded(false);
+    CHECK(fight.human().pushWeight() == 1.0F);
+}
+
 TEST_CASE("a human whose movement is locked is not moved by the stick until unlocked", "[human][script]") {
     const FightCharacter character;
     Fight fight(character, 30.0F);

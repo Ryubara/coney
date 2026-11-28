@@ -177,7 +177,9 @@ TEST_CASE("the getters answer for a human and their defaults for a handle that n
     CHECK(level.call("HuGetGangType", {Value(2.0)}).number() == 19.0);
     level.call("HuSetArrested", {Value(2.0), Value(1.0)});
     CHECK(level.call("HuIsArrested", {Value(2.0)}).number() == 1.0);
-    CHECK(level.call("HuIsAlive", {Value(2.0)}).isNil());
+    // Expected: characters-script.md#hu-is-alive, confirmed (code): cuffed (0x20000) is not among the
+    // down states, so an arrested human is alive.
+    CHECK(level.call("HuIsAlive", {Value(2.0)}).number() == 1.0);
     // Expected: ../references/bindings/character.md#husethealthpercent, confirmed (runtime): a quarter comes out
     // one point under, as the PS2's products round toward zero, and the getter reads back what was set.
     level.call("HuSetHealthPercent", {Value(2.0), Value(25.0)});
@@ -189,6 +191,18 @@ TEST_CASE("the getters answer for a human and their defaults for a handle that n
     CHECK(level.call("HuGetHealthPercent", {Value(99.0)}).number() == 0.0);
     CHECK(level.call("HuGetGangType", {Value(99.0)}).number() == 65535.0);
     CHECK(level.call("HuGetHeldObject", {Value(99.0)}).number() == 0.0);
+}
+
+TEST_CASE("HuSetNormalMode on an AI human ends the players' rage and leaves his own", "[ai][scripted]") {
+    // Expected: scenes.md#join-reset, confirmed (code): Human_ResetForMode's Humans_EndAllRage ends the rage of each
+    // player, and no other step ends the human's own.
+    Level level;
+    Brain& thug = level.add({44.0F, 40.0F, 0.0F});
+    thug.human().setRageMode(true);
+    level.scene.player().human().setRageMode(true);
+    level.call("HuSetNormalMode", {Value(2.0), Value(0.0)});
+    CHECK_FALSE(level.scene.player().human().fighter().combat().rage().raging());
+    CHECK(thug.human().fighter().combat().rage().raging());
 }
 
 TEST_CASE("a call on a human the level has not made yet waits for it", "[ai][scripted]") {

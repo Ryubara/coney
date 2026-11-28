@@ -890,6 +890,8 @@ class Human final : public Holdable {
     [[nodiscard]] bool alive() const {
         return !m_fighter.health().depleted() && !m_script.arrested && !m_script.knockedOut;
     }
+    /// Stub for the test commit (task 685): HuIsAlive's answer, still alive()'s.
+    [[nodiscard]] bool aliveAndUp() const { return alive(); }
     /// Health as a percentage of its maximum, 0-100 (`HuGetHealthPercent`).
     /// @orig 0x00237c38 Human_GetHealthPercent (unknown)
     [[nodiscard]] float healthPercent() const { return m_fighter.health().fraction() * 100.0F; }
@@ -916,6 +918,8 @@ class Human final : public Holdable {
     /// @orig 0x0022eb40 Human_Heal (unknown)
     /// @orig 0x0021ce08 Human_CreatePhysicsBody (unknown)
     void heal() { m_blockHumansFlag = true; }
+    /// Stub for the test commit (task 685): the heal's body only.
+    void heal(bool /*full*/) { heal(); }
     /// `HuSetNormalMode` (Fighter::setNormal()); an arrest ends too.
     void setNormalMode(bool full);
     /// Breaks any pair it is in from outside (Fighter::breakPair()), as a placement does.
