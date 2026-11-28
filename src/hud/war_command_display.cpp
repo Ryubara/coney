@@ -79,11 +79,9 @@ float axisAngle(float offset) {
     return ratio >= 1.0F ? 90.0F : std::asin(ratio) * 180.0F / std::numbers::pi_v<float>;
 }
 
-// A sprite word's rectangle: `Page_Rect` keeps its low 16 bits.
-std::size_t rectOf(std::uint32_t word) { return word & 0xffffU; }
-
 // The batch over resource instance `instance`'s sheet: big_font's (font slot 6) or part_page0's; null for any other,
 // or when the canvas has none.
+// @coney-only glue: the original's resource instances are Coney's HUD batches
 graphics::SpriteBatch* batchOf(const HudCanvas& canvas, int instance) {
     if (instance == kBigFontInstance) {
         // A canvas without big_font hands part_page0 for slot 6, whose rectangle 256 is something else.
@@ -91,19 +89,6 @@ graphics::SpriteBatch* batchOf(const HudCanvas& canvas, int instance) {
         return big == canvas.parts ? nullptr : big;
     }
     return instance == kPartsInstance ? canvas.parts : nullptr;
-}
-
-// Adds `sprite` centred at GUI (`x`, `y`), `height` tall and as wide as its rectangle's texels make it at that height
-// (BaseWidget_UpdateSize, no aspect fix). Nothing when its batch or rectangle is missing.
-void addSlotSprite(const HudCanvas& canvas, const WarCommandSprite& sprite, float x, float y, float height,
-                   graphics::Rgba colour) {
-    graphics::SpriteBatch* batch = batchOf(canvas, sprite.instance);
-    const std::size_t rect = rectOf(sprite.word);
-    if (batch == nullptr || rect >= batch->sheet().page.rects.size()) {
-        return;
-    }
-    const float width = squareTexelWidth(batch->sheet(), batch->sheet().page.rect(rect), height);
-    addRect(batch, rect, x, y, width, height, colour);
 }
 
 } // namespace
@@ -288,6 +273,19 @@ void WarCommandDisplay::render(const HudCanvas& canvas, const Look& look, std::u
         return;
     }
     const float others = fadeOf(false, nowMs);
+    // Adds one of a slot's sprites centred at GUI (x, y), `height` tall and as wide as its rectangle's texels make it
+    // at that height (BaseWidget_UpdateSize, no aspect fix); its rectangle is the word's low 16 bits, as Page_Rect
+    // reads it. Nothing when its batch or rectangle is missing.
+    const auto addSprite = [&canvas](const WarCommandSprite& sprite, float x, float y, float height,
+                                     graphics::Rgba colour) {
+        graphics::SpriteBatch* batch = batchOf(canvas, sprite.instance);
+        const std::size_t rect = sprite.word & 0xffffU;
+        if (batch == nullptr || rect >= batch->sheet().page.rects.size()) {
+            return;
+        }
+        addRect(batch, rect, x, y, squareTexelWidth(batch->sheet(), batch->sheet().page.rect(rect), height), height,
+                colour);
+    };
     // The six slots, back to front: the backing, the plate, the icon; the chosen one blinks after an order.
     for (std::size_t slot = 0; slot < kWarCommandSlots; ++slot) {
         const bool isChosen = slot == m_highlight;
@@ -303,9 +301,9 @@ void WarCommandDisplay::render(const HudCanvas& canvas, const Look& look, std::u
         const bool enabled = !look.enabled || (command && look.enabled(*command));
         // The backing and plate are big_font's disc, under the part_page0 icon (the big font's batch draws first).
         const WarCommandSlotSprites sprites = warCommandSlotSprites(slot);
-        addSlotSprite(canvas, sprites.backing, x, y, kBackingSize, faded(lit ? kGrey : kBlack, others));
-        addSlotSprite(canvas, sprites.plate, x, y, kPlateSize, faded(lit ? kGold : kGrey, others));
-        addSlotSprite(canvas, sprites.icon, x, y, kIconSize, faded(enabled ? kWhite : kDark, iconFade));
+        addSprite(sprites.backing, x, y, kBackingSize, faded(lit ? kGrey : kBlack, others));
+        addSprite(sprites.plate, x, y, kPlateSize, faded(lit ? kGold : kGrey, others));
+        addSprite(sprites.icon, x, y, kIconSize, faded(enabled ? kWhite : kDark, iconFade));
     }
     // The highlighted slot's name, until its time runs out or its text is shut down. Its box widget (+0x240) is laid
     // out by Update but never drawn: Render draws only the text (+0x50) and the slots.
