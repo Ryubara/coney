@@ -34,6 +34,7 @@ AnimRangeList rangesWithDamage(std::size_t count, std::int16_t damage) {
 } // namespace
 
 TEST_CASE("health takes damage down to 0 and reports its fraction", "[combat]") {
+    // Expected: combat-reactions.md#damage, confirmed (runtime) (health, record +0x144, falls by exactly the damage)
     Health health(314, 900);
     CHECK(health.fraction() == Approx(314.0F / 900.0F));
     CHECK(health.apply(17) == 17);
