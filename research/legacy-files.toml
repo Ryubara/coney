@@ -613,7 +613,7 @@ tag = 1
 tag = 6
 
 ["src/gamemodes/level_crime_services.cpp"]
-tag = 6
+tag = 4
 
 ["src/gamemodes/level_crime_services.h"]
 tag = 1
@@ -628,7 +628,7 @@ tag = 1
 tag = 4
 
 ["src/gamemodes/level_object_services.cpp"]
-tag = 18
+tag = 17
 
 ["src/gamemodes/level_object_services.h"]
 tag = 3
@@ -821,10 +821,10 @@ tag = 3
 tag = 6
 
 ["src/gui/rumble_mode_gui/rumble_data.cpp"]
-tag = 2
+tag = 1
 
 ["src/gui/rumble_mode_gui/rumble_gang_chooser.cpp"]
-tag = 7
+tag = 5
 
 ["src/gui/rumble_mode_gui/rumble_intro.cpp"]
 tag = 9
@@ -834,7 +834,7 @@ comment = 4
 tag = 1
 
 ["src/gui/rumble_mode_gui/rumble_menu.cpp"]
-tag = 21
+tag = 18
 
 ["src/gui/rumble_mode_gui/rumble_menu.h"]
 comment = 2
@@ -1004,7 +1004,7 @@ tag = 33
 comment = 3
 
 ["src/human/human_flight.cpp"]
-tag = 2
+tag = 1
 
 ["src/human/human_held.cpp"]
 tag = 3
@@ -1298,7 +1298,7 @@ tag = 5
 tag = 1
 
 ["src/warriors/crime_reports.cpp"]
-tag = 13
+tag = 10
 
 ["src/warriors/crime_reports.h"]
 comment = 1
@@ -1308,7 +1308,7 @@ tag = 1
 tag = 10
 
 ["src/warriors/game_over.cpp"]
-tag = 2
+tag = 1
 
 ["src/warriors/game_over.h"]
 comment = 1
@@ -1348,9 +1348,6 @@ tag = 5
 
 ["src/warriors/tag_session.h"]
 comment = 2
-
-["src/warriors/unlockables.cpp"]
-tag = 1
 
 ["src/warriors/unlockables.h"]
 tag = 2
@@ -1888,7 +1885,7 @@ citation = 2
 citation = 17
 
 ["tests/gamemodes/gameplay_objects_test.cpp"]
-citation = 5
+citation = 4
 
 ["tests/gamemodes/gameplay_sound_call_test.cpp"]
 citation = 1
@@ -1993,10 +1990,10 @@ citation = 8
 citation = 17
 
 ["tests/gui/rumble_mode_gui/rumble_match_screens_test.cpp"]
-citation = 9
+citation = 8
 
 ["tests/gui/rumble_mode_gui/rumble_menu_test.cpp"]
-citation = 12
+citation = 8
 
 ["tests/gui/screen_flow_controller_test.cpp"]
 citation = 7
@@ -2545,7 +2542,7 @@ citation = 1
 citation = 4
 
 ["tests/warriors/game_over_test.cpp"]
-citation = 5
+citation = 3
 
 ["tests/warriors/level_table_test.cpp"]
 citation = 2
@@ -2581,10 +2578,17 @@ citation = 9
 citation = 5
 
 ["tests/world_objects/car_hits_test.cpp"]
+<<<<<<< HEAD
 citation = 5
 
 ["tests/world_objects/cars_test.cpp"]
 citation = 8
+=======
+citation = 4
+
+["tests/world_objects/cars_test.cpp"]
+citation = 7
+>>>>>>> 00f640a1b (gameplay: Fix the Rumble gangs a fresh profile can choose)
 
 ["tests/world_objects/disc_doors_test.cpp"]
 citation = 1

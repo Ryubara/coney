@@ -40,9 +40,9 @@ std::vector<std::byte> discOrderGangChunk() {
 } // namespace
 
 TEST_CASE("a fresh profile's Choose Gangs lists gangs 5, 3, 4 and 1 in the script's order", "[rumble_menu]") {
-    // Expected: confirmed (runtime), run r-20261128-rumble-fresh-gangs: on a fresh boot the gang list at 0x0063ee4c
-    // held ids 5, 3, 4 and 1 at indices 0-3, and gang 4's resolved roster read 101 102 101 102 103 104 105 101 102;
-    // global.lua's CfgUnlockables unlocks records 170, 182, 188 and 190 (frontend.md#rumble-data).
+    // Expected: frontend.md#rumble-data, confirmed (runtime)
+    // Run r-20261128-rumble-fresh-gangs: on a fresh boot the gang list at 0x0063ee4c held ids 5, 3, 4 and 1 at indices
+    // 0-3, and gang 4's resolved roster read 101 102 101 102 103 104 105 101 102.
     RumbleMenuHarness h("10 tap cross\n20 tap cross\n");
     h.files["rumble_gang.lua"] = discOrderGangChunk();
     h.to(25);
@@ -60,9 +60,9 @@ TEST_CASE("a fresh profile's Choose Gangs lists gangs 5, 3, 4 and 1 in the scrip
 }
 
 TEST_CASE("a fresh profile unlocks the character types global.lua unlocks at boot", "[rumble_menu]") {
-    // Expected: confirmed (runtime), run r-20261128-rumble-fresh-gangs (records 216-224 and 270-283 unlocked in the
-    // locked bits at 0x006fe8f8 after the title); the records are global.lua's (level 0 and level 8, group 0, item 0)
-    // in docs/references/unlockables.md#rumble-character.
+    // Expected: frontend.md#rumble-data, confirmed (runtime)
+    // Run r-20261128-rumble-fresh-gangs: records 216-224 and 270-283 (level 0 and level 8, group 0, item 0, of
+    // docs/references/unlockables.md#rumble-character) were unlocked in the locked bits at 0x006fe8f8 after the title.
     const Unlockables fresh = Unlockables::freshProfile();
     constexpr std::array kUnlocked{2,  6,   12,  16,  19,  22,  27,  31,  34,  91,  92, 93,
                                    94, 101, 102, 103, 104, 105, 224, 225, 226, 227, 228};

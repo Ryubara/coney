@@ -21,10 +21,11 @@ enum class UnlockKind : std::uint8_t {
 /// (kind, id) pairs it holds and "locked" for every other, as the original's check answers for an id no record
 /// unlocks (docs/references/bindings/level.md#um_isdataunlocked).
 ///
-/// **Coney's choice** for a fresh profile (freshProfile()), from what a fresh boot shows
-/// (docs/research/frontend.md#rumble-setup): the modes 1 ON 1 (12) and WAR PARTY (14), the Fight Pen (102), and the
-/// gangs BASEBALL FURIES (5) and ORPHANS (3); no character type, so every type the stand-in table names is replaced.
-/// Which ids the story unlocks is not researched, so everything else stays locked until it is.
+/// **Coney's choice** for a fresh profile (freshProfile()), until Coney runs the records: what `global.lua`'s
+/// `CfgUnlockables` unlocks on every boot with `UM_Unlock(0, 0, 0)` and `UM_Unlock(8, 0, 0)`, of the four kinds above
+/// (docs/research/frontend.md#rumble-data, confirmed at runtime): the modes 1 ON 1 (12) and WAR PARTY (14), the Fight
+/// Pen (102), the gangs BASEBALL FURIES (5), ORPHANS (3), TURNBULL ACS (4) and WARRIORS (1), and 23 character types,
+/// none of which the stand-in table replaces. Everything the story unlocks stays locked until Coney has saves.
 ///
 /// Research: docs/research/frontend.md#rumble-data
 class Unlockables {
