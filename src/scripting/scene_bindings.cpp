@@ -250,10 +250,10 @@ NativeFunction makeSceneAddObject(const BindingContext& context) {
 // @orig 0x003615d8 GoalJoinAnimation (unknown)
 NativeFunction makeGoalJoin(const BindingContext& context) {
     return withScenes(context, [](scenes::SceneSystem& scenes, std::span<const Value> args) {
-        // stand-ins: processNow (the fifth argument, true by default) is not read, so the join always acts at once;
-        // with false the original pushes the cinematic and fixed-scene goals unprocessed (the animation goal ignores
-        // it). Every call in the game's scripts passes true. The three forms bind alike: the fixed-scene and
-        // animation goals' walks to the role's start are the host's, as the cinematic's is.
+        // stand-in: processNow (the fifth argument, true by default) is not read, so the join always acts at once; with
+        // false the original pushes the cinematic and fixed-scene goals unprocessed (the animation goal ignores it).
+        // Every call in the game's scripts passes true.
+        // stand-in: the three forms bind alike; each goal's walk to the role's start is the host's.
         scenes.joinHuman(handleArg(args, 0), unsignedArg(args, 1), unsignedArg(args, 2),
                          static_cast<int>(std::trunc(binding::number(args, 3))));
         return binding::none();
