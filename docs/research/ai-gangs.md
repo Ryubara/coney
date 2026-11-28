@@ -999,7 +999,7 @@ with line `0x85`. None of their Process functions ever ends the tactic (they ret
   3 s inside the radius, a walk back outside it; an enemy not targeting him: turn to him; one targeting him: a fight
   goal (4000 ms) when in sight and reach from inside the radius, else turn and shuffle. Events 17 (`+4` = 0), 19 and 22
   (`+8` = 1) hold again; 20 (violence) makes a free member look at the fighter for 3 s and taunt at 10 %.
-- <span id="warrior-hide"></span>**Hide** (`0x13`, the hold for a chief whose brain's `+0x2d5` is set): from the hiding
+- <span id="warrior-hide"></span>**Hide** (`0x13`, the hold for a gang whose brain `+0x2d5` is set): from the hiding
   flag (activity `0x21`) nearest the chief, ten 10 m rays 15° apart find wall points; each member gets Hide (`0x58`) at
   a free wall point at least 1 m from the chief. Events 1 and 16 (a player attacked while hidden in shadow): when no
   free member is left, the attack command is dispatched for the chief; another gang's tactic stops.

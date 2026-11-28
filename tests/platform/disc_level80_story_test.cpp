@@ -393,6 +393,8 @@ std::vector<std::string> hintsFrom(const std::vector<std::string>& order, std::s
 
 TEST_CASE("the disc's level80 from the story: the hints at each checkpoint, walked to the roof, none carried over",
           "[disc][story][level80][hints]") {
+    // Expected: hud.md#hints-hudsettutorialtext, confirmed (code), and the checkpoints of ../missions/level80.md; the
+    // orders it gives, hud.md#warrior-command-menu.
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");

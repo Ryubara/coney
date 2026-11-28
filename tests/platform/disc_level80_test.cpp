@@ -217,6 +217,8 @@ bool skipToPad(Level80& level, int frames) {
 
 TEST_CASE("the disc's level80: R2 and the right stick up give the follow order the script waits for",
           "[disc][story][commands]") {
+    // Expected: hud.md#warrior-command-menu, confirmed (code) and confirmed (runtime): the slot a push picks and the
+    // order R2's release gives.
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -811,6 +813,8 @@ TEST_CASE("the disc's level80: 325's root turn ends the freer facing the cuffed 
 
 TEST_CASE("the disc's level80 checkpoint 3: Fox, Hold Up, the bottle thrown from the aim, the thefts, the back door",
           "[disc][story][throw][steal]") {
+    // Expected: ../missions/level80.md#checkpoints (the checkpoint's flow, from the level's script) and
+    // hud.md#warrior-command-menu, confirmed (code) (the orders given through the menu).
     std::optional<coney::io::Wad> wad = coney::test::openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
