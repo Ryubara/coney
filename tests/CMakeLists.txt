@@ -316,6 +316,7 @@ add_executable(coney_tests
     physics/body_pools_test.cpp
     physics/human_body_test.cpp
     raycast/collision_mesh_test.cpp
+    raycast/world_ray_test.cpp
     physics/body_sweep_test.cpp
     physics/mesh_sweep_test.cpp
     physics/sphere_triangle_test.cpp

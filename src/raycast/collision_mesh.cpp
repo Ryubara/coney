@@ -447,6 +447,9 @@ std::expected<void, Error> onCollisionMeshLoaded(chunk::ChunkStacks& stacks, std
     return {};
 }
 
+void worldRayCast(const CollisionMesh* /*mesh*/, const Ray& /*ray*/, RayResult& /*result*/,
+                  std::span<const std::uint8_t> /*excludeMaterials*/, std::uint32_t /*mask*/) {}
+
 bool dropToGround(const CollisionMesh& mesh, float length, Vec3& position) {
     const auto hit = mesh.rayCast(Ray{.origin = position, .direction = kDown, .length = length}, {}, 0);
     if (!hit) {

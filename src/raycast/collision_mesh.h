@@ -77,6 +77,17 @@ struct RayHit {
     std::uint32_t triangle = 0; ///< Its index.
 };
 
+/// The world ray's result record (stub).
+struct RayResult {
+    Vec3 normal;
+    bool hit = false;
+    float t = 0.0F;
+    std::uint8_t material = kMaterialNone;
+    std::uint16_t flags = 0;
+    std::uint8_t area = 0;
+    std::uint32_t triangle = 0;
+};
+
 /// What a sphere push did.
 struct SpherePushResult {
     bool touched = false; ///< Some wall overlapped the sphere; the centre was moved.
@@ -205,6 +216,10 @@ class CollisionMesh final : public chunk::LoadedObject {
 /// for the level header's handler to take. Fails when a chunk is missing or out of order, or as CollisionMesh::build.
 /// @orig 0x00350580 CollisionMesh_OnLoaded (CollisionMesh.cpp)
 [[nodiscard]] std::expected<void, Error> onCollisionMeshLoaded(chunk::ChunkStacks& stacks, std::uint32_t type);
+
+/// The world ray (stub).
+void worldRayCast(const CollisionMesh* mesh, const Ray& ray, RayResult& result,
+                  std::span<const std::uint8_t> excludeMaterials, std::uint32_t mask);
 
 /// The ray's straight-down direction, (0, 0, -1) in the game's axes.
 inline constexpr Vec3 kDown{0.0F, 0.0F, -1.0F};
