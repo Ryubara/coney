@@ -93,8 +93,9 @@ TEST_CASE("Rembrandt's Anim Range List gives every attack a damage and the resea
 }
 
 TEST_CASE("Rembrandt's hold walks move at the speeds the original's grab walks at", "[disc][combat]") {
-    // Expected: combat-grabs.md#grab-turn, confirmed (runtime) (the pair walked backward at 1.125 m/s in the front hold
-    // and about 1.22 m/s in the rear one: record +0x170, which the grab's movement styles fill from 86 and 88)
+    // Expected: combat-grabs.md#hold-walk, confirmed (runtime), run r-20261128-grab-hold-walk (the player's speed read
+    // 1.1250 m/s in the front hold walk and 1.2273 m/s in the rear one: record +0x170, which the grab's movement styles
+    // fill from 86 and 88)
     const char* discPath = SDL_getenv("CONEY_DISC");
     if (discPath == nullptr || *discPath == '\0') {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -111,6 +112,6 @@ TEST_CASE("Rembrandt's hold walks move at the speeds the original's grab walks a
     const float rear = (*character)->anims().speed(88);
     std::printf("  hold walks: front 86 at %.3f m/s, rear 88 at %.3f m/s\n", static_cast<double>(front),
                 static_cast<double>(rear));
-    CHECK(front == Approx(1.125F).margin(0.01F));
-    CHECK(rear == Approx(1.22F).margin(0.02F));
+    CHECK(front == Approx(1.125F).margin(0.001F));
+    CHECK(rear == Approx(1.2273F).margin(0.001F));
 }
