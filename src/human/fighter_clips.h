@@ -24,6 +24,9 @@ inline constexpr std::uint32_t kGrabHold = 82;
 inline constexpr std::uint32_t kGrabHeld = 83;
 inline constexpr std::uint32_t kGrabRearHold = 84;
 inline constexpr std::uint32_t kGrabRearHeld = 85;
+// The grabber's hold walks, front and rear: the walk clips its grab movement styles (7, 9) put in the walk slot.
+inline constexpr std::uint32_t kGrabWalkFront = 86;
+inline constexpr std::uint32_t kGrabWalkRear = 88;
 inline constexpr std::uint32_t kGrabLetGoReact = 94;
 // A pair broken from outside (docs/research/combat-grabs.md#pair-break): the clip the human not placed plays.
 inline constexpr std::uint32_t kBreakRearGrabber = 106;   ///< GRAB_REAR_BREAK: the grabber of a rear grab or mugging

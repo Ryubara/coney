@@ -52,7 +52,10 @@ struct GrabbedInput {
     CommandId command = command::kNone;
     bool fromRear = false;      ///< Held from behind.
     bool hurt = false;          ///< The player is hurt.
-    float ownPowerFraction = 1; ///< The player's power over its maximum.
+    int ownPower = 0;           ///< The player's power meter.
+    int ownPowerMax = 1;        ///< Its maximum (at least 1).
+    bool ownPowerFull = false;  ///< Raging or on unlimited power: its fraction reads 1.0 (`Human_PowerFraction`).
+    bool noEscape = false;      ///< Human flag `0x2000000000`: circle cannot escape.
     int ownStruggleDivisor = 3; ///< The player's power class byte `+0x36`.
     bool movePlaying = false;   ///< One of the player's grabbed moves is still playing: no new one starts.
     GrabberState grabber;
@@ -65,8 +68,14 @@ struct GrabbedOutcome {
     int grabberPowerCost = 0;    ///< Power the grabber loses (the struggle's, spent even with no clip).
 };
 
-/// Whether the player may struggle (`0x002258f0`): not hurt, the grabber not raging, its own power above a sixth of
-/// its maximum, and the grabber's power fraction above 1 / the grabber's struggle divisor.
+/// `Grab_CanStruggle` (`0x002258f0`), which square and cross both need: the player not hurt, the grabber not raging,
+/// and its own power above a sixth of its maximum (whole numbers).
+/// @orig 0x002258f0 Grab_CanStruggle (unknown)
+[[nodiscard]] bool canStruggle(const GrabbedInput& input);
+
+/// Whether square struggles: canStruggle(), and the player's own power fraction (`Human_PowerFraction`: 1.0 while it
+/// rages) above 1 / the grabber's struggle divisor.
+/// @orig 0x0027fd68 Player_UpdateGrabbed (unknown)
 [[nodiscard]] bool struggleAllowed(const GrabbedInput& input);
 
 /// Whether a break-free roll succeeds (`0x00225830`): never against a raging grabber; with `t` a quarter of the
@@ -74,9 +83,10 @@ struct GrabbedOutcome {
 /// below `floor(p / t)` is 0.
 [[nodiscard]] bool breakFreeRoll(const GrabberState& grabber, CombatRandom& random);
 
-/// One update of the grabbed player: square struggles (its cost, the grabber's maximum / the player's divisor,
-/// spent even when a move is still playing), cross strikes back, circle escapes on a winning roll, R1 pressed reverses
-/// on one when the grabber lacks flag `0x40`.
+/// One update of the grabbed player, each button of any press kind (`PlayerCmd_IsSquareAny` and the like): square
+/// struggles when struggleAllowed() (its cost, the grabber's maximum / the player's divisor, spent even when a move is
+/// still playing), cross strikes back when canStruggle(), circle escapes on a winning roll unless the player has flag
+/// `0x2000000000`, R1 pressed reverses on one when the grabber lacks flag `0x40`.
 /// @orig 0x0027fd68 Player_UpdateGrabbed (unknown)
 [[nodiscard]] GrabbedOutcome updateGrabbed(const GrabbedInput& input, CombatRandom& random);
 

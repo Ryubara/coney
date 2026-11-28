@@ -1,0 +1,37 @@
+version = 1
+id = "r-20261128-grab-struggle-full"
+date = "2026-11-28"
+kind = "trace"
+tool = "trace original"
+digest = "5d736156d74cbe975f2dcdc5f29b9ce1cc8cce835006bc5bdee72b7c8ec60db5"
+
+[who]
+agent = "a96e99362a22b94aa"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["puppet", "right-stick", "scripted-pad"]
+
+[run]
+name = "grab_struggle_gate"
+method = ""
+
+[run.args]
+own = "400"
+grabber = "200"
+rage = "0"
+
+[values]
+updates = 91
+missed_updates = 0
+columns = 40
+
+[hashes]
+trace_csv = "68f0bc969261d76a525360005c32ee14e5f6b00814cbddcc31174194f94e4bf0"

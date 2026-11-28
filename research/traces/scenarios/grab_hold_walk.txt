@@ -1,0 +1,8 @@
+# Circle at 10 grabs the puppet; the front hold is walked with the stick full right, R1 spins to the rear and the
+# rear hold is walked the same way. Frames are character updates of 1/30 s.
+10 tap circle
+45 stick left 100 0
+105 stick left 0 0
+115 tap r1
+170 stick left 100 0
+230 stick left 0 0

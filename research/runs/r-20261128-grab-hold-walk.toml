@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261128-grab-hold-walk"
+date = "2026-11-28"
+kind = "trace"
+tool = "trace original"
+digest = "66997f86ad78c7ae6da57119ab5d62b76de052248fced8f03287efeed9cb83d4"
+
+[who]
+agent = "a96e99362a22b94aa"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "pedestrian-grab"
+patches = ["puppet", "right-stick", "scripted-pad"]
+
+[run]
+name = "grab_hold_walk"
+method = ""
+
+[values]
+updates = 241
+missed_updates = 0
+columns = 40
+
+[hashes]
+trace_csv = "0125237541bbeca6f01c3784ddf3c018b47b4ed1ee7720ca581e100f1927d98a"

@@ -285,7 +285,8 @@ void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float 
     const float reach =
         range != nullptr && range->reach > 0.0F ? range->reach : (m_rear ? kConnectReachRear : kConnectReachFront);
     const float listed = m_ranges != nullptr ? m_ranges->farRange(clip) : 0.0F;
-    const float far = (listed > 0.0F ? listed : kConnectFarRange) * kPlayerFarScale;
+    // `Pair_AlignStart` scales the far range by 1.25 for a player's grab only (brain kind 0); an AI's stops at it.
+    const float far = (listed > 0.0F ? listed : kConnectFarRange) * (m_player ? kPlayerFarScale : 1.0F);
     const PairAlignment align = alignPair(input.position, m_held->position(), reach, far, m_rear);
     // The grab-block flag of the grab's side on either human (`Grab_IntroEnd`): the grab does not go on.
     const std::uint64_t block = m_rear ? flag::kBlockRearGrab : flag::kBlockFrontGrab;
@@ -318,13 +319,15 @@ void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float 
         m_slideUpdates = m_turnUpdates;
     }
     // Both humans switch on the same update: the victim plays the grabber's set's reaction, then its own hold.
+    // **Coney stand-in**: its hold state is `Grab_Link`'s link (no speech, styles or hint), its push sphere stays on.
     m_held->playPaired(clips::one(clip + 1), animator.anims(), m_rear ? clips::kGrabRearHeld : clips::kGrabHeld,
                        AnimState::Hold, TargetState::Held);
     // `Grab_Connect` builds both holds under the connecting clips in this update, and building them fires their ids'
     // animation callbacks (82 / 83, 84 / 85 from the rear): level99's PlayerState runs now, the length of the
     // connecting clip before the strong grapple's hit is scored with 82, and not again when the holds begin
     // (docs/research/characters-animation.md#anim-callbacks). **Coney's reading**: the four-clip mix's second clips (86
-    // / 87) are not reported; Coney's hold plays the one clip.
+    // / 87) are not reported; Coney's hold plays the one clip. **Coney stand-in**: the grabber's connecting clip and
+    // its hold were queued with the intro (startHold()), and its push sphere stays on.
     animator.announceFollowOn();
     m_held->announceFollowOn();
     m_pair = PairStage::Moving;
@@ -460,7 +463,9 @@ anim::Vec3 Fighter::moveGrab(float stickHeading, float stickMagnitude, const Hum
     const float wanted = wrapAngle(stickHeading + kPi);
     m_grabTurn = combat::grabTurnStep(tuning, wrapAngle(wanted - heading), m_grabTurn);
     heading = wrapAngle(heading + m_grabTurn);
-    const float speed = m_rear ? tuning.grabWalkRear : tuning.grabWalkFront;
+    // The speed is record +0x170, the walk speed the grab's movement style (7 front, 9 rear) gives from its walk clip
+    // (86 / 88). **Coney stand-in**: Coney pushes no grab movement style, so the walk clip's root speed is read here.
+    const float speed = animator.anims().speed(m_rear ? clips::kGrabWalkRear : clips::kGrabWalkFront);
     return anim::scale(facing(heading), -speed);
 }
 

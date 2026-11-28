@@ -1,0 +1,24 @@
+# The player's grab at a still puppet `dist` metres ahead (2.8 by default, `--let dist=...` for others): beyond the
+# connecting clip's far range (2.5 m) and within 1.25 times it, the gate Pair_AlignStart (0x00276998) widens for a
+# brain of kind 0. The player taps circle at 10; clip 72 then means the grab connected, 69 that it missed. Started
+# from the state library's pedestrian-grab (slot 6). Research: docs/research/combat-grabs.md#grab-posing.
+description = "slot 6: circle tapped at a still puppet dist metres ahead; does the player's grab connect"
+research = "docs/research/combat-grabs.md#grab-posing"
+input = "grab_far_range_player.txt"
+updates = 60
+fields = ["player", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet"]
+let = { enemy = 'human("PoizoCiv")', dist = '2.8' }
+setup = [
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - dist * sin(heading(player))", until = 11 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + dist * cos(heading(player))", until = 11 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 11 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 11 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 11 },
+]
+
+[coney]
+level = "sandbox:combat"

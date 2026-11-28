@@ -1,0 +1,2 @@
+# Held from update 10, the player taps square once at 56. Frames are character updates of 1/30 s.
+56 tap square

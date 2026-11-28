@@ -1,0 +1,2 @@
+# The player presses nothing while the puppet grabs him. Frames are character updates of 1/30 s.
+59 stick left 0 0

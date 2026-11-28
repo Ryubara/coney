@@ -470,7 +470,7 @@ tag = 6
 tag = 6
 
 ["src/combat/grabbed.cpp"]
-tag = 2
+tag = 1
 
 ["src/combat/meters.cpp"]
 tag = 7
@@ -991,7 +991,7 @@ tag = 13
 tag = 4
 
 ["src/human/fighter_victim.cpp"]
-tag = 8
+tag = 7
 
 ["src/human/holdable.h"]
 comment = 1
@@ -1704,14 +1704,11 @@ citation = 5
 ["tests/combat/commands_test.cpp"]
 citation = 8
 
-["tests/combat/disc_combat_test.cpp"]
-citation = 1
-
 ["tests/combat/grab_test.cpp"]
 citation = 11
 
 ["tests/combat/grabbed_test.cpp"]
-citation = 6
+citation = 5
 
 ["tests/combat/lock_on_test.cpp"]
 citation = 4

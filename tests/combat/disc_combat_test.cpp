@@ -4,8 +4,9 @@
 // in it, and the grab and tackle search ranges come out as the research reads them at runtime
 // (docs/research/combat/index.md). The damage the research measured at runtime (S1 17, SS2 36, ...) is not what the
 // file holds: the character class's damage table overrides it when the human is made (combat.md, Coney's
-// implementation), so this test checks only that the file's values are there. It runs only when the environment
-// variable CONEY_DISC names the disc and skips otherwise. It prints counts only (LEGAL.md).
+// implementation), so this test checks only that the file's values are there. A second case reads the speeds of
+// Rembrandt's hold walks (86, 88), which the grab's walk takes (docs/research/combat-grabs.md#hold-walk). It runs only
+// when the environment variable CONEY_DISC names the disc and skips otherwise. It prints counts only (LEGAL.md).
 
 #include <cstddef>
 #include <cstdio>
@@ -22,11 +23,13 @@
 #include "combat/grab.h"
 #include "fileio/disc.h"
 #include "fileio/wad.h"
+#include "human/player.h"
 
 using Catch::Approx;
 using namespace coney::combat;
 
 TEST_CASE("Rembrandt's Anim Range List gives every attack a damage and the researched grab ranges", "[disc][combat]") {
+    // Expected: combat-grabs.md#grab, confirmed (code) (the grab's and the tackle's search ranges, read from the disc)
     const char* discPath = SDL_getenv("CONEY_DISC");
     if (discPath == nullptr || *discPath == '\0') {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -87,4 +90,28 @@ TEST_CASE("Rembrandt's Anim Range List gives every attack a damage and the resea
     }
     std::printf("  combat: %zu Anim Range List records, %d with damage, %d attacks checked\n", ranges->size(),
                 withDamage, attacks);
+}
+
+TEST_CASE("Rembrandt's hold walks move at the speeds the original's grab walks at", "[disc][combat]") {
+    // Expected: combat-grabs.md#hold-walk, confirmed (runtime), run r-20261128-grab-hold-walk (the player's speed read
+    // 1.1250 m/s in the front hold walk and 1.2273 m/s in the rear one: record +0x170, which the grab's movement styles
+    // fill from 86 and 88)
+    const char* discPath = SDL_getenv("CONEY_DISC");
+    if (discPath == nullptr || *discPath == '\0') {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto disc = coney::io::Disc::open(discPath);
+    REQUIRE(disc.has_value());
+    auto wad = coney::io::Wad::open(std::move(*disc));
+    REQUIRE(wad.has_value());
+    coney::chunk::ChunkHandlerTable table = coney::chunk::ChunkHandlerTable::withDefaults();
+    coney::characters::addCharacterDataHandlers(table);
+    auto character = coney::human::PlayerCharacter::load(*wad, table, coney::human::kPlayerModel);
+    REQUIRE(character.has_value());
+    const float front = (*character)->anims().speed(86);
+    const float rear = (*character)->anims().speed(88);
+    std::printf("  hold walks: front 86 at %.3f m/s, rear 88 at %.3f m/s\n", static_cast<double>(front),
+                static_cast<double>(rear));
+    CHECK(front == Approx(1.125F).margin(0.001F));
+    CHECK(rear == Approx(1.2273F).margin(0.001F));
 }

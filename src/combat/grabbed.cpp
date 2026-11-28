@@ -8,19 +8,24 @@ namespace coney::combat {
 
 namespace {
 
-// The struggle needs more than this share of the player's own power.
-constexpr float kStruggleOwnPower = 1.0F / 6.0F;
+// The struggle needs more power than the player's maximum over this (`Grab_CanStruggle`).
+constexpr int kStruggleOwnShare = 6;
 // The break-free threshold is this share of the grabber's maximum, or the hurt share when it is hurt.
 constexpr float kBreakShare = 0.25F;
 constexpr float kBreakShareHurt = 0.5F;
 
 } // namespace
 
+bool canStruggle(const GrabbedInput& input) {
+    return !input.hurt && !input.grabber.raging && input.ownPower > std::max(1, input.ownPowerMax) / kStruggleOwnShare;
+}
+
 bool struggleAllowed(const GrabbedInput& input) {
-    const GrabberState& grabber = input.grabber;
-    const float grabberFraction = static_cast<float>(grabber.power) / static_cast<float>(std::max(1, grabber.powerMax));
-    return !input.hurt && !grabber.raging && input.ownPowerFraction > kStruggleOwnPower &&
-           grabberFraction > 1.0F / static_cast<float>(std::max(1, grabber.struggleDivisor));
+    // The player's own fraction, not the grabber's, against the grabber's class divisor.
+    const float ownFraction =
+        input.ownPowerFull ? 1.0F
+                           : static_cast<float>(input.ownPower) / static_cast<float>(std::max(1, input.ownPowerMax));
+    return canStruggle(input) && ownFraction > 1.0F / static_cast<float>(std::max(1, input.grabber.struggleDivisor));
 }
 
 bool breakFreeRoll(const GrabberState& grabber, CombatRandom& random) {
@@ -42,12 +47,13 @@ GrabbedOutcome updateGrabbed(const GrabbedInput& input, CombatRandom& random) {
     const bool rear = input.fromRear;
     switch (input.command) {
     case command::kSquarePressed:
-        // The cost is the grabber's maximum over the player's divisor, spent even when no clip can start.
+    case command::kSquareChain:
+        // The cost: the grabber's maximum over the player's divisor, truncated (Human_SpendPower), even with no clip.
         if (!struggleAllowed(input)) {
             break;
         }
-        outcome.grabberPowerCost = static_cast<int>(std::lround(
-            static_cast<float>(input.grabber.powerMax) / static_cast<float>(std::max(1, input.ownStruggleDivisor))));
+        outcome.grabberPowerCost = static_cast<int>(1.0F / static_cast<float>(std::max(1, input.ownStruggleDivisor)) *
+                                                    static_cast<float>(input.grabber.powerMax));
         if (!input.movePlaying) {
             outcome.action = GrabbedAction::Struggle;
             outcome.animId = rear ? kGrabStruggleRear : kGrabStruggleFront;
@@ -55,7 +61,7 @@ GrabbedOutcome updateGrabbed(const GrabbedInput& input, CombatRandom& random) {
         break;
     case command::kCrossPressed:
     case command::kCrossLongHold:
-        if (!input.movePlaying) {
+        if (!input.movePlaying && canStruggle(input)) {
             outcome.action = GrabbedAction::StrikeBack;
             outcome.animId = rear ? kGrabStrikeBackRear : kGrabStrikeBackFront;
         }
@@ -63,12 +69,14 @@ GrabbedOutcome updateGrabbed(const GrabbedInput& input, CombatRandom& random) {
     case command::kCirclePressed:
     case command::kCircleTapped:
     case command::kCircleHeld:
-        if (!input.movePlaying && breakFreeRoll(input.grabber, random)) {
+        if (!input.movePlaying && !input.noEscape && breakFreeRoll(input.grabber, random)) {
             outcome.action = GrabbedAction::Escape;
             outcome.animId = rear ? kGrabEscapeRear : kGrabEscapeFront;
         }
         break;
     case command::kR1Pressed:
+        // **Coney stand-in**: the reversal reads R1 pressed only (not command 0x19) and not the player's flag
+        // 0x80000000; Fighter::struggleInHold() offers none.
         if (!input.movePlaying && !input.grabber.flag40 && breakFreeRoll(input.grabber, random)) {
             outcome.action = GrabbedAction::Reversal;
             outcome.animId = rear ? kGrabReversalRear : kGrabReversalFront;

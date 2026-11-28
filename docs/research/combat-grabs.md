@@ -3,9 +3,10 @@ kind: topic
 system: combat
 owns:
   functions: [
-    "0x0022bfd0", "0x0023bde8", "0x00244e78", "0x00245310", "0x00258a88", "0x00262ac8", "0x00263c90", "0x0026bad8",
-    "0x0026be68", "0x0026c1d8", "0x0026c548", "0x0026c7e0", "0x0026cc18", "0x0026ef68", "0x0026f008", "0x00276998",
-    "0x00276d98", "0x00277958", "0x0027df38", "0x0027ec20", "0x0027f3b0", "0x0027fd68", "0x002802a0", "0x00284920",
+    "0x002258f0", "0x0022bfd0", "0x0023bde8", "0x00244e78", "0x00245310", "0x00258a88", "0x00262ac8", "0x00263c90",
+    "0x0026bad8", "0x0026be68", "0x0026c1d8", "0x0026c548", "0x0026c7e0", "0x0026cc18", "0x0026ef68", "0x0026f008",
+    "0x00276998", "0x00276d98", "0x00277958", "0x0027df38", "0x0027ec20", "0x0027f3b0", "0x0027fd68", "0x002802a0",
+    "0x00284920",
   ]
 ---
 # Combat: grabs, tackles, the hold and the mount
@@ -267,8 +268,11 @@ grabber's heading.
 2. **Alignment** (`Pair_AlignStart`, `0x00276998`, called first by `Grab_Connect`, `0x0026be68`, with 72 from the
    front or 74 from the rear):
    - `d` = the 3D distance between the two. The grab fails (69 plays on) when `d` is beyond the clip's **far range**
-     (72 and 74: 2.5 m), × 1.25 when the grabber's controller record (`0x0021d408`) has kind 0 (inferred: a player),
-     so 3.125 m, or × 1.5 for kind 1 and anim id 7.
+     (72 and 74: 2.5 m), × 1.25 when the grabber's brain (`Human_GetBrain`, `0x0021d408`) has kind 0 at `+0x04`, so
+     3.125 m, or × 1.5 for kind 1 and anim id 7. Kind 0 is the player: in the street state Rembrandt's brain reads 0,
+     the pedestrian PoizoCiv's 4 and the Warriors Ash and Vermin 3 (confirmed (runtime), run
+     r-20261128-grab-brain-kinds). [At runtime](#grab-far-range-runtime) the player's grab connected from 2.74 m and
+     the pedestrian's missed from 2.87 m.
    - `h` = the heading from the grabber to the victim. Over a time `T` the **grabber turns to `h`**, and when `d`
      differs from the clip's **reach** `r` (72: 0.999 m, 74: 1.018 m) it **slides** to `victim − r·(−sin h, cos h, 0)`,
      so that the victim stands `r` straight ahead at the victim's height. The **victim does not move**: its own
@@ -349,6 +353,28 @@ inferred from the record only.
 **The pose** of every one of these clips is ordinary; what they share is that most leave out the bone 2 channel, which
 the original fills from its fixed reference pose ([Animation](formats/animation.md#reference-pose)).
 
+#### The far range at runtime {#grab-far-range-runtime}
+
+Confirmed (runtime), PCSX2 v2.9.129, from the library state `pedestrian-grab`, with the scenarios
+`repo:research/traces/scenarios/grab_far_range_player.toml` and
+`repo:research/traces/scenarios/grab_far_range_ai.toml`: the still puppet PoizoCiv placed `dist` m ahead, facing the
+player (the scenario's `dist`, 3.05, 3.45 or 2.40 m, is measured along the player's heading). The distances below are
+the trace's `e_distance`, the horizontal distance between the two; both stood at the same height (z 0.223), so it is
+the 3D distance `Object_Distance` measures (inferred). "Before the intro" is the update before the circle; "at the
+check" is the update before the connect or the miss, when `Grab_IntroEnd` calls `Grab_Connect`. The intro moves the
+grabber on (71 by 0.26 m, 70 by 0.12 m):
+
+| Grabber | Before the intro | At the check | Result | Run |
+| --- | --- | --- | --- | --- |
+| the player (71) | 3.00 m | 2.74 m | 72: connected | r-20261128-grab-far-player-305 |
+| the player (71) | 3.40 m | 3.13 m | 69: missed (0.009 m beyond 3.125 m) | r-20261128-grab-far-player-345 |
+| PoizoCiv (70, a puppet's circle tap, 13) | 2.35 m | 2.23 m | 72: connected | r-20261128-grab-far-ai-240 |
+| PoizoCiv (70) | 3.00 m | 2.87 m | 69: missed | r-20261128-grab-far-ai-305 |
+
+So an AI's grab stops at the far range of 2.5 m (it missed at 2.87 m, inside 3.125 m) and the player's reaches past it
+(it connected at 2.74 m); the player's miss at 3.13 m agrees with 1.25 × 2.5 m, though by a margin smaller than the
+measure's own uncertainty.
+
 ### Grab pose at runtime {#grab-pose-runtime}
 
 Measured every update in two runs: the player grabbing the puppet civilian (71, 72 / 73, hold 82 / 83, strike 51 /
@@ -416,7 +442,7 @@ the holds and strikes and carried only the spins' and connects' root motion (78:
 - Runtime: full stick turned the player's front hold by 118° in about 18 updates, 11° per update at first and
   slowing near the heading; the pair then walked backward at **1.125 m/s** in the front hold (record `+0x170` to
   `+0x17c` became 1.125, the grab movement style's walk speed, which `Human_ComputeGaitSpeeds` (`0x00254078`) writes
-  from the slot clips: confirmed (code)) and about 1.22 m/s in the rear hold.
+  from the slot clips: confirmed (code)) and 1.227 m/s in the rear hold (run r-20261128-grab-hold-walk).
   The victim kept the hold's offsets (front 1.012 ahead, 0.379 right; rear 0.222, −0.097).
 
 #### The hold walk: clips, speed and turning {#hold-walk}
@@ -446,7 +472,10 @@ addresses cited unless marked.
     | 10 | victim, rear | 85 `GRAB_HELD_FROM_REAR` | 89 `GRAB_REAR_WALK_BACKWARD_REACT` (`gen_grab_back_pull_react`) in slots 4-6 | |
 
     So the grabber's walk speed is clip 86's root speed from the front (1.125 m/s at runtime, above) and 88's from
-    behind (about 1.22 m/s); the jog, run and sprint slots hold the same clip, so there is no faster gait in a hold.
+    behind (1.227 m/s); the jog, run and sprint slots hold the same clip, so there is no faster gait in a hold.
+    Confirmed (runtime), run r-20261128-grab-hold-walk (scenario `repo:research/traces/scenarios/grab_hold_walk.toml`,
+    the stick full right in each hold): the player's speed (human `+0x1ac`) read 1.1250 m/s through the front walk
+    and 1.2273 m/s through the rear one, and his position moved by the same per update, also while the pair turned.
 4. **The hold is a four-clip task on both bodies.** The spins and the connect push, on each body, a type 11 four-clip
    mix ([Animation](animation.md)) of **slot 0 (the hold idle) and slot 4 (the walk) three times**, with task flags
    `0xc1` (no root velocity: the clips do not move the bodies) and anim state 4 (`Grab_SpinToRear` builds it with
@@ -633,11 +662,13 @@ not reached). At 229 the mounter stood in 358 (state `0x5`), the victim lay in 1
   (`Grab_CanStruggle`, `0x002258f0`: not hurt, the grabber not raging, own power above a sixth of the maximum) and the
   player's own power fraction is above 1 / the grabber's class byte `+0x36` (`Human_GetClassChainDelay`, `0x002233a8`;
   confirmed (code) at `0x0027fddc`-`0x0027fe00`). It takes 1 / (own byte `+0x36`) of the **grabber's** maximum
-  power, spent even when the strike then cannot start (another move playing), and the strike damages the grabber by
-  its clip's damage; a strike that would kill the grabber breaks the grab. Runtime: 96 (grabber 97); each press took
-  the 200-power civilian down by about 75 (66.7 for 1 / 3, and the rest is the grab's own drain of 15 per second,
-which keeps running through the struggle clip: 198 → 123 over 19 updates = 66.7 + 9.5, then 4 more over the next 7
-updates of 96), 68 when 104 was still playing; the
+  power, truncated (`Human_SpendPower`, `0x00226448`, converts the share to a whole number with `cvt.w.s` at
+  `0x002264d8`; confirmed (code)), so 66 of a 200-power grabber for the player's divisor 3, spent even when the
+  strike then cannot start (another move playing), and the strike damages the grabber by its clip's damage; a strike
+  that would kill the grabber breaks the grab. Runtime: 96 (grabber 97); each press took the 200-power civilian down
+  by about 75 (66 for 1 / 3, and the rest is the grab's own drain of 15 per second, which keeps running through the
+  struggle clip: 198 → 123 over 19 updates is 66 and about 9.5 of drain, then 4 more over the next 7 updates of 96),
+  68 when 104 was still playing; the
   third press emptied the meter and the grab broke with the player on 94 and the grabber on 95. 96 does 0 damage.
 - **Cross** (`0x12` / `0x10`): 104 / 116, a strike back, under the same `Grab_CanStruggle` test and with no power
   check (confirmed (code)). Runtime: 104 (grabber 105) for 33 updates, 20 damage to the
@@ -672,6 +703,23 @@ tackle dismounts (`Mount_GetOff`, `0x00271470`). Confirmed (code); confirmed (ru
 at 15 per second and broke with 95 / 94; with the player hurt (200 of 900 health) the civilian escaped with 100, the
 player played 101, was knocked down and stunned (`0x180005`), lay in 196 and rose with 199 2.78 s later; the escapee
 took 20. A third human hitting a grabber costs it 0.6 of its power (`0x00510274`).
+
+#### The struggle gate at runtime {#struggle-gate-runtime}
+
+Confirmed (runtime), PCSX2 v2.9.129, from the library state `pedestrian-grab`, with the scenario
+`repo:research/traces/scenarios/grab_struggle_gate.toml`: the puppet PoizoCiv (street
+civilian, 200 power, divisor 4) grabbed the still player (400 power at most, divisor 3) from 1 m; in the hold the
+player's power and the grabber's were set and square tapped once. The gate is the player's own fraction against 1 / 4,
+with `Grab_CanStruggle`'s 400 / 6 = 66 below it, and not the grabber's meter:
+
+| Player's power | Grabber's power | Raging | Square (`0xf`) | Run |
+| --- | --- | --- | --- | --- |
+| 400 | 200 | no | 96 / 97, back to 83 / 82 after 23 updates | r-20261128-grab-struggle-full |
+| 150 (0.375) | 200 | no | 96 / 97 | r-20261128-grab-struggle-own150 |
+| 80 (0.2) | 200 | no | nothing: the hold goes on | r-20261128-grab-struggle-own80 |
+| 80 (0.2) | 200 | yes (flag `0x80000` set) | 96 / 97: the fraction reads 1.0 | r-20261128-grab-struggle-own80-rage |
+| 0 | 200 | yes | nothing (`Grab_CanStruggle`: not above 66) | r-20261128-grab-struggle-own0-rage |
+| 400 | 40 (0.2) | no | 94 / 95 on the same update: the press emptied the grabber (by the code it spends 66, below) and the grab ended with the let-go instead of 96 | r-20261128-grab-struggle-grabber40 |
 
 ### Breaking a pair from outside {#pair-break}
 
@@ -742,8 +790,9 @@ every grabber the grabbing movement once attached, where the original gives `Hum
 a player's controls.
 
 **Where Coney differs: the hold walk** ([The hold walk](#hold-walk), #86). `Fighter::moveGrab` turns the pair and
-walks it backward along the stick at the fixed `grabWalkFront` / `grabWalkRear` tunables (1.125 and 1.22 m/s). The
-original does more, none of which Coney has:
+walks it backward along the stick at the root speed of the grabber's walk clip, 86 from the front and 88 from behind
+(#684: the speed the original's style puts in record `+0x170`, read from the clip since Coney pushes no grab movement
+style; it was the fixed tunables 1.125 and 1.22 m/s before). The original does more, which Coney does not have:
 
 1. The hold's movement styles: 7 (front) or 9 (rear) on the grabber and 8 or 10 on the victim for the whole hold,
    switched on every spin (78 / 79 to 9 / 10, 80 / 81 to 7 / 8).
@@ -751,9 +800,8 @@ original does more, none of which Coney has:
    behind), weighted by speed over walk speed clamped to 0-1, started on both bodies on the same update when the pair
    starts or stops walking, with no root motion from the clips; the victim is fed the grabber's velocity, so its blend
    follows the grabber's.
-3. The walk speed from the style's walk clip (86 from the front, 88 from behind), not a fixed tunable.
-4. No walk while mugging, and the pair stops when the victim's sweep against the world fails.
-5. The turn's carried rate ([Moving a grab](#grab-turn)): Coney's `combat::grabTurnStep` carries the last step, cut to
+3. No walk while mugging, and the pair stops when the victim's sweep against the world fails.
+4. The turn's carried rate ([Moving a grab](#grab-turn)): Coney's `combat::grabTurnStep` carries the last step, cut to
    the angle left and 0 once the heading is reached, and reads a reverse from its sign; the original carries the rate
    before the cut (`+0x5e0`) and reads the last angle left (`+0x5e4`), so Coney's turn starts slower again after the
    pair has reached the stick's direction (#1011).
@@ -799,6 +847,21 @@ move styles (0xc, 0xb, 7, 8), the cleared states 0x400 / 0x800, `Human_GoDown` f
 fight stance, speech command 8, the victim's brain target and tutorial hint 0xe. The get-off's 0.2 s blends from 244 and
 199 into the idles are cuts in Coney.
 
+**The connect's far range and the struggle** ([Posing a grab](#grab-posing), [Grabbed](#grabbed), #684).
+`Fighter::connect` scales the connecting clip's far range by 1.25 for a player's grab only, as `Pair_AlignStart`
+(`0x00276998`) does for brain kind 0; until #684 every grabber, an AI's too, had the larger range. `combat::updateGrabbed`
+(`repo:src/combat/grabbed.h`) gates square on `Grab_CanStruggle` (`combat::canStruggle`: not hurt, the grabber not
+raging, own power above a sixth of its maximum in whole numbers) and on the held human's own power fraction (1.0 while
+it rages or has unlimited power) above 1 / the grabber's class divisor, where it read the grabber's fraction before;
+cross needs `Grab_CanStruggle` too, circle is refused with flag `0x2000000000`, and each button takes every press kind
+(square `0xf` and `0x11`). The struggle's cost is truncated to whole power as `Human_SpendPower` truncates it (66 of
+200 for the divisor 3; Coney rounded it to 67 before). Unit tests: `repo:tests/combat/grabbed_test.cpp` and "a
+player's grab connects within 1.25 x the connecting clip's far range; an AI's grab there misses" in
+`repo:tests/human/human_grab_test.cpp`. One difference
+is left, marked as a stand-in in `Fighter::updateGrabbed` and `Fighter::struggleInHold`: a struggle whose cost empties
+the grabber's meter plays 96 / 97 for an update before the grabber's power-out lets go (inferred from Coney's code),
+where the original goes to 94 / 95 on the press's own update ([at runtime](#struggle-gate-runtime)).
+
 The spray can of [Rembrandt's power move](#power-move-props) (#223): `Human` acts on its clip events for any human
 (`repo:src/human/carried_prop.h`, `Human::carriedProp()`): `0x30` notes the named prop, `0x37` its place (the word's
 point times its scale), `0x31` removes it when the name matches, and a script's bind of the human to a scene role
@@ -820,6 +883,11 @@ lesson 6 the can is carried from 59's update 1 to 77 of its 59 and is gone after
   and the other callers of `Pair_SnapAttach`: `Grab_Reattach` (`0x0026d078`), `0x0026d8c8`, `0x0026eba0`, `0x00272918`.
 - **The other pair breaks**{#q-pair-break-callers}: the six callers of `Human_BreakPair` not traced, and what 244's and
   199's end callback (`0x00267870`) does ([Breaking a pair](#pair-break)).
+- **A struggle that empties the grabber**{#q-struggle-empties}: at runtime the square press that spent the grabber's
+  last power went to the let-go (94 / 95) on its own update, with no 96 ([the struggle gate at
+  runtime](#struggle-gate-runtime)), though the grabber (handle index 1) updates before the held player (2). Which call
+  ends the grab within that update (`Human_UpdateMeters`, `0x002562d0`, from the victim's side, or a later pass) is not
+  traced; Coney plays the struggle for an update first (a stand-in, [In Coney](#in-coney)).
 - **Flag `0x100000000`**{#q-flag-100000000}: what human flag `0x100000000` stands for (it blocks the mount from the
   front hold, the tackle and the strong grapple's grab).
 

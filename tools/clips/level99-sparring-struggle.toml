@@ -1,0 +1,14 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level99's sparring fight
+# (docs/research/ai-fights.md#level99-fight) under AI seed 3, for #684. From about frame 1830 a Warrior holds the player
+# from behind while the grab drains his meter, which falls under a quarter of its maximum about frame 1895; the player
+# taps square at frames 1920, 1932 and 1944. The struggle's gate reads the player's own power fraction against the
+# Warrior's class divisor (docs/research/combat-grabs.md#grabbed); before #684 it read the Warrior's, so these presses
+# did nothing and a second Warrior's tandem followed; now the first press's cost empties the meter and the Warrior lets
+# go (95 / 94).
+description = "level99 sparring fight, AI seed 3: the player struggles free of a Warrior's rear hold"
+level = "level99"
+input = "tools/clips/level99-sparring-struggle.txt"
+checkpoint = 1
+ai_seed = 3
+start_frame = 1890
+seconds = 10

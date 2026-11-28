@@ -74,8 +74,6 @@ void registerCombatTunables(TunableRegistry& registry) {
     registry.add(kCategory, "Grab turn max", &tuning.grabTurnMax).range(0, 1, 0.002).units("rad");
     registry.add(kCategory, "Grab turn carry", &tuning.grabTurnCarry).range(-1, 1, 0.05);
     registry.add(kCategory, "Grab turn reverse carry", &tuning.grabTurnReverseCarry).range(-1, 1, 0.05);
-    registry.add(kCategory, "Grab walk front", &tuning.grabWalkFront).range(0, 5, 0.005).units("m/s");
-    registry.add(kCategory, "Grab walk rear", &tuning.grabWalkRear).range(0, 5, 0.005).units("m/s");
 
     // Being hit.
     registry.add(kCategory, "Grab counters", &tuning.grabCounters).describe("R1 at a grab's catch counters it");
