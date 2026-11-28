@@ -869,6 +869,7 @@ TEST_CASE("a duck's counter is asked once under square spam and plays to its end
     // Expected: combat/index.md#block, confirmed (code)
     for (const bool release : {false, true}) {
         Fight fight(timingCharacter(), 30.0F);
+        const coney::human::TargetHuman& foe = fight.addTarget(timingCharacter(), 1.0F, 0.0F);
         // Blocking from 0 (let go at 13 in the second run); an attacker 1 m ahead warns at 10 (the duck on 11);
         // square every 2 updates from 12 to 40.
         const std::string script =
@@ -878,7 +879,8 @@ TEST_CASE("a duck's counter is asked once under square spam and plays to its end
                 fight.human().warn(coney::human::AttackNotice{.warning = combat::AttackWarning::Duck,
                                                               .attackAnim = id::kAttackSSX3,
                                                               .code = 0x25,
-                                                              .attacker = Vec3{40.0F, 41.0F, 0.0F}});
+                                                              .attacker = Vec3{40.0F, 41.0F, 0.0F},
+                                                              .from = &foe});
             }
         });
         INFO((release ? "R1 let go in the duck" : "R1 held"));

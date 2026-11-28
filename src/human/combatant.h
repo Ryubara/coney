@@ -17,6 +17,7 @@
 
 namespace coney::human {
 
+class Combatant;
 class Holdable;
 
 /// How a human lies: what an attacker's moves can do to it.
@@ -34,6 +35,9 @@ struct AttackNotice {
     int attackAnim = -1; ///< The attacker's anim id.
     int code = 0;        ///< The attack's hit code (for an early block reaction).
     anim::Vec3 attacker; ///< Where the attacker's feet are.
+    /// The attacker (the warned human's foe, `Human_GetFoe`), whose position a duck's counter reads when it plays; null
+    /// when none is known. Read only while it is among the fighter's targets (targetListed()).
+    const Combatant* from = nullptr;
 };
 
 /// A human another human can fight.

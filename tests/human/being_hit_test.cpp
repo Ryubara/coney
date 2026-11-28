@@ -669,9 +669,10 @@ TEST_CASE("square in the duck's window counters with 617 at an attacker in front
     // Expected: combat/index.md#block, confirmed (code)
     const FightCharacter character;
     Fight fight(character, 30.0F);
+    const coney::human::TargetHuman& foe = fight.addTarget(character, 1.0F, 0.0F);
     fight.run("0 press r1\n", 5);
     fight.human().warn(coney::human::AttackNotice{
-        .warning = combat::AttackWarning::Duck, .attackAnim = 17, .code = 0x2b, .attacker = kInFront});
+        .warning = combat::AttackWarning::Duck, .attackAnim = 17, .code = 0x2b, .attacker = kInFront, .from = &foe});
     ClipLog log;
     // The duck plays at 0.75: its frames 6-13 fire 8 to 17 updates in, but not on every update (a frame on a half
     // falls to the update after, as the task stack rounds); square held for two updates from 10, as the runtime's
@@ -684,7 +685,7 @@ TEST_CASE("square in the duck's window counters with 617 at an attacker in front
     // Square outside the window (just after the duck starts) does not counter.
     fight.run("0 press r1\n", 20);
     fight.human().warn(coney::human::AttackNotice{
-        .warning = combat::AttackWarning::Duck, .attackAnim = 17, .code = 0x2b, .attacker = kInFront});
+        .warning = combat::AttackWarning::Duck, .attackAnim = 17, .code = 0x2b, .attacker = kInFront, .from = &foe});
     fight.run("0 press r1\n2 tap square\n", 25);
     CHECK(fight.human().fighter().duckCounters() == 1);
 }
@@ -697,13 +698,20 @@ struct DuckRun {
     std::size_t firstLayers = 0;
 };
 
-// R1 held, a duck warned from `attacker`, square held for two updates in the duck's window (as above), with the
-// fight's target `ahead` m in front of the player.
-DuckRun duckFrom(const FightCharacter& character, Vec3 attacker, float ahead = 30.0F) {
+// R1 held, a duck warned by a foe standing at `attacker` (`warnedFrom`, when given, is where he stood at the
+// warning), square held for two updates in the duck's window (as above), with the fight's target `ahead` m in front
+// of the player.
+DuckRun duckFrom(const FightCharacter& character, Vec3 attacker, float ahead = 30.0F,
+                 std::optional<Vec3> warnedFrom = std::nullopt) {
     Fight fight(character, ahead);
+    coney::human::TargetHuman& foe = fight.addTarget(character, attacker.y - 40.0F, attacker.x - 40.0F);
+    foe.place(attacker, std::numbers::pi_v<float>);
     fight.run("0 press r1\n", 5);
-    fight.human().warn(coney::human::AttackNotice{
-        .warning = combat::AttackWarning::Duck, .attackAnim = 17, .code = 0x2b, .attacker = attacker});
+    fight.human().warn(coney::human::AttackNotice{.warning = combat::AttackWarning::Duck,
+                                                  .attackAnim = 17,
+                                                  .code = 0x2b,
+                                                  .attacker = warnedFrom.value_or(attacker),
+                                                  .from = &foe});
     DuckRun run;
     fight.run("0 press r1\n10 press square\n12 release square\n", 20, [&](std::uint64_t) {
         if (run.firstLayers == 0 && fight.human().animator().animId() == 617U) {
@@ -744,6 +752,25 @@ TEST_CASE("a duck whose foe stands out of the counter's range counters no one, n
     // unused (0x00255160). So a human 1 m ahead does not take the counter of a duck from an attacker 2 m away.
     const FightCharacter character;
     CHECK(duckFrom(character, Vec3{40.0F, 42.0F, 0.0F}, 1.0F).counters == 0);
+}
+
+TEST_CASE("the duck's counter measures to where its foe stands now, not where he warned from", "[human][combat]") {
+    // Expected: combat/index.md#block, confirmed (code) at Human_UpdateActions (0x00254e78): the range test reads the
+    // foe's position on the update it runs (Object_Distance 0x00229960, called at 0x00255170), so a foe who warned
+    // from 3.5 m and now stands 1 m in front takes the counter, and one who warned from 1 m and now stands 3.5 m away
+    // does not.
+    const FightCharacter character;
+    CHECK(duckFrom(character, kInFront, 30.0F, Vec3{40.0F, 43.5F, 0.0F}).counters == 1);
+    CHECK(duckFrom(character, Vec3{40.0F, 43.5F, 0.0F}, 30.0F, kInFront).counters == 0);
+}
+
+TEST_CASE("the duck's counter measures its range in three dimensions", "[human][combat]") {
+    // Expected: combat/index.md#block, confirmed (code) at Object_Distance (0x00229960): the distance is the length of
+    // the whole difference of the two positions, height included. A foe 1 m ahead and 2 m above is 2.24 m away, beyond
+    // the range of a 617 without a far range of its own (1.25 x 1.25 x its 1 m reach), though 1 m across the ground.
+    const FightCharacter character;
+    CHECK(duckFrom(character, Vec3{40.0F, 41.0F, 0.0F}).counters == 1);
+    CHECK(duckFrom(character, Vec3{40.0F, 41.0F, 2.0F}).counters == 0);
 }
 
 TEST_CASE("six X1 hits in a row on the target halve the seventh's rage", "[human][combat]") {
