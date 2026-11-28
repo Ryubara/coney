@@ -188,6 +188,11 @@ and the hand-off runs: 90 updates in an Armies level, with the HUD kept, then th
 walks to the cash register and lifts it with triangle, carries it with the stick and drops it, for a change to how such
 an object is held or carried ([Two-handed objects](../research/objects.md#two-handed), #433).
 
+`level99-run-release` is the scenario for a run's release: in level99's tutorial yard Rembrandt runs up and to the
+right at full stick and is let go at a steady run, on an update whose measured speed lands on the run speed, so he
+skids into the run stop (417) where a measure a unit short stops him in the idle (388), for a change to the run's
+velocity or the skid ([The run's velocity in floats](../research/characters-locomotion.md#run-velocity), #1714).
+
 `level99-world-parts` is the scenario for the World page's part switches: it opens the pad menu in the level99 street
 and hides the streamed world, then shows it and hides the objects, for a change to the mesh views' hook or to what a
 renderer records for a hidden kind; record it on `--renderer gpu`.

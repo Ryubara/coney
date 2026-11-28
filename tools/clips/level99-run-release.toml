@@ -1,0 +1,8 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level99's tutorial yard, a run up and to the
+# right at full stick let go at a steady run. For a change to the run's velocity, its measured speed or the skid that
+# plays the run stop (docs/research/characters-locomotion.md#run-velocity).
+description = "level99 tutorial yard: a steady run let go, the skid into the run stop or the idle"
+level = "level99"
+input = "tools/clips/level99-run-release.txt"
+start_frame = 160
+seconds = 3
