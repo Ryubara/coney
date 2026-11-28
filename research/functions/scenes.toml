@@ -40,7 +40,7 @@ name = "Goal_JoinCinematic"
 page = "scenes.md#original-structure"
 level = "confirmed-code"
 coney = "src/scenes/scene_player.h:SceneSystem::joinHuman"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00351da0

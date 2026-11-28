@@ -227,8 +227,9 @@ TEST_CASE("a scene bind's reset ends a stun, a wound, rage and a throw's aim, an
 
 TEST_CASE("a bind ends every raging player's rage and leaves an AI human's (Humans_EndAllRage)",
           "[human][script][scenes]") {
-    // docs/research/scenes.md#join-reset: Humans_EndAllRage walks the players' list (game state +0x224 / +0x228), not
-    // every human, so an AI human in rage keeps it through a bind.
+    // Expected: scenes.md#join-reset, confirmed (code): Humans_EndAllRage walks the players' list (game state +0x224 /
+    // +0x228), not every human, so an AI human in rage keeps it through a bind. Who is on that list (Coney reads it as
+    // the player-controlled humans) is scenes.md#q-players-list, inferred.
     const FightCharacter character;
     Fight first(character, 30.0F);
     Fight second(character, 30.0F);

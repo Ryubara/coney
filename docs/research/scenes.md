@@ -403,34 +403,32 @@ a script teleporting either human, or, for a skipped scene, the end's placement 
 `Human_BreakPair`, the partner playing its reaction clip). The cinematic's step 0 → 1 (`Gang_ClearBums`,
 `0x0016b8d0`) destroys the player's gang members whose type byte `+0x11b` is 6; it does not release grabs either.
 
-**`l99_c7` and the lesson-6 bum** (issue #225). `P1.PowerMovesDone`, 2500 ms after the extension 59 is counted,
+**`l99_c7` and the lesson-6 bum**. `P1.PowerMovesDone`, 2500 ms after the extension 59 is counted,
 binds `l99_c7`'s 13 roles through `SuperRunScene` ([below](#superrunscene)): 0 Cleon, 1 Vermin, 2-4 `Generic1`-`3`,
 5 `NilHandle`, **6 `CombatEnemy.GenWarrior`** (the lesson's victim, Rudy; role name `rudy`), 7-10
 `CombatEnemy2.SecondWave01`-`04` (`bum01`-`bum04`), 11 the player (`warrrecv`), 12 `player2` or `NilHandle`; objects
 the left door of `ChA00` and `dyn_beerbottle`; return `P1.SetupSnapAttacks`. Before that it clears Rudy's message
 handler 1 and flushes his brain (`BrFlush`). Inferred from the disassembly of `level99_combat.lua` (names and order
 only). In the original the 59 pair is **gone by the time the scene starts**, so both are free and bound
-(confirmed (runtime), PCSX2 2.9.94, two plays of checkpoint 1 with the course of
-`repo:research/traces/missions/level99_cp1.toml`, the pad let go after `P1.PowerMovesDone` so the scene was not
-skipped, hooks `pair-break`, `throw-clear-link`, `prop-release`):
+(confirmed (runtime) in PCSX2 2.9.94, two plays of checkpoint 1, [How this was checked](#how-checked)):
 
 | Update (second play) | What happened |
 | --- | --- |
 | 2057 | 59 starts (Rembrandt state `0x1005`, Rudy `0x2001`, held `0x400000`, Rudy's clip 60); `P1.PowerMovesDone` scheduled |
 | 2131 | `P1.PowerMovesDone`: `ScenePreload("l99_c7")` |
 | 2141 | 59's event `0x31` removes the spray can ([Combat](combat-grabs.md#power-move-props)) |
-| 2142 | `ScenePlayCinematic`; in the same update `Human_ResetForMode` (`0x002325e0`) runs on every human: `Human_ReleaseCarriedProps` for each, and **`Human_BreakPair(Rudy)`** (return `0x00232690`), which clears the throw link (`Throw_ClearLink(Rembrandt, —)` from `0x00258db4`): the pair ends there, 85 updates into the 94-update 59 |
+| 2142 | `ScenePlayCinematic`; in the same update `Human_ResetForMode` (`0x002325e0`) runs on the humans being bound (confirmed (runtime)): `Human_ReleaseCarriedProps` for each, and **`Human_BreakPair(Rudy)`** (return `0x00232690`), which clears the throw link (`Throw_ClearLink(Rembrandt, —)` from `0x00258db4`): the pair ends there, 85 updates into the 94-update 59 |
 | 2143 on | both in the scene: state `0x800000`, scene id 2630 at `+0x280`, clip 388; Rudy stands on role 6's start mark (−282.58, 127.29) |
 | about 2540-2730 | Rudy's role clip moves him (−282.6, 127.3) → (−276.6, 122.2): the Warriors drag him off |
 
 In the first play (scene skipped by the course's presses) the same states showed and the end placed Rudy at role 6's
-end mark (−273.62, 120.81). Which caller runs `Human_ResetForMode` at the cinematic's start was not traced (open).
-This qualifies the paragraph above: the scene task's own start does not release a pair (confirmed (code) at
-`0x0039d870`), but in this cinematic the pair was broken in the play call's update, before the free test, so a
-player's grab or paired move does not survive a `SuperRunScene` cinematic here; whether every cinematic does this
-waits for that caller.
+end mark (−273.62, 120.81). The caller is the bind: `Scene_BindHuman` resets each human it binds (the call at
+`0x003541d8`, confirmed (code), [the reset at the join](#join-reset)), and `gPlayCutScene` binds every role and plays
+the scene in one Lua call, so the reset falls in the play call's update. This qualifies the paragraph above: the scene
+task's own start does not release a pair (confirmed (code) at `0x0039d870`), but a bound human's pair is broken at
+its bind, before the free test, so a grab or paired move of a human the script binds does not survive into any scene.
 
-**Coney** (#225 and #281, implemented): `SceneSystem::joinHuman`, the bind, resets the human first, before it checks
+**Coney** (implemented): `SceneSystem::joinHuman`, the bind, resets the human first, before it checks
 the scene or the role (`SceneHost::resetHumanForJoin()`). `Human::resetForJoin()` is exactly
 `HuSetNormalMode(human, true)` (`Human::setNormalMode(true)`), the steps of [the reset at the join](#join-reset) that
 Coney models: a player's own rage ended, a throw's aim cancelled, any pair broken (`Human_BreakPair`,
@@ -440,7 +438,7 @@ damage becomes 1 (the pending damage 0) and the human stands in his idle. An arr
 stand-in's, every raging player's rage ends (`human::endAllRage()` for `Humans_EndAllRage`, play mode's join
 reset); an AI human in rage keeps it. A human never bound is not reset. Stand-ins: fire, mini-games, overlay tasks,
 held kind-`0x27` / `0x10` objects, the airborne bits, a climb's body, a picked object and the glow colour are not in
-Coney, so those steps are left out, and an AI human's fight stance stays his fight goal's (#959). Rudy then joins role 6
+Coney, so those steps are left out, and an AI human's fight stance stays his fight goal's. Rudy then joins role 6
 and is moved by his role clip. Disc tests: through lesson 6 into `l99_c7` Rudy is in role 6 and moves 11.2 m
 (`tests/platform/disc_level99_power_lesson_test.cpp`); the player still holds Rudy on the update before the play and no
 human is in a pair as it starts (`tests/platform/disc_level99_scene_grab_test.cpp`). Known difference: Coney starts
@@ -1084,6 +1082,9 @@ starts (1 human holding, 1 held), and finds no human holding, held or grabbed 90
 commands off, hold written as his last command and his menu locked: in the update the scene ends his menu is
 unlocked, follow is his last command and his crew has one new tactic, the follow, already started.
 
+The reset at the join ([Humans](#humans)) came with #225 and #281, and the bind's rage end for players only with #685;
+an AI human's fight stance at the join is left to #959.
+
 **Coney choices** where the page is silent:
 
 - A record arrives on the update after `ScenePreload` (Coney's reads are synchronous); a play binding reads it at once.
@@ -1215,3 +1216,12 @@ its end (inferred: the run played the scene out).
 - Which level a scene plays in (answered for the 333 scenes a script, a Subtitles chunk or a movie places,
   [Which level](#which-level)). Open: the 663 known only by their prefix and the 244 with no level; whether the
   never-named `l<N>_` families are reached by a computed name (answered: no, [Which level](#which-level)).
+
+## How this was checked {#how-checked}
+
+- `l99_c7` and the lesson-6 bum ([Humans](#humans)): PCSX2 2.9.94, two plays of level99's checkpoint 1 with the course
+  of `repo:research/traces/missions/level99_cp1.toml`, the pad let go after `P1.PowerMovesDone` in the second so the
+  scene was not skipped, with the hooks `pair-break`, `throw-clear-link` and `prop-release` (issue #225). Made before
+  run records existed; no record was kept.
+- The cast at the scene's end ([Humans](#humans)): the `warriors_passive` trace
+  (`repo:research/traces/scenarios/warriors_passive.toml`), recorded in PCSX2 2.9.94 on 2026-10-05.
