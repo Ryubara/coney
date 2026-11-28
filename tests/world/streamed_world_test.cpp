@@ -119,6 +119,7 @@ TEST_CASE("a part with a visible sector is not unloaded", "[streamed_world]") {
 }
 
 TEST_CASE("only visible, loaded sectors are collected, in the BSP's front-to-back order", "[streamed_world]") {
+    // Expected: world.md#visibility, confirmed (code)
     auto world =
         StreamedWorld::create("test", rowOfSectors({{0, 1}, {1, 1}, {2, 2}, {3, 3}}, 3), rowManifest({1, 1, 1}));
     REQUIRE(world.has_value());
@@ -146,6 +147,7 @@ TEST_CASE("only visible, loaded sectors are collected, in the BSP's front-to-bac
 // sets are only read by the streaming searches. So what is drawn follows the walk alone
 // (docs/research/world.md#visibility).
 TEST_CASE("the sectors drawn follow the view's own walk and never the visibility marks", "[streamed_world]") {
+    // Expected: world.md#visibility, confirmed (code)
     auto world =
         StreamedWorld::create("test", rowOfSectors({{0, 1}, {1, 1}, {2, 2}, {3, 3}}, 3), rowManifest({1, 1, 1}));
     REQUIRE(world.has_value());

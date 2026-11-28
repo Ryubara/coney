@@ -525,6 +525,8 @@ second**.
 
 ### Visibility {#visibility}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 `World_FindVisibleSectors` (`0x00411d10`), confirmed (code):
 
 1. For the first viewport, reset: clear the visible bits and the 32 bytes at `+0x18`, and, if the world has PVS data,

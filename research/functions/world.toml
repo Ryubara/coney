@@ -482,7 +482,7 @@ page = "world.md#original-structure"
 role = "queues a sector whose atomic is loaded"
 level = "confirmed-code"
 coney = "src/world/streamed_world.h:StreamedWorld::collectSectors"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00411d10
