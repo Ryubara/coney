@@ -246,8 +246,8 @@ TEST_CASE("the disc's level80 checkpoint 4: the Destroyers break their block and
     CHECK(mostFailing <= 1);
     // The block breaks into a ring: at update 60 at least 8 of the 12 stand more than 0.5 m from their flags (the
     // original: 10 and 9, runs r-20261123-level80-block-breaks and r-20261128-level80-ring-shape), and every one is
-    // within 6 m of Cochise or Swan (the original's farthest 5.42 m, the second run): the waiters keep the fight
-    // goal's band round their man rather than drifting off (scripting.md#level80-think-fight).
+    // within 6 m of the nearer of Cochise and Swan (the original's farthest 5.42 m, the second run): the ring stays
+    // round the pair rather than drifting off (scripting.md#level80-think-fight).
     CHECK(offFlagAt60 >= 8);
     CHECK(farthestFromPairAt60 < 6.0F);
     // Nobody goes for the idle player before the order: the Warriors are not their enemies yet.
