@@ -395,7 +395,6 @@ history = 7
 
 ["docs/research/physics.md"]
 front-matter = 1
-skeleton = 1
 verified = 1
 evidence = 32
 address-resolve = 2

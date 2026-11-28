@@ -261,6 +261,25 @@ TEST_CASE("a move longer than the body's reach meets the wall from where it star
     CHECK(human.position().x == Approx(50.0F - coney::human::playerWalkingRadius(1.0F) - 0.01F).margin(0.002));
 }
 
+TEST_CASE("in the air a pending push moves the body whole, its vertical part too", "[human]") {
+    const TestCharacter character;
+    const auto high = coney::test::makeMesh(coney::test::floorAt(10.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    const auto empty = coney::test::makeMesh(coney::test::floorAt(-100.0F, 0.0F, 1.0F, 0.0F, 1.0F));
+    Human human = spawnHuman(character, high.get(), Vec3{40.0F, 40.0F, 10.0F});
+    human.step(stick(0.0F, 0.0F), high.get());
+    human.step(stick(0.0F, 0.0F), empty.get()); // no ground under the feet: airborne
+    REQUIRE(human.airborne());
+    // The next airborne update has no gravity yet and no velocity: only the push moves the body.
+    human.addPush(Vec3{0.1F, 0.0F, 0.3F});
+    human.step(stick(0.0F, 0.0F), empty.get());
+    // Expected: docs/research/physics.md#sweep, confirmed (code) at 0x0033e278 (`PhysicsBody_Sweep`): the body's
+    // pending push-out (+0x50) is added to the move whole, its z too. (Human_Move's own stored push, +0x2f0, is not
+    // added in the air at all, 0x0023d928-0x0023d934.)
+    REQUIRE(human.airborne());
+    CHECK(human.position().x == Approx(40.1F).margin(1e-4));
+    CHECK(human.position().z == Approx(10.3F).margin(1e-4));
+}
+
 TEST_CASE("running into a wall at a steep angle brakes the player to the slid speed", "[human]") {
     const TestCharacter character;
     const auto mesh =
@@ -290,30 +309,126 @@ TEST_CASE("the stick is camera-relative: up walks away from the camera", "[human
     CHECK(human.heading() == Approx(std::numbers::pi_v<float> / 2.0F).margin(1e-3));
 }
 
-TEST_CASE("a fall lands on the first update that starts 0.17 m or more below the floor, falling through until then",
+TEST_CASE("an airborne human lands by the original's landing test, on the update its segment meets the floor",
           "[human]") {
-    // Ledges of several heights put the floor at different phases of the fall's steps
-    // (docs/research/characters-ground.md#falling #falling): whatever the phase, the last airborne update ends 0.17 m
-    // or more under the floor, and the one before it ends less than that under it (or above it).
+    // The landing segment's two worked cases (docs/research/physics-bodies.md#u3-tests, test 18): the feet 0.3 m above
+    // the floor moving 0.5 m down, and 0.05 m above moving 0.2 m down. Each is set up exactly: the human stands 10 m
+    // up, the ground goes away (an empty level), and the step is chosen so that the second airborne update, the first
+    // with gravity, moves the feet by exactly that much (D = -g dt^2); then the floor is put under the feet.
+    struct Case {
+        float feet; // the feet above the floor at the start of the landing update
+        float drop; // that update's move down
+    };
+    for (const Case test : {Case{.feet = 0.3F, .drop = 0.5F}, Case{.feet = 0.05F, .drop = 0.2F}}) {
+        CAPTURE(test.feet, test.drop);
+        const TestCharacter character;
+        const auto high = coney::test::makeMesh(coney::test::floorAt(10.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+        const auto empty = coney::test::makeMesh(coney::test::floorAt(-100.0F, 0.0F, 1.0F, 0.0F, 1.0F));
+        const auto low = coney::test::makeMesh(coney::test::floorAt(10.0F - test.feet, 0.0F, 80.0F, 0.0F, 80.0F));
+        Human human = spawnHuman(character, high.get(), Vec3{40.0F, 40.0F, 10.0F});
+        // The player's upper point is 0.88 m above the feet at scale 0.97 (docs/research/characters-ground.md#falling).
+        human.setScale(0.97F);
+        const float dt = std::sqrt(test.drop / Human::kGravity);
+        human.setStepSeconds(dt);
+        human.step(stick(0.0F, 0.0F), high.get());
+        REQUIRE(human.position().z == Approx(10.0F));
+        human.step(stick(0.0F, 0.0F), empty.get()); // no ground under the feet: airborne
+        human.step(stick(0.0F, 0.0F), empty.get()); // the first airborne update: no gravity yet, no move
+        REQUIRE(human.airborne());
+        REQUIRE(human.position().z == Approx(10.0F));
+        human.step(stick(0.0F, 0.0F), low.get());
+        // Expected: docs/research/physics-bodies.md#u3-tests (test 18), confirmed (code) at 0x0023e408
+        // (docs/research/physics-bodies.md#u3-landing): the landing contact is found on this update, its handler
+        // (`Human_OnContact`, 0x00219d50) lands the human (`Human_Land`, 0x0023e090, docs/research/characters-ground.md
+        // #falling, confirmed (code)), and the ground snap that follows a move ending on
+        // the ground (`Human_Move`, 0x0023d8c8, docs/research/characters-ground.md#falling, confirmed (code)) puts the
+        // feet on the floor.
+        CHECK_FALSE(human.airborne());
+        CHECK(human.landings() == 1U);
+        CHECK(human.position().z == Approx(10.0F - test.feet).margin(1e-4));
+        // Expected: docs/research/characters-ground.md#falling, confirmed (code): `Human_Land` takes the vertical speed
+        // at the contact (the update's, -g dt) for its fall damage and then sets it to 0.
+        CHECK(human.lastLandingSpeed() == Approx(-Human::kGravity * dt));
+        CHECK(human.velocity().z == 0.0F);
+    }
+}
+
+TEST_CASE("a fall lands on the update its moved feet pass the floor", "[human]") {
+    // Ledges of several heights put the floor at different phases of the fall's steps. Walking off a ledge is a fall,
+    // not a jump, so the landing segment ends at the moved feet themselves (docs/research/physics-bodies.md
+    // #u3-landing, step 2): every airborne update ends above the floor, and the one whose move passes it lands.
     const TestCharacter character;
     for (const float height : {1.0F, 1.3F, 1.6F, 2.0F, 2.45F}) {
+        CAPTURE(height);
         const auto mesh =
             coney::test::makeMesh(coney::test::join(coney::test::floorAt(height, 0.0F, 80.0F, 0.0F, 20.0F),
                                                     coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F)));
         Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 17.0F, height});
+        const float dt = human.stepSeconds();
         std::vector<float> airborneEnds;
-        for (int i = 0; i < 150 && (airborneEnds.empty() || human.airborne()); ++i) {
+        bool landed = false;
+        for (int i = 0; i < 150 && !landed; ++i) {
+            const bool wasAirborne = human.airborne();
+            const float start = human.position().z;
             human.step(stick(0.0F, 0.35F), mesh.get());
             if (human.airborne()) {
                 airborneEnds.push_back(human.position().z);
             }
+            if (!wasAirborne) {
+                continue; // still on the ledge, or the update that leaves it
+            }
+            landed = !human.airborne();
+            // The update's move down: the vertical speed after this update's gravity (taken back from the landing's 0).
+            const float drop = (landed ? human.lastLandingSpeed() : human.velocity().z) * dt;
+            // Expected: docs/research/physics-bodies.md#u3-landing, confirmed (code) at 0x0023e408: the segment ends
+            // at the moved feet, so the update lands exactly when they pass the floor, neither earlier (the feet still
+            // above it) nor later; confirmed (runtime), run r-20261124-fall-rise2-landing
+            // (docs/research/characters-ground.md#falling).
+            CHECK(landed == (start + drop < 0.0F));
         }
         REQUIRE(airborneEnds.size() >= 2);
-        CHECK_FALSE(human.airborne());
+        CHECK(landed);
         CHECK(human.position().z == Approx(0.0F).margin(1e-4));
-        CHECK(-airborneEnds.back() >= Human::kLandingDepth);
-        CHECK(-airborneEnds[airborneEnds.size() - 2] < Human::kLandingDepth);
+        // Expected: docs/research/physics-bodies.md#u3-landing, confirmed (code) at 0x0023e408.
+        CHECK(*std::ranges::min_element(airborneEnds) >= 0.0F);
     }
+}
+
+TEST_CASE("a jump lands on the update its raised, moved feet pass the floor, falling through it until then",
+          "[human]") {
+    // A jump raises the landing segment's end 0.4 m times the scale above the moved feet, at most 0.7 m above the
+    // take-off height (docs/research/physics-bodies.md#u3-landing, step 2, confirmed (code) at 0x0023e408). So the
+    // body falls on through the floor until an update's move takes the raised feet under it, as at runtime
+    // (docs/research/characters-ground.md#falling, confirmed (runtime)).
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 0.0F});
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    REQUIRE(human.launchJump(Vec3{0.0F, 0.0F, 5.5F}));
+    constexpr float kRaise = 0.4F;
+    constexpr float kRaiseAboveTakeOff = 0.7F;
+    const float dt = 1.0F / 30.0F;
+    bool landed = false;
+    for (int i = 0; i < 90 && !landed; ++i) {
+        const float start = human.position().z;
+        human.step(stick(0.0F, 0.0F), mesh.get());
+        landed = !human.airborne();
+        if (i == 0) {
+            continue; // the take-off update: no gravity yet, rising
+        }
+        // The update's move down: the vertical speed after this update's gravity (taken back from the landing's 0).
+        const float drop = (landed ? human.lastLandingSpeed() : human.velocity().z) * dt;
+        const float raised = std::min(start + (kRaise * human.scale()), kRaiseAboveTakeOff);
+        // Expected: docs/research/physics-bodies.md#u3-landing, confirmed (code) at 0x0023e408.
+        CHECK(landed == (raised + drop < 0.0F));
+        if (landed) {
+            // Expected: docs/research/characters-ground.md#falling, confirmed (runtime): the landing update starts with
+            // the feet under the floor.
+            CHECK(start < 0.0F);
+        }
+    }
+    CHECK(landed);
+    CHECK(human.position().z == Approx(0.0F).margin(1e-4));
 }
 
 TEST_CASE("a walk let go fades into the idle for 5 updates: pushed again at once, the walk start waits for its end",

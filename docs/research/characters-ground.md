@@ -374,8 +374,8 @@ trace is this, not a sampling artefact. The code path is the sweep's landing con
 `0x0033d340` when body flag `0x40` is set; segment from feet + `+0x4e8` − 0.16 × scale, 0.880 m for the player,
 to the moved feet), which records the contact's fraction as `(hit − 1.0) / (length − 1.0)`, or 0 when the hit is
 nearer than 1.0 m (the human's vtable `+0x5c`, which returns the constant 1.0:
-[Human_LandingTest](physics-bodies.md#u3-landing)); why the hit is not taken until the feet are about 0.17 m under is
-not traced. What the code shows (confirmed (code)):
+[Human_LandingTest](physics-bodies.md#u3-landing)). Why the hit is not taken until the feet are about 0.17 m under
+follows from the jump's raised segment end (below). What the code shows (confirmed (code)):
 
 - the segment's upper point is `0x00226a20`: the feet + `+0x4e8` − 0.16 × the scale (confirmed (code));
 - only a hit with a normal `z` above 0.65 records a landing contact;
@@ -384,9 +384,31 @@ not traced. What the code shows (confirmed (code)):
   whose handler returns a code that is not 0, then returns (confirmed (code));
 - the body's move loop `0x0033e278` runs the sweep up to 3 times (confirmed (code)).
 
-Read alone, this lands on the update the moved feet pass the ground, which the runtime contradicts; the 0.17 m does
-not follow from the 0.88 / 1.0 m geometry either. A log of the contacts (a code patch that copies each contact's
-fraction and handler code to free memory) would settle it.
+- the segment's lower end is raised for a jump (state `0x400000000`, not in a long fall `0x1000000000`) or with record
+  `+0x08` bit `0x800`: the feet + 0.4 × the scale, at most the take-off height `+0x560` + 0.7, before the move is
+  added ([Human_LandingTest](physics-bodies.md#u3-landing), step 2; `0x0023e408`, confirmed (code));
+- `Human_Move` (`0x0023d8c8`) gives the sweep the airborne velocity whole, the fall included, and snaps a human whose
+  airborne flag is clear after the sweep to the ground (`Human_SnapToGround`), so a landing in the sweep ends with the
+  feet on the floor in the same update (confirmed (code)).
+
+So a jump lands on the first update whose move takes the **raised** feet under the floor: with Rembrandt's scale 0.97
+the raise is 0.388 m, and a move of 0.21-0.22 m down near the ground (the runtime's step) puts the threshold at
+0.168-0.178 m under the floor, where the runtime saw it between 0.161 and 0.176 m. Inferred (the raise is confirmed
+(code), the match with the runtime is a reading); a log of the contacts (a code patch that copies each contact's
+fraction and handler code to free memory) would confirm it. A fall that is not a jump (walking off an edge) has no
+raise and lands on the update its moved feet pass the floor, never ending an update under it (inferred from
+`0x0023e408`; a 2 m fall with no jump does so at runtime, below).
+
+**Against Coney** (trace diffs of z and vz, original PCSX2 v2.9.129 against Coney headless). A fall with no
+jump, Rembrandt put 2 m up (`fall_heights`, `rise = 2`; through the fall the trace's `state_hi` is 8, so no jump state
+`0x400000000`, and its `phase`, record `+0x08`, is `0x400000` then 0, never bit `0x800`): the original's
+feet end the update before the landing 0.171 m above the floor at −7.317 m/s and the next update lands, the feet
+never under it; Coney does the same on the same update of the fall, 0 outside tolerance over 55 updates (confirmed
+(runtime), run r-20261124-fall-rise2-landing). Coney's former 0.17 m rule fell two more updates, to 0.091 and
+0.369 m under, and landed two updates late. A run jump (`run_jump`): the original's feet end the update before the
+landing 0.191 m under the floor and the next update lands; Coney's do the same, 0.191 m under, z within 0.0002 m
+over 69 updates (confirmed (runtime), run r-20261124-run-jump-landing). Coney stores the take-off's 5.5 m/s one
+update before the original's `+0x3a0` shows it, with the same heights; that is the jump's start, not the landing.
 
 **A fall at runtime** (`level99`, no stick input; Rembrandt raised 10 m by writing the transform table's `z`).
 Confirmed (runtime), run r-20261124-chars-fall:
@@ -453,10 +475,13 @@ Its rate is random (confirmed (code), above), so its length varies from one land
   triangle by the distance to the triangle's closest point rather than swept along the move; the push tries 3
   passes, then stops. The low-and-thin rule takes the triangle as given, so a 0.25 m face exactly (a sliver) does
   not stop the body, and a face from 0.26 m does.
-- **Landing** probes from 1.0 m above the feet, as the ground snap does. A floor found on that segment is landed on
-  by the first update that starts with the feet 0.17 m or more below it ([When the landing happens](#falling)); until
-  then the body falls on through it (0.19 m after a run jump, as at runtime). The landing is at that update's position
-  across the ground, so the landing update keeps the full horizontal speed.
+- **Landing** is the original's landing test in the walking body's sweep (`Human::moveInAir`, the sweep's landing
+  contact by `physics::landingContact`, #369): the whole airborne velocity goes to the sweep, the segment runs from
+  the head point (the body point's height less 0.16 × the scale) to the moved feet, raised 0.4 × the scale for a
+  jump, and its floor lands the human in the sweep, which then moves on across the ground and snaps to it
+  ([When the landing happens](#falling)). Stand-ins: the take-off height is the last ground stood on; a human with
+  no skeleton takes the idle's body point height (1.067 × the scale); with no long-fall state, a jump's raise lasts the
+  whole jump.
 - **The landing** has no fade, so 436 moves the body at its 4.23 m/s from its first update as at runtime, and hands
   over to a gait blend at the jog (1.0).
 - **Out of the world** (20 m below the mesh's lowest point, [Falling out of the world](#out-of-world)): an AI human
@@ -472,10 +497,10 @@ Its rate is random (confirmed (code), above), so its length varies from one land
 
 - **Ground**: no vertical velocity on the ground; snap the feet with a ray from 1.0 m above, 1.5 m long, each update;
   a miss starts a fall with gravity 15.68 m/s² (from the second airborne update), capped at 50 m/s; land on floors
-  with `n.z` > 0.65; fall damage from 14.9 m/s, a kill from 20.5 m/s ([above](#ground)). A fall or jump lands on
-  the first update that starts with the feet about 0.17 m or more below the floor: keep moving the full step until
-  then (feet up to 0.38 m under), then land at that update's position with the horizontal speed kept
-  ([When the landing happens](#falling)).
+  with `n.z` > 0.65; fall damage from 14.9 m/s, a kill from 20.5 m/s ([above](#ground)). A fall lands on the update
+  its move takes the feet under the floor; a jump only once its move takes the feet raised 0.4 × the scale under it,
+  so it falls on through the floor until then (feet up to 0.38 m under), then lands with the horizontal speed kept
+  and is snapped up ([When the landing happens](#falling)).
 - **Walls**: a sphere of radius 0.35 × scale² × body `+0x60` (1.4286 for the player: 0.4705 m), centred that radius
   plus 0.05 above the feet, swept along the move; the slid velocity is kept, so a steep wall brakes the player;
   wall triangles less than 0.25 m tall are not walls, which is all the step-up there is ([Walls and steps](#walls)).
@@ -490,11 +515,26 @@ Its rate is random (confirmed (code), above), so its length varies from one land
 - **Step height at runtime** (answered): steps up to 0.245 m are walked onto in one update, from 0.255 m they stop
   the body ([Walls and steps](#walls)), measured on a test step made in the mesh. Still open: a real kerb in a later
   level, as corroboration.
-- **The landing's threshold**: why the landing contact is taken only once the feet start an update about 0.17 m
-  below the floor ([When the landing happens](#falling)). The contact path is traced (the resolution `0x0033d9d8`
-  acts on the first contact by fraction) and does not explain it; a runtime log of the contacts is needed.
+- **The landing's threshold**: the jump's raised segment end explains the 0.17 m ([When the landing
+  happens](#falling)), inferred; a runtime log of the contacts would confirm it.
 - **The landing's fade** and the gait blend value 436 hands over to; the drop land (429) and the long falls are not
   built in Coney.
+
+### The landing test's inputs {#q-landing-inputs}
+
+Three inputs of `Human_LandingTest` (`0x0023e408`, [Falling and landing](#falling)) are stand-ins in Coney, each for
+want of the state it reads: the take-off height `+0x560` (written by `Human_BeginJump`, `0x0023db48`) is the human's
+last ground, where a jump starts; the long-fall state `0x1000000000`, which ends a jump's raise, is not built, so a
+jump stays raised throughout; and a human with no skeleton has no body point `+0x4e8`, so the head point takes the
+idle's pelvis height (1.067 × the scale, [Camera](camera.md#body-point), inferred). Open, and how to find out:
+
+- **Where the long-fall state `0x1000000000` is set**: a search in Ghidra for the writes of that bit to the record's
+  state word (the callers of the state setter given it, and the instructions that or it in), then a PCSX2 write
+  watch on the record's state word during a long fall (`fall_heights` with its default rise) for the update it
+  appears on.
+- **What `+0x4e8` holds before the first pose**: a PCSX2 read of the human's `+0x4e8` right after it is made
+  (a breakpoint at the end of `Human_Init`, `0x00218008`) and on its first updates; once posed it is the pelvis
+  height [Camera](camera.md#body-point) gives.
 
 ## How this was checked
 

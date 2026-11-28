@@ -8,6 +8,7 @@
 
 namespace coney::human {
 
+// @coney-only debug tooling: the debug menu's noclip
 void Human::setFlight(std::optional<Flight> flight) {
     const bool starting = flight.has_value() && !m_flight.has_value();
     const bool ending = !flight.has_value() && m_flight.has_value();
@@ -20,7 +21,6 @@ void Human::setFlight(std::optional<Flight> flight) {
         m_jumping = false;
         m_airborne = false;
         m_outOfWorld = false;
-        m_landingPending = false;
         m_airborneUpdates = 0;
         m_blockedUpdates = 0;
         m_velocity = anim::Vec3{};

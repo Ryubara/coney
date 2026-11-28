@@ -1,0 +1,8 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level99's tutorial yard, a run and one jump
+# into the trailer wall, the drop from it and the landing. For a change to the jump, the fall or the landing against a
+# wall (not an open-ground landing).
+description = "level99 tutorial yard: a run and one jump into the trailer wall"
+level = "level99"
+input = "tools/clips/level99-jump.txt"
+start_frame = 150
+seconds = 5

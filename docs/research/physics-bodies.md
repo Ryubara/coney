@@ -733,26 +733,41 @@ the first is inserted, so they never share a slot. Confirmed (code).
 `0x0023e408`, 0x2dc bytes. `int Human_LandingTest(Human* h, Contact* contacts, int* count, const vec4* D)`; returns 1
 with a contact written at `contacts[*count]` (the count is **not** incremented here), else 0. Confirmed (code):
 
-1. `A` = the feet: the position in the transform table (`0x00714b00 + 32 × h+0x92`).
-2. **Raised feet**: when (`0x00227f68`(h) is true and the state lacks `0x1000000000`, a long fall) **or** the human
-   holds with flag `0x800` (`0x00226660`): `A.z += 0.4 × Human_GetScale(h)` (`0x3ecccccd`), but at most
-   `h+0x560 + 0.7` (`0x3f333333`).
+1. `A` = the feet: the position in the transform table (`0x00714b00 + 32 × h+0x92`); confirmed (code).
+2. **Raised feet**: when (`0x00227f68`(h) is true, the state's jump bit `0x400000000`, and the state lacks
+   `0x1000000000`, a long fall) **or** the record `+0x08` has bit `0x800` (`Human_HasHeldFlag`, `0x00226660`):
+   `A.z += 0.4 × Human_GetScale(h)` (`0x3ecccccd`), but at most `h+0x560 + 0.7` (`0x3f333333`); confirmed (code).
 3. `B` = the upper point, human vtable slot `+0x60` / `+0x64` (`0x00226a20`: the feet + `+0x4e8` − 0.16 × scale,
-   [Characters](characters-ground.md#falling)).
+   [Characters](characters-ground.md#falling)); confirmed (code).
 4. `A += D` (the moved, possibly raised, feet).
 5. The ray goes from the **higher** of `A` and `B` to the lower: origin `B`, end `A`, unless `B.z < A.z`, then the
    two swap. `L` = the distance between them, direction = (end − origin) / `L`.
-6. `WorldManager_RayCast(world 0x005147c4, {origin, dir, L}, &hit, 0, 0)` (mask 0: every enabled triangle).
+6. `WorldManager_RayCast(world 0x005147c4, {origin, dir, L}, &hit, 0, 0)` (mask 0: every enabled triangle); confirmed (code).
 7. No hit, or the hit normal's `z ≤ 0.65` (`0x3f266666`): return 0.
 8. Else: human `+0x1d8` = the hit material, `+0x230` = the hit normal (vec4); and in the contact: `+0x04` = the
    body's first shape (body `h+0x1a0`, slot `+0x28` with `(0, 0, 0)`), `+0x50` = the hit normal, `+0x44` = 0,
    `+0xa0` = `(0, 0, 0, 1)`, `+0xb4` = the hit triangle, `+0xb0` = 0, `+0x84` = 0 (the point `+0x90` is not
-   written), and the fraction, with `h0` = human vtable slot `+0x58` / `+0x5c` (1.0, `0x004ed818`):
-   `f = 0` when the hit distance `< h0`, else `f = (dist − h0) / (L − h0)`. Return 1.
+   written), and the fraction, with `h0` = human vtable slot `+0x58` / `+0x5c` (a function
+   returning the constant 1.0): `f = 0` when the hit distance `< h0`, else `f = (dist − h0) / (L − h0)`. Return 1.
+   Confirmed (code).
 
 The fraction is measured on the segment **beyond 1.0 m from the origin**, not along `D`: with the origin 0.88 m above
 the starting feet, `f` is `(g − 0.12) / (|D.z| − 0.12)` for a vertical fall with the feet `g` above the ground (worked
 example in the tests). Confirmed (code) for the formula; the reading is inferred.
+
+**What the sweep does with it.** The contact's handler, `Human_OnContact` (`0x00219d50`), calls `Human_Land(h, 1, 1)`
+for a level contact flagged `0x80` before any of its material tests, and answers the level's `0x20001` (a slide with
+the contact scale); `Human_Move` (`0x0023d8c8`) snaps a human whose airborne bit is clear after the sweep to the
+ground. Confirmed (code) at the addresses cited. `Human_Land` clears the airborne bit at once, so the human body's
+contact scale for it is 1.0 and the later passes ask no landing test; with `f = 0` the advance is nothing, the slide
+takes the fall out of both velocities and the next pass moves the rest across the ground (inferred from the sweep's
+order, [above](#u3-sweep)). This also explains the runtime's 0.17 m
+landing depth of a jump ([When the landing happens](characters-ground.md#falling), inferred).
+
+**Coney.** `WalkingOwner::landing` (in `src/human/human.cpp`) asks `physics::landingContact` with the head point
+(`Human::headPointHeight`) and the raise, and `WalkingOwner::onContact` lands; `Human::moveInAir` gives the sweep the
+whole velocity, calls `Human::land` and snaps. Stand-ins: the take-off height `+0x560` is the human's last ground;
+there is no long-fall state, so a jump is raised throughout; a human with no skeleton takes the idle's body point.
 
 ### Contact_InsertSorted {#u3-insert}
 
