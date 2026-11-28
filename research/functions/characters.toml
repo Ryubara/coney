@@ -673,9 +673,14 @@ coney = "src/human/human.h:Human::startWounded"
 status = "compared"
 
 [[function.gaps]]
-what = "the held object's drop, the move styles popped and the wounded style 0xd pushed are not ported"
+what = "the held object's drop is not ported"
 relation = "not-ported"
-issue = 685
+issue = 711
+
+[[function.gaps]]
+what = "the move styles popped and the wounded style 0xd pushed are not ported"
+relation = "not-ported"
+issue = 990
 
 [[function.gaps]]
 what = "the brain's knocked-out event is the caller's flush (Brain::flush), not Brain_OnKnockedOut"
@@ -692,7 +697,12 @@ coney = "src/human/human.h:Human::endWounded"
 status = "compared"
 
 [[function.gaps]]
-what = "style 0xd's removal and body shape 2's enabling are not ported"
+what = "style 0xd's removal is not ported"
+relation = "not-ported"
+issue = 990
+
+[[function.gaps]]
+what = "body shape 2's enabling is not ported"
 relation = "not-ported"
 issue = 685
 
@@ -737,10 +747,15 @@ issue = 664
 address = 0x00232538
 name = "Humans_EndAllRage"
 page = "characters/index.md#code-core"
-role = "Ends rage mode for every human in rage (flag 0x80000)."
+role = "Ends rage mode for every player in rage (flag 0x80000): walks the players' list (game state +0x224 / +0x228), not every human."
 level = "confirmed-code"
 coney = "src/human/human.h:endAllRage"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the players' list is read as the humans that fight as a player (Fighter::player()), so the caller may pass every human (a stand-in)"
+relation = "stand-in"
+question = "scenes.md#q-players-list"
 
 [[function]]
 address = 0x00233b08
@@ -1217,7 +1232,7 @@ status = "compared"
 [[function.gaps]]
 what = "the anim state chosen again changes nothing, as the wounded clips are not played (a stand-in)"
 relation = "stand-in"
-issue = 685
+issue = 990
 
 [[function]]
 address = 0x002376a0

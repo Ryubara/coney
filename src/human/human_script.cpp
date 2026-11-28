@@ -48,7 +48,8 @@ void Human::heal(bool full) {
         endWounded();
     }
     if (knockedOut()) {
-        // Human_WakeUp, then Human_EnterFightStance. A knock-out by health ends with the health below.
+        // Human_WakeUp, then Human_EnterFightStance. A knock-out by health ends with the health below. Coney stand-in
+        // (#959): an AI human's stance is its fight goal's (Fighter::setAiStance()), so the stance shows for a player.
         m_script.knockedOut = false;
         m_fighter.setStanceOn(true);
     }
@@ -57,7 +58,7 @@ void Human::heal(bool full) {
     const int maximum = health.maximum();
     health.set(full ? maximum : std::min(health.value() + (maximum >> 1), maximum));
     heal();
-    // Not ported (#685): the linked object's release and the glow colour (+0x644) zeroed.
+    // Not ported: the linked object's release (#1640) and the glow colour (+0x644) zeroed (#685).
 }
 
 void Human::setNormalMode(bool full) {
@@ -102,7 +103,7 @@ void Human::arrest() {
     }
     loseBlockHumans();
     setThrowAiming(false);
-    // Not ported (#685): the drop of a held weapon of kind 4 or 6, or of anything held without flag 0x2000.
+    // Not ported (#711): the drop of a held weapon of kind 4 or 6, or of anything held without flag 0x2000.
     if (m_fighter.victim().stunned() && !m_fighter.victim().grounded()) {
         m_fighter.endStun(nowMs());
     }
@@ -155,7 +156,8 @@ void Human::aimThrow(float heading, bool turning) {
 
 void Human::setWounded(bool wounded) {
     // Coney stand-in: the binding reads `on` as a boolean, where the original starts the wound only for exactly 1; and
-    // the wounded clips (style 0xd) are not played, so choosing the anim state again (0x20000000) changes nothing.
+    // the wounded clips (style 0xd, #990) are not played, so choosing the anim state again (0x20000000) changes
+    // nothing.
     if (wounded) {
         startWounded();
     } else {
@@ -171,8 +173,8 @@ void Human::startWounded() {
     m_fighter.endStun(nowMs());
     m_script.knockedOut = false;
     if (!m_script.wounded) {
-        // Human_ReleaseAll: the pair broken, the grab and rage ended. Not ported (#685): the held object's drop and
-        // the wounded style 0xd.
+        // Human_ReleaseAll: the pair broken, the grab and rage ended. Not ported: the held object's drop (#711) and
+        // the wounded style 0xd (#990).
         breakPair();
         m_fighter.setNormal(m_animator, false);
         setRageMode(false);
@@ -186,8 +188,8 @@ void Human::startWounded() {
 }
 
 void Human::endWounded() {
-    // No longer wounded: push weight 1 (pushWeight()). Not ported (#685): style 0xd's removal and body shape 2's
-    // enabling.
+    // No longer wounded: push weight 1 (pushWeight()). Not ported: style 0xd's removal (#990) and body shape
+    // 2's enabling (#685).
     m_script.wounded = false;
 }
 

@@ -431,18 +431,22 @@ player's grab or paired move does not survive a `SuperRunScene` cinematic here; 
 waits for that caller.
 
 **Coney** (#225 and #281, implemented): `SceneSystem::joinHuman`, the bind, resets the human first, before it checks
-the scene or the role (`SceneHost::resetHumanForJoin()`, `Human::resetForJoin()`), with the steps of
-[the reset at the join](#join-reset) that Coney models: a throw's aim cancelled, any pair broken (`Human_BreakPair`,
-[Combat](combat-grabs.md#pair-break)), a wound ended, then `HuSetNormalMode(human, true)` (a grab, a stun, rage and a fall
-ended, the idle, at least 1 health), and the carried prop gone; and every raging human's rage ends at once
-(`human::endAllRage()`, play mode's join reset). A human never bound is not reset. Stand-in: fire, mini-games, overlay
-tasks, held kind-`0x27` / `0x10` objects, slow motion, a climb's body and a picked object are not in Coney, so those
-steps are left out. Rudy then joins role 6 and is moved by his role clip. Disc tests: through lesson 6 into `l99_c7`
-Rudy is in role 6 and moves 11.2 m (`tests/platform/disc_level99_power_lesson_test.cpp`); the player still holds Rudy
-on the update before the play and no human is in a pair as it starts
-(`tests/platform/disc_level99_scene_grab_test.cpp`). Known difference: Coney starts `l99_c7` 7 updates
-earlier than the original (update 78 of 59 against 85), probably because Coney's scene preload is instant where the
-original takes 11 updates from `ScenePreload` to the play, so the reset removes the can before 59's own `0x31`.
+the scene or the role (`SceneHost::resetHumanForJoin()`). `Human::resetForJoin()` is exactly
+`HuSetNormalMode(human, true)` (`Human::setNormalMode(true)`), the steps of [the reset at the join](#join-reset) that
+Coney models: a player's own rage ended, a throw's aim cancelled, any pair broken (`Human_BreakPair`,
+[Combat](combat-grabs.md#pair-break)), a wound ended, a grab ended, a downed human up and a stun ended, a player out of
+the fight stance, the carried props released and the players' slow motion ended; then a health at or below the pending
+damage becomes 1 (the pending damage 0) and the human stands in his idle. An arrest is kept. After each bind, also a
+stand-in's, every raging player's rage ends (`human::endAllRage()` for `Humans_EndAllRage`, play mode's join
+reset); an AI human in rage keeps it. A human never bound is not reset. Stand-ins: fire, mini-games, overlay tasks,
+held kind-`0x27` / `0x10` objects, the airborne bits, a climb's body, a picked object and the glow colour are not in
+Coney, so those steps are left out, and an AI human's fight stance stays his fight goal's (#959). Rudy then joins role 6
+and is moved by his role clip. Disc tests: through lesson 6 into `l99_c7` Rudy is in role 6 and moves 11.2 m
+(`tests/platform/disc_level99_power_lesson_test.cpp`); the player still holds Rudy on the update before the play and no
+human is in a pair as it starts (`tests/platform/disc_level99_scene_grab_test.cpp`). Known difference: Coney starts
+`l99_c7` 7 updates earlier than the original (update 78 of 59 against 85), probably because Coney's scene preload is
+instant where the original takes 11 updates from `ScenePreload` to the play, so the reset removes the can before 59's
+own `0x31`.
 
 **While it plays** the human is driven by the clip's animation and root motion ([Animation](formats/animation.md)),
 and the clip's 21/22 events place it at its marks ([Events](#events)). **When its clip ends** (`0x003a00b8`): unless
@@ -1182,6 +1186,10 @@ his own fade gates his stick there was not checked, and a skipped scene is taken
 its end (inferred: the run played the scene out).
 
 ## Open questions
+
+- **Who is on the players' list**{#q-players-list}: `Humans_EndAllRage` (`0x00232538`) walks game state `+0x224`
+  (count) and `+0x228` (handles). Coney reads it as the humans a player controls (human `+0x1b0` not -1,
+  `Fighter::player()`), inferred; where entries are added and removed (a hand-over, a second player) is not traced.
 
 - When the cast's idle is built at a scene's end: a breakpoint on `Human_BuildIdleTasks` (`0x0025f770`) for one of
   `l80_c7`'s Destroyers, and on the humans' update (`0x0024910c`) to see who reaches `AnimTaskBlendOut_Release`,

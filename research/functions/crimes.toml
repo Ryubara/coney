@@ -112,7 +112,7 @@ status = "compared"
 [[function.gaps]]
 what = "the drop of a held weapon of kind 4 or 6, or of anything held without flag 0x2000, is not ported"
 relation = "not-ported"
-issue = 685
+issue = 711
 
 [[function.gaps]]
 what = "brain +0x288 zeroed and the harmony tally for a type-3 brain's player are not ported"
@@ -131,7 +131,7 @@ status = "compared"
 [[function.gaps]]
 what = "a released ally of a leaderless gang does not follow its leader again (Goal_FollowPlayer)"
 relation = "not-ported"
-issue = 685
+issue = 677
 
 [[function]]
 address = 0x00232c60

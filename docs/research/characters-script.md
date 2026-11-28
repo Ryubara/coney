@@ -263,7 +263,7 @@ record [the record](characters/index.md#the-record).
 ## Behaviour
 
 The behaviour each function starts is on the topic page of its subject; the table under Map names the function and says
-what it does. The four below have no other page.
+what it does. The sections below have no other page; `Human_Heal`'s is [The flash](combat-rage.md#flash).
 
 ### HuIsAlive {#hu-is-alive}
 
@@ -285,21 +285,8 @@ Read in Ghidra: confirmed (code) where no other level is given.
 nothing else. It calls no part of the normal mode ([The reset at the join](scenes.md#join-reset)), so a grab, a stun,
 rage or a knockdown the human is in stay as they are. Confirmed (code) at `0x002377f8`.
 
-`Human_Heal(human, full)` (`0x0022eb40`), confirmed (code) at that address, in order:
-
-1. Byte `+0x3be` = 0 (its reader is not known).
-2. A wounded human (`Human_IsWounded`, state `0x10000`) has the wound ended (`Human_EndWounded`, [below](#hu-wounded)).
-3. A knocked-out human (`Human_IsKnockedOut`, state `0x40000`) wakes (`Human_WakeUp(human, 0)` `0x00230598`: body
-   shape 2 back on, the cuffs icon removed, style `0x12` off, states `0x1c8007` cleared, push weight 1, the brain
-   enabled and resumed) and enters the fight stance (`Human_EnterFightStance` `0x0022fe48`: state `0x1` and the
-   stance timer).
-4. State `0x4000000000` cleared.
-5. Health (record `+0x144`): with `full` the maximum; without, health + half the maximum (an arithmetic shift),
-   capped at the maximum. The flash asks for the partial heal on fury and in the Rumble
-   ([The flash](difficulty.md#flash)).
-6. A new physics body (`Human_CreatePhysicsBody` `0x0021ce08`, whose flags hold `BLOCKHUMANS`,
-   [Human contacts](physics.md#human-contacts)), the linked object released (`Human_ReleaseLinkedObject`
-   `0x0024ca40`) and `+0x644` (the glow colour, [Lighting](lighting.md#humans)) = 0.
+`Human_Heal` (`0x0022eb40`), the heal the revive, the flash, the uncuffing and the Armies game-over toggle share,
+is described step by step under [The flash](combat-rage.md#flash).
 
 ### HuSetWounded {#hu-wounded}
 

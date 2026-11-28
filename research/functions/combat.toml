@@ -342,14 +342,19 @@ relation = "stand-in"
 issue = 685
 
 [[function.gaps]]
-what = "the linked object's release and the glow colour +0x644 zeroed are not ported"
+what = "the linked object's release is not ported"
+relation = "not-ported"
+issue = 1640
+
+[[function.gaps]]
+what = "the glow colour +0x644 zeroed is not ported"
 relation = "not-ported"
 issue = 685
 
 [[function.gaps]]
 what = "an AI human's fight stance is its fight goal's, so the stance entered shows only for a player (a stand-in)"
 relation = "stand-in"
-issue = 685
+issue = 959
 
 [[function]]
 address = 0x0022f100

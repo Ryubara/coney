@@ -365,7 +365,7 @@ task pose table at `0x00714b00`, `0x20` bytes each. A human flag is a bit of `+0
 | `0x002320a0` | `Human_CanPush` | Whether one human pushes another on contact, by their stances and states (from Human_OnPushContact). | confirmed (code) |
 | `0x002323d0` | `Humans_DestroyAll` | At level unload: flushes deferred anim tasks and destroys every human handle. | confirmed (code) |
 | `0x00232430` | `Human_GetClipTimeLeft` | Time left in the top clip, or in the one under it (at least 0.1 s) when the top has ended. | confirmed (code) |
-| `0x00232538` | `Humans_EndAllRage` | Ends rage mode for every human in rage (flag 0x80000). | confirmed (code) |
+| `0x00232538` | `Humans_EndAllRage` | Ends rage mode for every player in rage (flag 0x80000): walks the players' list (game state `+0x224` / `+0x228`), not every human ([The reset at the join](../scenes.md#join-reset)). | confirmed (code) |
 | `0x00232b78` | `Human_CancelThrowAim` | Leaves throw aiming when the control function is Human_MoveThrowAim. | confirmed (code) |
 | `0x00233830` | `Human_CopRadioChatter` | For a cop brain, every 360 updates plays the next radio voice line. | confirmed (code) |
 | `0x00233890` | `Human_SayGoalLine` | Speaks the line for an AI goal event: commands or cop lines chosen by the event and the level. | confirmed (code) |

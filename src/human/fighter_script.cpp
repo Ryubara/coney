@@ -30,8 +30,8 @@ void Fighter::setNormal(HumanAnimator& animator, bool full) {
     }
     // Human_EndStun.
     m_victim.endStun();
-    // Human_LeaveFightStance: a player leaves the stance and the lock and drops his target. Coney stand-in: an AI
-    // human's stance is its fight goal's (setAiStance()), which keeps it.
+    // Human_LeaveFightStance: a player leaves the stance and the lock and drops his target. Coney stand-in (#959): an
+    // AI human's stance is its fight goal's (setAiStance()), which keeps it.
     if (m_player) {
         leaveStance();
         takeTarget(nullptr);

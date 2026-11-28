@@ -190,11 +190,13 @@ tests the state, not the arrest call, so a scripted `HuSetArrested` shows the sa
 setting the state over PINE showed the same (no run record was kept). He keeps his mark in the [gang
 tally](hud-functions-lua.md#gang-count-what), which counts only members not down.
 
-A human with no AI brain component (vtable `+0xf4` null) gets only state `0x20000`, the style and action 0.
+A human with no physics body (vtable `+0xf4`, which returns the body `Human_CreatePhysicsBody` makes, answers null)
+gets only state `0x20000`, the style and action 0.
 
 **Unarrest** (`Human_Unarrest`), for a cuffed human:
 
-1. Brain `+0x40` gets `0x80000004`, and the kind-0 record is removed (slot `+0x12c`).
+1. Body flags `0x80000004` (`BLOCKHUMANS` among them) are set again on the physics body (vtable `+0xf4`, its flags at
+   `+0x40`) when it has one, and the kind-0 record is removed (slot `+0x12c`).
 2. Its carried props are released (`Human_ReleaseCarriedProps` `0x0024ce40`) and the icon removed (message `0x15`,
    `Human_RemoveOverheadIcon`, `0x00227388`). Style `0x11` is removed (`0x00253f78`), state `0x20000` is cleared, and
    the push weight returns to 1.
