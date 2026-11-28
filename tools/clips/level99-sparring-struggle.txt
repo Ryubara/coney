@@ -10,24 +10,6 @@
 300 console lua AddFenceWarriors1()
 301 console lua GangMakeFriends(0,GangFenceWarriors1)
 302 console lua P1.SetupWarriors()
-1150 tap square
-1162 tap square
-1174 tap square
-1186 tap square
-1198 tap square
-1210 tap square
-1222 tap square
-1234 tap square
-1246 tap square
-1258 tap square
-1270 tap square
-1282 tap square
-1294 tap square
-1306 tap square
-1318 tap square
-1330 tap square
-1342 tap square
-1354 tap square
-1366 tap square
-1378 tap square
-1390 tap square
+1920 tap square
+1932 tap square
+1944 tap square
