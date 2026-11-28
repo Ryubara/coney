@@ -196,6 +196,17 @@ input after that: Coney plays that many more updates, the input script is shifte
 trace (renumbered from 1). It is no longer the way to wait out an opening, and [the standing-player
 check](#standing-player) fails a scenario that tries to.
 
+**Level99 from a save slot** (#1696). The original's slots stand where they were saved, long after the checkpoint's
+opening; Coney's run starts on the first update of control. So a level99 scenario that moves the player gives Coney the
+slot's spot and camera with `--checkpoint 3 --start ...` (the original trace's first row: the checkpoints' own starts
+are the roof at 1 and the street's far end at 3, never a slot's spot), and keeps the stick off for the first 40 updates
+of control with `settle` when its script moves it sooner. Control at checkpoint 3 comes with the script handing the
+fence camera back to the follow camera in a 1 s blend (`P3.FencePoizoDone` in `level99_lesson2` makes the main camera
+active over 1 s), the stick is turned by the view being shown, and with `--start` far from the fence that blend sweeps
+up to 156°: a full stick in it turned Rembrandt from 21.7° to 49.7° in three updates in `chars_wall_slide`, where the
+slot's run turns him 4.5° the other way. A test holds the `chars_*` scenarios to both rules
+(`python/tests/test_trace_guard.py`).
+
 ```sh
 uv run --project python coney-tools trace coney research/traces/scenarios/walk60.toml --out ../../scratch/walk60-coney.csv
 uv run --project python coney-tools trace diff ../../scratch/walk60-original.csv ../../scratch/walk60-coney.csv --scenario research/traces/scenarios/walk60.toml

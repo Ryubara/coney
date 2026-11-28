@@ -1,0 +1,5 @@
+# Walking into a wall (docs/research/characters-ground.md#walls): the player is put 7 m from the wall for the first
+# three updates, then the stick is pushed straight up at 60 % from update 20 to 280: a walk,
+# which reaches the wall at about update 155 and slides along it.
+20 stick left 0 60
+280 stick left 0 0

@@ -13,7 +13,11 @@ patches = ["scripted-pad", "right-stick"]
 
 [coney]
 level = "level99"
-wait_for_control = true          # checkpoint 1 opens with the scene l99_c1, which holds the pad (#1680)
+# Slot 7's spot and camera (the first row of the original's fence_climb trace): Coney's checkpoint start is not the
+# slot's (#1696).
+args = ["--checkpoint", "3", "--start", "48.4135,43.9145,0.2232,179.754,4.8,179.744"]
+wait_for_control = true          # checkpoint 3 opens with the scene l99_c3, which holds the pad (#1680)
+settle = 40                      # the stick comes after 40 updates of control, as in the slot (#1696)
 
 [[field]]
 name = "state_hi"                         # record +0x04, the state flags' high word (0x4 jump, 0x8 air, 0x20 land)

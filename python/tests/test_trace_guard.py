@@ -14,7 +14,7 @@ import pytest
 
 from coney_tools import trace_cli
 from coney_tools.input_script import parse_input_script
-from coney_tools.scenario import ScenarioError, load_scenario
+from coney_tools.scenario import Scenario, ScenarioError, load_scenario
 from coney_tools.trace_diff import load_trace
 from coney_tools.trace_guard import first_moving_step, standing_player
 
@@ -220,3 +220,40 @@ def test_every_level99_scenario_that_moves_the_player_waits_for_control() -> Non
         )
         assert scenario.coney_settle != 300, f"{path.name}: a settle of 300 is the old stand-in for waiting for control"
     assert checked >= 28
+
+
+#: Updates after player 1 gets control before a stick turns him as in the original's saved slots: control at level99
+#: checkpoint 3 comes with the fence camera blending back to the follow camera over 1 s (30 updates), and the stick is
+#: turned by the view shown; the slots were saved long after it (#1696, docs/guides/research-traces.md).
+SETTLED_UPDATES = 40
+
+
+def _first_stick_step(scenario: Scenario) -> int | None:
+    """The first step player 1's left stick leaves the centre at all (a 35 % nudge turns him too), or None."""
+    for event in scenario.events:
+        if event.action == "stick" and event.port == 0 and event.stick == 0 and (event.x or event.y):
+            return event.frame + 1
+    return None
+
+
+@pytest.mark.reads("docs_only")
+def test_every_level99_chars_scenario_starts_where_its_slot_stands_and_after_the_camera_settles() -> None:
+    # Coney's checkpoint starts are not the original's save slots (the roof at checkpoint 1, the street's far end at
+    # checkpoint 3), so a chars_* scenario that moves the player places him on the slot's spot with --start; and a
+    # stick within SETTLED_UPDATES of control turns him up to 50 degrees off the slot's run, so the scenario settles
+    # first.
+    checked = 0
+    for path in sorted((REPO / "research/traces/scenarios").glob("chars_*.toml")):
+        scenario = load_scenario(path, REPO)
+        args = list(scenario.coney_args)
+        checkpoint = args[args.index("--checkpoint") + 1] if "--checkpoint" in args else "1"
+        first = _first_stick_step(scenario)
+        if scenario.coney_level != "level99" or checkpoint not in ("1", "2", "3") or first is None:
+            continue
+        checked += 1
+        assert "--start" in args, f"{path.name}: give Coney the slot's spot with --start (#1696)"
+        assert scenario.coney_settle + first > SETTLED_UPDATES, (
+            f"{path.name}: the stick comes {first} updates after control; settle so it comes after "
+            f"{SETTLED_UPDATES} (#1696)"
+        )
+    assert checked >= 25
