@@ -875,7 +875,7 @@ an alarmed glass pane ([World objects](objects.md#pane)) and the code at `0x0021
 numbers they go with are inferred from those types (4 `Custom`, 1 `BreakAndEnter` for the store, 9
 `PrecinctAttack`).
 
-## Warrior commands {#warrior-commands}
+### Warrior commands {#warrior-commands}
 
 A war chief (a player human whose `+0x3ac` is 1) orders the crew, his gang, with one of seven **Warrior
 commands** ([Commands](../references/commands.md#warrior-command)). The menu (HUD `0x001a6c58`, R2 and the right
@@ -883,23 +883,39 @@ stick: [HUD](hud.md#warrior-command-menu)), `WCIssueCommand`
 and the game itself go through one dispatcher, `0x0041c4e0(state, chief, command, forced, pos, arg)`, confirmed
 (code):
 
-1. Nothing while commands are locked (game state `+0x411`), the player's menu is locked (`+0x42e` + player), the
-   command is disabled for the player (`+0x41e` + player × 7 + command, `WCEnableCommand`; the player is human
-   `+0x1b0`) or the human is not a war chief.
-2. The command becomes the player's last (`+0x41c` + player). **Unforced** (the menu): the chief is *quiet* when a
-   line of his is still playing (his speech handle resolves) and his `+0x194` is clear. Then the **range check**
-   (`WarChief_CheckCrewInRange`, `0x0041c338`): when the gang's nearest other member is more than 50 m away (squared
-   distance over 2500), the command is **refused** and, unless quiet, the chief says **18 `range`**, or **92
-   `range2`** when any member is cuffed or knocked out (`Human_SayCommand(1.0, chief, …, no interrupt)`); game state
-   `+0x414` + player records the refusal ([The out-of-range flag](#warrior-range-flag)).
-   Within range, giving the current command again (the tactic's `+0x18`
-   clear) only repeats its line (`WarChief_SayCommand`, `0x0041cc40`) and, for 0 under a tactic of type `0x12`,
-   calls `0x003114e0` on it. **Forced**, only defend (2) goes through the range check (quietly).
-3. Otherwise the gang's tactic is cleared and the command's started: 0 `0x00310e00` (given 9.0), 1 `0x00320530`
-   (unforced, the chief also plays clip 0x2a4 or 0x2a8, and the gang's target is set from his), 2 `Tactic_Defend`
-   around the chief (clip 0x2a3 or 0x2a7), 3 `0x00313400` (the standing tactic of type 3, [the first
-   mission](ai/index.md#level99)) or `0x003128a0` for a gang whose brain `+0x2d5` is set, 4 `0x00319570` (given 75.0), 5
-   `0x00320b60`; 6 starts nothing.
+1. Nothing for no chief, while player 1's camera is a scene's (kind 4), while commands are locked (game state
+   `+0x411`), when the human is not a war chief (`+0x3ac` = 1), while the player's menu is locked (`+0x42e` +
+   player) or when the command is disabled for the player (`+0x41e` + player × 7 + command, [the
+   switches](ai/index.md#warrior-command-switches); the player is human `+0x1b0`), tested in that order. The command
+   number is not range-checked.
+2. The command becomes the player's last asked for (`+0x41c` + player). **Unforced** (the menu): the chief is *quiet*
+   when a line of his is still playing (his speech handle resolves) and his `+0x194` is clear, and from here on the
+   dispatcher's forced argument holds that quiet flag (so step 3's clips and the attack's target, which wait for "not
+   forced", wait for "not quiet"). Then the **range check** (`WarChief_CheckCrewInRange`, `0x0041c338`): when the gang's
+   nearest other member is more than 50 m away (squared distance over 2500), the command is **refused** and, unless
+   quiet, the chief says **18 `range`**, or **92 `range2`** when any member is cuffed or knocked out
+   (`Human_SayCommand(1.0, chief, …, no interrupt)`); game state `+0x414` + player records the refusal ([The
+   out-of-range flag](#warrior-range-flag)). Within range, a **repeat** only repeats the line (`WarChief_SayCommand`,
+   `0x0041cc40`) and, for 0 under a tactic of type `0x12`, calls `WarriorFollowTactic_Repeat` (`0x003114e0`: each AI
+   member holding `FollowPlayer` but no `FollowFormation` gets `FollowFormation` (0.75 m) on the leader). A repeat is
+   the command **in force** (`+0x41a` + player, stored when a tactic starts, step 3), not the last asked for, with the
+   gang's tactic present (gang `+0x40`) and its byte `+0x18` clear. That tactic's own byte is set by the attack's
+   start when the gang's target is a valid enemy of the chief (`WarriorAttackTactic_Start`, `0x003208e8`), its update
+   (`WarriorAttackTactic_Process`, `0x003209d0`) while the leader is locked on (`Human_IsLocked`) onto a target not
+   friendly to him (`Brain_IsFriendly`, `0x00290230`) and no player, the defend tactic when a member defends the other
+   player (`DefendTactic_GiveGoals`, `0x00310288`), the hide tactic when it regives a member his goal
+   (`HideTactic_RegiveMember`, `0x00313028`); the others never set it. So attack again starts again once the crew has a
+   target or the chief has locked onto an enemy, as does a command to a crew with no tactic left (cleared by a script).
+   **Forced**, only defend (2) goes through the range check (quietly), with no repeat test. Confirmed (code) at
+   `0x0041c4e0` and the addresses given.
+3. Otherwise the gang's tactic is cleared, its shared target too, and the command is stored as the one in force
+   (`GameState_StoreWarriorCommand`, `0x0041c4c8`, with the argument at `+0x42c` + player) and started: 0
+   `0x00310e00` (given 9.0), 1 `0x00320530` (not quiet, the chief also plays clip 0x2a4 or 0x2a8, and the gang's
+   target is set from his), 2 `Tactic_Defend` around the chief (clip 0x2a3 or 0x2a7), 3 `0x00313400` (the standing
+   tactic of type 3, [the first mission](ai/index.md#level99)) or `0x003128a0` for a chief whose brain's `+0x2d5` is
+   set, 4 `0x00319570` (given 75.0), 5 `0x00320b60`; 6 starts nothing (it is still stored). After any of them,
+   6 included, the `WCSetCallback` function is called with (chief, command) when one is set and the chief's handle
+   resolves (`GameState_CallWarriorCommandCallback`, `0x0041b5e0`). Confirmed (code) at the addresses given.
 4. The chief says the command's line (`WarChief_SayCommand`, `0x0041cc40`, [below](#warrior-command-lines)): 0
    `follow` (`follow_hide` while hidden in shadow, `Human_IsHiddenInShadow` `0x00228168`), 1 `attack`, 2 `defend`,
    3 `hold` (`holdhide`), 4 `scatter`, 5 `steal` when the nearest store flag (activity `0xe`) is closer than 64 (8 m

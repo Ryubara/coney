@@ -19,6 +19,7 @@
 #include "ai/route_planner.h"
 #include "ai/script_services.h"
 #include "ai/targeting.h"
+#include "ai/threats.h"
 #include "ai/turn_action.h"
 #include "human/locomotion.h"
 
@@ -449,6 +450,7 @@ WarriorAttackTactic::WarriorAttackTactic(double chief, ScriptServices& services,
     : Tactic(kCrewAttack, {}), m_chief(chief), m_services(&services), m_formations(&formations) {}
 
 void WarriorAttackTactic::start(Gang& gang) {
+    // Stand-in: the tactic's chief stands for the gang's leader (Gang_GetLeader), who is the chief for a crew.
     Brain* chief = m_services->brain(m_chief);
     if (chief == nullptr) {
         return;
@@ -460,6 +462,34 @@ void WarriorAttackTactic::start(Gang& gang) {
         member->flush();
         member->pushGoal(std::make_unique<FollowAndAttackGoal>(*m_services, *m_formations, m_chief));
     }
+    // Stand-in: the gang's idle fidget clips and the note of whether the chief's line still plays (+0x20) are not
+    // kept.
+    // An attack begun on a valid enemy is started again by the same order, so the crew takes a new target.
+    if (const Brain* target = gang.chosenTarget(); target != nullptr && validEnemy(*chief, *target)) {
+        setRestartsOnRepeat(true);
+    }
+}
+
+int WarriorAttackTactic::update(Gang& /*gang*/) {
+    // Stand-in: the answer line (attack_resp, said once the chief's line has ended) is not built, so nothing waits
+    // for the chief's line here.
+    // Stand-in: the tactic's chief stands for the gang's leader, as in start().
+    const Brain* chief = m_services->brain(m_chief);
+    if (chief == nullptr || !chief->human().fighter().l1Locked() || restartsOnRepeat()) {
+        return 0;
+    }
+    // The chief's target (human +0xc8) as a brain; one not friendly to him and no player marks the tactic, so the same
+    // order starts the attack again on him.
+    const human::Combatant* target = chief->human().fighter().target();
+    if (target == nullptr || chief->peers() == nullptr) {
+        return 0;
+    }
+    for (const std::unique_ptr<Brain>& peer : *chief->peers()) {
+        if (&peer->human() == target && !isFriendly(*chief, *peer) && peer->type() != BrainType::Player) {
+            setRestartsOnRepeat(true);
+        }
+    }
+    return 0;
 }
 
 // ---- HoldPositionGoal ----

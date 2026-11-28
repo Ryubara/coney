@@ -2,6 +2,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -449,20 +450,26 @@ class StoryBindingHost {
 
     // ---- The Warrior commands.
 
-    /// The crew of the war chief `chief` takes Warrior command `command` (the dispatcher's checks passed); with
-    /// `forced` the command restarts even when it is the current one. Returns whether it started (false when only the
-    /// line was repeated).
+    /// The crew of the war chief `chief` takes Warrior command `command` (the dispatcher's checks and repeat test
+    /// passed); `forced` is the dispatcher's forced flag, which also stands for the chief being quiet. Returns false
+    /// when the chief has no brain (the dispatcher does not read it).
     virtual bool startWarriorCommand(double /*chief*/, int /*command*/, bool /*forced*/) { return false; }
+    /// Whether the crew of the war chief `chief` has a tactic (gang `+0x40`) whose `+0x18` byte is clear
+    /// (ai::Tactic::restartsOnRepeat()), which the dispatcher's repeat test asks.
+    [[nodiscard]] virtual bool crewTacticHoldsRepeat(double /*chief*/) const { return false; }
     /// Player 1's human's handle (0 for none).
     [[nodiscard]] virtual double playerOne() const { return 0; }
 };
 
-/// The command menu's order: Warrior command `command` from the war chief `chief`, unforced, through the dispatcher
-/// every order goes through (0x0041c4e0 with forced, position and argument 0): refused while a scene camera is player
-/// 1's, the commands or the player's menu are locked or the command is disabled; otherwise the player's last command,
-/// the crew's tactic and the `WCSetCallback` function with (chief, command).
+/// The command menu's order: Warrior command `command` from the war chief `chief`, stored as his player's last
+/// command (as `WarCommandDisplay_Issue` does, even for a command the dispatcher then refuses), then given unforced
+/// through the dispatcher every order goes through (0x0041c4e0 with forced, position and argument 0): refused while a
+/// scene camera is player 1's, the commands or the player's menu are locked or the command is disabled; a repeat of
+/// the command in force only repeats; otherwise the crew's tactic and the `WCSetCallback` function with (chief,
+/// command).
 ///
 /// Research: docs/research/hud.md#warrior-command-menu, docs/research/ai-gangs.md#warrior-commands
+/// @orig 0x001a6c58 WarCommandDisplay_Issue (unknown)
 void giveWarriorCommand(ScriptSystem& scripts, const BindingContext& context, double chief, int command);
 
 /// Registers kStoryBindings in `vm`: the humans', brains', gangs' and paths' bindings act through `context.ai`'s
@@ -473,6 +480,19 @@ void giveWarriorCommand(ScriptSystem& scripts, const BindingContext& context, do
 /// Research: docs/references/bindings/story.md
 void addStoryBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context,
                       std::function<double()> nextHandle);
+
+/// The handle of player `player`'s (0 or 1) human: the human `HuCreate` made for that player, or for player 0 the
+/// story host's player 1; nothing when that player has none.
+/// @coney-only Coney's lookup of a player's human, where the original reads the game state's handles (+0x228)
+[[nodiscard]] std::optional<double> playerHuman(const BindingContext& context, std::size_t player);
+
+/// Whether player `player`'s (0 or 1) Warrior command display may open (`WarCommandDisplay_SetAllowed`, display
+/// `+0x155c`, kept as StoryState::commandDisplay): set, and its name's text shut down on the HUD when there is one.
+/// `HUDShowWarCommand`, `WCEnableCommand` (enabling only) and `WCEnableAllCommands` call it.
+///
+/// Research: docs/research/hud.md#warrior-command-menu
+/// @orig 0x001a6c38 WarCommandDisplay_SetAllowed (unknown)
+void setWarCommandAllowed(const BindingContext& context, std::size_t player, bool on);
 
 /// Gives the Warrior command `command` as the war chief `chief` through the dispatcher the bindings and the menu use
 /// (`0x0041c4e0`): the game's own commands (the follow it issues when a player is made or a scene ends, the chief's

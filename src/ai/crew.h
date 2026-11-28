@@ -235,14 +235,24 @@ class FollowAndAttackGoal final : public Goal {
 /// The attack command's tactic (command 1, type 1, vtable `0x00544160`): every member that is not the chief, not a
 /// player and not down is flushed and given `FollowAndAttack` on the chief. It never ends by itself. Its type is below
 /// `0x12`, so the members keep their own goals. **Coney stand-ins**: dogs (class 221) get the attack goal too, not
-/// `AvoidEnemies`; the chief's clip (0x2a4 or 0x2a8), the gang's target and the answer line are not built.
+/// `AvoidEnemies`; the chief's clip (0x2a4 or 0x2a8) and the answer line are not built.
 /// @orig 0x00320530 WarriorAttackTactic_Create (unknown)
 class WarriorAttackTactic final : public Tactic {
   public:
     /// The tactic for `chief`'s crew, with the level's brains and formations (both must outlive it).
     WarriorAttackTactic(double chief, ScriptServices& services, Formations& formations);
-    /// Gives the members their goals.
+    /// Gives the members their goals, then marks the tactic as one a repeated attack starts again
+    /// (restartsOnRepeat()) when the gang's target (Gang::chosenTarget(), `+0x10`) is a valid enemy of the chief
+    /// (validEnemy()). **Coney stand-ins**: the gang's idle fidget clips and the note of whether the chief's line
+    /// still plays (`+0x20`) are not kept.
+    /// @orig 0x003208e8 WarriorAttackTactic_Start (unknown)
     void start(Gang& gang) override;
+    /// Each update: marks the tactic as one a repeated attack starts again (restartsOnRepeat()) once the chief is
+    /// locked on (human::Fighter::l1Locked(), `Human_IsLocked`) and his target (human `+0xc8`) is not friendly to him
+    /// (isFriendly()) and no player; always 0. **Coney stand-ins**: the answer line (`attack_resp`, 132) and the
+    /// wait for the chief's line before it are not built.
+    /// @orig 0x003209d0 WarriorAttackTactic_Process (unknown)
+    [[nodiscard]] int update(Gang& gang) override;
 
   private:
     double m_chief;

@@ -303,40 +303,54 @@ coney = "src/hud/crime_panel.h:CrimePanel::renderArc"
 status = "legacy"
 
 [[function]]
+address = 0x001a6c38
+name = "WarCommandDisplay_SetAllowed"
+page = "hud.md#warrior-command-menu"
+role = "whether the command display may open (`+0x155c`), and the name's text shut down; from `HUDShowWarCommand`, `WCEnableCommand` (enabling) and `WCEnableAllCommands`"
+level = "confirmed-code"
+coney = "src/scripting/story_bindings.h:setWarCommandAllowed"
+status = "compared"
+
+[[function]]
 address = 0x001a6c58
 name = "WarCommandDisplay_Issue"
-page = "hud-functions-parts.md#fn-after-checklistmessagehud"
-role = "on R2's release ([Warrior command menu](hud.md#warrior-command-menu)), once per opening (`+0x1548`): issues the selected command through `0x0041c4e0` and stores it as the player's last (`+0x41c` + player)"
+page = "hud.md#warrior-command-menu"
+role = "on R2's release, once per opening: stores the highlighted slot's command as the player's last (`+0x41c` + player), shuts a disabled command's name down, gives it to `0x0041c4e0` and lights the slot (`+0x1560`)"
 level = "confirmed-code"
 coney = "src/hud/war_command_display.h:WarCommandDisplay::issue"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001a6d28
 name = "WarCommandDisplay_Open"
-page = "hud-functions-parts.md#fn-after-checklistmessagehud"
-role = "from `0x002843f8`: for a war chief (`+0x3ac` = 1) shows the display and resets its sprites and timer"
+page = "hud.md#warrior-command-menu"
+role = "from `0x002843f8`, while R2 is held: nothing unless allowed (`+0x155c`); then hidden for a human who is not a war chief, else shown with its order, fades and blink cleared and the camera's right stick off"
 level = "confirmed-code"
 coney = "src/hud/war_command_display.h:WarCommandDisplay::open"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001a7040
 name = "WarCommandDisplay_ReadStick"
-page = "hud-functions-parts.md#fn-after-checklistmessagehud"
-role = "every `*0x0050d280` ms, with the stick (pad record bytes `+0x2a`/`+0x2b`) more than 110 from centre: the stick's angle picks one of six sectors (with hysteresis `0x0050d2b8`) as the selection `+0x1540`; interface cue `0x20` on a change"
+page = "hud.md#warrior-command-menu"
+role = "with the stick more than 110 from centre: lights the slot (`+0x1560`), the stick's angle picks one of six sectors (with hysteresis `0x0050d2b8`) as the selection `+0x1540`; interface cue `0x20` on a change"
 level = "confirmed-code"
 coney = "src/hud/war_command_display.h:WarCommandDisplay::update"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001a7e48
 name = "WarCommandDisplay_Update"
-page = "hud-functions-parts.md#fn-after-checklistmessagehud"
-role = "slot `+0x30`: closed when the player is down; the stick read unless the menu is locked; after an issue the sprites fade and the display closes when its text expires; text = the command's name, or entry 6, the out-of-range text, while game state `+0x414` + player is set (load at `0x001a8028`; [out-of-range flag](ai-gangs.md#warrior-range-flag)); entry 7 for a disabled command"
+page = "hud.md#warrior-command-menu"
+role = "slot `+0x30`: closed when the player is down; the stick read unless the menu is locked; after an issue the hold, the fade (the chosen icon 1,500 ms, the rest 500 ms), the chosen slot's blink and the close when its text expires; text = the command's name, entry 6 while game state `+0x414` + player is set ([out-of-range flag](ai-gangs.md#warrior-range-flag)), entry 7 for a disabled command"
 level = "confirmed-code"
 coney = "src/hud/war_command_display.h:WarCommandDisplay::update"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the 16:9 layouts"
+relation = "not-ported"
+issue = 890
 
 [[function]]
 address = 0x001a8530
@@ -350,11 +364,16 @@ status = "legacy"
 [[function]]
 address = 0x001a8590
 name = "WarCommandDisplay_Render"
-page = "hud-functions-parts.md#fn-after-checklistmessagehud"
-role = "slot `+0x38`: the selected slot white / gold `(255, 183, 0)` / grey, the others white / dark `(35, 35, 35)` / black; a disabled command in `(30, 30, 30)`"
+page = "hud.md#warrior-command-menu"
+role = "slot `+0x38`: nothing unless shown, allowed and the chief up, nor after an order of a disabled command; the lit slot (`+0x1560`) white / gold / grey `(35, 35, 35)`, the others white / grey / black; a disabled command in `(30, 30, 30)`; the name grey, dark or gold"
 level = "confirmed-code"
 coney = "src/hud/war_command_display.h:WarCommandDisplay::render"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the 16:9 layouts"
+relation = "not-ported"
+issue = 890
 
 [[function]]
 address = 0x001aa720
@@ -793,7 +812,7 @@ page = "hud-functions-lua.md#fn-hudlua"
 role = "`WarCommandDisplay_SetAllowed(player panel + 0x1ef0, on)`"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeHudShowWarCommand"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b4a88

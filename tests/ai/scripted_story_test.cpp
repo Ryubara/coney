@@ -18,6 +18,7 @@
 
 #include "ai/brain.h"
 #include "ai/chase_goals.h"
+#include "ai/crew.h"
 #include "ai/gangs.h"
 #include "ai/goal.h"
 #include "ai/riot_goals.h"
@@ -32,6 +33,7 @@
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
+#include "scripting/story_bindings.h"
 #include "support/ai_fixtures.h"
 #include "warriors/game_state.h"
 #include "world_objects/flags.h"
@@ -439,6 +441,7 @@ TEST_CASE("A gang becomes the enemy of every gang of a kind, and can be always s
 
 TEST_CASE("The fifth and sixth missions' goals: a turn, a guard, a lead chase, a devil run and a ledge thrower",
           "[ai][story]") {
+    // Expected: ai-scripting.md#scripted, confirmed (code)
     Level level;
     Brain& turner = level.add({44.0F, 40.0F, 0.0F});
     level.call("ActTurnToDir", {Value(2.0), Value(90.0), Value(1.0), Value(0.0)});
@@ -491,4 +494,149 @@ TEST_CASE("The fifth and sixth missions' goals: a turn, a guard, a lead chase, a
     CHECK(thrower.topGoal()->type() == GoalType::BigLedgeThrower);
     level.scene.run(60);
     CHECK(coney::anim::distance(thrower.human().position(), coney::anim::Vec3{20.0F, 20.0F, 0.0F}) < 0.6F);
+}
+
+TEST_CASE("WCEnableAllCommands switches only the players whose human is there and allows or disallows their menu",
+          "[ai][story]") {
+    // Expected: ai/index.md#warrior-command-switches, confirmed (runtime)
+    Level level;
+    // Player 1's human is the scene's player; there is no player 2.
+    level.call("WCEnableAllCommands", {Value(false)});
+    for (std::size_t command = 0; command < 7; ++command) {
+        CHECK_FALSE(level.state.characters.warriorCommands[0][command]);
+        CHECK(level.state.characters.warriorCommands[1][command]);
+    }
+    CHECK_FALSE(level.state.story.commandDisplay[0]);
+    CHECK(level.state.story.commandDisplay[1]);
+    level.call("WCEnableAllCommands", {Value(true)});
+    CHECK(level.state.characters.warriorCommands[0][3]);
+    CHECK(level.state.story.commandDisplay[0]);
+}
+
+TEST_CASE("WCEnableCommand allows the menu again when it enables a command, and leaves it when it disables one",
+          "[ai][story]") {
+    // Expected: ai/index.md#warrior-command-switches, confirmed (runtime)
+    Level level;
+    level.call("HUDShowWarCommand", {Value(false), Value(0.0)});
+    REQUIRE_FALSE(level.state.story.commandDisplay[0]);
+    level.call("WCEnableCommand", {Value(1.0), Value(2.0), Value(false)});
+    CHECK_FALSE(level.state.story.commandDisplay[0]);
+    level.call("WCEnableCommand", {Value(1.0), Value(2.0), Value(true)});
+    CHECK(level.state.story.commandDisplay[0]);
+}
+
+TEST_CASE("An unforced Warrior command the crew has no tactic for starts again", "[ai][story]") {
+    // Expected: ai-gangs.md#warrior-commands, confirmed (code)
+    Level level;
+    level.add({44.0F, 40.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(0, "Warriors");
+    level.scripted->gangAddMember(gang, 1.0);
+    level.scripted->gangAddMember(gang, 2.0);
+    level.call("WCSetCallback", {Value("Note")});
+    level.call("IssueWarriorCommand", {Value(0.0), Value(true)});
+    REQUIRE(level.notes.size() == 1);
+    // A script clears the crew's tactic: follow given again from the menu is no repeat and starts the tactic again.
+    level.scene.brains.gangs().setTactic(gang, nullptr);
+    level.call("IssueWarriorCommand", {Value(0.0), Value(false)});
+    CHECK(level.notes.size() == 2);
+    const coney::ai::Gang* warriors = level.scene.brains.gangs().find(gang);
+    REQUIRE(warriors != nullptr);
+    CHECK(warriors->tactic() != nullptr);
+}
+
+TEST_CASE("A Warrior command repeats only the command in force, not the last one asked for", "[ai][story]") {
+    // Expected: ai-gangs.md#warrior-commands, confirmed (code)
+    Level level;
+    level.add({44.0F, 40.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(0, "Warriors");
+    level.scripted->gangAddMember(gang, 1.0);
+    level.scripted->gangAddMember(gang, 2.0);
+    level.call("IssueWarriorCommand", {Value(0.0), Value(true)});
+    REQUIRE(level.scripted->storyHost().warriorCommand() == 0);
+    // Hold was the last asked for (the menu writes it before the dispatcher), but follow is in force: hold starts.
+    level.state.characters.lastWarriorCommand[0] = 3;
+    level.call("IssueWarriorCommand", {Value(3.0), Value(false)});
+    CHECK(level.scripted->storyHost().warriorCommand() == 3);
+}
+
+TEST_CASE("An attack given again starts again once the crew's attack began on a valid enemy", "[ai][story]") {
+    // Expected: ai-gangs.md#warrior-commands, confirmed (code): WarriorAttackTactic_Start (0x003208e8) sets the
+    // tactic's +0x18 when the gang's target is a valid enemy of the chief, and the dispatcher repeats only while it
+    // is clear.
+    Level level;
+    level.add({44.0F, 40.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(0, "Warriors");
+    level.scripted->gangAddMember(gang, 1.0);
+    level.scripted->gangAddMember(gang, 2.0);
+    level.call("WCSetCallback", {Value("Note")});
+    level.call("IssueWarriorCommand", {Value(0.0), Value(true)});
+    REQUIRE(level.notes.size() == 1);
+    // The crew attacks with no target: attack again is a repeat and starts nothing.
+    coney::ai::Gangs& gangs = level.scene.brains.gangs();
+    const auto attack = [&level, &gangs, gang] {
+        gangs.setTactic(gang, std::make_unique<coney::ai::WarriorAttackTactic>(
+                                  level.scene.player().handle(), *level.scripted, level.scene.brains.formations()));
+        level.state.characters.currentWarriorCommand[0] = 1;
+    };
+    attack();
+    level.scene.run(1);
+    level.call("IssueWarriorCommand", {Value(1.0), Value(false)});
+    CHECK(level.notes.size() == 1);
+    // The crew's attack began on a valid enemy: attack again starts it again.
+    Brain& enemy = level.scene.add({50.0F, 40.0F, 0.0F}, 0.0F);
+    attack();
+    REQUIRE(gangs.find(gang) != nullptr);
+    gangs.find(gang)->setSharedTarget(&enemy);
+    level.scene.run(1);
+    level.call("IssueWarriorCommand", {Value(1.0), Value(false)});
+    CHECK(level.notes.size() == 2);
+}
+
+TEST_CASE("An attack given again starts again once the chief locks onto an enemy while the crew attacks",
+          "[ai][story]") {
+    // Expected: ai-gangs.md#warrior-commands, confirmed (code): WarriorAttackTactic_Process (0x003209d0) sets the
+    // tactic's +0x18 on an update when the chief is locked on (Human_IsLocked) and his target is not friendly
+    // (Human_IsFriendly) and no player, and the dispatcher repeats only while it is clear.
+    Level level;
+    level.add({44.0F, 40.0F, 0.0F});
+    Brain& rogue = level.add({40.0F, 41.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(0, "Warriors");
+    const int rogues = level.scripted->gangCreate(2, "Rogues");
+    level.scripted->gangAddMember(gang, 1.0);
+    level.scripted->gangAddMember(gang, 2.0);
+    level.scripted->gangAddMember(rogues, 3.0);
+    rogue.setThreatResponse(0);
+    level.call("WCSetCallback", {Value("Note")});
+    level.call("IssueWarriorCommand", {Value(0.0), Value(true)});
+    REQUIRE(level.notes.size() == 1);
+    // The crew attacks with no target and the chief is not locked on: attack again is a repeat.
+    coney::ai::Gangs& gangs = level.scene.brains.gangs();
+    gangs.setTactic(gang, std::make_unique<coney::ai::WarriorAttackTactic>(
+                              level.scene.player().handle(), *level.scripted, level.scene.brains.formations()));
+    level.state.characters.currentWarriorCommand[0] = 1;
+    level.scene.run(1);
+    level.call("IssueWarriorCommand", {Value(1.0), Value(false)});
+    CHECK(level.notes.size() == 1);
+    // L1 held: the chief locks onto the rogue 1 m ahead; the attack's next update marks it, and attack again starts it
+    // again.
+    level.scene.player().human().record().command = coney::combat::command::kL1Held;
+    level.scene.run(3);
+    REQUIRE(level.scene.player().human().fighter().l1Locked());
+    REQUIRE(level.scene.player().human().fighter().target() == &rogue.human());
+    level.call("IssueWarriorCommand", {Value(1.0), Value(false)});
+    CHECK(level.notes.size() == 2);
+}
+
+TEST_CASE("The menu's order of a disabled command becomes the player's last and starts nothing", "[ai][story]") {
+    // Expected: hud.md#warrior-command-menu, confirmed (code)
+    Level level;
+    level.add({44.0F, 40.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(0, "Warriors");
+    level.scripted->gangAddMember(gang, 1.0);
+    level.scripted->gangAddMember(gang, 2.0);
+    level.call("IssueWarriorCommand", {Value(0.0), Value(true)});
+    level.call("WCEnableCommand", {Value(1.0), Value(3.0), Value(false)});
+    coney::script::giveWarriorCommand(*level.scripts, level.context, 1.0, 3);
+    CHECK(level.state.characters.lastWarriorCommand[0] == 3);
+    CHECK(level.scripted->storyHost().warriorCommand() == 0);
 }

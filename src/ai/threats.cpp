@@ -29,4 +29,17 @@ bool isThreat(const Brain& brain, const Brain& other) {
     return Gangs::enemies(brain.gang(), other.gang()) || (padPlayer(brain) && padPlayer(other));
 }
 
+bool isFriendly(const Brain& a, const Brain& b) {
+    // 1. Always himself.
+    if (&a == &b) {
+        return true;
+    }
+    // 2. Never a Warrior hitting back and a pad player, either way round.
+    if ((warriorHittingBack(a) && padPlayer(b)) || (warriorHittingBack(b) && padPlayer(a))) {
+        return false;
+    }
+    // 3. Friendly gangs, unless both are pad players.
+    return Gangs::friends(a.gang(), b.gang()) && !(padPlayer(a) && padPlayer(b));
+}
+
 } // namespace coney::ai

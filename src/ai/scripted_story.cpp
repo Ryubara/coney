@@ -718,7 +718,9 @@ bool ScriptedStory::startWarriorCommand(double chief, int command, bool forced) 
     if (crew == nullptr) {
         return true;
     }
-    // Every command first clears the crew's shared target; the menu's attack sets it from the chief.
+    // Every command first clears the crew's shared target; the menu's attack sets it from the chief. **Stand-in**:
+    // the chief's clip of an unforced attack or defend (0x2a3, 0x2a4, 0x2a7, 0x2a8) is not played, and neither is
+    // his line (the steal or vandal choice at a store is the line's).
     crew->setSharedTarget(nullptr);
     if (command == kCrewAttack && !forced) {
         if (Brain* target = chiefsTarget(*lead); target != nullptr) {
@@ -737,8 +739,8 @@ bool ScriptedStory::startWarriorCommand(double chief, int command, bool forced) 
             crew->id(), std::make_unique<WarriorAttackTactic>(chief, *m_scripted, m_scripted->owner().formations()));
         return true;
     }
-    // Hold: the hold tactic, which gives the members their goals on its first process. **Coney stand-in**: a gang
-    // whose brain `+0x2d5` is set gets the hiding tactic (`0x003128a0`) instead, which Coney does not build yet.
+    // Hold: the hold tactic, which gives the members their goals on its first process. **Coney stand-in**: a chief
+    // whose brain's `+0x2d5` is set gets the hiding tactic (`0x003128a0`) instead, which Coney does not build yet.
     if (command == kCrewHold) {
         m_scripted->owner().gangs().setTactic(crew->id(), std::make_unique<WarriorHoldTactic>(chief, *m_scripted));
         return true;
@@ -758,6 +760,8 @@ bool ScriptedStory::startWarriorCommand(double chief, int command, bool forced) 
             continue;
         }
         member->flush();
+        // Stand-in: defend has each member track the chief instead of the defend tactic round him (Tactic_Defend,
+        // given 2.25); the scatter tactic (0x00319570) is not built, so scatter, like 6, starts nothing more.
         if (command == kCommandDefend) {
             static_cast<void>(
                 goalTrackHuman(*member, *m_scripted, m_scripted->owner().formations(), chief, kCrewTrackDistance));
@@ -780,6 +784,12 @@ int ScriptedStory::musicMood() const {
         }
     }
     return 0;
+}
+
+bool ScriptedStory::crewTacticHoldsRepeat(double chief) const {
+    const Brain* lead = m_scripted->brain(chief);
+    const Gang* crew = lead != nullptr ? lead->gang() : nullptr;
+    return crew != nullptr && crew->tactic() != nullptr && !crew->tactic()->restartsOnRepeat();
 }
 
 double ScriptedStory::playerOne() const {

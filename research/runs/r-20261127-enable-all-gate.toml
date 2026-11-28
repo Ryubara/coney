@@ -1,0 +1,36 @@
+version = 1
+id = "r-20261127-enable-all-gate"
+date = "2026-11-27"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "a884cff837c0e79c646205368e3894af08cea08e034b3c333ec6e93bb9ec4de9"
+
+[who]
+agent = "af0bc54b1cabc83e6"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "lua recipe WCEnableAllCommands(true) then WCEnableAllCommands(false) with no player 2; read the game state's enabled bytes and player 1's command display allowed word; then HUDShowWarCommand(false, 0) and WCEnableAllCommands(true), read again"
+
+[values]
+player1_enabled_after_false = 0
+player2_enabled_after_false = 7
+allowed_after_false = 0
+allowed_after_true = 1
+player1_enabled_after_true = 7
+
+[addresses]
+game_state = 0x01fd8400
+enabled_bytes = 0x01fd881e
+allowed = 0x0061cdbc

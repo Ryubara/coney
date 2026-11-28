@@ -118,7 +118,7 @@ workers) that belong to this page, by address.
 | `0x0041d758` / `0x0041d770` | `GameState_SetWarriorVandalize` / `GameState_SetWarriorWeapons` | `CfgSetWarriorVandalize` (`+0x5700`) and `CfgWarriorWeapons` (`+0x5704`) | confirmed (code) |
 | `0x0041d978` | `Cfg_SetExcludedVandalizeZone` | `CfgExcludedVandalizeZone`: `0x005148bc` (`0xffff` at set-up) | confirmed (code) |
 | `0x0041da50` / `0x0041da60` / `0x0041da70` | `Cfg_SetTurfInvasion` / `Cfg_SetGrappleCounters` / `GameState_SetPowerupPickup` | `CfgEnableTurfInvasion` (byte `+0x56e1`), `CfgEnableGrappleCounters` (`+0x56e3`), `CfgPowerupPickup` (`+0x56e5`) | confirmed (code) |
-| `0x0041db08` / `0x0041dbe8` | `GameState_EnableAllWarriorCommands` / `GameState_EnableWarriorCommand` | the per-player allowed bytes `+0x41e + player × 7 + command`: all seven for every war chief / one for one human; both tell the command display (`WarCommandDisplay_SetAllowed`) | confirmed (code) |
+| `0x0041db08` / `0x0041dbe8` | `GameState_EnableAllWarriorCommands` / `GameState_EnableWarriorCommand` | the per-player enabled bytes `+0x41e + player × 7 + command` and the command display ([the switches](#warrior-command-switches)) | confirmed (code) |
 | `0x0041dc80` / `0x0041dcf0` / `0x0041dd40` | `GameState_IssueWarriorCommandFor` / `GameState_LockWarriorCommands` / `GameState_SetWarriorCommandCallback` | `WarriorCommand_Dispatch` for a human / byte `+0x418 + player` / the callback name | confirmed (code) |
 | `0x0041dd68` | `GameState_SetAutoSwitch` | `WCEnableAutomaticSwitching`: byte `+0x431` (1 at set-up), which turns the war chief's [automatic commands](../ai-gangs.md#warrior-auto-commands) on or off | confirmed (code) |
 
@@ -813,6 +813,25 @@ What the first mission's scripts give a brain directly: GoalMoveToFlag, ActLookA
 GoalPlayDynAnimation, GoalBumLogic, GoalDealer, GoalRiot and GoalDevilRun. The section is on
 [AI scripting](../ai-scripting.md#scripted).
 
+### The Warrior command switches {#warrior-command-switches}
+
+Each player has seven enabled bytes, game state `+0x41e` + player × 7 + command, which [the
+dispatcher](../ai-gangs.md#warrior-commands) tests; `InitLevel`'s reset sets them all
+([follow](../ai-gangs.md#warrior-follow)). Confirmed (code) at the addresses given:
+
+- **`WCEnableCommand(human, command, on)`** (`GameState_EnableWarriorCommand`, `0x0041dbe8`): the byte of the player
+  who controls `human` (human `+0x1b0`); with `on` set it also allows that player's command display
+  (`WarCommandDisplay_SetAllowed`, `0x001a6c38`, [HUD](../hud.md#warrior-command-menu)); a cleared `on` leaves the
+  display alone. The command is not range-checked.
+- **`WCEnableAllCommands(on)`** (`GameState_EnableAllWarriorCommands`, `0x0041db08`): for each of the two players
+  whose human is there (the handle at game state `+0x228` + player × 4 resolves) and is a war chief (`+0x3ac` = 1),
+  all seven bytes, then the display allowed or not as `on` says. A player with no human keeps his bytes and his
+  display. Confirmed (runtime), run r-20261127-enable-all-gate: on level 99's street with no player 2,
+  `WCEnableAllCommands(true)` then `(false)` left player 2's seven bytes set and cleared player 1's. In `level80`
+  checkpoint 2 the chapter's `Setup` turns all off and follow back on before it adds its cast, with player 1's human
+  already there: after it player 1 had only follow and player 2 all seven, confirmed (runtime), run
+  r-20261127-level80-c2-enabled.
+
 ### Gangs, tactics and formations {#gangs}
 
 Confirmed (code) at the cited addresses unless a line says otherwise.
@@ -1152,6 +1171,21 @@ The menu itself (`repo:src/hud/war_command_display.cpp`, `repo:src/gamemodes/gam
 (`repo:src/ai/scripted_story.cpp`). The original's columns: [Warrior commands](../ai-gangs.md#warrior-commands) and
 [the lines](../ai-gangs.md#warrior-command-lines).
 
+The dispatcher follows the original's tests in order: the last command asked for (`CharacterRules::lastWarriorCommand`,
+stored by the menu's order before the dispatcher, `script::giveWarriorCommand`), the repeat of the command in force
+(`CharacterRules::currentWarriorCommand`) while the crew has a tactic whose `+0x18` byte is clear
+(`StoryBindingHost::crewTacticHoldsRepeat`, `ai::Tactic::restartsOnRepeat`, set by the attack tactic's start when the
+gang's target is a valid enemy of the chief, and by its update once the chief is locked onto a target not friendly to
+him and no player: `ai::WarriorAttackTactic::update`, `ai::isFriendly`), then the command stored and started and the
+`WCSetCallback` function called for every started command, 6 included. `WCEnableAllCommands` and `WCEnableCommand`
+follow [the switches](#warrior-command-switches), allowing the menu through `script::setWarCommandAllowed`. Tests:
+`repo:tests/ai/scripted_story_test.cpp`. **Coney's readings**: every human a player controls is a war chief (`+0x3ac` is
+not kept); a command outside 0-6 is refused. **Stand-ins**: the chief is never quiet and says no line, so a repeat does
+nothing; `WarriorFollowTactic_Repeat` (`0x003114e0`) is not built; the defend's and hide's `+0x18` are not set (Coney
+does not build the cases that set them). **Not ported**: the range check (`WarChief_CheckCrewInRange`, `0x0041c338`) and
+its byte, #1520. The command in force is not reset by Coney's `InitLevel` (it starts at 0); the forced follow every new
+player is given stores it.
+
 The menu's "???" (user playtest, `level80` checkpoint 2) is `GSTRING.COMMAND` entry 7, the text the original shows for
 a **disabled** highlighted command ([HUD](../hud.md#warrior-command-menu)). That checkpoint's script switches every command
 off and follow back on (`WCEnableCommand` on the player's human) as its first calls, before the level has made his
@@ -1163,7 +1197,7 @@ still shows "???", as in the original.
 | Command (menu slot) | Original tactic and members' goal | Chief's line / answer | Coney | Where |
 | --- | --- | --- | --- | --- |
 | 0 follow (up) | `WarriorFollowTactic` (`0x12`, 9 m): `FollowPlayer` mode 3; a repeat adds `FollowFormation` (`WarriorFollowTactic_Repeat` `0x003114e0`) | 2 `follow` (86 hidden) / 131 | **partial**: tactic and goals built; no line, no answer, no repeat | `repo:src/ai/crew.cpp` |
-| 1 attack (up-left) | `WarriorAttackTactic` (1): `FollowAndAttack` on the chief; dogs `AvoidEnemies`; gang's shared target from the chief's | 1 `attack` / 132; gesture 676 / 680 | **partial**: tactic and goal built; no line, answer, gesture or shared target; dogs attack | `repo:src/ai/crew.cpp` |
+| 1 attack (up-left) | `WarriorAttackTactic` (1): `FollowAndAttack` on the chief; dogs `AvoidEnemies`; gang's shared target from the chief's | 1 `attack` / 132; gesture 676 / 680 | **partial**: tactic, goal and the gang's target from the chief's locked one (unforced) built; no line, answer or gesture; dogs attack | `repo:src/ai/crew.cpp` |
 | 2 defend (up-right) | `Tactic_Defend` round the chief (2.25 m): [`FollowAndDefend`](../ai-goals.md#goal-follow-and-defend), which fights and [rescues](../ai-goals.md#goal-save-human) a cuffed or knocked-out chief | 3 `defend` / 130; gesture 675 / 679 | **stand-in**: each member gets `GoalTrackHuman` (2 m), which never attacks and never rescues | `repo:src/ai/scripted_story.cpp` |
 | 3 hold (down) | `WarriorHoldTactic` (3): `HoldPosition` 1.5 m; hide (`0x13`): [`Hide`](../ai-goals.md#goal-hide) at wall points | 4 `hold` (70 hidden) / 133 | **partial**: the hold built; the hide is not (the hold stands in); no line, no answer | `repo:src/ai/crew.cpp` |
 | 4 scatter (down-right) | `WarriorScatterTactic` (`0x25`, 75 m): [`Scatter`](../ai-goals.md#goal-scatter) to hiding flags | 158 `scatter` / 159 | **missing**: the tactic is cleared and each member flushed, so the crew **stands still** | `repo:src/ai/scripted_story.cpp` |
@@ -1176,7 +1210,7 @@ Around the commands:
 | --- | --- | --- |
 | Crew out of range | unforced (and forced defend): nearest member beyond 50 m refuses the command; 18 `range` / 92 `range2`; the per-player flag ([out-of-range flag](../ai-gangs.md#warrior-range-flag)) also refreshed quietly every 40 updates, shown as the menu's out-of-range text and read by the mission-failure check | **missing**: always given |
 | Forced and quiet orders | forced commands and a chief already speaking say nothing | silent always (no lines at all) |
-| Repeating the current order | unforced: line again, no rebuild | refused silently (matches, minus the line) |
+| Repeating the current order | unforced, the command in force under a tactic whose `+0x18` is clear: line again, no rebuild (follow adds `FollowFormation`); otherwise started again ([the dispatcher](../ai-gangs.md#warrior-commands)) | **partial**: the same test, with the attack's `+0x18` set as in the original (at its start on a valid enemy, on an update while the chief is locked onto an enemy); no line, no follow repeat, and the defend's and hide's `+0x18` are not built |
 | [Automatic commands](../ai-gangs.md#warrior-auto-commands) | follow → attack / defend / steal; attack, defend → follow; steal → follow beyond 15 m | **partial**: follow → attack and back only (`CrewOrders`, `repo:src/ai/crew.h`) |
 | Hiding in shadow | forced hold (hide) after 500 ms or the run time; the old command back on leaving | **missing** |
 | Revive ([Combat](../combat-reactions.md#revive)) | d-pad left (command `0x27`) near a revivable downed member with a flash: 351, 353 / 354, flash spent, healed, 76 / 75 | **partial**: player 1 revives (`repo:src/gamemodes/gameplay_revive.cpp`) a revivable member, but no code flags the crew revivable ([open question](../combat-reactions.md#revive)); no AI rescue (`SaveHuman`) |

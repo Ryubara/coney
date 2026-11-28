@@ -1,0 +1,11 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level80 checkpoint 2, the Warrior command
+# menu. The input script taps cross to skip the opening scene, then holds R2 to open the menu, pushes the right stick
+# up-right to defend (a command the checkpoint has not enabled), then up to follow (the one it has), and releases R2 to
+# give the order. For a change to the menu (docs/research/hud.md#warrior-command-menu): the lit slot, the colours, the
+# name for a disabled command, the fades and the blink after the order.
+description = "level80 checkpoint 2: the Warrior command menu, a disabled command, then follow given"
+level = "level80"
+input = "tools/clips/level80-crew-menu.txt"
+checkpoint = 2
+start_frame = 690
+seconds = 8

@@ -1706,6 +1706,16 @@ coney = "src/ai/threats.h:isThreat"
 status = "legacy"
 
 [[function]]
+address = 0x00290230
+name = "Brain_IsFriendly"
+page = "ai-gangs.md#warrior-commands"
+kind = "helper"
+role = "whether another brain is friendly: always himself; never a Warrior hitting back (`+0x2e5`) and a pad player; else friendly gangs (`Gang_AreFriends`) with at most one pad player"
+level = "confirmed-code"
+coney = "src/ai/threats.h:isFriendly"
+status = "compared"
+
+[[function]]
 address = 0x00290328
 name = "Brain_MakeGangsEnemies"
 page = "ai-code.md#enemy-list"
@@ -6464,6 +6474,24 @@ coney = "src/ai/crew.h:WarriorAttackTactic"
 status = "legacy"
 
 [[function]]
+address = 0x003208e8
+name = "WarriorAttackTactic_Start"
+page = "ai-code.md#t2-warrior-attack"
+role = "gives the members their goals; sets the tactic's `+0x18` (a repeated attack starts again) when the gang's target is a valid enemy of the chief"
+level = "confirmed-code"
+coney = "src/ai/crew.h:WarriorAttackTactic::start"
+status = "compared"
+
+[[function]]
+address = 0x003209d0
+name = "WarriorAttackTactic_Process"
+page = "ai-code.md#t2-warrior-attack"
+role = "once, after the chief's line, a member answers `attack_resp`; sets the tactic's `+0x18` (a repeated attack starts again) while the leader is locked on and his target is not friendly and no player; always 0"
+level = "confirmed-code"
+coney = "src/ai/crew.h:WarriorAttackTactic::update"
+status = "compared"
+
+[[function]]
 address = 0x00320b60
 name = "WarriorStealTactic_Create"
 page = "ai-code.md#t2-warrior-steal"
@@ -6709,7 +6737,13 @@ name = "WarriorCommand_Dispatch"
 page = "ai-gangs.md#warrior-commands"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:dispatchWarriorCommand"
-status = "legacy"
+status = "compared"
+role = "the one dispatcher of the Warrior commands: the tests, the last asked (`+0x41c`), the repeat of the command in force (`+0x41a`) under a live tactic, the range check, then the tactic, the line and the `WCSetCallback` call"
+
+[[function.gaps]]
+what = "the range check (WarChief_CheckCrewInRange) of an unforced command and of a forced defend"
+relation = "not-ported"
+issue = 1520
 
 [[function]]
 address = 0x0041d738
@@ -6768,20 +6802,20 @@ status = "legacy"
 [[function]]
 address = 0x0041db08
 name = "GameState_EnableAllWarriorCommands"
-page = "ai/index.md#warriors-functions"
-role = "the per-player allowed bytes `+0x41e + player × 7 + command`: all seven for every war chief / one for one human; both tell the command display (`WarCommandDisplay_SetAllowed`)"
+page = "ai/index.md#warrior-command-switches"
+role = "all seven enabled bytes (`+0x41e + player × 7`) and the command display allowed, for each player whose human is there and is a war chief"
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeWcEnableAllCommands"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0041dbe8
 name = "GameState_EnableWarriorCommand"
-page = "ai/index.md#warriors-functions"
-role = "the per-player allowed bytes `+0x41e + player × 7 + command`: all seven for every war chief / one for one human; both tell the command display (`WarCommandDisplay_SetAllowed`)"
+page = "ai/index.md#warrior-command-switches"
+role = "one enabled byte of the player who controls the human; enabling also allows that player's command display (`WarCommandDisplay_SetAllowed`)"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeWcEnableCommand"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x0041dc80

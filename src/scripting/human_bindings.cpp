@@ -18,6 +18,7 @@
 #include "human/human_flags.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
+#include "scripting/story_bindings.h"
 #include "world_objects/spinning_icons.h"
 
 namespace coney::script {
@@ -500,13 +501,20 @@ NativeFunction makeChangePlayerGang(const BindingContext& context) {
     };
 }
 
-// `WCEnableAllCommands(on)`: every Warrior command of every player.
+// `WCEnableAllCommands(on)`: all seven Warrior commands, and whether the command display may open, of each player
+// whose human is there; a player with none keeps his. **Coney's choice** for the war-chief test (human `+0x3ac`,
+// not kept): every player's human leads his crew.
 // @orig 0x0041db08 GameState_EnableAllWarriorCommands (unknown)
 NativeFunction makeWcEnableAllCommands(const BindingContext& context) {
-    return rulesCall(context, [](CharacterRules& rules, std::span<const Value> args) {
+    return rulesCall(context, [context = &context](CharacterRules& rules, std::span<const Value> args) {
         const bool on = boolArg(args, 0);
-        for (auto& player : rules.warriorCommands) {
-            player.fill(on);
+        for (std::size_t player = 0; player < rules.warriorCommands.size(); ++player) {
+            // Only a player whose human is there (Coney's choice: and so leads his crew).
+            if (!playerHuman(*context, player)) {
+                continue;
+            }
+            rules.warriorCommands.at(player).fill(on);
+            setWarCommandAllowed(*context, player, on);
         }
     });
 }

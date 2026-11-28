@@ -45,7 +45,7 @@ tag = 6
 tag = 16
 
 ["src/ai/crew.cpp"]
-tag = 18
+tag = 17
 
 ["src/ai/crew.h"]
 comment = 3
@@ -90,7 +90,7 @@ tag = 11
 comment = 4
 
 ["src/ai/gangs.cpp"]
-tag = 17
+tag = 16
 
 ["src/ai/give_way.cpp"]
 tag = 4
@@ -169,7 +169,7 @@ tag = 4
 tag = 11
 
 ["src/ai/scripted_hub.cpp"]
-tag = 16
+tag = 15
 
 ["src/ai/scripted_humans.cpp"]
 tag = 49
@@ -179,7 +179,7 @@ comment = 2
 tag = 1
 
 ["src/ai/scripted_story.cpp"]
-tag = 61
+tag = 60
 
 ["src/ai/sectors.cpp"]
 tag = 4
@@ -962,7 +962,7 @@ tag = 3
 comment = 2
 
 ["src/hud/war_command_display.cpp"]
-tag = 6
+tag = 5
 
 ["src/human/body.cpp"]
 tag = 7
@@ -985,7 +985,7 @@ tag = 6
 tag = 1
 
 ["src/human/fighter_grab.cpp"]
-tag = 14
+tag = 13
 
 ["src/human/fighter_tandem.cpp"]
 tag = 4
@@ -1282,7 +1282,7 @@ tag = 19
 tag = 3
 
 ["src/scripting/story_bindings.cpp"]
-tag = 28
+tag = 27
 
 ["src/scripting/story_bindings.h"]
 comment = 2
@@ -1519,7 +1519,7 @@ citation = 22
 citation = 4
 
 ["tests/ai/gangs_test.cpp"]
-citation = 13
+citation = 12
 
 ["tests/ai/give_way_test.cpp"]
 citation = 9
@@ -1558,7 +1558,7 @@ citation = 5
 citation = 18
 
 ["tests/ai/scripted_story_test.cpp"]
-citation = 15
+citation = 14
 
 ["tests/ai/sectors_test.cpp"]
 citation = 5
@@ -1579,7 +1579,7 @@ citation = 16
 citation = 8
 
 ["tests/ai/tactic_attack_test.cpp"]
-citation = 17
+citation = 16
 
 ["tests/ai/tactics_test.cpp"]
 citation = 16
@@ -2050,7 +2050,7 @@ citation = 5
 citation = 4
 
 ["tests/hud/war_command_display_test.cpp"]
-citation = 7
+citation = 5
 
 ["tests/human/body_test.cpp"]
 citation = 4
@@ -2068,7 +2068,7 @@ citation = 3
 citation = 4
 
 ["tests/human/disc_player_test.cpp"]
-citation = 6
+citation = 5
 
 ["tests/human/flight_test.cpp"]
 citation = 6
@@ -2235,11 +2235,8 @@ citation = 2
 ["tests/platform/disc_level80_end_test.cpp"]
 citation = 1
 
-["tests/platform/disc_level80_story_test.cpp"]
-citation = 1
-
 ["tests/platform/disc_level80_test.cpp"]
-citation = 5
+citation = 3
 
 ["tests/platform/disc_level93_molotov_test.cpp"]
 citation = 1
@@ -2479,7 +2476,7 @@ citation = 11
 citation = 5
 
 ["tests/scripting/car_bindings_test.cpp"]
-citation = 3
+citation = 2
 
 ["tests/scripting/disc_script_system_test.cpp"]
 citation = 1
@@ -2584,10 +2581,10 @@ citation = 9
 citation = 5
 
 ["tests/world_objects/car_hits_test.cpp"]
-citation = 6
+citation = 5
 
 ["tests/world_objects/cars_test.cpp"]
-citation = 10
+citation = 8
 
 ["tests/world_objects/disc_doors_test.cpp"]
 citation = 1

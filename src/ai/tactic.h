@@ -48,6 +48,10 @@ class Tactic {
     [[nodiscard]] bool started() const { return m_started; }
     /// Its Lua callback (`+0x0c`).
     [[nodiscard]] const std::string& callback() const { return m_callback; }
+    /// The `+0x18` byte: set, its Warrior command given again starts it again instead of repeating
+    /// (docs/research/ai-gangs.md#warrior-commands). Clear at construction; only the tactics that set it write it (in
+    /// Coney the attack's start and update, WarriorAttackTactic).
+    [[nodiscard]] bool restartsOnRepeat() const { return m_restartsOnRepeat; }
 
     /// One gang update (`Tactic_Process`): starts it on the first (Tactic_Start: the time limit made absolute, the gang
     /// in the fighting state when alertsGang() and calm otherwise (Gang::setAlertState()), every AI member's goal base
@@ -87,6 +91,8 @@ class Tactic {
     void endStrategy(Gang& gang);
     /// Hears that `order` ended (vtable `+0x1c`), before its record is freed.
     virtual void strategyEnded(Gang& /*gang*/, const SubTactic& /*order*/) {}
+    /// Sets the `+0x18` byte (restartsOnRepeat()).
+    void setRestartsOnRepeat(bool on) { m_restartsOnRepeat = on; }
 
   private:
     int m_type;
@@ -95,6 +101,7 @@ class Tactic {
     std::uint64_t m_endsAtMs = 0;
     bool m_started = false;                // +0x04
     std::optional<std::size_t> m_strategy; // +0x10
+    bool m_restartsOnRepeat = false;       // +0x18
 };
 
 } // namespace coney::ai
