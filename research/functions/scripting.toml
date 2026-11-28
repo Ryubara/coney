@@ -518,7 +518,7 @@ name = "lua_GoalJoinFixedScene"
 page = "../references/bindings/ai.md#goaljoinfixedscene"
 level = "confirmed-code"
 coney = "src/scripting/scene_bindings.cpp:makeGoalJoin"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003614f8
@@ -526,7 +526,7 @@ name = "lua_GoalJoinCinematic"
 page = "../references/bindings/ai.md#goaljoincinematic"
 level = "confirmed-code"
 coney = "src/scripting/scene_bindings.cpp:makeGoalJoin"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x003615d8
@@ -534,7 +534,7 @@ name = "lua_GoalJoinAnimation"
 page = "../references/bindings/ai.md#goaljoinanimation"
 level = "confirmed-code"
 coney = "src/scripting/scene_bindings.cpp:makeGoalJoin"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00363018

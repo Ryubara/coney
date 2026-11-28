@@ -849,13 +849,15 @@ bool Human::linkedWith(const Human& other) const {
 
 // @orig 0x00221260 Human_GetAttribute (unknown)
 float Human::pushWeight() const {
-    // Every link sets both humans' weight to 1e9, and so does an arrest, and so does the death chain once the health
-    // has run out (`Human_PlayDeathReaction` 0x00267a00, its vtable +0xe4 call; `Human_KnockOut` after it).
+    // Every link sets both humans' weight to 1e9, and so do an arrest and a wound (`Human_StartWounded`, back to 1 at
+    // `Human_EndWounded`), and so does the death chain once the health has run out (`Human_PlayDeathReaction`
+    // 0x00267a00, its vtable +0xe4 call; `Human_KnockOut` after it).
     constexpr float kImmovable = 1e9F;
     const bool out = m_fighter.health().depleted();
     // stand-in: only attribute 7 is asked for (attribute 1's 82.0 is not), and it is derived from the states that set
     // it rather than kept at +0x27c.
-    return m_fighter.inPair() || m_script.arrested || m_uncuffing != nullptr || out ? kImmovable : 1.0F;
+    return m_fighter.inPair() || m_script.arrested || m_script.wounded || m_uncuffing != nullptr || out ? kImmovable
+                                                                                                        : 1.0F;
 }
 
 anim::Vec3 Human::meetHumans(anim::Vec3 from, anim::Vec3 move) {
@@ -1803,20 +1805,11 @@ void Human::noteCarriedPropEvents(const anim::AnimTask* before, std::uint32_t be
     }
 }
 
-void Human::resetForJoin() {
-    // In the original's order (scenes.md#join-reset): the throw's aim (step 1); the pair broken before the grab, the
-    // wound and the stun end (step 2); the full normal mode's idle (step 4) and the carried props (step 3), which
-    // touch different state, so their order does not matter here.
-    setThrowAiming(false);
-    breakPair();
-    setWounded(false);
-    setNormalMode(true);
-    releaseCarriedProps();
-}
-
+// Only the players' rage (scenes.md#join-reset).
 void endAllRage(std::span<Human* const> humans) {
     for (Human* human : humans) {
-        if (human != nullptr) {
+        // Coney stand-in: the original walks the players' list; here a player is a human that fights as one.
+        if (human != nullptr && human->fighter().player()) {
             human->setRageMode(false);
         }
     }

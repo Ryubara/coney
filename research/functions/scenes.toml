@@ -16,8 +16,23 @@ name = "Human_ResetForMode"
 page = "scenes.md#original-structure"
 role = "the reset every join runs: pairs, grabs, holds, rage, stun, props ([The reset at the join](scenes.md#join-reset))"
 level = "confirmed-code"
-coney = "src/combat/player_combat.h:PlayerCombat::abortTheft"
-status = "legacy"
+coney = "src/human/human.h:Human::setNormalMode"
+status = "compared"
+
+[[function.gaps]]
+what = "the overlay task's drop, the glow colour zeroed, the airborne bits, the climb's body and a picked object's release are not ported"
+relation = "not-ported"
+issue = 1718
+
+[[function.gaps]]
+what = "fire, mini-games, special states, workouts, muggings, tags and tackle holds are not modelled to end (stand-ins)"
+relation = "stand-in"
+issue = 1718
+
+[[function.gaps]]
+what = "an AI human's fight stance stays its fight goal's, so only a player leaves it (a stand-in)"
+relation = "stand-in"
+issue = 959
 
 [[function]]
 address = 0x002e5300
@@ -25,7 +40,7 @@ name = "Goal_JoinCinematic"
 page = "scenes.md#original-structure"
 level = "confirmed-code"
 coney = "src/scenes/scene_player.h:SceneSystem::joinHuman"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00351da0

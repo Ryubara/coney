@@ -263,7 +263,49 @@ record [the record](characters/index.md#the-record).
 ## Behaviour
 
 The behaviour each function starts is on the topic page of its subject; the table under Map names the function and says
-what it does.
+what it does. The sections below have no other page; `Human_Heal`'s is [The flash](combat-rage.md#flash).
+
+### HuIsAlive {#hu-is-alive}
+
+Read in Ghidra: confirmed (code) where no other level is given.
+
+`Human_IsAlive` (`0x00235628`) answers true for a human that `Human_IsDownOrDead` (`0x00227e60`) does not count and
+that `Human_IsUp` (`0x0029ce40`) does. Down or dead is any record state of the mask `0x180050000`: dead
+(`0x100000000`), dying (`0x80000000`), knocked out (`0x40000`) and wounded or tackled (`0x10000`), or no record at
+`+0xd4`. Not up is state `0x100000000`. Cuffed (`0x20000`) is in neither mask, so **an arrested human is alive** to the
+scripts, and a wounded one is not. A handle that names no human answers nil. Confirmed (code) at the three addresses.
+On player 1 in `level99`, `HuIsAlive` answered 1 while he was arrested and nil while wounded, and 1 again once the
+wound ended; the wound left 25 % health (confirmed (runtime), run r-20261128-script-heal-states).
+
+### HuRevive and Human_Heal {#hu-revive}
+
+Read in Ghidra: confirmed (code) where no other level is given.
+
+`Human_Revive` (`0x002377f8`) is `Human_Heal(human, 1)` and then state `0x20000000` (the anim state chosen again);
+nothing else. It calls no part of the normal mode ([The reset at the join](scenes.md#join-reset)), so a grab, a stun,
+rage or a knockdown the human is in stay as they are. Confirmed (code) at `0x002377f8`.
+
+`Human_Heal` (`0x0022eb40`), the heal the revive, the flash, the uncuffing and the Armies game-over toggle share,
+is described step by step under [The flash](combat-rage.md#flash).
+
+### HuSetWounded {#hu-wounded}
+
+Read in Ghidra: confirmed (code) where no other level is given.
+
+`Human_SetWounded(human, on)` (`0x00237628`) starts the wound for `on` = 1 exactly and ends it for anything else, then
+sets state `0x20000000`. Confirmed (code).
+
+`Human_StartWounded` (`0x0022fa78`), for a human with a record: states `0x14800f` cleared (the stance bits, block
+`0x8000`, knocked out `0x40000` and stunned `0x100000`). Only when not wounded already: everything let go
+(`Human_ReleaseAll`: the pair broken, a mini-game ended, the held object dropped, rage ended, style `0x12`), the held
+object dropped, every move style popped and the wounded style `0xd` pushed, record `+0xf0` stamped now + 14 s, health a
+quarter of the maximum (rounded toward zero) and body flag `BLOCKHUMANS` off. Then always: state `0x10000`, push weight
+(attribute 7, vtable `+0xe4` with 1e9 and 7) 1e9, and the brain's knocked-out event (`Brain_OnKnockedOut(brain, 0)`).
+Confirmed (code).
+
+`Human_EndWounded` (`0x0022fc00`): state `0x10000` cleared, push weight 1.0, style `0xd` popped when on top (else
+removed), and body shape 2 enabled again (the body's vtable `+0x2c` with 2, then the shape's `+0x1c` with 1), as
+`Human_WakeUp` does. It does not give `BLOCKHUMANS` back. Confirmed (code).
 
 ### `HuSetConscious` {#set-conscious}
 
@@ -355,6 +397,23 @@ and under the engine limits preset, every human in reach past 60.
   (bodies do not push each other); `HuChangePlayerGang` and `WCIssueCommand` only
   note the gang and command. `LoadBumAnims` requests or releases the bum animations' table, in order, as
   `SetDynamicAnimation` does each: the file listed twice is one entry, so twelve files are listed.
+- **The heals, the normal mode, the wound and the arrest** (task 685, `src/human/human_script.cpp`,
+  `src/human/fighter_script.cpp`): `HuIsAlive` is `Human::aliveAndUp()`, the down mask read from Coney's states
+  (`Human::downOrDead()`), so a cuffed human answers alive and a wounded one not; the AI's and the HUD's own test,
+  which also leaves out the cuffed, stays `Human::alive()`. `HuRevive` is `Human::heal(true)` and then, for a human
+  who was knocked out or out of health, the stand into his idle; a stun, rage, a grab or a knockdown are left alone.
+  A human a script knocked out also gets his brain back (`Brain::wakeUp()`, as `Human_WakeUp` resumes it), which his
+  health back alone would not give him ([HuSetConscious](#set-conscious)).
+  `Human::heal(bool)` ends a wound, wakes a knocked-out human into the fight stance (a player's: an AI human's stance
+  is its fight goal's), fills the health or adds half the maximum, capped, and makes the body again; the flash keeps
+  its own health and wound steps and calls only the body (`Human::heal()`). `HuSetNormalMode` ends the player's
+  rage (`ai::ScriptedHumans`), cancels a throw's aim, breaks a pair in full, ends a wound, a grab, the ground and a
+  stun, takes a player out of the stance, releases the carried props and ends the slow motion; in full a health at or
+  below the pending damage becomes 1 and the human stands in its idle. An arrest is no longer ended by it. The wound
+  weighs 1e9 (`Human::pushWeight()`) and the arrest no longer ends a grab or rage; the release lets go of the carried
+  props. **Not ported**: the held object's drops (#711), the move styles of the wound and the arrest (#990), the
+  heal's linked object (#1640), the ally's follow after a release (#677), and the heal's glow colour and the normal
+  mode's overlay task, climb body and picked object (#1718).
 - **The hub's hold on a human** (`level95`; `src/scripting/hub_bindings.*`, acting through `ai::ScriptedHub`): money,
   death, character class and voice set are read; the scale, name, cuffs, muggable, pedestrian reaction,
   unarrestable, combat mode, gear and tackle block are set. **Workouts** (`HuWorkout`): the enter clip into a loop
@@ -380,7 +439,8 @@ read them yet.
 - **The workout's reach and timing** (answered): the scripts make the player his own target, so the reach always
   passes, and a repetition is each wrap of the loop blend's leading clip ([Workouts](workouts.md#repetitions)).
 - Where god mode (`0x10`) is tested: Coney drops the damage and still plays the reaction.
-- What the arrest (state `0x20000`) plays and allows, and which human states `HuIsAlive`'s mask `0x180050000` names.
+- What the arrest (state `0x20000`) plays and allows. (Which states `HuIsAlive`'s mask `0x180050000` names is answered
+  in [HuIsAlive](#hu-is-alive).)
 
 ## How this was checked
 

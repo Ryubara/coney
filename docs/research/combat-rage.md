@@ -326,10 +326,25 @@ with `vags/misc/flash`, [Sound and music](../references/sound.md#interface-sound
 0x154`, `SetDifficulty`: 0 easy, 1 normal, 2 hard, 3 fury, 4 rumble; [The difficulty](difficulty.md#flash)) is above
 2; the HUD's per-panel request byte for
 the player (`0x001b28a0`, [HUD](hud.md)); and the player's screen effect at `0x005fdeb8[player]` is reset
-(`0x0018b7d0(…, 0)`). `Human_Heal` clears `+0x3be`, ends wounded (`Human_EndWounded`), wakes a knocked-out human
-(`Human_WakeUp`), clears state `0x4000000000`, then sets health to the maximum, or on fury and rumble adds half the
-maximum (capped); it also runs `0x0021ce08`, `0x0024ca40` and clears human `+0x644`. The same heal serves
-`Human_Revive`, the uncuffing and the Armies game-over toggle.
+(`0x0018b7d0(…, 0)`). The same heal serves `Human_Revive` ([HuRevive](characters-script.md#hu-revive)), the
+uncuffing and the Armies game-over toggle.
+
+`Human_Heal(human, full)` (`0x0022eb40`), confirmed (code) at that address, in order:
+
+1. Byte `+0x3be` = 0 (its reader is not known).
+2. A wounded human (`Human_IsWounded`, state `0x10000`) has the wound ended (`Human_EndWounded`,
+   [HuSetWounded](characters-script.md#hu-wounded)).
+3. A knocked-out human (`Human_IsKnockedOut`, state `0x40000`) wakes (`Human_WakeUp(human, 0)` `0x00230598`: body
+   shape 2 back on, the `dyn_cross` icon removed, style `0x12` off, states `0x1c8007` cleared, push weight 1, the brain
+   enabled and resumed) and enters the fight stance (`Human_EnterFightStance` `0x0022fe48`: state `0x1` and the
+   stance timer), confirmed (code).
+4. State `0x4000000000` cleared.
+5. Health (record `+0x144`): with `full` the maximum; without, health + half the maximum (an arithmetic shift),
+   capped at the maximum. The flash asks for the partial heal on fury and in the Rumble
+   ([The difficulty](difficulty.md#flash)).
+6. A new physics body (`Human_CreatePhysicsBody` `0x0021ce08`, whose flags hold `BLOCKHUMANS`,
+   [Human contacts](physics.md#human-contacts)), the linked object released (`Human_ReleaseLinkedObject`
+   `0x0024ca40`) and `+0x644` (the glow colour, [Lighting](lighting.md#humans)) = 0, confirmed (code).
 
 #### The flash during a move {#flash-mid-move}
 

@@ -152,13 +152,16 @@ prompt sits 0.04 above its place in the default video mode (0.02 in the others) 
 
 ### Arrest {#arrest}
 
+Read in Ghidra: confirmed (code) where no other level is given.
+
 `HuSetArrested(h, on)` (`Human_SetArrested`) runs `Human_Arrest` (`0x0022ec18`) or `Human_Unarrest` (`0x0022ef58`),
 then sets state `0x20000000`. Confirmed (code) at the cited addresses.
 
 **Arrest**, for a human not already cuffed:
 
-1. The human leaves its fight stance and drops a held weapon of kind 4 or 6, or anything held without human flag
-   `0x2000`. A stun ends.
+1. Body flag `BLOCKHUMANS` comes off, a throw's aim is cancelled (`Human_CancelThrowAim`), and the human drops a
+   held weapon of kind 4 or 6, or anything held without human flag `0x2000`. A stun ends, only a standing one
+   (`Human_IsStunnedStanding`, then `Human_EndStun`). Nothing here ends a grab, a pair or rage.
 2. Its push weight (attribute 7, vtable `+0xe4`) becomes 1e9, so nothing shoves it. State `0x8000` (block) is
    cleared and `0x20000` (cuffed) set.
 3. Movement style `0x11` is pushed (`Human_PushMoveStyle`, `0x00253ed0`), which puts 320 `ANIM_ARRESTED_IDLE` in
@@ -184,16 +187,19 @@ then sets state `0x20000000`. Confirmed (code) at the cited addresses.
 list](hud-functions-parts.md#crew-status) for as long as state `0x20000` holds: his portrait with a pulsing blue badge,
 and for 2.5 s a caption with his name and the arrested text (`GSTRING.HUD` 226). No interface sound plays. The list
 tests the state, not the arrest call, so a scripted `HuSetArrested` shows the same. Confirmed (code) at `0x001a0420`;
-confirmed (runtime) by setting the state over PINE. He keeps his mark in the [gang
+setting the state over PINE showed the same (no run record was kept). He keeps his mark in the [gang
 tally](hud-functions-lua.md#gang-count-what), which counts only members not down.
 
-A human with no AI brain component (vtable `+0xf4` null) gets only state `0x20000`, the style and action 0.
+A human with no physics body (vtable `+0xf4`, which returns the body `Human_CreatePhysicsBody` makes, answers null)
+gets only state `0x20000`, the style and action 0.
 
 **Unarrest** (`Human_Unarrest`), for a cuffed human:
 
-1. Brain `+0x40` gets `0x80000004`, and the kind-0 record is removed (slot `+0x12c`).
-2. `0x0024ce40` is called and the icon removed (message `0x15`, `Human_RemoveOverheadIcon`, `0x00227388`). Style
-   `0x11` is removed (`0x00253f78`), state `0x20000` is cleared, and the push weight returns to 1.
+1. Body flags `0x80000004` (`BLOCKHUMANS` among them) are set again on the physics body (vtable `+0xf4`, its flags at
+   `+0x40`) when it has one, and the kind-0 record is removed (slot `+0x12c`).
+2. Its carried props are released (`Human_ReleaseCarriedProps` `0x0024ce40`) and the icon removed (message `0x15`,
+   `Human_RemoveOverheadIcon`, `0x00227388`). Style `0x11` is removed (`0x00253f78`), state `0x20000` is cleared, and
+   the push weight returns to 1.
 3. A member of a leaderless gang (gang `+0x40` = 0) with a leader other than itself and a type-3 brain clears its
    actions and goals and follows the leader (`Goal_FollowPlayer`, 2.0, mode 3).
 4. **Event 17** goes out as above with `+0x04` = 0: `SetMsgHandler(h, 17, "SnowUnarrested")` gets `(self, other, 0)`,

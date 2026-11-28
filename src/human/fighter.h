@@ -518,14 +518,18 @@ class Fighter {
 
     // What the scripts do to a fighter (docs/references/bindings/character.md).
 
-    /// `HuRevive`: back on its feet with full health; a stun, the ground and a reaction end, the idle plays.
-    /// @orig 0x002377f8 Human_Revive (unknown)
-    void revive(HumanAnimator& animator);
-    /// `HuSetNormalMode`: a grab it holds or is held in ends, a stun ends, rage ends; with `full` also a human out of
-    /// health or down gets back up with at least 1 health and the idle plays. **Coney's reading** of the summary
-    /// (docs/references/bindings/character.md#husetnormalmode): fire, wounds, slow motion and held objects are not in
-    /// Coney, and the state machine's restart is the idle.
-    /// @orig 0x0023a210 Human_SetNormalMode (unknown)
+    /// Up into its idle after a wake (the original's state `0x20000000`, its anim state chosen again): the ground, a
+    /// stun and a reaction end and the idle plays.
+    /// @coney-only Coney's controller choosing the anim state again for a human woken by Human::revive()
+    void standUp(HumanAnimator& animator);
+    /// The fight stance's state bit (`0x1`), which `Human_EnterFightStance` sets; it shows in inFightStance() for a
+    /// player, an AI human's stance being its fight goal's (setAiStance()).
+    void setStanceOn(bool on) { m_stanceOn = on; }
+    /// The fighter's steps of the normal mode (Human::setNormalMode(), docs/research/scenes.md#join-reset): a grab it
+    /// holds or is held in ends, a downed human gets up, a stun ends and a player leaves the fight stance and drops his
+    /// target; with `full` also a health at or below the pending damage becomes 1 (the pending damage 0) and the human
+    /// stands in its idle.
+    /// @orig 0x002325e0 Human_ResetForMode (unknown)
     void setNormal(HumanAnimator& animator, bool full);
     /// `Human_Stun` for a set time: stunned until `nowMs + durationMs` in the stun's loop (356), however long the
     /// class's stun is. **Coney reading**: the loop plays at once, as after a stunning hit's reaction.

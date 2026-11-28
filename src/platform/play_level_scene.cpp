@@ -75,7 +75,7 @@ void PlayLevelMode::makeStage() {
     // A human a script binds to a role is reset first (scenes.md#join-reset): his carried prop goes, his pair breaks
     // and he is back in his normal mode, so the free test above takes in a human the player was holding (l99_c7's
     // Rudy, held in Rembrandt's power move). A handle that is no human here (a stand-in) has nothing to reset, but
-    // every bind, also a stand-in's, ends every raging human's rage.
+    // every bind, also a stand-in's, ends every raging player's rage (an AI human keeps his).
     m_stage->setJoinReset([this](double handle) {
         if (handle == m_playerHandle) {
             m_player->human().resetForJoin();

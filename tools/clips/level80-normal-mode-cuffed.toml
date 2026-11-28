@@ -1,0 +1,11 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level80 checkpoint 2, Vermin cuffed and then
+# given the normal mode without `full`. The input script taps cross to skip the opening scene, then types the developer
+# console's `lua` lines: HuSetArrested on Vermin by the handle the level script keeps (`Warriors2.Vermin`), then
+# HuSetNormalMode(Vermin, false) two seconds later (docs/guides/console.md#built). For a change to what the normal mode
+# ends (docs/research/scenes.md#join-reset): the original keeps the cuffs, so Vermin stays in the cuffed idle.
+description = "level80 checkpoint 2: Vermin cuffed, then HuSetNormalMode(Vermin, false)"
+level = "level80"
+input = "tools/clips/level80-normal-mode-cuffed.txt"
+checkpoint = 2
+start_frame = 690
+seconds = 8

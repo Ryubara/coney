@@ -334,7 +334,27 @@ page = "combat-rage.md#flash"
 role = "spends a flash, its sound, the heal (full, or half on fury and rumble)"
 level = "confirmed-code"
 coney = "src/human/human.h:Human::heal"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "byte +0x3be and state 0x4000000000 are not kept (stand-ins)"
+relation = "stand-in"
+issue = 1718
+
+[[function.gaps]]
+what = "the linked object's release is not ported"
+relation = "not-ported"
+issue = 1640
+
+[[function.gaps]]
+what = "the glow colour +0x644 zeroed is not ported"
+relation = "not-ported"
+issue = 1718
+
+[[function.gaps]]
+what = "an AI human's fight stance is its fight goal's, so the stance entered shows only for a player (a stand-in)"
+relation = "stand-in"
+issue = 959
 
 [[function]]
 address = 0x0022f100

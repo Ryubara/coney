@@ -5,6 +5,7 @@
 
 #include "human/human.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 
@@ -29,32 +30,101 @@ void Human::setHealthPercent(float percent) {
     health.set(static_cast<int>(ps2::mul(percent, hundredth)));
 }
 
+void Human::revive() {
+    // Down before the heal: knocked out, or out of health with the death chain still playing.
+    const bool down = knockedOut() || m_fighter.health().depleted();
+    heal(true);
+    // State 0x20000000: the anim state chosen again, which stands a woken human. Coney stand-in: a human still in his
+    // death chain is stood up too, where the original keeps the chain and knocks him out at its end (#685), because
+    // Coney's chain end reads the health, which would leave him lying neither knocked out nor up.
+    if (down) {
+        m_fighter.standUp(m_animator);
+    }
+}
+
+void Human::heal(bool full) {
+    // Coney stand-in: byte +0x3be, whose reader is not known, is not kept.
+    if (m_script.wounded) {
+        endWounded();
+    }
+    if (knockedOut()) {
+        // Human_WakeUp, then Human_EnterFightStance. A knock-out by health ends with the health below. Coney stand-in
+        // (#959): an AI human's stance is its fight goal's (Fighter::setAiStance()), so the stance shows for a player.
+        m_script.knockedOut = false;
+        m_fighter.setStanceOn(true);
+    }
+    // Coney stand-in: state 0x4000000000 is not kept.
+    combat::Health& health = m_fighter.health();
+    const int maximum = health.maximum();
+    health.set(full ? maximum : std::min(health.value() + (maximum >> 1), maximum));
+    heal();
+    // Not ported: the linked object's release (#1640) and the glow colour (+0x644) zeroed (#1718).
+}
+
 void Human::setNormalMode(bool full) {
-    // Leaving normal mode ends the players' slow motion whatever `full` says (`Human_ResetForMode`).
-    m_slowMotionReset = true;
-    m_script.arrested = false;
+    // Not ported (#1718): a human with a hold flag drops its overlay task.
+    // Humans_EndAllRage: a player's rage ends; the other players' are the caller's.
+    if (m_fighter.player()) {
+        setRageMode(false);
+    }
+    // Coney stand-in: no fire or mini-game is modelled, so there is none to end. A throw's aim is cancelled.
+    setThrowAiming(false);
+    // Not ported (#1718): the glow colour (+0x644) zeroed.
+    // The pair and down states: a pair is broken only in full; a wound ends. Coney stand-in: no mini-game, special
+    // state, workout, mugging, tag or tackle hold is modelled here to end.
+    if (full) {
+        breakPair();
+    }
+    if (m_script.wounded) {
+        endWounded();
+    }
+    // The grab, the get-up, the stun, the fight stance and, in full, the health and the idle (Fighter::setNormal()).
     m_fighter.setNormal(m_animator, full);
+    // Coney stand-in: no Coney human holds an object of kind 0x27 or 0x10 to drop. The carried props go.
+    releaseCarriedProps();
+    // The players' slow motion ends (takeSlowMotionReset()).
+    m_slowMotionReset = true;
+    // Coney stand-in: in full the airborne bits, the climb's body and a picked object are not kept apart here.
 }
 
 void Human::setArrested(bool arrested) {
-    if (arrested == m_script.arrested) {
+    if (arrested) {
+        arrest();
+    } else {
+        unarrest();
+    }
+}
+
+void Human::arrest() {
+    // Coney's choice: every Coney human has a body, so the bodiless branch (only the state, the style and action 0)
+    // never runs. Already cuffed: nothing.
+    if (m_script.arrested) {
         return;
     }
-    m_script.arrested = arrested;
-    // The cuffs take BLOCKHUMANS away (`Human_Arrest`); the release gives it back (`Human_Unarrest` sets body flags
-    // 0x80000004).
-    m_blockHumansFlag = !arrested;
-    // Arrested, it stops and whatever it was doing ends; released, it stands up again into the idle. While arrested
-    // its push weight is 1e9 (pushWeight()), so other humans' walks do not move it.
+    loseBlockHumans();
+    setThrowAiming(false);
+    // Not ported (#711): the drop of a held weapon of kind 4 or 6, or of anything held without flag 0x2000.
+    if (m_fighter.victim().stunned() && !m_fighter.victim().grounded()) {
+        m_fighter.endStun(nowMs());
+    }
+    // Cuffed: push weight 1e9 (pushWeight()). Coney stand-in: block 0x8000 is not kept apart, the cuffed idle ending
+    // any block. Style 0x11 loops 320 and the action is 0, which stops the human where he stands.
+    m_script.arrested = true;
     m_velocity.x = 0.0F;
     m_velocity.y = 0.0F;
-    m_fighter.setNormal(m_animator, false);
-    if (!arrested) {
-        m_animator.stopToIdle();
+    m_animator.playCombat(clips::kNoClips, clips::kArrestedIdle, AnimState::Hold);
+}
+
+void Human::unarrest() {
+    if (!m_script.arrested) {
         return;
     }
-    // Move style 0x11's idle, 320 `ANIM_ARRESTED_IDLE`, loops until the release.
-    m_animator.playCombat(clips::kNoClips, clips::kArrestedIdle, AnimState::Hold);
+    // Body flags 0x80000004: BLOCKHUMANS back.
+    m_blockHumansFlag = true;
+    releaseCarriedProps();
+    // Style 0x11 removed, no longer cuffed (push weight 1), and the anim state chosen again: the idle.
+    m_script.arrested = false;
+    m_animator.stopToIdle();
 }
 
 void Human::setThrowAiming(bool aiming) {
@@ -85,23 +155,42 @@ void Human::aimThrow(float heading, bool turning) {
 }
 
 void Human::setWounded(bool wounded) {
+    // Coney stand-in: the binding reads `on` as a boolean, where the original starts the wound only for exactly 1; and
+    // the wounded clips (style 0xd, #990) are not played, so choosing the anim state again (0x20000000) changes
+    // nothing.
+    if (wounded) {
+        startWounded();
+    } else {
+        endWounded();
+    }
+}
+
+void Human::startWounded() {
     // How long the wound stamp reaches past now (`0x00510794`).
     constexpr std::uint64_t kWoundMs = 14000;
-    if (!wounded) {
-        m_script.wounded = false;
-        return;
+    // States 0x14800f: the stance, the stun and a knock-out end.
+    m_fighter.setStanceOn(false);
+    m_fighter.endStun(nowMs());
+    m_script.knockedOut = false;
+    if (!m_script.wounded) {
+        // Human_ReleaseAll: the pair broken, the grab and rage ended. Not ported: the held object's drop (#711) and
+        // the wounded style 0xd (#990).
+        breakPair();
+        m_fighter.setNormal(m_animator, false);
+        setRageMode(false);
+        m_script.woundedUntilMs = nowMs() + kWoundMs;
+        combat::Health& health = m_fighter.health();
+        health.set(health.maximum() / 4);
+        loseBlockHumans();
     }
-    if (m_script.wounded) {
-        return;
-    }
+    // Wounded: push weight 1e9 (pushWeight()). Coney stand-in: the brain's knocked-out event is the caller's flush.
     m_script.wounded = true;
-    // `Human_StartWounded` takes BLOCKHUMANS away; ending the wound does not give it back (only a heal does).
-    loseBlockHumans();
-    m_script.woundedUntilMs = nowMs() + kWoundMs;
-    // Its stance, grab or throw ends (state bits `0x14800f`), and its health drops to a quarter.
-    m_fighter.setNormal(m_animator, false);
-    combat::Health& health = m_fighter.health();
-    health.set(health.maximum() / 4);
+}
+
+void Human::endWounded() {
+    // No longer wounded: push weight 1 (pushWeight()). Not ported: style 0xd's removal (#990) and body shape
+    // 2's enabling (#1718).
+    m_script.wounded = false;
 }
 
 void Human::setRageLocked(bool locked) {
