@@ -537,7 +537,14 @@ top edge.
 - **Jog**: when a pad-controlled human jogs other than when carrying (a movement style, a script).
 - **The idle threshold's getter** (answered): the sneak-walk speed ([Coney's implementation](#coneys-implementation)).
 - **A steady run's velocity in floats**: the original's run measures at or above the run speed on 10 of 93 updates,
-  Coney's on about 6 %; how its velocity is built (the order of the multiplies) is not traced.
+  Coney's on about 6 %. How the velocity is built, confirmed (code) at `0x00240e38`: the direction is the new
+  rotation's axis (`Quat_AxisY`, `0x003363b0`, called at `0x002418d4`, of the quaternion made from the half heading's
+  sine and cosine), multiplied by the speed in VU0 (`0x00241b0c`), then the vertical velocity is stored in its third
+  part; the speed the skid tests is the length of the velocity's three parts in VU0 (`vmul.xyz`, the adds and `vsqrt`,
+  `0x00240f38` to `0x00240f50`). Coney builds facing × speed in IEEE floats and takes the length of x and y only, so
+  its last bits differ: in `chars_run_stop_hit` Coney's run matched the original's to the release, where
+  the original measured the run speed exactly and skidded into 417 and Coney idled. What the VU0's rounding gives at a
+  steady run is not traced.
 - **The run start's speed on its 7th and 11th updates** in `run_circle` (3.35 and 5.40 m/s against Coney's 3.25 and
   5.54): which key the original samples there.
 - **The trace's clip id in the gait blend** (record `+0x20`): 410 where Coney reports the blend's leading clip (411,

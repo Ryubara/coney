@@ -14,8 +14,14 @@ slot = 2
 patches = ["scripted-pad", "right-stick"]
 
 [coney]
+# On Coney (2026-11-28) the climb, the roof and the walk off it match the original's to the landing; Coney then lands
+# straight into the move or the idle, without the original's 436 (the stick held) (the drop's landing clips, #667).
 level = "level99"
-wait_for_control = true          # checkpoint 1 opens with the scene l99_c1, which holds the pad (#1680)
+# Slot 2's spot (the first row of the original's trace, which has no camera columns: the camera is put behind him):
+# Coney's checkpoint start is not the slot's (#1696).
+args = ["--checkpoint", "3", "--start", "57.5826,39.526,0.2232,172.154,5.3,172.154"]
+wait_for_control = true          # checkpoint 3 opens with the scene l99_c3, which holds the pad (#1680)
+settle = 40                      # the stick comes after 40 updates of control, as in the slot (#1696)
 
 [[field]]
 name = "state_hi"                         # record +0x04, the state flags' high word (0x8 airborne, 0x20 landing)

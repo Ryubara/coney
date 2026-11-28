@@ -1,0 +1,32 @@
+version = 1
+id = "r-20261128-chars-wall-slide-walk"
+date = "2026-11-28"
+kind = "trace"
+tool = "trace original"
+digest = "6e6665bf8cbfabae21fb0e6c7d0e819ec453c7cd2618649785ef2d6e85784209"
+
+[who]
+agent = "a1ff5821f92dac31a"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["right-stick", "scripted-pad"]
+
+[run]
+name = "chars_wall_slide_walk"
+method = ""
+
+[values]
+updates = 301
+missed_updates = 0
+columns = 27
+
+[hashes]
+trace_csv = "2fc6accec057904d89601a564c1976861dfe44a6d5a336b400731e7e04488de7"

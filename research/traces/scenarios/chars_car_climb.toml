@@ -13,5 +13,8 @@ patches = ["scripted-pad", "right-stick"]
 
 [coney]
 level = "level99"
-args = ["--checkpoint", "2"]
-wait_for_control = true          # checkpoint 2 opens with a scene that holds the pad (#1680)
+# Slot 2's spot (the first row of the original's trace, which has no camera columns: the camera is put behind him):
+# Coney's checkpoint start is not the slot's (#1696).
+args = ["--checkpoint", "3", "--start", "57.5826,39.526,0.2232,172.154,5.3,172.154"]
+wait_for_control = true          # checkpoint 3 opens with the scene l99_c3, which holds the pad (#1680)
+settle = 40                      # the stick comes after 40 updates of control, as in the slot (#1696)

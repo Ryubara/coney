@@ -224,7 +224,10 @@ there: each update's speed is `k × (last speed + 0.8)`, `k` the sine of the ang
 0.415, against `0.8 k / (1 − k)` = 0.416 at 20°, just above the idle threshold (a quarter of the sneak-walk speed, 0.396
 m/s), so the run went on with the stick pushed. By the same rule a wall met less than about 19.3° off its normal settles
 under the threshold and the idle plays with the stick still pushed (inferred from the rule and the threshold; no
-recorded run covers it). A walk does the same (inferred from the rule, which does not depend on the gait). So the player
+recorded run covers it). A walk does the same (confirmed (runtime), run r-20261128-chars-wall-slide-walk, slot 1, the
+stick at 60 %): meeting the wall about 22° off its normal, the walk's 1.63 m/s went to 0.53, then 0.49 and settled at
+0.482 m/s on update 162 (heading 22.08°, so `0.8 k / (1 − k)` = 0.482), and it kept sliding, faster as the camera turned
+him further along the wall. So the player
 brakes against a wall met at a steep angle instead of sliding along it at speed.
 
 #### Slopes between floor and wall {#slopes}
@@ -542,4 +545,5 @@ Code claims were read in Ghidra in `SLUS_212.15`.
 
 The step was made from a box of the level's collision mesh by writing its vertices' heights in RAM (scenario
 `chars_step`); the landing's phase was shifted by writing the feet's height at the 7th update in the air (scenario
-`chars_run_jump`, its `shift` value).
+`chars_run_jump`, its `shift` value). The slide along a wall is scenario `chars_wall_slide` (the run) and
+`chars_wall_slide_walk` (the walk), each from the same spot put by a write before the first update.

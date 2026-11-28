@@ -18,6 +18,9 @@ setup = [
 ]
 
 [coney]
+# Coney has no step for the setup's stamina write, so its sprint keeps its stamina and does not end at 0: it compares
+# with the original's to update 50 and in the sprint start and run stop (417), not in the drain (#1696).
 level = "level99"
 args = ["--checkpoint", "3", "--start", "75.155,41.1354,0.2231,91.909,5.3,89.854"]
 wait_for_control = true          # checkpoint 3 opens with the scene l99_c3, which holds the pad (#1680)
+settle = 40                      # the stick comes after 40 updates of control, as in the slot (#1696)

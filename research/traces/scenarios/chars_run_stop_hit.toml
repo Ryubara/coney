@@ -12,8 +12,14 @@ slot = 1
 patches = ["scripted-pad", "right-stick", "state-code", "skid-test"]
 
 [coney]
+# On Coney (2026-11-28) the run matches the original's to the release, but the release plays the idle (388) where the
+# original's skid test sees the run speed exactly and plays the run stop (417): Coney's velocity is not built in the
+# original's floats (docs/research/characters-locomotion.md#open-questions).
 level = "level99"
-wait_for_control = true          # checkpoint 1 opens with the scene l99_c1, which holds the pad (#1680)
+# Slot 1's spot and camera (the first row of the original's walk60 trace): Coney's checkpoint start is not the
+# slot's (#1696).
+args = ["--checkpoint", "3", "--start", "75.155,41.1354,0.2231,91.909,5.3,89.854"]
+wait_for_control = true          # checkpoint 3 opens with the scene l99_c3, which holds the pad (#1680)
 
 [diff]
 columns = ["clip", "gait", "speed", "heading"]
