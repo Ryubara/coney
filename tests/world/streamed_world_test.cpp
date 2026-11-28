@@ -118,7 +118,7 @@ TEST_CASE("a part with a visible sector is not unloaded", "[streamed_world]") {
     CHECK(candidate.part == 1); // part 2 is seen and part 3 is the last
 }
 
-TEST_CASE("only visible, loaded sectors are collected, in the BSP's front-to-back order", "[streamed_world]") {
+TEST_CASE("loaded sectors in the frustum are collected, in the BSP's front-to-back order", "[streamed_world]") {
     // Expected: world.md#visibility, confirmed (code)
     auto world =
         StreamedWorld::create("test", rowOfSectors({{0, 1}, {1, 1}, {2, 2}, {3, 3}}, 3), rowManifest({1, 1, 1}));
@@ -131,7 +131,6 @@ TEST_CASE("only visible, loaded sectors are collected, in the BSP's front-to-bac
     pose.forward = Vec3{-1.0F, 0.0F, 0.0F};
     pose.right = Vec3{0.0F, 0.0F, -1.0F};
     const coney::world::ViewFrustum frustum(pose, 1.0F, 1.0F, 0.5F, 500.0F);
-    world->findVisibleSectors(frustum, true);
     // Collected back to front by the BSP (0, 1, 3 from x = 100), drawn last collected first; sector 2's part is not
     // loaded.
     CHECK(world->collectSectors(pose.position, frustum) == std::vector<std::uint32_t>{3, 1, 0});

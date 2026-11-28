@@ -315,7 +315,7 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
             draw::setRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
         }
         const std::vector<world::StreamedSector>& sectors = worlds[w]->sectors();
-        for (const std::uint32_t sector : worlds[w]->collectSectors(view.pose.position, frustum)) {
+        for (const std::uint32_t sector : worlds[w]->collectSectorsIn(view.pose.position, frustum)) {
 
             if (rw::Atomic* atomic = set.atomic(w, sector); atomic != nullptr) {
                 states.alphaTest = sceneAlphaTest(draw::getRenderState(rw::ALPHATESTFUNC));
