@@ -787,7 +787,7 @@ name = "Human_SetWheelchairControl"
 page = "characters-locomotion.md#wheelchair"
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x00234530
@@ -1215,11 +1215,11 @@ status = "legacy"
 [[function]]
 address = 0x00237778
 name = "Human_SetConscious"
-page = "characters-script.md#code-script"
+page = "characters-script.md#set-conscious"
 role = "`HuSetConscious`: knocks out or wakes the human."
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/ai/scripted_humans.h:ScriptedHumans::setConscious"
+status = "compared"
 
 [[function]]
 address = 0x002377f8
@@ -1860,11 +1860,11 @@ status = "legacy"
 [[function]]
 address = 0x0023b138
 name = "Human_TeleportNear"
-page = "characters-script.md#code-script"
-role = "`HuTeleportNearHuman`: puts the human at a free point near another human, facing it."
+page = "characters-script.md#teleport-near"
+role = "`HuTeleportNearHuman`: puts the human at a free point 3.6 m from another human, keeping his facing."
 level = "confirmed-code"
-coney = "src/scripting/human_bindings.cpp:makeTeleportNear"
-status = "legacy"
+coney = "src/ai/scripted_humans.h:ScriptedHumans::teleportNear"
+status = "compared"
 
 [[function]]
 address = 0x0023b778

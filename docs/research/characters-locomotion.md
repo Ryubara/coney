@@ -463,6 +463,13 @@ The constants, confirmed (code) in `Human_MoveWheelchair`, are at `0x005104d4` (
 `0x005104dc` (0.5 brake), `0x005104e0` (0.03) and `0x005104e4` (0.08). Changes are per update; whether the update is
 1/30 s or 1/60 s here is not traced.
 
+Both branches of `HuSetWheelchairControl` run only for a handle that names a human (switch 11 included), and the test
+"runs the wheelchair control" is the control pointer (`+0x1c0` = `Human_MoveWheelchair` with `+0x1be` = −1), confirmed
+(code) at `0x00234188`: so turning off a human not in the chair sets the switch and clears the flag but gives back no
+command. **In Coney** (the binding in `repo:src/scripting/arena_bindings.cpp`): the wheelchair flag stands for that
+control (**stand-in**: Coney chooses the wheelchair's control from the flag each update, `Human::updateState()`), read
+before it is cleared; commands 46 and 47 are not added, as the control reads L1 and R1 itself.
+
 ## In Coney {#coneys-implementation}
 
 - `src/human/locomotion.*` is the pure maths: the camera-relative stick, dead zone and run threshold

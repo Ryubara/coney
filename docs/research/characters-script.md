@@ -252,7 +252,7 @@ on or off; a `Cfg*` setter writes one global the human code reads.
 | `0x0023aee0` | `Human_StartButtonMiniGame` | `HuButtonMiniGame`: starts mode 5 of the mini-game record with its buttons, times and Lua callback. | confirmed (code) |
 | `0x0023b0e0` | `Human_SetScale` | `HuSetScale`: the human's model scale. | confirmed (code) |
 | `0x0023b128` | `CNS_SetMissionInfoEnabled` | `CNSEnableMissionInfo`: sets 0x005109ac. | confirmed (code) |
-| `0x0023b138` | `Human_TeleportNear` | `HuTeleportNearHuman`: puts the human at a free point near another human, facing it. | confirmed (code) |
+| `0x0023b138` | `Human_TeleportNear` | `HuTeleportNearHuman`: puts the human at a free point 3.6 m from another human, keeping his own facing ([below](#teleport-near)). | confirmed (code) |
 | `0x0023b778` | `Human_SetSlowMo` | `HuSetSlowMo`: a player's slow motion (`+0x3bb`, the time factor 0x005102cc). | confirmed (code) |
 
 ## Data
@@ -265,6 +265,72 @@ record [the record](characters/index.md#the-record).
 The behaviour each function starts is on the topic page of its subject; the table under Map names the function and says
 what it does.
 
+### `HuSetConscious` {#set-conscious}
+
+`Human_SetConscious` (`0x00237778`), confirmed (code) at that address: for a handle that names a human, `false` calls
+`Human_KnockOut(h, 0)` (`0x00230328`) and then `Player_SetStanceTimer` (`0x002800b8`,
+which writes record `+0xfc` only while the setting `0x00510994` is positive; it is −1, so nothing); `true` calls
+`Human_WakeUp(h, 0)` (`0x00230598`). Both then set state flag `0x20000000`, which makes the next
+`Human_ChooseAnimState` build the anim state again ([Clip selection](characters-animation.md#clip-selection)). There
+is no test of the state before either call.
+
+`Human_KnockOut(h, 0)`, confirmed (code) at `0x00230328`, does nothing for a human with no record or already knocked
+out (`0x40000`). Otherwise it lets go of everything (`Human_ReleaseAll`), stops his speech, takes `BLOCKHUMANS` (body
+flag `0x4`) away and sets body flag `0x80000000`, stamps the wake time (record `+0xf0`, now + 14 s), gives the push
+weight 1e9, turns a player's slow motion off, and, unless he is dead or wounded (`0x100050000`), sets `0x40000` and
+calls `Brain_OnKnockedOut` (`0x0028c3b0`; [the brain stops](ai/index.md)): never `Brain_SetDead`. A member of a
+player's gang (the brain's gang `+0x20c` equal to a player's) whose brain is of type 3 adds a harmony statistic, and
+outside Armies and Rumble levels shows the `dyn_cross` icon over him. It ends by setting `0x40000` whatever the state
+and clearing `0x8000` ([Who sets the bit](combat-reactions.md#knocked-out-bit)).
+
+`Human_WakeUp(h, 0)`, confirmed (code) at `0x00230598`: switches his body's shape 2 back on, removes the `dyn_cross`
+icon when he has it, pops move style `0x12` (or removes it when it is not on top), clears `0x1c8007`, puts the push
+weight back to 1 and resumes the brain (`Brain_EnableAndResume`). It does not give `BLOCKHUMANS` back.
+
+**In Coney** (`ai::ScriptedHumans::setConscious`, `repo:src/ai/scripted_humans.cpp`): the knock-out sets the script's
+knocked-out mark (whatever the state, as the original's last step), takes `BLOCKHUMANS` away, ends a player's slow
+motion, breaks a pair, and for a human not down or dead stops his brain as `Brain_OnKnockedOut` does
+(`Brain::knockOut()`) and sends him event 18 with the target he had, as `Brains::destroy()` does for the same call;
+the wake clears the mark and resumes the brain (`Brain::wakeUp()`). `Brains::reportDowns()`, which wakes a brain whose
+health is back, leaves a brain the script knocked out. **Stand-ins**: of `Human_ReleaseAll` only the pair is broken
+(no mini-game, held object, rage or move-style reset); the speech is not stopped; the 14 s wake time is #1584's; the
+cross icon and the harmony statistic are not shown or counted; the push weight is derived from the states
+(`Human::pushWeight()`), which do not include the knock-out; and state `0x20000000` has no counterpart, as Coney picks
+the anim state every update.
+
+### `HuTeleportNearHuman` {#teleport-near}
+
+`Human_TeleportNear(human, near)` (`0x0023b138`), confirmed (code) at that address and its disassembly:
+
+1. Both handles must name humans and differ. Let *rA* and *rB* be their capsule radii (`Human_GetCapsuleRadius`,
+   `0x00219860`, 0.35 m × scale) and *c* = *rB* + 2 *rA*.
+2. When the squared distance between them **in plan** is below 12.96 (3.6 m), nothing happens.
+3. The humans within *rA* + 3.6 m of `near` (in 3D) are listed by `Humans_FindAhead` (`0x002274a8`, at most 32,
+   `near` left out, each with its squared 3D distance to `near` as its key) and sorted by key, largest first
+   (`SortByKeyDescending`, `0x003868f8`).
+4. 32 headings are tried, 11.25° apart (π/16), starting at (game time & 31) and counting up modulo 32. Heading *k*
+   gives the direction (sin, cos, 0) of *k* π/16 (`Vec_FromHeading`, `0x00335e40`) and the point `near` + 3.6 m along
+   it.
+5. When `near` has a nav polygon and the line from him to the point is not clear (`Nav_LineClearWithin`,
+   `0x0024f718`, mask 0), its out value (the fraction along the line where the nearest nav edge crosses it) less *rA*
+   is compared with *c*²: below it the heading is refused; otherwise the point is moved to `near` + that value along
+   the direction. The fraction is at most 1, so for a human of scale 0.85 or more the heading is always refused
+   (inferred from the comparison).
+6. Each listed human *H* whose squared distance in plan to the point is below *rH* + *rA* (a squared distance against
+   a plain sum, as written) refuses the heading when his key is below (*c* + *rH*)²; otherwise the point moves to
+   `near` + (√key − *rH* − *rA*) along the direction, and the humans after him are tested against the new point.
+7. The first heading not refused is used: when the world exists, a ray straight down from the point at `near`'s
+   height + his capsule height (`0x00219890`, 2 m × scale) + 3 m, of that height + 6 m, drops the point to 0.01 m
+   above what it hits (`WorldManager_RayCast`, direction `0x00511770`). The human's transform is read (vtable `+0xac`),
+   its position replaced and set back (vtable `+0x6c`, `Human_SetTransform`, [a placement](teleports.md#placement)):
+   he **keeps his own facing**. When every heading is refused, nothing happens. No brain type is left out, so a
+   player is moved too.
+
+**In Coney** (`ai::ScriptedHumans::teleportNear`): the steps above, with the humans every brain of the level
+(`ai::Brains`) in its own order for the original's table order, the nav line through `ai::RoutePlanner::lineClear()`
+and the ray through the level's collision mesh. **Stand-ins**: `lineClear()` gives no fraction, so a line not clear
+refuses the heading whatever the scale (step 5); the ray meets the collision mesh only, not the world's objects.
+
 ## In Coney {#coneys-implementation}
 
 - **The scripts' hold on a human** ([character bindings](../references/bindings/character.md)): the flag word
@@ -276,7 +342,7 @@ what it does.
   the bindings are `src/scripting/human_bindings.*`, acting through `ai::ScriptedHumans`. **Stand-ins**: an arrested
   human only stands still; the icon, the object in the hand, the head-look and `HuUseAnim`'s clips other than the
   idle's (slot 0, which plays: [Rumble](rumble.md#coney)) are kept, not drawn or played; `HuSetPushable` is kept
-  (bodies do not push each other); `HuDropWeapon` lets go of any object; `HuChangePlayerGang` and `WCIssueCommand` only
+  (bodies do not push each other); `HuChangePlayerGang` and `WCIssueCommand` only
   note the gang and command. `LoadBumAnims` requests or releases the bum animations' table, in order, as
   `SetDynamicAnimation` does each: the file listed twice is one entry, so twelve files are listed.
 - **The hub's hold on a human** (`level95`; `src/scripting/hub_bindings.*`, acting through `ai::ScriptedHub`): money,

@@ -50,6 +50,7 @@
 #include "scripting/story_bindings.h"
 #include "warriors/crime_reports.h"
 #include "world_objects/object_breaks.h"
+#include "world_objects/object_types.h"
 #include "world_objects/spawn_records.h"
 #include "world_objects/volume_boxes.h"
 
@@ -500,6 +501,12 @@ void GameplayMode::enter() {
     m_uncuff.reset();
     m_uncuffHooked = nullptr;
     m_scripted->humanHost().setArrestHook([this](ai::Brain& brain, bool arrested) { onArrest(brain, arrested); });
+    // HuDropWeapon drops only an object whose type has a kind (+0x86), read from the object database by type name.
+    m_scripted->humanHost().setHeldKind([this](std::string_view type) {
+        const world_objects::ObjectType* found =
+            m_context.objectTypes != nullptr ? m_context.objectTypes->find(type) : nullptr;
+        return found != nullptr ? found->objectKind : 0;
+    });
     m_context.flagNet = &m_flagNet;
     m_scripted->setFlagNet(&m_flagNet);
     m_scripted->storyHost().setBoxes(m_context.boxes);

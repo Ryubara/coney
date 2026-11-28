@@ -345,21 +345,35 @@ void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("HuSetNoAutoLock", humanCall(context, [](HumanBindingHost& host, std::span<const Value> args) {
                             host.setFlags(handleArg(args, 0), human::flag::kNoAutoLock, boolArg(args, 1));
                         }));
-    // `HuSetWheelchairControl(human, on)`: on, the wheelchair flag (which gives a pad-driven human the wheelchair's
-    // control, Human::updateState()), every player command off and the cameras' look-behind switch (11) off; off, the
-    // flag cleared, every command on again and the switch on. **Coney stand-in**: the commands 46 and 47 it adds for L1
-    // and R1 are not, as the control reads the two buttons itself.
+    // `HuSetWheelchairControl(human, on)`, for a handle that names a human: on, the cameras' look-behind switch (11)
+    // off and, unless he is in the chair already, the wheelchair flag (which gives a pad-driven human the wheelchair's
+    // control, Human::updateState()) and every player command off; off, the switch on, the flag cleared and, only when
+    // he was in the chair, every command on again (docs/research/characters-locomotion.md#wheelchair). **Coney
+    // stand-in**: the commands 46 and 47 it adds for L1 and R1 are not, as the control reads the two buttons itself.
     // @orig 0x00234188 Human_SetWheelchairControl (unknown)
     vm.registerFunction("HuSetWheelchairControl", [context = &context](std::span<const Value> args) {
         constexpr int kAllCommands = 0;
         const double human = handleArg(args, 0);
         const bool on = boolArg(args, 1);
-        if (HumanBindingHost* host = humansOf(*context); host != nullptr) {
-            host->setFlags(human, human::flag::kWheelchair, on);
-            host->enableCommand(human, kAllCommands, !on);
+        HumanBindingHost* host = humansOf(*context);
+        const std::optional<HumanStatus> status = host != nullptr ? host->status(human) : std::nullopt;
+        if (!status) {
+            return binding::none();
         }
         if (context->cameras != nullptr) {
             context->cameras->enable(camera::Cameras::kSwitchLookBehind, !on);
+        }
+        // Coney stand-in: the wheelchair flag, read before it is cleared, for "runs the wheelchair control" (the
+        // control pointer +0x1c0), as Coney picks that control from the flag.
+        const bool inChair = (status->flags & human::flag::kWheelchair) != 0;
+        if (on && !inChair) {
+            host->setFlags(human, human::flag::kWheelchair, true);
+            host->enableCommand(human, kAllCommands, false);
+        } else if (!on) {
+            host->setFlags(human, human::flag::kWheelchair, false);
+            if (inChair) {
+                host->enableCommand(human, kAllCommands, true);
+            }
         }
         return binding::none();
     });

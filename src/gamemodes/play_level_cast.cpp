@@ -19,6 +19,7 @@
 #include "ai/brains.h"
 #include "ai/route_planner.h"
 #include "ai/scripted_brains.h"
+#include "ai/scripted_humans.h"
 #include "characters/character_choice.h"
 #include "characters/character_types.h"
 #include "core/engine_limits.h"
@@ -91,6 +92,13 @@ void PlayLevelSimulation::makeCast(const ScriptedCast& cast, const ai::AiConfig&
     cast.scripted->setHandOver([this](const ai::Brain& to) { takePlace(to); });
     // A script's placement of a human drops it onto the level's collision, unless a scene holds it.
     cast.scripted->setPlaceGround([this](double human) { return placeGround(human); });
+    // An AI's object HuDropWeapon let go of falls from his hand into the world (Human_DropHeld), as a player's does
+    // when the play mode sees his hand empty.
+    cast.scripted->humanHost().setHeldDrop([this](ai::Brain& brain, double held) {
+        if (m_pickups != nullptr) {
+            dropHeld(brain.human(), held);
+        }
+    });
     // GoalPlayDynAnimation's clips are the level's dynamic clips, loaded from the disc when first named.
     cast.scripted->setClipSource([this](std::string_view name) { return m_dynamicClips.find(name); });
     // The AI goals' lines (a boss's taunts and shouts, the dealer's lines) go to the game's sound, when there is one.

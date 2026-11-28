@@ -764,7 +764,8 @@ clip like any held object, and his fighter given the object's anim set, as the t
 confirmed (code)), so his attack pick, grabs and goals treat him as armed. Differences: the record stays pinned while
 held (Coney's take does the same; the original unpins it); the object is made on the step after the call, not in it;
 an unknown type empties the hand; and a kind-5 type is a **stand-in**: no carried prop is made and the hand stays
-empty (an open question below). The `0x4000` guard is not ported.
+empty (an open question below). The `0x4000` guard is a **stand-in**: a pick-up under way (`Human::pickingUp()`,
+the run that plays the pick-up clip) refuses the placement, for the held flag Coney does not keep.
 
 **Drop** (`0x00257f38`, triangle with nothing to take, a pick-up of a two-handed or hat object, a scene's release;
 confirmed (code)): pops the anim set the object pushed, records the human as its last holder (object `+0x11c`) unless
@@ -810,6 +811,17 @@ from the senders of messages `0x1b` and `0x32` above (all clip events or the scr
 `HuRender` (`0x00237e98`) draws a human and then every object attached to it that is not hidden (flag 4), giving each
 the human's alpha (confirmed (code)). In the normal draw an attached object skips the small-size fade and is drawn
 only within its parent's `ObjShow` distance ([Drawing](#tint)).
+
+#### The script's drop {#drop-weapon}
+
+`HuDropWeapon` (`Human_DropWeapon` `0x002994b8`, confirmed (code) at that address): for a handle that names a human, the
+drop above runs only when `Human_GetHeldObjectKind` (`0x00231a38`, the held object's type `+0x86` read through
+`ObjTypeList_Get`) is not 0, so an empty hand, a held thing that is no world object and an object of a type of kind 0
+all stay as they are. **In Coney** (`ai::ScriptedHumans::dropWeapon`, `repo:src/ai/scripted_humans.cpp`): the kind is
+read from the object database by the held object's type name (`ObjectType::objectKind`); an AI's object then falls from
+his hand into the world through the play mode's drop (`PlayLevelSimulation::dropHeld`), and a player's as his hand is
+seen empty. **Coney's choice**: with no object database to ask (a test scene with none) every held object counts as
+having a kind.
 
 #### A weapon given to a Warrior {#given-weapon}
 
@@ -975,9 +987,10 @@ type `+0x87`), so the slots go back to the defaults or the style beneath (confir
 (`Human_ReleaseThrow`, `0x002586d8`) instead **pops** the top style when it is 1-6, whatever the held set is, and
 removes the held set (when it is not 0) only when the top style is anything else, such as the hidden style (confirmed
 (code) at `0x002586d8`). The script's `HuDropWeapon` (`Human_DropWeapon`, `0x002994b8`) drops through `Human_DropHeld`
-when the human holds anything, and `GoalThrowObject`'s throw (`0x002cf690`) queues attack kind 0 (cross;
-`Brain_QueueAttack`, `0x0028e248`), the throw with something in hand, whose release event is `Human_ReleaseThrow` (both
-confirmed (code)). The drop of a set 4 or 6 object also sets state `0x20000000`, which asks for the anim state again, so
+when the held object's type has a kind ([the script's drop](#drop-weapon)), and `GoalThrowObject`'s throw
+(`0x002cf690`) queues attack kind 0 (cross; `Brain_QueueAttack`, `0x0028e248`), the throw with something in hand,
+whose release event is `Human_ReleaseThrow` (both confirmed (code)). The drop of a set 4 or 6 object also sets state
+`0x20000000`, which asks for the anim state again, so
 a standing human goes back to the plain idle at once (confirmed (code) at `0x00257f38`). Before a pick-up clip, a held
 object is dropped first when the new object's `pickupAnim` is 5 or 6 or the human's style is 4 or 6
 ([Combat](combat-throws.md#bat)). Hiding is refused while the held object's set is 4 or 6 (`Human_EnterShadow`,
