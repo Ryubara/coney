@@ -69,6 +69,25 @@ TEST_CASE("the target search takes the nearest available candidate within range"
     CHECK(nearestTarget({0.0F, 3.0F, 0.0F}, candidates, 3.75F) == 0);
 }
 
+TEST_CASE("of two candidates at the same distance the grab and cone searches take the earlier one", "[combat]") {
+    // The original sorts its list with SortByKeyAscending 0x003868d0, a BSD qsort that below 7 entries moves an entry
+    // back only past a greater key, so the earlier of two equal keys stays first and is taken.
+    // Expected: combat-targets.md#searches-coney, confirmed (code)
+    const std::array<TargetCandidate, 3> tied{
+        TargetCandidate{{0.0F, -4.0F, 0.0F}, true}, // beyond every range here
+        TargetCandidate{{-0.3F, 1.0F, 0.0F}, true}, // left
+        TargetCandidate{{0.3F, 1.0F, 0.0F}, true},  // right, as far
+    };
+    const coney::anim::Vec3 player{};
+    const coney::anim::Vec3 ahead{0.0F, 1.0F, 0.0F};
+    CHECK(nearestTarget(player, tied, 3.12F) == 1);
+    CHECK(nearestInCone(player, ahead, tied, 3.0F, kStrongGrappleCone, kStrongGrappleHeight) == 1);
+    // A single candidate exactly at the range is still found: only a tie keeps the earlier one.
+    const std::array<TargetCandidate, 1> edge{TargetCandidate{{0.0F, 2.0F, 0.0F}, true}};
+    CHECK(nearestTarget(player, edge, 2.0F) == 0);
+    CHECK(nearestInCone(player, ahead, edge, 2.0F, kStrongGrappleCone, kStrongGrappleHeight) == 0);
+}
+
 TEST_CASE("a throw goes by the stick's side, the THROW_02 set with a wall in reach", "[combat]") {
     CHECK(throwAttack(sideOf(Stick{0.0F, 0.6F}.angleDegrees()), false) == anim_id::kThrow1Front);
     CHECK(throwAttack(sideOf(Stick{0.5F, 0.4F}.angleDegrees()), false) == anim_id::kThrow1Right);

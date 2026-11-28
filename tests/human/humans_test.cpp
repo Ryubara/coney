@@ -287,22 +287,36 @@ TEST_CASE("the actions pass asks whether two humans are opposed only about the h
     CHECK(asked < static_cast<std::size_t>(kSteps) * 40U * 39U / 20U);
 }
 
-// A stand-in pin: Coney's searches give a tie to the later slot, where the original's sort (SortByKeyAscending
-// 0x003868d0) keeps the earlier one first; #1590 makes Coney do the same and turns these expectations round. Until
-// then the test holds the grid to the rule the searches had before it (a refactor pin, not the original's rule).
-TEST_CASE("of two enemies the same distance and angle away, square takes the one in the later slot",
+TEST_CASE("of two enemies the same distance and angle away, square takes the one in the earlier slot",
           "[human][humans][targeting]") {
-    // The searches visit the targets in slot order and the nearest-wins test keeps the last of equals
-    // (nearestFightable(), `distance <= best`), so a tie falls to the later slot whichever side it stands on and
-    // whichever way the actions pass runs. The third enemy, 30 m off at x 37.5, puts the left and the right one in
-    // different cells of the targets' grid (2.5 m cells from the lowest x and y), the later slot's first or last; at
-    // (70, 39) both are in one cell.
-    // Expected: combat-targets.md#searches-coney, Coney's stand-in (#1590): the original keeps the earlier slot
+    // The searches visit the targets in slot order, as the original's list does (Humans_FindInRange 0x00227598), and
+    // the original's sort (SortByKeyAscending 0x003868d0, a BSD qsort that below 7 entries moves an entry back only
+    // past a greater key) keeps the earlier of equals first, so a tie falls to the earlier slot whichever side it
+    // stands on and whichever way the actions pass runs. The third enemy, 30 m off at x 37.5, puts the left and the
+    // right one in different cells of the targets' grid (2.5 m cells from the lowest x and y), the earlier slot's
+    // first or last; at (70, 39) both are in one cell.
+    // Expected: combat-targets.md#searches-coney, confirmed (code)
     for (const bool odd : {false, true}) {
-        CHECK(tiedPick(1, 37.5F, 70.0F, odd) == Picked::Right);
-        CHECK(tiedPick(2, 37.5F, 70.0F, odd) == Picked::Left);
-        CHECK(tiedPick(1, 70.0F, 39.0F, odd) == Picked::Right);
-        CHECK(tiedPick(2, 70.0F, 39.0F, odd) == Picked::Left);
+        CHECK(tiedPick(1, 37.5F, 70.0F, odd) == Picked::Left);
+        CHECK(tiedPick(2, 37.5F, 70.0F, odd) == Picked::Right);
+        CHECK(tiedPick(1, 70.0F, 39.0F, odd) == Picked::Left);
+        CHECK(tiedPick(2, 70.0F, 39.0F, odd) == Picked::Right);
+    }
+}
+
+TEST_CASE("of two enemies the same distance away, the stance takes the one in the earlier slot",
+          "[human][humans][targeting]") {
+    // The stance's nearest enemy (Player_FindNearestEnemy 0x0027b1a0) sorts its list with SortByKeyAscending
+    // 0x003868d0, which keeps the earlier of equals first. The player stands with no command beside two enemies 1 m
+    // ahead and half a metre to either side.
+    // Expected: combat-targets.md#searches-coney, confirmed (code)
+    for (const std::size_t leftSlot : {std::size_t{1}, std::size_t{2}}) {
+        const coney::anim::Vec3 left{39.5F, 41.0F, 0.0F};
+        const coney::anim::Vec3 right{40.5F, 41.0F, 0.0F};
+        Crowd crowd({coney::anim::Vec3{40.0F, 40.0F, 0.0F}, leftSlot == 1 ? left : right, leftSlot == 1 ? right : left,
+                     coney::anim::Vec3{70.0F, 39.0F, 0.0F}});
+        crowd.humans.update(crowd.mesh.get());
+        CHECK(crowd.people[0]->fighter().target() == crowd.people[1].get());
     }
 }
 
