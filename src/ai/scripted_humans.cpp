@@ -57,6 +57,7 @@ struct NearHuman {
 // The humans within `reach` of `near` in 3D, `near` left out, at most kNearListMost in the brains' order, largest key
 // first (Humans_FindAhead 0x002274a8, SortByKeyDescending 0x003868f8). Stand-in: the brains' order stands for the
 // original's table order.
+// @coney-only helper of ScriptedHumans::teleportNear(), which carries Human_TeleportNear's @orig
 std::vector<NearHuman> humansNear(const Brains& brains, const Brain& near, float reach) {
     std::vector<NearHuman> list;
     const anim::Vec3 centre = near.human().position();
@@ -77,6 +78,7 @@ std::vector<NearHuman> humansNear(const Brains& brains, const Brain& near, float
 // The first of the 32 headings round `centre` (from the game time's low five bits) whose point 3.6 m out no nav edge
 // and no human of `around` refuses, moved in by the humans standing near it; nothing when every one is refused.
 // `clearance` is the other's capsule radius plus twice the mover's (`moverRadius`).
+// @coney-only helper of ScriptedHumans::teleportNear(), which carries Human_TeleportNear's @orig
 std::optional<anim::Vec3> freePointNear(const Brains& brains, anim::Vec3 centre, float clearance, float moverRadius,
                                         std::span<const NearHuman> around) {
     const std::uint32_t first = static_cast<std::uint32_t>(brains.nowMs()) & (kNearHeadings - 1);

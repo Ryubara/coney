@@ -787,7 +787,7 @@ name = "Human_SetWheelchairControl"
 page = "characters-locomotion.md#wheelchair"
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "compared"
+status = "legacy"
 
 [[function]]
 address = 0x00234530

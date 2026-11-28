@@ -267,6 +267,8 @@ what it does.
 
 ### `HuSetConscious` {#set-conscious}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 `Human_SetConscious` (`0x00237778`), confirmed (code) at that address: for a handle that names a human, `false` calls
 `Human_KnockOut(h, 0)` (`0x00230328`) and then `Player_SetStanceTimer` (`0x002800b8`,
 which writes record `+0xfc` only while the setting `0x00510994` is positive; it is −1, so nothing); `true` calls
@@ -293,12 +295,14 @@ motion, breaks a pair, and for a human not down or dead stops his brain as `Brai
 (`Brain::knockOut()`) and sends him event 18 with the target he had, as `Brains::destroy()` does for the same call;
 the wake clears the mark and resumes the brain (`Brain::wakeUp()`). `Brains::reportDowns()`, which wakes a brain whose
 health is back, leaves a brain the script knocked out. **Stand-ins**: of `Human_ReleaseAll` only the pair is broken
-(no mini-game, held object, rage or move-style reset); the speech is not stopped; the 14 s wake time is #1584's; the
+(no mini-game, held object, rage or move-style reset); the speech is not stopped; the 14 s wake time is not kept; the
 cross icon and the harmony statistic are not shown or counted; the push weight is derived from the states
 (`Human::pushWeight()`), which do not include the knock-out; and state `0x20000000` has no counterpart, as Coney picks
 the anim state every update.
 
 ### `HuTeleportNearHuman` {#teleport-near}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
 
 `Human_TeleportNear(human, near)` (`0x0023b138`), confirmed (code) at that address and its disassembly:
 

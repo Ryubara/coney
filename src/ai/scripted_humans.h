@@ -36,6 +36,7 @@ class ScriptedHumans final : public script::HumanBindingHost {
     // ---- script::HumanBindingHost: each does nothing for a handle with no human or an id with no gang ----
 
     /// Its human's flags, health, arrest; a player's brain is player 1's; its gang's kind; the object in its hands.
+    /// @coney-only the getters' shared read of a human; each getter's @orig is at its binding
     [[nodiscard]] std::optional<script::HumanStatus> status(double handle) const override;
     void setFlags(double human, std::uint64_t bits, bool on) override;
     void setLockedRage(double human, bool on) override;

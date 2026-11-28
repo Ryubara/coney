@@ -299,6 +299,9 @@ TEST_CASE("King of the hill's crown, reticules and split mode", "[scripting][rum
 }
 
 TEST_CASE("Battle royal's knock-out and Warrior commands switch", "[scripting][rumble]") {
+    // Expected: characters-script.md#set-conscious, confirmed (code): HuSetConscious knocks out through
+    // Human_KnockOut's Brain_OnKnockedOut and wakes through Human_WakeUp; GameState_TurnWarriorCommands (0x0041c2b0)
+    // sets every Warrior command
     Level level;
     Brain& thug = level.add({44.0F, 40.0F, 0.0F});
     level.call("HuSetConscious", {Value(thug.handle()), Value(0.0)});
@@ -371,6 +374,9 @@ TEST_CASE("Survival's police: brain type, attack weight, class, position and the
 
 TEST_CASE("Wheelchair's control, auto-lock flag, reverse button, colour and a teleported object",
           "[scripting][rumble]") {
+    // Expected: characters-locomotion.md#wheelchair, confirmed (code): HuSetWheelchairControl (0x00234188) sets the
+    // flag, turns every command off and switch 11 to 0, and undoes it; the other bindings as their comments in
+    // src/scripting/arena_bindings.cpp say
     Level level;
     coney::camera::Cameras cameras;
     coney::world_objects::SpawnRecords records;
