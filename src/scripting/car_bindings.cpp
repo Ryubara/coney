@@ -116,6 +116,7 @@ NativeFunction makeCarPlaceInTrunkOnDetach(const BindingContext& context, std::f
 
 } // namespace
 
+// @coney-only the registration of Coney's car bindings: each binding it registers carries its own @orig
 void addCarBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
     vm.registerFunction("CarMakeGoodAsNew", makeCarMakeGoodAsNew(context));
     vm.registerFunction("CarSetColor", makeCarSetColor(context));
