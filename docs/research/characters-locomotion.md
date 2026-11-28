@@ -506,9 +506,10 @@ top edge.
   steady run only when its speed lands on or above the run speed. **Coney's reading** of the speed: the velocity's
   length with each multiply, add and the square root rounded toward zero, as the PS2's floating-point unit rounds
   (`core/ps2_float.h`); the velocity itself is Coney's, so a steady run reaches the run speed on about 6 % of updates
-  against the original's 10 of 93. What builds the run stop is not traced. It holds `0x80000`, which the locomotion
-  gate reads (busy and no stick velocity). The skid sets no state code (the original's 9): the run stop's own bits
-  gate the same updates.
+  against the original's 10 of 93, so a release can skid on one game and not the other (#1714 ports the
+  original's construction, [Open questions](#open-questions)). What builds the run stop is not traced. It holds
+  `0x80000`, which the locomotion gate reads (busy and no stick velocity). The skid sets no state code (the
+  original's 9): the run stop's own bits gate the same updates.
 - **The idle's fade** (0.15 s, 5 updates) holds `0x10000000`, so after a stop, a release or a block the stick turns
   the human but the walk start waits for the fade to end ([Tasks](tasks.md#locomotion-gate)). Over those updates the
   last stick held turns him on, its magnitude × 0.8 each update, eased from rest at the standing turn's 20° limit;
@@ -541,10 +542,13 @@ top edge.
   rotation's axis (`Quat_AxisY`, `0x003363b0`, called at `0x002418d4`, of the quaternion made from the half heading's
   sine and cosine), multiplied by the speed in VU0 (`0x00241b0c`), then the vertical velocity is stored in its third
   part; the speed the skid tests is the length of the velocity's three parts in VU0 (`vmul.xyz`, the adds and `vsqrt`,
-  `0x00240f38` to `0x00240f50`). Coney builds facing × speed in IEEE floats and takes the length of x and y only, so
-  its last bits differ: in `chars_run_stop_hit` Coney's run matched the original's to the release, where
-  the original measured the run speed exactly and skidded into 417 and Coney idled. What the VU0's rounding gives at a
-  steady run is not traced.
+  `0x00240f38` to `0x00240f50`). Coney builds facing × speed in IEEE floats and takes the length of x and y only. In
+  `chars_run_stop_hit` the original's skid test measured exactly the run speed (`0x40f9a3ad`) on the release's update
+  and the run stop 417 played, where Coney's run, alike to the release, idled (confirmed (runtime), run
+  r-20261124-chars-run-stop-hit, the original's side). That the different construction decides it is inferred from the
+  code difference: what the VU0's rounding gives at a steady run is not traced. To settle it, log the
+  velocity's three parts and the measured length as raw words at a steady run with a hook at `0x00241b0c` and the
+  skid-test hook, and compare them with Coney's built the original's way.
 - **The run start's speed on its 7th and 11th updates** in `run_circle` (3.35 and 5.40 m/s against Coney's 3.25 and
   5.54): which key the original samples there.
 - **The trace's clip id in the gait blend** (record `+0x20`): 410 where Coney reports the blend's leading clip (411,

@@ -225,10 +225,10 @@ there: each update's speed is `k × (last speed + 0.8)`, `k` the sine of the ang
 m/s), so the run went on with the stick pushed. By the same rule a wall met less than about 19.3° off its normal settles
 under the threshold and the idle plays with the stick still pushed (inferred from the rule and the threshold; no
 recorded run covers it). A walk does the same (confirmed (runtime), run r-20261128-chars-wall-slide-walk, slot 1, the
-stick at 60 %): meeting the wall about 22° off its normal, the walk's 1.63 m/s went to 0.53, then 0.49 and settled at
-0.482 m/s on update 162 (heading 22.08°, so `0.8 k / (1 − k)` = 0.482), and it kept sliding, faster as the camera turned
-him further along the wall. So the player
-brakes against a wall met at a steep angle instead of sliding along it at speed.
+stick at 60 %): meeting the wall about 22° off its normal, the walk's 1.63 m/s went to 0.61, 0.53, 0.50, 0.49 and
+0.48, one value per update, and settled at 0.482 m/s on update 162 (heading 22.08°, so `0.8 k / (1 − k)` = 0.482),
+and it kept sliding, faster as the camera turned him further along the wall. So the player brakes against a wall
+met at a steep angle instead of sliding along it at speed.
 
 #### Slopes between floor and wall {#slopes}
 

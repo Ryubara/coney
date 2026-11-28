@@ -263,7 +263,8 @@ setup = [
 # Coney cannot run the trials yet (#1696): it has no step for the setup's writes, so the box keeps its own height and
 # the player is not put back between trials. Its run is the first trial's walk at 35 % into the box as level99 builds
 # it, then the stick pushing him against it; only the last trial (the 1.0 m wall, its stop 0.476 m from the face)
-# compares with the original's.
+# compares with the original's. `trace coney` exits 1 on it: the standing-player check sees the 50 % stick of update
+# 380 push a player already against the box and advises wait_for_control, which is set; read the trace anyway.
 level = "level99"
 args = ["--checkpoint", "3", "--start", "50.0,58.998,0.213,0.0,5.3,0.0"]
 wait_for_control = true          # checkpoint 3 opens with the scene l99_c3, which holds the pad (#1680)

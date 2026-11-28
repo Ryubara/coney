@@ -13,6 +13,9 @@ slot = 1
 patches = ["scripted-pad", "right-stick"]
 
 [coney]
+# On Coney (2026-11-28) the sprint, the jump and the turn in the air match the original's; after the landing Coney
+# turns faster on 436 (-38.6 degrees against -18.2 on update 78), plays a walk (408) the original does not, and ends
+# 0.32 m from the original's end.
 level = "level99"
 # Slot 1's spot and camera (the first row of the original's walk60 trace): Coney's checkpoint start is not the
 # slot's (#1696).
