@@ -29,4 +29,7 @@ bool isThreat(const Brain& brain, const Brain& other) {
     return Gangs::enemies(brain.gang(), other.gang()) || (padPlayer(brain) && padPlayer(other));
 }
 
+// Stub: not built yet.
+bool isFriendly(const Brain& /*a*/, const Brain& /*b*/) { return false; }
+
 } // namespace coney::ai

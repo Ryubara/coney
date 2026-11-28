@@ -21,6 +21,7 @@ using coney::ai::Brain;
 using coney::ai::BrainType;
 using coney::ai::Gang;
 using coney::ai::Gangs;
+using coney::ai::isFriendly;
 using coney::ai::isThreat;
 using coney::anim::Vec3;
 
@@ -115,6 +116,40 @@ TEST_CASE("Brain_IsThreat: never himself, a hitting-back Warrior and any player,
     CHECK(isThreat(rogue, warrior));
     gangs.setTruce(1000);
     CHECK_FALSE(isThreat(warrior, rogue));
+}
+
+TEST_CASE("Brain_IsFriendly: himself, else friendly gangs with at most one player, never a hitting-back Warrior and a "
+          "player",
+          "[ai][threat]") {
+    // Expected: ai-gangs.md#warrior-commands, confirmed (code): Brain_IsFriendly (0x00290230).
+    coney::test::AiScene scene;
+    Gangs& gangs = scene.brains.gangs();
+    const int warriors = gangs.create(0, "Warriors");
+    const int rogues = gangs.create(2, "Rogues");
+    Brain& player = scene.player();
+    Brain& other = scene.add(Vec3{20.0F, 20.0F, 0.0F}, 0.0F, BrainType::Player);
+    Brain& warrior = scene.add(Vec3{30.0F, 30.0F, 0.0F}, 0.0F, BrainType::Warrior);
+    Brain& rogue = scene.add(Vec3{32.0F, 30.0F, 0.0F}, 0.0F, BrainType::Gang);
+    gangs.addMember(warriors, player);
+    gangs.addMember(warriors, other);
+    gangs.addMember(warriors, warrior);
+    gangs.addMember(rogues, rogue);
+    CHECK(isFriendly(rogue, rogue));
+    // The same gang: friendly, but two players never are.
+    CHECK(isFriendly(player, warrior));
+    CHECK(isFriendly(warrior, player));
+    CHECK_FALSE(isFriendly(player, other));
+    // Not friendly gangs, then friends.
+    CHECK_FALSE(isFriendly(player, rogue));
+    gangs.makeFriends(warriors, rogues);
+    CHECK(isFriendly(player, rogue));
+    CHECK(isFriendly(rogue, warrior));
+    // A Warrior hitting back is no player's friend, either way round; another AI's he still is.
+    warrior.setHittingBack(true);
+    CHECK_FALSE(isFriendly(player, warrior));
+    CHECK_FALSE(isFriendly(warrior, player));
+    CHECK(isFriendly(warrior, rogue));
+    CHECK(isFriendly(rogue, warrior));
 }
 
 TEST_CASE("Gang_SetSharedTarget: checked through the leader, refused for a friend, listed by every AI member",

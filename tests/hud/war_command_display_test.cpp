@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "hud/war_command_display.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -409,6 +410,30 @@ TEST_CASE("a display that is not allowed draws nothing", "[hud][war-commands]") 
     REQUIRE(display.shown());
     canvas.draw(display, 33);
     CHECK(canvas.flat.sprites().empty());
+}
+
+TEST_CASE("the name is centred under the menu with no box behind it", "[hud][war-commands]") {
+    // Expected: hud.md#war-command-colours, confirmed (code): WarCommandDisplay_Render (0x001a8590) draws the slots and
+    // the name's text (+0x50) only, never the box widget (+0x240); the command texts open with <CENTER>, which
+    // MessageHUD_Layout (0x001b9600) turns into a start half the text's width left of its anchor, the menu's centre
+    // x; seen in PCSX2 at level80 checkpoint 2 (no box, the name centred under the menu).
+    WarCommandDisplay display;
+    Canvas canvas;
+    const WarCommandDisplay::Chief chief;
+    display.open(chief, 0);
+    canvas.draw(display, 0);
+    // part_page0 holds the six icons and nothing else.
+    REQUIRE(canvas.parts.sprites().size() == 6);
+    REQUIRE_FALSE(canvas.text.sprites().empty());
+    // The glyphs' extent is centred on slot 0's icon (at the centre x, offset 0).
+    float left = canvas.text.sprites()[0].position.x;
+    float right = left;
+    for (const auto& glyph : canvas.text.sprites()) {
+        left = std::min(left, glyph.position.x - (glyph.width / 2.0F));
+        right = std::max(right, glyph.position.x + (glyph.width / 2.0F));
+    }
+    CHECK(right > left);
+    CHECK((left + right) / 2.0F == Catch::Approx(canvas.parts.sprites()[0].position.x).margin(0.01));
 }
 
 TEST_CASE("the name is grey while picking, dark for a disabled command and gold after the order",

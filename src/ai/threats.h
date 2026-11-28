@@ -19,4 +19,8 @@ class Brain;
 /// @orig 0x00222a48 Human_IsThreatTo (unknown)
 [[nodiscard]] bool isThreat(const Brain& brain, const Brain& other);
 
+/// Whether `a` and `b` are friendly (`Brain_IsFriendly`).
+/// @orig 0x00290230 Brain_IsFriendly (unknown)
+[[nodiscard]] bool isFriendly(const Brain& a, const Brain& b);
+
 } // namespace coney::ai

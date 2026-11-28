@@ -592,6 +592,41 @@ TEST_CASE("An attack given again starts again once the crew's attack began on a 
     CHECK(level.notes.size() == 2);
 }
 
+TEST_CASE("An attack given again starts again once the chief locks onto an enemy while the crew attacks",
+          "[ai][story]") {
+    // Expected: ai-gangs.md#warrior-commands, confirmed (code): WarriorAttackTactic_Process (0x003209d0) sets the
+    // tactic's +0x18 on an update when the chief is locked on (Human_IsLocked) and his target is not friendly
+    // (Human_IsFriendly) and no player, and the dispatcher repeats only while it is clear.
+    Level level;
+    level.add({44.0F, 40.0F, 0.0F});
+    Brain& rogue = level.add({40.0F, 41.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(0, "Warriors");
+    const int rogues = level.scripted->gangCreate(2, "Rogues");
+    level.scripted->gangAddMember(gang, 1.0);
+    level.scripted->gangAddMember(gang, 2.0);
+    level.scripted->gangAddMember(rogues, 3.0);
+    rogue.setThreatResponse(0);
+    level.call("WCSetCallback", {Value("Note")});
+    level.call("IssueWarriorCommand", {Value(0.0), Value(true)});
+    REQUIRE(level.notes.size() == 1);
+    // The crew attacks with no target and the chief is not locked on: attack again is a repeat.
+    coney::ai::Gangs& gangs = level.scene.brains.gangs();
+    gangs.setTactic(gang, std::make_unique<coney::ai::WarriorAttackTactic>(
+                              level.scene.player().handle(), *level.scripted, level.scene.brains.formations()));
+    level.state.characters.currentWarriorCommand[0] = 1;
+    level.scene.run(1);
+    level.call("IssueWarriorCommand", {Value(1.0), Value(false)});
+    CHECK(level.notes.size() == 1);
+    // L1 held: the chief locks onto the rogue 1 m ahead; the attack's next update marks it, and attack again starts it
+    // again.
+    level.scene.player().human().record().command = coney::combat::command::kL1Held;
+    level.scene.run(3);
+    REQUIRE(level.scene.player().human().fighter().l1Locked());
+    REQUIRE(level.scene.player().human().fighter().target() == &rogue.human());
+    level.call("IssueWarriorCommand", {Value(1.0), Value(false)});
+    CHECK(level.notes.size() == 2);
+}
+
 TEST_CASE("The menu's order of a disabled command becomes the player's last and starts nothing", "[ai][story]") {
     // Expected: hud.md#warrior-command-menu, confirmed (code)
     Level level;
