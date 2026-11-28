@@ -374,6 +374,9 @@ TEST_CASE("Survival's police: brain type, attack weight, class, position and the
 
 TEST_CASE("Wheelchair's control, auto-lock flag, reverse button, colour and a teleported object",
           "[scripting][rumble]") {
+    // Expected: characters-locomotion.md#wheelchair, confirmed (code): HuSetWheelchairControl (0x00234188) sets the
+    // flag, turns every command off and switch 11 to 0, and undoes it; objects.md#tint for ObjColor's word; the other
+    // bindings as their comments in src/scripting/arena_bindings.cpp say
     Level level;
     coney::camera::Cameras cameras;
     coney::world_objects::SpawnRecords records;

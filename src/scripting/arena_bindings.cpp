@@ -406,7 +406,8 @@ NativeFunction makeSetWheelchairControl(const BindingContext& context) {
 
 // One byte of `ObjColor`'s tint: the component times 255 (Obj_SetColour), times 255 again (Colour_PackFloat), turned
 // into an unsigned integer as Float_ToUInt does (0 for a negative value or NaN, all ones from 2^32) and kept to its
-// low 8 bits. Since 65,025 is 1 modulo 256, a whole component 0-255 comes out as itself.
+// low 8 bits (Float_ToUInt, 0x0042c718). Since 65,025 is 1 modulo 256, a whole component 0-255 comes out as itself.
+// @orig 0x0017aca8 Colour_PackFloat (unknown)
 std::uint32_t colourByte(float component) {
     constexpr float kScale = 255.0F;
     constexpr float kAllOnesFrom = 4294967296.0F;
@@ -483,6 +484,7 @@ NativeFunction makeTacticDomination(const BindingContext& context) {
 }
 
 // Registers the humans' and gangs' bindings.
+// @coney-only the registration table: each port is the make* function it registers
 void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("HuLockMovement", makeLockMovement(context));
     vm.registerFunction("HuEnableSoundCommands", makeEnableSoundCommands(context));
