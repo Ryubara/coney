@@ -9,7 +9,9 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "physics/sphere_triangle.h"
 #include "raycast/collision_builder.h"
+#include "support/collision_fixtures.h"
 
 // The page's synthetic meshes (docs/research/physics-bodies.md#u2-test-ideas-synthetic-meshes-src-raycast), built with
 // Coney's own collision builder, cell size 2 m. No game data.
@@ -78,6 +80,34 @@ void checkVec(Vec3 actual, Vec3 expected) {
     CHECK(actual.y == Approx(expected.y).margin(kTolerance));
     CHECK(actual.z == Approx(expected.z).margin(kTolerance));
 }
+
+// A one-cell mesh of `tris` whose index buffer is `lists` as written, the cell's list at offset 1: so a test decides
+// what follows the cell's list in the buffer, as the level's lists do.
+std::unique_ptr<coney::raycast::CollisionMesh> oneCellMesh(const std::vector<coney::test::Tri>& tris,
+                                                           const std::vector<std::uint16_t>& lists) {
+    coney::test::MeshChunks c = coney::test::meshChunks(tris, 1);
+    c.lists = coney::test::Bytes{};
+    for (const std::uint16_t value : lists) {
+        c.lists.u16(value);
+    }
+    c.header.patchU32(0x7C, static_cast<std::uint32_t>(lists.size())); // the header's list count
+    c.grid = coney::test::Bytes{};
+    c.grid.u32(1);
+    auto mesh = coney::raycast::CollisionMesh::build(c.header.span(), c.lists.span(), c.grid.span(), c.triangles.span(),
+                                                     c.vertices.span(), c.checked.span());
+    REQUIRE(mesh.has_value());
+    return std::move(*mesh);
+}
+
+// The page's kernel case 12 (physics-kernels.md#u1-tests) turned upright: triangle T with its x, y and z carried to y,
+// z and x, so it is a wall at x = 0 facing +x, and the capsule's sphere sweeps past its corner v0. The kernel returns a
+// hit at a fraction above 1 there.
+const coney::test::Tri kCornerWall{Rv{0, 0, 0}, Rv{0, 4, 0}, Rv{0, 0, 4}};
+const Vec3 kCornerCentre{0.6F, -0.9F, -0.9F};
+const Vec3 kCornerFeet{0.6F, -0.9F, -0.9F - 0.55F};
+const Vec3 kCornerMove{-0.6F, 0.6F, 1.2F};
+// A wide wall at x = -0.2 facing +x, which the same move meets on its face at 0.3 / 0.6 = 0.5.
+const coney::test::Tri kNearWall{Rv{-0.2F, -5, -5}, Rv{-0.2F, 5, -5}, Rv{-0.2F, -5, 5}};
 
 } // namespace
 
@@ -323,4 +353,48 @@ TEST_CASE("the airborne push-out: the nearest wall, horizontally, r - distance",
     const auto slopedPush = coney::physics::pushOutOfWalls(*sloped, Sphere{centre, 0.5F}, scratch);
     REQUIRE(slopedPush.has_value());
     checkVec(slopedPush.value_or(Vec3{}), Vec3{-0.8F * 0.2F, 0, 0});
+}
+
+TEST_CASE("a hit above 1 gives the capsule's cell walk one more turn, reading the next index in the buffer",
+          "[physics][mesh_sweep]") {
+    // Expected: physics-bodies.md#u2-capsule-walk-overrun, confirmed (code)
+    // The corner wall's kernel hit lies beyond the move, as the test's premise needs.
+    coney::physics::WorkingTriangle corner;
+    corner.corners = {Vec3{0, 0, 0}, Vec3{0, 4, 0}, Vec3{0, 0, 4}};
+    coney::physics::computeNormal(corner);
+    corner.plane = coney::anim::dot(corner.corners[0], corner.normal);
+    coney::physics::computeEdges(corner, false);
+    const auto beyond = coney::physics::sweepSphereTriangle(Sphere{kCornerCentre, 0.5F}, corner, kCornerMove);
+    REQUIRE(beyond.hit);
+    REQUIRE(beyond.fraction > 1.0F);
+
+    // The cell lists only the corner wall (0); the next u16 is the count of a list no cell uses, 1, which the extra
+    // turn takes for triangle 1, the near wall, and keeps its hit.
+    const auto direct =
+        capsuleContacts(*oneCellMesh({kCornerWall, kNearWall}, {0, 1, 0, 1, 1}), kCornerFeet, kCornerMove);
+    REQUIRE(direct.size() == 1);
+    CHECK(direct[0].triangle == 1U);
+    CHECK(direct[0].fraction == Approx(0.5F).margin(kTolerance));
+    checkVec(xyz(direct[0].halves[1].normal), Vec3{1, 0, 0});
+
+    // An extra turn that hits above 1 again (triangle 2, a second corner wall) gives one more, which reads triangle 1.
+    const auto chained =
+        capsuleContacts(*oneCellMesh({kCornerWall, kNearWall, kCornerWall}, {0, 1, 0, 2, 1}), kCornerFeet, kCornerMove);
+    REQUIRE(chained.size() == 1);
+    CHECK(chained[0].triangle == 1U);
+
+    // A hit from 0 to 1 steps the counter: the cell's list [1] ends the walk, and the corner wall after it is unread.
+    const auto stepped =
+        capsuleContacts(*oneCellMesh({kCornerWall, kNearWall}, {0, 1, 1, 0}), kCornerFeet, kCornerMove);
+    REQUIRE(stepped.size() == 1);
+    CHECK(stepped[0].triangle == 1U);
+}
+
+TEST_CASE("the capsule's extra turns stop at the end of the index buffer and skip an index past the triangles",
+          "[physics][mesh_sweep]") {
+    // Expected: physics-bodies.md#u2-capsule-walk-overrun, confirmed (code)
+    // Coney's bound (the original reads on past the buffer and past its triangles): after the last list the walk
+    // stops, and an index past the triangle count is passed over as one turn, as a visited triangle is.
+    CHECK(capsuleContacts(*oneCellMesh({kCornerWall, kNearWall}, {0, 1, 0}), kCornerFeet, kCornerMove).empty());
+    CHECK(capsuleContacts(*oneCellMesh({kCornerWall, kNearWall}, {0, 1, 0, 9, 1}), kCornerFeet, kCornerMove).empty());
 }
