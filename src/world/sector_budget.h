@@ -47,6 +47,18 @@ class SectorBudget {
 /// is what that block was on the retail disc, not a constant of the code.
 inline constexpr std::uint64_t kSectorPoolSize = 17'217'536;
 
+/// Stub.
+struct SectorPoolSizes {
+    std::uint64_t sectorPool = 0;
+    std::uint64_t sectorPool2 = 0;
+};
+
+/// Stub.
+[[nodiscard]] inline SectorPoolSizes sectorPoolSizes(std::uint64_t largestFree, std::uint64_t largestFreeAfter) {
+    (void)largestFree, (void)largestFreeAfter;
+    return {};
+}
+
 /// The `Global Data Pool` clump made at start-up for `warriors.glr`: 101 % of its size
 /// (docs/research/level-loading.md#memory).
 [[nodiscard]] std::uint64_t globalDataPoolBytes(std::uint64_t glrSize);

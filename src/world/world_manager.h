@@ -5,6 +5,7 @@
 #include <optional>
 
 #include "world/sector_budget.h"
+#include "world/streamed_world.h"
 
 namespace coney::world {
 
@@ -50,6 +51,18 @@ class WorldManager {
     /// as the level file does through a level change's outro movie. The `Global Data Pool` stays either way.
     /// @orig 0x0040f5b8 WorldManager_Unload (WorldManagerPS2.cpp)
     void unload(bool keepLevelFile);
+
+    /// Stub.
+    void setLoadPriority(float scale) { (void)scale; }
+    /// Stub.
+    [[nodiscard]] float loadPriority() const { return 0.0F; }
+    /// Stub.
+    void resetVisibility(StreamedWorld& solid, StreamedWorld* detail) { (void)solid, (void)detail; }
+    /// Stub.
+    [[nodiscard]] SectorBudget& sectorPool(std::uint64_t* largestFree) const {
+        (void)largestFree;
+        return *m_budget;
+    }
 
     /// Bytes reserved for the `Global Data Pool`; 0 for none.
     [[nodiscard]] std::uint64_t globalDataBytes() const { return m_globalData.bytes(); }

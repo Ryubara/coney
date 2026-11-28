@@ -3,11 +3,15 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "support/streaming_fixtures.h"
 #include "world/sector_budget.h"
+#include "world/streamed_world.h"
 
 using coney::world::globalDataPoolBytes;
 using coney::world::SectorBudget;
@@ -106,4 +110,68 @@ TEST_CASE("a dropped world manager unloads its level and a moved-from one gives 
     CHECK(budget.used() == 1'010'000 + 2'060'000);
     kept.reset();
     CHECK(budget.used() == 0);
+}
+
+TEST_CASE("the boot's sector pools are the largest free block less 128 KB, the second at least 4 KB",
+          "[world_manager][physics-unit-18]") {
+    // Expected: physics-world.md#u18-create-pools, confirmed (code)
+    const auto retail = coney::world::sectorPoolSizes(17'217'536 + 0x20000, 100'000);
+    CHECK(retail.sectorPool == 17'217'536);
+    CHECK(retail.sectorPool2 == 4'096);
+    CHECK(coney::world::sectorPoolSizes(17'217'536 + 0x20000, 200'000).sectorPool2 == 68'928);
+    // Expected: physics-world.md#u18-tests, confirmed (code)
+    CHECK(worldLevelPoolBytes(100'000) == 262'144);
+    CHECK(worldLevelPoolBytes(254'500) == 262'144);
+    CHECK(worldLevelPoolBytes(254'524) == 262'159);
+    CHECK(worldLevelPoolBytes(300'000) == 309'000);
+    CHECK(globalDataPoolBytes(99) == 99);
+    CHECK(globalDataPoolBytes(1'000) == 1'010);
+}
+
+TEST_CASE("the load priority is stored as given, and a level load sets 0.001", "[world_manager][physics-unit-18]") {
+    // Expected: physics-world.md#u18-small, confirmed (code)
+    SectorBudget budget(10'000'000);
+    WorldManager manager(budget, kGlrSize);
+    manager.setLoadPriority(10.0F);
+    CHECK(manager.loadPriority() == 10.0F);
+    manager.setLoadPriority(-3.0F);
+    CHECK(manager.loadPriority() == -3.0F);
+    manager.setLoadPriority(1e9F);
+    CHECK(manager.loadPriority() == 1e9F);
+    // Expected: physics-world.md#u18-load, confirmed (code)
+    manager.loadLevel(kLevSize);
+    CHECK(manager.loadPriority() == 0.001F);
+}
+
+TEST_CASE("resetting the visibility clears both worlds' marks", "[world_manager][physics-unit-18]") {
+    // Expected: physics-world.md#u18-small, confirmed (code)
+    auto solid = coney::world::StreamedWorld::create("tests", coney::test::rowOfSectors({{0, 1}, {1, 1}}, 1),
+                                                     coney::test::rowManifest({1}));
+    auto detail = coney::world::StreamedWorld::create("testd", coney::test::rowOfSectors({{0, 1}}, 1),
+                                                      coney::test::rowManifest({1}));
+    REQUIRE(solid.has_value());
+    REQUIRE(detail.has_value());
+    solid->markVisible(0);
+    solid->markVisible(1);
+    detail->markVisible(0);
+    SectorBudget budget(10'000'000);
+    WorldManager manager(budget, std::nullopt);
+    manager.resetVisibility(*solid, &*detail);
+    CHECK_FALSE(solid->sectors()[0].visible);
+    CHECK_FALSE(solid->sectors()[1].visible);
+    CHECK_FALSE(detail->sectors()[0].visible);
+    // A level of one world has no detail world.
+    solid->markVisible(1);
+    manager.resetVisibility(*solid, nullptr);
+    CHECK_FALSE(solid->sectors()[1].visible);
+}
+
+TEST_CASE("the sector pool's largest free block is the budget's free bytes", "[world_manager][physics-unit-18]") {
+    // Expected: physics-world.md#u18-coney, confirmed (code)
+    SectorBudget budget(10'000'000);
+    WorldManager manager(budget, kGlrSize);
+    std::uint64_t largest = 0;
+    CHECK(&manager.sectorPool(&largest) == &budget);
+    CHECK(largest == 10'000'000 - 1'010'000);
+    CHECK(&manager.sectorPool(nullptr) == &budget);
 }
