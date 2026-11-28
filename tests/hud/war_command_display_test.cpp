@@ -2,6 +2,7 @@
 #include "hud/war_command_display.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -48,20 +49,23 @@ struct Sounds {
     }
 };
 
-// Where render() draws: the flat batch (each slot's backing then plate), part_page0 (the icons)
-// and the name's font batch, over synthetic sheets.
+// Where render() draws: big_font (resource instance 6, font slot 6: each slot's backing then plate), part_page0 (the
+// icons) and the name's font batch, over synthetic sheets; the flat batch must stay empty.
 struct Canvas {
     coney::graphics::SpriteBatch flat;
+    coney::graphics::SpriteBatch slots;
     coney::graphics::SpriteBatch parts;
     coney::graphics::Font font = coney::test::testFont();
     coney::graphics::SpriteBatch text;
     coney::hud::HudCanvas canvas;
 
-    Canvas() : flat(sheet(), 64, 1.0F), parts(sheet(), 64, 1.0F), text(coney::test::testFontSheet(), 256, 1.0F) {
+    Canvas()
+        : flat(coney::graphics::SpriteSheet{}, 64, 1.0F), slots(bigFontSheet(), 64, 1.0F), parts(sheet(), 64, 1.0F),
+          text(coney::test::testFontSheet(), 256, 1.0F) {
         canvas.flat = &flat;
         canvas.parts = &parts;
         canvas.text.fonts = [this](int /*slot*/) { return &font; };
-        canvas.text.textBatch = [this](int /*slot*/) { return &text; };
+        canvas.text.textBatch = [this](int slot) { return slot == 6 ? &slots : &text; };
     }
 
     // A sheet of 100 rectangles over a fake texture: enough for the icons (0x55-0x5b).
@@ -74,11 +78,23 @@ struct Canvas {
         return made;
     }
 
+    // A big_font stand-in: 300 rectangles, rectangle 256 (the slots' disc) 64 x 32 texels, the rest 25 x 25.
+    static coney::graphics::SpriteSheet bigFontSheet() {
+        coney::graphics::SpriteSheet made;
+        made.texture = std::make_shared<coney::test::FakeTexture>(256, 256);
+        for (int i = 0; i < 300; ++i) {
+            made.page.rects.push_back(i == 256 ? kDisc : coney::graphics::UvRect{0.0F, 0.0F, 0.1F, 0.1F});
+        }
+        return made;
+    }
+    static constexpr coney::graphics::UvRect kDisc{0.5F, 0.5F, 0.75F, 0.625F};
+
     // Draws `display` at `nowMs` with every command enabled but those `enabled` refuses.
     void draw(
         const WarCommandDisplay& display, std::uint64_t nowMs,
         std::function<bool(int)> enabled = [](int) { return true; }) {
         flat.clear();
+        slots.clear();
         parts.clear();
         text.clear();
         WarCommandDisplay::Look look;
@@ -255,21 +271,21 @@ TEST_CASE("a slot is lit only once the stick has passed the dead zone or an orde
     // Opened with the stick at rest: slot 0 is highlighted but not lit, its plate the others' grey.
     display.update(raw(0.0F), raw(0.0F), chief, 33, coney::test::kSilent);
     canvas.draw(display, 33);
-    REQUIRE(canvas.flat.sprites().size() == 12);
-    CHECK(sameColour(canvas.flat.sprites()[1].colour, grey));
+    REQUIRE(canvas.slots.sprites().size() == 12);
+    CHECK(sameColour(canvas.slots.sprites()[1].colour, grey));
     // The stick past the dead zone, still on slot 0, lights it.
     display.update(raw(0.0F), raw(-1.0F), chief, 66, coney::test::kSilent);
     REQUIRE(display.highlight() == 0);
     canvas.draw(display, 66);
-    REQUIRE(canvas.flat.sprites().size() == 12);
-    CHECK(sameColour(canvas.flat.sprites()[1].colour, gold));
+    REQUIRE(canvas.slots.sprites().size() == 12);
+    CHECK(sameColour(canvas.slots.sprites()[1].colour, gold));
     // An order lights it too, on a fresh display that never saw the stick.
     WarCommandDisplay ordered;
     ordered.open(chief, 0);
     REQUIRE(ordered.issue() == 0);
     canvas.draw(ordered, 0);
-    REQUIRE(canvas.flat.sprites().size() == 12);
-    CHECK(sameColour(canvas.flat.sprites()[1].colour, gold));
+    REQUIRE(canvas.slots.sprites().size() == 12);
+    CHECK(sameColour(canvas.slots.sprites()[1].colour, gold));
 }
 
 TEST_CASE("the lit slot's backing is the grey of an unlit plate", "[hud][war-commands]") {
@@ -280,11 +296,11 @@ TEST_CASE("the lit slot's backing is the grey of an unlit plate", "[hud][war-com
     display.open(chief, 0);
     display.update(raw(0.0F), raw(-1.0F), chief, 33, coney::test::kSilent);
     canvas.draw(display, 33);
-    REQUIRE(canvas.flat.sprites().size() == 12);
+    REQUIRE(canvas.slots.sprites().size() == 12);
     // Slot 0 lit: backing (35, 35, 35), plate gold; slot 1: backing black, plate (35, 35, 35).
-    CHECK(sameColour(canvas.flat.sprites()[0].colour, coney::graphics::Rgba{35, 35, 35, 255}));
-    CHECK(sameColour(canvas.flat.sprites()[2].colour, coney::graphics::Rgba{0, 0, 0, 255}));
-    CHECK(sameColour(canvas.flat.sprites()[3].colour, coney::graphics::Rgba{35, 35, 35, 255}));
+    CHECK(sameColour(canvas.slots.sprites()[0].colour, coney::graphics::Rgba{35, 35, 35, 255}));
+    CHECK(sameColour(canvas.slots.sprites()[2].colour, coney::graphics::Rgba{0, 0, 0, 255}));
+    CHECK(sameColour(canvas.slots.sprites()[3].colour, coney::graphics::Rgba{35, 35, 35, 255}));
 }
 
 TEST_CASE("after an order the chosen icon fades over 1500 ms and its backing and plate over 500 ms",
@@ -301,14 +317,14 @@ TEST_CASE("after an order the chosen icon fades over 1500 ms and its backing and
     }
     // 250 ms into the fade: the backing and plate are half gone, the icon a sixth (212 or 213 of 255).
     canvas.draw(display, 580);
-    REQUIRE(canvas.flat.sprites().size() == 12);
-    CHECK(canvas.flat.sprites()[0].colour.a == 128);
-    CHECK(canvas.flat.sprites()[1].colour.a == 128);
+    REQUIRE(canvas.slots.sprites().size() == 12);
+    CHECK(canvas.slots.sprites()[0].colour.a == 128);
+    CHECK(canvas.slots.sprites()[1].colour.a == 128);
     REQUIRE(canvas.parts.sprites().size() >= 6);
     CHECK(canvas.parts.sprites()[0].colour.a >= 212);
     CHECK(canvas.parts.sprites()[0].colour.a <= 213);
     // The other slots' sprites fade over 500 ms too.
-    CHECK(canvas.flat.sprites()[3].colour.a == 128);
+    CHECK(canvas.slots.sprites()[3].colour.a == 128);
     CHECK(canvas.parts.sprites()[1].colour.a == 128);
 }
 
@@ -355,8 +371,8 @@ TEST_CASE("the name keeps its full alpha while the slots fade after an order", "
     }
     // 250 ms into the fade the slots are half gone; the name is not.
     canvas.draw(display, 580);
-    REQUIRE(canvas.flat.sprites().size() == 12);
-    CHECK(canvas.flat.sprites()[3].colour.a == 128);
+    REQUIRE(canvas.slots.sprites().size() == 12);
+    CHECK(canvas.slots.sprites()[3].colour.a == 128);
     REQUIRE_FALSE(canvas.text.sprites().empty());
     for (const auto& glyph : canvas.text.sprites()) {
         CHECK(glyph.colour.a == 255);
@@ -375,7 +391,7 @@ TEST_CASE("the chosen slot blinks from the order on: hidden for two updates, the
     for (int n = 1; n <= 14; ++n) {
         display.update(raw(0.0F), raw(0.0F), chief, static_cast<std::uint64_t>(n) * 10, coney::test::kSilent);
         canvas.draw(display, static_cast<std::uint64_t>(n) * 10);
-        hidden.push_back(canvas.flat.sprites().size() == 10);
+        hidden.push_back(canvas.slots.sprites().size() == 10);
     }
     const std::vector<bool> expected{true,  true,  false, false, false, true,  false,
                                      false, false, true,  false, false, false, true};
@@ -391,10 +407,10 @@ TEST_CASE("nothing is drawn after an order of a disabled command", "[hud][war-co
     display.open(chief, 0);
     // While picking, the disabled command's slot is drawn.
     canvas.draw(display, 0, followOff);
-    CHECK(canvas.flat.sprites().size() == 12);
+    CHECK(canvas.slots.sprites().size() == 12);
     REQUIRE(display.issue() == 0);
     canvas.draw(display, 0, followOff);
-    CHECK(canvas.flat.sprites().empty());
+    CHECK(canvas.slots.sprites().empty());
     CHECK(canvas.parts.sprites().empty());
     CHECK(canvas.text.sprites().empty());
 }
@@ -409,7 +425,7 @@ TEST_CASE("a display that is not allowed draws nothing", "[hud][war-commands]") 
     display.update(raw(0.0F), raw(0.0F), chief, 33, coney::test::kSilent);
     REQUIRE(display.shown());
     canvas.draw(display, 33);
-    CHECK(canvas.flat.sprites().empty());
+    CHECK(canvas.slots.sprites().empty());
 }
 
 TEST_CASE("the name is centred under the menu with no box behind it", "[hud][war-commands]") {
@@ -453,4 +469,79 @@ TEST_CASE("the name is grey while picking, dark for a disabled command and gold 
     canvas.draw(display, 0);
     REQUIRE_FALSE(canvas.text.sprites().empty());
     CHECK(sameColour(canvas.text.sprites()[0].colour, coney::graphics::Rgba{255, 183, 0, 255}));
+}
+
+TEST_CASE("each slot's backing and plate are big_font rectangle 256 and its icon a part_page0 rectangle",
+          "[hud][war-commands]") {
+    // Expected: hud.md#warrior-command-menu, confirmed (code): WarCommandDisplay_Init (0x001a62c0) sets every plate and
+    // backing up with sprite word 0xd0100 and resource instance 6 (big_font), each icon with its rectangle and
+    // instance 3 (part_page0).
+    constexpr std::array<std::uint32_t, 6> kIcons{0x56, 0x5a, 0x58, 0x55, 0x59, 0x5b};
+    for (std::size_t slot = 0; slot < coney::hud::kWarCommandSlots; ++slot) {
+        const coney::hud::WarCommandSlotSprites sprites = coney::hud::warCommandSlotSprites(slot);
+        CHECK(sprites.backing.word == 0xd0100);
+        CHECK(sprites.backing.instance == 6);
+        CHECK(sprites.plate.word == 0xd0100);
+        CHECK(sprites.plate.instance == 6);
+        CHECK(sprites.icon.word == kIcons.at(slot));
+        CHECK(sprites.icon.instance == 3);
+    }
+}
+
+TEST_CASE("the slots' backings and plates are drawn from big_font rectangle 256 at sizes 0.077 and 0.07",
+          "[hud][war-commands]") {
+    // Expected: hud.md#warrior-command-menu, confirmed (code): WarCommandDisplay_Init (0x001a62c0) gives the plates and
+    // backings big_font's rectangle 256 (Page_Rect keeps the low 16 bits of 0xd0100); WarCommandDisplay_Update
+    // (0x001a7e48) sizes the plates 0.07 (0x0050d304) and the backings 0.07 x 1.1 (0x0050d314) in overlay units, the
+    // width following the rectangle's texel aspect (BaseWidget_UpdateSize, 0x001a21e8, no aspect fix).
+    WarCommandDisplay display;
+    Canvas canvas;
+    const WarCommandDisplay::Chief chief;
+    display.open(chief, 0);
+    canvas.draw(display, 0);
+    CHECK(canvas.flat.sprites().empty());
+    REQUIRE(canvas.slots.sprites().size() == 12);
+    REQUIRE(canvas.parts.sprites().size() == 6);
+    for (std::size_t n = 0; n < 12; ++n) {
+        const coney::graphics::Sprite& sprite = canvas.slots.sprites()[n];
+        CHECK(sprite.uv.u0 == Catch::Approx(Canvas::kDisc.u0));
+        CHECK(sprite.uv.v0 == Catch::Approx(Canvas::kDisc.v0));
+        CHECK(sprite.uv.u1 == Catch::Approx(Canvas::kDisc.u1));
+        CHECK(sprite.uv.v1 == Catch::Approx(Canvas::kDisc.v1));
+        // Backing then plate; the disc's 64 x 32 texels make it twice as wide as tall.
+        CHECK(sprite.height == Catch::Approx(n % 2 == 0 ? 0.077F : 0.07F));
+        CHECK(sprite.width == Catch::Approx(sprite.height * 2.0F));
+        // Centred on its slot's icon.
+        const coney::graphics::Sprite& icon = canvas.parts.sprites()[n / 2];
+        CHECK(sprite.position.x == Catch::Approx(icon.position.x));
+        CHECK(sprite.position.y == Catch::Approx(icon.position.y));
+    }
+}
+
+TEST_CASE("without a big_font batch the slots' discs are skipped, not drawn from part_page0", "[hud][war-commands]") {
+    // Expected: hud.md#coneys-implementation, confirmed (code): Coney's own guard, as its readings say (the original
+    // always has big_font, resource instance 6, resident); part_page0's rectangle 256 is another picture.
+    coney::graphics::SpriteSheet partsSheet;
+    partsSheet.texture = std::make_shared<coney::test::FakeTexture>(256, 256);
+    for (int i = 0; i < 300; ++i) {
+        partsSheet.page.rects.push_back(i == 256 ? Canvas::kDisc : coney::graphics::UvRect{0.0F, 0.0F, 0.1F, 0.1F});
+    }
+    coney::graphics::SpriteBatch parts(std::move(partsSheet), 64, 1.0F);
+    coney::graphics::SpriteBatch flat(coney::graphics::SpriteSheet{}, 64, 1.0F);
+    coney::hud::HudCanvas canvas;
+    canvas.parts = &parts;
+    canvas.flat = &flat;
+    // The HUD layer hands part_page0 for every font slot when big_font is not loaded.
+    canvas.text.textBatch = [&parts](int /*slot*/) { return &parts; };
+    WarCommandDisplay display;
+    const WarCommandDisplay::Chief chief;
+    display.open(chief, 0);
+    WarCommandDisplay::Look look;
+    display.render(canvas, look, 0);
+    // Only the six icons, none of them rectangle 256; nothing flat either.
+    REQUIRE(parts.sprites().size() == 6);
+    for (const auto& sprite : parts.sprites()) {
+        CHECK(sprite.uv.u0 != Catch::Approx(Canvas::kDisc.u0));
+    }
+    CHECK(flat.sprites().empty());
 }

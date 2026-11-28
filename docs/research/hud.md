@@ -408,7 +408,22 @@ fails at x 128 because the angle reads 90° there (the byte of 128 above), betwe
 `0x80`): 0.5, set by `Open`; in a level numbered 100 or more with two players (`0x001fe198` = 1), 0.23 for player 1
 and 0.76 for player 2. Each slot is three sprites at one point, back to front: a black backing (sprite word `0xd0100`
 of instance 6, size 0.077), a plate (the same rectangle, size 0.07) and the icon (`part_page0`, instance 3, size
-0.08):
+0.08). <span id="war-command-disc"></span>**The backing and plate are a disc of `big_font`**: resource instance 6 is the
+`big_font` sheet ([the instance table](gui.md#resource-instances)) and `Page_Rect` keeps the low 16 bits of the word, so
+both are rectangle 256 of that sheet, a white disc (the same rectangle `<MONEYFONT>` starts
+from, [MONEYFONT](gui.md#moneyfont)). `WarCommandDisplay_Init` sets all eighteen sprites up at size 0.08 with no aspect
+fix (the setup's stack argument is 0, `0x001a6364`-`0x001a6b04`); `WarCommandDisplay_Update` then sizes them on every
+update: the plates 0.07 (`0x0050d304`), the backings 0.07 × 1.1 (`0x0050d314`) = 0.077 and the icons 0.08
+(`0x0050d210`), as `BaseWidget_SetSize(size, size, widget, 1)`. Confirmed (code) at `0x001a62c0` and `0x001a7e48`.
+Confirmed (runtime), run r-20261128-level80-c2-menu-disc: at `level80` checkpoint 2 with R2 held, slot 0's plate
+(display `+0x340`) read instance 6, word `0xd0100`, height 0.07 and width 0.0689, its backing (`+0xf40`) instance 6,
+word `0xd0100`, height 0.077 and width 0.0758, both over the texture rectangle (0.9575, 0.7231)-(0.9878, 0.7847): each
+width is its height times the rectangle's texel aspect (0.984; `BaseWidget_UpdateSize`, `0x001a21e8`), so the disc
+draws round, and the picture shows six round slots. An earlier read in the same run read widths of 0.1 and 0.11
+instead, which are the heights times the device's width conversion: 0.07 × 640 / 448 = 0.1 and 0.077 × 640 / 448 =
+0.11. That read is put down to a resize in progress, `BaseWidget_SetSize(.., 1)` having converted the width before
+the widget's update set it from the height by the texel aspect (**inferred** from `0x001a7e48`, where each such
+`SetSize` is followed straight away by that update):
 
 | Slot | Position | Icon rectangle |
 | --- | --- | --- |
@@ -1129,12 +1144,15 @@ order of a disabled command) and the highlighted slot's `GSTRING.COMMAND` name (
 on x 0.5, grey, dark or gold. `HUDShowWarCommand`, `WCEnableCommand` (enabling) and `WCEnableAllCommands` (only for a
 player whose human is there) set whether the menu is allowed and shut its name down (`script::setWarCommandAllowed`).
 **Coney's readings**: player 1 is the war chief (`+0x3ac` is not kept) and his state flags do not hold the menu back;
-the stick reads a byte of 128 as the original does; the backing and plate are flat squares (the sprite word `0xd0100` is
-not mapped); the name is centred by a first layout's width (`gui::layoutText` centres inside a box from its x, where the
-original's `<CENTER>` starts half the line left of the anchor); the order is also given when play resumes under a
-closing pause menu (**Coney's reading**: any mode popped over play) and the menu closes when the chief is knocked out;
-not built: the two-player and 16:9 layouts. A script drives it as a player does: `press r2`, `stick right -70 70`
-(up-left, attack), `release r2` (`repo:tests/hud/war_command_display_test.cpp`).
+the stick reads a byte of 128 as the original does; the backing and plate are `big_font` rectangle 256 drawn in the big
+font's batch (`hud::warCommandSlotSprites`), as wide as the rectangle's texels make them at their height, like the
+icons, and skipped when the HUD has no `big_font` batch (its layer then hands `part_page0`, whose rectangle 256 is
+another picture; the original always has `big_font` resident); the name is centred by a first layout's width
+(`gui::layoutText` centres inside a box from its x, where the original's `<CENTER>` starts half the line left of the
+anchor); the order is also given when play resumes under a closing pause menu (**Coney's reading**: any mode popped over
+play) and the menu closes when the chief is knocked out; not built: the two-player and 16:9 layouts. A script drives it
+as a player does: `press r2`, `stick right -70 70` (up-left, attack), `release r2`
+(`repo:tests/hud/war_command_display_test.cpp`).
 
 **The health rings** (`repo:src/hud/health_rings.h`, drawn by `repo:src/platform/play_level_world.cpp`), as
 [the health rings](hud-radar.md#the-health-rings) say: each step after the HUD's, `hud::HealthRings` takes player 1 and

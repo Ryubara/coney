@@ -303,6 +303,15 @@ coney = "src/hud/crime_panel.h:CrimePanel::renderArc"
 status = "legacy"
 
 [[function]]
+address = 0x001a62c0
+name = "WarCommandDisplay_Init"
+page = "hud.md#warrior-command-menu"
+role = "from `PlayerHUD_Init`: the name's markup text, the (never drawn) box widget and per slot three sprites: the icon (`part_page0`, instance 3, rectangles `0x55`-`0x5b`), the plate and the backing (sprite word `0xd0100` over instance 6: `big_font` rectangle 256); shown 0, allowed 1, issued 0"
+level = "confirmed-code"
+coney = "src/hud/war_command_display.h:warCommandSlotSprites"
+status = "compared"
+
+[[function]]
 address = 0x001a6c38
 name = "WarCommandDisplay_SetAllowed"
 page = "hud.md#warrior-command-menu"

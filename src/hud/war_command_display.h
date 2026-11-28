@@ -30,6 +30,27 @@ inline constexpr std::uint32_t kWarCommandFadeMs = 500;
 /// @orig 0x001a8530 WarCommand_FromSlot (unknown)
 [[nodiscard]] std::optional<int> warCommandOfSlot(std::size_t slot);
 
+/// One of the menu's sprites as WarCommandDisplay_Init sets it up: its sprite word (`Page_Rect` keeps the low 16
+/// bits, the sheet rectangle) and the resource instance whose sheet holds it (docs/research/gui.md#resource-instances:
+/// 3 is `part_page0`, 6 `big_font`).
+struct WarCommandSprite {
+    std::uint32_t word = 0; ///< The sprite word; its low 16 bits are the rectangle.
+    int instance = 0;       ///< The resource instance (BaseWidget `+0xc4`).
+};
+
+/// The three sprites of one menu slot, back to front.
+struct WarCommandSlotSprites {
+    WarCommandSprite backing; ///< `+0xf40` + slot × `0x100`.
+    WarCommandSprite plate;   ///< `+0x340` + slot × `0x100`.
+    WarCommandSprite icon;    ///< `+0x940` + slot × `0x100`.
+};
+
+/// The sprites of menu slot `slot` (0-5; slot 0 for any other).
+///
+/// Research: docs/research/hud.md#war-command-disc
+/// @orig 0x001a62c0 WarCommandDisplay_Init (unknown)
+[[nodiscard]] WarCommandSlotSprites warCommandSlotSprites(std::size_t slot);
+
 /// The right stick's angle as the menu reads it from its raw bytes (`x`, `y`: 0-255, y down), degrees clockwise from
 /// up: nothing inside the dead zone ((x − 127)² + (y − 127)² ≤ 12,100, about 87 % of the travel); otherwise the
 /// quadrant's base (0, 90, 180, 270) plus asin(|d| / 128) of one axis's offset d from 128 (x in the up-right and
@@ -48,8 +69,7 @@ inline constexpr std::uint32_t kWarCommandFadeMs = 500;
 /// the six slots and the highlighted slot's name; whoever owns the pad and the game state reads the stick into it,
 /// passes the order to the dispatcher (0x0041c4e0) and switches the camera's stick as cameraStickOn() says.
 ///
-/// **Coney's choices**: the slots' backing and plate are plain squares (the original's sprite word `0xd0100` of
-/// sprite instance 6 is not mapped to a sheet rectangle); the 16:9 layouts are not built. The name's time counts from
+/// **Coney's choices**: the 16:9 layouts are not built. The name's time counts from
 /// the last picking update (the original sets the text on each), and the display closes when that time passes the
 /// name's `<DISPLAYTIME>` after an order.
 class WarCommandDisplay {
