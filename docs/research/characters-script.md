@@ -409,9 +409,9 @@ and under the engine limits preset, every human in reach past 60.
   stun, takes a player out of the stance, releases the carried props and ends the slow motion; in full a health at or
   below the pending damage becomes 1 and the human stands in its idle. An arrest is no longer ended by it. The wound
   weighs 1e9 (`Human::pushWeight()`) and the arrest no longer ends a grab or rage; the release lets go of the carried
-  props. **Not ported** (#685): the held object's drops, the move styles of the wound and the arrest, the linked
-  object and the glow colour of the heal, the ally's follow after a release, and the normal mode's overlay task,
-  climb body and picked object.
+  props. **Not ported**: the held object's drops (#711), the move styles of the wound and the arrest (#990), the
+  heal's linked object (#1640), the ally's follow after a release (#677), and the heal's glow colour and the normal
+  mode's overlay task, climb body and picked object (#1718).
 - **The hub's hold on a human** (`level95`; `src/scripting/hub_bindings.*`, acting through `ai::ScriptedHub`): money,
   death, character class and voice set are read; the scale, name, cuffs, muggable, pedestrian reaction,
   unarrestable, combat mode, gear and tackle block are set. **Workouts** (`HuWorkout`): the enter clip into a loop
