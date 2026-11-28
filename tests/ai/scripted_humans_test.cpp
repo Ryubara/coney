@@ -907,7 +907,7 @@ TEST_CASE("HuPlaceItemInHand refuses a human in the middle of a pick-up", "[ai][
     // with held flag 0x4000 (Human_HasHeld4000 0x00228408, a pick-up playing)
     Level level;
     Brain& thug = level.add({44.0F, 40.0F, 0.0F});
-    REQUIRE(thug.human().startPickUp(7.0, {44.0F, 40.8F, 0.0F}, 503));
+    REQUIRE(thug.human().startPickUp(7.0, {44.0F, 40.8F, 0.0F}, 428));
     CHECK(level.call("HuPlaceItemInHand", {Value(thug.handle()), Value("dyn_bat")}).number() == 0.0);
     CHECK(thug.human().script().heldObject == 0.0);
 }
