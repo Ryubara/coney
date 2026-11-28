@@ -256,43 +256,55 @@ bool CollisionMesh::checkOnce(std::uint32_t index) const {
 
 void CollisionMesh::rayTestCell(std::uint32_t x, std::uint32_t y, std::uint32_t z, const Ray& ray,
                                 std::span<const std::uint8_t> excludeMaterials, std::uint32_t mask,
-                                std::optional<RayHit>& best) const {
+                                RayResult& result) const {
     for (const std::uint16_t index : cellTriangles(x, y, z)) {
-        // Once per cast, however many cells list it.
-        if (!checkOnce(index)) {
+        const CollisionTriangle& triangle = m_triangles[index];
+        // The mask's type bits first, before the triangle counts as checked.
+        if ((triangle.flags & 0xFFFU & mask & ~kMaskIgnored) != 0) {
             continue;
         }
-        const CollisionTriangle& triangle = m_triangles[index];
-        if ((triangle.flags & 0xFFFU & mask & ~kMaskIgnored) != 0) {
+        // Once per cast, however many cells list it.
+        if (!checkOnce(index)) {
             continue;
         }
         const bool enabled =
             (triangle.flags & kTriangleEnabled) != 0 || (mask & kTriangleEnabled) != 0 ||
             ((mask & kTriangleTestableDisabled) != 0 && (triangle.flags & kTriangleTestableDisabled) != 0);
-        if (!enabled || excluded(triangle.material, excludeMaterials)) {
+        if (!enabled) {
             continue;
         }
         const bool twoSided = (triangle.flags & kTriangleTwoSided) != 0;
         const float t = rayTriangle(ray.origin, ray.direction, m_vertices[triangle.vertices[0]],
                                     m_vertices[triangle.vertices[1]], m_vertices[triangle.vertices[2]], twoSided);
-        if (t < 0.0F || t > ray.length || (best && !(t < best->t))) {
+        if (!(t >= 0.0F) || !(t <= ray.length)) {
             continue;
         }
-        Vec3 normal = faceNormal(index);
-        if (twoSided && dot(normal, ray.direction) > 0.0F) {
-            normal = normal * -1.0F;
+        // The material filter after the intersection: until a kept triangle is hit, any triangle crossed fills the
+        // result, nearer or not; after that an excluded one is skipped and a kept one must be nearer.
+        const bool kept = !excluded(triangle.material, excludeMaterials);
+        if (result.hit && (!kept || !(t < result.t))) {
+            continue;
         }
-        best = RayHit{.normal = normal,
-                      .t = t,
-                      .material = triangle.material,
-                      .flags = static_cast<std::uint16_t>(triangle.flags & 0xFFFU),
-                      .area = triangle.area,
-                      .triangle = index};
+        // Coney's choice: the original also zeroes the word at +0x18, which no caller reads; RayResult has none.
+        result.t = t;
+        result.hit = kept;
+        result.material = triangle.material;
+        result.flags = static_cast<std::uint16_t>(triangle.flags & 0xFFFU);
+        result.triangle = index;
+        result.area = triangle.area;
+        // Only a kept triangle writes the normal, turned to face the ray when the triangle is two-sided.
+        if (kept) {
+            Vec3 normal = faceNormal(index);
+            if (twoSided && dot(normal, ray.direction) > 0.0F) {
+                normal = normal * -1.0F;
+            }
+            result.normal = normal;
+        }
     }
 }
 
-std::optional<RayHit> CollisionMesh::rayCast(const Ray& ray, std::span<const std::uint8_t> excludeMaterials,
-                                             std::uint32_t mask) const {
+void CollisionMesh::rayCast(const Ray& ray, RayResult& result, std::span<const std::uint8_t> excludeMaterials,
+                            std::uint32_t mask) const {
     // 1. Both ends in grid space and the cell box they span.
     const Vec3 start = toGrid(ray.origin);
     const Vec3 end = toGrid(ray.origin + ray.direction * ray.length);
@@ -305,12 +317,11 @@ std::optional<RayHit> CollisionMesh::rayCast(const Ray& ray, std::span<const std
     const std::uint32_t zmax = box[2][1];
     // 2. A fresh checked set.
     clearChecked();
-    std::optional<RayHit> best;
     // Tests the cells (x, y0..y1, every z of the box).
     const auto testColumn = [&](std::uint32_t x, std::uint32_t y0, std::uint32_t y1) {
         for (std::uint32_t y = y0; y <= y1; ++y) {
             for (std::uint32_t z = zmin; z <= zmax; ++z) {
-                rayTestCell(x, y, z, ray, excludeMaterials, mask, best);
+                rayTestCell(x, y, z, ray, excludeMaterials, mask, result);
             }
         }
     };
@@ -319,7 +330,7 @@ std::optional<RayHit> CollisionMesh::rayCast(const Ray& ray, std::span<const std
         for (std::uint32_t x = xmin; x <= xmax; ++x) {
             testColumn(x, ymin, ymax);
         }
-        return best;
+        return;
     }
     // 4. Walk the x columns along the ray's line in grid space (from the unclamped ends), its y at each column's
     // edges ix and ix + 1, truncated and kept within the box. The edges sit on integers while cells are centred on
@@ -335,7 +346,21 @@ std::optional<RayHit> CollisionMesh::rayCast(const Ray& ray, std::span<const std
         }
         testColumn(ix, std::clamp(y0, ymin, ymax), std::clamp(y1, ymin, ymax));
     }
-    return best;
+}
+
+std::optional<RayHit> CollisionMesh::rayCast(const Ray& ray, std::span<const std::uint8_t> excludeMaterials,
+                                             std::uint32_t mask) const {
+    RayResult result;
+    worldRayCast(this, ray, result, excludeMaterials, mask);
+    if (!result.hit) {
+        return std::nullopt;
+    }
+    return RayHit{.normal = result.normal,
+                  .t = result.t,
+                  .material = result.material,
+                  .flags = result.flags,
+                  .area = result.area,
+                  .triangle = result.triangle};
 }
 
 SpherePushResult CollisionMesh::spherePush(float radius, Vec3 centre,
@@ -447,8 +472,17 @@ std::expected<void, Error> onCollisionMeshLoaded(chunk::ChunkStacks& stacks, std
     return {};
 }
 
-void worldRayCast(const CollisionMesh* /*mesh*/, const Ray& /*ray*/, RayResult& /*result*/,
-                  std::span<const std::uint8_t> /*excludeMaterials*/, std::uint32_t /*mask*/) {}
+void worldRayCast(const CollisionMesh* mesh, const Ray& ray, RayResult& result,
+                  std::span<const std::uint8_t> excludeMaterials, std::uint32_t mask) {
+    // Only the material and the hit are preset; the rest keeps the caller's values until a triangle fills them.
+    result.material = kMaterialNone;
+    result.hit = false;
+    // Coney's choice: no level, nothing crossed (the original reads the level object without a null check).
+    if (mesh == nullptr) {
+        return;
+    }
+    mesh->rayCast(ray, result, excludeMaterials, mask);
+}
 
 bool dropToGround(const CollisionMesh& mesh, float length, Vec3& position) {
     const auto hit = mesh.rayCast(Ray{.origin = position, .direction = kDown, .length = length}, {}, 0);
