@@ -22,12 +22,12 @@ status = "compared"
 [[function.gaps]]
 what = "the overlay task's drop, the glow colour zeroed, the airborne bits, the climb's body and a picked object's release are not ported"
 relation = "not-ported"
-issue = 685
+issue = 1718
 
 [[function.gaps]]
 what = "fire, mini-games, special states, workouts, muggings, tags and tackle holds are not modelled to end (stand-ins)"
 relation = "stand-in"
-issue = 685
+issue = 1718
 
 [[function.gaps]]
 what = "an AI human's fight stance stays its fight goal's, so only a player leaves it (a stand-in)"

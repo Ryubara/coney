@@ -117,7 +117,12 @@ issue = 711
 [[function.gaps]]
 what = "brain +0x288 zeroed and the harmony tally for a type-3 brain's player are not ported"
 relation = "not-ported"
-issue = 685
+issue = 1718
+
+[[function.gaps]]
+what = "the kind-0 record for a player cuffed with two players in or with a key is not ported"
+relation = "not-ported"
+issue = 1718
 
 [[function]]
 address = 0x0022ef58

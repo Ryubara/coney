@@ -704,7 +704,7 @@ issue = 990
 [[function.gaps]]
 what = "body shape 2's enabling is not ported"
 relation = "not-ported"
-issue = 685
+issue = 1718
 
 [[function]]
 address = 0x002300c0

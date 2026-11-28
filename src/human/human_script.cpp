@@ -58,18 +58,18 @@ void Human::heal(bool full) {
     const int maximum = health.maximum();
     health.set(full ? maximum : std::min(health.value() + (maximum >> 1), maximum));
     heal();
-    // Not ported: the linked object's release (#1640) and the glow colour (+0x644) zeroed (#685).
+    // Not ported: the linked object's release (#1640) and the glow colour (+0x644) zeroed (#1718).
 }
 
 void Human::setNormalMode(bool full) {
-    // Not ported (#685): a human with a hold flag drops its overlay task.
+    // Not ported (#1718): a human with a hold flag drops its overlay task.
     // Humans_EndAllRage: a player's rage ends; the other players' are the caller's.
     if (m_fighter.player()) {
         setRageMode(false);
     }
     // Coney stand-in: no fire or mini-game is modelled, so there is none to end. A throw's aim is cancelled.
     setThrowAiming(false);
-    // Not ported (#685): the glow colour (+0x644) zeroed.
+    // Not ported (#1718): the glow colour (+0x644) zeroed.
     // The pair and down states: a pair is broken only in full; a wound ends. Coney stand-in: no mini-game, special
     // state, workout, mugging, tag or tackle hold is modelled here to end.
     if (full) {
@@ -189,7 +189,7 @@ void Human::startWounded() {
 
 void Human::endWounded() {
     // No longer wounded: push weight 1 (pushWeight()). Not ported: style 0xd's removal (#990) and body shape
-    // 2's enabling (#685).
+    // 2's enabling (#1718).
     m_script.wounded = false;
 }
 
