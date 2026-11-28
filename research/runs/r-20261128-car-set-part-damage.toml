@@ -1,0 +1,37 @@
+version = 1
+id = "r-20261128-car-set-part-damage"
+date = "2026-11-28"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "4039e77998b7b537d2dcddb8e33d681a1eafda6ce1db73526c9cb5219e0bf295"
+
+[who]
+agent = "afd390a28d8b8c14a"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "vehicle-side-window"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "after run car-glass-radius, lua recipe ran CarSetPartDamage(car, 4, 0.5), CarRemovePart(car, 2, 1), CarSetPartDamage(car, 2, 0.25), then CarSetPartDamage(car, 4, 0.5) on the near sedan (handle 0x031b0085 from the handle table); masks and damage read after each"
+
+[values]
+part4_damage_first = 0.5
+part2_damage_after_removed = 0.25
+removed_after_first = 4
+kept_after_first = 2785476
+part4_damage_second = 1.0
+flying_after_second = 16
+kept_after_second = 2785492
+
+[addresses]
+car = 0x00f14b10
+handle_entry = 0x006ed610

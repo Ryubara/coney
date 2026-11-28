@@ -324,6 +324,16 @@ level = "confirmed-code"
 coney = "src/world_objects/glass.h:GlassPanes::breakInRadius"
 status = "compared"
 
+[[function.gaps]]
+what = "the TYPE_GLASS objects in the radius get no message: no object service implements breakGlassObjects"
+relation = "not-ported"
+issue = 708
+
+[[function.gaps]]
+what = "a pane is in the radius by its distance, not by the squares the original compares: the same for any radius not negative"
+relation = "stand-in"
+issue = 708
+
 [[function]]
 address = 0x003966c8
 name = "World_BreakGlassInRadius"

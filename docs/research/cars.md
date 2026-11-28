@@ -173,13 +173,19 @@ environment map or dual texture from the car's second texture resource.
   it is a car, `Car_FromObject`), and `Car_DamagePartsByMask` gives each one's glass parts 6, 7, 15, 17, 19 and 21,
   lowest first, damage 1 on a non-instant call, so window 15 frees the stereo; no first-hit effect and no message
   `0x19` is sent. It also works out the centre's offset from the car and the car's matrix, and reads neither.
-  Confirmed (code) at each address. Callers: the hit handler `0x0038bea0` (0.34 per hit from a
-  weapon or thrown object, 0.51 from a human with flag `0x400000`, 0.115 from other humans, on the parts the hit's zone
-  selects), `CarSetPartDamage`, `0x0038b0e8` (mask `0x2a80c0`), and `Car_DoExplode` (`0x0038ab50`, every part, instant,
-  its `quiet`). Confirmed (code). Confirmed (runtime), run r-20261127-car-corner: the player in `level99` beside the
-  parked sedan's left front wing (the body table's front band, left column: parts 2, 8, 10 and the lamp glass bit 26)
-  pressed square; the first hit took lamp 8 to damage 1 at once (off) and put bit 26 in `+0x11f0` and `+0x11f8`, with
-  bumper 2 and panel 10 at 0.115 and all four bits in `+0x11ec`; the second hit added 0.115 to 2 and 10 only.
+  Confirmed (code) at each address. Confirmed (runtime), run r-20261128-car-glass-radius: in `level99`
+  (`vehicle-side-window`), `BreakGlassInRadius(HuGetPlayer(0), 5)` put exactly `0x2a80c0` in `+0x11f8` of the sedan
+  1.9 m away, with damage 1 on parts 6 and 15, none on the bonnet, nothing in `+0x11f0` or `+0x11ec`, and left the
+  two cars 16.5 and 17.2 m away untouched. Confirmed (runtime), run r-20261128-car-set-part-damage: on that sedan,
+  `CarSetPartDamage(car, 4, 0.5)` left the bonnet at 0.5, a bumper (2) `CarRemovePart` had removed still took 0.25, and
+  a second 0.5 took the bonnet to 1 and off (`+0x11f8`), flying (`+0x11f4`). Callers: the hit handler `0x0038bea0`
+  (0.34 per hit from a weapon or thrown object, 0.51 from a human with flag `0x400000`, 0.115 from other humans, on the
+  parts the hit's zone selects), `CarSetPartDamage`, `0x0038b0e8` (mask `0x2a80c0`), and `Car_DoExplode`
+  (`0x0038ab50`, every part, instant, its `quiet`). Confirmed (code). Confirmed (runtime), run r-20261127-car-corner:
+  the player in `level99` beside the parked sedan's left front wing (the body table's front band, left column: parts 2,
+  8, 10 and the lamp glass bit 26) pressed square; the first hit took lamp 8 to damage 1 at once (off) and put bit 26 in
+  `+0x11f0` and `+0x11f8`, with bumper 2 and panel 10 at 0.115 and all four bits in `+0x11ec`; the second hit added
+  0.115 to 2 and 10 only.
 - **Repair** (`CarMakeGoodAsNew` → `Car_Repair` `0x0038e068` → `Car_ResetParts` `0x003875e8`): every one of the 26
   part records is reset (damage 0, the state byte that holds open cleared, its loose piece sent message `0x15`), and
   `+0x11ec`, `+0x11f0`, `+0x11f4`, `+0x11f8`, the rock `+0x12d6` and the exploded flag `+0x12d5` are cleared, so a
