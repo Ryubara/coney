@@ -687,6 +687,14 @@ each call site, 2026-10-12:
 - **Freeing the mesh.** Nothing to add: the mesh owns its chunks, and the order of the five frees is not observable
   ([Unit 17](#u17-destroy) gives the level object's order, which is).
 
+**Ported** (#380, 2026-11-27): `materialName` (`src/raycast/materials.*`), and `RayResult` with `worldRayCast`
+in `src/raycast/collision_mesh.*`. `CollisionMesh::rayCast(ray, result, exclude, mask)` is the walk and the cell
+test fills the result as above; the optional form `rayCast(ray, exclude, mask)` goes through `worldRayCast` and
+returns only a kept hit, so every existing caller keeps its answers (a kept triangle's nearest-first result is the
+same either way). Compared side by side with `0x0034fc08`, `0x0040db88`, `0x00350778` and `0x00350cd8`; the only
+differences are the null level above and the word at `+0x18`, which no caller reads and `RayResult` does not hold.
+The callers still use the optional form: none of them reads an excluded fill yet.
+
 ### Test ideas {#u16-tests}
 
 All on synthetic meshes from `src/raycast/collision_builder.h`; expected values follow from the spec above.
@@ -854,6 +862,14 @@ tables" is step 3 and the empty calls.
 - **Small ones.** `LevelObject_Construct` and `LevelHeader_RegisterChunkHandler` are what `makeLevelHeaderHandler`
   and `addLevelFileHandlers` already do; tag them there. `LevelObject_SetOccluders` is the occluders' assignment in
   the `0x17` handler (`readOccluders` does the conversion).
+
+**Ported** (#380, 2026-11-27): `Wad::entrySize`, the tags on `Wad::open` and `Wad::lookup` (which stands for
+both `Wad_FindEntry` and `Wad_HasEntry`), `platform::loadLevel` for `WorldLevel_Load` (the file name, the open and
+the load; `world::loadLevelFile` is the container load and the pop), `LevelObject::~LevelObject` in the order of the
+table above, and the tags of the construct, the occluder setter and the registration on `makeLevelHeaderHandler`
+and `addLevelFileHandlers`. Kept differences: no pools are pushed, a missing file or entry fails, and the WAD is not
+held open. **Not yet:** `WorldLevel_Release` as one function. Its third step is `LevelScenery`'s level object going
+(the destructor above); its glow and caption releases wait with Unit 19 on #380.
 
 ### Test ideas {#u17-tests}
 
@@ -1070,14 +1086,22 @@ evictions, so it must come back exactly on unload.
   manager.
 - **`setLoadPriority(float)`** stores the value unchanged; it has no reader until the resource manager streams
   (a stand-in). `@orig 0x0040c938`.
-- **`queuePack(name)`** appends to a `std::deque<std::string>`; the preload consumes it (`world_streamer`'s preload).
-  `@orig 0x0040e1a0`.
+- **`queuePack(name)`**: the queue is already the game state's `precacheQueue`, which the `QueueFileToPrecache`
+  binding appends to and `PrecacheWorld` empties (`src/scripting/arena_bindings.cpp`); the manager keeps no second
+  copy, so the function has no tag of its own.
 - **`resetVisibility()`** clears the latch and calls `StreamedWorld::resetVisibility` on each world. Coney's
   `StreamedWorld` cannot be null, so the original's missing null check has nothing to copy. `@orig 0x0040e0b8`.
 - **`sectorPool(&largestFree)`**: the budget, with `freeBytes()` standing for the largest free block (the
   approximation [Memory](memory.md#what-a-reimplementation-must-keep) recommends). `@orig 0x0040f850`.
 - **`CreatePools`**: `kSectorPoolSize` (the retail runtime value) already stands for it; tag the constant
   `@orig 0x0040d688 WorldManager_CreatePools (WorldManagerPS2.cpp)`. `Sector Pool 2` has nothing to stand for.
+
+**Ported** (#380, 2026-11-27): `WorldManager::setLoadPriority` and `loadPriority` (0.001 after `loadLevel`),
+`resetVisibility(solid, detail)`, `sectorPool(&largestFree)` and `world::sectorPoolSizes` for `CreatePools`.
+`loadLevel` now sets the load priority last. Kept differences: the visibility latch is not kept (nothing in Coney
+reads it), and nothing calls `resetVisibility` or reads the load priority until the resource manager streams. The
+pool sizes still use 64-bit arithmetic where the original truncates to 32 bits; they differ only for a file over about
+41 MB (inferred: no level file or `warriors.glr` is near that size).
 
 ### Test ideas {#u18-tests}
 
@@ -1256,6 +1280,10 @@ null for both an occluded and a PVS-hidden sector.
 - **Alpha and modulate.** `loadPart` already sets geometry flag `0x40` (tag `@orig 0x004102f0
   Atomic_SetModulateMaterialColour (WorldPS2.cpp)`); the renderer's fade sets the alpha of every material and must
   leave R, G and B alone (tag `@orig 0x00411958 Material_SetAlphaCallback (WorldPS2.cpp)`).
+
+**Not yet ported** (#380 stays open for it): marking the `s` world's bit from the `d` world's pass changes what
+Coney draws, because `StreamedWorld::collectSectors` draws the sectors the last pass marked, where the original
+collects them in the callback itself. The quirk needs the collection taken off the marks first.
 
 ### Test ideas {#u19-tests}
 

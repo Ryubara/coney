@@ -10,6 +10,83 @@ coney = "src/world/world_streams.h:readSectorPluginData"
 status = "legacy"
 
 [[function]]
+address = 0x0040c5e0
+name = "Wad_Open"
+page = "physics-world.md#u17-wad"
+role = "boot step 8: reads the WAD index and opens WARRIORS.WAD on the IOP"
+level = "confirmed-code"
+coney = "src/fileio/wad.h:Wad::open"
+status = "compared"
+
+[[function.gaps]]
+what = "WARRIORS.WAD is not held open: each entry is opened from the disc when read"
+relation = "stand-in"
+issue = 380
+
+[[function]]
+address = 0x0040c628
+name = "Wad_FindEntry"
+page = "physics-world.md#u17-wad"
+role = "a WAD entry by name, or none"
+level = "confirmed-code"
+coney = "src/fileio/wad.h:Wad::lookup"
+status = "compared"
+
+[[function.gaps]]
+what = "the caller's name is not lowercased in place"
+relation = "stand-in"
+issue = 380
+
+[[function]]
+address = 0x0040c648
+name = "Wad_GetEntrySize"
+page = "physics-world.md#u17-wad"
+role = "a WAD entry's size by name"
+level = "confirmed-code"
+coney = "src/fileio/wad.h:Wad::entrySize"
+status = "compared"
+
+[[function.gaps]]
+what = "a missing name fails with NotFound, where the original reads a null entry"
+relation = "stand-in"
+issue = 380
+
+[[function]]
+address = 0x0040c668
+name = "Wad_HasEntry"
+page = "physics-world.md#u17-wad"
+role = "whether the WAD has an entry of that name"
+level = "confirmed-code"
+coney = "src/fileio/wad.h:Wad::lookup"
+status = "compared"
+
+[[function]]
+address = 0x0040c688
+name = "WorldLevel_Load"
+page = "physics-world.md#u17-load"
+role = "loads `<level>.lev` into the World Level Pool and returns the level object it builds"
+level = "confirmed-code"
+coney = "src/platform/level_file.h:loadLevel"
+status = "compared"
+
+[[function.gaps]]
+what = "no pool is pushed around the open and close, and a missing file fails"
+relation = "stand-in"
+issue = 380
+
+[[function]]
+address = 0x0040c7f0
+name = "WorldLevel_Release"
+page = "physics-world.md#u17-release"
+role = "on an unload keeping nothing: releases the light glows and the captions, then deletes the level object"
+level = "confirmed-code"
+
+[[function.gaps]]
+what = "not ported as one function: LevelScenery's level object is destroyed as it goes; the glow and caption releases wait"
+relation = "not-ported"
+issue = 380
+
+[[function]]
 address = 0x0040c868
 name = "Level_SetFogColour"
 page = "world.md#fog"
@@ -24,6 +101,20 @@ page = "world.md#fog"
 level = "confirmed-code"
 coney = "src/scripting/lighting_bindings.cpp:addLightingBindings"
 status = "legacy"
+
+[[function]]
+address = 0x0040c938
+name = "WorldManager_SetLoadPriority"
+page = "physics-world.md#u18-small"
+role = "stores the streaming's load priority as given"
+level = "confirmed-code"
+coney = "src/world/world_manager.h:WorldManager::setLoadPriority"
+status = "compared"
+
+[[function.gaps]]
+what = "nothing reads it until the resource manager streams"
+relation = "stand-in"
+issue = 380
 
 [[function]]
 address = 0x0040c948
@@ -51,6 +142,14 @@ role = "`WorldManager_QueuePack` (`0x0040e1a0`) on the world manager: appends a 
 level = "confirmed-code"
 coney = "src/scripting/arena_bindings.cpp:addStateBindings"
 status = "legacy"
+
+[[function]]
+address = 0x0040cc68
+name = "PVS_CaptureSamplePoint"
+page = "physics-world.md#u18-small"
+role = "an empty debug stub"
+level = "not-needed"
+note = "it does nothing"
 
 [[function]]
 address = 0x0040cc70
@@ -98,6 +197,56 @@ coney = "src/scripting/story_bindings.cpp:addStoryBindings"
 status = "legacy"
 
 [[function]]
+address = 0x0040cf18
+name = "LevelHeader_RegisterChunkHandler"
+page = "physics-world.md#u17-register"
+role = "registers the level header chunk's (0x17) handler"
+level = "confirmed-code"
+coney = "src/world/level_object.h:addLevelFileHandlers"
+status = "compared"
+
+[[function]]
+address = 0x0040cf40
+name = "LevelObject_Construct"
+page = "physics-world.md#u17-construct"
+role = "the level object's constructor: every part empty"
+level = "confirmed-code"
+coney = "src/world/level_object.h:makeLevelHeaderHandler"
+status = "compared"
+
+[[function]]
+address = 0x0040cf80
+name = "LevelObject_Destroy"
+page = "physics-world.md#u17-destroy"
+role = "the level object's destructor: collision, occluders, level world, glow dictionary, then each model before its dictionary"
+level = "confirmed-code"
+coney = "src/world/level_object.h:LevelObject::~LevelObject"
+status = "compared"
+
+[[function]]
+address = 0x0040d088
+name = "LevelObject_SetOccluders"
+page = "physics-world.md#u17-construct"
+role = "stores the level's occluders and converts their points"
+level = "confirmed-code"
+coney = "src/world/level_object.h:makeLevelHeaderHandler"
+status = "compared"
+
+[[function]]
+address = 0x0040d688
+name = "WorldManager_CreatePools"
+page = "physics-world.md#u18-create-pools"
+role = "boot step 21: the Sector Pool and Sector Pool 2, each the largest free block less 128 KB"
+level = "confirmed-code"
+coney = "src/world/sector_budget.h:sectorPoolSizes"
+status = "compared"
+
+[[function.gaps]]
+what = "only the sizes: the budget starts at kSectorPoolSize, the retail size, and Sector Pool 2 has no counterpart"
+relation = "stand-in"
+issue = 380
+
+[[function]]
 address = 0x0040d900
 name = "WorldManager_Construct"
 page = "physics-world.md#u18-construct"
@@ -117,6 +266,20 @@ relation = "stand-in"
 issue = 380
 
 [[function]]
+address = 0x0040db88
+name = "WorldManager_RayCast"
+page = "physics-world.md#u16-world-ray"
+role = "the world manager's ray: presets the material and the hit, then casts into the level's collision mesh"
+level = "confirmed-code"
+coney = "src/raycast/collision_mesh.h:worldRayCast"
+status = "compared"
+
+[[function.gaps]]
+what = "no level reports nothing crossed, where the original reads a null level object"
+relation = "stand-in"
+issue = 380
+
+[[function]]
 address = 0x0040dbb8
 name = "WorldManager_LoadLevel"
 page = "physics-world.md#u18-load"
@@ -126,13 +289,32 @@ coney = "src/world/world_manager.h:WorldManager::loadLevel"
 status = "compared"
 
 [[function.gaps]]
-what = "only the World Level Pool's reservation: the worlds and the level file are loaded by loadLevelScenery, the header-only load, the load priority and the prints are not ported"
+what = "only the World Level Pool's reservation: the worlds and the level file are loaded by loadLevelScenery, the header-only load and the prints are not ported"
 relation = "not-ported"
 issue = 380
 
 [[function.gaps]]
 what = "a name without a level file reserves no level pool"
 relation = "stand-in"
+issue = 380
+
+[[function]]
+address = 0x0040e0b8
+name = "WorldManager_ResetVisibility"
+page = "physics-world.md#u18-small"
+role = "clears the visibility latch and both streamed worlds' visible marks"
+level = "confirmed-code"
+coney = "src/world/world_manager.h:WorldManager::resetVisibility"
+status = "compared"
+
+[[function.gaps]]
+what = "the visibility latch (+0x34) is not kept: nothing in Coney reads it"
+relation = "stand-in"
+issue = 380
+
+[[function.gaps]]
+what = "nothing calls it yet: the preload that does is the resource manager's"
+relation = "not-ported"
 issue = 380
 
 [[function]]
@@ -143,6 +325,22 @@ role = "the smaller of the two worlds' `World_PendingDistance`; no new search"
 level = "confirmed-code"
 coney = "src/world/world_streamer.h:nearestPendingDistance"
 status = "legacy"
+
+[[function]]
+address = 0x0040e1a0
+name = "WorldManager_QueuePack"
+page = "physics-world.md#u18-small"
+role = "appends a pack name to the precache queue, with no limit and no duplicate check"
+level = "confirmed-code"
+note = "the queue is the game state's precacheQueue, appended by the QueueFileToPrecache binding"
+
+[[function]]
+address = 0x0040e8d0
+name = "WorldManager_GetSolidWorld"
+page = "physics-world.md#u18-small"
+role = "the solid (`s`) world, or the only one"
+level = "confirmed-code"
+note = "Coney's callers hold the worlds themselves (WorldSet)"
 
 [[function]]
 address = 0x0040e8d8
@@ -176,6 +374,15 @@ status = "compared"
 what = "only the World Level Pool's reservation: the worlds and the level object are released by LevelScenery's members as it goes, the render queue flush, the task manager call and the water are not ported"
 relation = "not-ported"
 issue = 380
+
+[[function]]
+address = 0x0040f850
+name = "WorldManager_GetSectorPool"
+page = "physics-world.md#u18-small"
+role = "the Sector Pool, and its largest free block when asked"
+level = "confirmed-code"
+coney = "src/world/world_manager.h:WorldManager::sectorPool"
+status = "compared"
 
 [[function]]
 address = 0x0040f8a0

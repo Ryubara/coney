@@ -300,8 +300,9 @@ tall or more).
   enabled bit, as the original's handler does.
 - `rayCast` is `CollisionMesh_RayCast` with `RayTestCell`: the same cell box, the same column walk (half a cell off,
   as above), the per-cast checked set, the mask and enabled rules, a material exclusion (a span of ids in place of
-  the list ended by 1) and the nearest hit. It skips an excluded triangle **before** intersecting it and returns only
-  a kept hit, so unlike the original it cannot report the excluded triangle a clear ray crossed
+  the list ended by 1) and the nearest hit. Since #380 the walk fills a `RayResult` as the original does: an excluded
+  triangle crossed fills it (without a hit) until a kept one is hit, so `worldRayCast` (`WorldManager_RayCast`) can
+  report the excluded triangle a clear ray crossed; the optional `rayCast` returns only a kept hit
   ([Unit 16](physics-world.md#u16-coney)). `spherePush`, `setEnabledInBox`, `dropToGround`, `dropToMarkedGround`
   and `marchRay` follow the sections above; the ground helpers cast with mask 0 and no exclusions, which is what the
   original's `Collision_DropToGround`, `_DropToMarkedGround` and `_MarchRay` pass ([Unit
