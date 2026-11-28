@@ -1,0 +1,13 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level99's street at the roof of the building by
+# the trash can, its top 4 m up. Through the developer console's `lua`, a civilian stands in front of the player on the
+# street and a Warrior of a gang friendly to the player's stands on the roof 3.5 m behind the civilian across the
+# ground, 5.4 m from him in 3D, with a help hearing range of 5 m. The player's punches make the civilian call for help (the
+# shared handler's 20 m call, docs/research/ai-brain-types.md#help-calls). The original measures the call's reach in 3D
+# (Humans_FindAhead, Brain_IsInHearRange), so the Warrior does not hear it and stays on the roof; a build that measures
+# across the ground has him hear it, drop off the roof and join the fight. For a change to who hears a help call.
+description = "level99 street: a help call below a Warrior on a roof, in his hearing across the ground, not in 3D"
+level = "level99"
+input = "tools/clips/level99-roof-help-call.txt"
+checkpoint = 2
+start_frame = 240
+seconds = 8
