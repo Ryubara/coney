@@ -960,7 +960,7 @@ page = "hud-functions-lua.md#fn-hudlua"
 role = "`0x001b3880(HUD, a, b)`, `0x001b38b8(HUD)`, `0x001b38d8(HUD)`"
 level = "confirmed-code"
 coney = "src/gamemodes/rumble_intro_layer.h:RumbleIntroLayer::show"
-status = "legacy"
+status = "compared"
 
 [[function]]
 address = 0x001b5fb0

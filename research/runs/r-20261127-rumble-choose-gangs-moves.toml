@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261127-rumble-choose-gangs-moves"
+date = "2026-11-27"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "5f85a111995a34b80fd080504280cd02e0e6c9c31693c5979319e04686a7fbdf"
+
+[who]
+agent = "abff3d34fbcc1f3c2"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2-b"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "No save, pad 1 only: QUICK RUMBLE, WAR PARTY (gang size 5), 1 Player, Choose Gangs (side 1 on the first gang, side 2 on the second). A breakpoint on MoveUp gave the screen object; read side cursors (+0x158/+0x15c), gang-size flag (+0x1e4), bump flags (+0x1e8). Up: a breakpoint on the cue call caught cue 0xe from MoveUp's refused path; cursor stayed, bump flag set. Down: cue 4 from MoveDown's move path; cursor 0 to 2, past side 2's gang (TURNBULL ACS vs ORPHANS on screen). Written after relaunching the copy, as the MCP server held PINE"
+
+[values]
+side1_cursor_start = 0
+side2_cursor = 1
+gang_size_flag = 0
+cue_after_up = 14
+side1_cursor_after_up = 0
+bump_flag_after_up = 1
+cue_after_down = 4
+side1_cursor_after_down = 2
+
+[addresses]
+move_up = 0x001ef5a8
+move_down = 0x001ef6d8
+interface_cue = 0x0010fc30

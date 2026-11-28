@@ -108,6 +108,10 @@ void RumbleMenuMode::enter() {
 }
 
 ModeResult RumbleMenuMode::update(GameModeStack& stack, const FrameTime& frame) {
+    // Not ported: the world frame the original runs under the opaque background (its tasks, streaming, sectors, lights,
+    // cameras, the audio listener and the preview camera and dummy fighter, #88 and #669) and its error and frame-rate
+    // checks (#669). Stand-in: the original sets a fixed step and hides the HUD here; Coney's loop steps every mode at
+    // a fixed step and this mode draws no HUD.
     // The scripts', the fade's and the menu's time, as every front-end mode keeps it; the sprites of the step before
     // are drawn.
     const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
@@ -124,12 +128,14 @@ ModeResult RumbleMenuMode::update(GameModeStack& stack, const FrameTime& frame) 
     }
 
     // One frame of the screens, read from the HUD player's pad (port 1); a confirm writes the set-up. Once they have
-    // ended they are frozen.
+    // ended they are frozen. Stand-in for the HUD's pad bindings: port 2 is player 2's, the only other pad the
+    // original's HUD can bind.
     gui::RumbleMenuResult result = gui::RumbleMenuResult::Stay;
     if (!m_leaving) {
         const gui::GuiFrame guiFrame{nowMs, &stack.pads().port(0)};
-        result = m_menu.update(guiFrame, stack.pads().connectedCount());
+        result = m_menu.update(guiFrame, stack.pads().connectedCount(), &stack.pads().port(1));
     }
+    // Stand-in: the original draws the 2D pass here; Coney queues it and draws it in render().
     m_menu.render(m_canvas);
     for (const int cue : m_menu.takeCues()) {
         m_services.playCue(cue);
@@ -146,7 +152,7 @@ ModeResult RumbleMenuMode::update(GameModeStack& stack, const FrameTime& frame) 
     m_scripts.update(nowMs, frame.seconds);
 
     // The screens' end: backing out from the front end is "cancelled" (in game the menu only closes, at once); a
-    // start stops the music. Each fades out.
+    // start stops the music. Each fades out. Not ported: clearing mode 8's load-front-end flag when it is below (#669).
     if (result != gui::RumbleMenuResult::Stay) {
         m_started = result == gui::RumbleMenuResult::Started;
         m_cancelled = result == gui::RumbleMenuResult::Cancelled && m_fromFrontEnd;

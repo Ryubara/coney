@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261127-rumble-game-type-coop"
+date = "2026-11-27"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "1ae28cb90f8da355672dabeeb1f2b36241f14a3835526b07245fdca77dd4d592"
+
+[who]
+agent = "aeb3a44be1d8ebc2c"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "unknown"
+patches = []
+
+[run]
+name = ""
+method = "Booted the disc with no save, pad 1 only (port 2 empty); title START, QUICK RUMBLE, Game Mode WAR PARTY, Game Type right to Co-op; cross, then cross again about 470 frames later; read the 23 Rumble values (u16) and took screenshots after each step: the grey 'press START' message showed after the first cross and stayed after the second, Game Type stayed and gameMode stayed 0; a change of entry hid the message"
+
+[values]
+game_type = 14
+gang_size = 5
+game_mode_after_first_cross = 0
+game_mode_after_second_cross = 0
+frame_first_cross = 6165
+frame_second_cross = 6634
+message_shown_after_second_cross = 1
+message_shown_after_entry_change = 0
+
+[addresses]
+rumble_values = 0x0063eec0
+numplayers_oninput = 0x001fd1c8
+numplayers_update = 0x001fd408

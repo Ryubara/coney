@@ -57,12 +57,23 @@ bool RumbleIntro::speak(std::string_view name, std::uint64_t nowMs) {
 
 void RumbleIntro::open(std::string_view onDone, std::span<const std::string> names, std::array<int, 2> packs,
                        std::uint64_t nowMs) {
+    // Coney's choice: the original builds the screen on its first frame only, preloads the countdown's voice, takes
+    // the first pad, picks one of three layouts by the display flags (0x0050cdb4; here always the default one), makes
+    // a sprite batch and corrects each point for the screen's shape. Coney's widgets place by screen fractions, read
+    // the frame's pad and play voices when asked, so the screen is built on each open and none of those has a step.
     m_onDone = onDone;
+    // The name slots keep their places, an empty one blank, and the screen counts the names up to the first blank:
+    // a name after it is not shown. The original stores that count only when its loop finds a blank, so with all ten
+    // slots filled it stays 0 and no name is shown (the arena scripts name fewer, so a player is unlikely to see it).
     m_names.clear();
-    for (const std::string& name : names) {
-        if (!name.empty() && m_names.size() < kMaxNames) {
-            m_names.push_back(name);
+    for (const std::string& name : names.first(std::min(names.size(), kMaxNames))) {
+        if (name.empty()) {
+            break;
         }
+        m_names.push_back(name);
+    }
+    if (m_names.size() == kMaxNames) {
+        m_names.clear();
     }
     m_packs = packs;
     m_voices.clear();
@@ -75,7 +86,8 @@ void RumbleIntro::open(std::string_view onDone, std::span<const std::string> nam
     m_namesHidden = false;
     m_lastMs = nowMs;
 
-    // A line per name, stacked down the screen, and a separator between each two.
+    // A line per name, stacked down the screen, and a separator between each two. The places and the separator
+    // (a sprite in the original, "VS" here) are Coney's stand-in layout (kFirstNameY).
     m_nameTexts.clear();
     m_separatorTexts.clear();
     const float pitch = kSecondNameY - kFirstNameY;
@@ -89,9 +101,10 @@ void RumbleIntro::open(std::string_view onDone, std::span<const std::string> nam
             m_separatorTexts.push_back(std::move(separator));
         }
     }
-    // The prompt is a usage line in part_page0, whose cross-button picture its `<X>` needs; the countdown a big line.
+    // The prompt is a usage line in part_page0, whose cross-button picture its `<X>` needs.
     m_prompt.place(0.5F, kPromptY, false);
     m_prompt.setLegend(string(kPromptString));
+    // The countdown a big hidden line; the names' own layout pass (RM_Intro_LayoutNames) is the stand-in above.
     setupLine(m_countdown, kCountdownY, kNameScale, "");
 
     m_phase = RumbleIntroPhase::Names;

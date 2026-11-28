@@ -1,0 +1,8 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): from boot through the main menu to QUICK
+# RUMBLE, then WAR PARTY and co-op on the Rumble menu's Game Type screen with a second pad connected. Player 1 accepts
+# twice, then player 2 presses START; on Choose Gangs player 1 presses up once and down twice. For a change to the
+# Rumble menu's Game Type screen (its message and what goes on) or to the gang cursor's ends.
+description = "Rumble menu: WAR PARTY, co-op, player 1 accepts twice, player 2's START, then up and down on the gangs"
+input = "tools/clips/rumble-game-type.txt"
+start_frame = 605
+seconds = 10

@@ -1,7 +1,10 @@
+---
+kind: feature
+owns: {functions: ["0x0041a8c0"]}
+---
 # Rumble mode
 
-Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`) and the compiled Lua chunks
-of the retail disc. One runtime observation: [the intro](#intro).
+Verified against: `SLUS_212.15` (NTSC-U) and the retail disc's compiled Lua chunks; runtime claims say so where made.
 
 ## Purpose
 
@@ -18,6 +21,16 @@ flag chunk for the game type (`level<n>_<type>_init.lua`) and the game type's ru
 [result screen](#result-screen) and [`HuSwitchPlayer`](#switch-player). The Lua claims below are inferred from the
 chunks' disassembly (the method of [Scripts](scripting.md)); the C++ claims are confirmed (code) at the cited
 addresses.
+
+## Rules {#rules}
+
+Each game type's rules (win, lose, timers, scores, revivals) are in [The game types](#game-types).
+
+## Map {#map}
+
+The mode has no source files of its own: its pieces are the arena scripts and their [bindings](#bindings), the
+[intro](#intro), the [win camera](#win-camera), the [result screen](#result-screen) and the set-up menus on
+[Front end: the Rumble set-up](frontend.md#rumble-setup), each with its functions in its section.
 
 ## The arena script {#arena-script}
 
@@ -223,11 +236,19 @@ The race in detail (`wchair.lua`, `SetupRaceGlows4(fRace)`; from its calls and b
 `run4life`, `hifi`, `caps`, `car`, `shoot` and `muggr` have rules or flag chunks on the disc, but no mode record offers
 them ([Rumble roster](../references/rumble.md)).
 
-## The intro and countdown {#intro}
+## Behaviour
 
-`ShowRumbleModeIntro(onDone, names)` (`0x0036ed48` → `0x001b5f88`) opens the HUD's **RM_Intro** screen (`0x600840 +
-0xe530`): `0x001f9418` keeps `onDone` and up to 10 non-empty names; `0x001f9558` builds a text widget per name, a
-separator between two names and a prompt (global string `0x25`), queues screen effect 0 and loads a sound bank (`0x001f93a0`).
+### The intro and countdown {#intro}
+
+Confirmed (code) at the cited functions unless marked.
+
+`ShowRumbleModeIntro(onDone, names)` (`0x0036ed48` → `0x001b5f88`) opens the HUD's **RM_Intro** screen (`0x00600840 +
+0xe530`): `0x001f9418` copies `onDone` and keeps the ten name slots in place, zeroing an empty one; `0x001f9558` counts
+the names up to the first empty slot (so a name after an empty one is never shown; with all ten slots filled its loop
+ends on the bound before it stores the count, which stays 0, so no name is shown), builds a text widget per name, a
+separator between two names and a prompt (global string `0x25`), queues screen effect 0 and loads a sound bank
+(`0x001f93a0`). Confirmed (code) at `0x001f9418` and `0x001f9558`; the orig sweep corrected an earlier reading that the
+non-empty names were all kept.
 The update (`0x001fad40`) runs four phases (byte `+0xe4`), confirmed (code):
 
 1. **Names** (`0x001fa170`), one at a time: the announcer names the gang (`dj_gang_<pack + 1>`, the pack from set-up
@@ -271,16 +292,16 @@ intro pushes no game mode and sets no freeze flag. What it does set each update 
 (`0x0050eddc` record `+0x20ac` = 1, [Pause](pause.md)), so START cannot pause the game while it shows; once the prompt
 is up it also takes the HUD pad's buttons `0xf000`. Confirmed (code). So humans, brains and gangs update throughout.
 What keeps a fighter still is only what the scripts did to him: `BrDead` alone does not, because a dead brain still runs
-the goals on its stack, including those its gang's tactic gives it ([AI: handlers](ai/index.md#handlers)). **At runtime**
-(PCSX2, QUICK RUMBLE 1 ON 1 with the defaults, the Fight Pen `level102`, read over PINE every second), confirmed
-(runtime): while RM_Intro was open the game clock ran on (about 1,000 ms a second), every brain's time fields
-(`+0x30`-`+0x38`) changed each sample, the fighters' bones animated, and the twelve onlookers each held a goal. Both
-fighters (the player and the computer's) had `+0x09` = 1 and an **empty goal stack**, and neither moved: in a Brawl
-nothing gives them a goal before the end. Within a second of the screen closing (`FinishCountdown`) both were 0, the
-computer's fighter took a goal and began to walk at once, and two seconds later had a stack of three. So the fighters
-stand still in the intro only because their stacks are empty; a fighter that holds a goal, from a tactic or a script,
-would move during it (inferred from the code above). From the prompt's accept to the close took about 5 s (the ready
-line, then the 4,000 ms countdown).
+the goals on its stack, including those its gang's tactic gives it ([AI: handlers](ai/index.md#handlers)). **Observed in
+PCSX2** (QUICK RUMBLE 1 ON 1 with the defaults, the Fight Pen `level102`, read over PINE every second), with no run
+record, so speculative ([q-intro-world](#q-intro-world)): while RM_Intro was open the game clock ran on (about 1,000 ms
+a second), every brain's time fields (`+0x30`-`+0x38`) changed each sample, the fighters' bones animated, and the twelve
+onlookers each held a goal. Both fighters (the player and the computer's) had `+0x09` = 1 and an **empty goal stack**,
+and neither moved: in a Brawl nothing gives them a goal before the end. Within a second of the screen closing
+(`FinishCountdown`) both were 0, the computer's fighter took a goal and began to walk at once, and two seconds later had
+a stack of three. So the fighters stand still in the intro only because their stacks are empty; a fighter that holds a
+goal, from a tactic or a script, would move during it (inferred from the code above). From the prompt's accept to the
+close took about 5 s (the ready line, then the 4,000 ms countdown).
 
 ## The win camera {#win-camera}
 
@@ -722,3 +743,9 @@ wheelchair's clips and the give-way action.
   constants per 1/30 s step).
 - Mercy is versus only, and Coney has no second player yet; its one-player path (`GoalGrabTarget` on `P21` against
   Mercy) is not reachable from the menus.
+
+### The world under the intro {#q-intro-world}
+
+The reads of [the intro](#intro) (the clock running, the brains' time fields changing, both fighters with `+0x09` = 1
+and an empty goal stack until `FinishCountdown`) were made in PCSX2 before run records existed and have none. How to
+answer: repeat them on a claimed copy, QUICK RUMBLE 1 ON 1 to the Fight Pen, and write them with `pcsx2 record-run`.

@@ -163,6 +163,7 @@ add_executable(coney_tests
     gui/profile_management_gui/pm_controller_test.cpp
     gui/rumble_mode_gui/rumble_menu_test.cpp
     gui/rumble_mode_gui/rumble_match_screens_test.cpp
+    gui/rumble_mode_gui/rumble_setup_fidelity_test.cpp
     gui/screen_flow_controller_test.cpp
     gui/scrolling_window_test.cpp
     gui/text_layout_test.cpp

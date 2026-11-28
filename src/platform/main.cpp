@@ -1579,20 +1579,22 @@ int main(int argc, char** argv) {
         if (audio) {
             audio->setStepTap([&clip](std::span<const std::int16_t> samples) { clip->addSound(samples); });
         }
-        if (!waitsForLevel) {
+        // `--record-from-frame` without a level counts the run's own frames, from boot.
+        const std::uint64_t fromFrame = options->recordFromFrame.value_or(0);
+        if (!waitsForLevel && fromFrame == 0) {
             clip->start();
         }
         const bool endsWithClip = !frameLimit && !playFrameLimit;
         hooks.beginFrame = [inner = std::move(hooks.beginFrame), &clip, &clipDone, &debugSession, levelInPlay,
-                            endsWithClip, armed = !waitsForLevel, keepLines = options->recordDebugDraw,
-                            fromFrame = options->recordFromFrame.value_or(0), playFrames = std::uint64_t{0}]() mutable {
+                            endsWithClip, waitsForLevel, armed = !waitsForLevel && fromFrame == 0,
+                            keepLines = options->recordDebugDraw, fromFrame, playFrames = std::uint64_t{0}]() mutable {
             // The debug menus' lines in the 3D scene stay off while recording: a clip shows the game only, unless
             // `--record-debug-draw` keeps the lines the run itself switched on (the world edits' wireframe).
             debugSession.debugDraw() = coney::debug::recordedDebugDraw(debugSession.debugDraw(), keepLines);
             // With `--play-level` (or a guest's `--net-view`) the clip starts at the `--record-from-frame` frame of
             // play (0 unless given), counted from the first frame the level plays as an input script is, so a long
-            // scripted run is recorded at its end.
-            if (!armed && levelInPlay()) {
+            // scripted run is recorded at its end; without a level, at that frame of the run.
+            if (!armed && (!waitsForLevel || levelInPlay())) {
                 if (playFrames++ >= fromFrame) {
                     armed = true;
                     clip->start();

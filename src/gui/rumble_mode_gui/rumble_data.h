@@ -91,9 +91,10 @@ bool addRumbleMode(RumbleData& data, const Unlockables& unlocks, RumbleModeEntry
 bool addRumbleGang(RumbleData& data, const Unlockables& unlocks, std::int32_t id, std::string name,
                    const RumbleGangEntry::Roster& members);
 
-/// `CfgRumbleArena`: appends the arena with level number `levelNumber` to `data.arenas` when it is unlocked, the level
-/// table `state.levels` has it, and `modes` allows the mode chosen in `state.rumble` (a first value of 0 allows every
-/// mode; the list ends at a 0 or -1). Returns whether it did.
+/// `CfgRumbleArena`: appends the arena with level number `levelNumber` to `data.arenas` when the number is 101 to 199,
+/// it is unlocked, `modes` holds the mode chosen in `state.rumble` and the level table `state.levels` has it. At most
+/// the first 16 modes are read, and a 0 ends the list, so a list that starts with 0 lists the arena for no mode.
+/// Returns whether it did.
 /// @orig 0x001eaa30 RM_ChooseArea_AddArena (RM_ChooseArea.cpp)
 bool addRumbleArena(RumbleData& data, const GameState& state, int levelNumber, std::uint32_t value,
                     std::span<const std::int64_t> modes);

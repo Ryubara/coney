@@ -249,9 +249,9 @@ constexpr std::string_view kUsage =
     "                     frame of play\n"
     "  --record-seconds N the clip's length, 1 to 10 seconds (default and most: 10)\n"
     "  --record-from-frame N\n"
-    "                     with --play-level: start the clip at the N-th frame of play (counted as\n"
-    "                     an --input-script is, from 0), so a long scripted run is recorded at its\n"
-    "                     end; the clip is still at most 10 seconds\n"
+    "                     start the clip at the N-th frame (counted as an --input-script is, from\n"
+    "                     0: of play with --play-level, else of the run), so a long scripted run is\n"
+    "                     recorded at its end; the clip is still at most 10 seconds\n"
     "  --record-debug-draw\n"
     "                     keep the Debug draw lines the run switched on (the world edits' collision\n"
     "                     wireframe) in the clip; the menus and the overlay stay out\n"
@@ -568,9 +568,11 @@ std::expected<void, Error> checkRecord(const Options& options) {
     if (options.recordFromFrame.has_value() && !options.recordPath.has_value()) {
         return invalidArgument("--record-from-frame needs --record: it sets the frame the clip starts at");
     }
-    if (options.recordFromFrame.has_value() && !options.playLevel.has_value() && !options.netView) {
-        return invalidArgument("--record-from-frame needs --play-level or --net-view: its frames count from the "
-                               "level's first frame of play (a guest's, from the first it has the host's level)");
+    if (options.recordFromFrame.has_value() && options.netJoin.has_value() && !options.playLevel.has_value() &&
+        !options.netView) {
+        return invalidArgument("--record-from-frame needs --play-level or --net-view on a guest (--join): its frames "
+                               "count from the level's first frame of play or from the first it has the host's level, "
+                               "and a guest that draws its own game with no level has neither");
     }
     if (!options.recordPath.has_value()) {
         return {};
