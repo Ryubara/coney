@@ -456,3 +456,60 @@ TEST_CASE("destroying the level object releases each model before its dictionary
     CHECK(log == std::vector<std::string>{"level world", "glow dictionary", "skyline model", "skyline dictionary",
                                           "sky model", "sky dictionary", "cloud model", "cloud dictionary"});
 }
+
+namespace {
+
+// A stand-in for the platform's objects that counts how many are alive, so a test can see that none is left over.
+class CountedObject final : public coney::chunk::LoadedObject {
+  public:
+    CountedObject() { ++live(); }
+    CountedObject(const CountedObject&) = delete;
+    CountedObject& operator=(const CountedObject&) = delete;
+    ~CountedObject() override { --live(); }
+    [[nodiscard]] std::string_view describe() const override { return "counted"; }
+
+    // How many CountedObjects exist now.
+    static int& live() {
+        static int count = 0;
+        return count;
+    }
+};
+
+// A reader that pushes a CountedObject under `result`, standing for the platform's 0x2A, 0x47 and 0x15 readers.
+template <std::uint32_t Result>
+std::expected<void, coney::Error> readCounted(coney::io::Stream& chunk, const coney::chunk::ChunkHeader& header,
+                                              coney::chunk::ChunkStacks& stacks) {
+    std::vector<std::byte> first(1);
+    if (auto read = chunk.read(first); !read) {
+        return std::unexpected(read.error());
+    }
+    stacks.pushChunk(coney::chunk::ChunkData{
+        .type = Result, .id = header.id, .bytes = {}, .object = std::make_unique<CountedObject>()});
+    return {};
+}
+
+} // namespace
+
+TEST_CASE("a level object built from a level file and destroyed leaves none of its objects behind",
+          "[level_object][physics-unit-17]") {
+    // Expected: physics-world.md#u17-destroy, confirmed (code). The collision mesh and the occluders are owned by
+    // value or unique_ptr, which the asan preset checks; the platform objects are counted here.
+    coney::chunk::ChunkHandlerTable table = coney::chunk::ChunkHandlerTable::withDefaults();
+    table.setHandlers(0x2A, coney::chunk::ChunkHandlers{{}, readCounted<0x0B>});
+    table.setHandlers(0x47, coney::chunk::ChunkHandlers{{}, readCounted<0x41>});
+    table.setHandlers(0x15, coney::chunk::ChunkHandlers{{}, readCounted<0x42>});
+    coney::world::addLevelFileHandlers(
+        table, [](coney::chunk::LoadedObject&, coney::chunk::LoadedObject&) -> std::expected<void, coney::Error> {
+            return {};
+        });
+    REQUIRE(CountedObject::live() == 0);
+    const Bytes file = levelFile();
+    coney::io::MemoryStream stream(file.span());
+    auto level = coney::world::loadLevelFile(stream, table);
+    REQUIRE(level.has_value());
+    // Four dictionaries, three models and the level world, all held by the level object and nothing else.
+    CHECK(CountedObject::live() == 8);
+    REQUIRE((*level)->collision != nullptr);
+    level->reset();
+    CHECK(CountedObject::live() == 0);
+}

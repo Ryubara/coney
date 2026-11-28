@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <memory>
 #include <set>
@@ -178,6 +179,38 @@ TEST_CASE("of two excluded panes the world ray keeps the last one tested, not th
         CHECK_FALSE(result.hit);
         CHECK(result.t == Approx(2.0F));
     }
+}
+
+TEST_CASE("the world ray tests no cell of a column whose line lies above the grid", "[collision][physics-unit-16]") {
+    // Expected: physics-world.md#u16-world-ray, confirmed (code)
+    // A 14 by 14 grid of unit cells (grid space = world space, cells 0 to 13): a floor far below sets its extent.
+    // The ray's line y = 17 - 3x enters it from above: in column 0 it runs from y 17 to 14, all past the last row,
+    // so the original tests no cell there; column 1 runs from 14 to 11 (rows 11 to 13).
+    // Pane A (index 1) lies in cell (2, 10) and is listed one cell wider, so in (1, 11) but not in column 0. Pane B
+    // (index 2) lies in cell (1, 12) and is listed in (0, 13) as well. The original first meets both in (1, 11),
+    // A then B, so B is the last excluded pane tested and fills the result; a walk that also tested (0, 13) would
+    // meet B first and end with A.
+    const auto across = [](float x, float y) {
+        constexpr float kHalf = 0.05F; // along (3, 1), across the ray's direction (1, -3)
+        return BuildTriangle{.corners = {Vec3{x - 3.0F * kHalf, y - kHalf, 0.0F},
+                                         Vec3{x + 3.0F * kHalf, y + kHalf, 0.0F}, Vec3{x, y, 3.0F}},
+                             .flags = coney::raycast::kTriangleTwoSided,
+                             .material = kGlass};
+    };
+    const std::vector<BuildTriangle> triangles{
+        BuildTriangle{.corners = {Vec3{0.0F, 0.0F, -50.0F}, Vec3{13.0F, 0.0F, -50.0F}, Vec3{13.0F, 13.0F, -50.0F}}},
+        across(2.2F, 10.4F), across(1.5F, 12.5F)};
+    auto mesh = coney::raycast::buildCollisionMesh(triangles, 1.0F);
+    REQUIRE(mesh.has_value());
+    const float norm = std::sqrt(10.0F);
+    const Ray ray{
+        .origin = {-1.0F, 20.0F, 1.0F}, .direction = {1.0F / norm, -3.0F / norm, 0.0F}, .length = 5.0F * norm};
+    const std::array<std::uint8_t, 1> glass{kGlass};
+    RayResult result;
+    coney::raycast::worldRayCast(mesh->get(), ray, result, glass, 0);
+    CHECK_FALSE(result.hit);
+    CHECK(result.triangle == 2);
+    CHECK(result.t == Approx(2.5F * norm));
 }
 
 TEST_CASE("the world ray's mask skips a triangle by its type bits", "[collision][physics-unit-16]") {

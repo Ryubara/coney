@@ -160,6 +160,18 @@ TEST_CASE("the switches and the precache queue are kept in the game state", "[sc
     CHECK(level.state.precacheQueue.empty());
 }
 
+TEST_CASE("the same pack queued three times is three entries, in order", "[scripting][physics-unit-18]") {
+    // Expected: physics-world.md#u18-small, confirmed (code): WorldManager_QueuePack keeps no limit and no duplicate
+    // check, and the binding is Coney's queue (physics-world.md#u18-coney).
+    Level level;
+    level.call("QueueFileToPrecache", {str("gang_a.pak")});
+    level.call("QueueFileToPrecache", {str("gang_b.pak")});
+    level.call("QueueFileToPrecache", {str("gang_a.pak")});
+    level.call("QueueFileToPrecache", {str("gang_a.pak")});
+    CHECK(level.state.precacheQueue ==
+          std::vector<std::string>{"gang_a.pak", "gang_b.pak", "gang_a.pak", "gang_a.pak"});
+}
+
 TEST_CASE("the humans' lock, speech switch, pocket and damage response reach the human and its brain",
           "[scripting][rumble]") {
     Level level;
