@@ -30,6 +30,8 @@ void WorldManager::loadLevel(std::optional<std::uint64_t> levelFileSize) {
     if (levelFileSize) {
         m_levelPool.take(*m_budget, worldLevelPoolBytes(*levelFileSize));
     }
+    // Coney's choice: no pool is registered or left pushed (Coney allocates normally), the boot's header-only load has
+    // no counterpart, and the original's prints and the free-bytes global it writes (never read) are not kept.
     // The load priority last, after the worlds and the level file (which the platform loads after this call).
     m_loadPriority = kLevelLoadPriority;
 }
