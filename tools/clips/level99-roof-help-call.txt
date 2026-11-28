@@ -1,0 +1,15 @@
+# Level99's street for the `level99-roof-help-call` clips pair scenario (tools/clips/level99-roof-help-call.toml),
+# played from checkpoint 2: cross skips the checkpoint's scene, the developer console's `lua` puts the player on the
+# street facing the building, a civilian 1 m in front of him and a Warrior of a gang made friends with the player's on
+# the roof (its top at z 4.2), whose help hearing range is set to 5 m; then three punches at the civilian. Frames are
+# 1/30 s from the level's first frame of play.
+65 tap cross
+200 console lua "Teleport(player, {58.0, 9.9, 0.3}, 180)"
+210 console lua "GangClip = GangCreate(0, \"ClipRoof\", 0, 0)"
+211 console lua "ClipV = HuCreate(\"ClipVictim\", 114, {58.0, 8.9, 0.3}, 0, \"warr_sw\", 0, GangCivilians)"
+212 console lua "ClipF = HuCreate(\"ClipRoof\", 30, {58.0, 5.4, 4.8}, 0, \"warr_sw\", 0, GangClip)"
+213 console lua "GangMakeFriends(0, GangClip)"
+214 console lua "GangSetHearRange(GangClip, true, 5)"
+260 tap square
+275 tap square
+290 tap square

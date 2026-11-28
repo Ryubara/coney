@@ -42,14 +42,14 @@ struct Scene {
     std::vector<std::unique_ptr<Human>> humans;
     ai::Brains brains;
 
-    // A human with its feet at (x, y) facing `headingDegrees` (0 is +y), with a brain of `type`.
-    Brain& add(float x, float y, float headingDegrees, BrainType type = BrainType::Gang) {
+    // A human with its feet at (x, y, z) facing `headingDegrees` (0 is +y), with a brain of `type`.
+    Brain& add(float x, float y, float headingDegrees, BrainType type = BrainType::Gang, float z = 0.0F) {
         humans.push_back(std::make_unique<Human>(character.anims, coney::human::AnimSlots::player(),
                                                  coney::test::identityBind(), 1.0F, &character.ranges));
         Human& made = *humans.back();
         made.setFighterProfile(coney::human::FighterProfile{
             .player = type == BrainType::Player, .powerClass = ai::kWarriorPowerClass, .health = 1400});
-        made.spawn(mesh.get(), Vec3{x, y, 0.0F}, headingDegrees);
+        made.spawn(mesh.get(), Vec3{x, y, z}, headingDegrees);
         return brains.add(made, type, ai::FightSettings{}, static_cast<std::uint32_t>(humans.size()));
     }
 };
@@ -120,6 +120,29 @@ TEST_CASE("the list round a walker is a plain radius, the walker left out", "[ai
     REQUIRE(list.size() == 2);
     CHECK(list[0] == &near);
     CHECK(list[1] == &behind);
+}
+
+TEST_CASE("the list round a walker measures in 3D, leaving out a human on a ledge above him", "[ai][steering]") {
+    // Expected: ai-moving.md#steering, confirmed (code): Humans_FindAhead 0x002274a8 sums x, y and z squared
+    // (vsub.xyz, vaddy, vaddz at 0x00227518-0x00227530) against the radius squared
+    Scene scene;
+    // A 1.5 m ledge beside the walker's floor.
+    scene.mesh = coney::test::makeMesh(coney::test::join(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F),
+                                                         coney::test::floorAt(1.5F, 41.0F, 43.0F, 41.0F, 43.0F)));
+    Brain& walker = scene.add(40.0F, 40.0F, 0.0F);
+    // 1.5 m off across the ground and on the floor: in reach.
+    Brain& level = scene.add(41.5F, 40.0F, 0.0F);
+    // 1.7 m off across the ground and 1.5 m up on the ledge: 2.27 m in 3D, outside the 2 m reach.
+    Brain& onLedge = scene.add(41.2F, 41.2F, 0.0F, BrainType::Gang, 1.5F);
+    REQUIRE(onLedge.human().position().z > 1.4F);
+    std::vector<Brain*> all;
+    all.reserve(scene.brains.size());
+    for (std::size_t i = 0; i < scene.brains.size(); ++i) {
+        all.push_back(&scene.brains.at(i));
+    }
+    const std::vector<Brain*> list = ai::humansAround(walker, all, 2.0F);
+    CHECK(std::ranges::find(list, &level) != list.end());
+    CHECK(std::ranges::find(list, &onLedge) == list.end());
 }
 
 TEST_CASE("the blocker is the first disc the relative step meets, never behind or the target", "[ai][steering]") {
