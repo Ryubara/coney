@@ -250,10 +250,11 @@ void dispatchWarriorCommand(ScriptSystem& scripts, const BindingContext& context
     if (!forced) {
         // **Stand-in**: the chief is never quiet (none of his lines plays in Coney), so the forced flag the rest
         // reads stays clear. Not ported: the crew's range check (WarChief_CheckCrewInRange, #1520).
-        // A repeat of the command in force under a tactic: only its line again (not said), and for follow under the
-        // follow tactic WarriorFollowTactic_Repeat. **Stand-ins**: neither is built, and the tactic's `+0x18` byte
-        // (set by the attack, defend and hide tactics in cases Coney's do not model) reads clear.
-        if (host->crewHasTactic(chief) && rules.currentWarriorCommand.at(*player) == command) {
+        // A repeat of the command in force under a tactic whose `+0x18` byte is clear: only its line again (not
+        // said), and for follow under the follow tactic WarriorFollowTactic_Repeat. **Stand-ins**: neither is built;
+        // of the tactics that set the byte only the attack's does in Coney (the defend's for a member defending the
+        // other player and the hide's are not built).
+        if (host->crewTacticHoldsRepeat(chief) && rules.currentWarriorCommand.at(*player) == command) {
             return;
         }
     }

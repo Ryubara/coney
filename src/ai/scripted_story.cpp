@@ -739,8 +739,8 @@ bool ScriptedStory::startWarriorCommand(double chief, int command, bool forced) 
             crew->id(), std::make_unique<WarriorAttackTactic>(chief, *m_scripted, m_scripted->owner().formations()));
         return true;
     }
-    // Hold: the hold tactic, which gives the members their goals on its first process. **Coney stand-in**: a gang
-    // whose brain `+0x2d5` is set gets the hiding tactic (`0x003128a0`) instead, which Coney does not build yet.
+    // Hold: the hold tactic, which gives the members their goals on its first process. **Coney stand-in**: a chief
+    // whose brain's `+0x2d5` is set gets the hiding tactic (`0x003128a0`) instead, which Coney does not build yet.
     if (command == kCrewHold) {
         m_scripted->owner().gangs().setTactic(crew->id(), std::make_unique<WarriorHoldTactic>(chief, *m_scripted));
         return true;
@@ -786,10 +786,10 @@ int ScriptedStory::musicMood() const {
     return 0;
 }
 
-bool ScriptedStory::crewHasTactic(double chief) const {
+bool ScriptedStory::crewTacticHoldsRepeat(double chief) const {
     const Brain* lead = m_scripted->brain(chief);
     const Gang* crew = lead != nullptr ? lead->gang() : nullptr;
-    return crew != nullptr && crew->tactic() != nullptr;
+    return crew != nullptr && crew->tactic() != nullptr && !crew->tactic()->restartsOnRepeat();
 }
 
 double ScriptedStory::playerOne() const {

@@ -454,8 +454,9 @@ class StoryBindingHost {
     /// passed); `forced` is the dispatcher's forced flag, which also stands for the chief being quiet. Returns false
     /// when the chief has no brain (the dispatcher does not read it).
     virtual bool startWarriorCommand(double /*chief*/, int /*command*/, bool /*forced*/) { return false; }
-    /// Whether the crew of the war chief `chief` has a tactic (gang `+0x40`), which the dispatcher's repeat test asks.
-    [[nodiscard]] virtual bool crewHasTactic(double /*chief*/) const { return false; }
+    /// Whether the crew of the war chief `chief` has a tactic (gang `+0x40`) whose `+0x18` byte is clear
+    /// (ai::Tactic::restartsOnRepeat()), which the dispatcher's repeat test asks.
+    [[nodiscard]] virtual bool crewTacticHoldsRepeat(double /*chief*/) const { return false; }
     /// Player 1's human's handle (0 for none).
     [[nodiscard]] virtual double playerOne() const { return 0; }
 };

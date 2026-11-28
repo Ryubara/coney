@@ -177,7 +177,7 @@ class ScriptedStory final : public script::StoryBindingHost {
     bool startWarriorCommand(double chief, int command, bool forced) override;
     /// Whether the chief's brain has a gang with a tactic.
     /// @coney-only glue: the dispatcher's repeat test reads the chief's gang's tactic (gang `+0x40`) through the host
-    [[nodiscard]] bool crewHasTactic(double chief) const override;
+    [[nodiscard]] bool crewTacticHoldsRepeat(double chief) const override;
     [[nodiscard]] double playerOne() const override;
 
     /// The system music's mood round player 1: 1 (fight) while an AI human with health left targets him and has a fight

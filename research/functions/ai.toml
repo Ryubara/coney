@@ -6454,6 +6454,15 @@ coney = "src/ai/crew.h:WarriorAttackTactic"
 status = "legacy"
 
 [[function]]
+address = 0x003208e8
+name = "WarriorAttackTactic_Start"
+page = "ai-code.md#t2-warrior-attack"
+role = "gives the members their goals; sets the tactic's `+0x18` (a repeated attack starts again) when the gang's target is a valid enemy of the chief"
+level = "confirmed-code"
+coney = "src/ai/crew.h:WarriorAttackTactic::start"
+status = "compared"
+
+[[function]]
 address = 0x00320b60
 name = "WarriorStealTactic_Create"
 page = "ai-code.md#t2-warrior-steal"

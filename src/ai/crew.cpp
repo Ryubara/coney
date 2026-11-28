@@ -460,6 +460,10 @@ void WarriorAttackTactic::start(Gang& gang) {
         member->flush();
         member->pushGoal(std::make_unique<FollowAndAttackGoal>(*m_services, *m_formations, m_chief));
     }
+    // An attack begun on a valid enemy is started again by the same order, so the crew takes a new target.
+    if (const Brain* target = gang.chosenTarget(); target != nullptr && validEnemy(*chief, *target)) {
+        setRestartsOnRepeat(true);
+    }
 }
 
 // ---- HoldPositionGoal ----
