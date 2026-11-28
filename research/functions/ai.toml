@@ -576,8 +576,8 @@ name = "Gang_ShowMembersIcon"
 page = "ai-code.md#gang-functions"
 role = "`GangAttachSpinningIcon`: the overhead icon on every member"
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeGangAttachSpinningIcon"
+status = "compared"
 
 [[function]]
 address = 0x0016b358
@@ -585,8 +585,8 @@ name = "Gang_RemoveMembersIcon"
 page = "ai-code.md#gang-functions"
 role = "`GangRemoveSpinningIcon`"
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeGangRemoveSpinningIcon"
+status = "compared"
 
 [[function]]
 address = 0x0016b3d0
@@ -603,8 +603,8 @@ name = "Gang_SetDamageResponseById"
 page = "ai-code.md#gang-functions"
 role = "`GangSetDamageResponse`: brain `+0x220` of every current member"
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeGangSetDamageResponse"
+status = "compared"
 
 [[function]]
 address = 0x0016b4f0
@@ -1891,8 +1891,8 @@ page = "ai-code.md#script-bindings"
 kind = "helper"
 role = "script: set a human's brain type"
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeBrSetType"
+status = "compared"
 
 [[function]]
 address = 0x00292460
@@ -1919,8 +1919,8 @@ page = "ai-code.md#script-bindings"
 kind = "helper"
 role = "script: damage response `+0x220`"
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeBrSetDamageResponse"
+status = "compared"
 
 [[function]]
 address = 0x002927a8
@@ -2853,8 +2853,8 @@ page = "ai-goals.md#goal-engage-enemy"
 kind = "binding"
 role = "`GoalEngageEnemy`"
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeGoalEngageEnemy"
+status = "compared"
 
 [[function]]
 address = 0x002af5b0
@@ -4329,8 +4329,8 @@ page = "ai-goals.md#goal-move-to"
 kind = "binding"
 role = "`Goal_MoveToHuman` (type 6)"
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeGoalMoveToHuman"
+status = "compared"
 
 [[function]]
 address = 0x002dc4f8
@@ -6355,8 +6355,8 @@ page = "ai-code.md#t2-bindings"
 kind = "binding"
 role = "`TacticDomination`: `DominationTactic_Init`"
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeTacticDomination"
+status = "compared"
 
 [[function]]
 address = 0x00316ca0
@@ -6719,8 +6719,13 @@ name = "GameState_TurnWarriorCommands"
 page = "ai/index.md#warriors-functions"
 role = "the workers of `TurnWarriorCommands` (all on or off) and `IssueWarriorCommand` (for player 1)"
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeTurnWarriorCommands"
+status = "compared"
+
+[[function.gaps]]
+what = "hands the switch to every player's commands, not to `WCEnableAllCommands` (no human test, no command display switch)"
+relation = "not-ported"
+issue = 1726
 
 [[function]]
 address = 0x0041c2d0

@@ -581,8 +581,8 @@ address = 0x003648a0
 name = "lua_ActGiveWay"
 page = "../references/bindings/ai.md#actgiveway"
 level = "inferred"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeActGiveWay"
+status = "compared"
 
 [[function]]
 address = 0x00364ba8
@@ -1740,8 +1740,8 @@ address = 0x00378088
 name = "lua_ObjColor"
 page = "../references/bindings/world.md#objcolor"
 level = "confirmed-code"
-coney = "src/scripting/arena_bindings.cpp:addCharacterBindings"
-status = "legacy"
+coney = "src/scripting/arena_bindings.cpp:makeObjColor"
+status = "compared"
 
 [[function]]
 address = 0x00378320

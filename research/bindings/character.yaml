@@ -182,7 +182,9 @@
   depth: thorough
   notes: >-
     A human that is not pad-driven (per-player record `+0x1b` 0, inferred) runs its normal control even with the
-    flag, so the Rumble CPU follows its path as usual.
+    flag, so the Rumble CPU follows its path as usual. A handle that names no human does nothing, the switch
+    included; on does nothing more for a human already running the wheelchair control, and off gives the control and
+    the commands back only to one running it (confirmed (code) at 0x00234188).
   usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false}
   coney: implemented
 

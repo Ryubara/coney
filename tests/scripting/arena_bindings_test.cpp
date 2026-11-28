@@ -374,6 +374,9 @@ TEST_CASE("Survival's police: brain type, attack weight, class, position and the
 
 TEST_CASE("Wheelchair's control, auto-lock flag, reverse button, colour and a teleported object",
           "[scripting][rumble]") {
+    // Expected: characters-locomotion.md#wheelchair, confirmed (code): HuSetWheelchairControl (0x00234188) sets the
+    // flag, turns every command off and switch 11 to 0, and undoes it; objects.md#tint for ObjColor's word; the other
+    // bindings as their comments in src/scripting/arena_bindings.cpp say
     Level level;
     coney::camera::Cameras cameras;
     coney::world_objects::SpawnRecords records;
@@ -416,4 +419,68 @@ TEST_CASE("Wheelchair's control, auto-lock flag, reverse button, colour and a te
     // A quarter turn about -z (Quat_FromAxisAngle with the axis (0, 0, -1)).
     CHECK(std::abs(records.find(300.0)->rotation[2] + std::sqrt(0.5F)) < 1e-5F);
     CHECK(std::abs(records.find(300.0)->rotation[3] - std::sqrt(0.5F)) < 1e-5F);
+}
+
+TEST_CASE("HuSetWheelchairControl does nothing for a handle that names no human, and gives the commands back only to a "
+          "human who was in the chair",
+          "[scripting][rumble]") {
+    // Expected: characters-locomotion.md#wheelchair, confirmed (code): Human_SetWheelchairControl (0x00234188) acts
+    // only when the handle names a human (switch 11 included); on does nothing more for a human already running the
+    // wheelchair control; off clears the flag and sets switch 11 to 1, and gives the control and every command back
+    // only to a human running the wheelchair control
+    Level level;
+    coney::camera::Cameras cameras;
+    level.context.cameras = &cameras;
+    Brain& racer = level.scene.player();
+    cameras.enable(coney::camera::Cameras::kSwitchLookBehind, true);
+    level.call("HuSetWheelchairControl", {Value(99.0), Value(1.0)});
+    CHECK(cameras.enabled(coney::camera::Cameras::kSwitchLookBehind));
+
+    // Player 1 (handle 1), not in the chair, with a command off: off sets the switch and leaves the command off.
+    level.call("EnableCommand", {Value(1.0), Value(5.0), Value(0.0)});
+    const std::uint64_t disabled = racer.human().script().disabledCommands;
+    REQUIRE(disabled != 0);
+    cameras.enable(coney::camera::Cameras::kSwitchLookBehind, false);
+    level.call("HuSetWheelchairControl", {Value(1.0), Value(0.0)});
+    CHECK(cameras.enabled(coney::camera::Cameras::kSwitchLookBehind));
+    CHECK(racer.human().script().disabledCommands == disabled);
+
+    // In the chair, a command turned on again stays on when the chair is turned on a second time.
+    level.call("HuSetWheelchairControl", {Value(1.0), Value(1.0)});
+    REQUIRE(racer.human().hasFlag(coney::human::flag::kWheelchair));
+    level.call("EnableCommand", {Value(1.0), Value(5.0), Value(1.0)});
+    const std::uint64_t reopened = racer.human().script().disabledCommands;
+    level.call("HuSetWheelchairControl", {Value(1.0), Value(1.0)});
+    CHECK(racer.human().script().disabledCommands == reopened);
+    CHECK_FALSE(cameras.enabled(coney::camera::Cameras::kSwitchLookBehind));
+}
+
+TEST_CASE("ObjColor packs each component times 255 twice and writes the components back as floats",
+          "[scripting][rumble]") {
+    // Expected: objects.md#tint, confirmed (code): lua_ObjColor (0x00378088) reads the four components as floats,
+    // Obj_SetColour (0x00396bd0) hands each times 255 to Colour_PackFloat (0x0017aca8), which multiplies by 255 again
+    // and keeps Float_ToUInt's (0x0042c718) low byte (0 for a negative value), as 0xRRGGBBAA; then the four floats are
+    // written back into the table, whether or not the handle names an object.
+    // 0.3: 0.3F * 255 = 76.5, * 255 = 19507.5, 19507 = 0x4c33 -> 0x33. 2.25: 573.75 * 255 = 146306.25 -> 0x82.
+    Level level;
+    coney::world_objects::SpawnRecords records;
+    records.createPool(4);
+    level.context.spawnRecords = &records;
+    coney::world_objects::SpawnRecord glow;
+    glow.handle = 300.0;
+    glow.typeName = "dyn_w_mission";
+    REQUIRE(records.add(glow) != nullptr);
+    auto colour = std::make_shared<coney::script::Table>();
+    REQUIRE(colour->set(Value(1.0), Value(0.3)).has_value());
+    REQUIRE(colour->set(Value(2.0), Value(2.25)).has_value());
+    REQUIRE(colour->set(Value(3.0), Value(-1.0)).has_value());
+    level.call("ObjColor", {Value(300.0), Value(colour)});
+    CHECK(records.find(300.0)->tint == 0x33820000U);
+    CHECK(colour->get(Value(1.0)).number() == static_cast<double>(0.3F));
+    CHECK(colour->get(Value(4.0)).number() == 0.0);
+
+    // A handle that names nothing still has its table written back.
+    auto other = std::make_shared<coney::script::Table>();
+    level.call("ObjColor", {Value(999.0), Value(other)});
+    CHECK(other->get(Value(2.0)).number() == 0.0);
 }
