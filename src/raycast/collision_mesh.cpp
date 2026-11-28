@@ -303,7 +303,7 @@ void CollisionMesh::rayTestCell(std::uint32_t x, std::uint32_t y, std::uint32_t 
     }
 }
 
-void CollisionMesh::rayCast(const Ray& ray, RayResult& result, std::span<const std::uint8_t> excludeMaterials,
+void CollisionMesh::castRay(const Ray& ray, RayResult& result, std::span<const std::uint8_t> excludeMaterials,
                             std::uint32_t mask) const {
     // 1. Both ends in grid space and the cell box they span.
     const Vec3 start = toGrid(ray.origin);
@@ -481,7 +481,7 @@ void worldRayCast(const CollisionMesh* mesh, const Ray& ray, RayResult& result,
     if (mesh == nullptr) {
         return;
     }
-    mesh->rayCast(ray, result, excludeMaterials, mask);
+    mesh->castRay(ray, result, excludeMaterials, mask);
 }
 
 bool dropToGround(const CollisionMesh& mesh, float length, Vec3& position) {

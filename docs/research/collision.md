@@ -298,7 +298,7 @@ tall or more).
   header's counts against the chunk sizes, the clamp box against the grid, every grid offset and list against the
   index lists, every listed triangle and every triangle's vertices against their counts. It sets every triangle's
   enabled bit, as the original's handler does.
-- `rayCast` is `CollisionMesh_RayCast` with `RayTestCell`: the same cell box, the same column walk (half a cell off,
+- `castRay` is `CollisionMesh_RayCast` with `RayTestCell`: the same cell box, the same column walk (half a cell off,
   as above), the per-cast checked set, the mask and enabled rules, a material exclusion (a span of ids in place of
   the list ended by 1) and the nearest hit. Since #380 the walk fills a `RayResult` as the original does: an excluded
   triangle crossed fills it (without a hit) until a kept one is hit, so `worldRayCast` (`WorldManager_RayCast`) can

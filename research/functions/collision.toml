@@ -100,7 +100,7 @@ name = "CollisionMesh_RayCast"
 page = "physics-world.md#u16-world-ray"
 role = "ray against the mesh: the grid walk"
 level = "confirmed-code"
-coney = "src/raycast/collision_mesh.h:CollisionMesh::rayCast"
+coney = "src/raycast/collision_mesh.h:CollisionMesh::castRay"
 status = "compared"
 
 [[function]]

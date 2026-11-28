@@ -690,7 +690,7 @@ Confirmed (code) for what the cited original functions do (the sections above); 
   ([Unit 17](#u17-destroy) gives the level object's order, which is).
 
 **In Coney now:** `materialName` (`src/raycast/materials.*`), and `RayResult` with `worldRayCast`
-in `src/raycast/collision_mesh.*`. `CollisionMesh::rayCast(ray, result, exclude, mask)` is the walk and the cell
+in `src/raycast/collision_mesh.*`. `CollisionMesh::castRay(ray, result, exclude, mask)` is the walk and the cell
 test fills the result as above; the optional form `rayCast(ray, exclude, mask)` goes through `worldRayCast` and
 returns only a kept hit, so every existing caller keeps its answers (a kept triangle's nearest-first result is the
 same either way). Compared side by side with `0x0034fc08`, `0x0040db88`, `0x00350778` and `0x00350cd8`; the only

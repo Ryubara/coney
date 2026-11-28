@@ -125,7 +125,7 @@ class CollisionMesh final : public chunk::LoadedObject {
     /// included until a kept one is hit (RayResult). Presets nothing: worldRayCast() does. Walks the grid's columns as
     /// the original does, half a cell off its cell centres, so it meets the same triangles in the same order.
     /// @orig 0x00350cd8 CollisionMesh_RayCast (CollisionMesh.cpp)
-    void rayCast(const Ray& ray, RayResult& result, std::span<const std::uint8_t> excludeMaterials,
+    void castRay(const Ray& ray, RayResult& result, std::span<const std::uint8_t> excludeMaterials,
                  std::uint32_t mask) const;
 
     /// The nearest triangle `ray` hits within its length whose material is not in `excludeMaterials`, as
