@@ -225,18 +225,25 @@ TEST_CASE("a scene bind's reset ends a stun, a wound, rage and a throw's aim, an
     }
 }
 
-TEST_CASE("a bind ends every raging human's rage, whoever is bound (Humans_EndAllRage)", "[human][script][scenes]") {
+TEST_CASE("a bind ends every raging player's rage and leaves an AI human's (Humans_EndAllRage)",
+          "[human][script][scenes]") {
+    // docs/research/scenes.md#join-reset: Humans_EndAllRage walks the players' list (game state +0x224 / +0x228), not
+    // every human, so an AI human in rage keeps it through a bind.
     const FightCharacter character;
     Fight first(character, 30.0F);
     Fight second(character, 30.0F);
-    Fight calm(character, 30.0F);
+    Fight ai(character, 30.0F);
+    ai.human().setFighterProfile(
+        coney::human::FighterProfile{.player = false, .powerClass = coney::combat::kCivilianPowerClass, .health = 600});
     first.human().setRageMode(true);
     second.human().setRageMode(true);
-    const std::array<Human*, 3> humans{&first.human(), &second.human(), &calm.human()};
+    ai.human().setRageMode(true);
+    REQUIRE(ai.human().fighter().combat().rage().raging());
+    const std::array<Human*, 3> humans{&first.human(), &second.human(), &ai.human()};
     coney::human::endAllRage(humans);
     CHECK_FALSE(first.human().fighter().combat().rage().raging());
     CHECK_FALSE(second.human().fighter().combat().rage().raging());
-    CHECK_FALSE(calm.human().fighter().combat().rage().raging());
+    CHECK(ai.human().fighter().combat().rage().raging());
 }
 
 TEST_CASE("an arrested human stays where it is and is not alive until released", "[human][script]") {
