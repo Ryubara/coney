@@ -300,3 +300,23 @@ TEST_CASE("Wad refuses an override when the entry it names cannot be read to che
     CHECK(report->scripts.empty());
     CHECK_FALSE(wad->modded());
 }
+
+TEST_CASE("Wad gives an entry's size by name in any case, and fails for a name it lacks", "[wad][physics-unit-17]") {
+    // Expected: physics-world.md#u17-coney, confirmed (code)
+    TempDir folder;
+    folder.write("WARRIORS.DIR", twoEntryDir().span());
+    Bytes wadData;
+    wadData.text("hello").padTo(2048).u32(1).u32(2).u32(3);
+    folder.write("WARRIORS.WAD", wadData.span());
+    auto disc = Disc::open(folder.path());
+    REQUIRE(disc.has_value());
+    auto wad = Wad::open(std::move(*disc));
+    REQUIRE(wad.has_value());
+    // The index's sizes: global.lua 5 bytes, level1.lev 12.
+    CHECK(wad->entrySize("level1.lev") == 12U);
+    CHECK(wad->entrySize("LEVEL1.LEV") == 12U);
+    CHECK(wad->entrySize("Global.Lua") == 5U);
+    const auto missing = wad->entrySize("missing.lev");
+    REQUIRE_FALSE(missing.has_value());
+    CHECK(missing.error().code == ErrorCode::NotFound);
+}

@@ -420,3 +420,37 @@ TEST_CASE("a level file builds the level object from all its chunks, models link
     coney::io::MemoryStream again(file.span());
     CHECK(!coney::world::loadLevelFile(again, table).has_value());
 }
+
+namespace {
+
+// A stand-in for one of the level object's platform objects that writes its name to `log` when it is destroyed.
+class DestroyRecorder final : public coney::chunk::LoadedObject {
+  public:
+    DestroyRecorder(std::string name, std::vector<std::string>& log) : m_name(std::move(name)), m_log(&log) {}
+    DestroyRecorder(const DestroyRecorder&) = delete;
+    DestroyRecorder& operator=(const DestroyRecorder&) = delete;
+    ~DestroyRecorder() override { m_log->push_back(m_name); }
+    [[nodiscard]] std::string_view describe() const override { return m_name; }
+
+  private:
+    std::string m_name;
+    std::vector<std::string>* m_log;
+};
+
+} // namespace
+
+TEST_CASE("destroying the level object releases each model before its dictionary, skyline first",
+          "[level_object][physics-unit-17]") {
+    // Expected: physics-world.md#u17-destroy, confirmed (code)
+    std::vector<std::string> log;
+    auto level = std::make_unique<coney::world::LevelObject>();
+    const auto recorder = [&log](const char* name) { return std::make_unique<DestroyRecorder>(name, log); };
+    level->glowDictionary = recorder("glow dictionary");
+    level->levelWorld = recorder("level world");
+    level->skyline = {.dictionary = recorder("skyline dictionary"), .model = recorder("skyline model")};
+    level->skyBox = {.dictionary = recorder("sky dictionary"), .model = recorder("sky model")};
+    level->cloudBox = {.dictionary = recorder("cloud dictionary"), .model = recorder("cloud model")};
+    level.reset();
+    CHECK(log == std::vector<std::string>{"level world", "glow dictionary", "skyline model", "skyline dictionary",
+                                          "sky model", "sky dictionary", "cloud model", "cloud dictionary"});
+}

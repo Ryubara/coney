@@ -52,6 +52,9 @@ class Wad {
     /// an empty name or a malformed hash.
     [[nodiscard]] std::expected<const WadEntry*, Error> lookup(std::string_view nameOrHash) const;
 
+    /// The size of the entry called `name` (stub).
+    [[nodiscard]] std::expected<std::uint32_t, Error> entrySize(std::string_view name) const;
+
     /// Opens one entry's bytes as a stream. Fails as Disc::openFile() does.
     /// The original's stream file system prefixes the name and asks the IOP to read the entry's range of the WAD.
     /// An entry replaced by useOverrides() opens its file whole instead, at the file's own size.
