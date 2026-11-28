@@ -440,6 +440,7 @@ TEST_CASE("A gang becomes the enemy of every gang of a kind, and can be always s
 
 TEST_CASE("The fifth and sixth missions' goals: a turn, a guard, a lead chase, a devil run and a ledge thrower",
           "[ai][story]") {
+    // Expected: ai-scripting.md#scripted, confirmed (code)
     Level level;
     Brain& turner = level.add({44.0F, 40.0F, 0.0F});
     level.call("ActTurnToDir", {Value(2.0), Value(90.0), Value(1.0), Value(0.0)});
@@ -496,7 +497,7 @@ TEST_CASE("The fifth and sixth missions' goals: a turn, a guard, a lead chase, a
 
 TEST_CASE("WCEnableAllCommands switches only the players whose human is there and allows or disallows their menu",
           "[ai][story]") {
-    // Expected: ai-gangs.md#warrior-command-switches, confirmed (runtime)
+    // Expected: ai/index.md#warrior-command-switches, confirmed (runtime)
     Level level;
     // Player 1's human is the scene's player; there is no player 2.
     level.call("WCEnableAllCommands", {Value(false)});
@@ -513,7 +514,7 @@ TEST_CASE("WCEnableAllCommands switches only the players whose human is there an
 
 TEST_CASE("WCEnableCommand allows the menu again when it enables a command, and leaves it when it disables one",
           "[ai][story]") {
-    // Expected: ai-gangs.md#warrior-command-switches, confirmed (runtime)
+    // Expected: ai/index.md#warrior-command-switches, confirmed (runtime)
     Level level;
     level.call("HUDShowWarCommand", {Value(false), Value(0.0)});
     REQUIRE_FALSE(level.state.story.commandDisplay[0]);

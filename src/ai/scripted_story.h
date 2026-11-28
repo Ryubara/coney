@@ -173,6 +173,7 @@ class ScriptedStory final : public script::StoryBindingHost {
     /// the crew's tactic is cleared and its AI members flushed, then 2 defend has them track the chief, 1 attack look
     /// for enemies to fight (`FollowAndAttack` is not traced), 3 hold stand where they are; 4, 5 and 6 start nothing
     /// more.
+    /// @orig 0x0041c4e0 GameState_DispatchWarriorCommand (unknown)
     bool startWarriorCommand(double chief, int command, bool forced) override;
     /// Whether the chief's brain has a gang with a tactic.
     /// @coney-only glue: the dispatcher's repeat test reads the chief's gang's tactic (gang `+0x40`) through the host

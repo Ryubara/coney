@@ -295,7 +295,7 @@ A war chief (human `+0x3ac` = 1) orders his crew from a six-slot menu held open 
 **right stick**; releasing R2 gives the highlighted order. Each player panel owns one (`WarCommandDisplay`, panel
 `+0x1ef0`, built by `WarCommandDisplay_Init`, `0x001a62c0`); the commands themselves are on
 [AI: Warrior commands](ai-gangs.md#warrior-commands). Confirmed (code) at the addresses given unless marked. The
-menu's input and issue steps are confirmed (runtime)
+menu's input and issue steps were also seen in PCSX2
 ([`crew-command-menu`](../guides/pcsx2-recipes.md#crew-command-menu)): see the end of this section.
 
 **Input** (`Player_UseItemCommand`, `0x002843f8`; pad commands from [Combat](combat/index.md#commands): 1 is R2 held, 2
@@ -317,7 +317,7 @@ player). Release is tested before hold:
   down (`MessageHUD_Shutdown`: hidden, its display time left running), from three bindings: `HUDShowWarCommand(on,
   player)` (`0x001b4948`), `WCEnableCommand(human, command, on)` (`0x0041dbe8`) **only when `on` is set**, and
   `WCEnableAllCommands(on)` (`0x0041db08`) for each player whose human is there and is a war chief
-  ([the switches](ai-gangs.md#warrior-command-switches)). So enabling one command allows the menu again and
+  ([the switches](ai/index.md#warrior-command-switches)). So enabling one command allows the menu again and
   `WCEnableAllCommands(false)` disallows it. Confirmed (runtime), run r-20261127-enable-command-allows: after
   `HUDShowWarCommand(false, 0)` the word read 0, stayed 0 after `WCEnableCommand(player, 2, false)` and read 1 after
   `WCEnableCommand(player, 2, true)`; run r-20261127-enable-all-gate: `WCEnableAllCommands(false)` left it 0 and
@@ -423,7 +423,7 @@ colour (0, 0, 0, 143)) sized to the text plus (0.013, the record's `+0x64`). The
 command-text table (`0x006007c0`, filled by `CfgWarriorCommand` from
 [`GSTRING.COMMAND`](../references/text-labels.md#text-gstring-command); indexed by display slot, not command id); entry
 6 (`0x006007d8`), the **out-of-range** text, replaces it while the crew is out of range (game state `+0x414` + player,
-set by the [range check](ai-gangs.md#warrior-range-flag); confirmed (runtime), below) and entry 7 (`0x006007dc`) while
+set by the [range check](ai-gangs.md#warrior-range-flag); seen in PCSX2, below) and entry 7 (`0x006007dc`) while
 the highlighted command is disabled. Each is read every update while the menu is open and no command has been issued yet
 (`WarCommandDisplay_Update`, `0x001a7e48`, which copies the byte to `+0x154c`); after an issue the text is left as it
 was until it expires. **Runtime check** (PCSX2 2.9.94, a `level80` checkpoint state with the `scripted-pad` and

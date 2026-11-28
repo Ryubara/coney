@@ -875,7 +875,7 @@ an alarmed glass pane ([World objects](objects.md#pane)) and the code at `0x0021
 numbers they go with are inferred from those types (4 `Custom`, 1 `BreakAndEnter` for the store, 9
 `PrecinctAttack`).
 
-## Warrior commands {#warrior-commands}
+### Warrior commands {#warrior-commands}
 
 A war chief (a player human whose `+0x3ac` is 1) orders the crew, his gang, with one of seven **Warrior
 commands** ([Commands](../references/commands.md#warrior-command)). The menu (HUD `0x001a6c58`, R2 and the right
@@ -885,8 +885,9 @@ and the game itself go through one dispatcher, `0x0041c4e0(state, chief, command
 
 1. Nothing for no chief, while player 1's camera is a scene's (kind 4), while commands are locked (game state
    `+0x411`), when the human is not a war chief (`+0x3ac` = 1), while the player's menu is locked (`+0x42e` +
-   player) or when the command is disabled for the player (`+0x41e` + player × 7 + command, `WCEnableCommand`; the
-   player is human `+0x1b0`), tested in that order. The command number is not range-checked.
+   player) or when the command is disabled for the player (`+0x41e` + player × 7 + command, [the
+   switches](ai/index.md#warrior-command-switches); the player is human `+0x1b0`), tested in that order. The command
+   number is not range-checked.
 2. The command becomes the player's last asked for (`+0x41c` + player). **Unforced** (the menu): the chief is
    *quiet* when a line of his is still playing (his speech handle resolves) and his `+0x194` is clear, and from here
    on the dispatcher's forced argument holds that quiet flag (so step 3's clips and the attack's target, which wait
@@ -905,6 +906,7 @@ and the game itself go through one dispatcher, `0x0041c4e0(state, chief, command
    (`HideTactic_RegiveMember`, `0x00313028`); the others clear it at their construction and never set it. So a repeat of
    attack while the crew has a target starts it again. A crew with no tactic left (cleared by a script) takes the
    command again too. **Forced**, only defend (2) goes through the range check (quietly), and there is no repeat test.
+   Confirmed (code) at `0x0041c4e0` and the addresses given.
 3. Otherwise the gang's tactic is cleared, its shared target too, and the command is stored as the one in force
    (`GameState_StoreWarriorCommand`, `0x0041c4c8`, with the argument at `+0x42c` + player) and started: 0
    `0x00310e00` (given 9.0), 1 `0x00320530` (not quiet, the chief also plays clip 0x2a4 or 0x2a8, and the gang's
@@ -912,28 +914,12 @@ and the game itself go through one dispatcher, `0x0041c4e0(state, chief, command
    tactic of type 3, [the first mission](ai/index.md#level99)) or `0x003128a0` for a gang whose brain `+0x2d5` is
    set, 4 `0x00319570` (given 75.0), 5 `0x00320b60`; 6 starts nothing (it is still stored). After any of them,
    6 included, the `WCSetCallback` function is called with (chief, command) when one is set and the chief's handle
-   resolves (`GameState_CallWarriorCommandCallback`, `0x0041b5e0`).
+   resolves (`GameState_CallWarriorCommandCallback`, `0x0041b5e0`). Confirmed (code) at the addresses given.
 4. The chief says the command's line (`WarChief_SayCommand`, `0x0041cc40`, [below](#warrior-command-lines)): 0
    `follow` (`follow_hide` while hidden in shadow, `Human_IsHiddenInShadow` `0x00228168`), 1 `attack`, 2 `defend`,
    3 `hold` (`holdhide`), 4 `scatter`, 5 `steal` when the nearest store flag (activity `0xe`) is closer than 64 (8 m
    if that is a squared distance, inferred) and its zone still has objects (`ObjZone_HasObjects`, `0x0039a580`),
    else `vandal`; 6 none. **A forced command says nothing**, and neither does a quiet one (step 2).
-
-### The switches {#warrior-command-switches}
-
-Each player has seven enabled bytes, game state `+0x41e` + player × 7 + command, which the dispatcher tests (step 1
-above); `InitLevel`'s reset sets them all ([below](#warrior-follow)). Confirmed (code) at the addresses given:
-
-- **`WCEnableCommand(human, command, on)`** (`0x0041dbe8`): the byte of the player who controls `human` (human
-  `+0x1b0`); with `on` set it also allows that player's command display (`WarCommandDisplay_SetAllowed`, `0x001a6c38`,
-  [HUD](hud.md#warrior-command-menu)); a cleared `on` leaves the display alone. The command is not range-checked.
-- **`WCEnableAllCommands(on)`** (`0x0041db08`): for each of the two players whose human is there (the handle at game
-  state `+0x228` + player × 4 resolves) and is a war chief (`+0x3ac` = 1), all seven bytes, then the display allowed
-  or not as `on` says. A player with no human keeps his bytes and his display as they were. Confirmed (runtime), run
-  r-20261127-enable-all-gate: on level 99's street with no player 2, `WCEnableAllCommands(true)` then `(false)` left
-  player 2's seven bytes set and cleared player 1's. In `level80` checkpoint 2 the chapter's `Setup` turns all off
-  and follow back on before it adds its cast, and player 1's human is already there: after it player 1 had only
-  follow and player 2 all seven, confirmed (runtime), run r-20261127-level80-c2-enabled.
 
 ### The out-of-range flag {#warrior-range-flag}
 
@@ -1476,25 +1462,6 @@ formations `repo:src/ai/formations.h`, the Warrior commands `repo:src/ai/set_com
 `repo:src/ai/boss_goals.h`. What Coney does differently and what it leaves out is on
 [AI humans: Coney's implementation](ai/index.md#in-coney); the follow's sections above say where Coney differs on it,
 and the attack on sight is below.
-
-### The dispatcher and the switches in Coney {#warrior-commands-in-coney}
-
-`dispatchWarriorCommand` (`repo:src/scripting/story_bindings.cpp`) follows [the dispatcher](#warrior-commands): the
-tests in order, the last command asked for (`CharacterRules::lastWarriorCommand`), the repeat of the command in force
-(`CharacterRules::currentWarriorCommand`) while the crew has a tactic (`StoryBindingHost::crewHasTactic`), then the
-command stored and started and the `WCSetCallback` function called for every started command, 6 included. The menu's
-order stores the last command before the dispatcher (`script::giveWarriorCommand`). `WCEnableAllCommands` and
-`WCEnableCommand` follow [the switches](#warrior-command-switches), allowing the menu through
-`script::setWarCommandAllowed`. Tests: `repo:tests/ai/scripted_story_test.cpp`. What Coney leaves out:
-
-- **Coney's readings**: every human a player controls is a war chief (`+0x3ac` is not kept); a command outside 0-6 is
-  refused.
-- **Stand-ins**: the chief is never quiet and says no line (`WarChief_SayCommand` is not built), so a repeat does
-  nothing; the follow's repeat (`WarriorFollowTactic_Repeat`, `0x003114e0`) is not built; the tactics' `+0x18` byte
-  reads clear (Coney's attack, defend and hide tactics do not model the cases that set it).
-- **Not ported**: the range check (`WarChief_CheckCrewInRange`, `0x0041c338`) and its byte, #1520.
-- The command in force is not reset by Coney's `InitLevel` (it starts at 0); the follow every new player is given,
-  forced, stores it.
 
 ### Attacking on sight in Coney {#aggro-in-coney}
 

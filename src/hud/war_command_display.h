@@ -35,6 +35,7 @@ inline constexpr std::uint32_t kWarCommandFadeMs = 500;
 /// quadrant's base (0, 90, 180, 270) plus asin(|d| / 128) of one axis's offset d from 128 (x in the up-right and
 /// down-left quadrants, y in the other two; 128 or more counts as 90°). A byte of exactly 128 counts as up (y) for the
 /// quadrant and on both sides for the axis read, as WarCommandDisplay_ReadStick (0x001a7040) tests them.
+/// @orig 0x001a7040 WarCommandDisplay_ReadStick (unknown)
 [[nodiscard]] std::optional<float> warCommandStickAngle(std::uint8_t x, std::uint8_t y);
 
 /// The slot the menu highlights for a stick at `angle` (warCommandStickAngle()) with `current` highlighted: the

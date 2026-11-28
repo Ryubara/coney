@@ -6764,7 +6764,7 @@ status = "legacy"
 [[function]]
 address = 0x0041db08
 name = "GameState_EnableAllWarriorCommands"
-page = "ai-gangs.md#warrior-command-switches"
+page = "ai/index.md#warrior-command-switches"
 role = "all seven enabled bytes (`+0x41e + player × 7`) and the command display allowed, for each player whose human is there and is a war chief"
 level = "confirmed-code"
 coney = "src/scripting/human_bindings.cpp:makeWcEnableAllCommands"
@@ -6773,7 +6773,7 @@ status = "compared"
 [[function]]
 address = 0x0041dbe8
 name = "GameState_EnableWarriorCommand"
-page = "ai-gangs.md#warrior-command-switches"
+page = "ai/index.md#warrior-command-switches"
 role = "one enabled byte of the player who controls the human; enabling also allows that player's command display (`WarCommandDisplay_SetAllowed`)"
 level = "confirmed-code"
 coney = "src/scripting/story_bindings.cpp:makeWcEnableCommand"

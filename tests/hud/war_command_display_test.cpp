@@ -103,6 +103,7 @@ TEST_CASE("the command menu's slots map to the Warrior commands clockwise from u
 }
 
 TEST_CASE("the menu reads the right stick only past its dead zone, with a one-axis angle", "[hud][war-commands]") {
+    // Expected: hud.md#warrior-command-menu, confirmed (code)
     // At rest and at 80 % nothing is read; 90 % up is.
     CHECK_FALSE(warCommandStickAngle(raw(0.0F), raw(0.0F)).has_value());
     CHECK_FALSE(warCommandStickAngle(raw(0.0F), raw(-0.8F)).has_value());
@@ -125,6 +126,7 @@ TEST_CASE("the menu reads the right stick only past its dead zone, with a one-ax
 // highlight where it was (seen at runtime).
 TEST_CASE("a stick byte of exactly 128 counts as up for the quadrant and on both sides for the axis read",
           "[hud][war-commands]") {
+    // Expected: hud.md#warrior-command-menu, confirmed (code)
     // Exactly up at x 128: the up-right quadrant, read on the y axis: 90°, between slots, so nothing new is picked.
     CHECK(warCommandStickAngle(128, 0).value_or(-1.0F) == Catch::Approx(90.0F).margin(0.5F));
     CHECK(warCommandSlotAt(warCommandStickAngle(128, 0).value_or(-1.0F), 3) == 3);
@@ -216,6 +218,7 @@ TEST_CASE("the menu closes once the name's display time has run out after an ord
 }
 
 TEST_CASE("a human who is not a war chief gets no menu", "[hud][war-commands]") {
+    // Expected: hud.md#warrior-command-menu, confirmed (code)
     WarCommandDisplay display;
     WarCommandDisplay::Chief chief;
     chief.warChief = false;

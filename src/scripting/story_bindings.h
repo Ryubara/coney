@@ -468,6 +468,7 @@ class StoryBindingHost {
 /// command).
 ///
 /// Research: docs/research/hud.md#warrior-command-menu, docs/research/ai-gangs.md#warrior-commands
+/// @orig 0x001a6c58 WarCommandDisplay_Issue (unknown)
 void giveWarriorCommand(ScriptSystem& scripts, const BindingContext& context, double chief, int command);
 
 /// Registers kStoryBindings in `vm`: the humans', brains', gangs' and paths' bindings act through `context.ai`'s
@@ -481,6 +482,7 @@ void addStoryBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& co
 
 /// The handle of player `player`'s (0 or 1) human: the human `HuCreate` made for that player, or for player 0 the
 /// story host's player 1; nothing when that player has none.
+/// @coney-only Coney's lookup of a player's human, where the original reads the game state's handles (+0x228)
 [[nodiscard]] std::optional<double> playerHuman(const BindingContext& context, std::size_t player);
 
 /// Whether player `player`'s (0 or 1) Warrior command display may open (`WarCommandDisplay_SetAllowed`, display

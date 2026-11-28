@@ -118,7 +118,7 @@ workers) that belong to this page, by address.
 | `0x0041d758` / `0x0041d770` | `GameState_SetWarriorVandalize` / `GameState_SetWarriorWeapons` | `CfgSetWarriorVandalize` (`+0x5700`) and `CfgWarriorWeapons` (`+0x5704`) | confirmed (code) |
 | `0x0041d978` | `Cfg_SetExcludedVandalizeZone` | `CfgExcludedVandalizeZone`: `0x005148bc` (`0xffff` at set-up) | confirmed (code) |
 | `0x0041da50` / `0x0041da60` / `0x0041da70` | `Cfg_SetTurfInvasion` / `Cfg_SetGrappleCounters` / `GameState_SetPowerupPickup` | `CfgEnableTurfInvasion` (byte `+0x56e1`), `CfgEnableGrappleCounters` (`+0x56e3`), `CfgPowerupPickup` (`+0x56e5`) | confirmed (code) |
-| `0x0041db08` / `0x0041dbe8` | `GameState_EnableAllWarriorCommands` / `GameState_EnableWarriorCommand` | the per-player allowed bytes `+0x41e + player × 7 + command`: all seven for every war chief / one for one human; both tell the command display (`WarCommandDisplay_SetAllowed`) | confirmed (code) |
+| `0x0041db08` / `0x0041dbe8` | `GameState_EnableAllWarriorCommands` / `GameState_EnableWarriorCommand` | the per-player enabled bytes `+0x41e + player × 7 + command` and the command display ([the switches](#warrior-command-switches)) | confirmed (code) |
 | `0x0041dc80` / `0x0041dcf0` / `0x0041dd40` | `GameState_IssueWarriorCommandFor` / `GameState_LockWarriorCommands` / `GameState_SetWarriorCommandCallback` | `WarriorCommand_Dispatch` for a human / byte `+0x418 + player` / the callback name | confirmed (code) |
 | `0x0041dd68` | `GameState_SetAutoSwitch` | `WCEnableAutomaticSwitching`: byte `+0x431` (1 at set-up), which turns the war chief's [automatic commands](../ai-gangs.md#warrior-auto-commands) on or off | confirmed (code) |
 
@@ -813,6 +813,25 @@ What the first mission's scripts give a brain directly: GoalMoveToFlag, ActLookA
 GoalPlayDynAnimation, GoalBumLogic, GoalDealer, GoalRiot and GoalDevilRun. The section is on
 [AI scripting](../ai-scripting.md#scripted).
 
+### The Warrior command switches {#warrior-command-switches}
+
+Each player has seven enabled bytes, game state `+0x41e` + player × 7 + command, which [the
+dispatcher](../ai-gangs.md#warrior-commands) tests; `InitLevel`'s reset sets them all
+([follow](../ai-gangs.md#warrior-follow)). Confirmed (code) at the addresses given:
+
+- **`WCEnableCommand(human, command, on)`** (`GameState_EnableWarriorCommand`, `0x0041dbe8`): the byte of the player
+  who controls `human` (human `+0x1b0`); with `on` set it also allows that player's command display
+  (`WarCommandDisplay_SetAllowed`, `0x001a6c38`, [HUD](../hud.md#warrior-command-menu)); a cleared `on` leaves the
+  display alone. The command is not range-checked.
+- **`WCEnableAllCommands(on)`** (`GameState_EnableAllWarriorCommands`, `0x0041db08`): for each of the two players
+  whose human is there (the handle at game state `+0x228` + player × 4 resolves) and is a war chief (`+0x3ac` = 1),
+  all seven bytes, then the display allowed or not as `on` says. A player with no human keeps his bytes and his
+  display. Confirmed (runtime), run r-20261127-enable-all-gate: on level 99's street with no player 2,
+  `WCEnableAllCommands(true)` then `(false)` left player 2's seven bytes set and cleared player 1's. In `level80`
+  checkpoint 2 the chapter's `Setup` turns all off and follow back on before it adds its cast, with player 1's human
+  already there: after it player 1 had only follow and player 2 all seven, confirmed (runtime), run
+  r-20261127-level80-c2-enabled.
+
 ### Gangs, tactics and formations {#gangs}
 
 Confirmed (code) at the cited addresses unless a line says otherwise.
@@ -1151,6 +1170,18 @@ The menu itself (`repo:src/hud/war_command_display.cpp`, `repo:src/gamemodes/gam
 `repo:src/scripting/story_bindings.cpp`), which hands the tactic to `ScriptedStory::startWarriorCommand`
 (`repo:src/ai/scripted_story.cpp`). The original's columns: [Warrior commands](../ai-gangs.md#warrior-commands) and
 [the lines](../ai-gangs.md#warrior-command-lines).
+
+The dispatcher follows the original's tests in order: the last command asked for
+(`CharacterRules::lastWarriorCommand`, stored by the menu's order before the dispatcher, `script::giveWarriorCommand`),
+the repeat of the command in force (`CharacterRules::currentWarriorCommand`) while the crew has a tactic
+(`StoryBindingHost::crewHasTactic`), then the command stored and started and the `WCSetCallback` function called for
+every started command, 6 included. `WCEnableAllCommands` and `WCEnableCommand` follow [the
+switches](#warrior-command-switches), allowing the menu through `script::setWarCommandAllowed`. Tests:
+`repo:tests/ai/scripted_story_test.cpp`. **Coney's readings**: every human a player controls is a war chief (`+0x3ac`
+is not kept); a command outside 0-6 is refused. **Stand-ins**: the chief is never quiet and says no line, so a repeat
+does nothing; `WarriorFollowTactic_Repeat` (`0x003114e0`) is not built; the tactics' `+0x18` byte reads clear.
+**Not ported**: the range check (`WarChief_CheckCrewInRange`, `0x0041c338`) and its byte, #1520. The command in force
+is not reset by Coney's `InitLevel` (it starts at 0); the forced follow every new player is given stores it.
 
 The menu's "???" (user playtest, `level80` checkpoint 2) is `GSTRING.COMMAND` entry 7, the text the original shows for
 a **disabled** highlighted command ([HUD](../hud.md#warrior-command-menu)). That checkpoint's script switches every command
