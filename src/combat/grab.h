@@ -60,6 +60,7 @@ inline constexpr std::size_t kNoTarget = std::numeric_limits<std::size_t>::max()
 /// The index of the nearest available candidate within `range` of `from`, or kNoTarget; of equal distances the earlier
 /// (replacesKept()). **Coney choice**: the nearest by straight-line distance, with no facing cone; the original's
 /// search routine (`0x0027ac30`) is not researched beyond its range.
+/// @coney-only Coney's stand-in search for the circle's grab target; Player_FindCounterTarget is not ported
 [[nodiscard]] std::size_t nearestTarget(const anim::Vec3& from, std::span<const TargetCandidate> candidates,
                                         float range);
 
@@ -77,6 +78,7 @@ inline constexpr float kGrabbableHeight = 0.25F;
 /// `aim` and `maxHeight` above or below, or kNoTarget: the strong grapple's search (`0x0027a4b0`,
 /// docs/research/combat-grabs.md#strong-grapple); of equal distances the earlier (replacesKept()). **Coney choice**:
 /// nearest in plan distance.
+/// @orig 0x0027aa38 Player_FindSnapTarget (unknown)
 [[nodiscard]] std::size_t nearestInCone(const anim::Vec3& from, const anim::Vec3& aim,
                                         std::span<const TargetCandidate> candidates, float range, float halfAngle,
                                         float maxHeight);
