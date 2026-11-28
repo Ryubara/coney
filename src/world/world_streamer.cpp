@@ -107,6 +107,12 @@ float nearestPendingDistance(std::span<StreamedWorld* const> worlds, std::span<c
 PreloadResult preloadWorlds(std::span<StreamedWorld* const> worlds, std::span<const Vec3> cameras, float radius,
                             SectorBudget& budget, PartStore& store, std::uint64_t nowMs) {
     constexpr std::uint32_t kOtherPasses = 200;
+    // Clear the visible marks first (WorldManager_ResetVisibility, 0x0040e0b8, on the solid and detail worlds), so
+    // that what an earlier camera saw holds no part against unloading. The original clears them again after its pack
+    // load; Coney loads no pack in between, so once is the same.
+    for (StreamedWorld* world : worlds) {
+        world->resetVisibility();
+    }
     PreloadResult result;
     std::uint32_t otherPasses = 0;
     while (otherPasses < kOtherPasses) {

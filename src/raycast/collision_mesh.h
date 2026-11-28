@@ -228,7 +228,7 @@ class CollisionMesh final : public chunk::LoadedObject {
 [[nodiscard]] std::expected<void, Error> onCollisionMeshLoaded(chunk::ChunkStacks& stacks, std::uint32_t type);
 
 /// The world manager's ray: sets `result`'s material to kMaterialNone and its hit to false, leaves the rest as the
-/// caller had it, then casts `ray` into the level's collision `mesh` (CollisionMesh::rayCast()). Callers read
+/// caller had it, then casts `ray` into the level's collision `mesh` (CollisionMesh::castRay()). Callers read
 /// `result.hit`. Coney's choice: with no mesh (no level loaded) it reports nothing crossed, where the original reads a
 /// null level.
 /// @orig 0x0040db88 WorldManager_RayCast (WorldManagerPS2.cpp)

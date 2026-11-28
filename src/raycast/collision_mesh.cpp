@@ -333,8 +333,10 @@ void CollisionMesh::castRay(const Ray& ray, RayResult& result, std::span<const s
         return;
     }
     // 4. Walk the x columns along the ray's line in grid space (from the unclamped ends), its y at each column's
-    // edges ix and ix + 1, truncated and kept within the box. The edges sit on integers while cells are centred on
-    // them: the original's arithmetic, kept so the same cells are tested.
+    // edges ix and ix + 1, truncated. The edges sit on integers while cells are centred on them: the original's
+    // arithmetic, kept so the same cells are tested. Only the upper end is lowered to the box and only the lower end
+    // raised, so a column whose line lies wholly above or below the box tests no cell (the walk order decides which
+    // excluded triangle fills the result).
     const float slope = (end.y - start.y) / (end.x - start.x);
     const float intercept = start.y - slope * start.x;
     for (std::uint32_t ix = xmin; ix <= xmax; ++ix) {
@@ -344,7 +346,7 @@ void CollisionMesh::castRay(const Ray& ray, RayResult& result, std::span<const s
         if (y0 > y1) {
             std::swap(y0, y1);
         }
-        testColumn(ix, std::clamp(y0, ymin, ymax), std::clamp(y1, ymin, ymax));
+        testColumn(ix, std::max(y0, ymin), std::min(y1, ymax));
     }
 }
 

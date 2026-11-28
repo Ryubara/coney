@@ -101,11 +101,11 @@ struct PreloadResult {
     std::uint32_t failed = 0;   ///< Parts that could not be read.
 };
 
-/// The streaming loop before a level's first frame: runs updateStreaming() while it does work and the nearest missing
-/// sector of the last searches (nearestPendingDistance(), no new search) is within `radius` or there is none,
-/// counting the passes that did not load, up to 200. The original
-/// also loads the section's pack and stops at a real-time budget (15 or 30 s); Coney has no packs yet and reads
-/// synchronously, so the passes alone bound it.
+/// The streaming loop before a level's first frame: clears every world's visible marks (an earlier camera's must not
+/// keep a part loaded), then runs updateStreaming() while it does work and the nearest missing sector of the last
+/// searches (nearestPendingDistance(), no new search) is within `radius` or there is none, counting the passes that
+/// did not load, up to 200. The original also loads the section's pack and stops at a real-time budget (15 or 30 s);
+/// Coney has no packs yet and reads synchronously, so the passes alone bound it.
 /// @orig 0x0040e2d8 WorldManager_Preload (WorldManagerPS2.cpp)
 PreloadResult preloadWorlds(std::span<StreamedWorld* const> worlds, std::span<const Vec3> cameras, float radius,
                             SectorBudget& budget, PartStore& store, std::uint64_t nowMs);
