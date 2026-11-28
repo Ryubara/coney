@@ -319,13 +319,15 @@ void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float 
         m_slideUpdates = m_turnUpdates;
     }
     // Both humans switch on the same update: the victim plays the grabber's set's reaction, then its own hold.
+    // **Coney stand-in**: its hold state is `Grab_Link`'s link (no speech, styles or hint), its push sphere stays on.
     m_held->playPaired(clips::one(clip + 1), animator.anims(), m_rear ? clips::kGrabRearHeld : clips::kGrabHeld,
                        AnimState::Hold, TargetState::Held);
     // `Grab_Connect` builds both holds under the connecting clips in this update, and building them fires their ids'
     // animation callbacks (82 / 83, 84 / 85 from the rear): level99's PlayerState runs now, the length of the
     // connecting clip before the strong grapple's hit is scored with 82, and not again when the holds begin
     // (docs/research/characters-animation.md#anim-callbacks). **Coney's reading**: the four-clip mix's second clips (86
-    // / 87) are not reported; Coney's hold plays the one clip.
+    // / 87) are not reported; Coney's hold plays the one clip. **Coney stand-in**: the grabber's connecting clip and
+    // its hold were queued with the intro (startHold()), and its push sphere stays on.
     animator.announceFollowOn();
     m_held->announceFollowOn();
     m_pair = PairStage::Moving;
