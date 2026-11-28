@@ -1,0 +1,28 @@
+# Level80 checkpoint 2 for the `level80-crew-menu` clips pair scenario (tools/clips/level80-crew-menu.toml): cross
+# every second to skip the opening scene, then R2 held, the right stick up-right (defend, not enabled here), then up
+# (follow), and R2 released. Frames are 1/30 s from the level's first frame of play.
+30 tap cross
+60 tap cross
+90 tap cross
+120 tap cross
+150 tap cross
+180 tap cross
+210 tap cross
+240 tap cross
+270 tap cross
+300 tap cross
+330 tap cross
+360 tap cross
+390 tap cross
+420 tap cross
+450 tap cross
+480 tap cross
+510 tap cross
+540 tap cross
+570 tap cross
+600 tap cross
+720 press r2
+750 stick right 70 70
+800 stick right 0 100
+850 release r2
+852 stick right 0 0
