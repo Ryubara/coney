@@ -191,15 +191,16 @@ TEST_CASE("the disc's level80 checkpoint 4: the Destroyers break their block and
     for (const Brain* brain : cast.destroyers) {
         flags.push_back(brain->human().position());
     }
-    // Once an update from the scene's end: the first update each has a fight pushed, how far each has gone from his
-    // flag, how many fail "targets Cochise or Swan, or watches with a Spectate goal" from update 12 to 30, and any
-    // update a Destroyer targets the idle player (15 s, the earliest order of the original's runs).
+    // Once an update from the scene's end: the first update each has a fight pushed, how many fail "targets Cochise or
+    // Swan, or watches with a Spectate goal" from update 12 to 30, and any update a Destroyer targets the idle player
+    // (15 s, the earliest order of the original's runs); at update 60, how far each stands from his flag and from the
+    // nearer of Cochise and Swan.
     constexpr std::uint64_t kWatch = 450;
     std::vector<std::uint64_t> firstFight(cast.destroyers.size(), 0);
-    std::vector<float> farthest(cast.destroyers.size(), 0.0F);
     std::size_t failingAt12 = 0;
     std::size_t mostFailing = 0;
-    std::size_t movedBy60 = 0;
+    std::size_t offFlagAt60 = 0;
+    float farthestFromPairAt60 = 0.0F;
     int playerTargeted = 0;
     for (std::uint64_t update = 1; update <= kWatch; ++update) {
         run.run(1);
@@ -209,7 +210,6 @@ TEST_CASE("the disc's level80 checkpoint 4: the Destroyers break their block and
             if (firstFight[i] == 0 && fighting(brain)) {
                 firstFight[i] = update;
             }
-            farthest[i] = std::max(farthest[i], apart(brain.human().position(), flags[i]));
             const bool engaged = brain.target() == cast.cochise || brain.target() == cast.swan ||
                                  brain.findGoal(GoalType::Spectate) != nullptr;
             failing += engaged ? 0 : 1;
@@ -222,24 +222,34 @@ TEST_CASE("the disc's level80 checkpoint 4: the Destroyers break their block and
             mostFailing = std::max(mostFailing, failing);
         }
         if (update == 60) {
-            movedBy60 = static_cast<std::size_t>(std::ranges::count_if(farthest, [](float d) { return d > 0.5F; }));
+            for (std::size_t i = 0; i < cast.destroyers.size(); ++i) {
+                const coney::anim::Vec3 at = cast.destroyers[i]->human().position();
+                offFlagAt60 += apart(at, flags[i]) > 0.5F ? 1 : 0;
+                farthestFromPairAt60 =
+                    std::max(farthestFromPairAt60, std::min(apart(at, cast.cochise->human().position()),
+                                                            apart(at, cast.swan->human().position())));
+            }
         }
     }
     const std::uint64_t lastFight = std::ranges::max(firstFight);
     const bool allFought = std::ranges::none_of(firstFight, [](std::uint64_t u) { return u == 0; });
     std::printf(
         "  level80 brawl: last Destroyer fighting at update %llu, %zu failing at 12, at most %zu from 12 to 30, "
-        "%zu moved by 60, player targeted %d\n",
-        static_cast<unsigned long long>(lastFight), failingAt12, mostFailing, movedBy60, playerTargeted);
+        "%zu off their flags at 60, the farthest %.2f m from Cochise or Swan, player targeted %d\n",
+        static_cast<unsigned long long>(lastFight), failingAt12, mostFailing, offFlagAt60,
+        static_cast<double>(farthestFromPairAt60), playerTargeted);
     // Every Destroyer has FindEnemy and Melee by update 10 (the original: the last at 7 to 9).
     CHECK(allFought);
     CHECK(lastFight <= 10);
     // By update 12 all twelve target Cochise or Swan or watch; to update 30 at most one at a time fails it.
     CHECK(failingAt12 == 0);
     CHECK(mostFailing <= 1);
-    // How many have left their flags by more than 0.5 m within 60 updates is printed, not checked: the original's 10
-    // (run r-20261123-level80-block-breaks) come from the fight's band-keeping move, whose waiters back off to the
-    // ring and circle (scripting.md#level80-think-fight); #1663 adds the check.
+    // The block breaks into a ring: at update 60 at least 8 of the 12 stand more than 0.5 m from their flags (the
+    // original: 10 and 9, runs r-20261123-level80-block-breaks and r-20261128-level80-ring-shape), and every one is
+    // within 6 m of the nearer of Cochise and Swan (the original's farthest 5.42 m, the second run): the ring stays
+    // round the pair rather than drifting off (scripting.md#level80-think-fight).
+    CHECK(offFlagAt60 >= 8);
+    CHECK(farthestFromPairAt60 < 6.0F);
     // Nobody goes for the idle player before the order: the Warriors are not their enemies yet.
     CHECK(playerTargeted == 0);
 }
