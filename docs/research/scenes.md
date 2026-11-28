@@ -443,8 +443,11 @@ read `GoalJoin*`'s fifth argument (processNow), so the join always acts at once,
 asks (`true`; with `false` the original pushes the goal without processing it, confirmed (code) at `0x002e5300`, and
 the brain's update runs it later, inferred; the animation form's `Goal_JoinAnimation` `0x002e5650` ignores it,
 confirmed (code)). The fixed-scene and animation forms bind as the cinematic one does, their own walks to the role's
-start left to the host (a stand-in). Rudy then joins role 6
-and is moved by his role clip. Disc tests: through lesson 6 into `l99_c7` Rudy is in role 6 and moves 11.2 m
+start left to the host (a stand-in), and Coney's join handler switches player 1's brain (the pad) off and back on for
+them too, where only the cinematic goal holds the brain (`Brain_SetHeld` in its construct `0x002e53e0`, Start, End
+and Resume); the fixed-scene goal (`0x002e5128`) and the animation goal (`0x002e56f0`) never touch it, their Ends
+(`0x002e52a0`, `0x002e5870`) only turning steering back on, confirmed (code). Rudy then joins role 6 and is
+moved by his role clip. Disc tests: through lesson 6 into `l99_c7` Rudy is in role 6 and moves 11.2 m
 (`tests/platform/disc_level99_power_lesson_test.cpp`); the player still holds Rudy on the update before the play and no
 human is in a pair as it starts (`tests/platform/disc_level99_scene_grab_test.cpp`). Known difference: Coney starts
 `l99_c7` 7 updates earlier than the original (update 78 of 59 against 85), probably because Coney's scene preload is
