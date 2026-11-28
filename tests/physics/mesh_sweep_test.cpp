@@ -331,6 +331,7 @@ TEST_CASE("the sphere overlap returns 1 and puts the deepest kept first, from ei
 }
 
 TEST_CASE("the airborne push-out: the nearest wall, horizontally, r - distance", "[physics][mesh_sweep]") {
+    // Expected: physics-bodies.md#u2-003477c0-physicsbody-pushoutofwalls, confirmed (code)
     MeshScratch scratch;
     const auto wall = meshOf(wallFacingMinusX(0.0F));
     const auto push = coney::physics::pushOutOfWalls(*wall, Sphere{Vec3{-0.3F, 0, 1}, 0.5F}, scratch);
