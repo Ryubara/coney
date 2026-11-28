@@ -419,8 +419,11 @@ Confirmed (runtime), run r-20261128-level80-c2-menu-disc: at `level80` checkpoin
 (display `+0x340`) read instance 6, word `0xd0100`, height 0.07 and width 0.0689, its backing (`+0xf40`) instance 6,
 word `0xd0100`, height 0.077 and width 0.0758, both over the texture rectangle (0.9575, 0.7231)-(0.9878, 0.7847): each
 width is its height times the rectangle's texel aspect (0.984; `BaseWidget_UpdateSize`, `0x001a21e8`), so the disc
-draws round, and the picture shows six round slots. A read in the same frame as a resize can catch the width as
-`BaseWidget_SetSize` leaves it before that update (0.1 and 0.11 were read once):
+draws round, and the picture shows six round slots. An earlier read in the same run read widths of 0.1 and 0.11
+instead, which are the heights times the device's width conversion: 0.07 × 640 / 448 = 0.1 and 0.077 × 640 / 448 =
+0.11. That read is put down to a resize in progress, `BaseWidget_SetSize(.., 1)` having converted the width before
+the widget's update set it from the height by the texel aspect (**inferred** from `0x001a7e48`, where each such
+`SetSize` is followed straight away by that update):
 
 | Slot | Position | Icon rectangle |
 | --- | --- | --- |

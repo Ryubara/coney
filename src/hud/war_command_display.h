@@ -46,6 +46,8 @@ struct WarCommandSlotSprites {
 };
 
 /// The sprites of menu slot `slot` (0-5; slot 0 for any other).
+///
+/// Research: docs/research/hud.md#war-command-disc
 /// @orig 0x001a62c0 WarCommandDisplay_Init (unknown)
 [[nodiscard]] WarCommandSlotSprites warCommandSlotSprites(std::size_t slot);
 
