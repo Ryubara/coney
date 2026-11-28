@@ -2,14 +2,14 @@
 # (tools/clips/level99-sparring-tie.toml); the set-up is the `level99-sparring` scenario's
 # (tools/clips/level99-sparring.toml), played from checkpoint 1 (`--play-level level99 --checkpoint 1`). Once the scene
 # `l99_c5` has let the humans go, the developer console's lua line stops the sparring Warriors' brains (GangSuspend), so
-# they stand where they are put, then puts the player on a whole-metre point where he stands, facing +y, and two of the
-# Warriors 1 m to his left and right and 1.5 m ahead, facing him: the same distance to the last bit. The third goes 8 m
-# off. Square then picks between two equals. Frames are 1/30 s from the level's first frame of play.
+# they stand where they are put, then puts the player on a whole-metre point near where he stands, facing +y, and two
+# of the Warriors 1 m to his left and right and 1.5 m ahead, facing him: the same distance to the last bit. The third
+# goes 8 m off. Square then picks between two equals. Frames are 1/30 s from the level's first frame of play.
 0 stick left 0 0
 100 tap cross
 300 console lua AddFenceWarriors1()
 301 console lua GangMakeFriends(0,GangFenceWarriors1)
 302 console lua P1.SetupWarriors()
 850 console lua "GangSuspend(GangCombatWarriors, 1)"
-851 console lua "local p = HuGetPosition(player); local x = math.floor(p.x); local y = math.floor(p.y); Teleport(player, {x, y, p.z}, 0); Teleport(CombatWarriors.Generic2, {x - 1, y + 1.5, p.z}, 180); Teleport(CombatWarriors.Generic3, {x + 1, y + 1.5, p.z}, 180); Teleport(CombatWarriors.Generic1, {x, y + 8, p.z}, 180)"
+851 console lua "Teleport(player, {-287, 122, 0.25}, 0); Teleport(CombatWarriors.Generic2, {-288, 123.5, 0.25}, 180); Teleport(CombatWarriors.Generic3, {-286, 123.5, 0.25}, 180); Teleport(CombatWarriors.Generic1, {-287, 130, 0.25}, 180)"
 900 tap square
