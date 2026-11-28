@@ -27,7 +27,8 @@ SectorPoolSizes sectorPoolSizes(std::uint64_t largestFree, std::uint64_t largest
     // Coney's choice: a block under 128 KB gives an empty pool, where the original's size would go negative.
     SectorPoolSizes sizes;
     sizes.sectorPool = largestFree > kLeftFree ? largestFree - kLeftFree : 0;
-    // The second pool, from what is left, raised to 4 KB.
+    // The second pool, from what is left, raised to 4 KB. Coney's choice: as for the first, only its size is kept;
+    // the heap objects, their tracking and their registration have no counterpart.
     constexpr std::uint64_t kSecondMinimum = 0x1000;
     const std::uint64_t second = largestFreeAfter > kLeftFree ? largestFreeAfter - kLeftFree : 0;
     sizes.sectorPool2 = std::max(second, kSecondMinimum);
