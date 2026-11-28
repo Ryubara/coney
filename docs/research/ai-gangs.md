@@ -888,25 +888,27 @@ and the game itself go through one dispatcher, `0x0041c4e0(state, chief, command
    player) or when the command is disabled for the player (`+0x41e` + player × 7 + command, [the
    switches](ai/index.md#warrior-command-switches); the player is human `+0x1b0`), tested in that order. The command
    number is not range-checked.
-2. The command becomes the player's last asked for (`+0x41c` + player). **Unforced** (the menu): the chief is
-   *quiet* when a line of his is still playing (his speech handle resolves) and his `+0x194` is clear, and from here
-   on the dispatcher's forced argument holds that quiet flag (so step 3's clips and the attack's target, which wait
-   for "not forced", wait for "not quiet"). Then the **range check** (`WarChief_CheckCrewInRange`, `0x0041c338`):
-   when the gang's nearest other member is more than 50 m away (squared distance over 2500), the command is
-   **refused** and, unless quiet, the chief says **18 `range`**, or **92 `range2`** when any member is cuffed or
-   knocked out (`Human_SayCommand(1.0, chief, …, no interrupt)`); game state `+0x414` + player records the refusal
-   ([The out-of-range flag](#warrior-range-flag)). Within range, a **repeat** only repeats the line
-   (`WarChief_SayCommand`, `0x0041cc40`) and, for 0 under a tactic of type `0x12`, calls `WarriorFollowTactic_Repeat`
-   (`0x003114e0`: each AI member holding `FollowPlayer` but no `FollowFormation` gets `FollowFormation` (0.75 m) on
-   the leader). A repeat is the command **in force** (`+0x41a` + player, stored when a tactic starts, step 3), not
-   the last asked for, with the gang's tactic present (gang `+0x40`) and its byte `+0x18` clear. That byte is the
-   tactic's own: the attack tactic's start sets it when the gang's target is a valid enemy of the chief
-   (`WarriorAttackTactic_Start`, `0x003208e8`), the defend tactic when a member defends the other player
+2. The command becomes the player's last asked for (`+0x41c` + player). **Unforced** (the menu): the chief is *quiet*
+   when a line of his is still playing (his speech handle resolves) and his `+0x194` is clear, and from here on the
+   dispatcher's forced argument holds that quiet flag (so step 3's clips and the attack's target, which wait for "not
+   forced", wait for "not quiet"). Then the **range check** (`WarChief_CheckCrewInRange`, `0x0041c338`): when the gang's
+   nearest other member is more than 50 m away (squared distance over 2500), the command is **refused** and, unless
+   quiet, the chief says **18 `range`**, or **92 `range2`** when any member is cuffed or knocked out
+   (`Human_SayCommand(1.0, chief, …, no interrupt)`); game state `+0x414` + player records the refusal ([The
+   out-of-range flag](#warrior-range-flag)). Within range, a **repeat** only repeats the line (`WarChief_SayCommand`,
+   `0x0041cc40`) and, for 0 under a tactic of type `0x12`, calls `WarriorFollowTactic_Repeat` (`0x003114e0`: each AI
+   member holding `FollowPlayer` but no `FollowFormation` gets `FollowFormation` (0.75 m) on the leader). A repeat is
+   the command **in force** (`+0x41a` + player, stored when a tactic starts, step 3), not the last asked for, with the
+   gang's tactic present (gang `+0x40`) and its byte `+0x18` clear. That byte is the tactic's own: the attack tactic's
+   start sets it when the gang's target is a valid enemy of the chief (`WarriorAttackTactic_Start`, `0x003208e8`), and
+   so does its update (`WarriorAttackTactic_Process`, `0x003209d0`) on any update while the leader is locked on
+   (`Human_IsLocked`, L1) and his target is not friendly to him (`Human_IsFriendly`, `Brain_IsFriendly` `0x00290230`)
+   and no player (human `+0x1b0` = -1); the defend tactic when a member defends the other player
    (`DefendTactic_GiveGoals`, `0x00310288`), the hide tactic when it gives a member his goal again
    (`HideTactic_RegiveMember`, `0x00313028`); the others clear it at their construction and never set it. So a repeat of
-   attack while the crew has a target starts it again. A crew with no tactic left (cleared by a script) takes the
-   command again too. **Forced**, only defend (2) goes through the range check (quietly), and there is no repeat test.
-   Confirmed (code) at `0x0041c4e0` and the addresses given.
+   attack while the crew has a target, or once the chief has locked onto an enemy, starts it again. A crew with no
+   tactic left (cleared by a script) takes the command again too. **Forced**, only defend (2) goes through the range
+   check (quietly), and there is no repeat test. Confirmed (code) at `0x0041c4e0` and the addresses given.
 3. Otherwise the gang's tactic is cleared, its shared target too, and the command is stored as the one in force
    (`GameState_StoreWarriorCommand`, `0x0041c4c8`, with the argument at `+0x42c` + player) and started: 0
    `0x00310e00` (given 9.0), 1 `0x00320530` (not quiet, the chief also plays clip 0x2a4 or 0x2a8, and the gang's
@@ -999,10 +1001,10 @@ with line `0x85`. None of their Process functions ever ends the tactic (they ret
   3 s inside the radius, a walk back outside it; an enemy not targeting him: turn to him; one targeting him: a fight
   goal (4000 ms) when in sight and reach from inside the radius, else turn and shuffle. Events 17 (`+4` = 0), 19 and 22
   (`+8` = 1) hold again; 20 (violence) makes a free member look at the fighter for 3 s and taunt at 10 %.
-- <span id="warrior-hide"></span>**Hide** (`0x13`, the hold for a gang whose brain `+0x2d5` is set): from the hiding
-  flag (activity `0x21`) nearest the chief, ten 10 m rays 15° apart find wall points; each member gets Hide (`0x58`) at
-  a free wall point at least 1 m from the chief. Events 1 and 16 (a player attacked while hidden in shadow): when no
-  free member is left, the attack command is dispatched for the chief; another gang's tactic stops.
+- <span id="warrior-hide"></span>**Hide** (`0x13`, the hold for a chief whose brain's `+0x2d5` is set): from the
+  hiding flag (activity `0x21`) nearest the chief, ten 10 m rays 15° apart find wall points; each member gets Hide
+  (`0x58`) at a free wall point at least 1 m from the chief. Events 1 and 16 (a player attacked while hidden in
+  shadow): when no free member is left, the attack command is dispatched for the chief; another gang's tactic stops.
 - <span id="warrior-scatter"></span>**Scatter** (`0x25`): up to six hiding flags (activity `0x21`) within 75 m of the
   chief and at least 10 m from him, reachable, nearest first; members get Scatter (`0x37`) to them in turn, at a random
   navigable point 1-1.5 m from the flag (no flags: Scatter with no flag). Events 1 and 16 on a member at his flag: he

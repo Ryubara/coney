@@ -1171,19 +1171,20 @@ The menu itself (`repo:src/hud/war_command_display.cpp`, `repo:src/gamemodes/gam
 (`repo:src/ai/scripted_story.cpp`). The original's columns: [Warrior commands](../ai-gangs.md#warrior-commands) and
 [the lines](../ai-gangs.md#warrior-command-lines).
 
-The dispatcher follows the original's tests in order: the last command asked for
-(`CharacterRules::lastWarriorCommand`, stored by the menu's order before the dispatcher, `script::giveWarriorCommand`),
-the repeat of the command in force (`CharacterRules::currentWarriorCommand`) while the crew has a tactic whose
-`+0x18` byte is clear (`StoryBindingHost::crewTacticHoldsRepeat`, `ai::Tactic::restartsOnRepeat`, set by the attack
-tactic's start when the gang's target is a valid enemy of the chief), then the command stored and started and the
+The dispatcher follows the original's tests in order: the last command asked for (`CharacterRules::lastWarriorCommand`,
+stored by the menu's order before the dispatcher, `script::giveWarriorCommand`), the repeat of the command in force
+(`CharacterRules::currentWarriorCommand`) while the crew has a tactic whose `+0x18` byte is clear
+(`StoryBindingHost::crewTacticHoldsRepeat`, `ai::Tactic::restartsOnRepeat`, set by the attack tactic's start when the
+gang's target is a valid enemy of the chief, and by its update once the chief is locked onto a target not friendly to
+him and no player: `ai::WarriorAttackTactic::update`, `ai::isFriendly`), then the command stored and started and the
 `WCSetCallback` function called for every started command, 6 included. `WCEnableAllCommands` and `WCEnableCommand`
 follow [the switches](#warrior-command-switches), allowing the menu through `script::setWarCommandAllowed`. Tests:
-`repo:tests/ai/scripted_story_test.cpp`. **Coney's readings**: every human a player controls is a war chief (`+0x3ac`
-is not kept); a command outside 0-6 is refused. **Stand-ins**: the chief is never quiet and says no line, so a repeat
-does nothing; `WarriorFollowTactic_Repeat` (`0x003114e0`) is not built; the defend's and hide's `+0x18` are not set
-(Coney does not build the cases that set them). **Not ported**: the range check (`WarChief_CheckCrewInRange`,
-`0x0041c338`) and its byte, #1520. The command in force is not reset by Coney's `InitLevel` (it starts at 0); the
-forced follow every new player is given stores it.
+`repo:tests/ai/scripted_story_test.cpp`. **Coney's readings**: every human a player controls is a war chief (`+0x3ac` is
+not kept); a command outside 0-6 is refused. **Stand-ins**: the chief is never quiet and says no line, so a repeat does
+nothing; `WarriorFollowTactic_Repeat` (`0x003114e0`) is not built; the defend's and hide's `+0x18` are not set (Coney
+does not build the cases that set them). **Not ported**: the range check (`WarChief_CheckCrewInRange`, `0x0041c338`) and
+its byte, #1520. The command in force is not reset by Coney's `InitLevel` (it starts at 0); the forced follow every new
+player is given stores it.
 
 The menu's "???" (user playtest, `level80` checkpoint 2) is `GSTRING.COMMAND` entry 7, the text the original shows for
 a **disabled** highlighted command ([HUD](../hud.md#warrior-command-menu)). That checkpoint's script switches every command
@@ -1209,7 +1210,7 @@ Around the commands:
 | --- | --- | --- |
 | Crew out of range | unforced (and forced defend): nearest member beyond 50 m refuses the command; 18 `range` / 92 `range2`; the per-player flag ([out-of-range flag](../ai-gangs.md#warrior-range-flag)) also refreshed quietly every 40 updates, shown as the menu's out-of-range text and read by the mission-failure check | **missing**: always given |
 | Forced and quiet orders | forced commands and a chief already speaking say nothing | silent always (no lines at all) |
-| Repeating the current order | unforced, the command in force under a tactic whose `+0x18` is clear: line again, no rebuild (follow adds `FollowFormation`); otherwise started again ([the dispatcher](../ai-gangs.md#warrior-commands)) | **partial**: the same test, with the attack's `+0x18` kept (set when its target is a valid enemy); no line, no follow repeat, and the defend's and hide's `+0x18` are not built |
+| Repeating the current order | unforced, the command in force under a tactic whose `+0x18` is clear: line again, no rebuild (follow adds `FollowFormation`); otherwise started again ([the dispatcher](../ai-gangs.md#warrior-commands)) | **partial**: the same test, with the attack's `+0x18` set as in the original (at its start on a valid enemy, on an update while the chief is locked onto an enemy); no line, no follow repeat, and the defend's and hide's `+0x18` are not built |
 | [Automatic commands](../ai-gangs.md#warrior-auto-commands) | follow → attack / defend / steal; attack, defend → follow; steal → follow beyond 15 m | **partial**: follow → attack and back only (`CrewOrders`, `repo:src/ai/crew.h`) |
 | Hiding in shadow | forced hold (hide) after 500 ms or the run time; the old command back on leaving | **missing** |
 | Revive ([Combat](../combat-reactions.md#revive)) | d-pad left (command `0x27`) near a revivable downed member with a flash: 351, 353 / 354, flash spent, healed, 76 / 75 | **partial**: player 1 revives (`repo:src/gamemodes/gameplay_revive.cpp`) a revivable member, but no code flags the crew revivable ([open question](../combat-reactions.md#revive)); no AI rescue (`SaveHuman`) |
