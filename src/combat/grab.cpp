@@ -28,7 +28,8 @@ float grabSearchRange(const AnimRangeList& ranges, GrabKind kind, float scale) {
 bool replacesKept(float distance, float kept, bool any) {
     // SortByKeyAscending sorts the pairs by their key with Libc_QsortBsd and Cmp_KeyAscending (0 for equal keys): below
     // 7 entries an insertion sort that swaps only past a greater key, so the earliest of the smallest keys comes first.
-    // Coney's stand-in: the same rule from 7 entries, where the qsort's partition may put a later equal first.
+    // Coney's stand-in: the same rule from 7 entries, where the qsort's partition may put a later equal first (left for
+    // #1597, which needs that qsort for the enemy scan).
     return any ? distance < kept : distance <= kept;
 }
 

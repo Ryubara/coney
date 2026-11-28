@@ -53,13 +53,16 @@ inline constexpr std::size_t kNoTarget = std::numeric_limits<std::size_t>::max()
 /// first, strictly nearer after it. Of equal distances the first in list order stays, as the original's sort leaves it:
 /// a BSD `qsort` that below 7 entries moves an entry back only past a greater key
 /// (docs/research/combat-targets.md#searches-coney).
-/// **Coney stand-in** for its lists of 7 or more, which that `qsort` partitions unstably.
+/// **Coney stand-in** for its lists of 7 or more, which that `qsort` partitions unstably: left for #1597, whose enemy
+/// scan needs the same sort past 16 entries.
 /// @orig 0x003868d0 SortByKeyAscending (unknown)
 [[nodiscard]] bool replacesKept(float distance, float kept, bool any);
 
 /// The index of the nearest available candidate within `range` of `from`, or kNoTarget; of equal distances the earlier
-/// (replacesKept()). **Coney choice**: the nearest by straight-line distance, with no facing cone; the original's
-/// search routine (`0x0027ac30`) is not researched beyond its range.
+/// (replacesKept()), as Player_FindCounterTarget's sort leaves it. **Coney choice**: the nearest by straight-line
+/// distance in one pass, with no facing cone; the original's `0x0027ac30` runs three filtered passes (the enemy filter,
+/// then a standing enemy, then any angle when the searcher has no target, docs/research/combat-targets.md#targets),
+/// which this leaves out.
 /// @coney-only Coney's stand-in search for the circle's grab target; Player_FindCounterTarget is not ported
 [[nodiscard]] std::size_t nearestTarget(const anim::Vec3& from, std::span<const TargetCandidate> candidates,
                                         float range);
@@ -75,9 +78,10 @@ inline constexpr float kStrongGrappleHeight = 2.0F;
 inline constexpr float kGrabbableHeight = 0.25F;
 
 /// The index of the nearest available candidate within `range` of `from` in plan, within `halfAngle` of the direction
-/// `aim` and `maxHeight` above or below, or kNoTarget: the strong grapple's search (`0x0027a4b0`,
-/// docs/research/combat-grabs.md#strong-grapple); of equal distances the earlier (replacesKept()). **Coney choice**:
-/// nearest in plan distance.
+/// `aim` and `maxHeight` above or below, or kNoTarget; of equal distances the earlier (replacesKept()). It ports the
+/// snap's search step (Player_FindSnapTarget's list within its range through the enemy filter, sorted, the first
+/// taken), and the strong grapple's search (`0x0027a4b0`, docs/research/combat-grabs.md#strong-grapple) uses it too.
+/// **Coney choice**: nearest in plan distance.
 /// @orig 0x0027aa38 Player_FindSnapTarget (unknown)
 [[nodiscard]] std::size_t nearestInCone(const anim::Vec3& from, const anim::Vec3& aim,
                                         std::span<const TargetCandidate> candidates, float range, float halfAngle,

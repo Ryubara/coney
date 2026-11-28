@@ -1,0 +1,13 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level99's sparring fight
+# (tools/clips/level99-sparring.toml) staged as a tie for #1590. The console's lua stops the sparring Warriors' brains
+# and puts the player and two of them at mirrored points, each Warrior 1 m to a side and 1.5 m ahead of him, the same
+# distance to the last bit; at frame 900 he presses square. Of two equal distances the original's searches take the
+# earlier slot (docs/research/combat-targets.md#searches-coney): before #1590 Coney's took the later one, so he turns
+# to the other Warrior.
+description = "level99 sparring fight: square between two Warriors placed the same distance away"
+level = "level99"
+input = "tools/clips/level99-sparring-tie.txt"
+checkpoint = 1
+ai_seed = 4
+start_frame = 840
+seconds = 6

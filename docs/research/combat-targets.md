@@ -1102,10 +1102,13 @@ in their order, whichever came first). From 7 entries it partitions around a med
 equals comes first depends on the rest of the list: inferred from the same code, and confirmed (runtime) in the same
 run, where of eight entries with seven equal keys the last of them came first. Coney's nearest-wins loops keep the first
 of equals the same way (`combat::replacesKept()`, `repo:src/combat/grab.h`: the first candidate within the range, then
-only a strictly nearer one), in every search above, the strong grapple's and the circle's grab search; the grid visits
-the candidates in the same order, so a tie falls to the earlier slot as in the original. For lists of 7 or more Coney
-keeps the earlier too, a marked stand-in ([Ties in long lists](#open-questions)). Tests: the tie cases of
-`repo:tests/human/target_passes_test.cpp`, `repo:tests/combat/grab_test.cpp` and, through the characters' step with the
+only a strictly nearer one), in every search above, the strong grapple's and the circle's grab search, and in Coney's
+own stand-ins for searches it has not ported: the tandem's (`Fighter::tandemTarget()`, standing in for the pick and grab
+searches, which sort so) and the forward check `Fighter::inFront()`. The grid visits the candidates in the same order,
+so a tie falls to the earlier slot as in the original. For lists of 7 or more Coney keeps the earlier too, a marked
+stand-in left for #1597, whose enemy scan needs the same sort past 16 entries ([Ties in long
+lists](#open-questions)). Tests: the tie cases of `repo:tests/human/target_passes_test.cpp`,
+`repo:tests/combat/grab_test.cpp`, `repo:tests/human/human_tandem_test.cpp` and, through the characters' step with the
 grid, `repo:tests/human/humans_test.cpp`.
 
 Where Coney still differs (stand-ins, each marked at the code):
@@ -1187,7 +1190,8 @@ target's own turn is not dropped there, a `Combatant` offering none.
   on the same list the original builds (its order and its 32-entry cap), so that of equal distances in a list of 7 or
   more the one it puts first is taken: from 7 entries its partition may put a later equal first (confirmed (runtime),
   run r-20261128-sort-equal-keys; [Equal distances](#searches-coney)), where Coney keeps the earlier. A tie in such a
-  crowd needs two of seven or more candidates at one distance.
+  crowd needs two of seven or more candidates at one distance. Left for #1597: the enemy scan (`Brain_ScanEnemies`
+  `0x0028b358`) sorts with the same `SortByKeyAscending` past 16 entries, so one port of the `qsort` serves both.
 - **L1's action delay**{#q-l1-delay}: who sets the per-player action delay (player state `+0x4d` / `+0x50`, read by
   `PlayerRec_GetActionDelayLeft`) that refuses L1 held ([The fight stance](#fight-stance)).
 

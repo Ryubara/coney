@@ -2907,6 +2907,7 @@ status = "compared"
 [[function.gaps]]
 what = "the earlier of equal distances is kept in lists of 7 or more too, where the qsort's partition may put a later one first"
 relation = "stand-in"
+issue = 1597
 question = "combat-targets.md#q-tie-long-lists"
 
 [[function]]
