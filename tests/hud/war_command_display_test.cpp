@@ -517,3 +517,31 @@ TEST_CASE("the slots' backings and plates are drawn from big_font rectangle 256 
         CHECK(sprite.position.y == Catch::Approx(icon.position.y));
     }
 }
+
+TEST_CASE("without a big_font batch the slots' discs are skipped, not drawn from part_page0", "[hud][war-commands]") {
+    // Expected: hud.md#coneys-implementation, confirmed (code): Coney's own guard, as its readings say (the original
+    // always has big_font, resource instance 6, resident); part_page0's rectangle 256 is another picture.
+    coney::graphics::SpriteSheet partsSheet;
+    partsSheet.texture = std::make_shared<coney::test::FakeTexture>(256, 256);
+    for (int i = 0; i < 300; ++i) {
+        partsSheet.page.rects.push_back(i == 256 ? Canvas::kDisc : coney::graphics::UvRect{0.0F, 0.0F, 0.1F, 0.1F});
+    }
+    coney::graphics::SpriteBatch parts(std::move(partsSheet), 64, 1.0F);
+    coney::graphics::SpriteBatch flat(coney::graphics::SpriteSheet{}, 64, 1.0F);
+    coney::hud::HudCanvas canvas;
+    canvas.parts = &parts;
+    canvas.flat = &flat;
+    // The HUD layer hands part_page0 for every font slot when big_font is not loaded.
+    canvas.text.textBatch = [&parts](int /*slot*/) { return &parts; };
+    WarCommandDisplay display;
+    const WarCommandDisplay::Chief chief;
+    display.open(chief, 0);
+    WarCommandDisplay::Look look;
+    display.render(canvas, look, 0);
+    // Only the six icons, none of them rectangle 256; nothing flat either.
+    REQUIRE(parts.sprites().size() == 6);
+    for (const auto& sprite : parts.sprites()) {
+        CHECK(sprite.uv.u0 != Catch::Approx(Canvas::kDisc.u0));
+    }
+    CHECK(flat.sprites().empty());
+}
