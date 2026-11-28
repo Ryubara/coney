@@ -1,0 +1,39 @@
+version = 1
+id = "r-20261128-level80-c2-crew-menu-look"
+date = "2026-11-28"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "6eb51f79b1675a38539c70811eed11bf7cb44ba14e96b4ecb95d97b393051807"
+
+[who]
+agent = "a3fd24b7f93648f26"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "street-end-run"
+patches = ["call-brains", "right-stick", "scripted-pad"]
+
+[run]
+name = ""
+method = "load-checkpoint recipe level80 checkpoint 2, the intro skipped with cross; pad recipe R2 held with the right stick up-right (defend, disabled here), then R2 held 60 updates with the stick up 1 % left of centre (follow) and let go; the window captured by handle every 268 ms (34 frames in 9.1 s); counted the frames that show the menu, the lit slot, the grey and gold name and a box behind the name"
+
+[values]
+defend_lit_gold_name_dark = 1
+picking_frames_follow_lit_name_grey = 8
+gold_name_frames_after_order = 7
+gold_name_ms_after_order = 1600
+gold_name_ms_after_highlight = 3700
+chosen_slot_hidden_first_after_order = 1
+name_box_visible = 0
+frame_ms = 268
+
+[addresses]
+WarCommandDisplay_Update = 0x001a7e48
+MarkupText_SetText = 0x001bb250
+WarCommandDisplay_Render = 0x001a8590

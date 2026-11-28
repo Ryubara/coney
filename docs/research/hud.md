@@ -384,9 +384,13 @@ its three sprites are hidden while the counter is below 2 (`0x0050d24c`) and sho
 finds it at 4 puts it back to 0 before the + 1. So the slot is hidden on the first two updates after the order, then
 on one update in four (the 6th, 10th, 14th, ...). The display closes (`WarCommandDisplay_Shutdown`, `0x001a6b80`,
 which clears the shown flag and releases the sprites but not the camera stick; the lit flag is cleared beside it)
-when its text has expired (`MarkupText_IsExpired`: the text's `<DISPLAYTIME>`, inferred), a test made on every
-update after the order, the hold's included. It closes at once if the chief goes down (`0x00227dd8`), and a lock that
-arrives while it is open ends it as if issued, with no command.
+when its text has expired (`MarkupText_IsExpired`, `0x001bb2f0`: the text's `<DISPLAYTIME>` end), a test made on
+every update after the order, the hold's included. While picking, `WarCommandDisplay_Update` sets the text on every
+update and `MarkupText_SetText` (`0x001bb250`) clears its end time each time, so the display time counts from the last
+update before the order, not from the last highlight change. Confirmed (runtime), run
+r-20261128-level80-c2-crew-menu-look: at `level80` checkpoint 2, with follow highlighted for 2 s before R2 came up,
+the gold name was still shown 1.6 s after the order, 3.7 s after the highlight was set. It closes at once if the
+chief goes down (`0x00227dd8`), and a lock that arrives while it is open ends it as if issued, with no command.
 
 **Seen at runtime** (PCSX2 2.9.129, level 99's street, a war chief with two Warriors; the
 [`crew-command-menu`](../guides/pcsx2-recipes.md#crew-command-menu) recipe): with R2 held (pad command 1) and the right
@@ -448,8 +452,13 @@ colour word. The lit flag is set by a stick read past the dead zone or by an ord
 closes, so a menu opened again shows no lit slot until the stick moves. The name is drawn in (110, 110, 110, 255)
 (`0xff6e6e6e`) while picking an enabled command, (30, 30, 30, 255) while picking a disabled one and gold after the
 order (the colour `MessageHUD_Draw`, `0x001bb038`, hands its layout; that it is the text's colour where its markup
-sets none is inferred from the layout's draw mode). The 16:9 and other modes overwrite the offsets and sizes
-(`0x001a7e48`); they are not listed here.
+sets none is inferred from the layout's draw mode). Render sets the text's `+0x18c` to 255 (`0x0050d320`) on every
+draw and `Update` fades only the eighteen slot sprites, so the name stays whole while they fade. Confirmed (runtime),
+run r-20261128-level80-c2-crew-menu-look: the follow slot lit gold with the name grey while picking, defend (disabled
+there) lit with the name dark, and after the order the chosen slot hidden first, the slots fading and the gold name
+whole after they had gone. The same run shows no box behind the name, while picking or after; who draws the box
+widget (`+0x90`, recoloured each update and never faded) is not traced. The 16:9 and other modes overwrite the
+offsets and sizes (`0x001a7e48`); they are not listed here.
 
 **No d-pad path:** the player's command handler gives the menu nothing on the d-pad (d-pad right is the flash);
 scripts order the crew with `WCIssueCommand`.
@@ -1110,14 +1119,16 @@ his menu is locked (a menu that is not allowed is left as it is); the right stic
 lock arriving while it is up ends it with no order, and a hidden HUD gives the order at once; the camera's right stick
 is off (`FollowCamera::enablePadStick`) from the opening until the update after the hold of 10; the fade starts on the
 hold's last update, the chosen icon over 1,500 ms and every other sprite over 500 ms, the chosen slot blinking from
-the order on, until the name's `<DISPLAYTIME>` closes it. It draws the six slots in [the
+the order on, until the name's `<DISPLAYTIME>`, counted from the last picking update, closes it; the name is not
+faded. It draws the six slots in [the
 colours](#war-command-colours) (the lit slot only once lit; nothing when not allowed or after an order of a disabled
 command) and the highlighted slot's `GSTRING.COMMAND` name (entry 7 for a disabled command) at x 0.5, grey, dark or
 gold. `HUDShowWarCommand`, `WCEnableCommand` (enabling) and `WCEnableAllCommands` (only for a player whose human is
 there) set whether the menu is allowed and shut its name down (`script::setWarCommandAllowed`).
 **Coney's readings**: player 1 is the war chief (`+0x3ac` is not kept) and his state flags do not hold the menu back; the
 stick reads a byte of 128 as the original does; the backing and plate are flat squares (the sprite word `0xd0100` is not
-mapped); the order is also given when play resumes under a closing pause menu (**Coney's reading**: any mode popped
+mapped); the name's box is drawn and fades with the slots (**stand-in**: the original shows none at that spot); the
+order is also given when play resumes under a closing pause menu (**Coney's reading**: any mode popped
 over play) and the menu closes when the chief is knocked out; not built: the two-player and 16:9 layouts. A script
 drives it as a player does: `press r2`, `stick right -70 70` (up-left, attack), `release r2`
 (`repo:tests/hud/war_command_display_test.cpp`).
