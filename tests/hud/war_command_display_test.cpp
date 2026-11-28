@@ -311,6 +311,57 @@ TEST_CASE("after an order the chosen icon fades over 1500 ms and its backing and
     CHECK(canvas.parts.sprites()[1].colour.a == 128);
 }
 
+TEST_CASE("the name's display time counts from the last update before the order", "[hud][war-commands]") {
+    // Expected: hud.md#warrior-command-menu, confirmed (code): WarCommandDisplay_Update (0x001a7e48) sets the name's
+    // text on every update while picking, and MarkupText_SetText (0x001bb250) clears its end time; seen in PCSX2 at
+    // level80 checkpoint 2 (the gold name still shown 2.4 s after the order).
+    WarCommandDisplay display;
+    Sounds sounds;
+    const coney::hud::HudSound sound = sounds.sound();
+    WarCommandDisplay::Chief chief;
+    chief.nameDisplayMs = 2500;
+    display.open(chief, 0);
+    // Two seconds of picking with the highlight left where it was, then the order.
+    std::uint64_t now = 0;
+    while (now < 2000) {
+        now += 33;
+        display.update(raw(0.0F), raw(0.0F), chief, now, sound);
+    }
+    REQUIRE(display.issue() == 0);
+    const std::uint64_t ordered = now;
+    while (now < ordered + 2400) {
+        now += 33;
+        display.update(raw(0.0F), raw(0.0F), chief, now, sound);
+    }
+    CHECK(display.shown());
+    while (now < ordered + 2600) {
+        now += 33;
+        display.update(raw(0.0F), raw(0.0F), chief, now, sound);
+    }
+    CHECK_FALSE(display.shown());
+}
+
+TEST_CASE("the name keeps its full alpha while the slots fade after an order", "[hud][war-commands]") {
+    // Expected: hud.md#warrior-command-menu, confirmed (code): WarCommandDisplay_Render (0x001a8590) sets the text's
+    // +0x18c to 255 on every draw; seen in PCSX2 (the gold name whole after the slots had gone).
+    WarCommandDisplay display;
+    Canvas canvas;
+    const WarCommandDisplay::Chief chief;
+    display.open(chief, 0);
+    REQUIRE(display.issue() == 0);
+    for (int n = 1; n <= 12; ++n) {
+        display.update(raw(0.0F), raw(0.0F), chief, static_cast<std::uint64_t>(n) * 33, coney::test::kSilent);
+    }
+    // 250 ms into the fade the slots are half gone; the name is not.
+    canvas.draw(display, 580);
+    REQUIRE(canvas.flat.sprites().size() == 12);
+    CHECK(canvas.flat.sprites()[3].colour.a == 128);
+    REQUIRE_FALSE(canvas.text.sprites().empty());
+    for (const auto& glyph : canvas.text.sprites()) {
+        CHECK(glyph.colour.a == 255);
+    }
+}
+
 TEST_CASE("the chosen slot blinks from the order on: hidden for two updates, then one update in four",
           "[hud][war-commands]") {
     // Expected: hud.md#warrior-command-menu, confirmed (code)
