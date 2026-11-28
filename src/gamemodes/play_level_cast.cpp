@@ -10,6 +10,7 @@
 #include <numbers>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -29,6 +30,7 @@
 #include "human/tag_colour.h"
 #include "raycast/collision_mesh.h"
 #include "scripting/sound_bindings.h"
+#include "world_objects/object_types.h"
 
 namespace coney {
 
@@ -98,6 +100,11 @@ void PlayLevelSimulation::makeCast(const ScriptedCast& cast, const ai::AiConfig&
         if (m_pickups != nullptr) {
             dropHeld(brain.human(), held);
         }
+    });
+    // HuDropWeapon drops only an object whose type has a kind (+0x86), read from the object database by type name.
+    cast.scripted->humanHost().setHeldKind([types = cast.types](std::string_view type) {
+        const world_objects::ObjectType* found = types != nullptr ? types->find(type) : nullptr;
+        return found != nullptr ? found->objectKind : 0;
     });
     // GoalPlayDynAnimation's clips are the level's dynamic clips, loaded from the disc when first named.
     cast.scripted->setClipSource([this](std::string_view name) { return m_dynamicClips.find(name); });
