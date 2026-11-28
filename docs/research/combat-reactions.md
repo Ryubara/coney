@@ -515,8 +515,9 @@ Confirmed (code). A mounted human is state `0x800` instead, and the dispatcher s
   so being down (`0x80000`) does not stop it. Confirmed (code). The counter's hit is 617-620's own, 50 health points,
   their damage in the generic set's [Anim Range List](combat/index.md#damage-table) (Disc check: read from the disc; the
   50 confirmed (runtime) above). A foe beyond it leaves no one; with no foe `Player_FindCounterTarget` (`0x0027ac30`)
-  runs but its result is dropped (`0x00255160`), so **only the foe is countered** (confirmed (code)); the request lasts
-  while the window is open (inferred: each `0x25` of the window asks again).
+  runs but its result is dropped (`0x00255160`), so **only the foe is countered** (confirmed (code)); the request
+  (`+0x14` = `0xe`) lasts until the human is no longer free to react or the counter plays, as the clear at `0x00255190`
+  is skipped without a target (confirmed (code), [Block](combat/index.md#block)).
 - **What opens it: the rise's own `0x25` events.** 199's clip, `gen_face_up_ground_get_up` (21 frames; the generic
   set's, and no character maps 199 to another clip), carries event **`0x25` on frames 11-18**, the duck's event
   ([Block](combat/index.md#block)); its other events are `0x43` and 7 at frame 0, `0x44` at 6, `0xb` at 9 and 14, and **`0x48`

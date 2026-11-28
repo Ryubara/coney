@@ -775,6 +775,9 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         updateL1(humansOnly(input), animator.flags());
     }
     combat::CombatInput in = combatInput(input, animator, false);
+    // **Coney's stand-in** (#683): the duck's counter runs after the warnings and the pending hit (takeNotice(),
+    // takePending()); Human_UpdateActions handles the request 0xe (0x002550f4) before them (0x00255218, 0x00255338)
+    // and returns once Block_DuckCounter has played, so a counter and a hit on one update land in the other order.
     if (riseCountered || duckCounter(humansOnly(input), animator)) {
         in.command = combat::command::kNone;
     }

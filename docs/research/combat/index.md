@@ -1006,8 +1006,9 @@ type 3 throws the attacker into 629. A blocked hit gives the attacker half the r
 `0x00101dd8`, `0x00245920` and `0x00254e78`:
 
 - An anim event of type **`0x24`** in the attacker's clip (`0x00101dd8`): if the attacker has a target
-  (`0x00226e60`) within twice the reach of its current anim (Anim Range List `+0x04`, `0x002544a0`), it sends the
-  target message **`0xa4`** (`0x003a2e00`).
+  (`0x00226e60`) nearer than twice the reach of its current anim (Anim Range List `+0x04`, `0x002544a0`), measured in
+  3D (`Object_Distance`, `0x00229960`; a target at exactly twice the reach is not warned), it sends the target message
+  **`0xa4`** (`0x003a2e00`).
 - The target's message handler (`0x00245920`), case `0xa4`: when `0x00225498` allows it (the target is not in one of
   its excluded states) and the target is **blocking** (`0x00223ad0`: state `0x8000`, or record `+0x08` `0x1000`), it
   takes the attacker as its target (`0x00226760`) and sets record `+0x14` = **`0xd`** (`0x002266a8`).

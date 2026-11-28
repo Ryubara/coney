@@ -60,11 +60,6 @@ what = "a type-10 event's message 0x8a carries the event's position; Coney's rel
 relation = "not-ported"
 issue = 1008
 
-[[function.gaps]]
-what = "an event 0x24 or 0x26 warns the target when it is nearer than twice the anim's reach in 3D (Object_Distance); Human::sendWarnings measures across the ground and takes twice the reach itself"
-relation = "stand-in"
-issue = 683
-
 [[function]]
 address = 0x001041f8
 name = "AnimCursor_Init"

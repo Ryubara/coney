@@ -44,6 +44,11 @@ relation = "not-ported"
 issue = 1577
 
 [[function.gaps]]
+what = "the warnings 0xa4 and 0xa6 test Human_IsFreeToReact; Fighter::takeNotice stands in with neither grabbed nor helpless"
+relation = "stand-in"
+issue = 683
+
+[[function.gaps]]
 what = "the release tests the clip that plays, where the original tests the human's held flags"
 relation = "stand-in"
 issue = 1577

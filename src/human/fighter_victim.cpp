@@ -100,7 +100,10 @@ void Fighter::takeNotice(const FighterInput& input, HumanAnimator& animator) {
     }
     if (notice.warning == combat::AttackWarning::Duck) {
         // The duck (record +0x14 = 0xd): 616, then the block again; the attack passes over it. Its attacker, the foe
-        // (Human_GetFoe 0x002267a0), is kept for the duck's counter.
+        // (Human_GetFoe 0x002267a0), is kept for the duck's counter. **Coney's stand-in** (#683): only the duck's
+        // warning sets this foe. The original's foe is also rewritten by a later hit (Human_SetFoe in
+        // Human_AddPendingDamage 0x00264bd8) and by an early block's warning (0xa6), whose action 0xc also drops a
+        // counter request still waiting.
         m_duckFoe = notice.from;
         m_counterAsked = false;
         animator.playCombat(clips::one(clips::clipOf(combat::kBlockDodge)), clips::kBlockSustain, AnimState::Hold,
