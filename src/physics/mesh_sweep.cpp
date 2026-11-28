@@ -152,81 +152,42 @@ int sweepCapsuleMesh(const raycast::CollisionMesh& mesh, const Aabb& worldBox, c
     const Sphere sphere{Vec3{sweep.feet.x, sweep.feet.y, sweep.feet.z + sweep.radius + sweep.footGap}, sweep.radius};
     scratch.found.clear();
     const CellRange cells = beginShapeQuery(mesh, worldBox, scratch);
-    // One triangle's turn of the walk: false for a turn that does not count (a kernel hit above 1).
-    const auto testTriangle = [&](std::uint32_t index) {
+    walkCells(mesh, cells, scratch, [&](std::uint32_t index) {
         // 1-3. Enabled, and a wall.
         if ((mesh.triangles()[index].flags & raycast::kTriangleEnabled) == 0) {
-            return true;
+            return;
         }
         WorkingTriangle t = loadTriangle(mesh, index);
         if (!capsuleWallNormal(t.normal)) {
-            return true;
+            return;
         }
         // 4. The side, from the centre at the start: behind a one-sided wall it is passed, a two-sided one turns.
         if (dot3(t.normal, sphere.centre) - dot3(t.normal, t.corners[0]) < kSideEpsilon) {
             if ((mesh.triangles()[index].flags & raycast::kTriangleTwoSided) == 0) {
-                return true;
+                return;
             }
             flip(t);
         }
         // 5. Only faces the move goes into.
         if (dot3(t.normal, sweep.move) >= -kMoveInto) {
-            return true;
+            return;
         }
         // 6-7. Not low or thin (on unit edges, lengths kept).
         computeEdges(t, true);
         if (lowOrThin(t, sweep.minWallHeight)) {
-            return true;
+            return;
         }
         // 8. The kernel on the real edges.
         t.plane = dot3(t.corners[0], t.normal);
         computeEdges(t, false);
         const TriangleSweep hit = sweepSphereTriangle(sphere, t, sweep.move);
-        // 9. A hit from 0 to 1 is kept. A hit above 1 leaves the turn uncounted (the branch-likely at 0x00348170 skips
-        // the counter's step), so the walk reads one more index.
-        if (hit.hit && hit.fraction > 1.0F) {
-            return false;
-        }
+        // 9. A hit from 0 to 1. Coney's choice (#1692): the original's loop counter misses a step after a hit above 1
+        // and reads one index past the cell's list (0x00348170); Coney does not.
         if (hit.hit && hit.fraction >= 0.0F && hit.fraction <= 1.0F) {
             scratch.found.push_back(
                 MeshContact{.key = hit.fraction, .triangle = index, .region = hit.mask, .working = t});
         }
-        return true;
-    };
-    // The cells x outermost, then y, then z, as walkCells() walks them, but with the original's turn counter: a turn
-    // that does not count gives the cell's walk one more, which reads the next value of the index buffer, past the
-    // cell's list (docs/research/physics-bodies.md#u2-capsule-walk-overrun). The read position steps on every turn.
-    const std::size_t triangleCount = mesh.triangles().size();
-    for (std::uint32_t x = cells.min[0]; x <= cells.max[0]; ++x) {
-        for (std::uint32_t y = cells.min[1]; y <= cells.max[1]; ++y) {
-            for (std::uint32_t z = cells.min[2]; z <= cells.max[2]; ++z) {
-                const std::size_t count = mesh.cellTriangles(x, y, z).size();
-                const std::span<const std::uint16_t> entries = mesh.cellListOnward(x, y, z);
-                std::size_t counted = 0;
-                // A stand-in bound for what the original reads past the buffer and past its triangles (whatever
-                // memory follows): the turns stop at the buffer's end, and an index past the triangles counts as a
-                // turn, as a visited one does.
-                for (std::size_t at = 0; counted < count && at < entries.size(); ++at) {
-                    const std::uint32_t index = entries[at];
-                    if (index >= triangleCount) {
-                        ++counted;
-                        continue;
-                    }
-                    // The visited bits: a triangle is tested once per query.
-                    const auto bit = static_cast<std::uint8_t>(1U << (index & 7U));
-                    std::uint8_t& byte = scratch.visited.at(index >> 3U);
-                    if ((byte & bit) != 0) {
-                        ++counted;
-                        continue;
-                    }
-                    byte = static_cast<std::uint8_t>(byte | bit);
-                    if (testTriangle(index)) {
-                        ++counted;
-                    }
-                }
-            }
-        }
-    }
+    });
     if (scratch.found.empty()) {
         return 0;
     }
