@@ -301,10 +301,10 @@ on `main` at `96644c00a`; paths are under `src/`. The summary first:
   five passes; `Player` bundles one human, the `Humans` stepper and one follow camera. Only `Player::update` reads a
   pad; everything below sees the `PlayerRecord`, the cleanest seam in the code. `Humans` already accepts several
   pad-controlled humans.
-- **In the way:** the level holds one `Player`. `Fighter` keeps raw pointers to its target, the held and the thrown
-  object; snapshots need them as ids. `PlayerRecord::cameraForward` comes from that player's follow camera, so the
-  server needs each player's camera (it simulates them, as the original does). Five tuning singletons (`bodyTuning`,
-  `climbTuning`, `jumpTuning`, `locomotionTuning`, `staminaTuning`) are mutable statics.
+- **In the way:** the level holds one `Player`. `Fighter` keeps raw pointers to its target, the duck's foe, the held
+  and the thrown object; snapshots need them as ids. `PlayerRecord::cameraForward` comes from that player's follow
+  camera, so the server needs each player's camera (it simulates them, as the original does). Five tuning singletons
+  (`bodyTuning`, `climbTuning`, `jumpTuning`, `locomotionTuning`, `staminaTuning`) are mutable statics.
 
 ### Combat (`combat/`) {#sub-combat}
 

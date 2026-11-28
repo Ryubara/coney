@@ -37,9 +37,11 @@ inline constexpr anim::Vec3 kAlongY{0.0F, 1.0F, 0.0F};
 // The range data the tests fight with: the damage measured on a civilian (combat.md#damage-table), the hit codes and
 // flags read at runtime (combat.md#hit-codes; `codes` replaces some ids' hit codes), a reach of 1 m (far 1.25 m) for
 // every attack, and the grab's and the tackle's far ranges and the grab's places; the strong grapple's strikes are
-// placed as the plain grab's connects. `damages` replaces or adds some ids' damage.
+// placed as the plain grab's connects. `damages` replaces or adds some ids' damage, and `fars` some ids' far range
+// (mm).
 inline combat::AnimRangeList fightRanges(const std::map<int, std::int16_t>& codes = {},
-                                         const std::map<int, std::int16_t>& damages = {}) {
+                                         const std::map<int, std::int16_t>& damages = {},
+                                         const std::map<int, std::int16_t>& fars = {}) {
     struct Move {
         std::int16_t damage;
         std::int16_t code;
@@ -156,6 +158,9 @@ inline combat::AnimRangeList fightRanges(const std::map<int, std::int16_t>& code
         if (animId == 72 || animId == 74 || animId == 657 || animId == 659) {
             far = 2500;
         }
+        if (const auto given = fars.find(animId); given != fars.end()) {
+            far = given->second;
+        }
         bytes.u16(static_cast<std::uint16_t>(place.x)).u16(static_cast<std::uint16_t>(place.y));
         bytes.u32(std::bit_cast<std::uint32_t>(place.reach)).u16(static_cast<std::uint16_t>(far));
         bytes.u16(static_cast<std::uint16_t>(move.damage)).u16(static_cast<std::uint16_t>(move.code)).u16(move.flags);
@@ -208,6 +213,9 @@ class Fight {
         m_targets.push_back(m_others.back().get());
         return *m_others.back();
     }
+
+    // Adds `target`, owned by the caller, to the humans the player may fight; it is not stepped.
+    void addCombatant(coney::human::Combatant& target) { m_targets.push_back(&target); }
 
     // Runs `frames` updates of `script`, calling `each` after every update with its index.
     template <typename Each> void run(std::string_view script, std::uint64_t frames, Each each) {

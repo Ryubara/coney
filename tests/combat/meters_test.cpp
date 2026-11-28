@@ -34,6 +34,7 @@ AnimRangeList rangesWithDamage(std::size_t count, std::int16_t damage) {
 } // namespace
 
 TEST_CASE("health takes damage down to 0 and reports its fraction", "[combat]") {
+    // Expected: combat-reactions.md#damage, confirmed (runtime) (health, record +0x144, falls by exactly the damage)
     Health health(314, 900);
     CHECK(health.fraction() == Approx(314.0F / 900.0F));
     CHECK(health.apply(17) == 17);
@@ -41,19 +42,6 @@ TEST_CASE("health takes damage down to 0 and reports its fraction", "[combat]") 
     CHECK(health.apply(400) == 297);
     CHECK(health.depleted());
     CHECK(Health(600).value() == 600);
-}
-
-TEST_CASE("pending damage keeps the update's largest hit and its kind", "[combat]") {
-    PendingDamage pending;
-    pending.add(17, 10);
-    pending.add(53, 38);
-    pending.add(36, 11);
-    CHECK(pending.damage() == 53);
-    CHECK(pending.kind() == 38);
-    Health civilian(600);
-    CHECK(pending.applyTo(civilian) == 53);
-    CHECK(civilian.value() == 547);
-    CHECK(pending.damage() == 0);
 }
 
 TEST_CASE("a strike's damage is its anim's range list value, or a quarter of it", "[combat]") {

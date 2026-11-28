@@ -596,7 +596,8 @@ There are two steer functions, and the attack record's **flag `0x8`** (record `+
 | Used by | `Attack_Start` and `Attack_StartSnap` for a kind **without** flag `0x8`; always by `Attack_StartAtTarget` (`0x00261c80`, the specials from `Player_Special`), `Attack_StartSolo` and the other callers | `Attack_Start` (`0x002625a8`), `Attack_StartSnap` (`0x00264460`), `Attack_StartGrounded` and `Revive_Start` for a kind **with** flag `0x8`, when the word `0x005102c4` is non-zero |
 | Slide time | the caller's time, cut to the first event + 0.1 s. `Attack_Start`, `Attack_StartAtTarget` and `Attack_StartSolo` pass the time to the first event (`0x00101658`), so the slide lasts **the time to the first event**; `Attack_StartSnap` passes 0.1 s | always **the time to the first event + 0.1 s**; the caller's time is not read |
 | Target point | the target's position (its task `+0x10`) | the target's **slot point 0** (`Human_GetLedSlotPoint(target, 0)`, `0x00226aa0`) |
-| Lead, reach, turn | the same in both: the lead by the target's velocity × (first event + 0.1 s), cut to 0.5 m; the reach along the line in x and y; the goal at the attacker's own height | |
+| Lead, turn | the same in both: the lead by the target's velocity × (first event + 0.1 s), cut to 0.5 m; the reach along the line in x and y; the goal at the attacker's own height | |
+| Reach | the clip's reach, +0.07 m for a target scaled above 1.1, else −0.1 m from behind him | the clip's plain reach (`AttackTable_GetReach`): no change for a big target or from behind (confirmed (code) at `0x00275678`) |
 
 `0x005102c4` is 1 on the disc and only read by these two callers (no write was found), so in practice flag `0x8`
 alone decides (inferred from the callers). So **653** (flags `0x26`) and **645** (`0x23`), both started by
@@ -619,8 +620,11 @@ Read in Ghidra: confirmed (code) where no other level is given.
   flattened**: the point is at head height. It is not a formation offset and not the hips (`+0x4e0` is aim point 2).
 - **Lead.** The target's velocity × (time to the first event + 0.1 s) is added to the head point: in full when it is
   at most 1 m long, or when the led point is nearer the attacker than the head itself; otherwise cut to 0.5 m long.
-- **The point serves both the turn and the stand.** The standing point is the led head point minus the reach along
-  the unit line from the attacker to it in plan; the turn (`Human_TurnToOver`) is to that line's heading (less the
+- **The point serves both the turn and the stand.** The standing point is the led head point minus the reach (the
+  clip's own, `AttackTable_GetReach`, with none of the other steer's big-target or rear changes; confirmed (runtime),
+  run r-20261127-s1-rear-led-steer: `S1` (reach 0.94 m) from behind PoizoCiv 1.2 m ahead, his back to the player and
+  his brain off, set the goal 0.944 m from his slot point 0, where the rear change would have given 0.84 m) along the
+  unit line from the attacker to it in plan; the turn (`Human_TurnToOver`) is to that line's heading (less the
   attack's own direction offset, `AttackTable_GetOffset`); the slide (`Human_MoveToOver`) runs over the time to the
   first event + 0.1 s.
 - **How far off the position**, confirmed (runtime), PCSX2 2.9.94, a copy of slot 6: X1 pressed at update 41 at

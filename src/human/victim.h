@@ -39,6 +39,12 @@ struct IncomingHit {
     bool charge = false;
     /// Who struck, as the run log names him (Fighter::logName()); empty when no human did. Coney's own, for the log.
     std::string attackerName{};
+    /// The attacker has double damage (human flag `0x4000`): the damage is doubled only once the hit is kept as the
+    /// update's largest, not before that test (`Human_AddPendingDamage` `0x00264bd8`, Victim::hit()).
+    bool doubled = false;
+    /// The victim is of class `0x80` and the attacker's brain a Warrior's: the kept damage is quartered after the
+    /// doubling.
+    bool quartered = false;
 };
 
 /// What a human taking hits is, for its reaction (docs/research/combat/index.md#hit-codes).
@@ -110,7 +116,10 @@ class Victim {
     /// A victim of power class `powerClass`, its coin flips (the dying clip, the mash's cut) seeded with `seed`.
     explicit Victim(const combat::PowerClass& powerClass, std::uint32_t seed = 1);
 
-    /// Keeps `hit` when it is the update's largest (combat::PendingDamage's rule).
+    /// Keeps `hit` when its damage is at least the pending hit's by absolute value (a tie keeps the newer), then
+    /// doubles and quarters the damage kept as the hit says (IncomingHit::doubled, IncomingHit::quartered): the test
+    /// reads the new hit's own damage against the pending one as stored (docs/research/combat-reactions.md#damage).
+    /// @orig 0x00264bd8 Human_AddPendingDamage (unknown)
     void hit(const IncomingHit& hit);
     /// Whether a hit waits this update.
     [[nodiscard]] bool pending() const { return m_hasPending; }

@@ -60,7 +60,7 @@ class TargetHuman final : public Holdable {
     /// @orig 0x00265f70 Human_ApplyPendingDamage (unknown)
     void step();
 
-    /// A hit this update; the update keeps its largest (combat::PendingDamage).
+    /// A hit this update; the update keeps its largest (Victim::hit()).
     void hit(const TargetHit& hit) override;
     /// A warning does nothing: the target never blocks.
     void warn(const AttackNotice& /*notice*/) override {}

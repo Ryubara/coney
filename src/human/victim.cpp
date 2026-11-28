@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdlib>
 #include <optional>
 #include <span>
 #include <utility>
@@ -66,10 +67,22 @@ std::array<std::uint32_t, 1> one(std::uint32_t clip) { return {clip}; }
 Victim::Victim(const combat::PowerClass& powerClass, std::uint32_t seed) : m_class(powerClass), m_random(seed) {}
 
 void Victim::hit(const IncomingHit& hit) {
-    if (!m_hasPending || hit.damage > m_pending.damage) {
-        m_pending = hit;
-        m_hasPending = true;
+    // The largest test: the new hit's own damage against what is pending, as stored, by absolute value.
+    if (m_hasPending && std::abs(hit.damage) < std::abs(m_pending.damage)) {
+        return;
     }
+    m_pending = hit;
+    m_hasPending = true;
+    // Only the hit kept is doubled for its attacker's 0x4000, then quartered by an arithmetic shift (class 0x80 from
+    // a Warrior's brain); the stored damage is final, so the flags are spent.
+    if (hit.doubled) {
+        m_pending.damage *= 2;
+    }
+    if (hit.quartered) {
+        m_pending.damage >>= 2;
+    }
+    m_pending.doubled = false;
+    m_pending.quartered = false;
 }
 
 IncomingHit Victim::takePending() {

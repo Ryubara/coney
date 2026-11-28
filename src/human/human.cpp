@@ -2040,17 +2040,18 @@ void Human::sendWarnings(const anim::AnimTask* before, std::uint32_t beforeId, f
     if (!warning.has_value()) {
         return;
     }
-    // Only a target within twice the reach of the anim playing (its Anim Range List +0x04) hears it.
+    // Only a target nearer than twice the reach of the anim playing (its Anim Range List +0x04) hears it, measured
+    // in 3D (Object_Distance 0x00229960).
     const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(top->animId()) : nullptr;
     const float reach = range != nullptr ? range->reach : 0.0F;
-    const anim::Vec3 to = anim::subtract(target->position(), m_position);
-    if (std::hypot(to.x, to.y) > combat::kWarningReachScale * reach) {
+    if (anim::distance(target->position(), m_position) >= combat::kWarningReachScale * reach) {
         return;
     }
     target->warn(AttackNotice{.warning = *warning,
                               .attackAnim = static_cast<int>(top->animId()),
                               .code = range != nullptr ? range->kind : 0,
-                              .attacker = m_position});
+                              .attacker = m_position,
+                              .from = this});
 }
 
 void Human::updateState(const raycast::CollisionMesh* mesh) {

@@ -828,13 +828,13 @@ class Fighter {
     // The time from the start of attack `animId`'s clip to its first contact event; 0 without the clip.
     // @orig 0x002625a8 Attack_Start (unknown)
     [[nodiscard]] static float timeToEvent(int animId, const HumanAnimator& animator);
-    // Where an attack of clip `clipId` at `target`, `distance` away, should stand from it: the clip's reach, 0.07 m
-    // longer for a big target, else 0.1 m shorter from behind it (never both); without a reach, where the target
-    // stands.
+    // Where an attack of clip `clipId` at `target`, `distance` away, should stand from it: the clip's reach, which
+    // the led steer (`led`) takes as it is and the other makes 0.07 m longer for a big target, else 0.1 m shorter from
+    // behind it (never both); without a reach, where the target stands.
     // @orig 0x00275678 Attack_SteerLed (unknown)
     // @orig 0x002761c8 Attack_SteerToTarget (unknown)
     [[nodiscard]] float steerReach(std::uint32_t clipId, const Combatant& target, const FighterInput& input,
-                                   float distance) const;
+                                   float distance, bool led) const;
     // The block's clip: the shuffle with the stick pushed, the sustain otherwise. The clip half of
     // Player_UpdateActions' block step: R1 held sets the state 0x8001, whose anim state picks the clip
     // (docs/research/combat/index.md#block).
@@ -1092,19 +1092,25 @@ class Fighter {
     // @orig 0x00254e78 Human_UpdateActions (unknown)
     void takeNotice(const FighterInput& input, HumanAnimator& animator);
     // The duck's counter: square or cross while the duck's own events 0x25 fire asks for it (record +0x14 = 0xe);
-    // on the next update 617-620 plays by the side the attacker stands on. Returns whether this update's command
-    // went to it.
+    // on a later update 617-620 plays by the side the foe stands on, once he stands within counterRange() (measured
+    // in 3D to where he is then). Returns whether this update's command went to it.
+    // @orig 0x00254e78 Human_UpdateActions (unknown)
     // @orig 0x002617f8 Block_DuckCounter (unknown)
     bool duckCounter(const FighterInput& input, HumanAnimator& animator);
+    // How far the counter reaches its foe: 1.25 x 617's far range (reachOf(), `AttackTable_GetFarRange`)
+    // (docs/research/combat-reactions.md#ground-escape).
+    // @orig 0x00254e78 Human_UpdateActions (unknown)
+    [[nodiscard]] float counterRange() const;
     // The counter from the rise (or from any reaction clip carrying 0x25): a player free to react whose square or
     // cross arrives while the clip's own 0x25 events fire asks for it (record +0x14 = 0xe), and it plays at once at
-    // the target within 1.25 x 617's reach, ending the clip and the stun; without a target the request lasts while he
+    // the target within counterRange(), ending the clip and the stun; without a target the request lasts while he
     // stays free to react. Run while he is still reacting, before the ground's update skips the dispatcher. Returns
     // whether the counter played. An AI's Grounded goal says no through the whole rise, so only a player counters.
     // Research: docs/research/combat-reactions.md#ground-escape
     // @orig 0x00254e78 Human_UpdateActions (unknown)
     bool riseCounter(const FighterInput& input, HumanAnimator& animator);
-    // Plays the counter 617-620 at `target` (by its side) and starts it as the dispatcher's attack.
+    // Plays the counter 617-620 at `target` (by its side), its pose from its first update, and starts it as the
+    // dispatcher's attack.
     // @orig 0x002617f8 Block_DuckCounter (unknown)
     void playCounter(const FighterInput& input, HumanAnimator& animator, anim::Vec3 target);
     // The reaction's frame of the player now.
@@ -1269,7 +1275,7 @@ class Fighter {
     std::optional<HeldGrabber> m_heldGrabber;
     GrabbedReport m_heldReport;                   // what struggleInHold() decided, until the grabber takes it
     std::optional<ReactionShake> m_reactionShake; // the last update's reaction's shake
-    anim::Vec3 m_duckAttacker;                    // where the attacker that made the player duck stood
+    const Combatant* m_duckFoe = nullptr;         // the attacker that made the player duck (Human_GetFoe)
     std::uint32_t m_clipSeen = 0;                 // the clip playing at the end of the last update, and its time
     float m_clipTimeSeen = 0.0F;
     combat::CombatRandom m_grabbedRandom;

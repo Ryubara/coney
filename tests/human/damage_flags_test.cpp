@@ -42,6 +42,35 @@ TEST_CASE("double damage doubles each hit's table damage; cleared, the hit is th
     }
 }
 
+TEST_CASE("double damage doubles the hit kept as the update's largest, after the test, not the hit tested",
+          "[human][combat]") {
+    // Expected: combat-reactions.md#damage, confirmed (code) at Human_AddPendingDamage (0x00264bd8): the new hit is
+    // kept when its own damage is at least what is pending (by absolute value), and only then doubled for the
+    // attacker's 0x4000. So 20 already pending this update beats a doubled S1 of 17: 17 is tested, not 34.
+    const FightCharacter character;
+    // The update S1's hit lands, from a run without the flag (the flag changes no timing).
+    int landed = -1;
+    {
+        Fight probe(character);
+        probe.run("10 tap square\n", 40, [&](std::uint64_t frame) {
+            if (landed < 0 && probe.target().hitsTaken() == 1) {
+                landed = static_cast<int>(frame);
+            }
+        });
+    }
+    REQUIRE(landed > 0);
+    Fight fight(character);
+    fight.human().setFlag(flag::kDoubleDamage, true);
+    // 20 from no human waits on the target when S1 lands, in the same update.
+    fight.run("10 tap square\n", 40, [&](std::uint64_t frame) {
+        if (static_cast<int>(frame) == landed - 1) {
+            fight.target().hit(coney::human::IncomingHit{.damage = 20, .attacker = fight.target().position()});
+        }
+    });
+    CHECK(fight.target().hitsTaken() == 1);
+    CHECK(fight.target().damageTaken() == 20);
+}
+
 TEST_CASE("a Warrior's hit on class 0x80 is quartered, after the doubling; anyone else's or on another class is not",
           "[human][combat]") {
     const FightCharacter character;

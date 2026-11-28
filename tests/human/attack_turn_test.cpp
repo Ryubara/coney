@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstdint>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "animation/anim_math.h"
@@ -16,6 +17,7 @@
 // The turn of an attack whose target stands beyond its far range (`Attack_TurnToTarget` 0x00276008, called from
 // `Attack_Start` 0x002625a8, docs/research/combat-targets.md#attack-steer).
 
+using Catch::Approx;
 using coney::anim::Vec3;
 using coney::test::Fight;
 using coney::test::FightCharacter;
@@ -58,4 +60,27 @@ TEST_CASE("S1 at a kept target beyond its far range turns fully onto him over th
     REQUIRE(played);
     CHECK(fight.human().fighter().target() == &fight.target());
     CHECK(closest < 2.0F * kDegrees);
+}
+
+TEST_CASE("S1 from behind a target stands at its plain reach: the led steer takes no rear change",
+          "[human][combat][targeting]") {
+    // Expected: combat-targets.md#led-steer, confirmed (code). S1's hit code 0x0a has flag 0x8, so Attack_Start steers
+    // with Attack_SteerLed (0x00275678), whose standing point is the led head point less the plain reach
+    // (AttackTable_GetReach); only Attack_SteerToTarget (0x002761c8) takes 0.1 m off from behind. The fight's reach is
+    // 1 m, the synthetic clips carry no root motion, and the target's head is its position.
+    static const FightCharacter character;
+    // The target 1.2 m ahead, facing away from the player: the player stands behind him.
+    Fight fight(character, 1.2F, 0.0F, 0.0F);
+    fight.run("", 5);
+    REQUIRE(fight.human().fighter().target() == &fight.target());
+    const Vec3 target = fight.target().position();
+    bool played = false;
+    fight.run("0 tap square\n", 40, [&](std::uint64_t) {
+        played = played || fight.human().animator().animId() == static_cast<std::uint32_t>(id::kAttackS1);
+    });
+    REQUIRE(played);
+    REQUIRE_FALSE(fight.human().fighter().steering().sliding());
+    // The player slid from 1.2 m to 1.0 m behind where the target stood (0.9 m with the rear change).
+    CHECK(target.y - fight.human().position().y == Approx(1.0F).margin(0.02F));
+    CHECK(fight.human().position().x == Approx(target.x).margin(0.02F));
 }

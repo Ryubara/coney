@@ -704,7 +704,17 @@ page = "combat/index.md#block"
 role = "the counter from a duck, 617-620 by the target's side"
 level = "confirmed-code"
 coney = "src/human/fighter.h:Fighter::duckCounter"
-status = "legacy"
+status = "compared"
+
+[[function.gaps]]
+what = "the steer onto the foe over 0.1 s within the counter's far range, the 0.2 s blend into the idle, the block state 0x8000 cleared and the push sphere turned off are not done"
+relation = "not-ported"
+issue = 683
+
+[[function.gaps]]
+what = "the counter request (+0x14 = 0xe) lapses when the duck ends; Human_UpdateActions keeps it until the human is no longer free to react, a lifetime not yet measured at runtime"
+relation = "stand-in"
+issue = 683
 
 [[function]]
 address = 0x00261e78
@@ -854,8 +864,13 @@ name = "Human_AddPendingDamage"
 page = "combat-reactions.md#damage"
 role = "keeps the update's largest damage on the target"
 level = "confirmed-code"
-coney = "src/combat/meters.h:PendingDamage::add"
-status = "legacy"
+coney = "src/human/victim.h:Victim::hit"
+status = "compared"
+
+[[function.gaps]]
+what = "the hit's foe and last-hit object and the hit pulse's raw damage (+0x5d2) are not written by the pending hit"
+relation = "not-ported"
+issue = 683
 
 [[function]]
 address = 0x00264cf8
@@ -1665,9 +1680,9 @@ coney = "src/human/fighter.h:Fighter::steerOnto"
 status = "compared"
 
 [[function.gaps]]
-what = "the led steer takes the big-target and rear reach changes of the plain steer (steerReach()); the target's own turn is not cleared"
+what = "the target's own turn is not cleared (a Combatant offers none)"
 relation = "stand-in"
-issue = 1011
+issue = 683
 
 [[function]]
 address = 0x002759c0

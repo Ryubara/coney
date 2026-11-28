@@ -775,6 +775,9 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         updateL1(humansOnly(input), animator.flags());
     }
     combat::CombatInput in = combatInput(input, animator, false);
+    // **Coney's stand-in** (#683): the duck's counter runs after the warnings and the pending hit (takeNotice(),
+    // takePending()); Human_UpdateActions handles the request 0xe (0x002550f4) before them (0x00255218, 0x00255338)
+    // and returns once Block_DuckCounter has played, so a counter and a hit on one update land in the other order.
     if (riseCountered || duckCounter(humansOnly(input), animator)) {
         in.command = combat::command::kNone;
     }
@@ -1484,18 +1487,21 @@ void Fighter::steerOnto(int animId, const Combatant& target, const FighterInput&
                         float heading, bool ledAllowed) {
     const bool led = ledAllowed && ledSteer(animId);
     const float time = led ? toEvent + kSteerLeadExtraSeconds : std::min(seconds, toEvent + kSteerLeadExtraSeconds);
-    // The led steer aims at the target's head (slot point 0), read once here as the attack starts; the other at its
-    // position (docs/research/combat-targets.md#led-steer). A stand-in: both take steerReach()'s big and rear changes.
+    // The led steer aims at the target's head (slot point 0), read once here as the attack starts, and stands at the
+    // plain reach; the other aims at its position and takes the big and rear changes
+    // (docs/research/combat-targets.md#led-steer).
     const anim::Vec3 point = led ? target.ledPoint() : target.position();
     const anim::Vec3 to = anim::subtract(point, input.position);
     const auto clipId = static_cast<std::uint32_t>(clips::clipOf(animId));
-    const float reach = steerReach(clipId, target, input, std::hypot(to.x, to.y));
+    const float reach = steerReach(clipId, target, input, std::hypot(to.x, to.y), led);
     // Turn to face the led target and slide to stand at the reach from it. **Coney's reading**: the turn faces the led
     // target, not the standing point, which lies behind the attacker when the target is nearer than the reach (the
     // original's XX2 at a target 0.83 m away, inside its 1.12 m reach, turned under 1°).
     const SteerGoal goal = attackSteerGoal(input.position, point, target.velocity(), reach, toEvent);
     const anim::Vec3 toAim = anim::subtract(goal.aim, input.position);
     const float aim = std::hypot(toAim.x, toAim.y) > 1e-4F ? headingOf(toAim) : headingOf(to);
+    // **Coney stand-in**: both steers first drop the target's own turn (Human_ClearTurn on him), which a Combatant
+    // does not offer; the attacker's was dropped as the attack started (steer()).
     m_steer.turnToOver(heading, wrapAngle(aim - attackDirection(animId)), time);
     m_steer.moveToOver(input.position, goal.stand, time);
 }
@@ -1542,10 +1548,14 @@ float Fighter::timeToEvent(int animId, const HumanAnimator& animator) {
     return clip != nullptr ? firstContactTime(*clip, animator.anims().rate(clipId)) : 0.0F;
 }
 
-float Fighter::steerReach(std::uint32_t clipId, const Combatant& target, const FighterInput& input,
-                          float distance) const {
+float Fighter::steerReach(std::uint32_t clipId, const Combatant& target, const FighterInput& input, float distance,
+                          bool led) const {
     const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clipId) : nullptr;
     float reach = range != nullptr && range->reach > 0.0F ? range->reach : distance;
+    // Attack_SteerLed stands at the plain reach (AttackTable_GetReach): no change for a big target or from behind.
+    if (led) {
+        return reach;
+    }
     // Either-or (0x002762f8-0x00276344): a big target takes the longer reach and skips the side test.
     if (target.bodyScale() > kSteerBigScale) {
         reach += kSteerBigReach;
@@ -1616,15 +1626,14 @@ void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove,
     const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clips::clipOf(animId)) : nullptr;
     // A free strike of a killer (flag 0x20, `Strike_Contact`) takes all the victim's health, and double damage (flag
     // 0x4000, `Human_AddPendingDamage`) doubles it. **Coney's reading**: a move in a hold is the grab's own damage
-    // path (`Grab_Strike`), which the page gives its own doubling, so neither applies to it.
+    // path (`Grab_Strike`), which the page gives its own doubling, so neither applies to it. The doubling and the
+    // quarter are the victim's, after its largest test (Victim::hit()); `dealt` is what it takes when kept.
     const bool doubled = !heldMove && hasFlag(flag::kDoubleDamage);
     if (!heldMove && hasFlag(flag::kKiller)) {
         damage = victim.health().value();
     }
-    if (doubled) {
-        damage *= 2;
-    }
-    damage = quarteredFor(victim, damage);
+    const bool quartered = m_warriorBrain && victim.characterClass() == kQuarteredClass;
+    const int dealt = quarteredFor(victim, doubled ? damage * 2 : damage);
     // The rage award reads the victim as it was before this hit (Hit_Score runs before the hit's reaction).
     const bool scores = scoresRageOn(victim);
     // A move in a hold plays its own victim clips; a free hit picks the victim's reaction. A player's hits ignore
@@ -1640,9 +1649,11 @@ void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove,
                            .attackerIsPlayer = m_player,
                            .strikeMaterial = strikeMaterialOf(animId, range, animator),
                            .charge = (animator.flags() & kChargeFlags) != 0,
-                           .attackerName = logName()});
+                           .attackerName = logName(),
+                           .doubled = doubled,
+                           .quartered = quartered});
     ++m_hitsLanded;
-    m_damageDealt += damage;
+    m_damageDealt += dealt;
     if (m_player) {
         m_strikes.push_back(animId);
     }

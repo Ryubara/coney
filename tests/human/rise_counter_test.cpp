@@ -221,6 +221,19 @@ TEST_CASE("no counter from the rise without a target in reach, for an AI, or stu
     }
 }
 
+TEST_CASE("the counter from the rise reaches 1.25 x 617's far range, not its reach", "[human][combat]") {
+    // Expected: combat-reactions.md#ground-escape, confirmed (code) at Human_UpdateActions (0x00254e78): the counter's
+    // range is 1.25 x AttackTable_GetFarRange(617) (0x00254508). With 617-620's far range 2 m (reach 1 m) the
+    // attacker 2.2 m to the player's left is within 2.5 m; with none of their own (1.25 x the reach) he is not.
+    RiseCharacter rise;
+    rise.character.ranges = coney::test::fightRanges({}, {}, {{617, 2000}, {618, 2000}, {619, 2000}, {620, 2000}});
+    const RiseRun far = riseWith(rise.character, tapAt("square", 16), 60, true, 0, -2.2F);
+    CHECK(far.riseCounters == 1);
+    CHECK(firstK(far, kCounterLeft) == 16);
+    const RiseCharacter plain;
+    CHECK(riseWith(plain.character, tapAt("square", 16), 60, true, 0, -2.2F).riseCounters == 0);
+}
+
 TEST_CASE("a square pressed in the window with no target in reach lasts until one comes into reach, while the rise is "
           "free",
           "[human][combat]") {

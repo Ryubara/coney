@@ -2106,6 +2106,11 @@ level = "confirmed-code"
 coney = "src/human/strike_shapes.h:StrikeShapes::onEvent"
 status = "legacy"
 
+[[function.gaps]]
+what = "with a held world object and bone 25 the original builds the weapon's strike spheres (0x00247be8) instead of the hand's shape"
+relation = "stand-in"
+issue = 683
+
 [[function]]
 address = 0x00248110
 name = "Human_StrikeShapeOff"
