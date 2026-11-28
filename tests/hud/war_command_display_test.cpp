@@ -48,7 +48,7 @@ struct Sounds {
     }
 };
 
-// Where render() draws: the flat batch (each slot's backing then plate), part_page0 (the icons, then the name's box)
+// Where render() draws: the flat batch (each slot's backing then plate), part_page0 (the icons)
 // and the name's font batch, over synthetic sheets.
 struct Canvas {
     coney::graphics::SpriteBatch flat;
@@ -64,7 +64,7 @@ struct Canvas {
         canvas.text.textBatch = [this](int /*slot*/) { return &text; };
     }
 
-    // A sheet of 100 rectangles over a fake texture: enough for the icons (0x55-0x5b) and the name's box (0x4e).
+    // A sheet of 100 rectangles over a fake texture: enough for the icons (0x55-0x5b).
     static coney::graphics::SpriteSheet sheet() {
         coney::graphics::SpriteSheet made;
         made.texture = std::make_shared<coney::test::FakeTexture>(256, 256);

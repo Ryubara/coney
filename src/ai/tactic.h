@@ -49,7 +49,8 @@ class Tactic {
     /// Its Lua callback (`+0x0c`).
     [[nodiscard]] const std::string& callback() const { return m_callback; }
     /// The `+0x18` byte: set, its Warrior command given again starts it again instead of repeating
-    /// (docs/research/ai-gangs.md#warrior-commands). Clear at construction; only the tactics that set it write it.
+    /// (docs/research/ai-gangs.md#warrior-commands). Clear at construction; only the tactics that set it write it (in
+    /// Coney the attack's start and update, WarriorAttackTactic).
     [[nodiscard]] bool restartsOnRepeat() const { return m_restartsOnRepeat; }
 
     /// One gang update (`Tactic_Process`): starts it on the first (Tactic_Start: the time limit made absolute, the gang

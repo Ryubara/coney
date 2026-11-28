@@ -39,10 +39,8 @@ constexpr std::array<std::size_t, kWarCommandSlots> kSlotIcons{0x56, 0x5a, 0x58,
 constexpr float kBackingSize = 0.077F;
 constexpr float kPlateSize = 0.07F;
 constexpr float kIconSize = 0.08F;
-// The name: its line, its box (part_page0 rectangle 0x4e) and the box's margin.
+// The name's line.
 constexpr float kNameY = 0.86F;
-constexpr std::size_t kNameBoxRect = 0x4e;
-constexpr float kNameBoxMargin = 0.013F;
 constexpr int kNameFontSlot = 3;
 // The text-table entries that replace the name: all commands locked, the highlighted one disabled.
 constexpr std::size_t kAllLockedEntry = 6;
@@ -56,7 +54,6 @@ constexpr graphics::Rgba kGrey{35, 35, 35, 255};
 constexpr graphics::Rgba kDark{30, 30, 30, 255};
 constexpr graphics::Rgba kBlack{0, 0, 0, 255};
 constexpr graphics::Rgba kNameGrey{110, 110, 110, 255};
-constexpr graphics::Rgba kNameBox{0, 0, 0, 143};
 // A GUI width that draws as square as a GUI height (a GUI width is stretched by 640 / 448).
 constexpr float kSquareWidth = 448.0F / 640.0F;
 
@@ -166,7 +163,8 @@ void WarCommandDisplay::update(std::uint8_t stickX, std::uint8_t stickY, const C
                                const HudSound& audio) {
     // Stand-ins: the chief's knock-out closes the menu from GameplayMode (close()); the sprites are always resident
     // (+0x10); the out-of-range byte (+0x414) is not kept (#1520), so render() picks entry 6 from Look::allLocked;
-    // the name's text, places, sizes and box are render()'s, from fixed values; +0x1558 (render's flag) is not kept.
+    // the name's text and places are render()'s, from fixed values (the box widget, never drawn, is not kept); +0x1558
+    // (render's flag) is not kept.
     m_allowed = chief.allowed;
     if (!m_shown) {
         return;
@@ -270,7 +268,8 @@ void WarCommandDisplay::render(const HudCanvas& canvas, const Look& look, std::u
                     faded(enabled ? kWhite : kDark, iconFade));
         }
     }
-    // The highlighted slot's name over its box, until its time runs out or its text is shut down.
+    // The highlighted slot's name, until its time runs out or its text is shut down. Its box widget (+0x240) is laid
+    // out by Update but never drawn: Render draws only the text (+0x50) and the slots.
     if (!look.name || !canvas.text.fonts || m_nameShut) {
         return;
     }
@@ -294,14 +293,16 @@ void WarCommandDisplay::render(const HudCanvas& canvas, const Look& look, std::u
     }
     // The text's +0x18c is set to 255 on every draw: the name stays whole while the slots fade (seen in PCSX2).
     style.timeMs = static_cast<std::uint32_t>(nowMs - std::min(m_textSince, nowMs));
+    // Centred on the menu's centre x, the text's anchor: the command texts open with <CENTER>, which the original's
+    // layout (MessageHUD_Layout 0x001b9600) turns into a start half the widest line left of the anchor. **Coney's
+    // reading**: gui::layoutText centres a line inside the box starting at style.x, so the box is placed by a first
+    // layout's width; the name is always centred (every GSTRING.COMMAND entry opens with <CENTER>).
+    const float width = gui::layoutText(name, style, canvas.text.fonts).width;
+    style.x = look.centreX - (width / 2.0F);
     const gui::TextLayout text = gui::layoutText(name, style, canvas.text.fonts);
     if (text.expired) {
         return;
     }
-    // Stand-in: the name's box (the widget at +0x90, never faded by Update) is drawn and fades with the slots; in
-    // PCSX2 at level80 checkpoint 2 no box shows behind the name, and who draws +0x90 is not traced.
-    addRect(canvas.parts, kNameBoxRect, look.centreX, kNameY, text.width + kNameBoxMargin, text.height + kNameBoxMargin,
-            faded(kNameBox, others));
     gui::addTextSprites(text, canvas.text.textBatch);
 }
 

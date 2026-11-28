@@ -252,8 +252,9 @@ void dispatchWarriorCommand(ScriptSystem& scripts, const BindingContext& context
         // reads stays clear. Not ported: the crew's range check (WarChief_CheckCrewInRange, #1520).
         // A repeat of the command in force under a tactic whose `+0x18` byte is clear: only its line again (not
         // said), and for follow under the follow tactic WarriorFollowTactic_Repeat. **Stand-ins**: neither is built;
-        // of the tactics that set the byte only the attack's does in Coney (the defend's for a member defending the
-        // other player and the hide's are not built).
+        // of the tactics that set the byte only the attack's does in Coney, at its start and on each update once the
+        // chief is locked onto an enemy (ai::WarriorAttackTactic); the defend's (for a member defending the other
+        // player) and the hide's are not built.
         if (host->crewTacticHoldsRepeat(chief) && rules.currentWarriorCommand.at(*player) == command) {
             return;
         }

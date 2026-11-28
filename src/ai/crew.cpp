@@ -19,6 +19,7 @@
 #include "ai/route_planner.h"
 #include "ai/script_services.h"
 #include "ai/targeting.h"
+#include "ai/threats.h"
 #include "ai/turn_action.h"
 #include "human/locomotion.h"
 
@@ -467,6 +468,28 @@ void WarriorAttackTactic::start(Gang& gang) {
     if (const Brain* target = gang.chosenTarget(); target != nullptr && validEnemy(*chief, *target)) {
         setRestartsOnRepeat(true);
     }
+}
+
+int WarriorAttackTactic::update(Gang& /*gang*/) {
+    // Stand-in: the answer line (attack_resp, said once the chief's line has ended) is not built, so nothing waits
+    // for the chief's line here.
+    // Stand-in: the tactic's chief stands for the gang's leader, as in start().
+    const Brain* chief = m_services->brain(m_chief);
+    if (chief == nullptr || !chief->human().fighter().l1Locked() || restartsOnRepeat()) {
+        return 0;
+    }
+    // The chief's target (human +0xc8) as a brain; one not friendly to him and no player marks the tactic, so the same
+    // order starts the attack again on him.
+    const human::Combatant* target = chief->human().fighter().target();
+    if (target == nullptr || chief->peers() == nullptr) {
+        return 0;
+    }
+    for (const std::unique_ptr<Brain>& peer : *chief->peers()) {
+        if (&peer->human() == target && !isFriendly(*chief, *peer) && peer->type() != BrainType::Player) {
+            setRestartsOnRepeat(true);
+        }
+    }
+    return 0;
 }
 
 // ---- HoldPositionGoal ----

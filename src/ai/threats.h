@@ -3,7 +3,8 @@
 
 // Who is a threat to whom: the test the fight goal's re-target, picking a side in a fight, giving way and the enemy
 // scan's Warrior filter share. Two pad players are always threats to each other, as are a Warrior hitting back and any
-// pad player; otherwise only the members of an enemy gang are (Gangs::enemies(), which a truce lifts).
+// pad player; otherwise only the members of an enemy gang are (Gangs::enemies(), which a truce lifts). Who is a friend
+// (isFriendly()) is the same kind of test over friendly gangs.
 // Research: docs/research/ai-reimpl.md#brain-is-threat, docs/research/ai-fights.md#enemy-scan
 
 namespace coney::ai {
@@ -19,7 +20,11 @@ class Brain;
 /// @orig 0x00222a48 Human_IsThreatTo (unknown)
 [[nodiscard]] bool isThreat(const Brain& brain, const Brain& other);
 
-/// Whether `a` and `b` are friendly (`Brain_IsFriendly`).
+/// Whether `b`'s human is friendly to `a` (`Brain_IsFriendly`): always `a` himself; never a Warrior hitting back
+/// (Brain::hittingBack(), `+0x2e5`) and a pad player, either way round; else when their gangs are friends
+/// (Gangs::friends(), `Gang_AreFriends` on brain `+0x20c`) and at most one of them is a pad player. `Human_IsFriendly`
+/// (`0x00222a90`) is the same test on two humans' brains. **Coney's reading**: a pad player is a brain of type
+/// BrainType::Player, as in isThreat(). Research: docs/research/ai-gangs.md#warrior-commands
 /// @orig 0x00290230 Brain_IsFriendly (unknown)
 [[nodiscard]] bool isFriendly(const Brain& a, const Brain& b);
 

@@ -247,6 +247,12 @@ class WarriorAttackTactic final : public Tactic {
     /// still plays (`+0x20`) are not kept.
     /// @orig 0x003208e8 WarriorAttackTactic_Start (unknown)
     void start(Gang& gang) override;
+    /// Each update: marks the tactic as one a repeated attack starts again (restartsOnRepeat()) once the chief is
+    /// locked on (human::Fighter::l1Locked(), `Human_IsLocked`) and his target (human `+0xc8`) is not friendly to him
+    /// (isFriendly()) and no player; always 0. **Coney stand-ins**: the answer line (`attack_resp`, 132) and the
+    /// wait for the chief's line before it are not built.
+    /// @orig 0x003209d0 WarriorAttackTactic_Process (unknown)
+    [[nodiscard]] int update(Gang& gang) override;
 
   private:
     double m_chief;
