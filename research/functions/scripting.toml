@@ -1752,6 +1752,14 @@ coney = "src/scripting/car_bindings.cpp:makeCarSpawn"
 status = "legacy"
 
 [[function]]
+address = 0x00378528
+name = "lua_CarSetPartDamage"
+page = "../references/bindings/world.md#carsetpartdamage"
+level = "confirmed-code"
+coney = "src/scripting/car_bindings.cpp:makeCarSetPartDamage"
+status = "compared"
+
+[[function]]
 address = 0x003785c8
 name = "lua_CarSetColor"
 page = "../references/bindings/world.md#carsetcolor"

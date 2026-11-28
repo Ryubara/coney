@@ -1,0 +1,43 @@
+version = 1
+id = "r-20261128-car-glass-radius"
+date = "2026-11-28"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "d1f778d8123d8cc081ca7c0f011c9b1d2fa2492d1867e3c1af9dc69ed3c3e4c5"
+
+[who]
+agent = "afd390a28d8b8c14a"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "vehicle-side-window"
+patches = ["call-brains"]
+
+[run]
+name = ""
+method = "lua recipe ran BreakGlassInRadius(HuGetPlayer(0), 5) with the player at 57.58, 39.53, 0.22; car masks and part damage read before and after"
+
+[values]
+near_car_distance_m = 1.9
+near_kept_before = 0
+near_kept_after = 2785472
+near_removed_after = 0
+near_first_hits_after = 0
+near_part6_damage_after = 1.0
+near_part15_damage_after = 1.0
+near_part4_damage_after = 0.0
+far_car1_distance_m = 16.5
+far_car1_kept_after = 0
+far_car3_distance_m = 17.2
+far_car3_kept_after = 0
+
+[addresses]
+near_car = 0x00f14b10
+far_car1 = 0x00f13800
+far_car3 = 0x00f15e20

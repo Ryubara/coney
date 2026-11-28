@@ -1,0 +1,11 @@
+# A `clips pair` scenario (docs/guides/coney-tools-clips.md#clips-pair): level99's parked sedan at (41.23, 44.76),
+# with the player beside its front-left door, caught in BreakGlassInRadius(flag, 5) round a flag at the player's
+# feet, run through the developer console, as level5's Sanchez scene runs it beside a parked sedan. The original
+# knocks off the car's six glass parts (6, 7, 15, 17, 19, 21), which then show their broken form. For a change to a
+# car's glass or to BreakGlassInRadius.
+description = "level99 street: BreakGlassInRadius round a flag beside the parked sedan (the car's glass)"
+level = "level99"
+input = "tools/clips/level99-car-glass.txt"
+checkpoint = 2
+start_frame = 380
+seconds = 5

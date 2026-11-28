@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "scripting/binding_args.h"
+#include "world_objects/cars.h"
 #include "world_objects/level_objects.h"
 #include "world_objects/nav_links.h"
 #include "world_objects/object_breaks.h"
@@ -77,8 +78,8 @@ anim::Vec3 pointArg(std::span<const Value> args, std::size_t i) {
     return anim::Vec3{p[0], p[1], p[2]};
 }
 
-// Where the object `handle` is: a pane, door or leaf, an `ObjSpawn` object, a human the scripts made, or a flag;
-// nothing otherwise.
+// Where the object `handle` is: a pane, door or leaf, an `ObjSpawn` object, a human the scripts made, a flag or a
+// parked car; nothing otherwise.
 // @coney-only a lookup across Coney's object stores
 std::optional<anim::Vec3> positionOf(const BindingContext& context, double handle) {
     if (context.objects != nullptr) {
@@ -100,6 +101,11 @@ std::optional<anim::Vec3> positionOf(const BindingContext& context, double handl
     if (context.flags != nullptr) {
         if (const world_objects::WorldFlag* flag = context.flags->find(handle)) {
             return anim::Vec3{flag->position[0], flag->position[1], flag->position[2]};
+        }
+    }
+    if (context.cars != nullptr) {
+        if (const world_objects::Car* car = context.cars->find(handle)) {
+            return car->position;
         }
     }
     return std::nullopt;
@@ -334,13 +340,27 @@ NativeFunction makeLeafHandle(const BindingContext& context, std::size_t leaf) {
     };
 }
 
-// `BreakGlassInRadius(centre, radius)`: every pane within the radius of the object `centre`, and the glass objects.
+// `BreakGlassInRadius(centre, radius)`: every pane within the radius of the object `centre`, the glass objects, then
+// the glass of every car in the radius but the centre's own (docs/research/cars.md#parts).
 // @orig 0x003966c8 BreakGlassInRadius (unknown)
+// @orig 0x003963b8 World_BreakGlassInRadius (unknown)
 NativeFunction makeBreakGlassInRadius(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
+        // Only a centre that resolves does anything.
+        const double handle = binding::number(args, 0);
+        const std::optional<anim::Vec3> centre = positionOf(*context, handle);
+        if (!centre) {
+            return binding::none();
+        }
+        const auto radius = static_cast<float>(binding::number(args, 1));
+        // The panes and the glass objects (GlassPanes::breakInRadius()).
         if (LevelObjects* objects = context->objects) {
-            if (const std::optional<anim::Vec3> centre = positionOf(*context, binding::number(args, 0))) {
-                objects->glass.breakInRadius(*centre, static_cast<float>(binding::number(args, 1)), objects->world);
+            objects->glass.breakInRadius(*centre, radius, objects->world);
+        }
+        // Last, the cars in the radius, the centre left out when it is one: their glass.
+        if (world_objects::Cars* cars = context->cars) {
+            for (const double car : cars->inRange(*centre, radius, handle)) {
+                cars->breakGlass(car);
             }
         }
         return binding::none();

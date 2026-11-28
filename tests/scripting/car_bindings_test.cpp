@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The car bindings (docs/references/bindings/world.md): CarSpawn's handle and place, CarSetColor, CarMakeGoodAsNew and
-// CarSpawnRadio by handle.
+// The car bindings (docs/references/bindings/world.md): CarSpawn's handle and place, CarSetColor, CarMakeGoodAsNew,
+// CarSpawnRadio and CarSetPartDamage by handle.
 #include "scripting/car_bindings.h"
 
 #include <cstddef>
@@ -147,4 +147,31 @@ TEST_CASE("CarPlaceInTrunkOnDetach puts an object, or with a kind that many doll
     h.first("CarPlaceInTrunkOnDetach", {Value(car), Value(0.0), Value(261.0)}); // the low 8 bits: $5
     CHECK(h.cars.find(car)->trunkObject == 405.0);
     CHECK(h.cars.find(car)->trunkMoney == 5);
+}
+
+TEST_CASE("CarSetPartDamage adds the damage to the named part, a part a script removed too", "[car_bindings]") {
+    // Expected: cars.md#parts, confirmed (code): Car_SetPartDamage (0x0038dee8) resolves the car and calls
+    // Car_BreakPartByIndex (0x0038a7e8), a non-instant Car_AddPartDamage that passes over no part.
+    Harness h;
+    const double car =
+        h.first("CarSpawn", {str("car_coupe"), list({0, 0, 0}), list({0, 0, 0, 1})}).number().value_or(0);
+    REQUIRE(h.cars.find(car) != nullptr);
+    // The bonnet (4) adds up and comes off at 1.
+    h.first("CarSetPartDamage", {Value(car), Value(4.0), Value(0.5)});
+    CHECK(h.cars.find(car)->damage[4] == 0.5F);
+    CHECK((h.cars.find(car)->removedKept & (1U << 4U)) == 0);
+    h.first("CarSetPartDamage", {Value(car), Value(4.0), Value(0.5)});
+    CHECK(h.cars.find(car)->damage[4] == 1.0F);
+    CHECK((h.cars.find(car)->removedKept & (1U << 4U)) != 0);
+    // A bumper (2) a script removed still takes the damage.
+    h.cars.removePart(car, 2, true);
+    h.first("CarSetPartDamage", {Value(car), Value(2.0), Value(0.25)});
+    CHECK(h.cars.find(car)->damage[2] == 0.25F);
+    // A door (14) knocked off this way, not an instant call, takes its window (15) and frees the stereo behind it.
+    h.first("CarSpawnRadio", {Value(car)});
+    h.first("CarSetPartDamage", {Value(car), Value(14.0), Value(1.0)});
+    CHECK((h.cars.find(car)->removedKept & (1U << 15U)) != 0);
+    CHECK(h.cars.find(car)->stereo == coney::world_objects::StereoState::Freed);
+    // A handle that is not a car does nothing.
+    h.first("CarSetPartDamage", {Value(car + 50), Value(4.0), Value(1.0)});
 }

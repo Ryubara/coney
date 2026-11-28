@@ -200,6 +200,21 @@ class Cars {
     /// not off before (docs/research/cars.md#parts).
     /// @orig 0x0038a4d8 Car_AddPartDamage (unknown)
     bool damagePart(double handle, std::uint32_t part, float amount, bool instant, bool quiet = false);
+    /// `CarSetPartDamage(car, part, amount)`: damagePart() as a hit calls it (not instant, not quiet), on the part's
+    /// own record, passing over no part: one a script removed, or off already, takes the amount too. An unknown car
+    /// does nothing (docs/research/cars.md#parts).
+    /// @orig 0x0038dee8 Car_SetPartDamage (unknown)
+    /// @orig 0x0038a7e8 Car_BreakPartByIndex (unknown)
+    void setPartDamage(double handle, std::uint32_t part, float amount);
+    /// `BreakGlassInRadius`' step for one car: each glass part (6, 7, 15, 17, 19 and 21, lowest first) not removed or
+    /// off takes damage 1 from a non-instant call, so it comes off and window 15 frees the stereo. An unknown car does
+    /// nothing (docs/research/cars.md#parts).
+    /// @orig 0x0038b0e8 Car_DamagePartsByMask (unknown)
+    void breakGlass(double handle);
+    /// The cars whose position is within `radius` of `centre`, oldest first, leaving out the car `except` (the centre
+    /// itself, when it is a car; any other handle leaves out none) (docs/research/cars.md#parts).
+    /// @orig 0x0038e738 CarTaskManager_ListInRange (unknown)
+    [[nodiscard]] std::vector<double> inRange(anim::Vec3 centre, float radius, double except) const;
     /// `CarExplode(car, quiet)`'s wreck: a car not yet exploded has each hit bit 1-29 not off yet knocked off (parts
     /// 1-25 by instant damage, so a loaded boot's item is lost; the lamps' 26-29 removed) and marked hit, its stereo
     /// destroyed, and is marked exploded. Returns whether it exploded now (false for an unknown car or one exploded

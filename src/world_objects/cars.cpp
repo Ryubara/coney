@@ -249,6 +249,47 @@ bool Cars::damagePart(double handle, std::uint32_t part, float amount, bool inst
     return !wasOff;
 }
 
+void Cars::setPartDamage(double handle, std::uint32_t part, float amount) {
+    // Car_SetPartDamage goes on only for a handle that resolves (find() inside damagePart); Car_BreakPartByIndex then
+    // calls with the part's own record, not instant and not quiet. Neither checks the part number: damagePart()
+    // ignores one past the last part, where the original would read past the type's records.
+    static_cast<void>(damagePart(handle, part, amount, false));
+}
+
+void Cars::breakGlass(double handle) {
+    const Car* car = find(handle);
+    if (car == nullptr) {
+        return;
+    }
+    // The original also works out the centre's offset from the car and the car's matrix here, and reads neither.
+    // Each part of the glass mask in turn; the masks are read again for each, as the original does, so a part an
+    // earlier one took off is passed over.
+    for (std::uint32_t part = 0; part < kCarParts; ++part) {
+        const std::uint32_t bit = 1U << part;
+        if ((kCarGlassParts & bit) == 0 || (car->removedParts & bit) != 0 || (car->removedKept & bit) != 0) {
+            continue;
+        }
+        static_cast<void>(damagePart(handle, part, 1.0F, false));
+    }
+}
+
+std::vector<double> Cars::inRange(anim::Vec3 centre, float radius, double except) const {
+    // The original fills a list of at most the caller's count (384, more than the pool's 18 cars) and also writes
+    // each car's squared distance beside it, which its only caller never reads.
+    std::vector<double> found;
+    for (const Car& car : m_cars) {
+        if (car.handle == except) {
+            continue;
+        }
+        // The squared distance against the squared radius, as the original compares them.
+        const anim::Vec3 offset = anim::subtract(car.position, centre);
+        if (anim::dot(offset, offset) <= radius * radius) {
+            found.push_back(car.handle);
+        }
+    }
+    return found;
+}
+
 bool Cars::explode(double handle, bool quiet) {
     Car* car = find(handle);
     // Car_TryExplode: once only. **Coney's stand-in**: the original also refuses while a molotov's countdown

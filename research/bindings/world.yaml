@@ -236,7 +236,8 @@
   description: >-
     Breaks every breakable pane of glass within the radius of a flag or object, for scripted smashes: each pane whose
     centre is within the radius gets the hit message (kind 100), and so does every object of type `TYPE_GLASS`
-    (kind 101); cars' parts in range are hit as well (0x0038b0e8). No alarm, crime or statistic follows.
+    (kind 101); then each car within the radius but the centre itself has its glass parts not removed or off knocked
+    off (0x0038e738, 0x0038b0e8). No alarm, crime or statistic follows.
   evidence: confirmed-code
   depth: thorough
   notes: >-
@@ -764,12 +765,18 @@
   args:
     - {name: car, lua: number, ctype: unsigned, desc: "Handle of the car."}
     - {name: part, lua: number, ctype: unsigned, desc: "Car part id (see `CarRemovePart`)."}
-    - {name: damage, lua: number, ctype: float, desc: "Damage amount for the part; the scale is not traced."}
+    - {name: damage, lua: number, ctype: float, desc: "Damage added to the part; at 1 in all the part comes off."}
   description: >-
-    Applies damage to one part of a car (0x0038a7e8). No script calls it.
-  evidence: inferred
+    Adds damage to one part of a car as a hit does (Car_BreakPartByIndex 0x0038a7e8, then Car_AddPartDamage
+    0x0038a4d8, not instant): the damage adds up and at 1 the part comes off, a door takes its window, window 15 frees
+    the stereo and the boot releases its item. No part is passed over, not even one removed or off already. No script
+    calls it.
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    The car's handle must resolve (0x0038dee8); the part number is not checked (Coney ignores one past 25).
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: CarSetColor
   wrapper: 0x003785c8

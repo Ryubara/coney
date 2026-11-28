@@ -163,13 +163,29 @@ environment map or dual texture from the car's second texture resource.
   called by `World_BreakGlassInRadius` `0x003963b8`) over those removed or off; `Car_BreakPartByIndex` (`0x0038a7e8`,
   `CarSetPartDamage` through `0x0038dee8`) over none. So a part a script removed still takes damage from
   `CarSetPartDamage`, and a door knocked off breaks a window that is only removed (`+0x11f0`), since the door's test
-  reads `+0x11f8` alone. Confirmed (code) at each address. Callers: the hit handler `0x0038bea0` (0.34 per hit from a
-  weapon or thrown object, 0.51 from a human with flag `0x400000`, 0.115 from other humans, on the parts the hit's zone
-  selects), `CarSetPartDamage`, `0x0038b0e8` (mask `0x2a80c0`), and `Car_DoExplode` (`0x0038ab50`, every part, instant,
-  its `quiet`). Confirmed (code). Confirmed (runtime), run r-20261127-car-corner: the player in `level99` beside the
-  parked sedan's left front wing (the body table's front band, left column: parts 2, 8, 10 and the lamp glass bit 26)
-  pressed square; the first hit took lamp 8 to damage 1 at once (off) and put bit 26 in `+0x11f0` and `+0x11f8`, with
-  bumper 2 and panel 10 at 0.115 and all four bits in `+0x11ec`; the second hit added 0.115 to 2 and 10 only.
+  reads `+0x11f8` alone. Confirmed (code) at each address. `CarSetPartDamage(car, part, amount)` (`0x00378528`)
+  reads the car and the part as unsigned numbers and the amount as a float; `Car_SetPartDamage` goes on only when the
+  car's handle resolves, and `Car_BreakPartByIndex` passes the part's own record, not instant, not quiet: so the
+  amount adds up like a hit's, a door taken off this way takes its window, and the boot releases its item. Nothing
+  checks the part number (Coney ignores one past 25). `World_BreakGlassInRadius`, after the panes and the glass
+  objects, lists the cars whose position (`+0x10`) is within the radius of the centre (`CarTaskManager_ListInRange`
+  `0x0038e738`: the squared distance against the squared radius, at most 384 cars, leaving out the centre itself when
+  it is a car, `Car_FromObject`), and `Car_DamagePartsByMask` gives each one's glass parts 6, 7, 15, 17, 19 and 21,
+  lowest first, damage 1 on a non-instant call, so window 15 frees the stereo; no first-hit effect and no message
+  `0x19` is sent. It also works out the centre's offset from the car and the car's matrix, and reads neither.
+  Confirmed (code) at each address. Confirmed (runtime), run r-20261128-car-glass-radius: in `level99`
+  (`vehicle-side-window`), `BreakGlassInRadius(HuGetPlayer(0), 5)` put exactly `0x2a80c0` in `+0x11f8` of the sedan
+  1.9 m away, with damage 1 on parts 6 and 15, none on the bonnet, nothing in `+0x11f0` or `+0x11ec`, and left the
+  two cars 16.5 and 17.2 m away untouched. Confirmed (runtime), run r-20261128-car-set-part-damage: on that sedan,
+  `CarSetPartDamage(car, 4, 0.5)` left the bonnet at 0.5, a bumper (2) `CarRemovePart` had removed still took 0.25, and
+  a second 0.5 took the bonnet to 1 and off (`+0x11f8`), flying (`+0x11f4`). Callers: the hit handler `0x0038bea0`
+  (0.34 per hit from a weapon or thrown object, 0.51 from a human with flag `0x400000`, 0.115 from other humans, on the
+  parts the hit's zone selects), `CarSetPartDamage`, `0x0038b0e8` (mask `0x2a80c0`), and `Car_DoExplode`
+  (`0x0038ab50`, every part, instant, its `quiet`). Confirmed (code). Confirmed (runtime), run r-20261127-car-corner:
+  the player in `level99` beside the parked sedan's left front wing (the body table's front band, left column: parts 2,
+  8, 10 and the lamp glass bit 26) pressed square; the first hit took lamp 8 to damage 1 at once (off) and put bit 26 in
+  `+0x11f0` and `+0x11f8`, with bumper 2 and panel 10 at 0.115 and all four bits in `+0x11ec`; the second hit added
+  0.115 to 2 and 10 only.
 - **Repair** (`CarMakeGoodAsNew` → `Car_Repair` `0x0038e068` → `Car_ResetParts` `0x003875e8`): every one of the 26
   part records is reset (damage 0, the state byte that holds open cleared, its loose piece sent message `0x15`), and
   `+0x11ec`, `+0x11f0`, `+0x11f4`, `+0x11f8`, the rock `+0x12d6` and the exploded flag `+0x12d5` are cleared, so a
@@ -652,7 +668,12 @@ first 26 atomics of each car, each at its frame and given the dictionary's first
   18 or 20 also removes the next.
   `CarSpawnRadio` puts a stereo in the car; a broken window 15 frees it and a theft takes it once.
 - The bindings (`repo:src/scripting/car_bindings.h`) are `CarSpawn`, `CarSetColor`, `CarMakeGoodAsNew`,
-  `CarSpawnRadio` and `CarPlaceInTrunkOnDetach`; `CarSpawn` returns `NilHandle` when the pool is full.
+  `CarSpawnRadio`, `CarPlaceInTrunkOnDetach` and `CarSetPartDamage`; `CarSpawn` returns `NilHandle` when the pool is
+  full. `CarSetPartDamage` (`Cars::setPartDamage()`) adds the amount to the part as a hit does and passes over no part.
+- **A car's glass in `BreakGlassInRadius`** (`repo:src/scripting/object_bindings.cpp`, `Cars::inRange()`,
+  `Cars::breakGlass()`): after the panes and the glass objects, each car within the radius of the centre, the centre's
+  own car left out, has its glass parts not removed or off knocked off ([Parts](#parts)). The centre may be a car:
+  the bindings that take an object's position read a car's too.
 - **Part damage and the boot item** (`Cars::damagePart()`, `Cars::placeInTrunk()`): a part's damage adds up (an
   instant call, or a part of record flag `0x10`, sets it to 1) and at 1 the part comes off (its kept removed bit); a
   door knocked off takes its window, window 15 frees the stereo and the roof ends the police lights; the boot coming
@@ -708,9 +729,6 @@ Coney's stand-ins, where this page is silent:
   `+0x1200` countdown that also refuses an explosion), the rock, the dent and squeak sounds and the statistic
   ([The fix](#coney-fix)).
 - No part flies off (`+0x11f4` is not kept): a part a hit or a loud blast throws keeps its damaged form in place.
-- Two callers of `Car_AddPartDamage` are not ported ([#1702](issue:1702)): `CarSetPartDamage` (`0x0038dee8` →
-  `Car_BreakPartByIndex` `0x0038a7e8`) has no binding, and `BreakGlassInRadius` breaks the panes only, not a car's
-  glass (`World_BreakGlassInRadius` `0x003963b8` → `Car_DamagePartsByMask` `0x0038b0e8`, [Parts](#parts)).
 - The money pickup's 15 s life is not applied.
 - A name that is not one of the six types still makes a car, which draws nothing.
 - The explosion's pieces flying off (the car shows every part's damaged form where it was), effects, sound, 300

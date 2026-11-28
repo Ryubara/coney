@@ -23,10 +23,14 @@ what = "the thrown piece (Car_DetachPart) and the car's rescheduling are not por
 relation = "not-ported"
 issue = 72
 
-[[function.gaps]]
-what = "two callers are not ported: CarSetPartDamage (0x0038dee8, Car_BreakPartByIndex 0x0038a7e8) has no binding, and BreakGlassInRadius does not damage a car's glass (Car_DamagePartsByMask 0x0038b0e8)"
-relation = "not-ported"
-issue = 1702
+[[function]]
+address = 0x0038a7e8
+name = "Car_BreakPartByIndex"
+page = "cars.md#parts"
+role = "`Car_AddPartDamage` on one part by its index, not instant, not quiet; passes over no part"
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::setPartDamage"
+status = "compared"
 
 [[function]]
 address = 0x0038ab18
@@ -58,6 +62,15 @@ issue = 72
 what = "on every explosion, quiet or loud, the wreck's lower first box and the flags switched off near it are not ported"
 relation = "not-ported"
 issue = 72
+
+[[function]]
+address = 0x0038b0e8
+name = "Car_DamagePartsByMask"
+page = "cars.md#parts"
+role = "damage 1 to each glass part (mask `0x2a80c0`) not removed or off"
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::breakGlass"
+status = "compared"
 
 [[function]]
 address = 0x0038b8d0
@@ -111,6 +124,15 @@ relation = "stand-in"
 issue = 72
 
 [[function]]
+address = 0x0038dee8
+name = "Car_SetPartDamage"
+page = "cars.md#parts"
+role = "`CarSetPartDamage`: resolves the car, then `Car_BreakPartByIndex`"
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::setPartDamage"
+status = "compared"
+
+[[function]]
 address = 0x0038df38
 name = "Car_SetColour"
 page = "cars.md#original-structure"
@@ -125,6 +147,15 @@ name = "Car_PlaceInTrunkOnDetach"
 page = "cars.md#original-structure"
 note = "the import tied no level to this function (made from the progress list, issue 778); read the section"
 coney = "src/world_objects/cars.h:Cars::placeInTrunk"
+status = "compared"
+
+[[function]]
+address = 0x0038e738
+name = "CarTaskManager_ListInRange"
+page = "cars.md#parts"
+role = "the cars within a radius of a point, leaving one out, at most a given count"
+level = "confirmed-code"
+coney = "src/world_objects/cars.h:Cars::inRange"
 status = "compared"
 
 [[function]]
