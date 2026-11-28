@@ -43,19 +43,6 @@ TEST_CASE("health takes damage down to 0 and reports its fraction", "[combat]") 
     CHECK(Health(600).value() == 600);
 }
 
-TEST_CASE("pending damage keeps the update's largest hit and its kind", "[combat]") {
-    PendingDamage pending;
-    pending.add(17, 10);
-    pending.add(53, 38);
-    pending.add(36, 11);
-    CHECK(pending.damage() == 53);
-    CHECK(pending.kind() == 38);
-    Health civilian(600);
-    CHECK(pending.applyTo(civilian) == 53);
-    CHECK(civilian.value() == 547);
-    CHECK(pending.damage() == 0);
-}
-
 TEST_CASE("a strike's damage is its anim's range list value, or a quarter of it", "[combat]") {
     AnimRangeList ranges = rangesWithDamage(20, 36);
     CHECK(strikeDamage(ranges, 16) == 36);

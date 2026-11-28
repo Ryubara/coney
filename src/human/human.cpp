@@ -2050,7 +2050,8 @@ void Human::sendWarnings(const anim::AnimTask* before, std::uint32_t beforeId, f
     target->warn(AttackNotice{.warning = *warning,
                               .attackAnim = static_cast<int>(top->animId()),
                               .code = range != nullptr ? range->kind : 0,
-                              .attacker = m_position});
+                              .attacker = m_position,
+                              .from = this});
 }
 
 void Human::updateState(const raycast::CollisionMesh* mesh) {

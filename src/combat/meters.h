@@ -80,24 +80,6 @@ class Health {
     bool m_out; // depleted(): run out and not given back since
 };
 
-/// The damage waiting to be applied to a human this update: the largest of the update's hits, with its kind.
-class PendingDamage {
-  public:
-    /// Keeps `damage` and `kind` when the damage is larger than what is pending (record `+0x118`, `+0x11a`).
-    /// @orig 0x00264bd8 Human_AddPendingDamage (unknown)
-    void add(int damage, int kind);
-    /// The pending damage (0 for none).
-    [[nodiscard]] int damage() const { return m_damage; }
-    /// The pending hit's kind.
-    [[nodiscard]] int kind() const { return m_kind; }
-    /// Applies the pending damage to `health` and clears it; returns what was taken.
-    int applyTo(Health& health);
-
-  private:
-    int m_damage = 0;
-    int m_kind = 0;
-};
-
 /// A hit's damage: anim `animId`'s Anim Range List damage, quartered for class `0x80` against brain type 3. Double
 /// damage (human flag `0x4000`) is applied where the hit lands, human::Fighter::applyHit().
 ///

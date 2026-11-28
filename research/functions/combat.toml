@@ -711,6 +711,11 @@ what = "the steer onto the foe over 0.1 s within the counter's far range, the 0.
 relation = "not-ported"
 issue = 683
 
+[[function.gaps]]
+what = "the counter request (+0x14 = 0xe) lapses when the duck ends; Human_UpdateActions keeps it until the human is no longer free to react, a lifetime not yet measured at runtime"
+relation = "stand-in"
+issue = 683
+
 [[function]]
 address = 0x00261e78
 name = "Human_StartMeleeThrow"

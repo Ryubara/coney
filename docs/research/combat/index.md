@@ -1027,7 +1027,8 @@ type 3 throws the attacker into 629. A blocked hit gives the attacker half the r
   and `0x85`). Yes sets record `+0x14` = **`0xe`**.
 - On its next update `0x00254e78` handles `0xe` (`0x002550f4`): nothing while the human holds an object of class 8
   (`0x00231a38`); `+0x14` cleared and nothing else when `0x00225498` refuses; otherwise it keeps its foe
-  (`Human_GetFoe`, `0x002267a0`) if he is within 1.25 × the far range of anim 617 (`0x00254508`); with no foe it runs
+  (`Human_GetFoe`, `0x002267a0`) if he is within 1.25 × the far range of anim 617 (`0x00254508`), measured in 3D
+  from where he stands on that update (`Object_Distance`, `0x00229960`, called at `0x00255170`); with no foe it runs
   the counter search (`0x0027ac30`) in that range but drops its result (`0x00255160`), so nobody else is countered
   (confirmed (code)). With a target it clears `+0x14`, cuts a block or reaction clip short
   (`0x00228488`, then `0x0022f8d8`, unless human `+0xe0` has `0x8000000`), and plays the **duck counter**
@@ -1037,7 +1038,10 @@ type 3 throws the attacker into 629. A blocked hit gives the attacker half the r
   (`AnimTaskBlendOut_Construct` with 0), so the counter shows its pose from its first update; the 0.2 s it gives its
   chained task is the blend into the idle after it, as for the attacks ([Blend](../combat-moves.md#input)). The
   counters' hits are their clips' events `0xf` / `0x10` at frames 2 and 8 (on the disc). Without a target `+0x14` stays
-  `0xe` (inferred: the branch skips the clear), so a later event of the window can still find one.
+  `0xe` (confirmed (code): the branch at `0x00255188` skips the clear at `0x00255190`), so the request lasts until
+  the human is no longer free to react (`0x00225498`) or a later update finds the foe in range, even after the duck.
+  **Coney** keeps the request only while the duck plays, a marked stand-in until that lifetime is measured at runtime
+  (open: does 617-620 play when the foe steps into range after 616 has ended?).
 
 So a block that ducks an attack (616) can be turned into a counter-attack by pressing square or cross during the
 duck's frames 6-13. Confirmed (code) at the cited addresses.

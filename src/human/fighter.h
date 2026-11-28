@@ -1092,8 +1092,9 @@ class Fighter {
     // @orig 0x00254e78 Human_UpdateActions (unknown)
     void takeNotice(const FighterInput& input, HumanAnimator& animator);
     // The duck's counter: square or cross while the duck's own events 0x25 fire asks for it (record +0x14 = 0xe);
-    // on the next update 617-620 plays by the side the attacker stands on, when he stands within counterRange().
-    // Returns whether this update's command went to it.
+    // on a later update 617-620 plays by the side the foe stands on, once he stands within counterRange() (measured
+    // in 3D to where he is then). Returns whether this update's command went to it.
+    // @orig 0x00254e78 Human_UpdateActions (unknown)
     // @orig 0x002617f8 Block_DuckCounter (unknown)
     bool duckCounter(const FighterInput& input, HumanAnimator& animator);
     // How far the counter reaches its foe: 1.25 x 617's far range (reachOf(), `AttackTable_GetFarRange`)
@@ -1274,7 +1275,7 @@ class Fighter {
     std::optional<HeldGrabber> m_heldGrabber;
     GrabbedReport m_heldReport;                   // what struggleInHold() decided, until the grabber takes it
     std::optional<ReactionShake> m_reactionShake; // the last update's reaction's shake
-    anim::Vec3 m_duckAttacker;                    // where the attacker that made the player duck stood
+    const Combatant* m_duckFoe = nullptr;         // the attacker that made the player duck (Human_GetFoe)
     std::uint32_t m_clipSeen = 0;                 // the clip playing at the end of the last update, and its time
     float m_clipTimeSeen = 0.0F;
     combat::CombatRandom m_grabbedRandom;

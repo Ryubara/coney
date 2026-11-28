@@ -99,9 +99,9 @@ void Fighter::takeNotice(const FighterInput& input, HumanAnimator& animator) {
         return;
     }
     if (notice.warning == combat::AttackWarning::Duck) {
-        // The duck (record +0x14 = 0xd): 616, then the block again; the attack passes over it. Its attacker is kept
-        // for the duck's counter.
-        m_duckAttacker = notice.attacker;
+        // The duck (record +0x14 = 0xd): 616, then the block again; the attack passes over it. Its attacker, the foe
+        // (Human_GetFoe 0x002267a0), is kept for the duck's counter.
+        m_duckFoe = notice.from;
         m_counterAsked = false;
         animator.playCombat(clips::one(clips::clipOf(combat::kBlockDodge)), clips::kBlockSustain, AnimState::Hold,
                             kCombatFade, clips::kDuckHolds);
@@ -652,19 +652,28 @@ bool Fighter::riseCounter(const FighterInput& input, HumanAnimator& animator) {
 bool Fighter::duckCounter(const FighterInput& input, HumanAnimator& animator) {
     const std::uint32_t duck = clips::clipOf(combat::kBlockDodge);
     const bool ducking = animator.animId() == duck && animator.drivingClipPlaying();
-    // 1. Asked for on an earlier update: the counter by the side its foe stands on, once he is within the counter's
-    // range. The foe is the attacker that made the player duck; no one else is countered, as the original's search
-    // without a foe has its result dropped (0x00255160).
+    // 1. Asked for on an earlier update: the counter by the side its foe stands on now, once he is within the
+    // counter's range, measured in 3D from where he stands on this update (Object_Distance 0x00229960, called at
+    // 0x00255170). The foe is the attacker that made the player duck, read only while he is still among the targets;
+    // no one else is countered, as the original's search without a foe has its result dropped (0x00255160).
     if (m_counterAsked) {
-        if (std::hypot(m_duckAttacker.x - input.position.x, m_duckAttacker.y - input.position.y) <= counterRange()) {
-            playCounter(input, animator, m_duckAttacker);
-            m_counterAsked = false;
-            ++m_duckCounters;
-            return true;
+        const bool foeHere = m_duckFoe != nullptr && targetListed(input, m_duckFoe);
+        if (foeHere) {
+            const anim::Vec3 foe = m_duckFoe->position();
+            if (anim::distance(foe, input.position) <= counterRange()) {
+                playCounter(input, animator, foe);
+                m_counterAsked = false;
+                m_duckFoe = nullptr;
+                ++m_duckCounters;
+                return true;
+            }
         }
-        // **Coney's choice**: without a target the request lasts as long as the duck.
+        // **Coney's stand-in** (#683, known gap): the request lapses when the duck ends. The original keeps +0x14 = 0xe
+        // until the human is no longer free to react (Human_IsFreeToReact 0x00225498, in 0x00254e78) or the counter
+        // plays; that lifetime is not yet measured at runtime (docs/research/combat/index.md#block).
         if (!ducking) {
             m_counterAsked = false;
+            m_duckFoe = nullptr;
         }
     }
     // 2. The duck's window: its own 0x25 events fire this update while square or cross is pressed or held.

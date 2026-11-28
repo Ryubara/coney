@@ -51,20 +51,6 @@ void Health::keepOneWhileOut() {
     }
 }
 
-void PendingDamage::add(int damage, int kind) {
-    if (damage > m_damage) {
-        m_damage = damage;
-        m_kind = kind;
-    }
-}
-
-int PendingDamage::applyTo(Health& health) {
-    const int taken = health.apply(m_damage);
-    m_damage = 0;
-    m_kind = 0;
-    return taken;
-}
-
 int strikeDamage(const AnimRangeList& ranges, int animId, bool quartered) {
     if (animId < 0) {
         return 0;
