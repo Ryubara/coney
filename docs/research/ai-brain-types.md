@@ -125,7 +125,7 @@ limited to the gang: it is event `0x14` (20, violence) sent to everyone nearby. 
     - Both distances are 3D: `Humans_FindAhead` sums x, y and z squared (`vsub.xyz`, then `vaddy` and `vaddz`,
       `0x00227518`-`0x00227530`) and stores that square beside each human for the filter, so a human on a ledge or
       another floor, inside the reach across the ground, is left out when the height takes him past it. Coney measures
-      both in 3D too (`broadcastHelpCall` and `humansAround`, [#1594](issue:1594)).
+      both in 3D too (`broadcastHelpCall` and `humansAround`).
 3. **The ranges at the call sites**:
     - 5 m: `Brain_CallForHelp`.
     - 10 m: the Grabbed and Mounted goals (a civilian held).
