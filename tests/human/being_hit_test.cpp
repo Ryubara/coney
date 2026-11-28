@@ -754,6 +754,55 @@ TEST_CASE("a duck whose foe stands out of the counter's range counters no one, n
     CHECK(duckFrom(character, Vec3{40.0F, 42.0F, 0.0F}, 1.0F).counters == 0);
 }
 
+namespace {
+
+// A target that stands still and counts the warnings it is given.
+class WarnedTarget final : public coney::human::Combatant {
+  public:
+    explicit WarnedTarget(Vec3 at) : m_at(at) {}
+
+    [[nodiscard]] Vec3 position() const override { return m_at; }
+    [[nodiscard]] float heading() const override { return std::numbers::pi_v<float>; }
+    [[nodiscard]] coney::human::TargetState state() const override { return coney::human::TargetState::Standing; }
+    [[nodiscard]] const combat::Health& health() const override { return m_health; }
+    void hit(const IncomingHit& /*hit*/) override {}
+    void warn(const coney::human::AttackNotice& /*notice*/) override { ++m_warnings; }
+    [[nodiscard]] int warnings() const { return m_warnings; }
+
+  private:
+    Vec3 m_at;
+    combat::Health m_health{600};
+    int m_warnings = 0;
+};
+
+// The warnings a target standing at `at` hears from the player's S1, whose clip warns of a duck (event 0x24) at
+// frame 3, with the fight's own target far away.
+int warningsAt(Vec3 at) {
+    std::vector<coney::test::LocomotionClip> clips = coney::test::fightClips();
+    for (coney::test::LocomotionClip& clip : clips) {
+        if (clip.id == static_cast<std::uint32_t>(combat::anim_id::kAttackS1)) {
+            clip.markers.push_back({3, combat::kDuckEvent});
+        }
+    }
+    const FightCharacter character(clips);
+    Fight fight(character, 30.0F);
+    WarnedTarget target(at);
+    fight.addCombatant(target);
+    fight.run("2 tap square\n", 30);
+    return target.warnings();
+}
+
+} // namespace
+
+TEST_CASE("an attack warns a target nearer than twice its reach in three dimensions", "[human][combat]") {
+    // Expected: combat/index.md#block, confirmed (code) at Anim_FireFrameEvents (0x00101dd8): an event 0x24 warns the
+    // attacker's target when Object_Distance (0x00229960, 3D) is less than twice the anim's reach. S1's reach is 1 m:
+    // a target 1.2 m ahead is warned; one 1.2 m ahead and 2 m up (2.33 m away) is not, though within 2 m across the
+    // ground.
+    CHECK(warningsAt(Vec3{40.0F, 41.2F, 0.0F}) == 1);
+    CHECK(warningsAt(Vec3{40.0F, 41.2F, 2.0F}) == 0);
+}
+
 TEST_CASE("the duck's counter measures to where its foe stands now, not where he warned from", "[human][combat]") {
     // Expected: combat/index.md#block, confirmed (code) at Human_UpdateActions (0x00254e78): the range test reads the
     // foe's position on the update it runs (Object_Distance 0x00229960, called at 0x00255170), so a foe who warned

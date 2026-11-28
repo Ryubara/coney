@@ -214,6 +214,9 @@ class Fight {
         return *m_others.back();
     }
 
+    // Adds `target`, owned by the caller, to the humans the player may fight; it is not stepped.
+    void addCombatant(coney::human::Combatant& target) { m_targets.push_back(&target); }
+
     // Runs `frames` updates of `script`, calling `each` after every update with its index.
     template <typename Each> void run(std::string_view script, std::uint64_t frames, Each each) {
         for (const test::PadFrame& frame : test::playScript(script, frames)) {
