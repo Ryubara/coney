@@ -7,10 +7,11 @@
 #include <cmath>
 #include <cstdint>
 
-// The game's sine and cosine are fdlibm's float versions, run on the EE's floating-point unit
-// (docs/research/maths.md#trig): a polynomial kernel on [-π/4, π/4] after reducing the angle by π/2. Each operation
-// below is one of the original's, in its order, with the PS2's rounding (core/ps2_float.h), so the results are the
-// original's to the bit (docs/research/characters-locomotion.md#run-velocity).
+// The game's sine and cosine are fdlibm's float versions from its C runtime (middleware, so no `@orig` tag: core code
+// needs none), run on the EE's floating-point unit (docs/research/maths.md#trig): a polynomial kernel on [-π/4, π/4]
+// after reducing the angle by π/2. Each operation below is one of the original's, in its order, with the PS2's rounding
+// (core/ps2_float.h), so the results are the original's to the bit
+// (docs/research/characters-locomotion.md#run-velocity).
 
 namespace coney::ps2 {
 
@@ -30,7 +31,7 @@ constexpr std::uint32_t kQuarterPi = 0x3f490fd9U;
 constexpr std::uint32_t kThreeQuarterPi = 0x4016cbe4U;
 
 // The sine of x + y (y the tail of a reduced angle, ignored without `tail`) for |x| up to π/4.
-// @orig 0x004bdf20 Math_KernelSinf (unknown)
+// The C runtime's Math_KernelSinf (0x004bdf20).
 float kernelSin(float x, float y, bool tail) {
     if (magnitudeBits(x) < kTiny) {
         return x;
@@ -58,7 +59,7 @@ float kernelSin(float x, float y, bool tail) {
 }
 
 // The cosine of x + y for |x| up to π/4.
-// @orig 0x004bd478 Math_KernelCosf (unknown)
+// The C runtime's Math_KernelCosf (0x004bd478).
 float kernelCos(float x, float y) {
     const std::uint32_t bits = magnitudeBits(x);
     if (bits < kTiny) {
@@ -94,7 +95,7 @@ float kernelCos(float x, float y) {
 
 // An angle under 3π/4 (and at least π/4) reduced by π/2 into a head and a tail; returns the quadrant, 1 or -1. π/2 is
 // taken in three parts, the third used only near π/2 itself, where the first two cancel most of the angle.
-// @orig 0x004bcf60 Math_ReduceByHalfPif (unknown)
+// The C runtime's Math_ReduceByHalfPif (0x004bcf60), its first step only.
 int reduceByHalfPi(float x, float& head, float& tail) {
     const float pio2Head = word(0x3fc90f80U);       // π/2's first 17 bits
     const float pio2Second = word(0x37354400U);     // its next part
@@ -143,7 +144,7 @@ float reduced(float x, bool cosine) {
 
 } // namespace
 
-// @orig 0x004b8c40 Math_Sinf (unknown)
+// The C runtime's Math_Sinf (0x004b8c40).
 float sinf(float x) {
     const std::uint32_t bits = magnitudeBits(x);
     if (bits < kQuarterPi) {
@@ -157,7 +158,7 @@ float sinf(float x) {
     return towardZero(std::sin(static_cast<double>(x)));
 }
 
-// @orig 0x004b8a70 Math_Cosf (unknown)
+// The C runtime's Math_Cosf (0x004b8a70).
 float cosf(float x) {
     const std::uint32_t bits = magnitudeBits(x);
     if (bits < kQuarterPi) {

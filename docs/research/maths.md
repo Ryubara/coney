@@ -78,7 +78,7 @@ The game's `sinf` and `cosf` are fdlibm's single-precision ones, run on the EE's
 toward zero and lines up a sum's smaller operand keeping one guard bit ([The run's velocity in
 floats](characters-locomotion.md#run-velocity)). Their results can differ from a correctly rounded sine by a unit or two
 in the last place, and the locomotion's measured speed turns on those units. Confirmed (code) at each address;
-confirmed (runtime) on 57 half headings, run r-20261128-chars-run-velocity.
+the sines and cosines of 57 half headings confirmed (runtime), run r-20261128-chars-run-velocity.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
@@ -193,4 +193,8 @@ A box is `{min, max at +0x10}`.
 
 ## Open questions
 
+- **Sine and cosine past 3π/4 in Coney**{#q-trig-reduction}: Coney's `ps2::sinf` and `ps2::cosf` port the original's
+  kernels and its first reduction only, so past 3π/4 (the medium reduction with the table at `0x00591838` and the long
+  one at `0x004bd5d0`) they take IEEE's value rounded toward zero. No caller ported so far passes such an angle (the
+  locomotion's half heading stays under 1.75); a port that does needs those reductions first.
 - Whether `Mat_SwapYZ` converts to RenderWare's frame or to the vector unit's (its callers are all render paths).
