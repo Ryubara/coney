@@ -1855,6 +1855,8 @@ contact. Coney must reproduce the quirk exactly (faithful first), so its tests s
 
 ### PhysicsMesh_SweepBox (0x00348530) {#u13-mesh}
 
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
 Size 0x520. Mesh sweep table `+0xe0`, type 1. `int fn(Contact* out, int max, const AABB* worldBox, Body* body,
 Shape* box, const vec4* move)` (`a0`-`a3`, `t0`, `t1`); the options word (`t2`) and `f12`/`f13` (the `n.z` range of
 [Unit 2](physics-bodies.md#u2-0033d2d8-iphysics-sweepshapevsmesh)) are **never read**. Returns the number of contacts
@@ -1885,17 +1887,13 @@ start of the move). `P` = shape `+0x80`.
    10-byte file triangle, `+0x08 = 0`, `+0x20`…`+0xaf` the copy of `T+0x00`…`T+0x8f` (normal at `+0x90`)
    (`0x00348894`-`0x003488e0`). `+0x0c`, `+0x10`, `+0x14` are not written.
 
-**Bug, confirmed (code) at `0x0034888c`:** the `t > 1` exit branches past the loop counter's increment (as the
-capsule's does, [Unit 2](physics-bodies.md#u2-00347c08-physicsmesh-sweepcapsule)), and here the kernel's "no contact"
-value 1e28 takes
-that exit. So **every triangle the kernel misses** leaves the cell's counter where it was while the list pointer
-moves on, and the walk reads one more `u16` past the end of the cell's list per miss (and per miss among those).
-Every other skip (visited, disabled, bit 3, behind, receding, `t < 0`) counts correctly. What the extra entries
-are depends on what follows the list in memory (the next cell's count and indices, inferred from the layout in
-[Collision](collision.md)); each is treated as a triangle index, subject to the visited bit and every test. Since a
-triangle the swept box really reaches must lie in a cell the query box covers, the extra triangles can only add
-contacts that the cell walk would also find (inferred), except through the false contacts of the quirk above.
-Coney should walk the lists exactly and note the difference in a comment.
+**Each entry once, confirmed (code):** the cell loop's counter `s3` steps on every path. `s4 = s3 + 1` is set at
+`0x003487fc` (and in the delay slots at `0x003486b4` and `0x00348714`), and the copy `s3 = s4` sits in the delay slot of
+the `t < 0` test's plain `bc1t` at `0x00348870` (word `0x4501001d`, the branch-likely bit is 0), which runs whether the
+branch is taken or not. Every path to the `t > 1` exit, the `bc1tl` at `0x0034888c`, passes it, so when that exit jumps
+past the copy at `0x003488e4`, the entry is already counted. That holds for the kernel's "no contact" value 1e28 too: a
+missed triangle is one turn, and the walk never reads past the cell's list. As in the capsule's walk ([The cell loop's
+counter](physics-bodies.md#u2-capsule-walk-counter)).
 
 **After the walk** (`0x00348930`-`0x00348a1c`): none kept → return 0. Sort (`MeshContacts_SortByFraction`, with its
 smear); `count = min(count, max)`. For each sorted entry `i`, into `out[i]`:
@@ -1918,7 +1916,7 @@ a box, and through `IPhysics_CollideShape` with a box shape.
 
 **Differences from the sphere sweep, in one list:** no options (no `n.z` range, no `0x40` back faces, no `0x8000`, no
 one-contact-per-plane `0x20000`); the side is taken at the box centre; the point is the box centre; the flags word is
-always 0; the counter bug on every kernel miss.
+always 0.
 
 ### Sweep_BoxBox (0x0034c430) {#u13-box-box}
 

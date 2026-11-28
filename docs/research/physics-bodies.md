@@ -225,15 +225,9 @@ steps confirmed (code) at the cited addresses.
 9. Keep the hit when the kernel returns non-zero and `0 ≤ t ≤ 1` (`t` = result `+4`): append a mesh contact
    (`t`, triangle pointer, `+0x10` = 0, `+0x14` = region, the copy of `T`).
 
-**Bug (confirmed (code) at `0x00348170`):** a hit with `t > 1` leaves the cell's loop counter un-incremented while
-the list pointer moves on, so that cell's walk reads one `u16` past the end of its list and treats it as a triangle
-index (subject to the visited bit and the tests). The kernel's face path refuses `t > 1`, but its edge steps can return
-a fraction above 1
-([Unit 1](physics-kernels.md#u1-edge-cylinder)), so the overrun is reachable at a triangle's edges and corners
-(inferred: [Unit
-1](physics-kernels.md#u1-tests) cases 12
-and 13 return 1 with a fraction above 1; not seen at runtime). An implementation should not
-read past the list; note the difference in a comment.
+**Each entry once:** the cell loop steps its counter on every path, a hit with `t > 1` included, so each listed
+entry is one turn and nothing past the list is read: [The cell loop's counter](#u2-capsule-walk-counter).
+Confirmed (code).
 
 **After the walk** (none kept → return 0):
 
@@ -283,6 +277,40 @@ fraction of the move where the sphere first touches), the side is decided **befo
 move goes into count. A body moving fast enough to cross a wall within one update still meets it at the fraction
 where it touches, so there is no tunnelling; a body that starts behind a one-sided wall passes through it.
 
+#### The cell loop's counter {#u2-capsule-walk-counter}
+
+Confirmed (code) at the cited addresses unless a line says otherwise.
+
+**The loop.** Each cell's list is walked with a counter and a pointer (`0x00347d58`-`0x00347d8c`): the counter `s2`
+starts at 0, the count `s8` is the list's first `u16`, the pointer `s0` points at its first index, and each turn reads
+the `u16` at `s0` and keeps `s0 + 2` in `s7`. `s6` holds the counter plus 1 (`0x00347db4`, again at `0x00347ef8`). The
+loop runs while `s2 < s8`, moving `s0` on in the delay slot at `0x003481e8`.
+
+**The counter steps on every path.** The copy `s2 = s6` sits in the delay slot of the move-into test's branch at
+`0x00347f34`, a plain `bc1t` (word `0x450100aa`, the branch-likely bit is 0), whose delay slot runs whether the branch
+is taken or not; every path that reaches the kernel passes it. The low, thin and `t < 0` exits (`0x00347fcc`,
+`0x003480dc`, `0x00348154`) are plain `bc1t` with the same copy, and the visited exit's `bne` at `0x00347db0` jumps to
+the copy at `0x003481dc`. So when the `bc1tl` at `0x00348170` (a hit with `t > 1`) jumps past the copy at `0x003481dc`,
+the counter has already been stepped: each listed entry is one turn, and the walk never reads past its list. The
+decompile shows the same, one step at the foot of the loop. An earlier reading of this page took the plain branches'
+delay slots for taken-only and reported a skip there; there is none.
+
+**The index buffer in memory.** In level99's mesh (state `street-end-run`), the lists are one `u16` buffer: a leading
+0, then each list as a count followed by its indices, back to back (4933 values for 1718 triangles), as Coney's
+`CollisionMesh` holds them. The buffer is the last of the mesh's chunks in memory before the mesh object itself
+(checked set, vertices, triangles, grid, lists, header in rising order), 6 bytes before it. Confirmed (runtime), run
+r-20261128-capsule-walk-lists.
+
+**No hit above 1 was seen in play.** In the same run a conditional break at `0x00348170` on a fraction above 1 caught
+no hit in about 3,300 frames of walking into level99's walls and past their corners: confirmed (runtime), run
+r-20261128-capsule-walk-lists. The condition
+compared the fraction's raw bits with `0x3f800000` as an unsigned number, which a negative fraction would also pass;
+none reaches the break, as a negative fraction leaves at `0x00348154` first.
+
+**Step 9 keeps the same fractions as Coney's test.** Its keep test is `!(t < 0)` and `!(1 < t)` (`c.lt.S` at
+`0x0034814c` and `0x00348168`), which differs from `0 ≤ t ≤ 1` only for a NaN, and the EE's FPU has no NaN
+([Floating point](physics.md#units)).
+
 ### `0x00348a50` PhysicsMesh_SweepSphere {#u2-00348a50-physicsmesh-sweepsphere}
 
 Size `0x72c`. Mesh sweep table `+0xe0`, type 2. Arguments: `out`, `max`, `worldBox`, `body` (may be read for its
@@ -291,7 +319,7 @@ written. Confirmed (code) at the cited addresses.
 
 **The sphere:** centre = shape `+0x50` exactly (no raise), radius = shape `+0x40` (no body or human scale).
 
-**Per triangle** (same walk and visited bits; the loop counter is correct here):
+**Per triangle** (same walk and visited bits, each listed entry once):
 
 1. **Bit 3** (`0x0008`, within the low 12 bits): if set, skip when the body's flags `+0x40` have `0x100` or the
    options have `0x8000` (`0x00348c34`-`0x00348c54`). Meaning of bit 3 and of body flag `0x100`: not traced.
