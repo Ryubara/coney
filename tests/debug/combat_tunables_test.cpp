@@ -14,7 +14,7 @@ TEST_CASE("the combat tunables edit the values combat reads, defaulting to the r
     // mash target 1000; the count is Coney's list)
     TunableRegistry registry;
     coney::debug::registerCombatTunables(registry);
-    CHECK(registry.inCategory("Combat").size() == 39);
+    CHECK(registry.inCategory("Combat").size() == 37);
     REQUIRE(registry.find("Combat/History hold") != nullptr);
     CHECK(registry.find("Combat/History hold")->defaultValue() == 7.0);
     REQUIRE(registry.find("Combat/Power endurance") != nullptr);
@@ -33,7 +33,7 @@ TEST_CASE("the combat tunables edit the values combat reads, defaulting to the r
     registry.applyPending();
     CHECK(coney::combat::combatTuning().historyHoldSamples == 7);
     CHECK(coney::combat::combatTuning().snapNeedsTarget);
-    CHECK(registry.removeCategory("Combat") == 39);
+    CHECK(registry.removeCategory("Combat") == 37);
 }
 
 TEST_CASE("the combat tunables register beside the game's, as main does, with the rage's hold", "[debug][combat]") {
@@ -42,7 +42,7 @@ TEST_CASE("the combat tunables register beside the game's, as main does, with th
     coney::debug::registerGameTunables(registry);
     const std::size_t game = registry.size();
     coney::debug::registerCombatTunables(registry);
-    CHECK(registry.size() == game + 39);
+    CHECK(registry.size() == game + 37);
     // The rage's drain and decay are each player's Warrior class's (combat::RageClass), not tunables.
     CHECK(registry.find("Combat/Rage drain") == nullptr);
     REQUIRE(registry.find("Combat/Rage hold") != nullptr);
