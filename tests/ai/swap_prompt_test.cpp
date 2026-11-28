@@ -167,7 +167,9 @@ TEST_CASE("a knocked-out Warrior clears his swap prompt on his next think", "[ai
 }
 
 TEST_CASE("a Warrior whose brain is off clears his swap prompt on his next think", "[ai][swap]") {
-    // A script may make a knocked-out Warrior's brain dead too (BrDead); his think must still drop the prompt.
+    // Expected: hud-messages.md#action-prompts, confirmed (code): a knocked-out Warrior's swap prompt is cleared on his
+    // next think (WarriorBrain_Think 0x003052f0); a script may also make his brain dead (BrDead), and Coney's think
+    // still drops it then
     SwapScene s;
     s.scene.player().human().script().heldObject = 7.0;
     s.scene.run(5);
