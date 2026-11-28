@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The glass and door bindings (docs/research/objects.md): SpawnDoor reading its type's CfgObj, the door commands and
-// queries, the glass type table, SpawnBreakableGlass and BreakGlassInRadius, the lock-pick handlers, and the spawns
-// still handing out handles with no level objects.
+// queries, the glass type table, SpawnBreakableGlass and BreakGlassInRadius (the panes, and the glass of the cars in
+// the radius), the lock-pick handlers, and the spawns still handing out handles with no level objects.
 #include "scripting/object_bindings.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <memory>
 #include <optional>
@@ -23,6 +24,7 @@
 #include "support/object_fixtures.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
+#include "world_objects/cars.h"
 #include "world_objects/flags.h"
 #include "world_objects/glass.h"
 #include "world_objects/level_objects.h"
@@ -61,6 +63,7 @@ struct Harness {
     coney::world_objects::WorldFlags flags;
     coney::world_objects::ObjectTypes types;
     coney::world_objects::SpawnRecords records;
+    coney::world_objects::Cars cars;
     coney::script::BindingContext context;
     ScriptSystem scripts;
 
@@ -73,7 +76,8 @@ struct Harness {
                   .flags = &flags,
                   .objectTypes = &types,
                   .spawnRecords = &records,
-                  .objects = withObjects ? &objects : nullptr},
+                  .objects = withObjects ? &objects : nullptr,
+                  .cars = &cars},
           scripts(
               [](std::string_view) -> std::expected<std::vector<std::byte>, coney::Error> {
                   return coney::fail(coney::ErrorCode::NotFound, "no scripts in this test");
@@ -323,6 +327,49 @@ TEST_CASE("CfgSetGlassProperties, SpawnBreakableGlass and BreakGlassInRadius", "
     // The radius is round an object: the pane itself.
     h.first("BreakGlassInRadius", {Value(pane), Value(1.0)});
     CHECK(h.objects.glass.find(pane)->broken);
+}
+
+TEST_CASE("BreakGlassInRadius breaks the glass of the cars in the radius, but not a part removed or off",
+          "[object_bindings]") {
+    // Expected: cars.md#parts, confirmed (code): World_BreakGlassInRadius (0x003963b8) lists the cars within the
+    // radius (0x0038e738, distance to the car's position at most the radius) and Car_DamagePartsByMask (0x0038b0e8)
+    // gives each glass part (6, 7, 15, 17, 19, 21) not in +0x11f0 or +0x11f8 damage 1, a non-instant call.
+    Harness h;
+    h.flags.add(900, "fCentre", {0, 0, 0}, 0.0F);
+    REQUIRE(h.cars.spawn("car_coupe", coney::anim::Vec3{3, 0, 0}, coney::anim::Quat{}, 901) != nullptr);
+    REQUIRE(h.cars.spawn("car_coupe", coney::anim::Vec3{3, 4, 0}, coney::anim::Quat{}, 902) != nullptr);
+    REQUIRE(h.cars.spawn("car_coupe", coney::anim::Vec3{6, 0, 0}, coney::anim::Quat{}, 903) != nullptr);
+    // Car 901: a script removed door 14, so its window 15 is in +0x11f0 only, and window 17 (in both).
+    h.cars.removePart(901, 14, true);
+    h.cars.removePart(901, 17, true);
+    h.cars.spawnRadio(901);
+    h.first("BreakGlassInRadius", {Value(900.0), Value(5.0)});
+    constexpr std::uint32_t kGlass = (1U << 6U) | (1U << 7U) | (1U << 15U) | (1U << 17U) | (1U << 19U) | (1U << 21U);
+    // 901: the glass not removed comes off; 15 and 17 are passed over, so the stereo stays in the car.
+    const coney::world_objects::Car& inside = *h.cars.find(901);
+    CHECK(inside.damage[6] == 1.0F);
+    CHECK(inside.damage[7] == 1.0F);
+    CHECK(inside.damage[19] == 1.0F);
+    CHECK(inside.damage[21] == 1.0F);
+    CHECK(inside.damage[15] == 0.0F);
+    CHECK(inside.damage[17] == 0.0F);
+    CHECK(inside.stereo == coney::world_objects::StereoState::InCar);
+    CHECK((inside.removedKept & kGlass) == (kGlass & ~(1U << 15U)));
+    // 902 is 5 m away exactly: inside. Every glass part comes off, nothing else.
+    CHECK(h.cars.find(902)->removedKept == kGlass);
+    // 903, 6 m away, is untouched.
+    CHECK(h.cars.find(903)->removedKept == 0);
+}
+
+TEST_CASE("BreakGlassInRadius round a car passes over that car's own glass", "[object_bindings]") {
+    // Expected: cars.md#parts, confirmed (code): the car list (0x0038e738) leaves out the centre when it is a car
+    // (Car_FromObject).
+    Harness h;
+    REQUIRE(h.cars.spawn("car_coupe", coney::anim::Vec3{0, 0, 0}, coney::anim::Quat{}, 901) != nullptr);
+    REQUIRE(h.cars.spawn("car_coupe", coney::anim::Vec3{2, 0, 0}, coney::anim::Quat{}, 902) != nullptr);
+    h.first("BreakGlassInRadius", {Value(901.0), Value(5.0)});
+    CHECK(h.cars.find(901)->removedKept == 0);
+    CHECK(h.cars.find(902)->removedKept != 0);
 }
 
 TEST_CASE("the lock-pick handlers are kept by name", "[object_bindings]") {
