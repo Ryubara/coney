@@ -18,6 +18,7 @@
 #include "ai/taunt_action.h"
 #include "ai/threats.h"
 #include "ai/turn_action.h"
+#include "animation/anim_math.h"
 #include "combat/ai_counter.h"
 #include "combat/anim_ids.h"
 #include "combat/commands.h"
@@ -276,9 +277,12 @@ void broadcastHelpCall(Brain& caller, float range, Brain* aggressor, int value, 
         if (peer.get() == &caller) {
             continue;
         }
-        // Stand-in: the reach is measured in plan where the original measures in 3D (#1594).
-        const float distance = caller.distanceTo(*peer);
-        if (distance <= range && distance <= peer->senses().helpHearRange) {
+        // In 3D, as the original: Humans_FindAhead's squared distance (x, y and z) within the range squared, then
+        // Brain_IsInHearRange's test of the same square against the hearer's +0x138 squared.
+        const anim::Vec3 offset = anim::subtract(peer->human().position(), caller.human().position());
+        const float distanceSquared = anim::dot(offset, offset);
+        const float hearing = peer->senses().helpHearRange;
+        if (distanceSquared <= range * range && distanceSquared <= hearing * hearing) {
             hearers.push_back(peer.get());
             if (hearers.size() == mostHearers) {
                 break;

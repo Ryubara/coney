@@ -1,0 +1,41 @@
+version = 1
+id = "r-20261128-find-ahead-3d"
+date = "2026-11-28"
+kind = "method"
+tool = "pcsx2 record-run"
+digest = "c34a04324097463f69d8f8ac8f0fed4ce3275b5c8febee2172f1284bc12ef9ba"
+
+[who]
+agent = "adad962516500c344"
+type = "engineer"
+model = "claude-opus-5-5"
+source = "hook"
+
+[pcsx2]
+version = "v2.9.129"
+copy = "pcsx2"
+
+[start]
+state = "trash-can-roof"
+patches = []
+
+[run]
+name = ""
+method = "breakpoint at 0x00227544 (the compare after the sum) in Humans_FindAhead called from Humans_ListSeen; read f0 (the stored squared distance), f12 (the radius squared), the point a3 and the slot position t5 points at"
+
+[values]
+radius_squared = 9.0
+stored_distance_squared = 22.601
+dx = -0.698
+dy = -2.507
+dz = 3.978
+plan_distance_squared = 6.773
+point_z = 0.223
+other_z = 4.201
+
+[addresses]
+find_ahead = 0x002274a8
+compare = 0x00227544
+caller = 0x0029ca28
+point = 0x00714b40
+other = 0x00714b00

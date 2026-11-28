@@ -130,9 +130,9 @@ std::vector<Brain*> humansAround(const Brain& owner, std::span<Brain* const> oth
         if (other == nullptr || other == &owner || other->human().outOfWorld()) {
             continue;
         }
-        // Stand-in: measured in plan where the original measures in 3D (#1594), and the squared distance is not kept
-        // beside each human, as the original's list keeps it; the callers measure their own.
-        const anim::Vec3 offset = flat(anim::subtract(other->human().position(), at));
+        // In 3D, as the original: x, y and z squared summed (0x00227518-0x00227530). Stand-in: the squared distance is
+        // not kept beside each human, as the original's list keeps it; the callers measure their own.
+        const anim::Vec3 offset = anim::subtract(other->human().position(), at);
         if (anim::dot(offset, offset) <= reach) {
             list.push_back(other);
         }
