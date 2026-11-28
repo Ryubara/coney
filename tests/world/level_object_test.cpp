@@ -430,6 +430,7 @@ class DestroyRecorder final : public coney::chunk::LoadedObject {
     DestroyRecorder(std::string name, std::vector<std::string>& log) : m_name(std::move(name)), m_log(&log) {}
     DestroyRecorder(const DestroyRecorder&) = delete;
     DestroyRecorder& operator=(const DestroyRecorder&) = delete;
+    // NOLINTNEXTLINE(bugprone-exception-escape): a full log in a test may end the test run; nothing to recover
     ~DestroyRecorder() override { m_log->push_back(m_name); }
     [[nodiscard]] std::string_view describe() const override { return m_name; }
 
