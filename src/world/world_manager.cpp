@@ -30,6 +30,31 @@ void WorldManager::loadLevel(std::optional<std::uint64_t> levelFileSize) {
     if (levelFileSize) {
         m_levelPool.take(*m_budget, worldLevelPoolBytes(*levelFileSize));
     }
+    // The load priority last, after the worlds and the level file (which the platform loads after this call).
+    m_loadPriority = kLevelLoadPriority;
+}
+
+void WorldManager::setLoadPriority(float scale) {
+    // Stored as given: the original clamps nothing.
+    // Stand-in: nothing reads it until the resource manager streams.
+    m_loadPriority = scale;
+}
+
+void WorldManager::resetVisibility(StreamedWorld& solid, StreamedWorld* detail) {
+    // Coney's choice: the visibility latch (+0x34) the original clears first has no reader in Coney yet, so it is not
+    // kept. Then the solid world, and the detail world when the level has one.
+    solid.resetVisibility();
+    if (detail != nullptr) {
+        detail->resetVisibility();
+    }
+}
+
+SectorBudget& WorldManager::sectorPool(std::uint64_t* largestFree) const {
+    // The budget's free bytes stand for the pool's largest free block.
+    if (largestFree != nullptr) {
+        *largestFree = m_budget->freeBytes();
+    }
+    return *m_budget;
 }
 
 void WorldManager::unload(bool keepLevelFile) {
