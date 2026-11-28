@@ -84,6 +84,11 @@ std::optional<int> warCommandOfSlot(std::size_t slot) {
     return kCommands.at(slot);
 }
 
+WarCommandSlotSprites warCommandSlotSprites(std::size_t /*slot*/) {
+    // Stub for the test commit: nothing mapped yet.
+    return {};
+}
+
 std::optional<float> warCommandStickAngle(std::uint8_t x, std::uint8_t y) {
     const int cx = static_cast<int>(x) - 127;
     const int cy = static_cast<int>(y) - 127;

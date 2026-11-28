@@ -30,6 +30,25 @@ inline constexpr std::uint32_t kWarCommandFadeMs = 500;
 /// @orig 0x001a8530 WarCommand_FromSlot (unknown)
 [[nodiscard]] std::optional<int> warCommandOfSlot(std::size_t slot);
 
+/// One of the menu's sprites as WarCommandDisplay_Init sets it up: its sprite word (`Page_Rect` keeps the low 16
+/// bits, the sheet rectangle) and the resource instance whose sheet holds it (docs/research/gui.md#resource-instances:
+/// 3 is `part_page0`, 6 `big_font`).
+struct WarCommandSprite {
+    std::uint32_t word = 0; ///< The sprite word; its low 16 bits are the rectangle.
+    int instance = 0;       ///< The resource instance (BaseWidget `+0xc4`).
+};
+
+/// The three sprites of one menu slot, back to front.
+struct WarCommandSlotSprites {
+    WarCommandSprite backing; ///< `+0xf40` + slot × `0x100`.
+    WarCommandSprite plate;   ///< `+0x340` + slot × `0x100`.
+    WarCommandSprite icon;    ///< `+0x940` + slot × `0x100`.
+};
+
+/// The sprites of menu slot `slot` (0-5; slot 0 for any other).
+/// @orig 0x001a62c0 WarCommandDisplay_Init (unknown)
+[[nodiscard]] WarCommandSlotSprites warCommandSlotSprites(std::size_t slot);
+
 /// The right stick's angle as the menu reads it from its raw bytes (`x`, `y`: 0-255, y down), degrees clockwise from
 /// up: nothing inside the dead zone ((x − 127)² + (y − 127)² ≤ 12,100, about 87 % of the travel); otherwise the
 /// quadrant's base (0, 90, 180, 270) plus asin(|d| / 128) of one axis's offset d from 128 (x in the up-right and
